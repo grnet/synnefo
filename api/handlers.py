@@ -191,3 +191,70 @@ class SharedIPGroupHandler(BaseHandler):
     def delete(self, request, id):
         """Deletes a Shared IP Group"""
         return noContent
+
+
+class LimitHandler(BaseHandler):
+    allowed_methods = ('GET',)
+
+    # XXX: hookup with @throttle
+
+    rate = [
+        {
+           "verb" : "POST",
+           "URI" : "*",
+           "regex" : ".*",
+           "value" : 10,
+           "remaining" : 2,
+           "unit" : "MINUTE",
+           "resetTime" : 1244425439
+        },
+        {
+           "verb" : "POST",
+           "URI" : "*/servers",
+           "regex" : "^/servers",
+           "value" : 25,
+           "remaining" : 24,
+           "unit" : "DAY",
+           "resetTime" : 1244511839
+        },
+        {
+           "verb" : "PUT",
+           "URI" : "*",
+           "regex" : ".*",
+           "value" : 10,
+           "remaining" : 2,
+           "unit" : "MINUTE",
+           "resetTime" : 1244425439
+        },
+        {
+           "verb" : "GET",
+           "URI" : "*",
+           "regex" : ".*",
+           "value" : 3,
+           "remaining" : 3,
+           "unit" : "MINUTE",
+           "resetTime" : 1244425439
+        },
+        {
+           "verb" : "DELETE",
+           "URI" : "*",
+           "regex" : ".*",
+           "value" : 100,
+           "remaining" : 100,
+           "unit" : "MINUTE",
+           "resetTime" : 1244425439
+        }
+    ]
+
+    absolute = {
+        "maxTotalRAMSize" : 51200,
+        "maxIPGroups" : 50,
+        "maxIPGroupMembers" : 25
+    }
+
+    def read(self, request):
+        return { "limits": {
+                "rate": self.rate,
+                "absolute": self.absolute,
+               }
+            }

@@ -10,6 +10,7 @@ from synnefo.api.authentication import TokenAuthentication
 
 auth = TokenAuthentication()
 
+limit_handler = Resource(LimitHandler, auth)
 server_handler = Resource(ServerHandler, auth)
 server_address_handler = Resource(ServerAddressHandler, auth)
 server_actions_handler = Resource(ServerActionHandler, auth)
@@ -19,6 +20,7 @@ image_handler = Resource(ImageHandler, auth)
 shared_ip_group_handler = Resource(SharedIPGroupHandler, auth)
 
 v10patterns = patterns('',
+    url(r'^limits$', limit_handler),
     url(r'^servers/(?P<id>[^/]+)?$', server_handler),
     url(r'^servers/(?P<id>[^/]+)/action$', server_actions_handler),
     url(r'^servers/(?P<id>[^/]+)/ips$', server_address_handler),

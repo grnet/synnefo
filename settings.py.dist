@@ -98,3 +98,5 @@ INSTALLED_APPS = (
     'synnefo.auth',
     'synnefo.api',
 )
+
+GANETI_CLUSTER_INFO = ('ganeti.example.org', 5080)

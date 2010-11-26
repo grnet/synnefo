@@ -5,6 +5,11 @@
 
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
+from synnefo.api.helpers import instance_to_server
+from synnefo.util.rapi import GanetiRapiClient
+from django.conf import settings
+
+rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
 VERSIONS = [
     {
@@ -38,21 +43,25 @@ class ServerHandler(BaseHandler):
     def read(self, request, id=None):
         if id is None:
             return self.read_all(request)
-        elif id is "detail":
+        elif id == "detail":
             return self.read_all(request, detail=True)
         else:
             return self.read_one(request, id)
 
     def read_one(self, request, id):
-        print ("server info %s" % id)
-        return {}
+        instance = rapi.GetInstance(id)
+        return { "server": instance_to_server(instance) }
 
     def read_all(self, request, detail=False):
         if not detail:
-            print "server info all"
+            instances = rapi.GetInstances(bulk=False)
+            servers = [ { "id": id, "name": id } for id in instances ]
         else:
-            print "server info all detail"
-        return {}
+            instances = rapi.GetInstances(bulk=True)
+            servers = []
+            for instance in instances:
+                servers.append(instance_to_server(instance))
+        return { "servers": servers }
 
     def create(self, request):
         return accepted

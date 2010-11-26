@@ -16,6 +16,7 @@ server_actions_handler = Resource(ServerActionHandler, auth)
 server_backup_handler = Resource(ServerBackupHandler, auth)
 flavor_handler = Resource(FlavorHandler, auth)
 image_handler = Resource(ImageHandler, auth)
+shared_ip_group_handler = Resource(SharedIPGroupHandler, auth)
 
 v10patterns = patterns('',
     url(r'^servers/(?P<id>[^/]+)?$', server_handler),
@@ -26,6 +27,7 @@ v10patterns = patterns('',
     url(r'^servers/(?P<id>[^/]+)/backup_schedule', server_backup_handler),
     url(r'^flavors/(?P<id>[^/]+)?$', flavor_handler),
     url(r'^images/(?P<id>[^/]+)?$', image_handler),
+    url(r'^shared_ip_groups/(?P<id>[^/]+)?$', shared_ip_group_handler),
 )
 
 version_handler = Resource(VersionHandler)

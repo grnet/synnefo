@@ -169,3 +169,24 @@ class ImageHandler(BaseHandler):
     def create(self, request):
         """Create a new image"""
         return accepted
+
+
+class SharedIPGroupHandler(BaseHandler):
+    allowed_methods = ('GET', 'POST', 'DELETE')
+
+    def read(self, request, id=None):
+        """List Shared IP Groups"""
+        if id is None:
+            return {}
+        elif id == "detail":
+            return {}
+        else:
+            return fault.itemNotFound
+
+    def create(self, request, id):
+        """Creates a new Shared IP Group"""
+        return created
+
+    def delete(self, request, id):
+        """Deletes a Shared IP Group"""
+        return noContent

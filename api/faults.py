@@ -78,3 +78,4 @@ class _fault_factory(object):
 fault = _fault_factory()
 noContent = HttpResponse(status=204)
 accepted = HttpResponse(status=202)
+created = HttpResponse(status=201)

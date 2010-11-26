@@ -7,8 +7,12 @@ from django.conf.urls.defaults import *
 from piston.resource import Resource
 from synnefo.api.handlers import *
 from synnefo.api.authentication import TokenAuthentication
+from synnefo.api.faults import fault
 
 auth = TokenAuthentication()
+
+def notFound(request):
+    return fault.itemNotFound.response
 
 limit_handler = Resource(LimitHandler, auth)
 server_handler = Resource(ServerHandler, auth)
@@ -34,6 +38,7 @@ v10patterns = patterns('',
     url(r'^images/(?P<id>[^/]+)$', image_handler),
     url(r'^shared_ip_groups$', shared_ip_group_handler),
     url(r'^shared_ip_groups/(?P<id>[^/]+)$', shared_ip_group_handler),
+    (r'^.+', notFound), # catch-all
 )
 
 version_handler = Resource(VersionHandler)
@@ -42,4 +47,5 @@ urlpatterns = patterns('',
     url(r'^(?P<number>[^/]+)/?$', version_handler),
     url(r'^$', version_handler),
     (r'^v1.0/', include(v10patterns)),
+    (r'^.+', notFound), # catch-all
 )

@@ -3,10 +3,11 @@
 # Copyright © 2010 Greek Research and Technology Network
 #
 
+import re
+from xml.dom import minidom
+from django.conf.urls.defaults import url
 from piston.emitters import Emitter, Mimer
 from piston.resource import Resource as BaseResource
-from xml.dom import minidom
-import re
 
 _accept_re = re.compile(r'([^\s;,]+)(?:[^,]*?;\s*q=(\d*(?:\.\d+)?))?')
 
@@ -47,7 +48,8 @@ class Resource(BaseResource):
         """
 
         em = request.GET.get('format', 'json')
-        if 'emitter_format' in kwargs:
+        if 'emitter_format' in kwargs and \
+           kwargs["emitter_format"] is not None:
             em = kwargs.pop('emitter_format')
         elif 'HTTP_ACCEPT' in request.META:
             accepts = parse_accept_header(request.META['HTTP_ACCEPT'])
@@ -116,3 +118,12 @@ class OSXMLEmitter(Emitter):
 
 Emitter.register('xml', OSXMLEmitter, 'application/xml')
 Mimer.register(lambda *a: None, ('application/xml',))
+
+def url_with_format(regex, *args, **kwargs):
+    """
+    An extended url() that adds an .json/.xml suffix to the end to avoid DRY
+    """
+    if regex[-1] == '$' and regex[-2] != '\\':
+        regex = regex[:-1]
+    regex = regex + r'(\.(?P<emitter_format>json|xml))?$'
+    return url(regex, *args, **kwargs)

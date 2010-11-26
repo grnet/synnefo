@@ -4,7 +4,7 @@
 #
 
 from django.conf.urls.defaults import *
-from synnefo.api.emitter import Resource
+from synnefo.api.emitter import Resource, url_with_format
 from synnefo.api.handlers import *
 from synnefo.api.authentication import TokenAuthentication
 from synnefo.api.faults import fault
@@ -23,29 +23,35 @@ flavor_handler = Resource(FlavorHandler, auth)
 image_handler = Resource(ImageHandler, auth)
 shared_ip_group_handler = Resource(SharedIPGroupHandler, auth)
 
+def url_with_format(regex, *args, **kwargs):
+    if regex[-1] == '$':
+        regex = regex[:-1]
+    regex = regex + r'(\.(?P<emitter_format>json|xml))?$'
+    return url(regex, *args, **kwargs)
+
 v10patterns = patterns('',
-    url(r'^limits$', limit_handler),
-    url(r'^servers$', server_handler),
-    url(r'^servers/(?P<id>[^/]+)$', server_handler),
-    url(r'^servers/(?P<id>[^/]+)/action$', server_actions_handler),
-    url(r'^servers/(?P<id>[^/]+)/ips$', server_address_handler),
-    url(r'^servers/(?P<id>[^/]+)/ips/private$', server_address_handler),
-    url(r'^servers/(?P<id>[^/]+)/ips/public/(?P<address>[^/]+)$', server_address_handler),
-    url(r'^servers/(?P<id>[^/]+)/backup_schedule', server_backup_handler),
-    url(r'^flavors$', flavor_handler),
-    url(r'^flavors/(?P<id>[^/]+)$', flavor_handler),
-    url(r'^images$', image_handler),
-    url(r'^images/(?P<id>[^/]+)$', image_handler),
-    url(r'^shared_ip_groups$', shared_ip_group_handler),
-    url(r'^shared_ip_groups/(?P<id>[^/]+)$', shared_ip_group_handler),
-    (r'^.+', notFound), # catch-all
+    url_with_format(r'^limits$', limit_handler),
+    url_with_format(r'^servers$', server_handler),
+    url_with_format(r'^servers/(?P<id>[^/]+)$', server_handler),
+    url_with_format(r'^servers/(?P<id>[^/]+)/action$', server_actions_handler),
+    url_with_format(r'^servers/(?P<id>[^/]+)/ips$', server_address_handler),
+    url_with_format(r'^servers/(?P<id>[^/]+)/ips/private$', server_address_handler),
+    url_with_format(r'^servers/(?P<id>[^/]+)/ips/public/(?P<address>[^/]+)$', server_address_handler),
+    url_with_format(r'^servers/(?P<id>[^/]+)/backup_schedule', server_backup_handler),
+    url_with_format(r'^flavors$', flavor_handler),
+    url_with_format(r'^flavors/(?P<id>[^/]+)$', flavor_handler),
+    url_with_format(r'^images$', image_handler),
+    url_with_format(r'^images/(?P<id>[^/]+)$', image_handler),
+    url_with_format(r'^shared_ip_groups$', shared_ip_group_handler),
+    url_with_format(r'^shared_ip_groups/(?P<id>[^/]+)$', shared_ip_group_handler),
+    url(r'^.+', notFound), # catch-all
 )
 
 version_handler = Resource(VersionHandler)
 
 urlpatterns = patterns('',
-    url(r'^(?P<number>[^/]+)/?$', version_handler),
+    url_with_format(r'^(?P<number>[^/]+)/?$', version_handler),
     url(r'^$', version_handler),
-    (r'^v1.0/', include(v10patterns)),
-    (r'^.+', notFound), # catch-all
+    url(r'^v1.0/', include(v10patterns)),
+    url(r'^.+', notFound), # catch-all
 )

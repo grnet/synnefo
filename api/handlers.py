@@ -94,6 +94,20 @@ class ServerActionHandler(BaseHandler):
         return accepted
 
 
+class ServerBackupHandler(BaseHandler):
+    """ Backup Schedules are not implemented yet, return notImplemented """
+    allowed_methods = ('GET', 'POST', 'DELETE')
+
+    def read(self, request, id):
+        return fault.notImplemented
+
+    def create(self, request, id):
+        return fault.notImplemented
+
+    def delete(self, request, id):
+        return fault.notImplemented
+
+
 class FlavorHandler(BaseHandler):
     allowed_methods = ('GET',)
     flavors = [

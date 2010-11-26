@@ -13,6 +13,7 @@ auth = TokenAuthentication()
 server_handler = Resource(ServerHandler, auth)
 server_address_handler = Resource(ServerAddressHandler, auth)
 server_actions_handler = Resource(ServerActionHandler, auth)
+server_backup_handler = Resource(ServerBackupHandler, auth)
 flavor_handler = Resource(FlavorHandler, auth)
 image_handler = Resource(ImageHandler, auth)
 
@@ -22,6 +23,7 @@ v10patterns = patterns('',
     url(r'^servers/(?P<id>[^/]+)/ips$', server_address_handler),
     url(r'^servers/(?P<id>[^/]+)/ips/private$', server_address_handler),
     url(r'^servers/(?P<id>[^/]+)/ips/public/(?P<address>[^/]+)$', server_address_handler),
+    url(r'^servers/(?P<id>[^/]+)/backup_schedule', server_backup_handler),
     url(r'^flavors/(?P<id>[^/]+)?$', flavor_handler),
     url(r'^images/(?P<id>[^/]+)?$', image_handler),
 )

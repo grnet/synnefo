@@ -73,7 +73,11 @@ class _fault_factory(object):
         except TypeError:
             raise AttributeError(attr)
 
-        # XXX: piston > 0.2.2 does the serialization for us, but be compatible
+        # details are not supported for now
+        m['details'] = ''
+
+        # piston > 0.2.2 does the serialization for us, but be compatible
+        # XXX: this won't work when we start supporting XML
         message = simplejson.dumps({ attr: m }, ensure_ascii=False, indent=4)
         code = m['code']
         response = HttpResponse(message, status=code)

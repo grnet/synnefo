@@ -32,8 +32,9 @@ class VersionHandler(AnonymousBaseHandler):
             return fault.itemNotFound
 
 
-# XXX: incomplete
 class ServerHandler(BaseHandler):
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
     def read(self, request, id=None):
         if id is None:
             return self.read_all(request)

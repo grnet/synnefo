@@ -3,7 +3,9 @@
 # Copyright © 2010 Greek Research and Technology Network
 #
 
+from piston.emitters import Emitter, Mimer
 from piston.resource import Resource as BaseResource
+from xml.dom import minidom
 import re
 
 _accept_re = re.compile(r'([^\s;,]+)(?:[^,]*?;\s*q=(\d*(?:\.\d+)?))?')
@@ -30,8 +32,6 @@ def parse_accept_header(value):
 
     return result
 
-# XXX: works as intended but not used since piston's XMLEmitter doesn't output
-# XML according to our spec :(
 class Resource(BaseResource):
     def determine_emitter(self, request, *args, **kwargs):
         """
@@ -46,7 +46,7 @@ class Resource(BaseResource):
         specification.
         """
 
-        em = request.GET.get('format', 'xml')
+        em = request.GET.get('format', 'json')
         if 'emitter_format' in kwargs:
             em = kwargs.pop('emitter_format')
         elif 'HTTP_ACCEPT' in request.META:
@@ -59,3 +59,60 @@ class Resource(BaseResource):
                     break
 
         return em
+
+class OSXMLEmitter(Emitter):
+    """
+    Custom XML Emitter that handles some special stuff needed by the API.
+
+    Shamelessly stolen^Wborrowed code (sans Piston integration) by OpenStack's
+    Nova project and hence:
+
+    Copyright 2010 United States Government as represented by the
+    Administrator of the National Aeronautics and Space Administration.
+    Copyright 2010 OpenStack LLC.
+
+    and licensed under the Apache License, Version 2.0
+    """
+
+    _metadata = {
+            "server": [ "id", "imageId", "name", "flavorId", "hostId",
+                        "status", "progress", "progress" ],
+            "flavor": [ "id", "name", "ram", "disk" ],
+            "image": [ "id", "name", "updated", "created", "status",
+                       "serverId", "progress" ],
+        }
+
+    def _to_xml_node(self, doc, nodename, data):
+        """Recursive method to convert data members to XML nodes."""
+        result = doc.createElement(nodename)
+        if type(data) is list:
+            if nodename.endswith('s'):
+                singular = nodename[:-1]
+            else:
+                singular = 'item'
+            for item in data:
+                node = self._to_xml_node(doc, singular, item)
+                result.appendChild(node)
+        elif type(data) is dict:
+            attrs = self._metadata.get(nodename, {})
+            for k, v in data.items():
+                if k in attrs:
+                    result.setAttribute(k, str(v))
+                else:
+                    node = self._to_xml_node(doc, k, v)
+                    result.appendChild(node)
+        else: # atom
+            node = doc.createTextNode(str(data))
+            result.appendChild(node)
+        return result
+
+    def render(self, request):
+        data = self.construct()
+        # We expect data to contain a single key which is the XML root.
+        root_key = data.keys()[0]
+        doc = minidom.Document()
+        node = self._to_xml_node(doc, root_key, data[root_key])
+        return node.toprettyxml(indent='    ')
+
+Emitter.register('xml', OSXMLEmitter, 'application/xml')
+Mimer.register(lambda *a: None, ('application/xml',))

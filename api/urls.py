@@ -4,7 +4,7 @@
 #
 
 from django.conf.urls.defaults import *
-from piston.resource import Resource
+from synnefo.api.emitter import Resource
 from synnefo.api.handlers import *
 from synnefo.api.authentication import TokenAuthentication
 from synnefo.api.faults import fault

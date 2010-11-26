@@ -77,7 +77,7 @@ class _fault_factory(object):
         m['details'] = ''
 
         # piston > 0.2.2 does the serialization for us, but be compatible
-        # XXX: this won't work when we start supporting XML
+        # 'till the next version gets released. XXX: this doesn't do XML!
         message = simplejson.dumps({ attr: m }, ensure_ascii=False, indent=4)
         code = m['code']
         response = HttpResponse(message, status=code)

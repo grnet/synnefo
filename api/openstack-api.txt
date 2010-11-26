@@ -1,0 +1,50 @@
+auth api
+========
+
+cloud api
+=========
+* auth
+* version (DONE)
+* faults (DONE)
+* limits
+* servers
+  + list
+    - index:  GET /servers
+    - detail: GET /servers/detail
+  + create
+    - create: POST /servers
+  + get details
+    - show:   GET /servers/<id>
+  + update password
+    - update: PUT /servers/<id>
+  + delete servers
+    - delete: DELETE /servers/<id>
+  * addresses
+    + list
+    + list public
+    + list private
+    + share
+    + unshare
+  * actions
+    + reboot
+    + rebuild
+    + resize
+    + confirm resized
+    + revert resized
+* flavors
+  + list
+  + get details
+* images
+  + list images
+  + create an image
+  + get details
+  + delete image
+* backup schedule
+  + list
+  + create/update
+  + disable
+* shared ip groups
+  + list
+  + create
+  + get details
+  + delete

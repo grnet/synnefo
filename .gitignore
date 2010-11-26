@@ -1,2 +1,5 @@
 settings.py
+*.db
 *.pyc
+*~
+*.sw*

@@ -39,7 +39,7 @@ v10patterns = patterns('',
 version_handler = Resource(VersionHandler)
 
 urlpatterns = patterns('',
-    url(r'^(?P<number>[^/]+)/$', version_handler),
-    url(r'^/$', version_handler),
+    url(r'^(?P<number>[^/]+)/?$', version_handler),
+    url(r'^$', version_handler),
     (r'^v1.0/', include(v10patterns)),
 )

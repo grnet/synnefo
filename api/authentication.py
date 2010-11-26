@@ -23,5 +23,5 @@ class TokenAuthentication(object):
             return True
 
     def challenge(self):
-        return fault.unauthorized
+        return fault.unauthorized.response
 

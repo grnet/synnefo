@@ -7,7 +7,7 @@ from django.conf import settings
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
-from synnefo.util.rapi import GanetiRapiClient
+from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
@@ -49,8 +49,11 @@ class ServerHandler(BaseHandler):
             return self.read_one(request, id)
 
     def read_one(self, request, id):
-        instance = rapi.GetInstance(id)
-        return { "server": instance_to_server(instance) }
+        try:
+            instance = rapi.GetInstance(id)
+            return { "server": instance_to_server(instance) }
+        except GanetiApiError:
+            raise fault.itemNotFound
 
     @paginator
     def read_all(self, request, detail=False):

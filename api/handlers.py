@@ -92,3 +92,41 @@ class ServerActionHandler(BaseHandler):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
         print ("server action %s" % id)
         return accepted
+
+
+class FlavorHandler(BaseHandler):
+    allowed_methods = ('GET',)
+    flavors = [
+          {
+            "id" : 1,
+            "name" : "256 MB Server",
+            "ram" : 256,
+            "disk" : 10
+          },
+          {
+            "id" : 2,
+            "name" : "512 MB Server",
+            "ram" : 512,
+            "disk" : 20
+          }
+        ]
+
+    def read(self, request, id=None):
+        """List flavors
+
+        Returns: OK
+        Faults: cloudServersFault, serviceUnavailable, unauthorized, badRequest
+        """
+        if id is None:
+            simple = map(lambda v: {
+                        "id": v["id"],
+                        "name": v["name"],
+                    }, self.flavors)
+            return { "flavors": simple }
+        elif id == "detail":
+            return { "flavors": self.flavors }
+        else:
+            for flavor in self.flavors:
+                if str(flavor["id"]) == id:
+                    return { "flavor": flavor }
+            return fault.itemNotFound

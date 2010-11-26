@@ -14,6 +14,7 @@ server_handler = Resource(ServerHandler, auth)
 server_address_handler = Resource(ServerAddressHandler, auth)
 server_actions_handler = Resource(ServerActionHandler, auth)
 flavor_handler = Resource(FlavorHandler, auth)
+image_handler = Resource(ImageHandler, auth)
 
 v10patterns = patterns('',
     url(r'^servers/(?P<id>[^/]+)?$', server_handler),
@@ -22,6 +23,7 @@ v10patterns = patterns('',
     url(r'^servers/(?P<id>[^/]+)/ips/private$', server_address_handler),
     url(r'^servers/(?P<id>[^/]+)/ips/public/(?P<address>[^/]+)$', server_address_handler),
     url(r'^flavors/(?P<id>[^/]+)?$', flavor_handler),
+    url(r'^images/(?P<id>[^/]+)?$', image_handler),
 )
 
 version_handler = Resource(VersionHandler)

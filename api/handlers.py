@@ -112,10 +112,12 @@ class FlavorHandler(BaseHandler):
         ]
 
     def read(self, request, id=None):
-        """List flavors
+        """
+        List flavors or retrieve one
 
         Returns: OK
-        Faults: cloudServersFault, serviceUnavailable, unauthorized, badRequest
+        Faults: cloudServersFault, serviceUnavailable, unauthorized,
+                badRequest, itemNotFound
         """
         if id is None:
             simple = map(lambda v: {
@@ -130,3 +132,26 @@ class FlavorHandler(BaseHandler):
                 if str(flavor["id"]) == id:
                     return { "flavor": flavor }
             return fault.itemNotFound
+
+
+class ImageHandler(BaseHandler):
+    allowed_methods = ('GET', 'POST')
+
+    def read(self, request, id=None):
+        """
+        List images or retrieve one
+
+        Returns: OK
+        Faults: cloudServersFault, serviceUnavailable, unauthorized,
+                badRequest, itemNotFound
+        """
+        if id is None:
+            return {}
+        elif id == "detail":
+            return {}
+        else:
+            return fault.itemNotFound
+
+    def create(self, request):
+        """Create a new image"""
+        return accepted

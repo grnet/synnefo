@@ -3,11 +3,11 @@
 # Copyright © 2010 Greek Research and Technology Network
 #
 
+from django.conf import settings
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
-from synnefo.api.helpers import instance_to_server
+from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient
-from django.conf import settings
 
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
@@ -52,6 +52,7 @@ class ServerHandler(BaseHandler):
         instance = rapi.GetInstance(id)
         return { "server": instance_to_server(instance) }
 
+    @paginator
     def read_all(self, request, detail=False):
         if not detail:
             instances = rapi.GetInstances(bulk=False)

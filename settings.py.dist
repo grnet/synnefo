@@ -71,6 +71,7 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'synnefo.middleware.StripURLMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
 #    'django.middleware.csrf.CsrfViewMiddleware',
@@ -94,5 +95,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     # 'django.contrib.admin',
     # 'django.contrib.admindocs',
+    'synnefo.auth',
     'synnefo.api',
 )

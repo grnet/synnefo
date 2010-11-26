@@ -4,8 +4,11 @@
 #
 
 from django.conf.urls.defaults import *
+from piston.resource import Resource
+from synnefo.auth.handlers import *
+
+auth_handler = Resource(AuthHandler)
 
 urlpatterns = patterns('',
-    (r'^auth/api/', include('synnefo.auth.urls')),
-    (r'^api/', include('synnefo.api.urls')),
+    (r'^v1.0', auth_handler),
 )

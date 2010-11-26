@@ -4,7 +4,7 @@
 #
 
 from piston.handler import BaseHandler, AnonymousBaseHandler
-from synnefo.api.faults import fault, noContent, accepted
+from synnefo.api.faults import fault, noContent, accepted, created
 
 VERSIONS = [
     {
@@ -29,7 +29,7 @@ class VersionHandler(AnonymousBaseHandler):
             for version in VERSIONS:
                 if version["id"] == number:
                     return { "version": version }
-            return fault.itemNotFound
+            raise fault.itemNotFound
 
 
 class ServerHandler(BaseHandler):
@@ -100,13 +100,13 @@ class ServerBackupHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'DELETE')
 
     def read(self, request, id):
-        return fault.notImplemented
+        raise fault.notImplemented
 
     def create(self, request, id):
-        return fault.notImplemented
+        raise fault.notImplemented
 
     def delete(self, request, id):
-        return fault.notImplemented
+        raise fault.notImplemented
 
 
 class FlavorHandler(BaseHandler):
@@ -146,7 +146,7 @@ class FlavorHandler(BaseHandler):
             for flavor in self.flavors:
                 if str(flavor["id"]) == id:
                     return { "flavor": flavor }
-            return fault.itemNotFound
+            raise fault.itemNotFound
 
 
 class ImageHandler(BaseHandler):
@@ -165,7 +165,7 @@ class ImageHandler(BaseHandler):
         elif id == "detail":
             return {}
         else:
-            return fault.itemNotFound
+            raise fault.itemNotFound
 
     def create(self, request):
         """Create a new image"""
@@ -182,7 +182,7 @@ class SharedIPGroupHandler(BaseHandler):
         elif id == "detail":
             return {}
         else:
-            return fault.itemNotFound
+            raise fault.itemNotFound
 
     def create(self, request, id):
         """Creates a new Shared IP Group"""

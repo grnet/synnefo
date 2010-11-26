@@ -5,6 +5,11 @@
 
 from django.http import HttpResponse
 from django.utils import simplejson
+from piston.utils import HttpStatusCode
+
+class Fault(HttpStatusCode):
+    """Fault Exception"""
+    pass
 
 class _fault_factory(object):
     """
@@ -71,11 +76,14 @@ class _fault_factory(object):
         # XXX: piston > 0.2.2 does the serialization for us, but be compatible
         message = simplejson.dumps({ attr: m }, ensure_ascii=False, indent=4)
         code = m['code']
+        response = HttpResponse(message, status=code)
 
-        return HttpResponse(message, status=code)
+        return Fault(response)
 
 
 fault = _fault_factory()
+
+# these are in the 2xx range, hence not faults/exceptions
 noContent = HttpResponse(status=204)
 accepted = HttpResponse(status=202)
 created = HttpResponse(status=201)

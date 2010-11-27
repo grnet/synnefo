@@ -23,4 +23,3 @@ class StripURLMiddleware(object):
     def process_request(self, request):
         request.path = re.sub(_strip_url_re, '', request.path)
         request.path_info = re.sub(_strip_url_re, '', request.path_info)
-        print request.path_info

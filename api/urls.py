@@ -4,7 +4,8 @@
 #
 
 from django.conf.urls.defaults import *
-from synnefo.api.emitter import Resource, url_with_format
+from synnefo.helpers import url_with_format
+from synnefo.api.resource import Resource
 from synnefo.api.handlers import *
 from synnefo.api.authentication import TokenAuthentication
 from synnefo.api.faults import fault

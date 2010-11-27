@@ -5,6 +5,7 @@
 
 from piston.resource import Resource as BaseResource
 from synnefo.helpers import parse_accept_header
+import synnefo.api.emitter # load our own Emitter
 
 class Resource(BaseResource):
     def determine_emitter(self, request, *args, **kwargs):

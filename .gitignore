@@ -3,3 +3,11 @@ settings.py
 *.pyc
 *~
 *.sw*
+*.pt.py
+*.installed.cfg
+ui/bin/
+ui/develop-eggs/
+ui/eggs/
+ui/parts/
+ui/src/synnefo.egg-info/
+

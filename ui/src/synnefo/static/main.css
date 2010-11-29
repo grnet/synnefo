@@ -1,0 +1,453 @@
+body {
+    background:url("../static/header.png") no-repeat scroll top transparent;
+    background-color: #213d55;
+	font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
+    margin: 0;
+}
+
+#footer {
+    text-align:center;
+    color: #666;
+    font-size: .5em;
+    padding:2em;
+}
+
+#footer a {
+    color: #EBEBEB;
+    text-decoration: none;
+}
+
+/* get rid of those system borders being generated for A tags */
+a:active {
+  outline:none;
+}
+
+:focus {
+  -moz-outline-style:none;
+}
+
+/* root element for tabs  */
+ul.css-tabs {  
+	margin:-.5em 2em 0 1em !important; 
+	padding:0;
+	height:2.2em;
+	border-bottom:1px solid #666;	 	
+}
+
+/* single tab */
+ul.css-tabs li {  
+	float:left;	 
+	padding:0; 
+	margin:-1px 1em 0 0;  
+	list-style-type:none;	
+}
+
+/* link inside the tab. uses a background image */
+ul.css-tabs a { 
+	float:left;
+	font-size:1em;
+	display:block;
+	padding:.6em 3em 0;	
+	text-decoration:none;
+	border:1px solid #213D55;
+	border-bottom:2px solid #213D55;
+	height:1.5em;
+	background-color:#ebebeb;
+	color:#666666;
+	position:relative;
+	outline:0;
+	-moz-border-radius:1em 1em 0 0;	
+}
+
+ul.css-tabs a:hover {
+    color: #3baddb;
+}
+	
+/* selected tab */
+ul.css-tabs a.current {
+	background-color:#f7f7f7;
+	border-bottom:2px solid #f7f7f7;	
+    color: #000;
+	cursor:default;
+}
+
+	
+/* tab pane */
+.css-panes div {
+	display:none;
+	border:1px solid #666;
+	border-width:0 1px 1px 1px;
+	padding:15px 20px;
+	background-color:#f7f7f7;
+    margin: 0 1em;
+    -moz-border-radius: 0 1em 1em;
+}
+
+
+
+/* CSS3 border radius for various elements. yea - CSS isn't perfect */
+.rounded, #sheet input, .error {
+	border-radius: 5px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	-o-border-radius: 5px;
+	-khtml-border-radius: 5px;
+}
+
+/* validation error message */
+.error {
+	background-color:#E8FF6D;
+	padding:4px;
+	-webkit-box-shadow: #000 0 0 12px;
+	-moz-box-shadow: #000 0 0 12px;
+}
+
+/* nested arrow inside error message. It's 100% CSS. No images. */
+.error em {
+	border:10px solid;
+	border-color:#E8FF6D transparent transparent;
+	bottom:-17px;
+	display:block;
+	height:0;
+	left:10px;
+	position:absolute;
+	width:0;
+}
+
+/* input field that caused validation error */
+.invalid {
+	background-color:rgba(221, 233, 255, 0.898) !important;
+}
+
+#create {
+    -moz-border-radius: .5em;
+    background-color: #f49c1a;
+    border: 2px solid #F7F7F7;
+    color: #f4f4f4;
+    cursor:pointer;
+    display:block;
+    padding: .7em 1.5em;
+    margin-top: 1em;
+    width: 10em;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+#create:hover {
+    background-color:#f29400;
+    color: white;
+    border: 2px solid #f29400;
+}
+
+div#header {
+    height:152px;
+}
+
+div#wrapper {
+    width: 990px;
+    margin: 0 auto;
+}
+
+a.logo {
+    width: 250px; 
+}
+
+a.logo h1 {
+    background:url("../static/cloud.png") no-repeat scroll bottom left transparent ;
+    height:78px;
+    color: #b1b3b4;
+    margin-left: 1em;
+    margin-top: 0;
+    padding: .5em 0 0 2.6em;   
+    line-height: .3em;
+    font-size: 1.7em; 
+}
+
+a.logo:hover h1 {
+    color: #3baddb;
+}
+a img {
+    border: none;
+}
+
+div#about {
+    color: white;
+    padding: .9em 5em;
+    font-size:.6em;
+    float: right;
+    width: 63%;
+}    
+
+/* tooltip styling. by default the element to be styled is .tooltip  */
+.tooltip {
+	display:none;
+	background:transparent url(../static/tooltip.png);
+	font-size:12px;
+	height:40px;
+	width:130px;
+	padding:25px;
+	color:#fff;	
+
+}
+
+.modal {
+    background-color:#fff;
+    display:none;
+    width:30em;
+    height:20em;
+    padding:1em;
+    text-align:left;
+    opacity:0.9;
+}
+	
+/* the root element for scrollable */
+#wizard {
+	overflow:hidden;
+	position:relative;
+}
+
+/* scrollable items */
+#wizard .items {
+	width:20000em;
+	clear:both;
+	position:absolute;
+}
+
+/* single scrollable item called ".page" in this setup */
+#wizard .page {
+	padding:20px 30px;
+	float:left;
+}
+
+/* validation error message bar. positioned on the top edge */
+#drawer {
+	overflow:visible;
+	position:fixed;
+	left:0;
+	top:0;
+}
+
+/* scrollable root element */
+#wizard {	
+	background:#fff url(../static/h600.png) repeat scroll 0 0;
+	border:5px solid #789;
+	font-size:12px;
+	height:360px;
+	margin:20px auto;	
+	width:500px;
+	overflow:hidden;
+	position:relative;
+	
+	/* rounded corners for modern browsers */
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+}  
+
+/* scrollable items */
+#wizard .items {
+	width:20000em;	
+	clear:both;	
+	position:absolute;	
+    display:block;
+    padding: 0;
+    margin: 0;
+    border:none;
+    background:none;
+}
+
+/* single item */
+#wizard .page {	
+	padding:20px 30px;
+	width:420px;
+	float:left;	
+    display:block;
+    border:none;
+    background-color: transparent;
+}
+
+/* title */
+#wizard h2 {
+	border-bottom:1px dotted #ccc;
+	font-size:22px;
+	font-weight:normal;
+	margin:10px 0 0 0;
+	padding-bottom:15px;		
+}
+
+#wizard h2 em {
+	display:block;
+	font-size:14px;
+	color:#666;
+	font-style:normal;
+	margin-top:5px;
+}
+
+/* input fields */
+#wizard ul {
+	padding:0px !important;
+	margin:0px !important;
+}
+
+#wizard li {
+	list-style-type:none;
+	list-style-image:none;
+	margin-bottom:25px;	
+}
+
+#wizard label {
+	font-size:16px;	
+	display:block;
+}
+
+#wizard label strong {
+	color:#789;	
+	position:relative;
+	top:-1px;
+}
+
+#wizard label em {
+	font-size:11px;
+	color:#666;	
+	font-style:normal;
+}
+
+#wizard .text {
+	width:100%;
+	padding:5px;
+	border:1px solid #ccc;
+	color:#456;
+	letter-spacing:1px;
+}
+
+#wizard select {
+	border:1px solid #ccc;
+	width:94%;	
+	padding:4px;
+}
+
+#wizard label span {
+	color:#b8128f;
+	font-weight:bold;
+	position:relative;
+	top:4px;
+	font-size:20px;
+}
+
+#wizard .double label { 
+	width:50%;
+	float:left;
+}
+
+#wizard .double .text {
+	width:93%;	
+}
+
+#wizard .clearfix {
+	clear:left;
+	padding-top:10px;	
+}
+
+#wizard .right {
+	float:right;		
+}
+
+/* validation error message bar */
+#drawer {
+	background:#fff url(../static/h80.png) repeat-x scroll 0 0;
+	_background-color:#fff;
+	overflow:visible;
+	position:fixed;	
+	left:0;
+	top:0;
+	text-align:center;
+	padding:15px;
+	font-size:18px;
+	border-bottom:2px solid #789;
+	width:100%;
+	display:none;
+	z-index:2;
+}
+
+#wizard .error {
+	border:1px solid red;		
+}
+
+#wizard #status {
+	margin:0px !important;
+	height:35px;
+	background:#213d55 url(../static/h30.png) repeat-x;
+	padding-left:25px !important;
+	_background:#213d55;
+}
+
+#status li {
+	list-style-type:none;
+	list-style-image:none;
+	float:left;
+	color:#fff;
+	padding:10px 30px;
+}
+
+#status li.active {
+	background-color:#F49C1A;
+	font-weight:normal;		
+}
+
+/* slider root element */
+.slider { 
+    display: block !important;
+	background:#3C72E6 url(../static/h30.png) repeat-x 0 0; 
+	height:9px; 
+	position:relative; 
+	cursor:pointer;
+	border:1px solid #333;
+	width:300px;
+	float:left; 
+	clear:right;
+	margin-top:10px;
+	-moz-border-radius:5px; 
+	-webkit-border-radius:5px; 
+	-moz-box-shadow:inset 0 0 8px #000;
+    padding: .1em !important;
+}
+
+/* progress bar (enabled with progress: true) */
+.progress {
+	height:9px; 
+	background-color:#C5FF00; 
+	display:none;
+	opacity:0.6;
+}
+
+/* drag handle */
+.handle { 
+	background:#fff url(../static/h30.png) repeat-x 0 0; 
+	height:10px;
+	width:10px;
+	position:absolute; 
+	display:block; 
+	margin-top:1px;
+	border:1px solid #000;
+	cursor:move;
+	-moz-box-shadow:0 0 6px #000;
+	-webkit-box-shadow:0 0 6px #000;
+	-moz-border-radius:14px;
+	-webkit-border-radius:14px; 
+
+}
+
+/* the input field */
+.range {
+	border:1px inset #ddd;
+	float:left;
+	font-size:20px;
+	margin:0 0 0 15px;
+	padding:3px 0;
+	text-align:center;
+	width:50px;
+	-moz-border-radius:5px; 
+	-webkit-border-radius:5px; 		
+}
+
+
+

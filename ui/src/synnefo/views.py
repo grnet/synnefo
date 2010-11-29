@@ -12,7 +12,7 @@ def instances(request):
     #conn = Driver(USER, SECRET) 
     #nodes = conn.list_nodes()     
     nodes = []
-    nodes.append({'id':1, name:'My mail server', 'state':'3','public_ip':'147.102.1.62',})
+    nodes.append({'id':1, 'name':'My mail server', 'state':'3','public_ip':'147.102.1.62',})
     return {'nodes': nodes}
 
 def storage(request):

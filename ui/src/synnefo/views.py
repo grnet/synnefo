@@ -13,6 +13,7 @@ def instances(request):
     #nodes = conn.list_nodes()     
     nodes = []
     nodes.append({'id':1, 'name':'My mail server', 'state':'3','public_ip':'147.102.1.62',})
+    nodes.append({'id':2, 'name':'My name server', 'state':'3','public_ip':'147.102.1.64',})
     return {'nodes': nodes}
 
 def storage(request):

@@ -27,17 +27,17 @@
         </ul>
 
         <div class="css-panes">
-	        <div style="display:block"></div>
-	        <div></div>
-	        <div></div>
-	        <div></div>
+	        <div class="pane" style="display:block"></div>
+	        <div class="pane"></div>
+	        <div class="pane"></div>
+	        <div class="pane"></div>
         </div>
     </div>
 
     <!-- activate tabs with JavaScript -->
     <script>
         $(function() {
-	        $("ul.css-tabs").tabs("div.css-panes div", {	
+	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
 		        effect: 'ajax',
 		        onBeforeClick: function(event, i) {
 			        // get the pane to be opened

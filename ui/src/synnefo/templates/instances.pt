@@ -1,6 +1,11 @@
 
 <a id="create" rel="#wizard" href="#">Create a new VM</a>
-<!-- twitter style notification bar for validation errors -->
+
+<div class="instance" tal:repeat="node nodes">
+    <img src="static/server.png" />
+    <h3 tal:content="node['name']" />
+    <span tal:content="node['public_ip']" />
+</div>
 
 <!-- the form -->
 <form action="#">

@@ -73,7 +73,7 @@ ul.css-tabs a.current {
 
 	
 /* tab pane */
-.css-panes div {
+.css-panes > div.pane {
 	display:none;
 	border:1px solid #666;
 	border-width:0 1px 1px 1px;
@@ -450,4 +450,16 @@ div#about {
 }
 
 
+.instance {
+    clear: both;
+    padding: 1em;
+}
 
+.instance:hover {
+    background-color:red;
+}
+
+.instance img {
+    float: left;
+    margin: 1em .5em;
+}

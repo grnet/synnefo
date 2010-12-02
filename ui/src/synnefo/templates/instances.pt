@@ -6,7 +6,6 @@
     <div class="actions">
         <a href="#" class="action">reboot</a>
         <a href="#" class="action">shutdown</a>
-
         <a href="#" class="more">more &hellip;</a>
     </div>
     
@@ -19,30 +18,30 @@
         <div class="uptime">24 days uptime</div>
     </div>
 
-
-
     <img src="static/server.png" />
-    <a href="#" class="name"><h3> <span tal:replace="node['name']" /> <span class="rename">(rename)</span></h3></a>
-    <a href="#" class="ip"><h5><span tal:replace="node['public_ip']" /> <span class="configure">(configure networking)</span></h5></a>
-    <a href="#" class="storage"><h5>34GB of total storage in 3 volumes <span class="configure">(configure storage)</span></h5></a>
+    <a href="#" class="name">
+        <h3> <span tal:replace="node['name']" /><span class="rename">(rename)</span></h3>
+    </a>
+    <a href="#" class="ip">
+        <h5><span tal:replace="node['public_ip']" /><span class="configure">(configure networking)</span></h5>
+    </a>
+    <a href="#" class="storage">
+        <h5>34GB of total storage in 3 volumes <span class="configure">(configure storage)</span></h5>
+    </a>
 </div>
 
 <!-- the form -->
 <form action="#">
-
 	<!-- scrollable root element -->
 	<div class="modal" id="wizard">
-
 		<!-- status bar -->
 		<ul id="status">
 			<li class="active"><strong>1.</strong> Select image</li>
 			<li><strong>2.</strong> Instance type</li>
 			<li><strong>3.</strong> Start VM</li>
 		</ul>
-
 		<!-- scrollable items -->
 		<div class="items">
-
 			<!-- pages -->
 			<div class="page">
                 <h2>
@@ -57,9 +56,7 @@
 							<input type="text" class="text" name="instance_name" />
 							<em>e.g. My mail server.</em>
 						</label>
-
 					</li>
-
 					<!-- image -->
 					<li class="required">
 						<label>
@@ -71,53 +68,42 @@
 								<option>Windows 7</option>
 							</select>                                
 							<em></em>
-
 						</label>
 					</li>
-
 					<li class="clearfix">
 						<button type="button" class="next right">Proceed &raquo;</button>
 					</li>
 				</ul>
-
             </div>
 			<div class="page">
 				<h2>
 					<strong>Step 2: </strong> Instance type <b></b>
 					<em>Select CPU units, RAM and storage space for your instance</em>
-
 				</h2>
                 <ul>
                     <li>
 			            <label><strong>number of CPU units</strong></label>
                         <input type="range" value="4" max="8" min="1" />
                     </li>
-
                     <li>
 			            <label><strong>RAM (MB)</strong></label>
                         <input type="range" value="1024" max="2048" min="256" step="256" />
                     </li>
-
                     <li>
 		                <label><strong>disk size (GB)</strong></label>
                         <input type="range" value="10" step="1" max="100" min="1" />
                     </li>
-
 					<li class="clearfix">
 						<button type="button" class="prev" style="float:left">&laquo; Back</button>
 						<button type="button" class="next right">Proceed &raquo;</button>
 					</li>
-
 					<br clear="all" />
                 </ul>
-
             </div>
 			<div class="page">
 				<h2>
 					<strong>Step 3: </strong> Start VM <b></b>
 					<em>Confirm the settings below and start your new instance</em>
-   
-
 				</h2>
                 <ul>
                     <li>
@@ -131,15 +117,11 @@
 						<button type="button" class="prev" style="float:left">&laquo; Back</button>
 						<button type="button" class="next right">Start VM</button>
 					</li>
-                
 					<br clear="all" />
                 </ul>
             </div>
-
 		</div>
-
 	</div>
-
 </form>
 
 <script>
@@ -150,73 +132,46 @@ $(":range").rangeinput();
 $(function() { $("a#create[rel]").overlay({mask: '#000', effect: 'default'}); });
 
 $(function() {
-
-
     var root = $("#wizard").scrollable();
-
     // some variables that we need
     var api = root.scrollable(), drawer = $("#drawer");
-
     // rangeinput with default configuration
-
-
-
-
     // validation logic is done inside the onBeforeSeek callback
     api.onBeforeSeek(function(event, i) {
-
 	    // we are going 1 step backwards so no need for validation
 	    if (api.getIndex() < i) {
-		// 1. get current page
-		var page = root.find(".page").eq(api.getIndex()),
-
+             // 1. get current page
+		     var page = root.find(".page").eq(api.getIndex()),
 			 // 2. .. and all required fields inside the page
 			 inputs = page.find(".required :input").removeClass("error"),
-
 			 // 3. .. which are empty
 			 empty = inputs.filter(function() {
 				return $(this).val().replace(/\s*/g, '') == '';
 			 });
-
 		 // if there are empty fields, then
 		if (empty.length) {
-
 			// add a CSS class name "error" for empty & required fields
 			empty.addClass("error");
-
 			// cancel seeking of the scrollable by returning false
 			return false;
-
 		// everything is good
 		} else {
-
 			// hide the drawer
 			drawer.slideUp();
 		}
-
 	    }
-
 	    // update status bar
 	    $("#status li").removeClass("active").eq(i).addClass("active");
-
     });
-
-
-
     // if tab is pressed on the next button seek to next page
     root.find("button.next").keydown(function(e) {
 	    if (e.keyCode == 9) {
-
 		    // seeks to next tab by executing our validation routine
 		    api.next();
 		    e.preventDefault();
 	    }
     });
-
 // ]]>
 });
-
-
-
 </script>
 

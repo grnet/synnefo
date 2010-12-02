@@ -5,6 +5,16 @@ body {
     margin: 0;
 }
 
+h1, h2, h3, h4, h5 {
+    margin-top: 0em;
+    margin-bottom: .6em;
+}
+
+h5 {
+    font-weight: normal;
+    margin-bottom: 1em;
+}
+
 #footer {
     text-align:center;
     color: #666;
@@ -258,7 +268,7 @@ div#about {
 /* single item */
 #wizard .page {	
 	padding:20px 30px;
-	width:420px;
+	width:440px;
 	float:left;	
     display:block;
     border:none;
@@ -297,6 +307,7 @@ div#about {
 #wizard label {
 	font-size:16px;	
 	display:block;
+    clear: both;
 }
 
 #wizard label strong {
@@ -452,14 +463,124 @@ div#about {
 
 .instance {
     clear: both;
-    padding: 1em;
+    margin: 1em 0;
+    padding: 1em 2em 1em 1em;
+    width: 70%;
+    border: 1px dashed transparent;
+    color: #666;
+    height: 70px;
+}
+
+.instance a {
+    color: #666;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: .8em;
+}
+
+.instance a:hover {
+    color: black;
+}
+
+.state {
+    float: right;
+    width: 15%;
+    margin-top: .4em;
+}
+
+
+.actions {
+    float: right;
+    width: 15%;
+    margin-right: -10em;
+    font-weight: normal;
+    padding-left: 2em;
+    height: 70px;
+}
+
+.actions a {
+    color: transparent;
+}
+
+a.action, a.more {
+    margin:.5em;
+    display:block;
+}
+
+a.action:hover, a.more:hover {
+    color: black !important;
+}
+
+
+.actions:hover a,.instance:hover .actions a {
+    color: #666;
 }
 
 .instance:hover {
-    background-color:red;
+    border: 1px dotted transparent;
+    background-color:#EBEBEB;
+    color: black;
 }
 
 .instance img {
     float: left;
-    margin: 1em .5em;
+    margin: 0em 2em 0 1em;
 }
+
+div.ip, div.state {
+    font-size:.7em;
+}
+
+div.indicator {
+    width:1em;
+    height:.6em;
+    margin: .3em -.1em .5em;
+    clear: none;
+    float:left;
+}
+
+.running .indicator {
+    border:2px solid white;
+    background-color: #05b00d;
+}    
+
+
+.instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
+    color: #666;
+}
+
+div.uptime {
+    font-size:.7em;
+    clear: both;
+    color:transparent;
+    margin-left:1px;
+}
+
+div.instance-tabs {
+    margin-top: 1em;
+}
+div.instance-tabs a{
+
+}
+
+span.rename, span.configure {
+    font-size: 10px;
+    clear: none;
+    color: transparent;
+    display: inline;
+    font-weight: normal;
+    padding-left: 2em;
+}
+
+a.name:hover span.rename {
+    color: #213D55;
+}
+
+a.ip:hover span.configure {
+    color: #213D55;
+}
+
+a.storage:hover span.configure {
+    color: #213D55;
+}
+

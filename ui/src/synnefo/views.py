@@ -5,7 +5,7 @@
 #SECRET = 'secret'
 
 def home(request):
-    return {'project':'synnefo'}
+    return {'project':'+nefo'}
 
 def instances(request):
     #Driver = get_driver(Provider.RACKSPACE) 

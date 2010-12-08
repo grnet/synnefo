@@ -46,34 +46,25 @@
 			<div class="page">
                 <h2>
 					<strong>Step 1: </strong> Select image
-					<em>Enter a name for your instance and select an image to boot from:</em>
+					<em>Select an OS image to boot from</em>
 				</h2>
 				<ul>
-					<!-- instance name -->
-					<li class="required">
-						<label>
-							<strong>1.</strong> Instance name <span>*</span><br />
-							<input type="text" class="text" name="instance_name" />
-							<em>e.g. My mail server.</em>
-						</label>
-					</li>
 					<!-- image -->
-					<li class="required">
-						<label>
-							<strong>2.</strong> Select an image <br />
-                            <select name="image">
-								<option value="">-- please select --</option>
-								<option>Ubuntu 10.04 x86_64 server</option>
-								<option>Debian Lenny</option>
-								<option>Windows 7</option>
-							</select>                                
-							<em></em>
-						</label>
-					</li>
-					<li class="clearfix">
-						<button type="button" class="next right">Proceed &raquo;</button>
+					<li>
+						<label for="${image['id']}" tal:repeat="image images">
+                            <a>
+                                <div class="image">
+                                    <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
+                                    <span class="description">${image['description']}</span> 
+                                    <span class="size">${image['size']}MB</span>
+                                    <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
+                                </div>
+                            </a>
+						</label>                            
 					</li>
 				</ul>
+				<button type="button" class="prev" id="cancel">Cancel</button>
+				<button type="button" class="next right">Next &raquo;</button>
             </div>
 			<div class="page">
 				<h2>
@@ -82,23 +73,49 @@
 				</h2>
                 <ul>
                     <li>
-			            <label><strong>number of CPU units</strong></label>
-                        <input type="range" value="4" max="8" min="1" />
+                        <div class="instance-type">
+                            <label for="small">
+                                <input type="radio" id="small" name="instance-type" value="small" checked="true" />
+                                <strong>small</strong>
+                            </label>
+                        </div>
+                        <div class="instance-type">      
+                            <label for="medium">
+                                <input type="radio" id="medium" name="instance-type" value="medium" />                  
+                                <strong>medium</strong>
+                            </label>
+                        </div>
+                        <div class="instance-type">
+                            <label for="large">
+                                <input type="radio" id="large" name="instance-type" value="large" />
+                                <strong>large</strong>
+
+                            </label>
+                        </div>
+                        <div class="instance-type">
+                            <label for="custom">
+                                <input type="radio" name="instance-type" id="custom" value="large" />
+                                <strong>custom</strong>
+
+                            </label>
+                        </div>
                     </li>
                     <li>
-			            <label><strong>RAM (MB)</strong></label>
-                        <input type="range" value="1024" max="2048" min="256" step="256" />
+			            <label><strong class="sliders">CPU (cores)</strong></label>
+                        <input type="range" id="cpu" disabled="true" value="1" max="8" min="1" />
                     </li>
                     <li>
-		                <label><strong>disk size (GB)</strong></label>
-                        <input type="range" value="10" step="1" max="100" min="1" />
+			            <label><strong class="sliders">RAM (MB)</strong></label>
+                        <input type="range" id="ram" disabled="true" value="256" max="2048" min="256" step="256" />
                     </li>
-					<li class="clearfix">
-						<button type="button" class="prev" style="float:left">&laquo; Back</button>
-						<button type="button" class="next right">Proceed &raquo;</button>
-					</li>
-					<br clear="all" />
+                    <li>
+		                <label><strong class="sliders">Storage (GB)</strong></label>
+                        <input type="range" id="storage" disabled="true" value="5" step="1" max="100" min="2" />
+                    </li>
                 </ul>
+				<button type="button" class="prev">&laquo; Back</button>
+				<button type="button" class="next right">Next &raquo;</button>
+
             </div>
 			<div class="page">
 				<h2>
@@ -106,19 +123,30 @@
 					<em>Confirm the settings below and start your new instance</em>
 				</h2>
                 <ul>
-                    <li>
-                        <span><strong>Name</strong>: My mail server</span><br />
-                        <span><strong>Image</strong>: Ubuntu 10.04 x86_64 server</span><br />
-                        <span><strong>CPU</strong>: 2 units</span><br />
-                        <span><strong>RAM</strong>: 1024MB</span><br />
-                        <span><strong>Storage</strong>: 10GB</span><br />
+                    <li class="required">
+                        <label>
+                            <strong></strong> Instance name <span>*</span><br />
+                            <input type="text" class="text" name="instance_name" value="My Ubuntu 10.04 x86_64 server"/>
+                        </label>
                     </li>
-					<li class="clearfix">
-						<button type="button" class="prev" style="float:left">&laquo; Back</button>
-						<button type="button" class="next right">Start VM</button>
-					</li>
-					<br clear="all" />
+                    <li>
+                        <strong>Image</strong> <span>Ubuntu 10.04 x86_64 server</span>
+                    </li>
+                    <li>
+                        <strong>CPU</strong> <span>2 cores</span>
+                    </li>
+                    <li>
+                        <strong>RAM</strong> <span>1024MB</span>
+                    </li>
+                    <li>
+                        <strong>Storage</strong> <span>10GB</span>
+                    </li>
+                    <li>
+                        <strong>VNC password</strong> <span>sQX9s2pl</span>
+                    </li>
                 </ul>
+				<button type="button" class="prev">&laquo; Back</button>
+				<button type="button" class="next right" id="start">Start VM</button>        
             </div>
 		</div>
 	</div>
@@ -129,12 +157,62 @@
 
 $(":range").rangeinput();
 
-$(function() { $("a#create[rel]").overlay({mask: '#000', effect: 'default'}); });
+function disableSliders() {
+    $("#cpu").attr('disabled',true);
+    $("#ram").attr('disabled',true);
+    $("#storage").attr('disabled',true);
+}
+
+$("#custom").click(function(event){
+    $("#cpu").attr('disabled',false);
+    $("#ram").attr('disabled',false);
+    $("#storage").attr('disabled',false);
+    $("strong.sliders").style = 'color: #778899;';
+});
+
+$("#small").click(function(event){
+    $("#cpu").data('rangeinput').setValue(1);
+    $("#ram").data('rangeinput').setValue(256);
+    $("#storage").data('rangeinput').setValue(5);
+    disableSliders();
+});
+
+$("#medium").click(function(event){
+    $("#cpu").data('rangeinput').setValue(4);
+    $("#ram").data('rangeinput').setValue(1024);
+    $("#storage").data('rangeinput').setValue(30);
+    disableSliders();
+});
+
+$("#large").click(function(event){
+    $("#cpu").data('rangeinput').setValue(8);
+    $("#ram").data('rangeinput').setValue(4096);
+    $("#storage").data('rangeinput').setValue(80);
+    disableSliders();
+});
+
+$("#cancel").click(function(event){
+    $("a#create[rel]").overlay().close();
+});
+
+$("#start").click(function(event){
+    $("a#create[rel]").overlay().close();
+});
+
+$("a#create").click(function(event){
+    $("#wizard").scrollable().begin();
+});
+
+$(function() { 
+    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%'});
+});
 
 $(function() {
     var root = $("#wizard").scrollable();
+
     // some variables that we need
-    var api = root.scrollable(), drawer = $("#drawer");
+    var api = root.scrollable();
+
     // rangeinput with default configuration
     // validation logic is done inside the onBeforeSeek callback
     api.onBeforeSeek(function(event, i) {
@@ -148,21 +226,19 @@ $(function() {
 			 empty = inputs.filter(function() {
 				return $(this).val().replace(/\s*/g, '') == '';
 			 });
-		 // if there are empty fields, then
-		if (empty.length) {
-			// add a CSS class name "error" for empty & required fields
-			empty.addClass("error");
-			// cancel seeking of the scrollable by returning false
-			return false;
-		// everything is good
-		} else {
-			// hide the drawer
-			drawer.slideUp();
-		}
+		     // if there are empty fields, then
+		    if (empty.length) {
+			    // add a CSS class name "error" for empty & required fields
+			    empty.addClass("error");
+			    // cancel seeking of the scrollable by returning false
+			    return false;
+		    // everything is good
+		    } 
 	    }
 	    // update status bar
 	    $("#status li").removeClass("active").eq(i).addClass("active");
     });
+
     // if tab is pressed on the next button seek to next page
     root.find("button.next").keydown(function(e) {
 	    if (e.keyCode == 9) {

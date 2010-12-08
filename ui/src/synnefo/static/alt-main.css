@@ -1,6 +1,5 @@
 body {
-    background:url("../static/header.png") no-repeat scroll top transparent;
-    background-color: #213d55;
+    background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
 	font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
     margin: 0;
 }
@@ -16,15 +15,7 @@ h5 {
 }
 
 #footer {
-    text-align:center;
-    color: #666;
-    font-size: .5em;
-    padding:2em;
-}
-
-#footer a {
-    color: #EBEBEB;
-    text-decoration: none;
+    display: none
 }
 
 /* get rid of those system borders being generated for A tags */
@@ -37,18 +28,18 @@ a:active {
 }
 
 /* root element for tabs  */
-ul.css-tabs {  
-	margin:-.5em 2em 0 1em !important; 
-	padding:0;
-	height:2.2em;
-	border-bottom:1px solid #666;	 	
+ul.css-tabs {
+	margin:0 0 0 -4em !important; 
+	height:1.5em;
+    font-size:2em;	
+    overflow: hidden; 	
 }
 
 /* single tab */
 ul.css-tabs li {  
 	float:left;	 
 	padding:0; 
-	margin:-1px 1em 0 0;  
+	margin: 0 -4em 0 0;  
 	list-style-type:none;	
 }
 
@@ -59,41 +50,37 @@ ul.css-tabs a {
 	display:block;
 	padding:.6em 3em 0;	
 	text-decoration:none;
-	border:1px solid #213D55;
-	border-bottom:2px solid #213D55;
 	height:1.5em;
-	background-color:#ebebeb;
-	color:#666666;
+	color:#d2d2d2;
 	position:relative;
 	outline:0;
-	-moz-border-radius:1em 1em 0 0;	
+    margin-top:0.15em
 }
 
 ul.css-tabs a:hover {
-    color: #3baddb;
+    color: #666;
+    margin-top:0em
 }
 	
 /* selected tab */
 ul.css-tabs a.current {
-	background-color:#f7f7f7;
-	border-bottom:2px solid #f7f7f7;	
-    color: #000;
+    color: #D4AA00;
 	cursor:default;
+    margin-top:0em
 }
 
-	
 /* tab pane */
+div.css-panes {
+    border-top: 10px solid #D4AA00;  
+    background: white;
+}
+
 .css-panes > div.pane {
 	display:none;
-	border:1px solid #666;
-	border-width:0 1px 1px 1px;
 	padding:15px 20px;
-	background-color:#f7f7f7;
     margin: 0 1em;
     -moz-border-radius: 0 1em 1em;
 }
-
-
 
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
 .rounded, #sheet input, .error {
@@ -130,27 +117,24 @@ ul.css-tabs a.current {
 }
 
 #create {
-    -moz-border-radius: .5em;
-    background-color: #f49c1a;
-    border: 2px solid #F7F7F7;
-    color: #f4f4f4;
+    background-color: #D4AA00;
+    color: black;
     cursor:pointer;
     display:block;
     padding: .7em 1.5em;
     margin-top: 1em;
     width: 10em;
-    font-weight: bold;
     text-decoration: none;
+    margin-left: -2.3em;
 }
 
 #create:hover {
-    background-color:#f29400;
     color: white;
-    border: 2px solid #f29400;
 }
 
 div#header {
-    height:152px;
+    height:60px;
+    background: #999999;
 }
 
 div#wrapper {
@@ -163,14 +147,7 @@ a.logo {
 }
 
 a.logo h1 {
-    background:url("../static/cloud.png") no-repeat scroll bottom left transparent ;
-    height:78px;
-    color: #b1b3b4;
-    margin-left: 1em;
-    margin-top: 0;
-    padding: .5em 0 0 2.6em;   
-    line-height: .3em;
-    font-size: 1.7em; 
+    display: none;
 }
 
 a.logo:hover h1 {
@@ -181,30 +158,20 @@ a img {
 }
 
 div#about {
-    color: white;
-    padding: .9em 5em;
-    font-size:.6em;
-    float: right;
-    width: 63%;
+    display: none;
 }    
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
 .tooltip {
 	display:none;
-	background:transparent url(../static/tooltip.png);
-	font-size:12px;
-	height:40px;
-	width:130px;
-	padding:25px;
-	color:#fff;	
-
+    color: transparent; 
 }
 
 .modal {
     background-color:#fff;
     display:none;
     width:30em;
-    height:30em;
+    height:20em;
     padding:1em;
     text-align:left;
     opacity:0.9;
@@ -242,8 +209,8 @@ div#about {
 	background:#fff url(../static/h600.png) repeat scroll 0 0;
 	border:5px solid #789;
 	font-size:12px;
-	height:450px;
-	margin:0px auto;	
+	height:360px;
+	margin:20px auto;	
 	width:500px;
 	overflow:hidden;
 	position:relative;
@@ -277,6 +244,7 @@ div#about {
 
 /* title */
 #wizard h2 {
+	border-bottom:1px dotted #ccc;
 	font-size:22px;
 	font-weight:normal;
 	margin:10px 0 0 0;
@@ -294,13 +262,13 @@ div#about {
 /* input fields */
 #wizard ul {
 	padding:0px !important;
-	margin:0 0 2em 0 !important;
+	margin:0px !important;
 }
 
 #wizard li {
 	list-style-type:none;
 	list-style-image:none;
-	margin-bottom:1.2em;
+	margin-bottom:25px;	
 }
 
 #wizard label {
@@ -322,7 +290,7 @@ div#about {
 }
 
 #wizard .text {
-	width:94%;
+	width:100%;
 	padding:5px;
 	border:1px solid #ccc;
 	color:#456;
@@ -360,6 +328,23 @@ div#about {
 
 #wizard .right {
 	float:right;		
+}
+
+/* validation error message bar */
+#drawer {
+	background:#fff url(../static/h80.png) repeat-x scroll 0 0;
+	_background-color:#fff;
+	overflow:visible;
+	position:fixed;	
+	left:0;
+	top:0;
+	text-align:center;
+	padding:15px;
+	font-size:18px;
+	border-bottom:2px solid #789;
+	width:100%;
+	display:none;
+	z-index:2;
 }
 
 #wizard .error {
@@ -403,7 +388,6 @@ div#about {
 	-webkit-border-radius:5px; 
 	-moz-box-shadow:inset 0 0 8px #000;
     padding: .1em !important;
-    margin-bottom: 2em;
 }
 
 /* progress bar (enabled with progress: true) */
@@ -470,7 +454,6 @@ div#about {
     float: right;
     width: 15%;
     margin-top: .4em;
-    padding-bottom:2em;
 }
 
 
@@ -550,12 +533,11 @@ div.instance-tabs a{
 
 span.rename, span.configure {
     font-size: 10px;
-    float: right;
+    clear: none;
     color: transparent;
+    display: inline;
     font-weight: normal;
-    padding-right: 10em;
-    width: 13em;
-    text-align: left;
+    padding-left: 2em;
 }
 
 a.name:hover span.rename {
@@ -572,7 +554,7 @@ a.storage:hover span.configure {
 
 #ubuntu {
     height:50px;
-    background: url(../static/ubuntu.png) no-repeat 0 0;
+    background: url(../static/ubuntu-logo.png) no-repeat 0 0;
     padding-left: 50px;
 }
 
@@ -589,7 +571,7 @@ a.storage:hover span.configure {
     margin-top: 10px;
     padding: 0.1em !important;
     position: relative;
-    width: 360px;
+    width: 300px;
 }
 
 .handle {
@@ -626,72 +608,3 @@ button.next {
 button.prev {
 
 }
-
-.image-logo {
-    float: left;
-    margin-right: 1em;
-}
-
-div.image {
-    padding: 1em;
-    clear: both;
-    display: block;
-}
-
-#wizard a:hover div.image {
-    background-color: #999;
-}
-#wizard a:hover div.image img {
-    background-color: #999;
-}
-
-#wizard label a:hover strong {
-    color: white;
-}
-
-#wizard div.image strong {
-    font-size: 1em;
-}
-
-#wizard div.image span.size {
-    font-size:.7em;
-    color: #666;
-}
-
-#wizard div.image .radio {
-    float: right;
-}
-
-#wizard div.image span.image-id, #wizard div.image span.description {
-    font-size:.7em;
-    color: #666;
-    font-weight: normal;
-    display:inline;
-}
-
-#wizard a:hover div.image span.image-id, #wizard a:hover div.image span.description, #wizard a:hover div.image span.size {
-    color: white;
-}
-
-
-.page ul {
-    height: 250px;
-    overflow: auto;
-    margin-bottom: 2em;
-}
-
-div.instance-type {
-    float: left;
-    margin-right:1.9em;
-    margin-bottom: 2em;
-    margin-top: 1em;
-}
-
-div.instance-type img {
-    float:left;
-}
-
-#wizard strong.sliders {
-    color: #ADA9A5;
-}
-

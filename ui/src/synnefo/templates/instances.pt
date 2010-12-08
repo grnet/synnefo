@@ -69,7 +69,7 @@
 			<div class="page">
 				<h2>
 					<strong>Step 2: </strong> Instance type <b></b>
-					<em>Select CPU units, RAM and storage space for your instance</em>
+					<em>Select CPU cores, RAM and storage space for your instance</em>
 				</h2>
                 <ul>
                     <li>
@@ -102,15 +102,15 @@
                     </li>
                     <li>
 			            <label><strong class="sliders">CPU (cores)</strong></label>
-                        <input type="range" id="cpu" disabled="true" value="1" max="8" min="1" />
+                        <input type="range" id="cpu" value="1" max="8" min="1" />
                     </li>
                     <li>
 			            <label><strong class="sliders">RAM (MB)</strong></label>
-                        <input type="range" id="ram" disabled="true" value="256" max="2048" min="256" step="256" />
+                        <input type="range" id="ram" value="256" max="2048" min="256" step="256" />
                     </li>
                     <li>
 		                <label><strong class="sliders">Storage (GB)</strong></label>
-                        <input type="range" id="storage" disabled="true" value="5" step="1" max="100" min="2" />
+                        <input type="range" id="storage" value="5" step="1" max="100" min="2" />
                     </li>
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>
@@ -174,21 +174,21 @@ $("#small").click(function(event){
     $("#cpu").data('rangeinput').setValue(1);
     $("#ram").data('rangeinput').setValue(256);
     $("#storage").data('rangeinput').setValue(5);
-    disableSliders();
+    // disableSliders();
 });
 
 $("#medium").click(function(event){
     $("#cpu").data('rangeinput').setValue(4);
     $("#ram").data('rangeinput').setValue(1024);
     $("#storage").data('rangeinput').setValue(30);
-    disableSliders();
+    // disableSliders();
 });
 
 $("#large").click(function(event){
     $("#cpu").data('rangeinput').setValue(8);
     $("#ram").data('rangeinput').setValue(4096);
     $("#storage").data('rangeinput').setValue(80);
-    disableSliders();
+    // disableSliders();
 });
 
 $("#cancel").click(function(event){
@@ -201,6 +201,18 @@ $("#start").click(function(event){
 
 $("a#create").click(function(event){
     $("#wizard").scrollable().begin();
+});
+
+$("#cpu").change(function(event){
+    $("#custom").click();
+});
+
+$("#ram").change(function(event){
+    $("#custom").click();
+});
+
+$("#storage").change(function(event){
+    $("#custom").click();
 });
 
 $(function() { 

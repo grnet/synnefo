@@ -15,6 +15,10 @@ h5 {
     margin-bottom: 1em;
 }
 
+#nefo{
+    display:none;
+}
+
 #footer {
     text-align:center;
     color: #666;
@@ -41,7 +45,6 @@ ul.css-tabs {
 	margin:-.5em 2em 0 1em !important; 
 	padding:0;
 	height:2.2em;
-	border-bottom:1px solid #666;	 	
 }
 
 /* single tab */
@@ -168,7 +171,7 @@ a.logo h1 {
     color: #b1b3b4;
     margin-left: 1em;
     margin-top: 0;
-    padding: .5em 0 0 2.6em;   
+    padding: .5em 0 0 3.2em;   
     line-height: .3em;
     font-size: 1.7em; 
 }
@@ -560,6 +563,7 @@ span.rename, span.configure {
 
 a.name:hover span.rename {
     color: #213D55;
+    margin-top: 0.4em;
 }
 
 a.ip:hover span.configure {

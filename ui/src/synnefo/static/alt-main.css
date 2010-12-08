@@ -101,26 +101,26 @@ div.css-panes {
 
 /* nested arrow inside error message. It's 100% CSS. No images. */
 .error em {
-	border:10px solid;
-	border-color:#E8FF6D transparent transparent;
-	bottom:-17px;
-	display:block;
-	height:0;
-	left:10px;
-	position:absolute;
-	width:0;
+	border: 10px solid;
+	border-color: #E8FF6D transparent transparent;
+	bottom: -17px;
+	display: block;
+	height: 0;
+	left: 10px;
+	position: absolute;
+	width: 0;
 }
 
 /* input field that caused validation error */
 .invalid {
-	background-color:rgba(221, 233, 255, 0.898) !important;
+	background-color: rgba(221, 233, 255, 0.898) !important;
 }
 
 #create {
     background-color: #D4AA00;
-    color: black;
-    cursor:pointer;
-    display:block;
+    color: #725b00;
+    cursor: pointer;
+    display: block;
     padding: .7em 1.5em;
     margin-top: 1em;
     width: 10em;
@@ -133,13 +133,13 @@ div.css-panes {
 }
 
 div#header {
-    height:60px;
-    background: #999999;
+    height: 60px;
+    background: #999;
 }
 
 div#wrapper {
     width: 990px;
-    margin: 0 auto;
+    margin: 0em auto;
 }
 
 a.logo {
@@ -158,8 +158,13 @@ a img {
 }
 
 div#about {
-    display: none;
+    display:none;
 }    
+
+#nefo {
+    background: url("../static/nefo.png") no-repeat;
+    margin: 3em 0 -0.2em 0;
+}
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
 .tooltip {

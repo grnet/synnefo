@@ -10,6 +10,7 @@
 
 <body>
     <div id="wrapper">
+        <div id='nefo'><img src="static/nefo.png"/></div>
         <div id="header">
             <div id="about">Greek Research and Technology Network - Cloud management web interface</div>
             <a href="/" class="logo">

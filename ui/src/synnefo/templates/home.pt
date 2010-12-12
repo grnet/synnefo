@@ -5,12 +5,12 @@
 	<title>$project</title>
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
-	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
+	<link rel="stylesheet" type="text/css" href="static/alt-main.css"/>	
 </head>
 
 <body>
     <div id="wrapper">
-        <div id='nefo'><img src="static/nefo.png"/></div>
+        <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
         <div id="header">
             <div id="about">Greek Research and Technology Network - Cloud management web interface</div>
             <a href="/" class="logo">
@@ -33,6 +33,13 @@
     </div>
     <!-- activate tabs with JavaScript -->
     <script>
+		$(function() {
+			$('ul.css-tabs li').hover(function(){
+				$(this).find('a').animate({top:'-3px'},{queue:false,duration:150});
+			}, function(){
+				$(this).find('a').animate({top:'0px'},{queue:false,duration:150});
+			});
+		});
         $(function() {
 	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
 		        effect: 'ajax',

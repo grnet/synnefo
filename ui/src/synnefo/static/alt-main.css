@@ -29,7 +29,8 @@ a:active {
 
 /* root element for tabs  */
 ul.css-tabs {
-	margin:0 0 0 -4em !important; 
+	margin: 0; 
+    padding: 0;
 	height:1.5em;
     font-size:2em;	
     overflow: hidden; 	
@@ -39,7 +40,7 @@ ul.css-tabs {
 ul.css-tabs li {  
 	float:left;	 
 	padding:0; 
-	margin: 0 -4em 0 0;  
+	margin: 0;  
 	list-style-type:none;	
 }
 
@@ -48,7 +49,7 @@ ul.css-tabs a {
 	float:left;
 	font-size:1em;
 	display:block;
-	padding:.6em 3em 0;	
+	padding:.6em 1em 0;	
 	text-decoration:none;
 	height:1.5em;
 	color:#d2d2d2;
@@ -58,20 +59,19 @@ ul.css-tabs a {
 }
 
 ul.css-tabs a:hover {
-    color: #666;
     margin-top:0em
 }
 	
 /* selected tab */
 ul.css-tabs a.current {
-    color: #D4AA00;
+    color: #87aade;
 	cursor:default;
     margin-top:0em
 }
 
 /* tab pane */
 div.css-panes {
-    border-top: 10px solid #D4AA00;  
+    border-top: 10px solid #87aade;  
     background: white;
 }
 
@@ -117,13 +117,13 @@ div.css-panes {
 }
 
 #create {
-    background-color: #D4AA00;
-    color: #725b00;
+    background-color: #87aade;
+    color: #162d50;
     cursor: pointer;
     display: block;
-    padding: .7em 1.5em;
+    padding: 0.7em .4em 0.7em 2.2em;
     margin-top: 1em;
-    width: 10em;
+    width: 9em;
     text-decoration: none;
     margin-left: -2.3em;
 }
@@ -445,7 +445,7 @@ div#about {
 }
 
 .instance a {
-    color: #666;
+    color: #6892d2;
     font-weight: normal;
     text-decoration: none;
     font-size: .8em;
@@ -491,7 +491,7 @@ a.action:hover, a.more:hover {
 
 .instance:hover {
     border: 1px dotted transparent;
-    background-color:#EBEBEB;
+    background-color:#c6c6c6;
     color: black;
 }
 

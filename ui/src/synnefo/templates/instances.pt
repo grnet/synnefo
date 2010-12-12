@@ -1,5 +1,5 @@
 
-<a id="create" rel="#wizard" href="#">Create a new VM</a>
+<a id="create" rel="#wizard" href="#">Create New +</a>
 
 <div class="instance running" tal:repeat="node nodes">
 

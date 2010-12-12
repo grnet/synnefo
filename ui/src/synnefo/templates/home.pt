@@ -54,8 +54,6 @@
         });
         $("ul.css-tabs a").tooltip({effect: 'fade', predelay: 1000, delay: 2, position: 'top center', opacity: 0.8});
     </script>
-    <div id="footer">created by <a href="https://unweb.me" title="state of the art information systems">unweb.me</a></div>
 </body>
-
 </html>
 

@@ -115,7 +115,6 @@
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>
 				<button type="button" class="next right">Next &raquo;</button>
-
             </div>
 			<div class="page">
 				<h2>
@@ -130,19 +129,19 @@
                         </label>
                     </li>
                     <li>
-                        <strong>Image</strong> <span>Ubuntu 10.04 x86_64 server</span>
+                        <strong>Image:</strong> <span>Ubuntu 10.04 x86_64 server</span>
                     </li>
                     <li>
-                        <strong>CPU</strong> <span>2 cores</span>
+                        <strong>CPU:</strong> <span>2 cores</span>
                     </li>
                     <li>
-                        <strong>RAM</strong> <span>1024MB</span>
+                        <strong>RAM:</strong> <span>1024MB</span>
                     </li>
                     <li>
-                        <strong>Storage</strong> <span>10GB</span>
+                        <strong>Storage:</strong> <span>10GB</span>
                     </li>
                     <li>
-                        <strong>VNC password</strong> <span>sQX9s2pl</span>
+                        <strong>Cost:</strong> <span>100 credits, 300 remaining</span>
                     </li>
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>

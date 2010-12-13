@@ -51,7 +51,7 @@ ul.css-tabs {
 ul.css-tabs li {  
 	float:left;	 
 	padding:0; 
-	margin:-1px 1em 0 0;  
+	margin:-2px 1em 0 0;  
 	list-style-type:none;	
 }
 
@@ -141,7 +141,7 @@ ul.css-tabs a.current {
     display:block;
     padding: .7em 1.5em;
     margin-top: 1em;
-    width: 10em;
+    width: 7em;
     font-weight: bold;
     text-decoration: none;
 }
@@ -245,7 +245,7 @@ div#about {
 	background:#fff url(../static/h600.png) repeat scroll 0 0;
 	border:5px solid #789;
 	font-size:12px;
-	height:450px;
+	height:480px;
 	margin:0px auto;	
 	width:500px;
 	overflow:hidden;

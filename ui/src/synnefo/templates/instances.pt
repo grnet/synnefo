@@ -112,6 +112,12 @@
 		                <label><strong class="sliders">Storage (GB)</strong></label>
                         <input type="range" id="storage" value="5" step="1" max="100" min="2" />
                     </li>
+                    <li>
+                        <div class="instance-type">Cost:</div>
+                    </li>
+                    <li>
+                        <div class="instance-type">Remaining:</div>
+                    </li>
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>
 				<button type="button" class="next right">Next &raquo;</button>

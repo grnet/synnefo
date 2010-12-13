@@ -5,7 +5,7 @@
 	<title>$project</title>
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
-	<link rel="stylesheet" type="text/css" href="static/alt-main.css"/>	
+	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
 </head>
 
 <body>

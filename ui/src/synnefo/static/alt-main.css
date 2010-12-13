@@ -15,7 +15,10 @@ h5 {
 }
 
 #footer {
-    display: none
+    text-align:center;
+    color: #666;
+    font-size: .5em;
+    padding:2em;
 }
 
 /* get rid of those system borders being generated for A tags */
@@ -123,7 +126,7 @@ div.css-panes {
     display: block;
     padding: 0.7em .4em 0.7em 2.2em;
     margin-top: 1em;
-    width: 9em;
+    width: 7.9em;
     text-decoration: none;
     margin-left: -2.3em;
 }
@@ -436,7 +439,7 @@ div#about {
 
 .instance {
     clear: both;
-    margin: 1em 0;
+    margin: 1em 0 0 -2em;
     padding: 1em 2em 1em 1em;
     width: 70%;
     border: 1px dashed transparent;
@@ -464,8 +467,8 @@ div#about {
 
 .actions {
     float: right;
-    width: 15%;
-    margin-right: -10em;
+    width: 20%;
+    margin: -1.5em -10em 0 0;
     font-weight: normal;
     padding-left: 2em;
     height: 70px;
@@ -475,9 +478,14 @@ div#about {
     color: transparent;
 }
 
-a.action, a.more {
-    margin:.5em;
-    display:block;
+a.action{
+    margin: .5em;
+    display: block;
+}
+
+a.more {
+    margin: 4.1em 0.5em 0.5em;
+    display: block;
 }
 
 a.action:hover, a.more:hover {

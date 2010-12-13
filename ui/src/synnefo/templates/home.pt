@@ -20,9 +20,9 @@
         <!-- tabs -->
         <ul class="css-tabs">
 	        <li><a href="instances" title="manage your virtual machines">instances</a></li>
-	        <li><a href="storage" title="manage your storage volumes">storage</a></li>
-	        <li><a href="network" title="configure networking">network</a></li>
+	        <li><a href="storage" title="manage your storage volumes">disks</a></li>
 	        <li><a href="images" title="manage boot images">images</a></li>
+	        <li><a href="network" title="configure networking">network</a></li>
         </ul>
         <div class="css-panes">
 	        <div class="pane" style="display:block"></div>

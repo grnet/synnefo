@@ -113,10 +113,9 @@
                         <input type="range" id="storage" value="5" step="1" max="100" min="2" />
                     </li>
                     <li>
-                        <div class="instance-type">Cost:</div>
-                    </li>
-                    <li>
-                        <div class="instance-type">Remaining:</div>
+                        <div class="cost">
+                            Cost per hour for this VM: 20 credits | Credits currently in account: 10.000
+                        </div>
                     </li>
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>
@@ -147,7 +146,10 @@
                         <strong>Storage:</strong> <span>10GB</span>
                     </li>
                     <li>
-                        <strong>Cost:</strong> <span>100 credits, 300 remaining</span>
+                        <strong>Cost per hour:</strong> <span>20 credits</span>
+                    </li>
+                    <li>
+                        <strong>Remaining credits:</strong> <span>10.000</span>
                     </li>
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>

@@ -283,7 +283,6 @@ div#about {
 	font-size:22px;
 	font-weight:normal;
 	margin:10px 0 0 0;
-	padding-bottom:15px;		
 }
 
 #wizard h2 em {
@@ -297,7 +296,6 @@ div#about {
 /* input fields */
 #wizard ul {
 	padding:0px !important;
-	margin:0 0 2em 0 !important;
 }
 
 #wizard li {
@@ -593,7 +591,7 @@ a.storage:hover span.configure {
     margin-top: 10px;
     padding: 0.1em !important;
     position: relative;
-    width: 360px;
+    width: 330px;
 }
 
 .handle {
@@ -677,9 +675,13 @@ div.image {
     color: white;
 }
 
+#wizard .cost {
+    color: #666;
+    margin-top: 4em;
+}
 
 .page ul {
-    height: 250px;
+    height: 280px;
     overflow: auto;
     margin-bottom: 2em;
 }

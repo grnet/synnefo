@@ -437,7 +437,7 @@ div#about {
 }
 
 .instance a:hover {
-    color: black;
+    color: #162d50;
 }
 
 .state {
@@ -504,12 +504,12 @@ div.indicator {
 
 .running .indicator {
     border:2px solid white;
-    background-color: #05b00d;
+    background-color: #86a9dd;
 }    
 
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
-    color: #666;
+    color: #162d50;
 }
 
 div.uptime {

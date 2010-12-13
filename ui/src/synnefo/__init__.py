@@ -13,6 +13,10 @@ def main(global_config, **settings):
                      view='synnefo.views.instances',
                      view_renderer='templates/instances.pt')
 
+    config.add_route('list', '/instances/list', 
+                     view='synnefo.views.instances',
+                     view_renderer='templates/list.pt')
+
     config.add_route('storage', '/storage', 
                      view='synnefo.views.storage',
                      view_renderer='templates/storage.pt')

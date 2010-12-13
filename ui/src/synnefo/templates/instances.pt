@@ -48,21 +48,28 @@
 					<strong>Step 1: </strong> Select image
 					<em>Select an OS image to boot from</em>
 				</h2>
-				<ul>
-					<!-- image -->
-					<li>
-						<label for="${image['id']}" tal:repeat="image images">
-                            <a>
-                                <div class="image">
-                                    <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
-                                    <span class="description">${image['description']}</span> 
-                                    <span class="size">${image['size']}MB</span>
-                                    <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
-                                </div>
-                            </a>
-						</label>                            
-					</li>
-				</ul>
+                <ul class="tabs">
+                    <li><a href="#">my images</a></li>
+                    <li><a href="#">standard images</a></li>
+                </ul>
+                <div class="panes">
+				    <ul>
+					    <!-- image -->
+					    <li>
+						    <label for="${image['id']}" tal:repeat="image images">
+                                <a>
+                                    <div class="image">
+                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
+                                        <span class="description">${image['description']}</span> 
+                                        <span class="size">${image['size']}MB</span>
+                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
+                                    </div>
+                                </a>
+						    </label>                            
+					    </li>
+				    </ul>
+                    <ul>some</ul>
+                </div>
 				<button type="button" class="prev" id="cancel">Cancel</button>
 				<button type="button" class="next right">Next &raquo;</button>
             </div>
@@ -89,14 +96,12 @@
                             <label for="large">
                                 <input type="radio" id="large" name="instance-type" value="large" />
                                 <strong>large</strong>
-
                             </label>
                         </div>
                         <div class="instance-type">
                             <label for="custom">
                                 <input type="radio" name="instance-type" id="custom" value="large" />
                                 <strong>custom</strong>
-
                             </label>
                         </div>
                     </li>
@@ -161,6 +166,8 @@
 
 <script>
 // <![CDATA[ 
+
+$("ul.tabs").tabs("div.panes ul");
 
 $(":range").rangeinput();
 

@@ -217,8 +217,8 @@ div#about {
 	background:#fff url(../static/h600.png) repeat scroll 0 0;
 	border:5px solid #789;
 	font-size:12px;
-	height:360px;
-	margin:20px auto;	
+	height:450px;
+	margin:0px auto;	
 	width:500px;
 	overflow:hidden;
 	position:relative;
@@ -252,7 +252,6 @@ div#about {
 
 /* title */
 #wizard h2 {
-	border-bottom:1px dotted #ccc;
 	font-size:22px;
 	font-weight:normal;
 	margin:10px 0 0 0;
@@ -270,13 +269,13 @@ div#about {
 /* input fields */
 #wizard ul {
 	padding:0px !important;
-	margin:0px !important;
+	margin:0 0 2em 0 !important;
 }
 
 #wizard li {
 	list-style-type:none;
 	list-style-image:none;
-	margin-bottom:25px;	
+	margin-bottom:1.2em;
 }
 
 #wizard label {
@@ -298,7 +297,7 @@ div#about {
 }
 
 #wizard .text {
-	width:100%;
+	width:94%;
 	padding:5px;
 	border:1px solid #ccc;
 	color:#456;
@@ -336,23 +335,6 @@ div#about {
 
 #wizard .right {
 	float:right;		
-}
-
-/* validation error message bar */
-#drawer {
-	background:#fff url(../static/h80.png) repeat-x scroll 0 0;
-	_background-color:#fff;
-	overflow:visible;
-	position:fixed;	
-	left:0;
-	top:0;
-	text-align:center;
-	padding:15px;
-	font-size:18px;
-	border-bottom:2px solid #789;
-	width:100%;
-	display:none;
-	z-index:2;
 }
 
 #wizard .error {

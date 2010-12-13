@@ -5,6 +5,10 @@ body {
     margin: 0;
 }
 
+*:focus {
+    outline:0 !important;
+}
+
 h1, h2, h3, h4, h5 {
     margin-top: 0em;
     margin-bottom: .6em;
@@ -64,7 +68,7 @@ ul.css-tabs a {
 	text-decoration:none;
 	border:1px solid #213D55;
 	border-bottom:2px solid #213D55;
-	height:1.5em;
+	height:1.57em;
 	background-color:#ebebeb;
 	color:#666666;
 	position:relative;
@@ -141,7 +145,7 @@ ul.css-tabs a.current {
     display:block;
     padding: .7em 1.5em;
     margin-top: 1em;
-    width: 7em;
+    width: 8em;
     font-weight: bold;
     text-decoration: none;
 }
@@ -550,26 +554,29 @@ div.instance-tabs a{
 }
 
 span.rename, span.configure {
+    background-repeat: no-repeat;
     font-size: 10px;
-    float: right;
     color: transparent;
     font-weight: normal;
-    padding-right: 10em;
-    width: 13em;
+    margin-left: 2em;
+    padding-left: 2em;
     text-align: left;
 }
 
 a.name:hover span.rename {
     color: #213D55;
     margin-top: 0.4em;
+    background-image: url(/static/pencil.png);
 }
 
 a.ip:hover span.configure {
     color: #213D55;
+    background-image: url(/static/pencil.png);
 }
 
 a.storage:hover span.configure {
     color: #213D55;
+    background-image: url(/static/pencil.png);
 }
 
 #ubuntu {
@@ -686,6 +693,15 @@ div.image {
     margin-bottom: 2em;
 }
 
+.page ul.tabs {
+    height: auto;
+    margin-bottom: 0em;
+}
+.page ul.tabs li {
+    float: right;
+    margin: 0 1em;
+}
+
 div.instance-type {
     float: left;
     margin-right:1.9em;
@@ -701,3 +717,11 @@ div.instance-type img {
     color: #ADA9A5;
 }
 
+a#list, a#standard {
+    float: left;
+    clear: both;
+    color: #666;
+    text-decoration: none;
+    margin-top:-3em;
+    margin-left:35em;
+}

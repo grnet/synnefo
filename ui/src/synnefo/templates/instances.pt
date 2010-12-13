@@ -21,13 +21,13 @@
 
         <img src="static/server.png" />
         <a href="#" class="name">
-            <h3> <span tal:replace="node['name']" /><span class="rename">(rename)</span></h3>
+            <h3> <span tal:replace="node['name']" /><span class="rename">rename</span></h3>
         </a>
         <a href="#" class="ip">
-            <h5><span tal:replace="node['public_ip']" /><span class="configure">(configure networking)</span></h5>
+            <h5><span tal:replace="node['public_ip']" /><span class="configure">configure networking</span></h5>
         </a>
         <a href="#" class="storage">
-            <h5>34GB of total storage in 3 volumes <span class="configure">(configure storage)</span></h5>
+            <h5>34GB of total storage in 3 volumes <span class="configure">configure storage</span></h5>
         </a>
     </div>
 </div>

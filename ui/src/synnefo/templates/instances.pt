@@ -53,25 +53,10 @@
 					<em>Select an OS image to boot from</em>
 				</h2>
                 <ul class="tabs">
-                    <li><a href="#">custom</a></li>
                     <li><a href="#">standard</a></li>
+                    <li><a href="#">custom</a></li>
                 </ul>
                 <div class="panes">
-                    <ul class="pane">
-					    <!-- custom images -->
-					    <li>
-						    <label for="${image['id']}" tal:repeat="image images"> 
-                                <a tal:condition="image['type']=='custom'">
-                                    <div class="image">
-                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
-                                        <span class="description">${image['description']}</span> 
-                                        <span class="size">${image['size']}MB</span>
-                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
-                                    </div>
-                                </a>
-						    </label> 
-					    </li>
-                    </ul>
                     <ul class="pane">
 					    <!-- standard images -->
 					    <li>
@@ -87,6 +72,21 @@
 						    </label> 
 					    </li>
 				    </ul>
+                    <ul class="pane">
+					    <!-- custom images -->
+					    <li>
+						    <label for="${image['id']}" tal:repeat="image images"> 
+                                <a tal:condition="image['type']=='custom'">
+                                    <div class="image">
+                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
+                                        <span class="description">${image['description']}</span> 
+                                        <span class="size">${image['size']}MB</span>
+                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
+                                    </div>
+                                </a>
+						    </label> 
+					    </li>
+                    </ul>
                 </div>
 				<button type="button" class="prev" id="cancel">Cancel</button>
 				<button type="button" class="next right">Next &raquo;</button>
@@ -182,7 +182,11 @@
 	</div>
 </form>
 
-<div class="modal" id="misc">hi!</div>
+<div class="modal" id="misc">
+    <h3>Your VM is being created!</h3>
+    <em>Your password is sdeEFre please copy this</em>
+</div>
+
 <script>
 // <![CDATA[ 
 
@@ -235,7 +239,7 @@ $("#cancel").click(function(event){
 
 $("#start").click(function(event){
     $("a#create[rel]").overlay().close();
-    $("div#misc").overlay({mask: '#000', effect: 'default', top: '5%'});
+    $("div#misc").overlay({mask: '#000', effect: 'default', top: '5%', load:'true',});
 });
 
 $("a#create").click(function(event){

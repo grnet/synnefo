@@ -265,7 +265,7 @@ div#about {
 #wizard li {
 	list-style-type:none;
 	list-style-image:none;
-	margin-bottom:1.2em; !important
+	margin-bottom:1.2em;
 }
 
 #wizard label {
@@ -372,10 +372,10 @@ div#about {
 }
 
 #wizard #status {
-	margin:0px !important;
-	height:35px;
-	background:#999;
-	padding-left:25px !important;
+	margin: 0px !important;
+	height: 35px;
+	background: #999;
+	padding-left: 25px !important;
 }
 
 .page ul {
@@ -391,7 +391,7 @@ div#about {
 .page ul.tabs {
     height: auto;
     margin-bottom: 0em;
-    margin-top: -1.5em;
+    margin-top: -1.37em;
 }
 
 .page ul.tabs li {
@@ -652,4 +652,41 @@ div.instance-type {
     margin-bottom: 2em;
     margin-right: 1.9em;
     margin-top: 1em;
+}
+
+/* root element for tabs  */
+#wizard ul.tabs { 
+	border-bottom:1px solid #666;
+    margin-top: -2em;	 	
+}
+
+/* single tab */
+#wizard ul.tabs li {  
+    margin-bottom: 0; 
+	list-style-type:none;	
+}
+
+/* link inside the tab. uses a background image */
+#wizard ul.tabs a { 
+	display:block;
+	padding: 0.5em;	
+	text-decoration:none;
+	color:#999;
+	position:relative;
+	top:1px;	
+	outline:0;
+}
+
+#wizard ul.tabs a:hover {
+	background-color:#F7F7F7;
+	color:#666;
+}
+	
+/* selected tab */
+#wizard ul.tabs a.current {
+	-moz-border-radius:4px 4px 0 0;	
+    border:1px solid #666;
+    border-bottom: none; !important
+	color:#666;	
+	cursor:default;
 }

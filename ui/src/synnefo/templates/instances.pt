@@ -216,21 +216,18 @@ $("#small").click(function(event){
     $("#cpu").data('rangeinput').setValue(1);
     $("#ram").data('rangeinput').setValue(256);
     $("#storage").data('rangeinput').setValue(5);
-    // disableSliders();
 });
 
 $("#medium").click(function(event){
     $("#cpu").data('rangeinput').setValue(4);
     $("#ram").data('rangeinput').setValue(1024);
     $("#storage").data('rangeinput').setValue(30);
-    // disableSliders();
 });
 
 $("#large").click(function(event){
     $("#cpu").data('rangeinput').setValue(8);
     $("#ram").data('rangeinput').setValue(4096);
     $("#storage").data('rangeinput').setValue(80);
-    // disableSliders();
 });
 
 $("#cancel").click(function(event){
@@ -239,7 +236,8 @@ $("#cancel").click(function(event){
 
 $("#start").click(function(event){
     $("a#create[rel]").overlay().close();
-    $("div#misc").overlay({mask: '#000', effect: 'default', top: '5%', load:'true',});
+    $("div#misc").overlay({mask: '#000', effect: 'default', top: '5%'});
+    $("div#misc").overlay().load();
 });
 
 $("a#create").click(function(event){

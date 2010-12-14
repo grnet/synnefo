@@ -374,6 +374,46 @@ div#about {
 	_background:#213d55;
 }
 
+#wizard a:hover div.image {
+    background-color: #999;
+}
+#wizard a:hover div.image img {
+    background-color: #999;
+}
+
+#wizard label a:hover strong {
+    color: white;
+}
+
+#wizard div.image strong {
+    font-size: 1em;
+}
+
+#wizard div.image span.size {
+    font-size:.7em;
+    color: #666;
+}
+
+#wizard div.image .radio {
+    float: right;
+}
+
+#wizard div.image span.image-id, #wizard div.image span.description {
+    font-size:.7em;
+    color: #666;
+    font-weight: normal;
+    display:inline;
+}
+
+#wizard a:hover div.image span.image-id, #wizard a:hover div.image span.description, #wizard a:hover div.image span.size {
+    color: white;
+}
+
+#wizard .cost {
+    color: #666;
+    margin-top: 4em;
+}
+
 #status li {
 	list-style-type:none;
 	list-style-image:none;
@@ -639,45 +679,7 @@ div.image {
     display: block;
 }
 
-#wizard a:hover div.image {
-    background-color: #999;
-}
-#wizard a:hover div.image img {
-    background-color: #999;
-}
 
-#wizard label a:hover strong {
-    color: white;
-}
-
-#wizard div.image strong {
-    font-size: 1em;
-}
-
-#wizard div.image span.size {
-    font-size:.7em;
-    color: #666;
-}
-
-#wizard div.image .radio {
-    float: right;
-}
-
-#wizard div.image span.image-id, #wizard div.image span.description {
-    font-size:.7em;
-    color: #666;
-    font-weight: normal;
-    display:inline;
-}
-
-#wizard a:hover div.image span.image-id, #wizard a:hover div.image span.description, #wizard a:hover div.image span.size {
-    color: white;
-}
-
-#wizard .cost {
-    color: #666;
-    margin-top: 4em;
-}
 
 .page ul {
     height: 280px;
@@ -694,6 +696,7 @@ div.image {
     margin-bottom: 0em;
     margin-top: -1.5em;
 }
+
 .page ul.tabs li {
     float: right;
     margin: 0 1em;

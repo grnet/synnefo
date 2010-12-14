@@ -185,6 +185,7 @@ div#about {
     opacity:0.9;
 }
 	
+	
 /* the root element for scrollable */
 #wizard {
 	overflow:hidden;
@@ -217,7 +218,7 @@ div#about {
 	background:#fff url(../static/h600.png) repeat scroll 0 0;
 	border:5px solid #789;
 	font-size:12px;
-	height:450px;
+	height:480px;
 	margin:0px auto;	
 	width:500px;
 	overflow:hidden;
@@ -255,7 +256,6 @@ div#about {
 	font-size:22px;
 	font-weight:normal;
 	margin:10px 0 0 0;
-	padding-bottom:15px;		
 }
 
 #wizard h2 em {
@@ -269,7 +269,6 @@ div#about {
 /* input fields */
 #wizard ul {
 	padding:0px !important;
-	margin:0 0 2em 0 !important;
 }
 
 #wizard li {
@@ -341,12 +340,73 @@ div#about {
 	border:1px solid red;		
 }
 
+#wizard a:hover div.image {
+    background-color: #999;
+}
+#wizard a:hover div.image img {
+    background-color: #999;
+}
+
+#wizard label a:hover strong {
+    color: white;
+}
+
+#wizard div.image strong {
+    font-size: 1em;
+}
+
+#wizard div.image span.size {
+    font-size:.7em;
+    color: #666;
+}
+
+#wizard div.image .radio {
+    float: right;
+}
+
+#wizard div.image span.image-id, #wizard div.image span.description {
+    font-size:.7em;
+    color: #666;
+    font-weight: normal;
+    display:inline;
+}
+
+#wizard a:hover div.image span.image-id, #wizard a:hover div.image span.description, #wizard a:hover div.image span.size {
+    color: white;
+}
+
+#wizard .cost {
+    color: #666;
+    margin-top: 4em;
+}
+
 #wizard #status {
 	margin:0px !important;
 	height:35px;
 	background:#213d55 url(../static/h30.png) repeat-x;
 	padding-left:25px !important;
 	_background:#213d55;
+}
+
+.page ul {
+    height: 280px;
+    overflow: auto;
+    margin-bottom: 2em;
+}
+
+.panes ul.pane {
+    height: 268px;
+}
+
+.page ul.tabs {
+    height: auto;
+    margin-bottom: 0em;
+    margin-top: -1.5em;
+}
+
+.page ul.tabs li {
+    float: right;
+    margin: 0 1em;
 }
 
 #status li {
@@ -378,6 +438,7 @@ div#about {
 	-webkit-border-radius:5px; 
 	-moz-box-shadow:inset 0 0 8px #000;
     padding: .1em !important;
+    margin-bottom: 2em;
 }
 
 /* progress bar (enabled with progress: true) */
@@ -417,7 +478,6 @@ div#about {
 	-moz-border-radius:5px; 
 	-webkit-border-radius:5px; 		
 }
-
 
 .instance {
     clear: both;
@@ -492,6 +552,7 @@ a.action:hover, a.more:hover {
 
 div.ip, div.state {
     font-size:.7em;
+    color: #6892D2;
 }
 
 div.indicator {
@@ -509,14 +570,13 @@ div.indicator {
 
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
-    color: #162d50;
+    color: #6892D2;
 }
 
 div.uptime {
-    font-size:.7em;
     clear: both;
-    color:transparent;
-    margin-left:1px;
+    color: transparent;
+    margin-left: 1px;
 }
 
 div.instance-tabs {
@@ -527,12 +587,13 @@ div.instance-tabs a{
 }
 
 span.rename, span.configure {
-    font-size: 10px;
-    clear: none;
+    background-repeat: no-repeat;
     color: transparent;
-    display: inline;
+    font-size: 11px;
     font-weight: normal;
+    margin-left: 2em;
     padding-left: 2em;
+    text-align: left;
 }
 
 a.name:hover span.rename {
@@ -602,4 +663,32 @@ button.next {
 
 button.prev {
 
+}
+
+.image-logo {
+    float: left;
+    margin-right: 1em;
+}
+
+div.image {
+    padding: 1em;
+    clear: both;
+    display: block;
+}
+
+a#list, a#standard {
+    float: left;
+    clear: both;
+    color: #666;
+    text-decoration: none;
+    margin-top: -4em;
+    margin-left: 65em;
+    font-size: 0.8em
+}
+
+div.instance-type {
+    float: left;
+    margin-bottom: 2em;
+    margin-right: 1.9em;
+    margin-top: 1em;
 }

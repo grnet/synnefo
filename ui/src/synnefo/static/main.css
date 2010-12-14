@@ -212,11 +212,20 @@ div#about {
     opacity:0.9;
 }
 	
-/* the root element for scrollable */
-#wizard {
+/* scrollable root element */
+#wizard {	
+	background:#fff url(../static/h600.png) repeat scroll 0 0;
+	border:5px solid #789;
+	font-size:12px;
+	height:480px;
+	margin:0px auto;	
+	width:500px;
 	overflow:hidden;
 	position:relative;
-}
+	/* rounded corners for modern browsers */
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+}  
 
 /* scrollable items */
 #wizard .items {
@@ -238,22 +247,6 @@ div#about {
 	left:0;
 	top:0;
 }
-
-/* scrollable root element */
-#wizard {	
-	background:#fff url(../static/h600.png) repeat scroll 0 0;
-	border:5px solid #789;
-	font-size:12px;
-	height:480px;
-	margin:0px auto;	
-	width:500px;
-	overflow:hidden;
-	position:relative;
-	
-	/* rounded corners for modern browsers */
-	-moz-border-radius:5px;
-	-webkit-border-radius:5px;
-}  
 
 /* scrollable items */
 #wizard .items {
@@ -428,22 +421,20 @@ div#about {
 }
 
 /* slider root element */
-.slider { 
+.slider {
+    -moz-border-radius: 5px 5px 5px 5px;
+    -moz-box-shadow: 0 0 8px #000000 inset;
+    background: url("../static/h30.png") repeat-x scroll 0 0 #3C72E6;
+    border: 1px solid #333333;
+    clear: right;
+    cursor: pointer;
     display: block !important;
-	background:#3C72E6 url(../static/h30.png) repeat-x 0 0; 
-	height:9px; 
-	position:relative; 
-	cursor:pointer;
-	border:1px solid #333;
-	width:300px;
-	float:left; 
-	clear:right;
-	margin-top:10px;
-	-moz-border-radius:5px; 
-	-webkit-border-radius:5px; 
-	-moz-box-shadow:inset 0 0 8px #000;
-    padding: .1em !important;
-    margin-bottom: 2em;
+    float: left;
+    height: 3px;
+    margin-top: 10px;
+    padding: 0.1em !important;
+    position: relative;
+    width: 330px;
 }
 
 /* progress bar (enabled with progress: true) */
@@ -455,20 +446,17 @@ div#about {
 }
 
 /* drag handle */
-.handle { 
-	background:#fff url(../static/h30.png) repeat-x 0 0; 
-	height:10px;
-	width:10px;
-	position:absolute; 
-	display:block; 
-	margin-top:1px;
-	border:1px solid #000;
-	cursor:move;
-	-moz-box-shadow:0 0 6px #000;
-	-webkit-box-shadow:0 0 6px #000;
-	-moz-border-radius:14px;
-	-webkit-border-radius:14px; 
-
+.handle {
+    -moz-border-radius: 14px 14px 14px 14px;
+    -moz-box-shadow: 0 0 2px #000000;
+    background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
+    border: 1px solid #000000;
+    cursor: move;
+    display: block;
+    height: 22px;
+    margin-top: -11px;
+    position: absolute;
+    width: 10px;
 }
 
 /* the input field */
@@ -483,7 +471,6 @@ div#about {
 	-moz-border-radius:5px; 
 	-webkit-border-radius:5px; 		
 }
-
 
 .instance {
     clear: both;
@@ -513,7 +500,6 @@ div#about {
     padding-bottom:2em;
 }
 
-
 .actions {
     float: right;
     width: 15%;
@@ -533,7 +519,6 @@ a.action, a.more {
 a.action:hover, a.more:hover {
     color: black !important;
 }
-
 
 .actions:hover a,.instance:hover .actions a {
     color: #666;
@@ -566,7 +551,6 @@ div.indicator {
     border:2px solid white;
     background-color: #05b00d;
 }    
-
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
     color: #666;
@@ -617,35 +601,6 @@ a.storage:hover span.configure {
     padding-left: 50px;
 }
 
-.slider {
-    -moz-border-radius: 5px 5px 5px 5px;
-    -moz-box-shadow: 0 0 8px #000000 inset;
-    background: url("../static/h30.png") repeat-x scroll 0 0 #3C72E6;
-    border: 1px solid #333333;
-    clear: right;
-    cursor: pointer;
-    display: block !important;
-    float: left;
-    height: 3px;
-    margin-top: 10px;
-    padding: 0.1em !important;
-    position: relative;
-    width: 330px;
-}
-
-.handle {
-    -moz-border-radius: 14px 14px 14px 14px;
-    -moz-box-shadow: 0 0 2px #000000;
-    background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
-    border: 1px solid #000000;
-    cursor: move;
-    display: block;
-    height: 22px;
-    margin-top: -11px;
-    position: absolute;
-    width: 10px;
-}
-
 button {
     -moz-border-radius: 10.2em 10.2em 10.2em 10.2em;
     background-color: #31446f;
@@ -678,8 +633,6 @@ div.image {
     clear: both;
     display: block;
 }
-
-
 
 .page ul {
     height: 280px;

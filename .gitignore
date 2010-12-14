@@ -10,4 +10,5 @@ ui/develop-eggs/
 ui/eggs/
 ui/parts/
 ui/src/synnefo.egg-info/
-
+ui/include/
+ui/lib/

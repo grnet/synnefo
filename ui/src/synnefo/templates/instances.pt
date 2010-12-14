@@ -40,7 +40,7 @@
 		<ul id="status">
 			<li class="active"><strong>1.</strong> Select image</li>
 			<li><strong>2.</strong> Instance type</li>
-			<li><strong>3.</strong> Start VM</li>
+			<li><strong>3.</strong> Review</li>
 		</ul>
 		<!-- scrollable items -->
 		<div class="items">
@@ -130,8 +130,8 @@
             </div>
 			<div class="page">
 				<h2>
-					<strong>Step 3: </strong> Start VM <b></b>
-					<em>Confirm the settings below and start your new instance</em>
+					<strong>Step 3: </strong> Review <b></b>
+					<em>Confirm the settings below and create your new instance</em>
 				</h2>
                 <ul>
                     <li class="required">
@@ -160,7 +160,7 @@
                     </li>
                 </ul>
 				<button type="button" class="prev">&laquo; Back</button>
-				<button type="button" class="next right" id="start">Start VM</button>        
+				<button type="button" class="next right" id="start">Create VM</button>        
             </div>
 		</div>
 	</div>

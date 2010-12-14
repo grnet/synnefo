@@ -55,7 +55,7 @@ ul.css-tabs {
 ul.css-tabs li {  
 	float:left;	 
 	padding:0; 
-	margin:-2px 1em 0 0;  
+	margin:-3px 1em 0 0;  
 	list-style-type:none;	
 }
 
@@ -145,7 +145,7 @@ ul.css-tabs a.current {
     display:block;
     padding: .7em 1.5em;
     margin-top: 1em;
-    width: 8em;
+    width: 7em;
     font-weight: bold;
     text-decoration: none;
 }
@@ -190,7 +190,7 @@ a img {
 div#about {
     color: white;
     padding: .9em 5em;
-    font-size:.6em;
+    font-size:.7em;
     float: right;
     width: 63%;
 }    
@@ -482,9 +482,7 @@ div#about {
 .actions {
     float: right;
     width: 15%;
-    margin-right: -10em;
-    font-weight: normal;
-    padding-left: 2em;
+    margin: -1.5em -9em 0 0;
     height: 70px;
 }
 
@@ -540,7 +538,6 @@ div.indicator {
 }
 
 div.uptime {
-    font-size:.7em;
     clear: both;
     color:transparent;
     margin-left:1px;
@@ -555,7 +552,7 @@ div.instance-tabs a{
 
 span.rename, span.configure {
     background-repeat: no-repeat;
-    font-size: 10px;
+    font-size: 11px;
     color: transparent;
     font-weight: normal;
     margin-left: 2em;
@@ -722,6 +719,7 @@ a#list, a#standard {
     clear: both;
     color: #666;
     text-decoration: none;
-    margin-top:-3em;
-    margin-left:35em;
+    margin-top: -4em;
+    margin-left: 65em;
+    font-size: 0.8em
 }

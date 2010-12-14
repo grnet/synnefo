@@ -384,6 +384,10 @@ div#about {
     margin-bottom: 2em;
 }
 
+.page ul.tabs {
+    overflow: hidden;
+}
+
 .panes ul.pane {
     height: 268px;
 }

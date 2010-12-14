@@ -1,3 +1,22 @@
-<div id="instancesview">
+<div id="instancesview" class="list">
     <a id="standard" href="/">standard view</a>
+
+    <div class="active">
+        <div tal:repeat="node nodes" tal:omit-tag="">
+            <div class="running" tal:condition="node['state']=='3'">
+                <label for="instance-${node['id']}"> 
+                    <input type="checkbox" id="instance-${node['id']}" /> <img src="static/${node['thumb']}" width="16" height="16" /><span tal:replace="node['name']" /> | <span tal:replace="node['public_ip']" /> | group
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="inactive">
+        <div tal:repeat="node nodes" tal:omit-tag="">
+            <div class="stopped" tal:condition="node['state']=='0'">
+                <label for="instance-${node['id']}"> 
+                    <input type="checkbox" id="instance-${node['id']}" /> <img src="static/${node['thumb']}" width="16" height="16" /><span tal:replace="node['name']" /> | <span tal:replace="node['public_ip']" /> | group
+                </label>
+            </div>
+        </div>
+    </div>
 </div>

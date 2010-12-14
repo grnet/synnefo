@@ -1,8 +1,9 @@
 <a id="create" rel="#wizard" href="#">Create New +</a>
 
-<div id="instancesview">
+<div id="instancesview" class="standard">
     <a id="list" href="/instances/list">list view</a>
     <div class="instance running" tal:repeat="node nodes">
+        <div tal:condition="node['state']=='3'" tal:omit-tag="">
 
         <div class="actions">
             <a href="#" class="action">reboot</a>
@@ -29,6 +30,7 @@
         <a href="#" class="storage">
             <h5>34GB of total storage in 3 volumes <span class="configure">configure storage</span></h5>
         </a>
+        </div>
     </div>
 </div>
 
@@ -180,6 +182,7 @@
 	</div>
 </form>
 
+<div class="modal" id="misc">hi!</div>
 <script>
 // <![CDATA[ 
 
@@ -232,6 +235,7 @@ $("#cancel").click(function(event){
 
 $("#start").click(function(event){
     $("a#create[rel]").overlay().close();
+    $("div#misc").overlay({mask: '#000', effect: 'default', top: '5%'});
 });
 
 $("a#create").click(function(event){

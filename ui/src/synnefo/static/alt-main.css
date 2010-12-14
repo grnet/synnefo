@@ -638,12 +638,12 @@ div.image {
 }
 
 a#list, a#standard {
-    float: left;
+    float: right;
     clear: both;
     color: #666;
     text-decoration: none;
-    margin-top: -4em;
-    margin-left: 65em;
+    margin-top: -2em;
+    margin-right: 5em;
     font-size: 0.8em
 }
 
@@ -652,4 +652,30 @@ div.instance-type {
     margin-bottom: 2em;
     margin-right: 1.9em;
     margin-top: 1em;
+}
+
+div.active {
+    border-bottom: 1em solid #87AADE;
+    height: 100px;
+    overflow: auto;
+}
+
+div.active, div.stopped {
+    margin-left: -2.2em;
+    width: 70%;
+    padding: 1em;
+    margin-top: 1em;
+}
+
+div.list label img {
+    margin-right: .5em;
+}
+
+div.list label {
+    color: #87AADE;
+    font-size:.8em;
+}
+
+div.list div.running {
+    margin: .5em 0;
 }

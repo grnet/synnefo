@@ -1,28 +1,20 @@
-#from libcloud.types import Provider 
-#from libcloud.providers import get_driver 
-
-#USERNAME = 'user'
-#SECRET = 'secret'
-
 def home(request):
     return {'project':'+nefo'}
 
 def instances(request):
-    #Driver = get_driver(Provider.RACKSPACE) 
-    #conn = Driver(USER, SECRET) 
-    #nodes = conn.list_nodes()
     nodes = []
-    nodes.append({'id':1, 'name':'My mail server', 'state':'3','public_ip':'147.102.1.62',})
-    nodes.append({'id':2, 'name':'My name server', 'state':'3','public_ip':'147.102.1.64',})
+    nodes.append({'id':1, 'name':'My mail server', 'state':'3','public_ip':'147.102.1.62', 'thumb' : 'ubuntu.png'})
+    nodes.append({'id':2, 'name':'My name server', 'state':'3','public_ip':'147.102.1.64', 'thumb' : 'debian.png'})
+    nodes.append({'id':3, 'name':'My file server', 'state':'3','public_ip':'147.102.1.65', 'thumb' : 'fedora.png'})
+    nodes.append({'id':4, 'name':'My torrent server', 'state':'3','public_ip':'147.102.1.66', 'thumb' : 'gentoo.png'})
+    nodes.append({'id':5, 'name':'My firewall', 'state':'3','public_ip':'147.102.1.67', 'thumb' : 'netbsd.png'})
+    nodes.append({'id':6, 'name':'My windows workstation', 'state':'0','public_ip':'147.102.1.69', 'thumb' : 'windows.png'})
     return {'nodes': nodes, 'images': images(request)['images']}
 
 def storage(request):
     return {}
 
-def images(request):
-    #Driver = get_driver(Provider.RACKSPACE) 
-    #conn = Driver(USER, SECRET) 
-    #nodes = conn.list_images()     
+def images(request): 
     images = [
               {'id': 'ubuntu-10.10-x86_64-server', 'type':'standard', 'title': 'Ubuntu 10.10 server 64bit', 'description': 'Apache, MySQL, php5 preinstalled', 'size': '834', 'logo':'/static/ubuntu.png'}, 
               {'id': 'fedora-14-desktop', 'type':'standard', 'title': 'Fedora 14 desktop 32bit', 'description': 'Apache, MySQL, php5 preinstalled', 'size': '912', 'logo':'/static/fedora.png'}, 

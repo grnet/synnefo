@@ -40,10 +40,6 @@ a:active {
   outline:none;
 }
 
-:focus {
-  -moz-outline-style:none;
-}
-
 /* root element for tabs  */
 ul.css-tabs {  
 	margin:-.5em 2em 0 1em !important; 
@@ -104,7 +100,6 @@ ul.css-tabs a.current {
 
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
 .rounded, #sheet input, .error {
-	border-radius: 5px;
 	-webkit-border-radius: 5px;
 	-moz-border-radius: 5px;
 	-o-border-radius: 5px;
@@ -690,9 +685,14 @@ div.image {
     margin-bottom: 2em;
 }
 
+.panes ul.pane {
+    height: 268px;
+}
+
 .page ul.tabs {
     height: auto;
     margin-bottom: 0em;
+    margin-top: -1.5em;
 }
 .page ul.tabs li {
     float: right;

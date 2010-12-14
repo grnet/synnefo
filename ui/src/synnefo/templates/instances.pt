@@ -51,14 +51,14 @@
 					<em>Select an OS image to boot from</em>
 				</h2>
                 <ul class="tabs">
-                    <li><a href="#">my images</a></li>
                     <li><a href="#">standard images</a></li>
+                    <li><a href="#">my images</a></li>
                 </ul>
                 <div class="panes">
-				    <ul>
+				    <ul class="pane">
 					    <!-- image -->
 					    <li>
-						    <label for="${image['id']}" tal:repeat="image images">
+						    <label for="${image['id']}" tal:repeat="image images"> 
                                 <a>
                                     <div class="image">
                                         <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
@@ -67,10 +67,11 @@
                                         <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
                                     </div>
                                 </a>
-						    </label>                            
+						    </label> 
 					    </li>
 				    </ul>
-                    <ul>some</ul>
+                    <ul class="pane">my images
+                    </ul>
                 </div>
 				<button type="button" class="prev" id="cancel">Cancel</button>
 				<button type="button" class="next right">Next &raquo;</button>

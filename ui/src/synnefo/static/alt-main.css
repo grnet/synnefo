@@ -682,7 +682,6 @@ div.list div.running {
 
 /* root element for tabs  */
 #wizard ul.tabs { 
-	border-bottom:1px solid #666;
     margin-top: -2em;	 	
 }
 
@@ -697,22 +696,20 @@ div.list div.running {
 	display:block;
 	padding: 0.5em;	
 	text-decoration:none;
-	color:#999;
+	color: #999;
 	position:relative;
-	top:1px;	
+	top:1px;
 	outline:0;
 }
 
 #wizard ul.tabs a:hover {
-	background-color:#F7F7F7;
-	color:#666;
+	color: black;
+    background-color:#F7F7F7;
 }
 	
 /* selected tab */
 #wizard ul.tabs a.current {
-	-moz-border-radius:4px 4px 0 0;	
-    border:1px solid #666;
-    border-bottom: none; !important
-	color:#666;	
-	cursor:default;
+	color: white;
+    background-color: #87AADE;	
+	cursor: default;
 }

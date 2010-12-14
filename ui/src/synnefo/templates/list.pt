@@ -1,12 +1,29 @@
 <div id="instancesview" class="list">
     <a id="standard" href="/">standard view</a>
-
+    <div class="actions">
+        <a>start</a>
+        <a>reboot</a>
+        <a>shutdown</a>
+        <br />
+        <a>destroy</a>
+        <br />
+        <a>&lt;test_group&gt; group</a>
+        <br />
+        <a>out of bound</a>
+        <br />
+        <a>attach disk</a>
+        <a>detach disk</a>
+        <br />
+        <a>connect to network</a>
+        <a>disconnect from network</a>
+    </div>
     <div class="active">
         <div tal:repeat="node nodes" tal:omit-tag="">
             <div class="running" tal:condition="node['state']=='3'">
                 <label for="instance-${node['id']}"> 
-                    <input type="checkbox" id="instance-${node['id']}" /> <img src="static/${node['thumb']}" width="16" height="16" /><span tal:replace="node['name']" /> | <span tal:replace="node['public_ip']" /> | group
+                    <input type="checkbox" class="instance" id="instance-${node['id']}" /> <img src="static/${node['thumb']}" width="16" height="16" /><span tal:replace="node['name']" /> | <span tal:replace="node['public_ip']" /> | group
                 </label>
+                <div class="state">Running</div>
             </div>
         </div>
     </div>
@@ -14,8 +31,9 @@
         <div tal:repeat="node nodes" tal:omit-tag="">
             <div class="stopped" tal:condition="node['state']=='0'">
                 <label for="instance-${node['id']}"> 
-                    <input type="checkbox" id="instance-${node['id']}" /> <img src="static/${node['thumb']}" width="16" height="16" /><span tal:replace="node['name']" /> | <span tal:replace="node['public_ip']" /> | group
+                    <input type="checkbox" class="instance" id="instance-${node['id']}" /> <img src="static/${node['thumb']}" width="16" height="16" /><span tal:replace="node['name']" /> | <span tal:replace="node['public_ip']" /> | group
                 </label>
+                <div class="state">Terminated</div>
             </div>
         </div>
     </div>

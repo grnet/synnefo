@@ -236,8 +236,16 @@ $("#cancel").click(function(event){
 
 $("#start").click(function(event){
     $("a#create[rel]").overlay().close();
-    $("div#misc").overlay({mask: '#000', effect: 'default', top: '5%'});
-    $("div#misc").overlay().load();
+
+    var triggers = $("div#misc").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        load: 'true',
+	    closeOnClick: 'false'
+    });
 });
 
 $("a#create").click(function(event){
@@ -258,6 +266,7 @@ $("#storage").change(function(event){
 
 $(function() { 
     $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%'});
+
 });
 
 $(function() {

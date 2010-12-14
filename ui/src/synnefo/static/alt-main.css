@@ -368,7 +368,8 @@ div#about {
 
 #wizard .cost {
     color: #666;
-    margin-top: 4em;
+    margin-top: 5em;
+    font-size: .8em;
 }
 
 #wizard #status {
@@ -660,8 +661,7 @@ div.instance-type {
 
 div.active {
     border-bottom: 1em solid #87AADE;
-    height: 100px;
-    overflow: auto;
+    height: 200px;
 }
 
 div.active, div.stopped {
@@ -673,6 +673,7 @@ div.active, div.stopped {
 
 div.list label img {
     margin-right: .5em;
+    margin-bottom: -0.25em;
 }
 
 div.list label {
@@ -717,3 +718,38 @@ div.list div.running {
     background-color: #87AADE;	
 	cursor: default;
 }
+
+div.inactive div.state {
+    margin-right: 2.5em;
+}
+
+div.inactive {
+    opacity: .6;
+}
+
+div.list div.actions {
+    clear: left;
+    float: right;
+    margin-right: 4em;
+    margin-top: 1em;
+    text-align: right;
+}
+
+div.list div.actions a {
+    clear: left;
+    color: #666 !important;
+    display: block;
+    font-size: .8em;
+}
+
+input.instance {
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    top: -1px;
+    *overflow: hidden;
+}
+

@@ -53,25 +53,10 @@
 					<em>Select an OS image to boot from</em>
 				</h2>
                 <ul class="tabs">
-                    <li><a href="#">standard images</a></li>
-                    <li><a href="#">my images</a></li>
+                    <li><a href="#">custom</a></li>
+                    <li><a href="#">standard</a></li>
                 </ul>
                 <div class="panes">
-				    <ul class="pane">
-					    <!-- standard images -->
-					    <li>
-						    <label for="${image['id']}" tal:repeat="image images"> 
-                                <a tal:condition="image['type']=='standard'">
-                                    <div class="image">
-                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
-                                        <span class="description">${image['description']}</span> 
-                                        <span class="size">${image['size']}MB</span>
-                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
-                                    </div>
-                                </a>
-						    </label> 
-					    </li>
-				    </ul>
                     <ul class="pane">
 					    <!-- custom images -->
 					    <li>
@@ -87,6 +72,21 @@
 						    </label> 
 					    </li>
                     </ul>
+                    <ul class="pane">
+					    <!-- standard images -->
+					    <li>
+						    <label for="${image['id']}" tal:repeat="image images"> 
+                                <a tal:condition="image['type']=='standard'">
+                                    <div class="image">
+                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
+                                        <span class="description">${image['description']}</span> 
+                                        <span class="size">${image['size']}MB</span>
+                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
+                                    </div>
+                                </a>
+						    </label> 
+					    </li>
+				    </ul>
                 </div>
 				<button type="button" class="prev" id="cancel">Cancel</button>
 				<button type="button" class="next right">Next &raquo;</button>

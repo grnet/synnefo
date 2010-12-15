@@ -496,8 +496,6 @@ div#about {
 .state {
     float: right;
     width: 15%;
-    margin-top: .4em;
-    padding-bottom:2em;
 }
 
 .actions {
@@ -536,7 +534,9 @@ a.action:hover, a.more:hover {
 }
 
 div.ip, div.state {
-    font-size:.7em;
+    font-size: 0.7em;
+    color: #666;
+    margin-top: 0.5em;
 }
 
 div.indicator {
@@ -564,9 +564,6 @@ div.uptime {
 
 div.instance-tabs {
     margin-top: 1em;
-}
-div.instance-tabs a{
-
 }
 
 span.rename, span.configure {
@@ -657,13 +654,35 @@ div.image {
 
 div.instance-type {
     float: left;
-    margin-right:1.9em;
     margin-bottom: 2em;
+    margin-right: 1.8em;
     margin-top: 1em;
 }
 
-div.instance-type img {
-    float:left;
+div.active {
+    border-bottom: 1em solid #2C597E;
+    height: 200px;
+}
+
+div.active, div.stopped {
+    margin-left: -1em;
+    width: 70%;
+    padding: 1em;
+    margin-top: 1em;
+}
+
+div.list label img {
+    margin-right: .5em;
+    margin-bottom: -0.25em;
+}
+
+div.list label {
+    color: #666;
+    font-size: 0.8em;
+}
+
+div.list div.running {
+    margin: 0.5em 0;
 }
 
 #wizard strong.sliders {
@@ -678,4 +697,72 @@ a#list, a#standard {
     margin-top: -4em;
     margin-left: 65em;
     font-size: 0.8em
+}
+
+/* root element for tabs  */
+#wizard ul.tabs { 
+    margin-top: -2em;	 	
+}
+
+/* single tab */
+#wizard ul.tabs li {  
+    margin-bottom: 0; 
+	list-style-type:none;	
+}
+
+/* link inside the tab. uses a background image */
+#wizard ul.tabs a { 
+	display:block;
+	padding: 0.5em;	
+	text-decoration:none;
+	color: #999;
+	position:relative;
+	top:1px;
+	outline:0;
+}
+
+#wizard ul.tabs a:hover {
+	color: black;
+    background-color:#F7F7F7;
+}
+	
+/* selected tab */
+#wizard ul.tabs a.current {
+	color: white;
+    background-color: #F49000;	
+	cursor: default;
+}
+
+div.inactive div.state {
+    margin-right: 2.5em;
+}
+
+div.inactive {
+    opacity: .6;
+}
+
+div.list div.actions {
+    clear: left;
+    float: right;
+    margin-right: 4em;
+    margin-top: 1em;
+    text-align: right;
+}
+
+div.list div.actions a {
+    clear: left;
+    color: #666 !important;
+    display: block;
+    font-size: .8em;
+}
+
+input.instance {
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    top: -1px;
+    *overflow: hidden;
 }

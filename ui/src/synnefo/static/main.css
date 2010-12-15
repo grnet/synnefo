@@ -770,5 +770,18 @@ input.instance {
 }
 
 #misc {
+	background:#fff url(../static/h600.png) repeat scroll 0 0;
+	border:5px solid #789;
     height: 100px;
+	margin:0px auto;	
+	overflow:hidden;
+	position:relative;
+	/* rounded corners for modern browsers */
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
 }
+
+#misc strong {
+    color: #F49C1A;
+}
+

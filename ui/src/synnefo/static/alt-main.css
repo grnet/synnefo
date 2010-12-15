@@ -756,5 +756,14 @@ input.instance {
 }
 
 #misc {
-    height: 100px;	
+    height: 100px;
+    -moz-border-radius: 5px 5px 5px 5px;
+    border: 5px solid #87AADE;
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+}
+
+#misc strong {
+    color: #F49C1A;
 }

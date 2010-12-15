@@ -701,13 +701,15 @@ a#list, a#standard {
 
 /* root element for tabs  */
 #wizard ul.tabs { 
-    margin-top: -2em;	 	
+    margin-top: -2em;	
+    margin-left: 21em; 	
 }
 
 /* single tab */
 #wizard ul.tabs li {  
     margin-bottom: 0; 
-	list-style-type:none;	
+	list-style-type: none;	
+    float: left;
 }
 
 /* link inside the tab. uses a background image */
@@ -765,4 +767,8 @@ input.instance {
     position: relative;
     top: -1px;
     *overflow: hidden;
+}
+
+#misc {
+    height: 100px;
 }

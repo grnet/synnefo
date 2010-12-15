@@ -184,7 +184,8 @@
 
 <div class="modal" id="misc">
     <h3>Your VM is being created!</h3>
-    <em>Your password is sdeEFre please copy this</em>
+    <p>Your password is:<strong> sdeEFre</strong></p>
+    <p>Please copy this! Without it you can not connect to your VM.</p>
 </div>
 
 <script>
@@ -243,8 +244,9 @@ $("#start").click(function(event){
 		    color: '#ebecff',
 		    opacity: '0.9'
 	    },
+        top: 'center',
         load: 'true',
-	    closeOnClick: 'false'
+	    closeOnClick: 'false'  
     });
 });
 

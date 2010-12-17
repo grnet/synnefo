@@ -97,6 +97,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'synnefo.auth',
     'synnefo.api',
+    'synnefo.ui',
 )
 
 GANETI_CLUSTER_INFO = ('ganeti.example.org', 5080)

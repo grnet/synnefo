@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:tal="http://xml.zope.org/namespaces/tal">
+
+<head>
+	<title>${context['project']}</title>
+	<!-- include the Tools -->
+	<script src="static/jquery.tools.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="static/alt-main.css"/>	
+</head>
+
+<body>
+    <div id="wrapper">
+        <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
+        <div id="header">
+            <div id="about">Greek Research and Technology Network - Cloud management web interface</div>
+            <a href="/" class="logo">
+                <h1>${context['project']}</h1>
+            </a>
+        </div>
+        <!-- tabs -->
+        <ul class="css-tabs">
+	        <li><a href="instances" title="manage your virtual machines">instances</a></li>
+	        <li><a href="disks" title="manage your storage volumes">disks</a></li>
+	        <li><a href="images" title="manage boot images">images</a></li>
+	        <li><a href="networks" title="configure networking">networks</a></li>
+        </ul>
+        <div class="css-panes">
+	        <div class="pane" style="display:block"></div>
+	        <div class="pane"></div>
+	        <div class="pane"></div>
+	        <div class="pane"></div>
+        </div>
+    </div>
+    <!-- activate tabs with JavaScript -->
+    <script>
+		$(function() {
+            if ($("link").attr("href") == "static/alt-main.css") {
+			    $('ul.css-tabs li').hover(function(){
+				    $(this).find('a').animate({top:'-3px'},{queue:false,duration:150});
+			    }, function(){
+				    $(this).find('a').animate({top:'0px'},{queue:false,duration:150});
+			    });
+            }
+		});
+        $(function() {
+	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
+		        effect: 'ajax',
+		        onBeforeClick: function(event, i) {
+			        // get the pane to be opened
+			        var pane = this.getPanes().eq(i);
+
+			        // load it with a page specified in the tab's href attribute
+			        pane.load(this.getTabs().eq(i).attr("href"));
+		        }
+	        });
+        });
+        $("ul.css-tabs a").tooltip({effect: 'fade', predelay: 1000, delay: 2, position: 'top center', opacity: 0.8});
+    </script>
+</body>
+</html>
+

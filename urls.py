@@ -8,4 +8,5 @@ from django.conf.urls.defaults import *
 urlpatterns = patterns('',
     (r'^auth/api/', include('synnefo.auth.urls')),
     (r'^api/', include('synnefo.api.urls')),
+    (r'^', include('synnefo.ui.urls')),
 )

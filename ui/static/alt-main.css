@@ -549,18 +549,17 @@ div.instance {
 
 .state {
     float: right;
-    width: 15%;
+    width: 65px;
     margin-top: .4em;
 }
 
 
 .actions {
     float: right;
-    width: 20%;
-    margin: -1.5em -10em 0 0;
+    width: 70px;
+    margin: 0 -75px 0 0;
     font-weight: normal;
-    padding-left: 2em;
-    height: 70px;
+    height: 67px;
 }
 
 .actions a {
@@ -568,12 +567,12 @@ div.instance {
 }
 
 a.action{
-    margin: .5em;
+    margin: 3px 0 5px 5px;
     display: block;
 }
 
 a.more {
-    margin: 4.1em 0.5em 0.5em;
+    margin: 20px 0 5px 5px;
     display: block;
 }
 
@@ -583,7 +582,7 @@ a.action:hover, a.more:hover {
 
 
 .actions:hover a,.instance:hover .actions a {
-    color: #666;
+    color: #1b1b1b;
 }
 
 .instance:hover {
@@ -605,7 +604,7 @@ div.ip, div.state {
 div.indicator {
     width:10px;
     height:11px;
-    margin: 2px -1px;
+    margin: 3px -1px;
     clear: none;
     float:left;
 }

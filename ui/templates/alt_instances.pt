@@ -6,8 +6,8 @@
         <div tal:condition="node['state']=='3'" tal:omit-tag="">
 
         <div class="actions">
-            <a href="#" class="action">reboot</a>
-            <a href="#" class="action">shutdown</a>
+            <a href="#" class="action">Reboot</a>
+            <a href="#" class="action">Shutdown</a>
             <a href="#" class="more">more &hellip;</a>
         </div>
         

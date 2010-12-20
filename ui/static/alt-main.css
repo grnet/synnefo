@@ -547,10 +547,15 @@ div.instance {
 
 .state {
     float: right;
-    width: 65px;
-    margin-top: .4em;
+    width: 90px;
+    margin-top: 5px;
+    padding-right: 18px;
 }
 
+.state div {
+    text-align: right;
+    margin-right: 3px;
+}
 
 .actions {
     float: right;
@@ -570,7 +575,7 @@ a.action{
 }
 
 a.more {
-    margin: 20px 0 5px 5px;
+    margin: 13px 0 5px 5px;
     display: block;
 }
 
@@ -604,7 +609,7 @@ div.indicator {
     height:11px;
     margin: 3px -1px;
     clear: none;
-    float:left;
+    float:right;
 }
 
 .running .indicator {
@@ -615,6 +620,9 @@ div.indicator {
     background-color: #86a9dd;
 }    
 
+.terminated {
+    opacity: .6;
+}
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
     color: #3d3d3d;
@@ -834,4 +842,12 @@ div#user {
 div#user a {
     color: #a0a0a0;
     text-decoration: none;
+}
+
+div.seperator {
+    background-color: #86a9dd;
+    height:10px;
+    margin: 20px 0 25px -36px;
+    padding: 3px 5px 0;
+    width: 523px;
 }

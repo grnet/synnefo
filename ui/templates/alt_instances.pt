@@ -2,9 +2,8 @@
 
 <div id="instancesview" class="standard" tal:define="nodes context['nodes']">
     <a id="list" href="/instances/list">list view</a>
-    <div class="instance running" tal:repeat="node nodes">
-        <div tal:condition="node['state']=='3'" tal:omit-tag="">
-
+    <tal:running tal:repeat="node nodes">
+    <div class="instance running" tal:condition="node['state']=='3'">
         <div class="actions">
             <a href="#" class="action">Reboot</a>
             <a href="#" class="action">Shutdown</a>
@@ -31,8 +30,39 @@
         <h5 class="storage">
             Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
         </h5>
-        </div>
     </div>
+    </tal:running>
+    <div class="seperator"></div>
+    <tal:stopped tal:repeat="node nodes">
+    <div class="instance terminated" tal:condition="node['state']=='0'">
+        <div class="actions">
+            <a href="#" class="action">Start</a>
+            <a href="#" class="action">Destroy</a>
+            <a href="#" class="more">more &hellip;</a>
+        </div>
+        
+        <div class="state">
+            <div>Terminated</div>
+            <div class="indicator" />
+            <div class="indicator" />
+            <div class="indicator" />
+            <div class="indicator" />
+        </div>
+
+        <img src="static/pc.png" />
+        <img class="os" src="static/${node['thumb']}" />
+        <a href="#" class="name">
+            <h5>Hostname: <span tal:replace="node['name']" /><span class="rename"></span></h5>
+        </a>
+        <a href="#" class="ip">
+            <h5>IP: <span tal:replace="node['public_ip']" /></h5>
+        </a>
+        <br />
+        <h5 class="storage">
+            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
+        </h5>
+    </div>
+    </tal:stopped>
 </div>
 
 <!-- the form -->

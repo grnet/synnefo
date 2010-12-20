@@ -20,6 +20,7 @@
         </div>
 
         <img src="static/pc.png" />
+        <img class="os" src="static/${node['thumb']}" />
         <a href="#" class="name">
             <h5>Hostname: <span tal:replace="node['name']" /><span class="rename">rename</span></h5>
         </a>

@@ -819,3 +819,9 @@ input.instance {
 #misc strong {
     color: #F49C1A;
 }
+
+img.os {
+    z-index: 1;
+    margin-left: -40px;
+    margin-top: 30px;
+}

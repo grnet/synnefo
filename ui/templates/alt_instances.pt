@@ -22,15 +22,15 @@
         <img src="static/pc.png" />
         <img class="os" src="static/${node['thumb']}" />
         <a href="#" class="name">
-            <h5>Hostname: <span tal:replace="node['name']" /><span class="rename">rename</span></h5>
+            <h5>Hostname: <span tal:replace="node['name']" /><span class="rename"></span></h5>
         </a>
         <a href="#" class="ip">
             <h5>IP: <span tal:replace="node['public_ip']" /></h5>
         </a>
         <br />
-        <a href="#" class="storage">
-            <h5>Show: disks | networks | group | uptime: 24 days</h5>
-        </a>
+        <h5 class="storage">
+            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
+        </h5>
         </div>
     </div>
 </div>

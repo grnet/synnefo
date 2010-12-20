@@ -14,7 +14,7 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 	font-size: 100%;
 	vertical-align: baseline;
 	background: transparent;
-    font-family: 'PT Sans', Verdana, Bitstream Charter, sans-serif;
+    font-family: Verdana, 'PT Sans', Bitstream Charter, sans-serif;
 }
 body {
 	line-height: 1;
@@ -58,7 +58,7 @@ body {
 
 h5 {
     font-weight: normal;
-    font-size: 10pt;
+    font-size: 9pt;
     margin-bottom:3px;
 }
 
@@ -97,7 +97,7 @@ ul.css-tabs a {
 	position:relative;
 	outline:0;
     padding: 0 9px 0 13px;
-    margin-top: 6px;
+    margin-top: 7px;
 }
 
 ul.css-tabs a#instances {
@@ -153,8 +153,8 @@ div.css-panes {
 .error {
 	background-color:#E8FF6D;
 	padding:4px;
-	-webkit-box-shadow: #000 0 0 10pt;
-	-moz-box-shadow: #000 0 0 10pt;
+	-webkit-box-shadow: #000 0 0 9pt;
+	-moz-box-shadow: #000 0 0 9pt;
 }
 
 /* nested arrow inside error message. It's 100% CSS. No images. */
@@ -185,6 +185,7 @@ div.css-panes {
     text-decoration: none;
     margin-left: -2.3em;
     border:1px solid #bfd2ed;
+    margin-bottom: 17px;
 }
 
 #create:hover {
@@ -221,7 +222,7 @@ div#about {
 }    
 
 #nefo {
-    margin: 33px 0 0 17px;
+    margin: 33px 0 -2px 25px;
 }
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
@@ -243,7 +244,7 @@ div#about {
 /* scrollable root element */
 #wizard {	
 	border:5px solid #87AADE;
-	font-size:10pt;
+	font-size:9pt;
 	height:480px;
 	margin:0px auto;	
 	width:500px;
@@ -306,7 +307,7 @@ div#about {
 
 #wizard h2 em {
 	display:block;
-	font-size:10pt;
+	font-size:9pt;
 	color:#666;
 	font-style:normal;
 	margin-top:5px;
@@ -336,7 +337,7 @@ div#about {
 }
 
 #wizard label em {
-	font-size:10pt;
+	font-size:9pt;
 	color:#666;	
 	font-style:normal;
 }
@@ -402,7 +403,7 @@ div#about {
 }
 
 #wizard div.image span.size {
-    font-size: 10pt;
+    font-size: 9pt;
     color: #666;
 }
 
@@ -411,7 +412,7 @@ div#about {
 }
 
 #wizard div.image span.image-id, #wizard div.image span.description {
-    font-size: 10pt;
+    font-size: 9pt;
     color: #666;
     font-weight: normal;
     display:inline;
@@ -424,7 +425,7 @@ div#about {
 #wizard .cost {
     color: #666;
     margin-top: 5em;
-    font-size: 10pt;
+    font-size: 9pt;
 }
 
 #wizard #status {
@@ -499,7 +500,7 @@ div#about {
     cursor: move;
     display: block;
     height: 22px;
-    margin-top: -10pt;
+    margin-top: -9pt;
     position: absolute;
     width: 10px;
 }
@@ -527,8 +528,8 @@ div#about {
 
 div.instance {
     clear: both;
-    margin: 1em 0 0 -2em;
-    padding: 5px;
+    margin: 5px 0 0 -32px;
+    padding: 3px 5px 0;
     width: 523px;
     border: 1px dashed transparent;
     color: #666;
@@ -539,7 +540,7 @@ div.instance {
     color: #3d3d3d;
     font-weight: normal;
     text-decoration: none;
-    font-size: 10pt;
+    font-size: 9pt;
 }
 
 .instance a:hover {
@@ -588,7 +589,7 @@ a.action:hover, a.more:hover {
 .instance:hover {
     border: 1px dotted transparent;
     background-color:#dcdcdc;
-    color: black;
+    color: #3d3d3d;
 }
 
 .instance img {
@@ -597,26 +598,29 @@ a.action:hover, a.more:hover {
 }
 
 div.ip, div.state {
-    font-size:10pt;
+    font-size:9pt;
     color: #3d3d3d;
 }
 
 div.indicator {
-    width:1em;
-    height:.6em;
-    margin: .3em -.1em .5em;
+    width:10px;
+    height:11px;
+    margin: 2px -1px;
     clear: none;
     float:left;
 }
 
 .running .indicator {
-    border:2px solid white;
+    border-top: 2px solid white;
+    border-bottom: 2px solid white;
+    border-left: 2px solid white;
+    border-right: 3px solid white;
     background-color: #86a9dd;
 }    
 
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
-    color: #000;
+    color: #3d3d3d;
 }
 
 div.uptime {
@@ -635,10 +639,10 @@ div.instance-tabs a{
 span.rename, span.configure {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: normal;
-    margin-left: 2em;
-    padding-left: 2em;
+    margin-left: 10px;
+    padding-left: 10px;
     text-align: left;
 }
 
@@ -666,7 +670,7 @@ button {
     border-width: 1px 1px 0.2em;
     color: #FFFFFF;
     cursor: pointer;
-    font-size: 10pt;
+    font-size: 9pt;
     line-height: 1;
     padding: 0.7em 2em;
 
@@ -699,7 +703,7 @@ a#list, a#standard {
     text-decoration: none;
     margin-top: -65px;
     margin-right: -36px;
-    font-size: 10pt;
+    font-size: 9pt;
     background-color: #87aade;
     padding: 5px 10px;
 }
@@ -730,7 +734,7 @@ div.list label img {
 
 div.list label {
     color: #87AADE;
-    font-size:10pt;
+    font-size:9pt;
 }
 
 div.list div.running {
@@ -793,7 +797,7 @@ div.list div.actions a {
     clear: left;
     color: #666 !important;
     display: block;
-    font-size:10pt;
+    font-size:9pt;
 }
 
 input.instance {
@@ -823,5 +827,5 @@ input.instance {
 img.os {
     z-index: 1;
     margin-left: -40px;
-    margin-top: 30px;
+    margin-top: 27px;
 }

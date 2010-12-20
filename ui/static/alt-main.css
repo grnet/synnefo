@@ -517,7 +517,7 @@ div#about {
 div.instance {
     clear: both;
     margin: 5px 0 0 -32px;
-    padding: 3px 5px 0;
+    padding: 3px 4px 0;
     width: 523px;
     border: 1px dashed transparent;
     color: #666;
@@ -608,7 +608,11 @@ div.indicator {
     border-left: 2px solid white;
     border-right: 3px solid white;
     background-color: #86a9dd;
-}    
+}
+
+.instance:hover .indicator {  
+    border-color: #dcdcdc !important;
+}
 
 .terminated {
     opacity: .6;

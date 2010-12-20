@@ -14,17 +14,21 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 	font-size: 100%;
 	vertical-align: baseline;
 	background: transparent;
-    font-family: Verdana, 'PT Sans', Bitstream Charter, sans-serif;
+    font-family: Verdana, 'PT Sans', sans-serif;
 }
+
 body {
 	line-height: 1;
 }
+
 ol, ul {
 	list-style: none;
 }
+
 blockquote, q {
 	quotes: none;
 }
+
 blockquote:before, blockquote:after,
 q:before, q:after {
 	content: '';
@@ -40,6 +44,7 @@ q:before, q:after {
 ins {
 	text-decoration: none;
 }
+
 del {
 	text-decoration: line-through;
 }
@@ -49,7 +54,6 @@ table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
-
 
 body {
     background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
@@ -260,12 +264,6 @@ div#about {
 	width:20000em;
 	clear:both;
 	position:absolute;
-}
-
-/* single scrollable item called ".page" in this setup */
-#wizard .page {
-	padding:20px 30px;
-	float:left;
 }
 
 /* validation error message bar. positioned on the top edge */
@@ -664,20 +662,16 @@ a.storage:hover span.configure {
 }
 
 button {
-    -moz-border-radius: 10.2em 10.2em 10.2em 10.2em;
     background-color: #87AADE;
-    border-bottom: 0.2em solid #999;
-    border-width: 1px 1px 0.2em;
+    border: 1px solid #87AADE;
     color: #FFFFFF;
     cursor: pointer;
-    font-size: 9pt;
-    line-height: 1;
     padding: 0.7em 2em;
-
 }
 
 button.next {
-    background-color: #f49000;
+    background-color: #F49000;
+    border-color: #F49000;
     font-weight: bold;
 }
 

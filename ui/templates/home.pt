@@ -12,6 +12,7 @@
 
 <body>
     <div id="wrapper">
+        <div id='user'><a href="#">username</a> &nbsp;|&nbsp; <a href="#">settings</a></div>
         <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
         <div id="header">
             <div id="about">Greek Research and Technology Network - Cloud management web interface</div>

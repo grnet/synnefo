@@ -50,7 +50,6 @@
 			<!-- pages -->
 			<div class="page">
                 <h2>
-					<strong>Step 1: </strong> Select image
 					<em>Select an OS image to boot from</em>
 				</h2>
                 <ul class="tabs">
@@ -94,7 +93,6 @@
             </div>
 			<div class="page">
 				<h2>
-					<strong>Step 2: </strong> Instance type <b></b>
 					<em>Select CPU cores, RAM and storage space for your instance</em>
 				</h2>
                 <ul>
@@ -147,7 +145,6 @@
             </div>
 			<div class="page">
 				<h2>
-					<strong>Step 3: </strong> Review <b></b>
 					<em>Confirm the settings below and create your new instance</em>
 				</h2>
                 <ul>

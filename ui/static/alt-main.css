@@ -298,17 +298,9 @@ div#about {
 
 /* title */
 #wizard h2 {
-	font-size:22px;
-	font-weight:normal;
-	margin:10px 0 0 0;
-}
-
-#wizard h2 em {
-	display:block;
-	font-size:9pt;
-	color:#666;
-	font-style:normal;
-	margin-top:5px;
+	font-weight: bold;
+    font-size: 11pt;
+    color: #666;
 }
 
 /* input fields */
@@ -701,9 +693,9 @@ a#list, a#standard {
 
 div.instance-type {
     float: left;
-    margin-bottom: 2em;
-    margin-right: 1.8em;
-    margin-top: 1em;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    margin-top: 4px;
 }
 
 div.active {
@@ -734,8 +726,7 @@ div.list div.running {
 
 /* root element for tabs  */
 #wizard ul.tabs { 
-    margin-top: -2em;
-    margin-left: 21em; 		 	
+    margin-left: 260px; 		 	
 }
 
 /* single tab */

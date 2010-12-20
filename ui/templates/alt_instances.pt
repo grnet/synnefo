@@ -79,10 +79,7 @@
 		<div class="items">
 			<!-- pages -->
 			<div class="page">
-                <h2>
-					<strong>Step 1: </strong> Select image
-					<em>Select an OS image to boot from</em>
-				</h2>
+                <h2>Select an OS</h2>
                 <ul class="tabs">
                     <li><a href="#">standard</a></li>
                     <li><a href="#">custom</a></li>
@@ -123,10 +120,7 @@
 				<button type="button" class="next right">Next &raquo;</button>
             </div>
 			<div class="page">
-				<h2>
-					<strong>Step 2: </strong> Instance type <b></b>
-					<em>Select CPU cores, RAM and storage space for your instance</em>
-				</h2>
+				<h2>Select CPU, RAM and storage</h2>
                 <ul>
                     <li>
                         <div class="instance-type">
@@ -176,10 +170,7 @@
 				<button type="button" class="next right">Next &raquo;</button>
             </div>
 			<div class="page">
-				<h2>
-					<strong>Step 3: </strong> Review <b></b>
-					<em>Confirm the settings below and create your new instance</em>
-				</h2>
+				<h2>Confirm your settings</h2>
                 <ul>
                     <li class="required">
                         <label>

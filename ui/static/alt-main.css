@@ -249,9 +249,9 @@ div#about {
 #wizard {	
 	border:5px solid #87AADE;
 	font-size:9pt;
-	height:480px;
+	height:420px;
 	margin:0px auto;	
-	width:500px;
+	width:460px;
 	overflow:hidden;
 	position:relative;
 	/* rounded corners for modern browsers */
@@ -298,17 +298,9 @@ div#about {
 
 /* title */
 #wizard h2 {
-	font-size:22px;
-	font-weight:normal;
-	margin:10px 0 0 0;
-}
-
-#wizard h2 em {
-	display:block;
-	font-size:9pt;
-	color:#666;
-	font-style:normal;
-	margin-top:5px;
+	font-weight: bold;
+    font-size: 11pt;
+    color: #666;
 }
 
 /* input fields */
@@ -397,7 +389,7 @@ div#about {
 }
 
 #wizard div.image strong {
-    font-size: 1em;
+    font-size: 9pt;
 }
 
 #wizard div.image span.size {
@@ -427,10 +419,8 @@ div#about {
 }
 
 #wizard #status {
-	margin: 0px !important;
-	height: 35px;
+	height: 32px;
 	background: #999;
-	padding-left: 25px !important;
 }
 
 .page ul {
@@ -673,7 +663,7 @@ button {
     border: 1px solid #87AADE;
     color: #FFFFFF;
     cursor: pointer;
-    padding: 0.7em 2em;
+    padding: 7px 12px;
 }
 
 button.next {
@@ -711,9 +701,9 @@ a#list, a#standard {
 
 div.instance-type {
     float: left;
-    margin-bottom: 2em;
-    margin-right: 1.8em;
-    margin-top: 1em;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    margin-top: 4px;
 }
 
 div.active {
@@ -744,8 +734,7 @@ div.list div.running {
 
 /* root element for tabs  */
 #wizard ul.tabs { 
-    margin-top: -2em;
-    margin-left: 21em; 		 	
+    margin-left: 260px; 		 	
 }
 
 /* single tab */

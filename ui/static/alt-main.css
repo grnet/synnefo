@@ -673,7 +673,7 @@ button.next {
 }
 
 button.prev {
-
+    margin-left: -19px;
 }
 
 .image-logo {

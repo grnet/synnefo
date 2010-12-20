@@ -1,0 +1,22 @@
+Synnefo
+=======
+
+Contents
+--------
+ui.pyramids/    The old version of the app in pyramids
+ui/             The new, django app, version
+
+
+Installation
+------------
+    $ sudo easy_install virtualenv
+    ....
+    $ virtualenv some_env --no-site-packages
+    ...
+    $ cd some_env
+    $ ./bin/easy_install django django-piston chameleon
+    ...
+    $ git clone https://cpsaltis@code.grnet.gr/git/synnefo ./synnefo
+    ...
+    $ cd synnefo
+    $ ../bin/python manage.py runserver

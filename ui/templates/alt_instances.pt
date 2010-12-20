@@ -59,7 +59,7 @@
         </a>
         <br />
         <h5 class="storage">
-            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
+            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> 
         </h5>
     </div>
     </tal:stopped>

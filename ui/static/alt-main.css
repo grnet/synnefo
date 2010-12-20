@@ -1,6 +1,58 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+	background: transparent;
+    font-family: Verdana, Bitstream Charter, sans-serif;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+
+/* remember to define focus styles! */
+:focus {
+	outline: 0;
+}
+
+/* remember to highlight inserts somehow! */
+ins {
+	text-decoration: none;
+}
+del {
+	text-decoration: line-through;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+
 body {
     background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
-	font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
     margin: 0;
 }
 
@@ -32,10 +84,10 @@ a:active {
 
 /* root element for tabs  */
 ul.css-tabs {
-	margin: 0; 
+	margin: 0 0 0 10px; 
     padding: 0;
-	height:1.5em;
-    font-size:2em;	
+	height:31px;
+    font-size:34px;	
     overflow: hidden; 	
 }
 
@@ -43,22 +95,20 @@ ul.css-tabs {
 ul.css-tabs li {  
 	float:left;	 
 	padding:0; 
-	margin: 0;  
+	margin: 0 10px 0 0;  
 	list-style-type:none;	
 }
 
 /* link inside the tab. uses a background image */
 ul.css-tabs a { 
 	float:left;
-	font-size:1em;
 	display:block;
-	padding:.6em 1em 0;	
 	text-decoration:none;
-	height:1.5em;
 	color:#d2d2d2;
 	position:relative;
 	outline:0;
-    margin-top:0.15em
+    padding: 0 7px 0 10px;
+    margin-top: 7px;
 }
 
 ul.css-tabs a:hover {
@@ -69,7 +119,7 @@ ul.css-tabs a:hover {
 ul.css-tabs a.current {
     color: #87aade;
 	cursor:default;
-    margin-top:0em
+    margin-top: 2px;
 }
 
 /* tab pane */
@@ -80,7 +130,7 @@ div.css-panes {
 
 .css-panes > div.pane {
 	display:none;
-	padding:15px 20px;
+	padding:0px 20px;
     margin: 0 1em;
     -moz-border-radius: 0 1em 1em;
 }
@@ -125,7 +175,7 @@ div.css-panes {
     cursor: pointer;
     display: block;
     padding: 0.7em .4em 0.7em 2.2em;
-    margin-top: 1em;
+    margin-top: 9px;
     width: 7.9em;
     text-decoration: none;
     margin-left: -2.3em;
@@ -141,7 +191,7 @@ div#header {
 }
 
 div#wrapper {
-    width: 990px;
+    width: 700px;
     margin: 0em auto;
 }
 
@@ -165,8 +215,7 @@ div#about {
 }    
 
 #nefo {
-    background: url("../static/nefo.png") no-repeat;
-    margin: 3em 0 -0.2em 0;
+    margin: 33px 0 0 17px;
 }
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
@@ -532,7 +581,7 @@ a.action:hover, a.more:hover {
 
 .instance:hover {
     border: 1px dotted transparent;
-    background-color:#c6c6c6;
+    background-color:#dcdcdc;
     color: black;
 }
 

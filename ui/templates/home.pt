@@ -6,6 +6,8 @@
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
 	<link rel="stylesheet" type="text/css" href="static/alt-main.css"/>	
+    <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css' />
+
 </head>
 
 <body>
@@ -19,10 +21,10 @@
         </div>
         <!-- tabs -->
         <ul class="css-tabs">
-	        <li><a href="instances" title="manage your virtual machines">instances</a></li>
-	        <li><a href="disks" title="manage your storage volumes">disks</a></li>
-	        <li><a href="images" title="manage boot images">images</a></li>
-	        <li><a href="networks" title="configure networking">networks</a></li>
+	        <li><a href="alt-instances" title="manage your virtual machines" id="instances">instances</a></li>
+	        <li><a href="disks" title="manage your storage volumes" id="disks">disks</a></li>
+	        <li><a href="images" title="manage boot images" id="images">images</a></li>
+	        <li><a href="networks" title="configure networking" id="networks">networks</a></li>
         </ul>
         <div class="css-panes">
 	        <div class="pane" style="display:block"></div>

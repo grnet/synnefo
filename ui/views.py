@@ -32,6 +32,10 @@ def home(request):
 def instances(request):
     context = {'nodes': DEFAULT_NODES, 'images': DEFAULT_IMAGES}
     return template('instances', context)
+
+def alt_instances(request):
+    context = {'nodes': DEFAULT_NODES, 'images': DEFAULT_IMAGES}
+    return template('alt_instances', context)
    
 def instances_list(request):
     context = {'nodes': DEFAULT_NODES, 'images': DEFAULT_IMAGES}

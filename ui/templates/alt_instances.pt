@@ -1,0 +1,317 @@
+<a id="create" rel="#wizard" href="#">Create New +</a>
+
+<div id="instancesview" class="standard" tal:define="nodes context['nodes']">
+    <a id="list" href="/instances/list">list view</a>
+    <div class="instance running" tal:repeat="node nodes">
+        <div tal:condition="node['state']=='3'" tal:omit-tag="">
+
+        <div class="actions">
+            <a href="#" class="action">reboot</a>
+            <a href="#" class="action">shutdown</a>
+            <a href="#" class="more">more &hellip;</a>
+        </div>
+        
+        <div class="state">
+            <div>Running</div>
+            <div class="indicator" />
+            <div class="indicator" />
+            <div class="indicator" />
+            <div class="indicator" />
+        </div>
+
+        <img src="static/pc.png" />
+        <a href="#" class="name">
+            <h5>Hostname: <span tal:replace="node['name']" /><span class="rename">rename</span></h5>
+        </a>
+        <a href="#" class="ip">
+            <h5>IP: <span tal:replace="node['public_ip']" /></h5>
+        </a>
+        <br />
+        <a href="#" class="storage">
+            <h5>Show: disks | networks | group | uptime: 24 days</h5>
+        </a>
+        </div>
+    </div>
+</div>
+
+<!-- the form -->
+<form action="#">
+	<!-- scrollable root element -->
+	<div class="modal" id="wizard">
+		<!-- status bar -->
+		<ul id="status">
+			<li class="active"><strong>1.</strong> Select image</li>
+			<li><strong>2.</strong> Instance type</li>
+			<li><strong>3.</strong> Review</li>
+		</ul>
+		<!-- scrollable items -->
+		<div class="items">
+			<!-- pages -->
+			<div class="page">
+                <h2>
+					<strong>Step 1: </strong> Select image
+					<em>Select an OS image to boot from</em>
+				</h2>
+                <ul class="tabs">
+                    <li><a href="#">standard</a></li>
+                    <li><a href="#">custom</a></li>
+                </ul>
+                <div class="panes" tal:define="images context['images']">
+                    <ul class="pane">
+					    <!-- standard images -->
+					    <li>
+						    <label for="${image['id']}" tal:repeat="image images"> 
+                                <a tal:condition="image['type']=='standard'">
+                                    <div class="image">
+                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
+                                        <span class="description">${image['description']}</span> 
+                                        <span class="size">${image['size']}MB</span>
+                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
+                                    </div>
+                                </a>
+						    </label> 
+					    </li>
+				    </ul>
+                    <ul class="pane">
+					    <!-- custom images -->
+					    <li>
+						    <label for="${image['id']}" tal:repeat="image images"> 
+                                <a tal:condition="image['type']=='custom'">
+                                    <div class="image">
+                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
+                                        <span class="description">${image['description']}</span> 
+                                        <span class="size">${image['size']}MB</span>
+                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
+                                    </div>
+                                </a>
+						    </label> 
+					    </li>
+                    </ul>
+                </div>
+				<button type="button" class="prev" id="cancel">Cancel</button>
+				<button type="button" class="next right">Next &raquo;</button>
+            </div>
+			<div class="page">
+				<h2>
+					<strong>Step 2: </strong> Instance type <b></b>
+					<em>Select CPU cores, RAM and storage space for your instance</em>
+				</h2>
+                <ul>
+                    <li>
+                        <div class="instance-type">
+                            <label for="small">
+                                <input type="radio" id="small" name="instance-type" value="small" checked="true" />
+                                <strong>small</strong>
+                            </label>
+                        </div>
+                        <div class="instance-type">      
+                            <label for="medium">
+                                <input type="radio" id="medium" name="instance-type" value="medium" />                  
+                                <strong>medium</strong>
+                            </label>
+                        </div>
+                        <div class="instance-type">
+                            <label for="large">
+                                <input type="radio" id="large" name="instance-type" value="large" />
+                                <strong>large</strong>
+                            </label>
+                        </div>
+                        <div class="instance-type">
+                            <label for="custom">
+                                <input type="radio" name="instance-type" id="custom" value="large" />
+                                <strong>custom</strong>
+                            </label>
+                        </div>
+                    </li>
+                    <li>
+			            <label><strong class="sliders">CPU (cores)</strong></label>
+                        <input type="range" id="cpu" value="1" max="8" min="1" />
+                    </li>
+                    <li>
+			            <label><strong class="sliders">RAM (MB)</strong></label>
+                        <input type="range" id="ram" value="256" max="2048" min="256" step="256" />
+                    </li>
+                    <li>
+		                <label><strong class="sliders">Storage (GB)</strong></label>
+                        <input type="range" id="storage" value="5" step="1" max="100" min="2" />
+                    </li>
+                    <li>
+                        <div class="cost">
+                            Cost per hour for this VM: 20 credits | Credits currently in account: 10.000
+                        </div>
+                    </li>
+                </ul>
+				<button type="button" class="prev">&laquo; Back</button>
+				<button type="button" class="next right">Next &raquo;</button>
+            </div>
+			<div class="page">
+				<h2>
+					<strong>Step 3: </strong> Review <b></b>
+					<em>Confirm the settings below and create your new instance</em>
+				</h2>
+                <ul>
+                    <li class="required">
+                        <label>
+                            <strong></strong> Instance name <span>*</span><br />
+                            <input type="text" class="text" name="instance_name" value="My Ubuntu 10.04 x86_64 server"/>
+                        </label>
+                    </li>
+                    <li>
+                        <strong>Image:</strong> <span>Ubuntu 10.04 x86_64 server</span>
+                    </li>
+                    <li>
+                        <strong>CPU:</strong> <span>2 cores</span>
+                    </li>
+                    <li>
+                        <strong>RAM:</strong> <span>1024MB</span>
+                    </li>
+                    <li>
+                        <strong>Storage:</strong> <span>10GB</span>
+                    </li>
+                    <li>
+                        <strong>Cost per hour:</strong> <span>20 credits</span>
+                    </li>
+                    <li>
+                        <strong>Remaining credits:</strong> <span>10.000</span>
+                    </li>
+                </ul>
+				<button type="button" class="prev">&laquo; Back</button>
+				<button type="button" class="next right" id="start">Create VM</button>        
+            </div>
+		</div>
+	</div>
+</form>
+
+<div class="modal" id="misc">
+    <h3>Your VM is being created!</h3>
+    <p>Your password is:<strong> sdeEFre</strong></p>
+    <p>Please copy this! Without it you can not connect to your VM.</p>
+</div>
+
+<script>
+// <![CDATA[ 
+
+$("#list").click(function(event){
+    $("div#instancesview").load($("#list").attr("href"));
+    return false;
+});
+
+$("ul.tabs").tabs("div.panes ul");
+
+$(":range").rangeinput();
+
+function disableSliders() {
+    $("#cpu").attr('disabled',true);
+    $("#ram").attr('disabled',true);
+    $("#storage").attr('disabled',true);
+}
+
+$("#custom").click(function(event){
+    $("#cpu").attr('disabled',false);
+    $("#ram").attr('disabled',false);
+    $("#storage").attr('disabled',false);
+    $("strong.sliders").style = 'color: #778899;';
+});
+
+$("#small").click(function(event){
+    $("#cpu").data('rangeinput').setValue(1);
+    $("#ram").data('rangeinput').setValue(256);
+    $("#storage").data('rangeinput').setValue(5);
+});
+
+$("#medium").click(function(event){
+    $("#cpu").data('rangeinput').setValue(4);
+    $("#ram").data('rangeinput').setValue(1024);
+    $("#storage").data('rangeinput').setValue(30);
+});
+
+$("#large").click(function(event){
+    $("#cpu").data('rangeinput').setValue(8);
+    $("#ram").data('rangeinput').setValue(4096);
+    $("#storage").data('rangeinput').setValue(80);
+});
+
+$("#cancel").click(function(event){
+    $("a#create[rel]").overlay().close();
+});
+
+$("#start").click(function(event){
+    $("a#create[rel]").overlay().close();
+
+    var triggers = $("div#misc").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+        load: 'true',
+	    closeOnClick: 'false'  
+    });
+});
+
+$("a#create").click(function(event){
+    $("#wizard").scrollable().begin();
+});
+
+$("#cpu").change(function(event){
+    $("#custom").click();
+});
+
+$("#ram").change(function(event){
+    $("#custom").click();
+});
+
+$("#storage").change(function(event){
+    $("#custom").click();
+});
+
+$(function() { 
+    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%'});
+
+});
+
+$(function() {
+    var root = $("#wizard").scrollable();
+
+    // some variables that we need
+    var api = root.scrollable();
+
+    // rangeinput with default configuration
+    // validation logic is done inside the onBeforeSeek callback
+    api.onBeforeSeek(function(event, i) {
+	    // we are going 1 step backwards so no need for validation
+	    if (api.getIndex() < i) {
+             // 1. get current page
+		     var page = root.find(".page").eq(api.getIndex()),
+			 // 2. .. and all required fields inside the page
+			 inputs = page.find(".required :input").removeClass("error"),
+			 // 3. .. which are empty
+			 empty = inputs.filter(function() {
+				return $(this).val().replace(/\s*/g, '') == '';
+			 });
+		     // if there are empty fields, then
+		    if (empty.length) {
+			    // add a CSS class name "error" for empty & required fields
+			    empty.addClass("error");
+			    // cancel seeking of the scrollable by returning false
+			    return false;
+		    // everything is good
+		    } 
+	    }
+	    // update status bar
+	    $("#status li").removeClass("active").eq(i).addClass("active");
+    });
+
+    // if tab is pressed on the next button seek to next page
+    root.find("button.next").keydown(function(e) {
+	    if (e.keyCode == 9) {
+		    // seeks to next tab by executing our validation routine
+		    api.next();
+		    e.preventDefault();
+	    }
+    });
+// ]]>
+});
+</script>
+

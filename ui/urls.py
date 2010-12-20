@@ -4,6 +4,7 @@ import os
 urlpatterns = patterns('',
     (r'^$', 'synnefo.ui.views.home'),
     (r'^instances$', 'synnefo.ui.views.instances'),
+    (r'^alt-instances$', 'synnefo.ui.views.alt_instances'),
     (r'^instances/list$', 'synnefo.ui.views.instances_list'),
     (r'^disks$', 'synnefo.ui.views.disks'),
     (r'^images$', 'synnefo.ui.views.images'),

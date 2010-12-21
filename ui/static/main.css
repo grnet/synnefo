@@ -139,7 +139,6 @@ ul.css-tabs a.current {
     cursor:pointer;
     display:block;
     padding: .7em 1em;
-    margin-top: 1em;
     width: 8em;
     font-weight: bold;
     text-decoration: none;
@@ -153,10 +152,11 @@ ul.css-tabs a.current {
 
 div#header {
     height:152px;
+    margin-left: -2em;
 }
 
 div#wrapper {
-    width: 990px;
+    width: 800px;
     margin: 0 auto;
 }
 
@@ -184,10 +184,9 @@ a img {
 
 div#about {
     color: white;
-    padding: .9em 5em;
+    padding: .5em 0;
     font-size:.7em;
     float: right;
-    width: 63%;
 }    
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
@@ -474,8 +473,7 @@ div#about {
 
 .instance {
     clear: both;
-    margin: 1em 0;
-    padding: 1em 2em 1em 1em;
+    padding: .7em 1em .7em 1em;
     width: 70%;
     border: 1px dashed transparent;
     color: #666;
@@ -501,7 +499,7 @@ div#about {
 .actions {
     float: right;
     width: 15%;
-    margin: -1.5em -9em 0 0;
+    margin-right: -7em;
     height: 70px;
 }
 
@@ -572,7 +570,7 @@ span.rename, span.configure {
     color: transparent;
     font-weight: normal;
     margin-left: 2em;
-    padding-left: 2em;
+    padding-left: 1.5em;
     text-align: left;
 }
 
@@ -590,6 +588,10 @@ a.ip:hover span.configure {
 a.storage:hover span.configure {
     color: #213D55;
     background-image: url(/static/pencil.png);
+}
+
+.terminated {
+    opacity: .8;
 }
 
 #ubuntu {
@@ -659,15 +661,11 @@ div.instance-type {
     margin-top: 1em;
 }
 
-div.active {
-    border-bottom: 1em solid #2C597E;
-    height: 200px;
-}
-
 div.active, div.stopped {
     margin-left: -1em;
     width: 70%;
     padding: 1em;
+    height: 200px;
     margin-top: 1em;
 }
 
@@ -736,7 +734,7 @@ a#list, a#standard {
 }
 
 div.inactive div.state {
-    margin-right: 2.5em;
+    margin-right: 1.5em;
 }
 
 div.inactive {
@@ -746,8 +744,9 @@ div.inactive {
 div.list div.actions {
     clear: left;
     float: right;
-    margin-right: 4em;
-    margin-top: 1em;
+    margin-right: 2em;
+    margin-top: 2em;
+    width: 150px;
     text-align: right;
 }
 
@@ -783,5 +782,25 @@ input.instance {
 
 #misc strong {
     color: #F49C1A;
+}
+
+img.os {
+    z-index: 1;
+    margin-left: -40px;
+    margin-top: 45px;
+    opacity: .9;
+}
+
+div#user {
+    float:right;
+    color: white;
+    font-size: 9pt;
+    margin-top: 6px;
+    margin-left: 9px;
+}
+
+div#user a {
+    color: #a0a0a0;
+    text-decoration: none;
 }
 

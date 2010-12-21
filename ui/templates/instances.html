@@ -20,6 +20,40 @@
                         <div class="uptime">24 days uptime</div>
                     </div>
                     <img src="static/server.png" />
+                    <img class="os" src={{ node.thumb }} />
+                    <a href="#" class="name">
+                        <h3><span>{{ node.name }}</span><span class="rename">rename</span></h3>
+                    </a>
+                    <a href="#" class="ip">
+                        <h5><span>{{ node.public_ip }}</span><span class="configure">configure networking</span></h5>
+                    </a>
+                    <a href="#" class="storage">
+                        <h5>34GB of total storage in 3 volumes <span class="configure">configure storage</span></h5>
+                    </a>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    <div class="seperator"></div>
+    <div class="terminated">
+        {% for node in nodes %}
+            {% if node.state == '0' %}        
+                <div class="instance terminated">
+                    <div class="actions">
+                        <a href="#" class="action">start</a>
+                        <a href="#" class="action">destroy</a>
+                        <a href="#" class="more">more &hellip;</a>
+                    </div>
+                    <div class="state">
+                        <div>Stopped</div>
+                        <div class="indicator" />
+                        <div class="indicator" />
+                        <div class="indicator" />
+                        <div class="indicator" />
+                    </div>
+                    <img src="static/server.png" />
+                    <img class="os" src={{ node.thumb }} />
                     <a href="#" class="name">
                         <h3><span>{{ node.name }}</span><span class="rename">rename</span></h3>
                     </a>

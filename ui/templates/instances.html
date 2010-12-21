@@ -2,36 +2,38 @@
 
 <div id="instancesview" class="standard">
     <a id="list" href="/instances/list">list view</a>
-    {% for node in nodes %}
-        {% if node.state == '3' %}        
-            <div class="instance running">
-                <div class="actions">
-                    <a href="#" class="action">reboot</a>
-                    <a href="#" class="action">shutdown</a>
-                    <a href="#" class="more">more &hellip;</a>
+    <div class="running">
+        {% for node in nodes %}
+            {% if node.state == '3' %}        
+                <div class="instance running">
+                    <div class="actions">
+                        <a href="#" class="action">reboot</a>
+                        <a href="#" class="action">shutdown</a>
+                        <a href="#" class="more">more &hellip;</a>
+                    </div>
+                    <div class="state">
+                        <div>Running</div>
+                        <div class="indicator" />
+                        <div class="indicator" />
+                        <div class="indicator" />
+                        <div class="indicator" />
+                        <div class="uptime">24 days uptime</div>
+                    </div>
+                    <img src="static/server.png" />
+                    <a href="#" class="name">
+                        <h3><span>{{ node.name }}</span><span class="rename">rename</span></h3>
+                    </a>
+                    <a href="#" class="ip">
+                        <h5><span>{{ node.public_ip }}</span><span class="configure">configure networking</span></h5>
+                    </a>
+                    <a href="#" class="storage">
+                        <h5>34GB of total storage in 3 volumes <span class="configure">configure storage</span></h5>
+                    </a>
+                    </div>
                 </div>
-                <div class="state">
-                    <div>Running</div>
-                    <div class="indicator" />
-                    <div class="indicator" />
-                    <div class="indicator" />
-                    <div class="indicator" />
-                    <div class="uptime">24 days uptime</div>
-                </div>
-                <img src="static/server.png" />
-                <a href="#" class="name">
-                    <h3><span>{{ node.name }}</span><span class="rename">rename</span></h3>
-                </a>
-                <a href="#" class="ip">
-                    <h5><span>{{ node.public_ip }}</span><span class="configure">configure networking</span></h5>
-                </a>
-                <a href="#" class="storage">
-                    <h5>34GB of total storage in 3 volumes <span class="configure">configure storage</span></h5>
-                </a>
-                </div>
-            </div>
-        {% endif %}
-    {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </div>
 </div>
 
 <!-- the form -->
@@ -56,36 +58,44 @@
                     <li><a href="#">standard</a></li>
                     <li><a href="#">custom</a></li>
                 </ul>
-                <div class="panes" tal:define="images context['images']">
+                <div class="panes">
                     <ul class="pane">
 					    <!-- standard images -->
-					    <li>
-						    <label for="${image['id']}" tal:repeat="image images"> 
-                                <a tal:condition="image['type']=='standard'">
-                                    <div class="image">
-                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
-                                        <span class="description">${image['description']}</span> 
-                                        <span class="size">${image['size']}MB</span>
-                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
-                                    </div>
-                                </a>
-						    </label> 
-					    </li>
+                        {% for image in images %}
+                            {% if image.type == 'standard' %}
+					            <li>
+						            <label> 
+                                        <a><div class="image">
+                                            <img src={{ image.logo }} class="image-logo"/>
+                                            <strong>{{ image.title }}</strong>
+                                            <br />
+                                            <span class="description">{{ image.description }}</span> 
+                                            <span class="size">{{ image.size }}MB</span>
+                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
+                                        </div></a>
+						            </label>
+					            </li>
+                            {% endif %}
+                        {% endfor %} 
 				    </ul>
                     <ul class="pane">
 					    <!-- custom images -->
-					    <li>
-						    <label for="${image['id']}" tal:repeat="image images"> 
-                                <a tal:condition="image['type']=='custom'">
-                                    <div class="image">
-                                        <img tal:attributes="src image['logo']" class="image-logo" /> <strong>${image['title']}</strong><br />
-                                        <span class="description">${image['description']}</span> 
-                                        <span class="size">${image['size']}MB</span>
-                                        <input class="radio" type="radio" name="image-id" id="${image['id']}" value="${image['id']}" checked="${repeat.image.start}" />
-                                    </div>
-                                </a>
-						    </label> 
-					    </li>
+                        {% for image in images %}
+                            {% if image.type == 'custom' %}
+					            <li>
+						            <label> 
+                                        <a><div class="image">
+                                            <img src={{ image.logo }} class="image-logo"/>
+                                            <strong>{{ image.title }}</strong>
+                                            <br />
+                                            <span class="description">{{ image.description }}</span> 
+                                            <span class="size">{{ image.size }}MB</span>
+                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
+                                        </div></a>
+						            </label>
+					            </li>
+                            {% endif %}
+                        {% endfor %}
                     </ul>
                 </div>
 				<button type="button" class="prev" id="cancel">Cancel</button>

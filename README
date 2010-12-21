@@ -19,4 +19,7 @@ Installation
     $ git clone https://user@code.grnet.gr/git/synnefo ./synnefo
     ...
     $ cd synnefo
+    $ cp settings.py.dist settings.py
     $ ../bin/python manage.py runserver
+
+    Attention! The project folder MUST be named synnefo

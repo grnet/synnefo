@@ -1,0 +1,54 @@
+<div id="instancesview" class="list">
+    <a id="standard" href="/">standard view</a>
+    <div class="actions">
+        <a>Start</a>
+        <a>Reboot</a>
+        <a>Shutdown</a>
+        <br />
+        <a>Destroy</a>
+        <br />
+        <a>Show Details</a>
+        <a>Add to group</a>
+        <br />
+        <a>Out of band</a>
+        <br />
+        <a>Attach disk</a>
+        <a>Detach disk</a>
+        <br />
+        <a>Connect to network</a>
+        <a>Disconnect from net</a>
+    </div>
+    <div class="active">
+        {% for node in nodes %}
+            {% if node.state == '3' %}
+                <div class="running">
+                    <label> 
+                        <input type="checkbox" class="instance" id={{ node.id }} />
+                        <img src={{ node.thumb }} width="16" height="16" />
+                        <span>{{ node.name }}</span> | 
+                        <span>{{ node.public_ip }}</span> | 
+                        group
+                    </label>
+                    <div class="state">Running</div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    <div class="seperator"></div>
+    <div class="inactive">
+        {% for node in nodes %}
+            {% if node.state == '0' %}
+                <div class="stopped">
+                    <label> 
+                        <input type="checkbox" class="instance" id={{ node.id }} />
+                        <img src={{ node.thumb }} width="16" height="16" />
+                        <span>{{ node.name }}</span> | 
+                        <span>{{ node.public_ip }}</span> | 
+                        group
+                    </label>
+                    <div class="state">Terminated</div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>

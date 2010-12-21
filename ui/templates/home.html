@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html xmlns:tal="http://xml.zope.org/namespaces/tal">
 
 <head>
-	<title>${context['project']}</title>
+	<title>{{ project }}</title>
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
 	<link rel="stylesheet" type="text/css" href="static/alt-main.css"/>	
@@ -17,7 +16,7 @@
         <div id="header">
             <div id="about">Greek Research and Technology Network - Cloud management web interface</div>
             <a href="/" class="logo">
-                <h1>${context['project']}</h1>
+                <h1>{{ project }}</h1>
             </a>
         </div>
         <!-- tabs -->

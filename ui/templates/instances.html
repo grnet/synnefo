@@ -1,68 +1,37 @@
 <a id="create" rel="#wizard" href="#">Create New +</a>
 
-<div id="instancesview" class="standard" tal:define="nodes context['nodes']">
+<div id="instancesview" class="standard">
     <a id="list" href="/instances/list">list view</a>
-    <tal:running tal:repeat="node nodes">
-    <div class="instance running" tal:condition="node['state']=='3'">
-        <div class="actions">
-            <a href="#" class="action">Reboot</a>
-            <a href="#" class="action">Shutdown</a>
-            <a href="#" class="more">more &hellip;</a>
-        </div>
-        
-        <div class="state">
-            <div>Running</div>
-            <div class="indicator" />
-            <div class="indicator" />
-            <div class="indicator" />
-            <div class="indicator" />
-        </div>
-
-        <img src="static/pc.png" />
-        <img class="os" src="static/${node['thumb']}" />
-        <a href="#" class="name">
-            <h5>Hostname: <span tal:replace="node['name']" /><span class="rename"></span></h5>
-        </a>
-        <a href="#" class="ip">
-            <h5>IP: <span tal:replace="node['public_ip']" /></h5>
-        </a>
-        <br />
-        <h5 class="storage">
-            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
-        </h5>
-    </div>
-    </tal:running>
-    <div class="seperator"></div>
-    <tal:stopped tal:repeat="node nodes">
-    <div class="instance terminated" tal:condition="node['state']=='0'">
-        <div class="actions">
-            <a href="#" class="action">Start</a>
-            <a href="#" class="action">Destroy</a>
-            <a href="#" class="more">more &hellip;</a>
-        </div>
-        
-        <div class="state">
-            <div>Terminated</div>
-            <div class="indicator" />
-            <div class="indicator" />
-            <div class="indicator" />
-            <div class="indicator" />
-        </div>
-
-        <img src="static/pc.png" />
-        <img class="os" src="static/${node['thumb']}" />
-        <a href="#" class="name">
-            <h5>Hostname: <span tal:replace="node['name']" /><span class="rename"></span></h5>
-        </a>
-        <a href="#" class="ip">
-            <h5>IP: <span tal:replace="node['public_ip']" /></h5>
-        </a>
-        <br />
-        <h5 class="storage">
-            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> 
-        </h5>
-    </div>
-    </tal:stopped>
+    {% for node in nodes %}
+        {% if node.state == '3' %}        
+            <div class="instance running">
+                <div class="actions">
+                    <a href="#" class="action">reboot</a>
+                    <a href="#" class="action">shutdown</a>
+                    <a href="#" class="more">more &hellip;</a>
+                </div>
+                <div class="state">
+                    <div>Running</div>
+                    <div class="indicator" />
+                    <div class="indicator" />
+                    <div class="indicator" />
+                    <div class="indicator" />
+                    <div class="uptime">24 days uptime</div>
+                </div>
+                <img src="static/server.png" />
+                <a href="#" class="name">
+                    <h3><span>{{ node.name }}</span><span class="rename">rename</span></h3>
+                </a>
+                <a href="#" class="ip">
+                    <h5><span>{{ node.public_ip }}</span><span class="configure">configure networking</span></h5>
+                </a>
+                <a href="#" class="storage">
+                    <h5>34GB of total storage in 3 volumes <span class="configure">configure storage</span></h5>
+                </a>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
 </div>
 
 <!-- the form -->
@@ -71,15 +40,18 @@
 	<div class="modal" id="wizard">
 		<!-- status bar -->
 		<ul id="status">
-			<li class="active"><strong>1.</strong> Image</li>
-			<li><strong>2.</strong> Instance</li>
+			<li class="active"><strong>1.</strong> Select image</li>
+			<li><strong>2.</strong> Instance type</li>
 			<li><strong>3.</strong> Review</li>
 		</ul>
 		<!-- scrollable items -->
 		<div class="items">
 			<!-- pages -->
 			<div class="page">
-                <h2>Select an OS</h2>
+                <h2>
+					<strong>Step 1: </strong> Select image
+					<em>Select an OS image to boot from</em>
+				</h2>
                 <ul class="tabs">
                     <li><a href="#">standard</a></li>
                     <li><a href="#">custom</a></li>
@@ -120,7 +92,10 @@
 				<button type="button" class="next right">Next &raquo;</button>
             </div>
 			<div class="page">
-				<h2>Select CPU, RAM and storage</h2>
+				<h2>
+					<strong>Step 2: </strong> Instance type <b></b>
+					<em>Select CPU cores, RAM and storage space for your instance</em>
+				</h2>
                 <ul>
                     <li>
                         <div class="instance-type">
@@ -170,11 +145,14 @@
 				<button type="button" class="next right">Next &raquo;</button>
             </div>
 			<div class="page">
-				<h2>Confirm your settings</h2>
+				<h2>
+					<strong>Step 3: </strong> Review <b></b>
+					<em>Confirm the settings below and create your new instance</em>
+				</h2>
                 <ul>
                     <li class="required">
                         <label>
-                            <strong></strong> Instance name<br />
+                            <strong></strong> Instance name <span>*</span><br />
                             <input type="text" class="text" name="instance_name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>

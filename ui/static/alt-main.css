@@ -105,20 +105,35 @@ ul.css-tabs a {
 }
 
 ul.css-tabs a#instances {
-    color: #87aade;
+    color: #a3bbc5;
 }
 
+ul.css-tabs a#instances.current {
+  color: #87aade;
+}
 
 ul.css-tabs a#disks {
     color: #deb358;
+}
+
+ul.css-tabs a#disks.current {
+  color: #dea842;
+}
+
+ul.css-tabs a#images {
+    color: #9ba97b;
+}
+
+ul.css-tabs a#images.current {
+    color: #87a06d;
 }
 
 ul.css-tabs a#networks {
     color: #bc9399;
 }
 
-ul.css-tabs a#images {
-    color: #9ba97b;
+ul.css-tabs a#networks.current {
+  color: #9d6d6a;
 }
 
 ul.css-tabs a:hover {
@@ -336,14 +351,6 @@ div#about {
 	width:94%;	
 	padding:4px;
     display: none;
-}
-
-#wizard label span {
-	color:#b8128f;
-	font-weight:bold;
-	position:relative;
-	top:4px;
-	font-size:20px;
 }
 
 #wizard .double label { 

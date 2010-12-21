@@ -174,7 +174,7 @@
                 <ul>
                     <li class="required">
                         <label>
-                            <strong></strong> Instance name <span>*</span><br />
+                            <strong></strong> Instance name<br />
                             <input type="text" class="text" name="instance_name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>

@@ -224,7 +224,7 @@ div#about {
 }    
 
 #nefo {
-    margin: 33px 0 -2px 25px;
+    margin: 10px 0 -2px 25px;
 }
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
@@ -524,7 +524,6 @@ div.instance {
 .state {
     float: right;
     width: 90px;
-    margin-top: 5px;
     padding-right: 18px;
 }
 
@@ -539,6 +538,7 @@ div.instance {
     margin: 0 -75px 0 0;
     font-weight: normal;
     height: 67px;
+
 }
 
 .actions a {
@@ -546,12 +546,12 @@ div.instance {
 }
 
 a.action{
-    margin: 3px 0 5px 5px;
+    margin: 0 0 5px 5px;
     display: block;
 }
 
 a.more {
-    margin: 13px 0 5px 5px;
+    margin: 18px 0 5px 5px;
     display: block;
 }
 
@@ -717,7 +717,7 @@ div.list label img {
 }
 
 div.list label {
-    color: #87AADE;
+    color: #3D3D3D;
     font-size:9pt;
 }
 
@@ -779,9 +779,10 @@ div.list div.actions {
 
 div.list div.actions a {
     clear: left;
-    color: #666 !important;
+    color: #3D3D3D !important;
     display: block;
     font-size:9pt;
+    opacity: 0.6;
 }
 
 input.instance {

@@ -1,21 +1,22 @@
 <div id="instancesview" class="list" tal:define="nodes context['nodes']">
     <a id="standard" href="/">standard view</a>
     <div class="actions">
-        <a>start</a>
-        <a>reboot</a>
-        <a>shutdown</a>
+        <a>Start</a>
+        <a>Reboot</a>
+        <a>Shutdown</a>
         <br />
-        <a>destroy</a>
+        <a>Destroy</a>
         <br />
-        <a>&lt;test_group&gt; group</a>
+        <a>Show Details</a>
+        <a>Add to group</a>
         <br />
-        <a>out of bound</a>
+        <a>Out of band</a>
         <br />
-        <a>attach disk</a>
-        <a>detach disk</a>
+        <a>Attach disk</a>
+        <a>Detach disk</a>
         <br />
-        <a>connect to network</a>
-        <a>disconnect from network</a>
+        <a>Connect to network</a>
+        <a>Disconnect from net</a>
     </div>
     <div class="active">
         <div tal:repeat="node nodes" tal:omit-tag="">
@@ -27,6 +28,7 @@
             </div>
         </div>
     </div>
+    <div class="seperator"></div>
     <div class="inactive">
         <div tal:repeat="node nodes" tal:omit-tag="">
             <div class="stopped" tal:condition="node['state']=='0'">

@@ -184,12 +184,10 @@ div.css-panes {
     cursor: pointer;
     display: block;
     padding: 6px 24px;
-    margin-top: 9px;
+    margin: 10px 0 10px -37px;
     width: 125px;
     text-decoration: none;
-    margin-left: -2.3em;
     border:1px solid #bfd2ed;
-    margin-bottom: 17px;
 }
 
 #create:hover {
@@ -249,7 +247,7 @@ div#about {
 #wizard {	
 	border:5px solid #87AADE;
 	font-size:9pt;
-	height:420px;
+	height:400px;
 	margin:0px auto;	
 	width:460px;
 	overflow:hidden;
@@ -303,14 +301,7 @@ div#about {
     color: #666;
 }
 
-/* input fields */
-#wizard ul {
-	padding:0px !important;
-}
-
 #wizard li {
-	list-style-type:none;
-	list-style-image:none;
 	margin-bottom:1.2em;
 }
 
@@ -426,11 +417,7 @@ div#about {
 .page ul {
     height: 280px;
     overflow: auto;
-    margin-bottom: 2em;
-}
-
-.page ul.tabs {
-    overflow: hidden;
+    margin-bottom: 20px;
 }
 
 .panes ul.pane {
@@ -438,9 +425,10 @@ div#about {
 }
 
 .page ul.tabs {
+    overflow: hidden;
     height: auto;
-    margin-bottom: 0em;
-    margin-top: -1.37em;
+    margin-bottom: 0;
+    margin-top: -20px;
 }
 
 .page ul.tabs li {
@@ -449,11 +437,9 @@ div#about {
 }
 
 #status li {
-	list-style-type:none;
-	list-style-image:none;
 	float:left;
 	color:#666;
-	padding:10px 30px;
+	padding:10px 45px;
 }
 
 #status li.active {
@@ -696,11 +682,15 @@ a#list, a#standard {
     clear: both;
     color: white;
     text-decoration: none;
-    margin-top: -65px;
+    margin-top: -60px;
     margin-right: -36px;
     font-size: 9pt;
     background-color: #87aade;
     padding: 5px 10px;
+}
+
+a#standard {
+    margin-top: -65px;
 }
 
 div.instance-type {
@@ -711,7 +701,6 @@ div.instance-type {
 }
 
 div.active {
-    border-bottom: 1em solid #87AADE;
     height: 200px;
 }
 
@@ -782,9 +771,10 @@ div.inactive {
 div.list div.actions {
     clear: left;
     float: right;
-    margin-right: 4em;
-    margin-top: 1em;
+    margin-right: -20px;
+    margin-top: 30px;
     text-align: right;
+    width: 150px;
 }
 
 div.list div.actions a {
@@ -839,8 +829,11 @@ div#user a {
 
 div.seperator {
     background-color: #86a9dd;
-    height:10px;
+    height: 10px;
+    width: 538px;
     margin: 20px 0 25px -36px;
-    padding: 3px 5px 0;
-    width: 523px;
+}
+
+.list .seperator {
+    margin: 0 0 10px -36px;
 }

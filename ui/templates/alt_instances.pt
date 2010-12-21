@@ -71,8 +71,8 @@
 	<div class="modal" id="wizard">
 		<!-- status bar -->
 		<ul id="status">
-			<li class="active"><strong>1.</strong> Select image</li>
-			<li><strong>2.</strong> Instance type</li>
+			<li class="active"><strong>1.</strong> Image</li>
+			<li><strong>2.</strong> Instance</li>
 			<li><strong>3.</strong> Review</li>
 		</ul>
 		<!-- scrollable items -->

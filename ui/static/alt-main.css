@@ -148,7 +148,8 @@ ul.css-tabs a.current {
 
 /* tab pane */
 div.css-panes {
-    border-top: 10px solid #87aade;  
+    border-top: 10px solid #87aade;
+    border-bottom: 10px solid #87aade;  
     background: white;
 }
 
@@ -206,7 +207,8 @@ div.css-panes {
 }
 
 #create:hover {
-    color: white;
+    background-color: #a3bbc5;
+    border-color: #a3bbc5;
 }
 
 div#header {
@@ -609,6 +611,7 @@ div.indicator {
 
 .terminated {
     opacity: .6;
+    margin-bottom: 25px;
 }
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
@@ -773,6 +776,7 @@ div.inactive div.state {
 
 div.inactive {
     opacity: .6;
+    margin-bottom: 25px;
 }
 
 div.list div.actions {
@@ -843,5 +847,5 @@ div.seperator {
 }
 
 .list .seperator {
-    margin: 0 0 10px -36px;
+    margin-left: -36px;
 }

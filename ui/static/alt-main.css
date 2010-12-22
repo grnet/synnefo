@@ -533,8 +533,6 @@ div.instance {
 
 .state {
     float: right;
-    width: 90px;
-    padding-right: 18px;
 }
 
 .state div {
@@ -588,6 +586,10 @@ a.action:hover, a.more:hover {
 div.ip, div.state {
     font-size:9pt;
     color: #3d3d3d;
+}
+
+.list .state {
+    margin-top: 3px;
 }
 
 div.indicator {
@@ -712,7 +714,7 @@ div.active {
 
 div.active, div.stopped {
     margin-left: -2.2em;
-    width: 70%;
+    width: 500px;
     padding: 1em;
     margin-top: 1em;
 }
@@ -766,10 +768,6 @@ div.list div.running {
 	cursor: default;
 }
 
-div.inactive div.state {
-    margin-right: 2.5em;
-}
-
 div.inactive {
     opacity: .6;
     margin-bottom: 25px;
@@ -779,7 +777,7 @@ div.list div.actions {
     clear: left;
     float: right;
     margin-right: -20px;
-    margin-top: 30px;
+    margin-top: 22px;
     text-align: right;
     width: 150px;
 }

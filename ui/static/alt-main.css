@@ -264,9 +264,9 @@ div#about {
 #wizard {	
 	border:5px solid #87AADE;
 	font-size:9pt;
-	height:400px;
-	margin:0px auto;	
+	height:405px;
 	width:460px;
+	margin:0px auto;	
 	overflow:hidden;
 	position:relative;
 	/* rounded corners for modern browsers */
@@ -314,12 +314,16 @@ div#about {
 /* title */
 #wizard h2 {
 	font-weight: bold;
-    font-size: 11pt;
+    font-size: 12pt;
     color: #666;
 }
 
 #wizard li {
 	margin-bottom:1.2em;
+}
+
+#wizard .pane li {
+    margin: 0;
 }
 
 #wizard label {
@@ -332,6 +336,7 @@ div#about {
 	color:#789;	
 	position:relative;
 	top:-1px;
+    font-size: 12pt;
 }
 
 #wizard label em {
@@ -341,11 +346,12 @@ div#about {
 }
 
 #wizard .text {
-	width:94%;
-	padding:5px;
-	border:1px solid #ccc;
-	color:#456;
-	letter-spacing:1px;
+	width: 94%;
+	padding: 5px;
+    margin-top: 10px;
+	border: 1px solid #ccc;
+	color: #456;
+	letter-spacing: 1px;
 }
 
 #wizard select {
@@ -388,10 +394,6 @@ div#about {
     color: white;
 }
 
-#wizard div.image strong {
-    font-size: 9pt;
-}
-
 #wizard div.image span.size {
     font-size: 9pt;
     color: #666;
@@ -414,23 +416,23 @@ div#about {
 
 #wizard .cost {
     color: #666;
-    margin-top: 5em;
-    font-size: 9pt;
+    margin-top: 50px;
 }
 
 #wizard #status {
 	height: 32px;
 	background: #999;
+    padding-left: 15px;
 }
 
 .page ul {
+    margin-top: 15px;
     height: 280px;
     overflow: auto;
-    margin-bottom: 20px;
 }
 
 .panes ul.pane {
-    height: 268px;
+    height: 276px;
 }
 
 .page ul.tabs {
@@ -448,7 +450,7 @@ div#about {
 #status li {
 	float:left;
 	color:#666;
-	padding:10px 45px;
+	padding:10px 40px;
 }
 
 #status li.active {
@@ -467,8 +469,7 @@ div#about {
     display: block !important;
     float: left;
     height: 3px;
-    margin-top: 10px;
-    margin-bottom: 2em;
+    margin: 20px 0 20px;
     padding: 0.1em !important;
     position: relative;
     width: 330px;
@@ -498,15 +499,15 @@ div#about {
 
 /* the input field */
 .range {
-	border:1px inset #ddd;
-	float:left;
-	font-size:16px;
-	margin:0 0 0 15px;
-	padding:3px 0;
-	text-align:center;
-	width:50px;
-	-moz-border-radius:5px; 
-	-webkit-border-radius:5px; 		
+	border: 1px inset #ddd;
+	float: left;
+	font-size: 12pt;
+	margin: 10px 0 0 15px;
+	padding: 3px 0;
+	text-align: center;
+	width: 50px;
+	-moz-border-radius: 5px; 
+	-webkit-border-radius: 5px; 		
 }
 
 div.instance {
@@ -627,9 +628,6 @@ div.uptime {
 div.instance-tabs {
     margin-top: 1em;
 }
-div.instance-tabs a{
-
-}
 
 span.rename, span.configure {
     background-repeat: no-repeat;
@@ -705,9 +703,7 @@ a#standard {
 
 div.instance-type {
     float: left;
-    margin-bottom: 10px;
-    margin-right: 10px;
-    margin-top: 4px;
+    margin: 4px 10px 20px 0;
 }
 
 div.active {
@@ -822,8 +818,9 @@ input.instance {
 
 img.os {
     z-index: 1;
-    margin-left: -40px;
+    margin-left: -34px;
     margin-top: 27px;
+    width: 28px;
     opacity: .9;
 }
 

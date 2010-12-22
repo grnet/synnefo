@@ -98,14 +98,14 @@
                         {% for image in images %}
                             {% if image.type == 'standard' %}
 					            <li>
-						            <label> 
+						            <label for={{ image.id }}> 
                                         <a><div class="image">
                                             <img src={{ image.logo }} class="image-logo"/>
                                             <strong>{{ image.title }}</strong>
+                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
                                             <br />
                                             <span class="description">{{ image.description }}</span> 
                                             <span class="size">{{ image.size }}MB</span>
-                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
                                         </div></a>
 						            </label>
 					            </li>
@@ -117,14 +117,14 @@
                         {% for image in images %}
                             {% if image.type == 'custom' %}
 					            <li>
-						            <label> 
+						            <label for={{ image.id }}> 
                                         <a><div class="image">
                                             <img src={{ image.logo }} class="image-logo"/>
                                             <strong>{{ image.title }}</strong>
+                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
                                             <br />
                                             <span class="description">{{ image.description }}</span> 
                                             <span class="size">{{ image.size }}MB</span>
-                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
                                         </div></a>
 						            </label>
 					            </li>
@@ -196,7 +196,7 @@
                 <ul>
                     <li class="required">
                         <label>
-                            <strong></strong> Instance name <span>*</span><br />
+                            <strong>Instance name</strong><span>*</span>
                             <input type="text" class="text" name="instance_name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>

@@ -137,7 +137,7 @@ ul.css-tabs a#networks.current {
 }
 
 ul.css-tabs a:hover {
-    margin-top:0em
+    margin-top: 2px;
 }
 	
 /* selected tab */
@@ -561,7 +561,7 @@ a.action:hover, a.more:hover {
 
 
 .actions:hover a,.instance:hover .actions a {
-    color: #1b1b1b;
+    color: #3d3d3d;
 }
 
 .instance:hover {

@@ -38,9 +38,7 @@
 		$(function() {
             if ($("link").attr("href") == "static/alt-main.css") {
 			    $('ul.css-tabs li').hover(function(){
-				    $(this).find('a').animate({top:'-3px'},{queue:false,duration:150});
-			    }, function(){
-				    $(this).find('a').animate({top:'0px'},{queue:false,duration:150});
+				    $(this).find('a').animate({top:'0px'},{queue:true, duration:'slow'});
 			    });
             }
 		});

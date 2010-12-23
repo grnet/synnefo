@@ -157,7 +157,6 @@ div.css-panes {
 	display:none;
 	padding:0px 20px;
     margin: 0 1em;
-    -moz-border-radius: 0 1em 1em;
 }
 
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
@@ -269,9 +268,6 @@ div#about {
 	margin:0px auto;	
 	overflow:hidden;
 	position:relative;
-	/* rounded corners for modern browsers */
-	-moz-border-radius:5px;
-	-webkit-border-radius:5px;
 }  
 
 /* scrollable items */
@@ -461,7 +457,6 @@ div#about {
 
 /* slider root element */
 .slider {
-    -moz-border-radius: 5px 5px 5px 5px;
     background-color: #87AADE;
     border: 1px solid #666;
     clear: right;
@@ -477,7 +472,6 @@ div#about {
 
 /* drag handle */
 .handle {
-    -moz-border-radius: 14px 14px 14px 14px;
     -moz-box-shadow: 0 0 2px #000000;
     background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
     border: 1px solid #000000;
@@ -505,9 +499,7 @@ div#about {
 	margin: 10px 0 0 15px;
 	padding: 3px 0;
 	text-align: center;
-	width: 50px;
-	-moz-border-radius: 5px; 
-	-webkit-border-radius: 5px; 		
+	width: 50px;		
 }
 
 div.instance {
@@ -803,7 +795,6 @@ input.instance {
 
 #misc {
     height: 100px;
-    -moz-border-radius: 5px 5px 5px 5px;
     border: 5px solid #87AADE;
     margin: 0 auto;
     overflow: hidden;

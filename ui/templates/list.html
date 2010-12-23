@@ -1,5 +1,4 @@
 <div id="instancesview" class="list">
-    <a id="standard" href="/">standard view</a>
     <div class="actions">
         <a>Start</a>
         <a>Reboot</a>
@@ -34,7 +33,7 @@
             {% endif %}
         {% endfor %}
     </div>
-    <div class="seperator"></div>
+    <div id="mini" class="seperator"></div>
     <div class="inactive">
         {% for node in nodes %}
             {% if node.state == '0' %}

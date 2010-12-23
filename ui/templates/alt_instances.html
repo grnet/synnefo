@@ -1,7 +1,14 @@
+<div id="instances" class="seperator"></div>
+
 <a id="create" rel="#wizard" href="#">Create New +</a>
 
+<div id="view-select">
+    <a id="standard" class="current" href="/">#</a>
+    |
+    <a id="list" href="/instances/list">=</a>
+</div>
+
 <div id="instancesview" class="standard">
-    <a id="list" href="/instances/list">list view</a>
     <div class="running">
         {% for node in nodes %}
             {% if node.state == '3' %} 
@@ -34,7 +41,7 @@
             {% endif %}
         {% endfor %}
     </div>
-    <div class="seperator"></div>
+    <div id="mini" class="seperator"></div>
     <div class="terminated">
         {% for node in nodes %}
             {% if node.state == '0' %}
@@ -68,6 +75,8 @@
         {% endfor %} 
     </div>
 </div>
+
+<div id="instances" class="seperator"></div>
 
 <!-- the form -->
 <form action="#">

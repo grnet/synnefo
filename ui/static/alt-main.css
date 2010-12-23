@@ -148,8 +148,8 @@ ul.css-tabs a.current {
 
 /* tab pane */
 div.css-panes {
-    border-top: 10px solid #87aade;
-    border-bottom: 10px solid #87aade;  
+/*    border-top: 10px solid #87aade;
+    border-bottom: 10px solid #87aade;  */
     background: white;
 }
 
@@ -199,15 +199,13 @@ div.css-panes {
     cursor: pointer;
     display: block;
     padding: 6px 24px;
-    margin: 10px 0 10px -37px;
+    margin: 12px 0 12px -36px;
     width: 125px;
     text-decoration: none;
-    border:1px solid #bfd2ed;
 }
 
 #create:hover {
-    background-color: #a3bbc5;
-    border-color: #a3bbc5;
+    background-color: #a8c5f1;
 }
 
 div#header {
@@ -538,7 +536,6 @@ div.instance {
     margin: 0 -75px 0 0;
     font-weight: normal;
     height: 67px;
-
 }
 
 .actions a {
@@ -597,7 +594,7 @@ div.indicator {
     border-bottom: 2px solid white;
     border-left: 2px solid white;
     border-right: 3px solid white;
-    background-color: #86a9dd;
+    background-color: #87AADE;
 }
 
 .instance:hover .indicator {  
@@ -605,8 +602,8 @@ div.indicator {
 }
 
 .terminated {
-    opacity: .6;
     margin-bottom: 25px;
+    opacity: 0.6;
 }
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
@@ -655,7 +652,7 @@ button {
     border: 1px solid #87AADE;
     color: #FFFFFF;
     cursor: pointer;
-    padding: 7px 12px;
+    padding: 4px 25px;
 }
 
 button.next {
@@ -679,20 +676,19 @@ div.image {
     display: block;
 }
 
-a#list, a#standard {
+div#view-select {
     float: right;
     clear: both;
     color: white;
-    text-decoration: none;
-    margin-top: -60px;
+    margin-top: -62px;
     margin-right: -36px;
     font-size: 9pt;
     background-color: #87aade;
     padding: 5px 10px;
 }
 
-a#standard {
-    margin-top: -65px;
+a#standard, a#list {
+    text-decoration: none;
 }
 
 div.instance-type {
@@ -825,13 +821,26 @@ div#user a {
     text-decoration: none;
 }
 
-div.seperator {
-    background-color: #86a9dd;
+.seperator {
+    background-color: #87AADE;
     height: 10px;
+    width: 700px;
+    margin: 0 0 0 -36px;
+}
+
+#mini.seperator {
     width: 538px;
     margin: 20px 0 25px -36px;
 }
 
-.list .seperator {
-    margin-left: -36px;
+#disks.seperator {
+    background-color: #dea842;
+}
+
+#images.seperator {
+    background-color: #87a06d;
+}
+
+#networks.seperator {
+    background-color: #9d6d6a;
 }

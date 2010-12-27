@@ -655,6 +655,14 @@ button {
     padding: 4px 25px;
 }
 
+button.next:hover {
+    background-color: #f4b400;
+}
+
+button.prev:hover {
+    background-color: #a8c5f1;
+}
+
 button.next {
     background-color: #F49000;
     border-color: #F49000;

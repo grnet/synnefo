@@ -107,7 +107,7 @@
                                         <a><div class="image">
                                             <img src={{ image.logo }} class="image-logo"/>
                                             <strong>{{ image.title }}</strong>
-                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
+                                            <input class="radio" type="radio" {% if forloop.first %}checked="checked"{% endif %} name="image-id" id={{ image.id }} />
                                             <br />
                                             <span class="description">{{ image.description }}</span> 
                                             <span class="size">{{ image.size }}MB</span>

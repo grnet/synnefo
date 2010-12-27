@@ -237,6 +237,8 @@
 
 $("#list").click(function(event){
     $("div#instancesview").load($("#list").attr("href"));
+    $("a#standard")[0].className += ' activelink'
+    this.style.color = '#999999';
     return false;
 });
 

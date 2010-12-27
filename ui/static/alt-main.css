@@ -679,7 +679,7 @@ div.image {
 div#view-select {
     float: right;
     clear: both;
-    color: white;
+    color: #999999;
     margin-top: -62px;
     margin-right: -36px;
     font-size: 9pt;
@@ -690,6 +690,23 @@ div#view-select {
 a#standard, a#list {
     text-decoration: none;
 }
+
+a#standard:link, a#standard:visited {
+color:#999999;
+}
+
+a#list:link, a#list:visited {
+color:white;
+}
+
+a#standard:active, a#list:active {
+color:white;
+}
+
+.activelink {
+color:white !important;
+}
+
 
 div.instance-type {
     float: left;

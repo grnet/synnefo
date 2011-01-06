@@ -603,7 +603,7 @@ div.indicator {
 
 .terminated {
     margin-bottom: 25px;
-    opacity: 0.6;
+    opacity: 0.8;
 }
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {

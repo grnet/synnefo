@@ -657,10 +657,12 @@ button {
 
 button.next:hover {
     background-color: #f4b400;
+    border-color: #f4b400;
 }
 
 button.prev:hover {
     background-color: #a8c5f1;
+    border-color: #a8c5f1;
 }
 
 button.next {

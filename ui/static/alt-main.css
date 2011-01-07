@@ -519,6 +519,7 @@ div.instance {
 
 .instance a:hover {
     color: #000;
+    border-bottom: 2px dotted #000;
 }
 
 .state {
@@ -554,6 +555,7 @@ a.more {
 
 a.action:hover, a.more:hover {
     color: black !important;
+    border-bottom: 2px dotted black;
 }
 
 
@@ -803,6 +805,10 @@ div.list div.actions a {
     display: block;
     font-size:9pt;
     opacity: 0.6;
+}
+
+div.list div.actions a:hover{
+    border-bottom: 2px dotted #3D3D3D;
 }
 
 input.instance {

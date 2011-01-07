@@ -1,3 +1,5 @@
+{% load i18n %}
+
 <!DOCTYPE html>
 
 <head>
@@ -11,10 +13,25 @@
 
 <body>
     <div id="wrapper">
-        <div id='user'><a href="#">username</a> &nbsp;|&nbsp; <a href="#">settings</a></div>
+
+        <div id='user'><a href="#">{% trans "username" %}</a> &nbsp;|&nbsp; <a href="#">{% trans "settings" %}</a>
+{% get_available_languages as LANGUAGES %}
+<form action="/i18n/setlang/" method="post">
+{% csrf_token %}
+<input name="next" type="hidden" value="/" />
+<select name="language">
+{% for language in LANGUAGES %}
+<option value="{{ language.0 }}">{{ language.1 }}::{{ language.0 }}</option>
+{% endfor %}
+</select>
+<input type="submit" value="Go" />
+</form>
+
+
+</div>
         <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
         <div id="header">
-            <div id="about">Greek Research and Technology Network - Cloud management web interface</div>
+            <div id="about">{% trans "Greek Research and Technology Network - Cloud management web interface" %}</div>
             <a href="/" class="logo">
                 <h1>{{ project }}</h1>
             </a>

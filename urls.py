@@ -6,6 +6,7 @@
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',
+    (r'^i18n/', include('django.conf.urls.i18n')),
     (r'^auth/api/', include('synnefo.auth.urls')),
     (r'^api/', include('synnefo.api.urls')),
     (r'^', include('synnefo.ui.urls')),

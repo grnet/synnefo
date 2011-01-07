@@ -701,10 +701,11 @@ div#view-select {
 
 a#standard, a#list {
     text-decoration: none;
+    font-size: 11pt;
 }
 
 a#standard:link, a#standard:visited {
-color:#999999;
+color:#5f8dd3;
 }
 
 a#list:link, a#list:visited {

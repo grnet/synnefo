@@ -10,7 +10,6 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 	margin: 0;
 	padding: 0;
 	border: 0;
-	outline: 0;
 	font-size: 100%;
 	vertical-align: baseline;
 	background: transparent;
@@ -19,6 +18,8 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 
 body {
 	line-height: 1;
+    background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
+    margin: 0;
 }
 
 ol, ul {
@@ -35,9 +36,8 @@ q:before, q:after {
 	content: none;
 }
 
-/* remember to define focus styles! */
 :focus {
-	outline: 0;
+    outline: 1px dotted #87AADE;
 }
 
 /* remember to highlight inserts somehow! */
@@ -55,24 +55,10 @@ table {
 	border-spacing: 0;
 }
 
-body {
-    background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
-    margin: 0;
-}
-
 h5 {
     font-weight: normal;
     font-size: 9pt;
     margin-bottom:3px;
-}
-
-/* get rid of those system borders being generated for A tags */
-a:active {
-  outline:none;
-}
-
-*:focus {
-    outline:0 !important;
 }
 
 /* root element for tabs  */
@@ -557,7 +543,7 @@ a.action:hover, a.more:hover {
     color: black !important;
 }
 
-.actions:hover a,.instance:hover .actions a {
+.actions a:focus, .actions:hover a,.instance:hover .actions a {
     color: #3d3d3d;
 }
 
@@ -819,7 +805,7 @@ input.instance {
     vertical-align: bottom;
     position: relative;
     top: -1px;
-    *overflow: hidden;
+    overflow: hidden;
 }
 
 #misc {
@@ -875,4 +861,9 @@ div#user a {
 
 #networks.seperator {
     background-color: #9d6d6a;
+}
+
+.instance h5 {
+    margin-left: 84px;
+    margin-right: 60px;
 }

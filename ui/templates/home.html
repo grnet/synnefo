@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load localeurl_tags %}
 
 <!DOCTYPE html>
 
@@ -13,21 +14,38 @@
 
 <body>
     <div id="wrapper">
+
+    {% get_available_languages as LANGUAGES %}
+    
+        <div id="language">
+            {% for lang in LANGUAGES %}
+                <a href="{{request.path|chlocale:lang.0}}">{{lang.1}}</a> 
+            {% endfor %}
+        </div>
+
         <div id='user'><a href="#">{% trans "username" %}</a> &nbsp;|&nbsp; <a href="#">{% trans "settings" %}</a>
-            {% get_available_languages as LANGUAGES %}
-            <form action="/i18n/setlang/" method="post">
-                {% csrf_token %}
-                <input name="next" type="hidden" value="/" />
-                <select name="language">
-                {% for language in LANGUAGES %}
-                <option value="{{ language.0 }}">{{ language.1 }}::{{ language.0 }}</option>
-                {% endfor %}
-                </select>
-                <input type="submit" value="Go" />
-            </form>
+{% comment %}
+{% get_available_languages as LANGUAGES %}
+<form action="/i18n/setlang/" method="post">
+{% csrf_token %}
+<input name="next" type="hidden" value="/" />
+<select name="language">
+{% for language in LANGUAGES %}
+<option value="{{ language.0 }}">{{ language.1 }}::{{ language.0 }}</option>
+{% endfor %}
+</select>
+<input type="submit" value="Go" />
+</form>
+{% endcomment %}
+
+
 </div>
+
         <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
         <div id="header">
+
+
+
             <div id="about">{% trans "Greek Research and Technology Network - Cloud management web interface" %}</div>
             <a href="/" class="logo">
                 <h1>{{ project }}</h1>
@@ -52,9 +70,7 @@
 		$(function() {
             if ($("link").attr("href") == "static/alt-main.css") {
 			    $('ul.css-tabs li').hover(function(){
-				    $(this).find('a:not(.current)').animate({top:'-3px'},{queue:false,duration:150});
-                }, function(){
-                    $(this).find('a:not(.current)').animate({top:'0px'},{queue:false,duration:150});
+				    $(this).find('a').animate({top:'0px'},{queue:true, duration:'slow'});
 			    });
             }
 		});

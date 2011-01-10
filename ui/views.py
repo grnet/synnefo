@@ -26,7 +26,7 @@ def template(name, context):
     return HttpResponse(t.render(Context(context)))
 
 def home(request):
-    context = { 'project' : '+nefo' }
+    context = { 'project' : '+nefo', 'request': request }
     return template('home', context)
 
 def instances(request):

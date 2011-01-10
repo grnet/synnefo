@@ -9,6 +9,7 @@
 </div>
 
 <div id="instancesview" class="standard">
+
     <div class="running">
         {% for node in nodes %}
             {% if node.state == '3' %} 
@@ -238,7 +239,7 @@
 $("#list").click(function(event){
     $("div#instancesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
-    this.style.color = '#999999';
+    this.style.color = '#5f8dd3';
     return false;
 });
 

@@ -3,8 +3,7 @@ Synnefo
 
 Contents
 --------
-ui.pyramids/    The old version of the app in pyramids
-ui/             The new, django app, version
+ui/             The django app
 
 
 Installation

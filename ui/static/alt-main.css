@@ -689,7 +689,7 @@ div.image {
 div#view-select {
     float: right;
     clear: both;
-    color: #999999;
+    color: white;
     margin-top: -62px;
     margin-right: -36px;
     font-size: 9pt;
@@ -710,6 +710,10 @@ a#list:link, a#list:visited {
 color:white;
 }
 
+a#list:hover {
+background: #5f8dd3;
+}
+
 a#standard:active, a#list:active {
 color:white;
 }
@@ -717,7 +721,6 @@ color:white;
 .activelink {
 color:white !important;
 }
-
 
 div.instance-type {
     float: left;
@@ -825,13 +828,24 @@ input.instance {
 #misc {
     height: 100px;
     border: 5px solid #87AADE;
-    margin: 0 auto;
-    overflow: hidden;
-    position: relative;
+}
+
+#misc p {
+    margin-top: 3px;
 }
 
 #misc strong {
     color: #F49C1A;
+}
+
+#misc .close {
+	background-image: url(/static/close.png);
+	position: absolute;
+	right: -19px;
+	top: -20px;
+	cursor: pointer;
+	height: 35px;
+	width: 35px;
 }
 
 img.os {

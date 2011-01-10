@@ -533,20 +533,22 @@ div.instance {
 
 a.action{
     margin: 0 0 5px 5px;
-    display: block;
+    display: none;
 }
 
 a.more {
     margin: 18px 0 5px 5px;
-    display: block;
+    display: none;
 }
 
 a.action:hover, a.more:hover {
     color: black !important;
+    display: block;
 }
 
 .actions a:focus, .actions:hover a,.instance:hover .actions a {
     color: #3d3d3d;
+    display: block;
 }
 
 .instance:hover {

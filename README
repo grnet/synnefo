@@ -1,27 +1,20 @@
 Synnefo
 =======
 
-Contents
---------
-ui/             The django app
-
-
 Installation
 ------------
     $ sudo easy_install virtualenv
     ....
-    $ virtualenv some_env --no-site-packages
-    ...
-    $ cd some_env
-    $ ./bin/easy_install django django-piston django-localeurl
-    ...
-    $ git clone https://user@code.grnet.gr/git/synnefo ./synnefo
+    $ git clone https://user@code.grnet.gr/git/synnefo synnefo
+    $ virtualenv synnefo --no-site-packages
     ...
     $ cd synnefo
+    $ ./bin/pip install django django-piston django-localeurl
+    ...
+    ...
     $ cp settings.py.dist settings.py
     $ ../bin/python manage.py runserver
 
-    Attention! The project folder MUST be named synnefo
 
 Alt - main
 ----------

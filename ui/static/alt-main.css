@@ -592,7 +592,7 @@ div.indicator {
 }
 
 .terminated {
-    margin-bottom: 25px;
+    margin-bottom: 17px;
     opacity: 0.8;
 }
 
@@ -867,7 +867,8 @@ div#user a, div#language a {
 
 #mini.seperator {
     width: 538px;
-    margin: 20px 0 25px -36px;
+    height: 5px;
+    margin: 17px 0 17px -36px;
 }
 
 #disks.seperator {

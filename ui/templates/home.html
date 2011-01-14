@@ -7,7 +7,7 @@
 	<title>{{ project }}</title>
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
-	<link rel="stylesheet" type="text/css" href="static/alt-main.css"/>	
+	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
     <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css' />
 
 </head>
@@ -24,6 +24,7 @@
         </div>
 
         <div id='user'><a href="#">{% trans "username" %}</a> &nbsp;|&nbsp; <a href="#">{% trans "settings" %}</a>
+
 {% comment %}
 {% get_available_languages as LANGUAGES %}
 <form action="/i18n/setlang/" method="post">
@@ -53,7 +54,7 @@
         </div>
         <!-- tabs -->
         <ul class="css-tabs">
-	        <li><a href="alt-instances" title="manage your virtual machines" id="instances">instances</a></li>
+	        <li><a href="instances" title="manage your virtual machines" id="instances">instances</a></li>
 	        <li><a href="disks" title="manage your storage volumes" id="disks">disks</a></li>
 	        <li><a href="images" title="manage boot images" id="images">images</a></li>
 	        <li><a href="networks" title="configure networking" id="networks">networks</a></li>
@@ -68,13 +69,11 @@
     <!-- activate tabs with JavaScript -->
     <script>
 		$(function() {
-            if ($("link").attr("href") == "static/alt-main.css") {
-			    $('ul.css-tabs li').hover(function(){
-				    $(this).find('a:not(.current)').animate({top:'-3px'},{queue:false,duration:150});
-                }, function(){
-                    $(this).find('a:not(.current)').animate({top:'0px'},{queue:false,duration:150});
-			    });
-            }
+		    $('ul.css-tabs li').hover(function(){
+			    $(this).find('a:not(.current)').animate({top:'-3px'},{queue:false,duration:150});
+            }, function(){
+                $(this).find('a:not(.current)').animate({top:'0px'},{queue:false,duration:150});
+		    });
 		});
         $(function() {
 	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	

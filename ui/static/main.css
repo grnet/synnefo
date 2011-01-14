@@ -1,105 +1,155 @@
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+	background: transparent;
+    font-family: Verdana, 'PT Sans', sans-serif;
+}
+
 body {
-    background:url("../static/header.png") no-repeat scroll top transparent;
-    background-color: #213d55;
-	font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
+	line-height: 1;
+    background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
     margin: 0;
 }
 
-*:focus {
-    outline:0 !important;
+ol, ul {
+	list-style: none;
 }
 
-h1, h2, h3, h4, h5 {
-    margin-top: 0em;
-    margin-bottom: .6em;
+blockquote, q {
+	quotes: none;
 }
+
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+
+/* remember to define focus styles! */
+:focus {
+    outline: 1px dotted #87AADE;
+}
+
+/* remember to highlight inserts somehow! */
+ins {
+	text-decoration: none;
+}
+
+del {
+	text-decoration: line-through;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
 
 h5 {
     font-weight: normal;
-    margin-bottom: 1em;
-}
-
-#nefo{
-    display:none;
-}
-
-#footer {
-    text-align:center;
-    color: #666;
-    font-size: .5em;
-    padding:2em;
-}
-
-#footer a {
-    color: #EBEBEB;
-    text-decoration: none;
-}
-
-/* get rid of those system borders being generated for A tags */
-a:active {
-  outline:none;
+    font-size: 9pt;
+    margin-bottom:3px;
 }
 
 /* root element for tabs  */
-ul.css-tabs {  
-	margin:-.5em 2em 0 1em !important; 
-	padding:0;
-	height:2.2em;
+ul.css-tabs {
+	margin: 0 0 0 10px; 
+    padding: 0;
+	height:31px;
+    font-size:32px;	
+    overflow: hidden; 	
 }
 
 /* single tab */
 ul.css-tabs li {  
 	float:left;	 
 	padding:0; 
-	margin:-3px 1em 0 0;  
+	margin: 0 10px 0 0;  
 	list-style-type:none;	
 }
 
 /* link inside the tab. uses a background image */
 ul.css-tabs a { 
 	float:left;
-	font-size:1em;
 	display:block;
-	padding:.6em 3em 0;	
 	text-decoration:none;
-	border:0px solid #213D55;
-	border-bottom:2px solid #213D55;
-	height:1.65em;
-	background-color:#ebebeb;
-	color:#666666;
+	color:#d2d2d2;
 	position:relative;
 	outline:0;
-	-moz-border-radius:1em 1em 0 0;	
+    padding: 0 9px 0 13px;
+    margin-top: 7px;
+}
+
+ul.css-tabs a#instances {
+    color: #a3bbc5;
+}
+
+ul.css-tabs a#instances.current {
+  color: #87aade;
+}
+
+ul.css-tabs a#disks {
+    color: #deb358;
+}
+
+ul.css-tabs a#disks.current {
+  color: #dea842;
+}
+
+ul.css-tabs a#images {
+    color: #9ba97b;
+}
+
+ul.css-tabs a#images.current {
+    color: #87a06d;
+}
+
+ul.css-tabs a#networks {
+    color: #bc9399;
+}
+
+ul.css-tabs a#networks.current {
+  color: #9d6d6a;
 }
 
 ul.css-tabs a:hover {
-    color: #3baddb;
+    margin-top: 2px;
 }
 	
 /* selected tab */
 ul.css-tabs a.current {
-	background-color:#f7f7f7;
-    color: #000;
 	cursor:default;
-    border-bottom: none;
-	height:1.8em !important;
+    margin-top: 2px;
 }
 
-	
 /* tab pane */
+div.css-panes {
+/*    border-top: 10px solid #87aade;
+    border-bottom: 10px solid #87aade;  */
+    background: white;
+}
+
 .css-panes > div.pane {
 	display:none;
-	border:0px solid #666;
-	padding:15px 20px;
-	background-color:#f7f7f7;
+	padding:0px 20px;
     margin: 0 1em;
-    -moz-border-radius: 0 1em 1em;
 }
-
-
 
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
 .rounded, #sheet input, .error {
+	border-radius: 5px;
 	-webkit-border-radius: 5px;
 	-moz-border-radius: 5px;
 	-o-border-radius: 5px;
@@ -110,54 +160,50 @@ ul.css-tabs a.current {
 .error {
 	background-color:#E8FF6D;
 	padding:4px;
-	-webkit-box-shadow: #000 0 0 12px;
-	-moz-box-shadow: #000 0 0 12px;
+	-webkit-box-shadow: #000 0 0 9pt;
+	-moz-box-shadow: #000 0 0 9pt;
 }
 
 /* nested arrow inside error message. It's 100% CSS. No images. */
 .error em {
-	border:10px solid;
-	border-color:#E8FF6D transparent transparent;
-	bottom:-17px;
-	display:block;
-	height:0;
-	left:10px;
-	position:absolute;
-	width:0;
+	border: 10px solid;
+	border-color: #E8FF6D transparent transparent;
+	bottom: -17px;
+	display: block;
+	height: 0;
+	left: 10px;
+	position: absolute;
+	width: 0;
 }
 
 /* input field that caused validation error */
 .invalid {
-	background-color:rgba(221, 233, 255, 0.898) !important;
+	background-color: rgba(221, 233, 255, 0.898) !important;
 }
 
 #create {
-    -moz-border-radius: .5em;
-    background-color: #f49c1a;
-    border: 2px solid #F7F7F7;
-    color: #f4f4f4;
-    cursor:pointer;
-    display:block;
-    padding: .7em 1em;
-    width: 8em;
-    font-weight: bold;
+    background-color: #87aade;
+    color: #000;
+    cursor: pointer;
+    display: block;
+    padding: 6px 24px;
+    margin: 12px 0 12px -36px;
+    width: 125px;
     text-decoration: none;
 }
 
 #create:hover {
-    background-color:#f29400;
-    color: white;
-    border: 2px solid #f29400;
+    background-color: #a8c5f1;
 }
 
 div#header {
-    height:152px;
-    margin-left: -2em;
+    height: 60px;
+    background: #999;
 }
 
 div#wrapper {
-    width: 800px;
-    margin: 0 auto;
+    width: 700px;
+    margin: 0em auto;
 }
 
 a.logo {
@@ -165,14 +211,7 @@ a.logo {
 }
 
 a.logo h1 {
-    background:url("../static/cloud.png") no-repeat scroll bottom left transparent ;
-    height:78px;
-    color: #b1b3b4;
-    margin-left: 1em;
-    margin-top: 0;
-    padding: .5em 0 0 3.2em;   
-    line-height: .3em;
-    font-size: 1.7em; 
+    display: none;
 }
 
 a.logo:hover h1 {
@@ -183,29 +222,24 @@ a img {
 }
 
 div#about {
-    color: white;
-    padding: .5em 0;
-    font-size:.7em;
-    float: right;
+    display:none;
 }    
+
+#nefo {
+    margin: 10px 0 -2px 25px;
+}
 
 /* tooltip styling. by default the element to be styled is .tooltip  */
 .tooltip {
 	display:none;
-	background:transparent url(../static/tooltip.png);
-	font-size:12px;
-	height:40px;
-	width:130px;
-	padding:25px;
-	color:#fff;	
-
+    color: transparent; 
 }
 
 .modal {
     background-color:#fff;
     display:none;
     width:30em;
-    height:30em;
+    height:20em;
     padding:1em;
     text-align:left;
     opacity:0.9;
@@ -213,17 +247,13 @@ div#about {
 	
 /* scrollable root element */
 #wizard {	
-	background:#fff url(../static/h600.png) repeat scroll 0 0;
-	border:5px solid #789;
-	font-size:12px;
-	height:480px;
+	border:5px solid #87AADE;
+	font-size:9pt;
+	height:405px;
+	width:460px;
 	margin:0px auto;	
-	width:500px;
 	overflow:hidden;
 	position:relative;
-	/* rounded corners for modern browsers */
-	-moz-border-radius:5px;
-	-webkit-border-radius:5px;
 }  
 
 /* scrollable items */
@@ -231,12 +261,6 @@ div#about {
 	width:20000em;
 	clear:both;
 	position:absolute;
-}
-
-/* single scrollable item called ".page" in this setup */
-#wizard .page {
-	padding:20px 30px;
-	float:left;
 }
 
 /* validation error message bar. positioned on the top edge */
@@ -271,28 +295,17 @@ div#about {
 
 /* title */
 #wizard h2 {
-	font-size:22px;
-	font-weight:normal;
-	margin:10px 0 0 0;
-}
-
-#wizard h2 em {
-	display:block;
-	font-size:14px;
-	color:#666;
-	font-style:normal;
-	margin-top:5px;
-}
-
-/* input fields */
-#wizard ul {
-	padding:0px !important;
+	font-weight: bold;
+    font-size: 12pt;
+    color: #666;
 }
 
 #wizard li {
-	list-style-type:none;
-	list-style-image:none;
 	margin-bottom:1.2em;
+}
+
+#wizard .pane li {
+    margin: 0;
 }
 
 #wizard label {
@@ -305,20 +318,22 @@ div#about {
 	color:#789;	
 	position:relative;
 	top:-1px;
+    font-size: 12pt;
 }
 
 #wizard label em {
-	font-size:11px;
+	font-size:9pt;
 	color:#666;	
 	font-style:normal;
 }
 
 #wizard .text {
-	width:94%;
-	padding:5px;
-	border:1px solid #ccc;
-	color:#456;
-	letter-spacing:1px;
+	width: 94%;
+	padding: 5px;
+    margin-top: 10px;
+	border: 1px solid #ccc;
+	color: #456;
+	letter-spacing: 1px;
 }
 
 #wizard select {
@@ -326,14 +341,6 @@ div#about {
 	width:94%;	
 	padding:4px;
     display: none;
-}
-
-#wizard label span {
-	color:#b8128f;
-	font-weight:bold;
-	position:relative;
-	top:4px;
-	font-size:20px;
 }
 
 #wizard .double label { 
@@ -358,14 +365,6 @@ div#about {
 	border:1px solid red;		
 }
 
-#wizard #status {
-	margin:0px !important;
-	height:35px;
-	background:#213d55 url(../static/h30.png) repeat-x;
-	padding-left:25px !important;
-	_background:#213d55;
-}
-
 #wizard a:hover div.image {
     background-color: #999;
 }
@@ -377,12 +376,8 @@ div#about {
     color: white;
 }
 
-#wizard div.image strong {
-    font-size: 1em;
-}
-
 #wizard div.image span.size {
-    font-size:.7em;
+    font-size: 9pt;
     color: #666;
 }
 
@@ -391,7 +386,7 @@ div#about {
 }
 
 #wizard div.image span.image-id, #wizard div.image span.description {
-    font-size:.7em;
+    font-size: 9pt;
     color: #666;
     font-weight: normal;
     display:inline;
@@ -403,37 +398,75 @@ div#about {
 
 #wizard .cost {
     color: #666;
-    margin-top: 4em;
+    margin-top: 50px;
+}
+
+#wizard #status {
+	height: 32px;
+	background: #999;
+    padding-left: 15px;
+}
+
+.page ul {
+    margin-top: 15px;
+    height: 280px;
+    overflow: auto;
+}
+
+.panes ul.pane {
+    height: 276px;
+}
+
+.page ul.tabs {
+    overflow: hidden;
+    height: auto;
+    margin-bottom: 0;
+    margin-top: -20px;
+}
+
+.page ul.tabs li {
+    float: right;
+    margin: 0 1em;
 }
 
 #status li {
-	list-style-type:none;
-	list-style-image:none;
 	float:left;
-	color:#fff;
-	padding:10px 30px;
+	color:#666;
+	padding:10px 40px;
 }
 
 #status li.active {
-	background-color:#F49C1A;
-	font-weight:normal;		
+	background-color: #87AADE;
+    font-weight: bold;
+    color: white;
 }
 
 /* slider root element */
 .slider {
-    -moz-border-radius: 5px 5px 5px 5px;
-    -moz-box-shadow: 0 0 8px #000000 inset;
-    background: url("../static/h30.png") repeat-x scroll 0 0 #3C72E6;
-    border: 1px solid #333333;
+    background-color: #87AADE;
+    border: 1px solid #666;
     clear: right;
     cursor: pointer;
     display: block !important;
     float: left;
     height: 3px;
-    margin-top: 10px;
+    margin: 20px 0 20px;
     padding: 0.1em !important;
     position: relative;
     width: 330px;
+}
+
+/* drag handle */
+.handle {
+    -moz-box-shadow: 0 0 2px #000000;
+    background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
+    border: 1px solid #000000;
+    cursor: move;
+    display: block;
+    height: 22px;
+    margin-top: -9pt;
+    position: absolute;
+    width: 10px;
 }
 
 /* progress bar (enabled with progress: true) */
@@ -444,120 +477,133 @@ div#about {
 	opacity:0.6;
 }
 
-/* drag handle */
-.handle {
-    -moz-border-radius: 14px 14px 14px 14px;
-    -moz-box-shadow: 0 0 2px #000000;
-    background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
-    border: 1px solid #000000;
-    cursor: move;
-    display: block;
-    height: 22px;
-    margin-top: -11px;
-    position: absolute;
-    width: 10px;
-}
-
 /* the input field */
 .range {
-	border:1px inset #ddd;
-	float:left;
-	font-size:16px;
-	margin:0 0 0 15px;
-	padding:3px 0;
-	text-align:center;
-	width:50px;
-	-moz-border-radius:5px; 
-	-webkit-border-radius:5px; 		
+	border: 1px inset #ddd;
+	float: left;
+	font-size: 12pt;
+	margin: 10px 0 0 15px;
+	padding: 3px 0;
+	text-align: center;
+	width: 50px;		
 }
 
-.instance {
+div.instance {
     clear: both;
-    padding: .7em 1em .7em 1em;
-    width: 70%;
+    margin: 5px 0 0 -32px;
+    padding: 3px 4px 0;
+    width: 523px;
     border: 1px dashed transparent;
     color: #666;
-    height: 70px;
+    height: 67px;
 }
 
 .instance a {
-    color: #666;
+    color: #3d3d3d;
     font-weight: normal;
     text-decoration: none;
-    font-size: .8em;
+    font-size: 9pt;
 }
 
 .instance a:hover {
-    color: black;
+    color: #000;
+    text-decoration: underline;
 }
 
 .state {
     float: right;
-    width: 15%;
+}
+
+.state div {
+    text-align: right;
+    margin-right: 3px;
 }
 
 .actions {
     float: right;
-    width: 15%;
-    margin-right: -7em;
-    height: 70px;
+    width: 70px;
+    margin: 0 -75px 0 0;
+    font-weight: normal;
+    height: 67px;
 }
 
 .actions a {
     color: transparent;
 }
 
-a.action, a.more {
-    margin:.5em;
-    display:block;
+a.action{
+    margin: 0 0 5px 5px;
+    display: none;
+}
+
+a.more {
+    margin: 18px 0 5px 5px;
+    display: none;
 }
 
 a.action:hover, a.more:hover {
     color: black !important;
+    display: block;
 }
 
-.actions:hover a,.instance:hover .actions a {
-    color: #666;
+.actions a:focus, .actions:hover a,.instance:hover .actions a {
+    color: #3d3d3d;
+    display: block;
 }
 
 .instance:hover {
     border: 1px dotted transparent;
-    background-color:#EBEBEB;
-    color: black;
+    background-color:#dcdcdc;
+    color: #3d3d3d;
 }
 
 .instance img {
     float: left;
-    margin: 0em 2em 0 1em;
+    margin: 0em 14px 0 14px;
 }
 
 div.ip, div.state {
-    font-size: 0.7em;
-    color: #666;
-    margin-top: 0.5em;
+    font-size:9pt;
+    color: #3d3d3d;
+}
+
+.list .state {
+    margin-top: 3px;
 }
 
 div.indicator {
-    width:1em;
-    height:.6em;
-    margin: .3em -.1em .5em;
+    width:10px;
+    height:11px;
+    margin: 3px -1px;
     clear: none;
-    float:left;
+    float:right;
 }
 
 .running .indicator {
-    border:2px solid white;
-    background-color: #05b00d;
-}    
+    border-top: 2px solid white;
+    border-bottom: 2px solid white;
+    border-left: 2px solid white;
+    border-right: 3px solid white;
+    background-color: #87AADE;
+}
+
+.instance:hover .indicator {  
+    border-color: #dcdcdc !important;
+}
+
+.terminated {
+    margin-bottom: 17px;
+    opacity: 0.8;
+}
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
-    color: #666;
+    color: #3d3d3d;
 }
 
 div.uptime {
     clear: both;
-    color:transparent;
-    margin-left:1px;
+    color: transparent;
+    margin-left: 1px;
 }
 
 div.instance-tabs {
@@ -566,60 +612,57 @@ div.instance-tabs {
 
 span.rename, span.configure {
     background-repeat: no-repeat;
-    font-size: 11px;
     color: transparent;
+    font-size: 9pt;
     font-weight: normal;
-    margin-left: 2em;
-    padding-left: 1.5em;
+    margin-left: 10px;
+    padding-left: 10px;
     text-align: left;
 }
 
 a.name:hover span.rename {
-    color: #213D55;
+    color: #3D3D3D;
     margin-top: 0.4em;
     background-image: url(/static/pencil.png);
 }
 
-a.ip:hover span.configure {
-    color: #213D55;
-    background-image: url(/static/pencil.png);
-}
 
 a.storage:hover span.configure {
-    color: #213D55;
-    background-image: url(/static/pencil.png);
-}
-
-.terminated {
-    opacity: .8;
+    color: #3D3D3D;
 }
 
 #ubuntu {
     height:50px;
-    background: url(../static/ubuntu.png) no-repeat 0 0;
+    background: url(../static/ubuntu-logo.png) no-repeat 0 0;
     padding-left: 50px;
 }
 
 button {
-    -moz-border-radius: 10.2em 10.2em 10.2em 10.2em;
-    background-color: #31446f;
-    border-bottom: 0.2em solid #666666;
-    border-width: 1px 1px 0.2em;
+    background-color: #87AADE;
+    border: 1px solid #87AADE;
     color: #FFFFFF;
     cursor: pointer;
-    font-size: 1em;
-    line-height: 1;
-    padding: 0.7em 2em;
+    padding: 4px 25px;
+}
 
+button.next:hover {
+    background-color: #f4b400;
+    border-color: #f4b400;
+}
+
+button.prev:hover {
+    background-color: #a8c5f1;
+    border-color: #a8c5f1;
 }
 
 button.next {
-    background-color: #f49000;
+    background-color: #F49000;
+    border-color: #F49000;
     font-weight: bold;
 }
 
 button.prev {
-
+    margin-left: -19px;
 }
 
 .image-logo {
@@ -633,39 +676,55 @@ div.image {
     display: block;
 }
 
-.page ul {
-    height: 280px;
-    overflow: auto;
-    margin-bottom: 2em;
-}
-
-.panes ul.pane {
-    height: 268px;
-}
-
-.page ul.tabs {
-    height: auto;
-    margin-bottom: 0em;
-    margin-top: -1.5em;
-}
-
-.page ul.tabs li {
+div#view-select {
     float: right;
-    margin: 0 1em;
+    clear: both;
+    color: white;
+    margin-top: -62px;
+    margin-right: -36px;
+    font-size: 9pt;
+    background-color: #87aade;
+    padding: 5px 10px;
+}
+
+a#standard, a#list {
+    text-decoration: none;
+    font-size: 11pt;
+}
+
+a#standard:link, a#standard:visited {
+color:#5f8dd3;
+}
+
+a#list:link, a#list:visited {
+color:white;
+}
+
+a#list:hover {
+background: #5f8dd3;
+}
+
+a#standard:active, a#list:active {
+color:white;
+}
+
+.activelink {
+color:white !important;
 }
 
 div.instance-type {
     float: left;
-    margin-bottom: 2em;
-    margin-right: 1.8em;
-    margin-top: 1em;
+    margin: 4px 10px 20px 0;
+}
+
+div.active {
+    height: 200px;
 }
 
 div.active, div.stopped {
-    margin-left: -1em;
-    width: 70%;
+    margin-left: -2.2em;
+    width: 500px;
     padding: 1em;
-    height: 200px;
     margin-top: 1em;
 }
 
@@ -675,39 +734,24 @@ div.list label img {
 }
 
 div.list label {
-    color: #666;
-    font-size: 0.8em;
+    color: #3D3D3D;
+    font-size:9pt;
 }
 
 div.list div.running {
-    margin: 0.5em 0;
-}
-
-#wizard strong.sliders {
-    color: #ADA9A5;
-}
-
-a#list, a#standard {
-    float: left;
-    clear: both;
-    color: #666;
-    text-decoration: none;
-    margin-top: -4em;
-    margin-left: 65em;
-    font-size: 0.8em
+    margin: .5em 0;
 }
 
 /* root element for tabs  */
 #wizard ul.tabs { 
-    margin-top: -2em;	
-    margin-left: 21em; 	
+    margin-left: 260px; 		 	
 }
 
 /* single tab */
 #wizard ul.tabs li {  
     margin-bottom: 0; 
-	list-style-type: none;	
-    float: left;
+	list-style-type:none;
+    float: left;	
 }
 
 /* link inside the tab. uses a background image */
@@ -729,32 +773,35 @@ a#list, a#standard {
 /* selected tab */
 #wizard ul.tabs a.current {
 	color: white;
-    background-color: #F49000;	
+    background-color: #87AADE;	
 	cursor: default;
-}
-
-div.inactive div.state {
-    margin-right: 1.5em;
 }
 
 div.inactive {
     opacity: .6;
+    margin-bottom: 25px;
 }
 
 div.list div.actions {
     clear: left;
     float: right;
-    margin-right: 2em;
-    margin-top: 2em;
-    width: 150px;
+    margin-right: -20px;
+    margin-top: 22px;
     text-align: right;
+    width: 150px;
 }
 
 div.list div.actions a {
     clear: left;
-    color: #666 !important;
+    color: #3D3D3D !important;
     display: block;
-    font-size: .8em;
+    font-size:9pt;
+    opacity: 0.6;
+}
+
+div.list div.actions a:hover{
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 input.instance {
@@ -765,42 +812,79 @@ input.instance {
     vertical-align: bottom;
     position: relative;
     top: -1px;
-    *overflow: hidden;
+    overflow: hidden;
 }
 
 #misc {
-	background:#fff url(../static/h600.png) repeat scroll 0 0;
-	border:5px solid #789;
     height: 100px;
-	margin:0px auto;	
-	overflow:hidden;
-	position:relative;
-	/* rounded corners for modern browsers */
-	-moz-border-radius:5px;
-	-webkit-border-radius:5px;
+    border: 5px solid #87AADE;
+}
+
+#misc p {
+    margin-top: 15px;
 }
 
 #misc strong {
     color: #F49C1A;
 }
 
+#misc .close {
+	background-image: url(/static/close.png);
+	position: absolute;
+	right: -19px;
+	top: -20px;
+	cursor: pointer;
+	height: 35px;
+	width: 35px;
+}
+
 img.os {
     z-index: 1;
-    margin-left: -40px;
-    margin-top: 45px;
+    margin-left: -34px;
+    margin-top: 29px;
     opacity: .9;
 }
 
-div#user {
+div#user, div#language {
     float:right;
-    color: white;
+    clear: both;
+    color: #a0a0a0;
     font-size: 9pt;
-    margin-top: 6px;
-    margin-left: 9px;
+    margin-top: 1px;
 }
 
-div#user a {
+div#user a, div#language a {
     color: #a0a0a0;
     text-decoration: none;
+}
+
+.seperator {
+    background-color: #87AADE;
+    height: 10px;
+    width: 700px;
+    margin: 0 0 0 -36px;
+}
+
+#mini.seperator {
+    width: 538px;
+    height: 5px;
+    margin: 17px 0 17px -36px;
+}
+
+#disks.seperator {
+    background-color: #dea842;
+}
+
+#images.seperator {
+    background-color: #87a06d;
+}
+
+#networks.seperator {
+    background-color: #9d6d6a;
+}
+
+.instance h5 {
+    margin-left: 84px;
+    margin-right: 60px;
 }
 

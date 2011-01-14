@@ -104,7 +104,7 @@
 					            <li>
 						            <label for={{ image.id }}> 
                                         <a><div class="image">
-                                            <img src={{ image.logo }} class="image-logo"/>
+                                            <img src="static/os_logos/{{ image.logo }}" class="image-logo"/>
                                             <strong>{{ image.title }}</strong>
                                             <input class="radio" type="radio" {% if forloop.first %}checked="checked"{% endif %} name="image-id" id={{ image.id }} />
                                             <br />
@@ -124,7 +124,7 @@
 					            <li>
 						            <label for={{ image.id }}> 
                                         <a><div class="image">
-                                            <img src={{ image.logo }} class="image-logo"/>
+                                            <img src="static/os_logos/{{ image.logo }}" class="image-logo"/>
                                             <strong>{{ image.title }}</strong>
                                             <input class="radio" type="radio" name="image-id" id={{ image.id }} />
                                             <br />

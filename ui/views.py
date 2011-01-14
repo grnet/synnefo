@@ -14,7 +14,7 @@ DEFAULT_IMAGES = [
 DEFAULT_NODES = [
                  {'id':1, 'name':'My mail server', 'state':'3','public_ip':'147.102.1.62', 'thumb' : 'ubuntu.png'},
                  {'id':2, 'name':'My name server', 'state':'3','public_ip':'147.102.1.64', 'thumb' : 'debian.png'},
-                 {'id':3, 'name':'My file server', 'state':'3','public_ip':'147.102.1.65', 'thumb' : 'slackware.png'},
+                 {'id':3, 'name':'My file server', 'state':'3','public_ip':'147.102.1.65', 'thumb' : 'ubuntu.png'},
                  {'id':4, 'name':'My torrent server', 'state':'3','public_ip':'147.102.1.66', 'thumb' : 'gentoo.png'},
                  {'id':5, 'name':'My firewall', 'state':'3','public_ip':'147.102.1.67', 'thumb' : 'netbsd.png'},
                  {'id':6, 'name':'My windows workstation', 'state':'0','public_ip':'147.102.1.69', 'thumb' : 'windows-off.png'},

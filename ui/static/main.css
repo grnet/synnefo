@@ -229,12 +229,6 @@ div#about {
     margin: 10px 0 -2px 25px;
 }
 
-/* tooltip styling. by default the element to be styled is .tooltip  */
-.tooltip {
-	display:none;
-    color: transparent; 
-}
-
 .modal {
     background-color:#fff;
     display:none;

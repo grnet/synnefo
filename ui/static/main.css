@@ -437,15 +437,13 @@ div#about {
 
 /* slider root element */
 .slider {
-    background-color: #87AADE;
     border: 1px solid #666;
     clear: right;
     cursor: pointer;
     display: block !important;
     float: left;
-    height: 3px;
+    height: 5px;
     margin: 20px 0 20px;
-    padding: 0.1em !important;
     position: relative;
     width: 330px;
 }
@@ -458,17 +456,15 @@ div#about {
     cursor: move;
     display: block;
     height: 22px;
-    margin-top: -9pt;
+    margin-top: -15px;
     position: absolute;
     width: 10px;
 }
 
 /* progress bar (enabled with progress: true) */
 .progress {
-	height:9px; 
-	background-color:#C5FF00; 
-	display:none;
-	opacity:0.6;
+	height: 5px; 
+	background-color: #87AADE;
 }
 
 /* the input field */

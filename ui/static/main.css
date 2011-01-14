@@ -18,7 +18,7 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 
 body {
 	line-height: 1;
-    background:#fff url(../static/degrade-background.png) repeat scroll 0 0;
+    background: url(../static/degrade-background.png) repeat-x scroll 0 0 #C3C3C3;
     margin: 0;
 }
 

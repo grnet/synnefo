@@ -19,6 +19,7 @@ DEFAULT_NODES = [
                  {'id':5, 'name':'My firewall', 'state':'3','public_ip':'147.102.1.67', 'thumb' : 'static/netbsd.png'},
                  {'id':6, 'name':'My windows workstation', 'state':'0','public_ip':'147.102.1.69', 'thumb' : 'static/windows.png'},
                 ]
+
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")  
     current_template = template_path + name + '.html'

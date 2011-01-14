@@ -711,29 +711,32 @@ div.instance-type {
     margin: 4px 10px 20px 0;
 }
 
-div.active {
+div.active, div.inactive {
     height: 200px;
+    width: 500px;
+    overflow: auto;
 }
 
-div.active, div.stopped {
-    margin-left: -2.2em;
-    width: 500px;
-    padding: 1em;
-    margin-top: 1em;
+div.inactive {
+    opacity: .6;
+    margin-bottom: 17px;
 }
 
 div.list label img {
-    margin-right: .5em;
-    margin-bottom: -0.25em;
+    margin: 0 5px -3px 0;
 }
 
 div.list label {
     color: #3D3D3D;
-    font-size:9pt;
+    font-size: 9pt;
 }
 
 div.list div.running {
-    margin: .5em 0;
+    margin: 8px 8px 8px 0;
+}
+
+div.list div.stopped {
+    margin: 8px 8px 8px 0;
 }
 
 /* root element for tabs  */
@@ -769,11 +772,6 @@ div.list div.running {
 	color: white;
     background-color: #87AADE;	
 	cursor: default;
-}
-
-div.inactive {
-    opacity: .6;
-    margin-bottom: 25px;
 }
 
 div.list div.actions {

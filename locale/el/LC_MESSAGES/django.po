@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-01-07 18:19+0200\n"
+"POT-Creation-Date: 2011-01-14 21:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,25 +16,22 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: ui/views.py:7
-msgid "Ubuntu 10.10 server 64bit"
-msgstr " Ένα Ubunty 10.10 mpla mpla "
-
-#: ui/views.py:7
 msgid "Apache, MySQL, php5 preinstalled"
-msgstr ""
+msgstr "Apache, MySQL, php5 προεγκατεστημένα"
 
-#: ui/templates/alt_instances.html:4 ui/templates/instances.html:3
-msgid "Create New +"
-msgstr "Δημιουργία Νέου +"
 
-#: ui/templates/home.html:17
+#: ui/templates/home.html:24
 msgid "username"
 msgstr ""
 
-#: ui/templates/home.html:17
+#: ui/templates/home.html:24
 msgid "settings"
-msgstr ""
+msgstr "ρυθμίσεις"
 
-#: ui/templates/home.html:34
+#: ui/templates/home.html:48
 msgid "Greek Research and Technology Network - Cloud management web interface"
 msgstr "Εθνικό Δίκτυο Έρευνας και τεχνολογίας"
+
+#: ui/templates/instances.html:5
+msgid "Create New +"
+msgstr "Δημιουργία Νέου +"

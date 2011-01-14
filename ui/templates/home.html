@@ -1,5 +1,4 @@
 {% load i18n %}
-{% load localeurl_tags %}
 
 <!DOCTYPE html>
 
@@ -16,10 +15,9 @@
     <div id="wrapper">
 
     {% get_available_languages as LANGUAGES %}
-    
         <div id="language">
             {% for lang in LANGUAGES %}
-                <a href="{{request.path|chlocale:lang.0}}">{{lang.1}}</a> 
+                <a href="/lang/?l={{lang.0}}">{{lang.1}}</a> 
             {% endfor %}
         </div>
 

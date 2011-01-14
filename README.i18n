@@ -14,6 +14,8 @@ LANGUAGES = (
 1)for each language we want to add, we run makemessages, from our project's base:
 
 $ django-admin.py makemessages -l el -e=html,txt,py
+(./bin/django-admin.py makemessages -l el -e html,txt,py --ignore=lib/*)
+
 
 this will add the Greek language, and we specify that html, txt and python files contain translatable strings
 

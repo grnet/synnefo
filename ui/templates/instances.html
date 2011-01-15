@@ -320,7 +320,6 @@ $("#cancel").click(function(event){
 });
 
 $("#start").click(function(event){
-
     var triggers = $("a#notify").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
@@ -330,11 +329,13 @@ $("#start").click(function(event){
         top: 'center',
 	    closeOnClick: false,
         oneInstance: false,
-        load: true
+        load: true,
+        onClose: function(event){
+                $("div.pane#instances-pane").load($("a#standard").attr("href"));
+        }
     });
     $("#wizard").hide();
     update();
-    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%', oneInstance: false, closeOnClick: false});
 });
 
 $("a#create").click(function(event){

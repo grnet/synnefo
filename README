@@ -9,12 +9,13 @@ Installation
     $ virtualenv synnefo --no-site-packages
     ...
     $ cd synnefo
-    $ ./bin/pip install django django-piston 
+    $ ./bin/pip install django django-piston pycurl simplejson
     ...
     ...
     $ cp settings.py.dist settings.py
     $ ../bin/python manage.py runserver
 
+(On ubuntu systems, apt-get install libcurl3-gnutls libcurl3-gnutls-dev was needed)
 
 Alt - main
 ----------

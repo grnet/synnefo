@@ -2,6 +2,7 @@ import os
 from django.utils.translation import gettext_lazy as _
 from django.template import Context, loader
 from django.http import HttpResponse
+from django.utils.translation import get_language
 
 DEFAULT_IMAGES = [
               {'id': 'ubuntu-10.10-x86_64-server', 'type':'standard', 'title': 'Ubuntu 10.10 server 64bit', 'description': _('Apache, MySQL, php5 preinstalled'), 'size': '834', 'logo':'ubuntu.png'}, 
@@ -28,29 +29,25 @@ def template(name, context):
     return HttpResponse(t.render(Context(context)))
 
 def home(request):
-    context = { 'project' : '+nefo', 'request': request }
+    context = { 'project' : '+nefo', 'request': request, 'current_lang' : get_language() or 'en' }
     return template('home', context)
 
 def instances(request):
-    context = {'nodes': DEFAULT_NODES, 'images': DEFAULT_IMAGES}
+    context = {}
     return template('instances', context)
-
-def alt_instances(request):
-    context = {'nodes': DEFAULT_NODES, 'images': DEFAULT_IMAGES}
-    return template('alt_instances', context)
    
 def instances_list(request):
-    context = {'nodes': DEFAULT_NODES, 'images': DEFAULT_IMAGES}
+    context = {}
     return template('list', context)
 
 def images(request): 
-    context = {'images': DEFAULT_IMAGES}
+    context = {}
     return template('images', context)
 
 def disks(request):
-    context = { 'project' : '+nefo' }
+    context = {}
     return template('disks', context)
 
 def networks(request):
-    context = { 'project' : '+nefo' }
+    context = {}
     return template('networks', context)

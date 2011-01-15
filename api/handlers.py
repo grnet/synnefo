@@ -8,8 +8,12 @@ from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
+from synnefo.vocabs import MOCK_SERVERS, MOCK_IMAGES
 
-rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
+if settings.GANETI_CLUSTER_INFO:
+    rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
+else:
+    rapi = None
 
 VERSIONS = [
     {
@@ -49,6 +53,8 @@ class ServerHandler(BaseHandler):
             return self.read_one(request, id)
 
     def read_one(self, request, id):
+        if not rapi: # No ganeti backend. Return mock objects
+            return { "server": MOCK_SERVERS[0] }
         try:
             instance = rapi.GetInstance(id)
             return { "server": instance_to_server(instance) }
@@ -57,6 +63,12 @@ class ServerHandler(BaseHandler):
 
     @paginator
     def read_all(self, request, detail=False):
+        if not rapi: # No ganeti backend. Return mock objects
+            if detail:
+                return { "servers": MOCK_SERVERS }
+            else:
+                return { "servers": [ { "id": s['id'], "name": s['name'] } for s in MOCK_SERVERS ] }
+
         if not detail:
             instances = rapi.GetInstances(bulk=False)
             servers = [ { "id": id, "name": id } for id in instances ]
@@ -173,6 +185,13 @@ class ImageHandler(BaseHandler):
         Faults: cloudServersFault, serviceUnavailable, unauthorized,
                 badRequest, itemNotFound
         """
+        if not rapi: # No ganeti backend. Return mock objects
+            if id == "detail":
+                return { "images": MOCK_IMAGES }
+            elif id is None:
+                return { "images": [ { "id": s['id'], "name": s['name'] } for s in MOCK_IMAGES ] }
+            else:
+                return { "image": MOCK_IMAGES[0] }
         if id is None:
             return {}
         elif id == "detail":

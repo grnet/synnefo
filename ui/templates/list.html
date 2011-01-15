@@ -18,37 +18,19 @@
         <a>Connect to network</a>
         <a>Disconnect from net</a>
     </div>
-    <div class="active">
-        {% for node in nodes %}
-            {% if node.state == '3' %}
-                <div class="running">
-                    <label> 
-                        <input type="checkbox" class="instance" id={{ node.id }} />
-                        <img src="static/os_logos/{{ node.thumb }}" width="16" height="16" />
-                        <span>{{ node.name }}</span> | 
-                        <span>{{ node.public_ip }}</span> | 
-                        group
-                    </label>
-                    <div class="state">Running</div>
-                </div>
-            {% endif %}
-        {% endfor %}
+    <div class="running">
+        <div id="instance-template" style="display: none">
+            <label> 
+                <input type="checkbox" class="instance" id="node-id" />
+                <img class="list-logo" src="static/os_logos/node.thumb" width="16" height="16" />
+                <a class="name"><span class="name">node.name</span></a> | 
+                <a class="ip"><span class="public">node.public_ip</span></a> | 
+                group
+            </label>
+            <div class="status state">Running</div>
+        </div>
     </div>
     <div id="mini" class="seperator"></div>
-    <div class="inactive">
-        {% for node in nodes %}
-            {% if node.state == '0' %}
-                <div class="stopped">
-                    <label> 
-                        <input type="checkbox" class="instance" id={{ node.id }} />
-                        <img src="static/os_logos/{{ node.thumb }}" width="16" height="16" />
-                        <span>{{ node.name }}</span> | 
-                        <span>{{ node.public_ip }}</span> | 
-                        group
-                    </label>
-                    <div class="state">Terminated</div>
-                </div>
-            {% endif %}
-        {% endfor %}
+    <div class="terminated">
     </div>
 </div>

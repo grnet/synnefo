@@ -1,7 +1,5 @@
 {% load i18n %}
-
 <!DOCTYPE html>
-
 <head>
 	<title>{{ project }}</title>
 	<!-- include the Tools -->
@@ -10,41 +8,18 @@
     <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css' />
 
 </head>
-
 <body>
     <div id="wrapper">
-
-    {% get_available_languages as LANGUAGES %}
-        <div id="language">
+        <div id='user'>
+            <a href="#">{% trans "username" %}</a> &nbsp;|&nbsp; <a href="#">{% trans "settings" %}</a>
+            {% get_available_languages as LANGUAGES %}
             {% for lang in LANGUAGES %}
-                <a href="/lang/?l={{lang.0}}">{{lang.1}}</a> 
+                &nbsp;|&nbsp;
+                <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a> 
             {% endfor %}
         </div>
-
-        <div id='user'><a href="#">{% trans "username" %}</a> &nbsp;|&nbsp; <a href="#">{% trans "settings" %}</a>
-
-{% comment %}
-{% get_available_languages as LANGUAGES %}
-<form action="/i18n/setlang/" method="post">
-{% csrf_token %}
-<input name="next" type="hidden" value="/" />
-<select name="language">
-{% for language in LANGUAGES %}
-<option value="{{ language.0 }}">{{ language.1 }}::{{ language.0 }}</option>
-{% endfor %}
-</select>
-<input type="submit" value="Go" />
-</form>
-{% endcomment %}
-
-
-</div>
-
         <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
         <div id="header">
-
-
-
             <div id="about">{% trans "Greek Research and Technology Network - Cloud management web interface" %}</div>
             <a href="/" class="logo">
                 <h1>{{ project }}</h1>
@@ -58,10 +33,10 @@
 	        <li><a href="networks" title="configure networking" id="networks">networks</a></li>
         </ul>
         <div class="css-panes">
-	        <div class="pane" style="display:block"></div>
-	        <div class="pane"></div>
-	        <div class="pane"></div>
-	        <div class="pane"></div>
+	        <div id="instances-pane" class="pane" style="display:block">{% include "instances.html" %}</div>
+	        <div id="disks-pane" class="pane"></div>
+	        <div id="images-pane" class="pane"></div>
+	        <div id="networks-pane" class="pane"></div>
         </div>
     </div>
     <!-- activate tabs with JavaScript -->
@@ -75,11 +50,10 @@
 		});
         $(function() {
 	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
-		        effect: 'ajax',
 		        onBeforeClick: function(event, i) {
 			        // get the pane to be opened
 			        var pane = this.getPanes().eq(i);
-
+                    pane.text('');
 			        // load it with a page specified in the tab's href attribute
 			        pane.load(this.getTabs().eq(i).attr("href"));
 		        }

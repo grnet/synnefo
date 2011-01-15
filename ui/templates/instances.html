@@ -3,77 +3,46 @@
 <div id="instances" class="seperator"></div>
 
 <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
-
+<a id="notify" rel="#misc" href="#"></a>
 <div id="view-select">
-    <a id="standard" class="current" href="/">#</a>
+    <a id="standard" class="current" href="/instances">#</a>
     |
     <a id="list" href="/instances/list">=</a>
 </div>
 
+
+
 <div id="instancesview" class="standard">
 
+    <div class="instance" id="instance-template" style="display:none">
+        <div class="state">
+            <div class="status">Running</div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+        </div>
+        <img class="logo" src="static/machines/ubuntu.png" />
+        <a href="#" class="name">
+            <h5>Hostname: <span class="name">node.name</span><span class="rename"></span></h5>
+        </a>
+        <a href="#" class="ip">
+            <h5>IP: <span class="public">node.public_ip</span></h5>
+        </a>
+        <h5 class="storage">
+            Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a>
+        </h5>
+        <div class="actions">
+            <a href="#" class="action">Reboot</a>
+            <a href="#" class="action">Shutdown</a>
+            <a href="#" class="more">more &hellip;</a>
+        </div>
+    </div>
+
     <div class="running">
-        {% for node in nodes %}
-            {% if node.state == '3' %} 
-                <div class="instance running">
-                    <div class="actions">
-                        <a href="#" class="action">Reboot</a>
-                        <a href="#" class="action">Shutdown</a>
-                        <a href="#" class="more">more &hellip;</a>
-                    </div>
-                    <div class="state">
-                        <div>Running</div>
-                        <div class="indicator" />
-                        <div class="indicator" />
-                        <div class="indicator" />
-                        <div class="indicator" />
-                    </div>
-                    <img src="static/machines/{{ node.thumb }}" />
-                    <a href="#" class="name">
-                        <h5>Hostname: <span>{{ node.name }}</span><span class="rename"></span></h5>
-                    </a>
-                    <a href="#" class="ip">
-                        <h5>IP: <span>{{ node.public_ip }}</span></h5>
-                    </a>
-                    <br />
-                    <h5 class="storage">
-                        Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
-                    </h5>
-                </div>
-            {% endif %}
-        {% endfor %}
     </div>
     <div id="mini" class="seperator"></div>
     <div class="terminated">
-        {% for node in nodes %}
-            {% if node.state == '0' %}
-                <div class="instance terminated">
-                    <div class="actions">
-                        <a href="#" class="action">Start</a>
-                        <a href="#" class="action">Destroy</a>
-                        <a href="#" class="more">more &hellip;</a>
-                    </div>
-                    <div class="state">
-                        <div>Terminated</div>
-                        <div class="indicator" />
-                        <div class="indicator" />
-                        <div class="indicator" />
-                        <div class="indicator" />
-                    </div>
-                    <img src="static/machines/{{ node.thumb }}" />
-                    <a href="#" class="name">
-                        <h5>Hostname: <span>{{ node.name }}</span><span class="rename"></span></h5>
-                    </a>
-                    <a href="#" class="ip">
-                        <h5>IP: <span>{{ node.public_ip }}</span></h5>
-                    </a>
-                    <br />
-                    <h5 class="storage">
-                        Show: <a href="#">disks</a> | <a href="#">networks</a> | <a href="#">group</a> | uptime: 24 days
-                    </h5>
-                </div>
-            {% endif %}
-        {% endfor %} 
     </div>
 </div>
 
@@ -99,44 +68,25 @@
                     <li><a href="#">custom</a></li>
                 </ul>
                 <div class="panes">
-                    <ul class="pane">
+		            <li id="image-template" style="display:none">
+			            <label for="image.id"> 
+                            <a><div class="image">
+                                <img src="static/os_logos/image.logo" class="image-logo"/>
+                                <strong class="image-title">image.title</strong>
+                                <input class="radio" type="radio" name="image-id" id="image-id" />
+                                <br />
+                                <span class="description">image.description</span> 
+                                <span class="size">?? MB</span>
+                                
+                            </div></a>
+			            </label>
+		            </li>
+                    <ul class="pane" id="standard-images">
 					    <!-- standard images -->
-                        {% for image in images %}
-                            {% if image.type == 'standard' %}
-					            <li>
-						            <label for={{ image.id }}> 
-                                        <a><div class="image">
-                                            <img src="static/os_logos/{{ image.logo }}" class="image-logo"/>
-                                            <strong>{{ image.title }}</strong>
-                                            <input class="radio" type="radio" {% if forloop.first %}checked="checked"{% endif %} name="image-id" id={{ image.id }} />
-                                            <br />
-                                            <span class="description">{{ image.description }}</span> 
-                                            <span class="size">{{ image.size }}MB</span>
-                                            
-                                        </div></a>
-						            </label>
-					            </li>
-                            {% endif %}
-                        {% endfor %} 
 				    </ul>
-                    <ul class="pane">
+                    <ul class="pane" id="custom-images">
 					    <!-- custom images -->
-                        {% for image in images %}
-                            {% if image.type == 'custom' %}
-					            <li>
-						            <label for={{ image.id }}> 
-                                        <a><div class="image">
-                                            <img src="static/os_logos/{{ image.logo }}" class="image-logo"/>
-                                            <strong>{{ image.title }}</strong>
-                                            <input class="radio" type="radio" name="image-id" id={{ image.id }} />
-                                            <br />
-                                            <span class="description">{{ image.description }}</span> 
-                                            <span class="size">{{ image.size }}MB</span>
-                                        </div></a>
-						            </label>
-					            </li>
-                            {% endif %}
-                        {% endfor %}
+
                     </ul>
                 </div>
 				<button type="button" class="prev" id="cancel">Cancel</button>
@@ -235,11 +185,98 @@
 
 <script>
 // <![CDATA[ 
+var image_tags = {
+                1: 'archlinux',
+                2: 'centos',
+                3: 'debian',
+                4: 'freebsd',
+                5: 'gentoo',
+                6: 'netbsd',
+                7: 'openbsd',
+                8: 'redhat',
+                9: 'slackware',
+                10: 'suse',
+                11: 'ubuntu',
+                12: 'windows',
+               };
 
+function update() {
+
+    $("div.running").text('');
+    $("div.terminated").text('');
+    $("ul#standard-images").text('');
+    $("ul#custom-images").text('');
+
+    $.ajax({
+        url: '/api/v1.0/servers/detail',
+        type: "GET",
+    //    async: false,
+        dataType: "json",
+        success: function(data) {
+            $.each(data.servers, function(i,server){
+                var instance = $('#instance-template').clone().attr("id",server.id).fadeIn("slow");
+                instance.find("a.name span.name").text(server.name);
+                instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
+                instance.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
+                instance.find("a.ip span.public").text(String(server.addresses.public));            
+
+                if (server.status == 'BUILD'){
+                    instance.find("div.status").text('Building');
+                    instance.appendTo("div.running");
+                } else if (server.status == 'ACTIVE') {
+                    instance.find("div.status").text('Running');
+                    instance.appendTo("div.running");
+                } else if (server.status == 'SUSPENDED') {
+                    instance.find("div.status").text('Terminated');
+                    instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                    instance.appendTo("div.terminated");
+                } else {
+                    instance.find("div.status").text('Unknown');
+                    instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                    instance.appendTo("div.terminated");
+                }
+
+
+            });
+        }
+    });
+
+    $.ajax({
+        url: '/api/v1.0/images/detail',
+        type: "GET",
+    //    async: false,
+        dataType: "json",
+        success: function(data) {
+            $.each(data.images, function(i,image){
+                var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
+                img.find("label").attr('for',"img-radio-" + image.id);
+                img.find(".image-title").text(image.name);
+                img.find("input.radio").attr('id',"img-radio-" + image.id);
+                if (i==0) img.find("input.radio").attr("checked","checked"); 
+                img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
+                if (image.serverId) {
+                    img.appendTo("ul#custom-images");
+                } else {
+                    img.appendTo("ul#standard-images");
+                }
+            });
+        }
+    });
+}
+update();
 $("#list").click(function(event){
-    $("div#instancesview").load($("#list").attr("href"));
+    $("div.standard#instancesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
     this.style.color = '#5f8dd3';
+    update(); 
+    return false;
+});
+
+$("a#standard").click(function(event){
+    href=$("a#standard").attr("href");
+    $("div.pane#instances-pane").load(href);
+    //$("a#standard")[0].className += ' activelink'
+    //this.style.color = '#5f8dd3';
     return false;
 });
 
@@ -283,18 +320,21 @@ $("#cancel").click(function(event){
 });
 
 $("#start").click(function(event){
-    $("a#create[rel]").overlay().close();
 
-    var triggers = $("div#misc").overlay({
+    var triggers = $("a#notify").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
 		    color: '#ebecff',
 		    opacity: '0.9'
 	    },
         top: 'center',
-        load: 'true',
-	    closeOnClick: 'false'  
+	    closeOnClick: false,
+        oneInstance: false,
+        load: true
     });
+    $("#wizard").hide();
+    update();
+    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%', oneInstance: false, closeOnClick: false});
 });
 
 $("a#create").click(function(event){
@@ -314,8 +354,7 @@ $("#storage").change(function(event){
 });
 
 $(function() { 
-    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%'});
-
+    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%', oneInstance: false, closeOnClick: false});
 });
 
 $(function() {

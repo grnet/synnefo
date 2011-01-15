@@ -514,7 +514,6 @@ div.instance {
     width: 70px;
     margin:-44px -75px 0 0;
     font-weight: normal;
-    height: 67px;
 }
 
 .actions a {
@@ -559,6 +558,7 @@ div.ip, div.state {
 
 .list .state {
     margin-top: 3px;
+    margin-right: 10px;
 }
 
 div.indicator {
@@ -693,6 +693,9 @@ color:white;
 a#list:hover {
 background: #5f8dd3;
 }
+a#standard:hover{
+background: #5f8dd3;
+}
 
 a#standard:active, a#list:active {
 color:white;
@@ -708,7 +711,7 @@ div.instance-type {
 }
 
 div.active, div.inactive {
-    height: 200px;
+    min-height: 200px;
     width: 500px;
     overflow: auto;
 }
@@ -716,6 +719,10 @@ div.active, div.inactive {
 div.inactive {
     opacity: .6;
     margin-bottom: 17px;
+}
+
+div.list#instancesview {
+min-height: 270px; 
 }
 
 div.list label img {
@@ -729,6 +736,8 @@ div.list label {
 
 div.list div.running {
     margin: 8px 8px 8px 0;
+    height: 200px; 
+    overflow: auto;
 }
 
 div.list div.stopped {
@@ -777,6 +786,7 @@ div.list div.actions {
     margin-top: 9px;
     text-align: right;
     width: 150px;
+    height: 1000px;
 }
 
 div.list div.actions a {

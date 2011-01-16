@@ -131,7 +131,7 @@ ul.css-tabs a:hover {
 /* selected tab */
 ul.css-tabs a.current {
 	cursor:default;   
-    top: 0px !important; 
+    top: 2px !important; 
 }
 
 /* tab pane */

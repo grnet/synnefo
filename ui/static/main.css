@@ -89,7 +89,7 @@ ul.css-tabs a {
 	position:relative;
 	outline:0;
     padding: 0 9px 0 13px;
-    margin-top: 7px;
+    top: 7px;
 }
 
 ul.css-tabs a#instances {
@@ -105,7 +105,7 @@ ul.css-tabs a#disks {
 }
 
 ul.css-tabs a#disks.current {
-  color: #dea842;
+    color: #dea842;
 }
 
 ul.css-tabs a#images {
@@ -125,13 +125,13 @@ ul.css-tabs a#networks.current {
 }
 
 ul.css-tabs a:hover {
-    margin-top: 2px;
+
 }
 	
 /* selected tab */
 ul.css-tabs a.current {
-	cursor:default;
-    margin-top: 2px;
+	cursor:default;   
+    top: 0px !important; 
 }
 
 /* tab pane */

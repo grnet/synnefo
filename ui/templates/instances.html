@@ -10,6 +10,8 @@
     <a id="list" href="/instances/list">=</a>
 </div>
 
+
+
 <div id="instancesview" class="standard">
 
     <div class="instance" id="instance-template" style="display:none">
@@ -329,7 +331,7 @@ $("#start").click(function(event){
         oneInstance: false,
         load: true,
         onClose: function(event){
-                $("div.pane#instances-pane").load($("a#standard").attr("href"));
+            $("div.pane#instances-pane").load($("a#standard").attr("href"));
         }
     });
     $("#wizard").hide();

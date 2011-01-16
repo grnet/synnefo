@@ -42,19 +42,21 @@
     <script>
 		$(function() {
 		    $('ul.css-tabs li').hover(function(){
-			    $(this).find('a:not(.current)').animate({top:'-3px'},{queue:false,duration:150});
+			    $(this).find('a:not(.current)').animate({top:'0px'},{queue:false,duration:150});
             }, function(){
-                $(this).find('a:not(.current)').animate({top:'0px'},{queue:false,duration:150});
+                $('ul.css-tabs li a:not(.current)').animate({top:'7px'},{queue:false,duration:150});
 		    });
 		});
         $(function() {
 	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
 		        onBeforeClick: function(event, i) {
+                    $('ul.css-tabs li a').animate({top:'7px'},{queue:false,duration:150});
 			        // get the pane to be opened
 			        var pane = this.getPanes().eq(i);
                     pane.text('');
 			        // load it with a page specified in the tab's href attribute
 			        pane.load(this.getTabs().eq(i).attr("href"));
+
 		        }
 	        });
         });

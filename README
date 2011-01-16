@@ -16,9 +16,3 @@ Installation
     $ ../bin/python manage.py runserver
 
 (On ubuntu systems, apt-get install libcurl3-gnutls libcurl3-gnutls-dev was needed)
-
-Alt - main
-----------
-To change between alt and main view, in ui/templates/home.html
-    (line 7) change alt-main.css <-> main.css
-    (line 24) href="alt-instances" <-> href="instances"

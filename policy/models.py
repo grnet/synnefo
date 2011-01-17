@@ -9,7 +9,7 @@ class Users(models.Model):
 	user_credit = models.IntegerField()
 	user_quota = models.IntegerField()
 	user_created = models.DateField()
-	resources = models.ManyToManyField(Resource)
+	resources = models.ManyToManyField(Resource, through='UserResource')
 	groups = models.ManyToManyField(Group, through='UserGroup')
 	
 class VMachine(models.Model):
@@ -18,7 +18,7 @@ class VMachine(models.Model):
 	vm_active = models.BooleanField()
 	vm_started = models.DateTimeField()
 	users = models.ManyToManyField(Users)
-	resources = models.ManyToManyField(Resource)
+	resources = models.ManyToManyField(Resource, through='VMResource')
 	
 class ChargingLog(models.Model):
 	vm_id = models.ForeignKey(VMachine)
@@ -31,9 +31,24 @@ class Groups(models.Model):
 	gr_credit = models.IntegerField()
 	gr_quota = models.IntegerField()
 	gr_created = models.DateTimeField()
-	resources = models.ManyToManyField(Resource)
+	resources = models.ManyToManyField(Resource, through='GroupResource')
 	
 class UserGroup(models.Model):
 	user = models.ForeignKey(Users)
 	group = models.ForeignKey(Groups)
 	ug_credit = models.IntegerField()
+
+class UserResource(models.Model):
+	user = models.ForeignKey(Users)
+	resource = models.ForeignKey(Resource)
+	ur_value = models.IntegerField()
+	
+class GroupResource(models.Model):
+	group = models.ForeignKey(Groups)
+	resource = models.ForeignKey(Resource)
+	gr_resource = models.IntegerField()
+	
+class VMResource(models.Model):
+	vmachine = models.ForeignKey(VMachine)
+	resource = models.ForeignKey(Resource)
+	conf_value = models.IntegerField()

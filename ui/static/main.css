@@ -459,7 +459,7 @@ div.instance {
     width: 523px;
     border: 1px dashed transparent;
     color: #666;
-    height: 65px;
+    height: 63px;
 }
 
 .instance a {
@@ -600,12 +600,6 @@ a.settings:hover span.configure {
     color: #3D3D3D;
 }
 
-#ubuntu {
-    height:50px;
-    background: url(../static/ubuntu-logo.png) no-repeat 0 0;
-    padding-left: 50px;
-}
-
 button {
     background-color: #87AADE;
     border: 1px solid #87AADE;
@@ -650,7 +644,7 @@ div#view-select {
     clear: both;
     color: white;
     margin-top: -62px;
-    margin-right: -36px;
+    margin-right: -70px;
     font-size: 9pt;
     background-color: #87aade;
     padding: 5px 10px;
@@ -867,7 +861,7 @@ div#user a.current_lang {
 .instance .seperator {
     width: 508px;
     height: 1px;
-    margin: 6px 0 0 15px;
+    margin: 4px 0 0 15px;
     background-color: #DCDCDC;
 }
 

@@ -833,7 +833,7 @@ div#user a{
 }
 
 div#user a.current_lang {
-    opacity: .7;
+    opacity: .5;
 }
 
 .seperator {

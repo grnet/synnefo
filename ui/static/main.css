@@ -457,9 +457,8 @@ div.instance {
     margin: -1px 0 0 -32px;
     padding: 3px 4px 0;
     width: 523px;
-    border: 1px dashed transparent;
     color: #666;
-    height: 63px;
+    height: 65px;
 }
 
 .instance a {
@@ -515,9 +514,7 @@ a.action:hover, a.more:hover {
 }
 
 .instance:hover {
-    border: 1px dotted transparent;
     background-color:#dcdcdc;
-    color: #3d3d3d;
 }
 
 .instance img {
@@ -546,16 +543,13 @@ div.indicator {
 .view-seperator {
     color:#5F8DD3;    
 }
+
 .running .indicator {
     border-top: 2px solid white;
     border-bottom: 2px solid white;
     border-left: 2px solid white;
     border-right: 3px solid white;
     background-color: #87AADE;
-}
-
-.instance:hover .indicator {  
-    border-color: #dcdcdc !important;
 }
 
 .terminated {

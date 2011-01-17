@@ -13,7 +13,7 @@ LANGUAGES = (
 
 1)for each language we want to add, we run makemessages, from our project's base:
 
-$ django-admin.py makemessages -l el -e=html,txt,py
+$ ./bin/django-admin.py makemessages -l el -e html,txt,py
 (./bin/django-admin.py makemessages -l el -e html,txt,py --ignore=lib/*)
 
 
@@ -36,13 +36,13 @@ then on each string that needs to be translated, we put it on {% trans "string" 
 
 
 3)when we have put our strings to be translated, from the project's base we run
-$ django-admin.py makemessages -l el -e=html,txt,py
+$ django-admin.py makemessages -l el -e html,txt,py
 processing language el
 
 this creates (or updates) the po file for the Greek language. We run this command each time we add new strings to be translated. After that, we can translate our strings, on the po file (locale/el/LC_MESSAGES/django.po)
 
 4)when we are ready, we run the following command from the project's base
-$ django-admin.py compilemessages
+$ ./bin/django-admin.py compilemessages
 
 this compiles the po files to mo. 
 

@@ -339,9 +339,6 @@ div#wrapper {
 #wizard a:hover div.image {
     background-color: #999;
 }
-#wizard a:hover div.image img {
-    background-color: #999;
-}
 
 #wizard label a:hover strong {
     color: white;
@@ -643,7 +640,7 @@ button.prev {
 }
 
 div.image {
-    padding: 1em;
+    padding: 10px;
     clear: both;
     display: block;
 }
@@ -675,6 +672,7 @@ color:white;
 a#list:hover {
 background: #5f8dd3;
 }
+
 a#standard:hover{
 background: #5f8dd3;
 }
@@ -729,6 +727,11 @@ div.list div.stopped {
 /* root element for tabs  */
 #wizard ul.tabs { 
     margin-left: 260px; 		 	
+}
+
+#wizard div.panes {
+    height: 270px;
+    margin-bottom: 6px;
 }
 
 /* single tab */

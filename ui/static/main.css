@@ -560,6 +560,8 @@ div.indicator {
 
 .terminated {
     margin-bottom: 17px;
+    max-height: 200px;
+    overflow: auto;
     opacity: 0.6;
 }
 

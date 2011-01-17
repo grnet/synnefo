@@ -187,7 +187,7 @@ div.css-panes {
     cursor: pointer;
     display: block;
     padding: 6px 24px;
-    margin: 12px 0 12px -36px;
+    margin: 12px 0 20px -36px;
     width: 125px;
     text-decoration: none;
 }
@@ -196,7 +196,7 @@ div.css-panes {
     background-color: #a8c5f1;
 }
 
-#header .separator{
+#header .fatborder{
     height: 60px;
     background: #999;
 }
@@ -454,12 +454,12 @@ div#wrapper {
 
 div.instance {
     clear: both;
-    margin: 5px 0 0 -32px;
+    margin: -1px 0 0 -32px;
     padding: 3px 4px 0;
     width: 523px;
     border: 1px dashed transparent;
     color: #666;
-    height: 67px;
+    height: 65px;
 }
 
 .instance a {
@@ -486,7 +486,7 @@ div.instance {
 .actions {
     float: right;
     width: 70px;
-    margin:-53px -75px 0 0;
+    margin:-60px -75px 0 0;
     font-weight: normal;
 }
 
@@ -522,7 +522,7 @@ a.action:hover, a.more:hover {
 
 .instance img {
     float: left;
-    margin: 0em 14px 0 14px;
+    margin: 7px 14px 0;
 }
 
 div.ip, div.state {
@@ -864,11 +864,18 @@ div#user a.current_lang {
     background-color: #9d6d6a;
 }
 
+.instance .seperator {
+    width: 508px;
+    height: 1px;
+    margin: 6px 0 0 15px;
+    background-color: #DCDCDC;
+}
+
 .instance h5 {
     margin: 0px 60px 1px 84px;
 }
 
 .instance .settings {
-    margin-top: 15px;
+    margin-top: 22px;
 }
 

@@ -196,7 +196,7 @@ div.css-panes {
     background-color: #a8c5f1;
 }
 
-div#header {
+#header .separator{
     height: 60px;
     background: #999;
 }
@@ -204,29 +204,6 @@ div#header {
 div#wrapper {
     width: 700px;
     margin: 0em auto;
-}
-
-a.logo {
-    width: 250px; 
-}
-
-a.logo h1 {
-    display: none;
-}
-
-a.logo:hover h1 {
-    color: #3baddb;
-}
-a img {
-    border: none;
-}
-
-div#about {
-    display:none;
-}    
-
-#nefo {
-    margin: 10px 0 -2px 25px;
 }
 
 .modal {

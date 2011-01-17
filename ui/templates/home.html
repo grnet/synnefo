@@ -18,11 +18,11 @@
                 <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a> 
             {% endfor %}
         </div>
-        <div id='nefo'><a href="/" class="logo"><img src="static/nefo.png"/></a></div>
-        <div id="header">
+        <div id='header'>
             <a href="/" class="logo">
-                <h1>{{ project }}</h1>
+                <img src="static/nefo.png" alt="+nefo"/>
             </a>
+            <div class='separator'></div>
         </div>
         <!-- tabs -->
         <ul class="css-tabs">

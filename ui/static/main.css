@@ -527,11 +527,6 @@ div.ip, div.state {
     color: #3d3d3d;
 }
 
-.list .state {
-    margin-top: 3px;
-    margin-right: 10px;
-}
-
 div.indicator {
     width:10px;
     height:11px;
@@ -698,6 +693,11 @@ div.list label img {
 div.list label {
     color: #3D3D3D;
     font-size: 9pt;
+}
+
+div.list .state {
+    margin-top: 7px;
+    margin-right: 10px;
 }
 
 div.list div.running {

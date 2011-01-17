@@ -489,7 +489,7 @@ div.instance {
 .actions {
     float: right;
     width: 70px;
-    margin:-44px -75px 0 0;
+    margin:-53px -75px 0 0;
     font-weight: normal;
 }
 
@@ -596,7 +596,7 @@ a.name:hover span.rename {
 }
 
 
-a.storage:hover span.configure {
+a.settings:hover span.configure {
     color: #3D3D3D;
 }
 
@@ -859,7 +859,10 @@ div#user a.current_lang {
 }
 
 .instance h5 {
-    margin-left: 84px;
-    margin-right: 60px;
+    margin: 0px 60px 1px 84px;
+}
+
+.instance .settings {
+    margin-top: 15px;
 }
 

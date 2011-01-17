@@ -560,9 +560,12 @@ div.indicator {
 
 .terminated {
     margin-bottom: 17px;
+    opacity: 0.6;
+}
+
+.list .terminated {
     max-height: 200px;
     overflow: auto;
-    opacity: 0.6;
 }
 
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {

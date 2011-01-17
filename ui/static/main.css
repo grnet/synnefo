@@ -543,6 +543,9 @@ div.indicator {
     float:right;
 }
 
+.view-seperator {
+    color:#5F8DD3;    
+}
 .running .indicator {
     border-top: 2px solid white;
     border-bottom: 2px solid white;

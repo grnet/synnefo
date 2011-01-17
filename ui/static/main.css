@@ -557,11 +557,6 @@ div.indicator {
     opacity: 0.6;
 }
 
-.list .terminated {
-    max-height: 200px;
-    overflow: auto;
-}
-
 .instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
     color: #3d3d3d;
 }
@@ -697,7 +692,7 @@ min-height: 270px;
 }
 
 div.list label img {
-    margin: 0 5px -3px 0;
+    margin: 5px 5px -3px 0;
 }
 
 div.list label {
@@ -706,13 +701,22 @@ div.list label {
 }
 
 div.list div.running {
-    margin: 8px 8px 8px 0;
-    height: 200px; 
+    margin-top: 8px;
+    max-height: 310px; 
+    overflow: auto;
+}
+
+div.list .terminated {
+    max-height: 200px;
     overflow: auto;
 }
 
 div.list div.stopped {
-    margin: 8px 8px 8px 0;
+    margin-top: 8px;
+}
+
+div.list #mini.seperator {
+    margin-top: 0;
 }
 
 /* root element for tabs  */
@@ -838,7 +842,7 @@ div#user a.current_lang {
 }
 
 #mini.seperator {
-    width: 538px;
+    width: 535px;
     height: 5px;
     margin: 17px 0 17px -36px;
 }

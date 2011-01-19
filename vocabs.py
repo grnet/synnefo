@@ -36,7 +36,7 @@ MOCK_IMAGES = [
                     "status" : "ACTIVE"
                 },
                 {
-                    "id" : 11,
+                    "id" : 20,
                     "name" : "Ubuntu 10.10 server 64bit",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",

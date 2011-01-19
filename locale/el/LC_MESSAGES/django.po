@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-01-19 11:26+0200\n"
+"POT-Creation-Date: 2011-01-19 17:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,17 +26,17 @@ msgstr "ρυθμίσεις"
 
 #: ui/templates/home.html:29
 msgid "manage your virtual machines"
-msgstr ""
+msgstr "διαχειριστείτε τις εικονικές μηχανές σας"
 
 #: ui/templates/home.html:29
-msgid "instances"
-msgstr ""
+msgid "machines"
+msgstr "μηχανές"
 
 #: ui/templates/home.html:30
 msgid "manage your storage volumes"
 msgstr "διαχειριστείτε το χώρο σας"
 
-#: ui/templates/home.html:30 ui/templates/instances.html:31
+#: ui/templates/home.html:30 ui/templates/machines.html:31
 msgid "disks"
 msgstr "δίσκοι"
 
@@ -52,134 +52,136 @@ msgstr ""
 msgid "configure networking"
 msgstr ""
 
-#: ui/templates/home.html:32 ui/templates/instances.html:31
+#: ui/templates/home.html:32 ui/templates/machines.html:31
 msgid "networks"
 msgstr "δίκτυα"
 
-#: ui/templates/instances.html:5
+#: ui/templates/machines.html:5
 msgid "Create New +"
 msgstr "Δημιουργία +"
 
-#: ui/templates/instances.html:17
+#: ui/templates/machines.html:17
 msgid "Running"
 msgstr "Τρέχουν"
 
-#: ui/templates/instances.html:31
+#: ui/templates/machines.html:31
 msgid "Show:"
 msgstr "Δείξε:"
 
-#: ui/templates/instances.html:31
+#: ui/templates/machines.html:31
 msgid "group"
 msgstr "γκρουπ"
 
-#: ui/templates/instances.html:34
+#: ui/templates/machines.html:34
 msgid "Reboot"
 msgstr "Επανεκκίνηση"
 
-#: ui/templates/instances.html:35
+#: ui/templates/machines.html:35
 msgid "Shutdown"
 msgstr "Κλείσιμο"
 
-#: ui/templates/instances.html:36
+#: ui/templates/machines.html:36
 msgid "more"
 msgstr "περισσότερα"
 
-#: ui/templates/instances.html:54
+#: ui/templates/machines.html:54
 msgid "Image"
 msgstr ""
 
-#: ui/templates/instances.html:55
+#: ui/templates/machines.html:55
 msgid "Instance"
 msgstr ""
 
-#: ui/templates/instances.html:56
+#: ui/templates/machines.html:56
 msgid "Review"
 msgstr ""
 
-#: ui/templates/instances.html:62
+#: ui/templates/machines.html:62
 msgid "Select an OS"
 msgstr "Επιλέξτε ένα ΛΣ"
 
-#: ui/templates/instances.html:64
+#: ui/templates/machines.html:64
 msgid "standard"
 msgstr ""
 
-#: ui/templates/instances.html:65 ui/templates/instances.html.py:117
+#: ui/templates/machines.html:65 ui/templates/machines.html.py:117
 msgid "custom"
 msgstr ""
 
-#: ui/templates/instances.html:89
+#: ui/templates/machines.html:89
 msgid "Cancel"
 msgstr "Άκυρο"
 
-#: ui/templates/instances.html:90 ui/templates/instances.html.py:140
+#: ui/templates/machines.html:90 ui/templates/machines.html.py:140
 msgid "Next"
 msgstr "Επόμενο"
 
-#: ui/templates/instances.html:93
+#: ui/templates/machines.html:93
 msgid "Select CPU, RAM and storage"
 msgstr "Επιλέξτε CPU, μνήμη και αποθηκευτικό χώρο"
 
-#: ui/templates/instances.html:99
+#: ui/templates/machines.html:99
 msgid "small"
 msgstr "μικρό"
 
-#: ui/templates/instances.html:105
+#: ui/templates/machines.html:105
 msgid "medium"
 msgstr "μεσαίο"
 
-#: ui/templates/instances.html:111
+#: ui/templates/machines.html:111
 msgid "large"
 msgstr "μεγάλο"
 
-#: ui/templates/instances.html:135 ui/templates/instances.html.py:164
+#: ui/templates/machines.html:135 ui/templates/machines.html.py:164
 msgid "Cost per hour:"
 msgstr "Κόστος ανά ώρα:"
 
-#: ui/templates/instances.html:135 ui/templates/instances.html.py:164
+#: ui/templates/machines.html:135 ui/templates/machines.html.py:164
 msgid "credits"
 msgstr "μονάδες"
 
-#: ui/templates/instances.html:135
+#: ui/templates/machines.html:135
 msgid "Credits currently in account:"
 msgstr "Μονάδες στο λογαριασμό:"
 
-#: ui/templates/instances.html:139 ui/templates/instances.html.py:170
+#: ui/templates/machines.html:139 ui/templates/machines.html.py:170
 msgid "Back"
 msgstr "Πίσω"
 
-#: ui/templates/instances.html:143
+#: ui/templates/machines.html:143
 msgid "Confirm your settings"
 msgstr "Επιβεβαιώστε τις ρυθμίσεις"
 
-#: ui/templates/instances.html:152
+#: ui/templates/machines.html:152
 msgid "Image:"
 msgstr ""
 
-#: ui/templates/instances.html:155
+#: ui/templates/machines.html:155
 msgid "CPU:"
 msgstr ""
 
-#: ui/templates/instances.html:158
+#: ui/templates/machines.html:158
 msgid "RAM:"
 msgstr ""
 
-#: ui/templates/instances.html:161
+#: ui/templates/machines.html:161
 msgid "Storage:"
 msgstr ""
 
-#: ui/templates/instances.html:167
+#: ui/templates/machines.html:167
 msgid "Remaining credits:"
 msgstr "Μονάδες που απομένουν:"
 
-#: ui/templates/instances.html:171
+#: ui/templates/machines.html:171
 msgid "Create VM"
 msgstr "Δημιουργία VM"
 
-#: ui/templates/instances.html:179
+#: ui/templates/machines.html:179
 msgid "Your password is:"
 msgstr "Ο κωδικός σας είναι:"
 
-#: ui/templates/instances.html:180
+#: ui/templates/machines.html:180
 msgid "Please copy this! Without it you can not connect to your VM."
-msgstr "Παρακαλώ αντιγράψτε τον κωδικό! Χωρίς αυτό δεν θα μπορείτε να συνδεθείτε στο VM"
+msgstr ""
+"Παρακαλώ αντιγράψτε τον κωδικό! Χωρίς αυτό δεν θα μπορείτε να συνδεθείτε στο "
+"VM"

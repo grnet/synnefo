@@ -15,11 +15,11 @@ def home(request):
     context = { 'project' : '+nefo', 'request': request, 'current_lang' : get_language() or 'en' }
     return template('home', context)
 
-def instances(request):
+def machines(request):
     context = {}
-    return template('instances', context)
+    return template('machines', context)
    
-def instances_list(request):
+def machines_list(request):
     context = {}
     return template('list', context)
 

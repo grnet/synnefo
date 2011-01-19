@@ -1,16 +1,16 @@
 {% load i18n %}
 
-<div id="instances" class="seperator"></div>
+<div id="machines" class="seperator"></div>
 
 <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
 <a id="notify" rel="#misc" href="#"></a>
 <div id="view-select">
-    <a id="standard" class="current" href="/instances">#</a>
+    <a id="standard" class="current" href="/machines">#</a>
     <span class="view-seperator">|</span>
-    <a id="list" href="/instances/list">=</a>
+    <a id="list" href="/machines/list">=</a>
 </div>
 
-<div id="instancesview" class="standard">
+<div id="machinesview" class="standard">
 
     <div class="instance" id="instance-template" style="display:none">
         <div class="state">
@@ -43,7 +43,7 @@
     <div class="terminated"></div>
 </div>
 
-<div id="instances" class="seperator"></div>
+<div id="machines" class="seperator"></div>
 
 <!-- the form -->
 <form action="#">
@@ -264,7 +264,7 @@ function update() {
 }
 update();
 $("#list").click(function(event){
-    $("div.standard#instancesview").load($("#list").attr("href"));
+    $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
     this.style.color = '#5f8dd3';
     update(); 
@@ -273,7 +273,7 @@ $("#list").click(function(event){
 
 $("a#standard").click(function(event){
     href=$("a#standard").attr("href");
-    $("div.pane#instances-pane").load(href);
+    $("div.pane#machines-pane").load(href);
     //$("a#standard")[0].className += ' activelink'
     //this.style.color = '#5f8dd3';
     return false;
@@ -330,7 +330,7 @@ $("#start").click(function(event){
         oneInstance: false,
         load: true,
         onClose: function(event){
-            $("div.pane#instances-pane").load($("a#standard").attr("href"));
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
         }
     });
     $("#wizard").hide();

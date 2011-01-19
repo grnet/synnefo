@@ -92,11 +92,11 @@ ul.css-tabs a {
     top: 7px;
 }
 
-ul.css-tabs a#instances {
+ul.css-tabs a#machines {
     color: #a3bbc5;
 }
 
-ul.css-tabs a#instances.current {
+ul.css-tabs a#machines.current {
   color: #87aade;
 }
 
@@ -682,7 +682,7 @@ div.inactive {
     margin-bottom: 17px;
 }
 
-div.list#instancesview {
+div.list#machinesview {
 min-height: 270px; 
 }
 

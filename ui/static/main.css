@@ -845,6 +845,7 @@ div#user a.current_lang {
     width: 535px;
     height: 5px;
     margin: 17px 0 17px -36px;
+    display: none;
 }
 
 #disks.seperator {

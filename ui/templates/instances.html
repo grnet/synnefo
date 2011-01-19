@@ -227,6 +227,7 @@ function update() {
                     instance.find("div.status").text('Terminated');
                     instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
                     instance.appendTo("div.terminated");
+                    $("#mini.seperator").fadeIn("slow");
                 } else {
                     instance.find("div.status").text('Unknown');
                     instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');

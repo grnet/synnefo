@@ -11,7 +11,7 @@
 </div>
 
 <div id="machinesview" class="standard">
-
+    <div id="spinner"></div>
     <div class="instance" id="instance-template" style="display:none">
         <div class="state">
             <div class="status">{% trans "Running" %}</div>
@@ -203,6 +203,7 @@ function update() {
     $("div.terminated").text('');
     $("ul#standard-images").text('');
     $("ul#custom-images").text('');
+    $("#spinner").show();
 
     $.ajax({
         url: '/api/v1.0/servers/detail',
@@ -211,7 +212,8 @@ function update() {
         dataType: "json",
         success: function(data) {
             $.each(data.servers, function(i,server){
-                var instance = $('#instance-template').clone().attr("id",server.id).fadeIn("slow");
+
+                var instance = $("#instance-template").clone().attr("id",server.id).fadeIn("slow");
                 instance.find("a.name span.name").text(server.name);
                 instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
                 instance.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
@@ -234,9 +236,10 @@ function update() {
                     instance.appendTo("div.terminated");
                 }
 
-
             });
+            $("#spinner").hide();
         }
+        
     });
 
     $.ajax({
@@ -261,7 +264,9 @@ function update() {
         }
     });
 }
+
 update();
+
 $("#list").click(function(event){
     $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'

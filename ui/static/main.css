@@ -868,3 +868,11 @@ div#user a.current_lang {
     margin-top: 22px;
 }
 
+#spinner {
+    background: url("../static/progress.gif");
+    height: 31px;
+    width: 31px;
+    margin-left: 298px; 
+    display: none;
+}
+

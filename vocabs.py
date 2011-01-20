@@ -122,7 +122,6 @@ MOCK_SERVERS = [
                             "Server Label" : "DB 19"
                         }
                 },
-
                 {
                     "id" : 3678,
                     "name" : "sample-server19",
@@ -199,7 +198,6 @@ MOCK_SERVERS = [
                         "Image Version" : "3.3"
                     }
                 },
-
                 {
                 "id" : 16,
                 "name" : "sample-server 66",
@@ -222,7 +220,6 @@ MOCK_SERVERS = [
                         "Image Version" : "6.6"
                     }
                 },
-
                 {
                 "id" : 1665,
                 "name" : "sample-server28",
@@ -245,7 +242,6 @@ MOCK_SERVERS = [
                         "Image Version" : "5.5"
                     }
                 },
-
                 {
                     "id" : 4758,
                     "name" : "my sample-server for mysql",
@@ -259,8 +255,6 @@ MOCK_SERVERS = [
                             "Server Label" : "Mysql DB production"
                         }
                 },
-
-
                 {
                     "id" : 1548,
                     "name" : "mongodb8",
@@ -280,7 +274,6 @@ MOCK_SERVERS = [
                             "Server Label" : "Mongodb production"
                         }
                 },
-
                 {
                     "id" : 3678,
                     "name" : "sample-server29",
@@ -319,7 +312,6 @@ MOCK_SERVERS = [
                             "Server Label" : "Sample Server 15"
                         }
                 },
-
                 {
                     "id" : 5620,
                     "name" : "sample-server20",
@@ -339,7 +331,6 @@ MOCK_SERVERS = [
                             "Server Label" : "Sample Server 20"
                         }
                 },
-
                 {
                     "id" : 5629,
                     "name" : "sample-server29",
@@ -359,8 +350,6 @@ MOCK_SERVERS = [
                             "Server Label" : "Sample Server 29"
                         }
                 },
-
-
                 {
                     "id" : 5673,
                     "name" : "sample-server77",
@@ -380,8 +369,6 @@ MOCK_SERVERS = [
                             "Server Label" : "Sample Server 77"
                         }
                 },
-
-
                 {
                     "id" : 5480,
                     "name" : "sample-server4",

@@ -454,7 +454,7 @@ div#wrapper {
 
 div.instance {
     clear: both;
-    margin: -1px 0 0 -32px;
+    margin: 5px 0 0 -32px;
     padding: 3px 4px 0;
     width: 523px;
     color: #666;
@@ -863,7 +863,7 @@ div#user a.current_lang {
 .instance .seperator {
     width: 508px;
     height: 1px;
-    margin: 4px 0 0 15px;
+    margin: 8px 0 0 15px;
     background-color: #DCDCDC;
 }
 

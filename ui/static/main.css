@@ -523,7 +523,7 @@ a.action:hover, a.more:hover {
 }
 
 div.ip, div.state {
-    font-size:9pt;
+    font-size: 9pt;
     color: #3d3d3d;
 }
 
@@ -683,7 +683,7 @@ div.inactive {
 }
 
 div.list#machinesview {
-min-height: 270px; 
+    min-height: 270px;
 }
 
 div.list label img {
@@ -700,9 +700,9 @@ div.list .state {
     margin-right: 10px;
 }
 
-div.list div.running {
+div.list .running {
     margin-top: 8px;
-    max-height: 310px; 
+    max-height: 310px;
     overflow: auto;
 }
 
@@ -711,7 +711,7 @@ div.list .terminated {
     overflow: auto;
 }
 
-div.list div.stopped {
+div.list .stopped {
     margin-top: 8px;
 }
 
@@ -760,6 +760,7 @@ div.list #mini.seperator {
 }
 
 div.list div.actions {
+    display: none;
     clear: left;
     float: right;
     margin-right: -20px;
@@ -873,6 +874,48 @@ div#user a.current_lang {
     height: 31px;
     width: 31px;
     margin-left: 298px; 
+}
+
+/* tables in list view */
+div.list table {
+    width: 498px;
+    font-size: 9pt;
     display: none;
+}
+
+div.list table thead tr th, div.list table tfoot tr th {
+	background-color: #e6EEEE;
+	border: 1px solid #FFF;
+	padding: 4px;
+}
+
+div.list table thead tr .header {
+	background-image: url(bg.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+	cursor: pointer;
+}
+
+div.list table tbody td {
+	color: #3D3D3D;
+	padding: 4px;
+	background-color: #FFF;
+	vertical-align: bottom;
+}
+
+div.list table tbody tr.odd td {
+	background-color:#F0F0F6;
+}
+
+div.list table thead tr .headerSortUp {
+	background-image: url(asc.gif);
+}
+
+div.list table thead tr .headerSortDown {
+	background-image: url(desc.gif);
+}
+
+div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
+    background-color: #87AADE;
 }
 

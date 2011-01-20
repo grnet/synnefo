@@ -377,6 +377,9 @@ MOCK_SERVERS = [
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
                     "status" : "SUSPENDED",
                     "addresses" : {
+                        "public" : [
+                                "67.23.11.177"
+                            ],
                         },
                     "metadata" : {
                             "Server Label" : "DB 3"

@@ -1,5 +1,7 @@
-<div id="machinesview" class="list">
+<script src="http://tablesorter.com/jquery.tablesorter.min.js"></script>
 
+<div id="machinesview" class="list">
+    <div id="spinner"></div>
     <div class="actions">
         <a>Start</a>
         <a>Reboot</a>
@@ -18,18 +20,40 @@
         <a>Connect to network</a>
         <a>Disconnect from net</a>
     </div>
-    <div class="running">
-        <div id="instance-template" style="display: none">
-            <label> 
-                <input type="checkbox" class="instance" id="node-id" />
-                <img class="list-logo" src="static/os_logos/node.thumb" width="16" height="16" />
-                <a class="name"><span class="name">node.name</span></a> | 
-                <a class="ip"><span class="public">node.public_ip</span></a> | 
-                group
-            </label>
-            <div class="status state">Running</div>
-        </div>
-    </div>
+    <table>
+        <thead> 
+            <tr> 
+                <th></th> 
+                <th>OS</th> 
+                <th>Name</th> 
+                <th>IP</th> 
+                <th>Group</th>
+                <th>Status</th> 
+            </tr> 
+        </thead> 
+        <tbody class="running">
+            <tr id="instance-template" style="display: none">
+                <td><input type="checkbox" class="instance" id="node-id" /></td>
+                <td><img class="list-logo" src="static/os_logos/node.thumb" width="16" height="16" /></td>
+                <td><a class="name"><span class="name">node.name</span></a></td> 
+                <td><a class="ip"><span class="public">node.public_ip</span></a></td>
+                <td>group</td>
+                <td class="status state">Running</td>    
+            </tr>
+        </tbody>
+    </table>
     <div id="mini" class="seperator"></div>
-    <div class="terminated"></div>
+    <table>
+        <thead> 
+            <tr> 
+                <th></th> 
+                <th>OS</th> 
+                <th>Name</th> 
+                <th>IP</th> 
+                <th>Group</th>
+                <th>Status</th> 
+            </tr> 
+        </thead> 
+        <tbody class="terminated"></tbody>
+    </table>
 </div>

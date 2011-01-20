@@ -199,11 +199,10 @@ var image_tags = {
 
 function update() {
 
-    $("div.running").text('');
-    $("div.terminated").text('');
+    $(".running").text('');
+    $(".terminated").text('');
     $("ul#standard-images").text('');
     $("ul#custom-images").text('');
-    $("#spinner").show();
 
     $.ajax({
         url: '/api/v1.0/servers/detail',
@@ -220,26 +219,26 @@ function update() {
                 instance.find("a.ip span.public").text(String(server.addresses.public));            
 
                 if (server.status == 'BUILD'){
-                    instance.find("div.status").text('Building');
-                    instance.appendTo("div.running");
+                    instance.find(".status").text('Building');
+                    instance.appendTo(".running");
                 } else if (server.status == 'ACTIVE') {
-                    instance.find("div.status").text('Running');
-                    instance.appendTo("div.running");
+                    instance.find(".status").text('Running');
+                    instance.appendTo(".running");
                 } else if (server.status == 'SUSPENDED') {
-                    instance.find("div.status").text('Terminated');
+                    instance.find(".status").text('Terminated');
                     instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                    instance.appendTo("div.terminated");
+                    instance.appendTo(".terminated");
                     $("#mini.seperator").fadeIn("slow");
                 } else {
-                    instance.find("div.status").text('Unknown');
+                    instance.find(".status").text('Unknown');
                     instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                    instance.appendTo("div.terminated");
+                    instance.appendTo(".terminated");
                 }
-
             });
             $("#spinner").hide();
+            $(".list table").show().tablesorter();
+            $(".list .actions").show();
         }
-        
     });
 
     $.ajax({

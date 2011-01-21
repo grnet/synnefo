@@ -237,7 +237,7 @@ function update() {
                 }
             });
             $("#spinner").hide();
-            $(".list table").show().tablesorter();
+            $(".list table").tablesorter({ headers: { 0: { sorter: false}, 1: {sorter: false} } }).show();
             $(".list .actions").show();
         }
     });

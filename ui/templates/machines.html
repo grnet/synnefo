@@ -236,6 +236,7 @@ function update() {
                     machine.appendTo(".terminated");
                 }
             });
+            $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();
             $(".list table").tablesorter({ 
                 headers: { 0: { sorter: false}, 1: {sorter: false} }, 

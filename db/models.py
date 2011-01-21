@@ -1,41 +1,72 @@
+# vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
+
 from django.db import models
 
-class Limits(models.Model):
-    lim_id = models.IntegerField(primary_key=True)
-    lim_desc = models.CharField(max_length=45)
+class Limit(models.Model):
+    description = models.CharField(max_length=45)
 
-class Users(models.Model):
-    user_id = models.IntegerField(primary_key=True)
-    user_name = models.CharField(max_length=255)
-    user_credit = models.IntegerField()
-    user_quota = models.IntegerField()
-    user_created = models.DateField()
-    limits = models.ManyToManyField(Limits, through='UserLimit')
+    def __unicode__(self):
+        return self.description
+
+
+class User(models.Model):
+    name = models.CharField(max_length=255)
+    credit = models.IntegerField()
+    quota = models.IntegerField()
+    created = models.DateField()
+    limits = models.ManyToManyField(Limit, through='UserLimit')
+
+    def __unicode__(self):
+        return self.name
+
 
 class UserLimit(models.Model):
-    lim_id = models.ForeignKey(Limits, primary_key=True)
-    user_id = models.ForeignKey(Users, primary_key=True)
-    ul_value = models.IntegerField()
+    user = models.ForeignKey(User)
+    limit = models.ForeignKey(Limit)
+    value = models.IntegerField()
+
+    class Meta:
+        unique_together = ('user', 'limit')
+
+    def __unicode__(self):
+        return u'Limit %s for user %s: %d' % (self.limit, self.user, self.value)
+
 
 class Flavor(models.Model):
-    flv_id = models.IntegerField(primary_key=True)
-    flv_desc = models.CharField(max_length=255)
-    flv_cost_active = models.IntegerField()
-    flv_cost_inactive = models.IntegerField()
-    flv_detailed = models.CharField(max_length=1000)
+    name = models.CharField(max_length=255, unique=True)
+    description = models.CharField(max_length=1000)
+    cost_active = models.PositiveIntegerField()
+    cost_inactive = models.PositiveIntegerField()
 
-class VMachine(models.Model):
-    vm_id = models.IntegerField(primary_key=True)
-    vm_alias = models.CharField(max_length=255)
-    vm_created = models.DateTimeField()
-    vm_state = models.IntegerField()
-    vm_started = models.DateTimeField()
-    user_id = models.ForeignKey(Users)
-    flv_id = models.ForeignKey(Flavor)
+    def __unicode__(self):
+        return self.name
+
+class VirtualMachine(models.Model):
+    STATES = (
+            (0, 'down'),
+            (1, 'up'),
+            # FIXME
+    )
+
+    name = models.CharField(max_length=255)
+    created = models.DateTimeField()
+    state = models.IntegerField(choices=STATES)
+    started = models.DateTimeField()
+    owner = models.ForeignKey(User)
+    flavor = models.ForeignKey(Flavor)
+
+    class Meta:
+        verbose_name = u'Virtual machine'
+        get_latest_by = 'created'
+
+    def __unicode__(self):
+        return self.name
 
 class ChargingLog(models.Model):
-    cl_id = models.IntegerField(primary_key=True)
-    vm_id = models.ForeignKey(VMachine)
-    cl_date = models.DateTimeField()
-    cl_credit = models.IntegerField()
-    cl_message = models.CharField(max_length=1000)
+    vm = models.ForeignKey(VirtualMachine)
+    date = models.DateTimeField()
+    credit = models.IntegerField()
+    message = models.CharField(max_length=1000)
+
+    class Meta:
+        verbose_name = u'Charging log'

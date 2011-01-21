@@ -237,7 +237,9 @@ function update() {
                 }
             });
             $("#spinner").hide();
-            $(".list table").tablesorter({ headers: { 0: { sorter: false}, 1: {sorter: false} } }).show();
+            $(".list table").tablesorter({ 
+                headers: { 0: { sorter: false}, 1: {sorter: false} }, 
+                sortMultiSortKey: "ctrlKey" }).show();
             $(".list .actions").show();
         }
     });

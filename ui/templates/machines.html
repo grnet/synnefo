@@ -12,7 +12,7 @@
 
 <div id="machinesview" class="standard">
     <div id="spinner"></div>
-    <div class="instance" id="instance-template" style="display:none">
+    <div class="machine" id="machine-template" style="display:none">
         <div class="state">
             <div class="status">{% trans "Running" %}</div>
             <div class="indicator"></div>
@@ -33,7 +33,7 @@
         <div class="actions">
             <a href="#" class="action">{% trans "Reboot" %}</a>
             <a href="#" class="action">{% trans "Shutdown" %}</a>
-            <a href="#" class="more">{% trans "more" %} &hellip;</a>
+            <a href="#" class="more">{% trans "more &hellip;" %}</a>
         </div>
         <div class="seperator"></div>
     </div>
@@ -52,7 +52,7 @@
 		<!-- status bar -->
 		<ul id="status">
 			<li class="active"><strong>1.</strong> {% trans "Image" %}</li>
-			<li><strong>2.</strong> {% trans "Instance" %}</li>
+			<li><strong>2.</strong> {% trans "Machine" %}</li>
 			<li><strong>3.</strong> {% trans "Review" %}</li>
 		</ul>
 		<!-- scrollable items -->
@@ -93,27 +93,27 @@
 				<h2>{% trans "Select CPU, RAM and storage" %}</h2>
                 <ul>
                     <li>
-                        <div class="instance-type">
+                        <div class="machine-type">
                             <label for="small">
-                                <input type="radio" id="small" name="instance-type" value="small" checked="true" />
+                                <input type="radio" id="small" name="machine-type" value="small" checked="true" />
                                 <strong>{% trans "small" %}</strong>
                             </label>
                         </div>
-                        <div class="instance-type">      
+                        <div class="machine-type">      
                             <label for="medium">
-                                <input type="radio" id="medium" name="instance-type" value="medium" />                  
+                                <input type="radio" id="medium" name="machine-type" value="medium" />                  
                                 <strong>{% trans "medium" %}</strong>
                             </label>
                         </div>
-                        <div class="instance-type">
+                        <div class="machine-type">
                             <label for="large">
-                                <input type="radio" id="large" name="instance-type" value="large" />
+                                <input type="radio" id="large" name="machine-type" value="large" />
                                 <strong>{% trans "large" %}</strong>
                             </label>
                         </div>
-                        <div class="instance-type">
+                        <div class="machine-type">
                             <label for="custom">
-                                <input type="radio" name="instance-type" id="custom" value="large" />
+                                <input type="radio" name="machine-type" id="custom" value="large" />
                                 <strong>{% trans "custom" %}</strong>
                             </label>
                         </div>
@@ -144,8 +144,8 @@
                 <ul>
                     <li class="required">
                         <label>
-                            <strong>Instance name</strong>
-                            <input type="text" class="text" name="instance_name" value="My Ubuntu 10.04 x86_64 server"/>
+                            <strong>Machine name</strong>
+                            <input type="text" class="text" name="machine_name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>
                     <li>
@@ -213,27 +213,27 @@ function update() {
         success: function(data) {
             $.each(data.servers, function(i,server){
 
-                var instance = $("#instance-template").clone().attr("id",server.id).fadeIn("slow");
-                instance.find("a.name span.name").text(server.name);
-                instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
-                instance.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
-                instance.find("a.ip span.public").text(String(server.addresses.public));            
+                var machine = $("#machine-template").clone().attr("id",server.id).fadeIn("slow");
+                machine.find("a.name span.name").text(server.name);
+                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
+                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
+                machine.find("a.ip span.public").text(String(server.addresses.public));            
 
                 if (server.status == 'BUILD'){
-                    instance.find(".status").text('Building');
-                    instance.appendTo(".running");
+                    machine.find(".status").text('Building');
+                    machine.appendTo(".running");
                 } else if (server.status == 'ACTIVE') {
-                    instance.find(".status").text('Running');
-                    instance.appendTo(".running");
+                    machine.find(".status").text('Running');
+                    machine.appendTo(".running");
                 } else if (server.status == 'SUSPENDED') {
-                    instance.find(".status").text('Terminated');
-                    instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                    instance.appendTo(".terminated");
+                    machine.find(".status").text('Terminated');
+                    machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                    machine.appendTo(".terminated");
                     $("#mini.seperator").fadeIn("slow");
                 } else {
-                    instance.find(".status").text('Unknown');
-                    instance.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                    instance.appendTo(".terminated");
+                    machine.find(".status").text('Unknown');
+                    machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                    machine.appendTo(".terminated");
                 }
             });
             $("#spinner").hide();

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-01-19 17:39+0200\n"
+"POT-Creation-Date: 2011-01-21 15:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -81,7 +81,7 @@ msgid "Shutdown"
 msgstr "Κλείσιμο"
 
 #: ui/templates/machines.html:36
-msgid "more"
+msgid "more &hellip;"
 msgstr "περισσότερα"
 
 #: ui/templates/machines.html:54
@@ -89,8 +89,8 @@ msgid "Image"
 msgstr ""
 
 #: ui/templates/machines.html:55
-msgid "Instance"
-msgstr ""
+msgid "Machine"
+msgstr "Μηχανές"
 
 #: ui/templates/machines.html:56
 msgid "Review"
@@ -98,7 +98,7 @@ msgstr ""
 
 #: ui/templates/machines.html:62
 msgid "Select an OS"
-msgstr "Επιλέξτε ένα ΛΣ"
+msgstr "Επιλέξτε το Λειτουργικό"
 
 #: ui/templates/machines.html:64
 msgid "standard"
@@ -185,3 +185,6 @@ msgid "Please copy this! Without it you can not connect to your VM."
 msgstr ""
 "Παρακαλώ αντιγράψτε τον κωδικό! Χωρίς αυτό δεν θα μπορείτε να συνδεθείτε στο "
 "VM"
+
+#~ msgid "more"
+#~ msgstr "περισσότερα"

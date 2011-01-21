@@ -452,7 +452,7 @@ div#wrapper {
 	width: 50px;		
 }
 
-div.instance {
+div.machine {
     clear: both;
     margin: 5px 0 0 -32px;
     padding: 3px 4px 0;
@@ -461,14 +461,14 @@ div.instance {
     height: 65px;
 }
 
-.instance a {
+.machine a {
     color: #3d3d3d;
     font-weight: normal;
     text-decoration: none;
     font-size: 9pt;
 }
 
-.instance a:hover {
+.machine a:hover {
     color: #000;
     text-decoration: underline;
 }
@@ -508,16 +508,16 @@ a.action:hover, a.more:hover {
     display: block;
 }
 
-.actions a:focus, .actions:hover a,.instance:hover .actions a {
+.actions a:focus, .actions:hover a,.machine:hover .actions a {
     color: #3d3d3d;
     display: block;
 }
 
-.instance:hover {
+.machine:hover {
     background-color:#dcdcdc;
 }
 
-.instance img {
+.machine img {
     float: left;
     margin: 7px 14px 0;
 }
@@ -552,7 +552,7 @@ div.indicator {
     opacity: 0.6;
 }
 
-.instance:hover div.uptime, .instance:hover a.rename, .instance:hover a.configure {
+.machine:hover div.uptime, .machine:hover a.rename, .machine:hover a.configure {
     color: #3d3d3d;
 }
 
@@ -562,7 +562,7 @@ div.uptime {
     margin-left: 1px;
 }
 
-div.instance-tabs {
+div.machine-tabs {
     margin-top: 1em;
 }
 
@@ -666,7 +666,7 @@ color:white;
 color:white !important;
 }
 
-div.instance-type {
+div.machine-type {
     float: left;
     margin: 4px 10px 20px 0;
 }
@@ -783,7 +783,7 @@ div.list div.actions a:hover{
     cursor: pointer;
 }
 
-input.instance {
+input.machine {
     width: 13px;
     height: 13px;
     padding: 0;
@@ -861,18 +861,18 @@ div#user a.current_lang {
     background-color: #9d6d6a;
 }
 
-.instance .seperator {
+.machine .seperator {
     width: 508px;
     height: 1px;
     margin: 8px 0 0 15px;
     background-color: #DCDCDC;
 }
 
-.instance h5 {
+.machine h5 {
     margin: 0px 60px 1px 84px;
 }
 
-.instance .settings {
+.machine .settings {
     margin-top: 22px;
 }
 

@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-01-17 12:45+0200\n"
+"POT-Creation-Date: 2011-01-19 17:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,6 +24,164 @@ msgstr "χρήστης"
 msgid "settings"
 msgstr "ρυθμίσεις"
 
-#: ui/templates/instances.html:5
+#: ui/templates/home.html:29
+msgid "manage your virtual machines"
+msgstr "διαχειριστείτε τις εικονικές μηχανές σας"
+
+#: ui/templates/home.html:29
+msgid "machines"
+msgstr "μηχανές"
+
+#: ui/templates/home.html:30
+msgid "manage your storage volumes"
+msgstr "διαχειριστείτε το χώρο σας"
+
+#: ui/templates/home.html:30 ui/templates/machines.html:31
+msgid "disks"
+msgstr "δίσκοι"
+
+#: ui/templates/home.html:31
+msgid "manage boot images"
+msgstr ""
+
+#: ui/templates/home.html:31
+msgid "images"
+msgstr ""
+
+#: ui/templates/home.html:32
+msgid "configure networking"
+msgstr ""
+
+#: ui/templates/home.html:32 ui/templates/machines.html:31
+msgid "networks"
+msgstr "δίκτυα"
+
+#: ui/templates/machines.html:5
 msgid "Create New +"
-msgstr "Νέο +"
+msgstr "Δημιουργία +"
+
+#: ui/templates/machines.html:17
+msgid "Running"
+msgstr "Τρέχουν"
+
+#: ui/templates/machines.html:31
+msgid "Show:"
+msgstr "Δείξε:"
+
+#: ui/templates/machines.html:31
+msgid "group"
+msgstr "γκρουπ"
+
+#: ui/templates/machines.html:34
+msgid "Reboot"
+msgstr "Επανεκκίνηση"
+
+#: ui/templates/machines.html:35
+msgid "Shutdown"
+msgstr "Κλείσιμο"
+
+#: ui/templates/machines.html:36
+msgid "more"
+msgstr "περισσότερα"
+
+#: ui/templates/machines.html:54
+msgid "Image"
+msgstr ""
+
+#: ui/templates/machines.html:55
+msgid "Instance"
+msgstr ""
+
+#: ui/templates/machines.html:56
+msgid "Review"
+msgstr ""
+
+#: ui/templates/machines.html:62
+msgid "Select an OS"
+msgstr "Επιλέξτε ένα ΛΣ"
+
+#: ui/templates/machines.html:64
+msgid "standard"
+msgstr ""
+
+#: ui/templates/machines.html:65 ui/templates/machines.html.py:117
+msgid "custom"
+msgstr ""
+
+#: ui/templates/machines.html:89
+msgid "Cancel"
+msgstr "Άκυρο"
+
+#: ui/templates/machines.html:90 ui/templates/machines.html.py:140
+msgid "Next"
+msgstr "Επόμενο"
+
+#: ui/templates/machines.html:93
+msgid "Select CPU, RAM and storage"
+msgstr "Επιλέξτε CPU, μνήμη και αποθηκευτικό χώρο"
+
+#: ui/templates/machines.html:99
+msgid "small"
+msgstr "μικρό"
+
+#: ui/templates/machines.html:105
+msgid "medium"
+msgstr "μεσαίο"
+
+#: ui/templates/machines.html:111
+msgid "large"
+msgstr "μεγάλο"
+
+#: ui/templates/machines.html:135 ui/templates/machines.html.py:164
+msgid "Cost per hour:"
+msgstr "Κόστος ανά ώρα:"
+
+#: ui/templates/machines.html:135 ui/templates/machines.html.py:164
+msgid "credits"
+msgstr "μονάδες"
+
+#: ui/templates/machines.html:135
+msgid "Credits currently in account:"
+msgstr "Μονάδες στο λογαριασμό:"
+
+#: ui/templates/machines.html:139 ui/templates/machines.html.py:170
+msgid "Back"
+msgstr "Πίσω"
+
+#: ui/templates/machines.html:143
+msgid "Confirm your settings"
+msgstr "Επιβεβαιώστε τις ρυθμίσεις"
+
+#: ui/templates/machines.html:152
+msgid "Image:"
+msgstr ""
+
+#: ui/templates/machines.html:155
+msgid "CPU:"
+msgstr ""
+
+#: ui/templates/machines.html:158
+msgid "RAM:"
+msgstr ""
+
+#: ui/templates/machines.html:161
+msgid "Storage:"
+msgstr ""
+
+#: ui/templates/machines.html:167
+msgid "Remaining credits:"
+msgstr "Μονάδες που απομένουν:"
+
+#: ui/templates/machines.html:171
+msgid "Create VM"
+msgstr "Δημιουργία VM"
+
+#: ui/templates/machines.html:179
+msgid "Your password is:"
+msgstr "Ο κωδικός σας είναι:"
+
+#: ui/templates/machines.html:180
+msgid "Please copy this! Without it you can not connect to your VM."
+msgstr ""
+"Παρακαλώ αντιγράψτε τον κωδικό! Χωρίς αυτό δεν θα μπορείτε να συνδεθείτε στο "
+"VM"

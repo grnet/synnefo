@@ -45,6 +45,8 @@ class ServerHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def read(self, request, id=None):
+        from time import sleep
+        sleep(1)
         if id is None:
             return self.read_all(request)
         elif id == "detail":

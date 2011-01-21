@@ -26,13 +26,13 @@
         </div>
         <!-- tabs -->
         <ul class="css-tabs">
-	        <li><a href="instances" title="manage your virtual machines" id="instances">instances</a></li>
-	        <li><a href="disks" title="manage your storage volumes" id="disks">disks</a></li>
-	        <li><a href="images" title="manage boot images" id="images">images</a></li>
-	        <li><a href="networks" title="configure networking" id="networks">networks</a></li>
+	        <li><a href="machines" title="{% trans "manage your virtual machines" %}" id="machines">{% trans "machines" %}</a></li>
+	        <li><a href="disks" title="{% trans "manage your storage volumes" %}" id="disks">{% trans "disks" %}</a></li>
+	        <li><a href="images" title="{% trans "manage boot images" %}" id="images">{% trans "images" %}</a></li>
+	        <li><a href="networks" title="{% trans "configure networking" %}" id="networks">{% trans "networks" %}</a></li>
         </ul>
         <div class="css-panes">
-	        <div id="instances-pane" class="pane" style="display:block">{% include "instances.html" %}</div>
+	        <div id="machines-pane" class="pane" style="display:block">{% include "machines.html" %}</div>
 	        <div id="disks-pane" class="pane"></div>
 	        <div id="images-pane" class="pane"></div>
 	        <div id="networks-pane" class="pane"></div>

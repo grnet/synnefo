@@ -92,11 +92,11 @@ ul.css-tabs a {
     top: 9px;
 }
 
-ul.css-tabs a#instances {
+ul.css-tabs a#machines {
     color: #a3bbc5;
 }
 
-ul.css-tabs a#instances.current {
+ul.css-tabs a#machines.current {
   color: #87aade;
 }
 
@@ -454,7 +454,7 @@ div#wrapper {
 
 div.instance {
     clear: both;
-    margin: -1px 0 0 -32px;
+    margin: 8px 0 0 -32px;
     padding: 3px 4px 0;
     width: 523px;
     color: #666;
@@ -485,7 +485,7 @@ div.instance {
 .actions {
     float: right;
     width: 70px;
-    margin:-60px -75px 0 0;
+    margin:-60px -70px 0 0;
     font-weight: normal;
 }
 
@@ -494,12 +494,12 @@ div.instance {
 }
 
 a.action{
-    margin: 0 0 5px 5px;
+    margin: 0 0 5px 8px;
     display: none;
 }
 
 a.more {
-    margin: 18px 0 5px 5px;
+    margin: 18px 0 5px 8px;
     display: none;
 }
 
@@ -523,7 +523,7 @@ a.action:hover, a.more:hover {
 }
 
 div.ip, div.state {
-    font-size:9pt;
+    font-size: 9pt;
     color: #3d3d3d;
 }
 
@@ -682,8 +682,8 @@ div.inactive {
     margin-bottom: 17px;
 }
 
-div.list#instancesview {
-min-height: 270px; 
+div.list#machinesview {
+    min-height: 270px;
 }
 
 div.list label img {
@@ -700,9 +700,9 @@ div.list .state {
     margin-right: 10px;
 }
 
-div.list div.running {
+div.list .running {
     margin-top: 8px;
-    max-height: 310px; 
+    max-height: 310px;
     overflow: auto;
 }
 
@@ -711,7 +711,7 @@ div.list .terminated {
     overflow: auto;
 }
 
-div.list div.stopped {
+div.list .stopped {
     margin-top: 8px;
 }
 
@@ -760,6 +760,7 @@ div.list #mini.seperator {
 }
 
 div.list div.actions {
+    display: none;
     clear: left;
     float: right;
     margin-right: -20px;
@@ -845,6 +846,7 @@ div#user a.current_lang {
     width: 535px;
     height: 5px;
     margin: 17px 0 17px -36px;
+    display: none;
 }
 
 #disks.seperator {
@@ -859,18 +861,61 @@ div#user a.current_lang {
     background-color: #9d6d6a;
 }
 
-.instance .seperator {
-    width: 508px;
-    height: 1px;
-    margin: 4px 0 0 15px;
-    background-color: #DCDCDC;
-}
-
 .instance h5 {
     margin: 0px 60px 1px 84px;
 }
 
 .instance .settings {
     margin-top: 22px;
+}
+
+#spinner {
+    background: url("../static/progress.gif");
+    height: 31px;
+    width: 31px;
+    margin-left: 298px; 
+}
+
+/* tables in list view */
+div.list table {
+    width: 498px;
+    font-size: 9pt;
+    display: none;
+}
+
+div.list table thead tr th, div.list table tfoot tr th {
+	background-color: #e6EEEE;
+	border: 1px solid #FFF;
+	padding: 4px;
+}
+
+div.list table thead tr .header {
+	background-image: url(bg.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+	cursor: pointer;
+}
+
+div.list table tbody td {
+	color: #3D3D3D;
+	padding: 4px;
+	background-color: #FFF;
+	vertical-align: bottom;
+}
+
+div.list table tbody tr.odd td {
+	background-color:#F0F0F6;
+}
+
+div.list table thead tr .headerSortUp {
+	background-image: url(asc.gif);
+}
+
+div.list table thead tr .headerSortDown {
+	background-image: url(desc.gif);
+}
+
+div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
+    background-color: #87AADE;
 }
 

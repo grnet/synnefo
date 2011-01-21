@@ -891,7 +891,8 @@ div.list table {
 }
 
 div.list table thead tr th, div.list table tfoot tr th {
-	background-color: #e6EEEE;
+    font-weight: normal; 
+	background-color: #E6EEEE;
 	border: 1px solid #FFF;
 	padding: 4px;
 }
@@ -903,15 +904,27 @@ div.list table thead tr .header {
 	cursor: pointer;
 }
 
+div.list table thead tr .header#group, div.list table thead tr .header#name{
+    width: 80px;
+}
+
+div.list table thead tr .header#ip {
+    width: 180px;
+}
+
+div.list table thead tr th#selection, div.list table thead tr th#os {
+    width: 10px;
+}
+
 div.list table tbody td {
 	color: #3D3D3D;
 	padding: 4px;
 	background-color: #FFF;
-	vertical-align: bottom;
+	vertical-align: middle;
 }
 
 div.list table tbody tr.odd td {
-	background-color:#F0F0F6;
+	background-color:#FFF;
 }
 
 div.list table thead tr .headerSortUp {

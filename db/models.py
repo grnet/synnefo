@@ -14,6 +14,7 @@ class User(models.Model):
     credit = models.IntegerField()
     quota = models.IntegerField()
     created = models.DateField()
+    monthly_rate = models.IntegerField()
     limits = models.ManyToManyField(Limit, through='UserLimit')
 
     def __unicode__(self):

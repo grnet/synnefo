@@ -4,6 +4,7 @@
 	<title>{{ project }}</title>
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
+    <script src="static/jQueryRotate.js"></script>
 	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
     <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css' />
 
@@ -26,7 +27,8 @@
         </div>
         <!-- tabs -->
         <ul class="css-tabs">
-	        <li><a href="machines" title="{% trans "manage your virtual machines" %}" id="machines">{% trans "machines" %}</a></li>
+	        <li><a href="machines" title="{% trans "manage your virtual machines" %}" id="machines">{% trans "machines" %}
+                </a></li>
 	        <li><a href="disks" title="{% trans "manage your storage volumes" %}" id="disks">{% trans "disks" %}</a></li>
 	        <li><a href="images" title="{% trans "manage boot images" %}" id="images">{% trans "images" %}</a></li>
 	        <li><a href="networks" title="{% trans "configure networking" %}" id="networks">{% trans "networks" %}</a></li>
@@ -34,6 +36,7 @@
 	        <li><a href="desktops" title="{% trans "your desktops" %}" id="desktops">{% trans "desktops" %}</a></li>
 	        <li><a href="apps" title="{% trans "your apps" %}" id="apps">{% trans "apps" %}</a></li>
         </ul>
+        <div class="more-tabs"><img src="static/arrow.png" id="arrow"></img></div>
         <div class="css-panes">
 	        <div id="machines-pane" class="pane" style="display:block">{% include "machines.html" %}</div>
 	        <div id="disks-pane" class="pane"></div>
@@ -65,6 +68,34 @@
 
 		        }
 	        });
+        });
+        // what should work
+        /*
+        $("#arrow").click(function(event){
+            $(this).addClass("clicked");
+            $(this).rotateAnimation(90);
+        });
+
+        $(".clicked").click(function(event){
+            $(this).removeClass("clicked");
+            $(this).rotateAnimation(0);
+        });
+        */
+        
+        // what is working
+        var counter = 1;
+        var angle;
+
+        $("#arrow").click(function(event){
+            $(this).rotate({animateAngle: (90), bind:[{
+                "click":function(){
+                    if (counter % 2 == 0)
+                        $(this).rotateAnimation(90);
+                    else
+                       $(this).rotateAnimation(0); 
+                    counter += 1;
+                }}]
+            });
         });
     </script>
 </body>

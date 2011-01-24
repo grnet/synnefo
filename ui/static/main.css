@@ -935,3 +935,12 @@ div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
     background-color: #87AADE;
 }
 
+.more-tabs {
+    float: right;
+    margin: -15px 50px 0px 0px;
+}
+
+.more-tabs:hover {
+    cursor: pointer;
+}
+

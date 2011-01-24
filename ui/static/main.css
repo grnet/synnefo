@@ -786,10 +786,6 @@ div.list div.actions a:hover{
 input.machine {
     width: 13px;
     height: 13px;
-    padding: 0;
-    margin:0;
-    vertical-align: bottom;
-    position: relative;
     top: -1px;
     overflow: hidden;
 }
@@ -937,5 +933,14 @@ div.list table thead tr .headerSortDown {
 
 div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
     background-color: #87AADE;
+}
+
+.more-tabs {
+    float: right;
+    margin: -15px 50px 0px 0px;
+}
+
+.more-tabs:hover {
+    cursor: pointer;
 }
 

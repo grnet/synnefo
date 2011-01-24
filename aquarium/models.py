@@ -9,7 +9,6 @@ class Limit(models.Model):
     def __unicode__(self):
         return self.description
 
-
 class OceanUser(models.Model):
     name = models.CharField(max_length=255)
     credit = models.IntegerField()
@@ -45,8 +44,10 @@ class Flavor(models.Model):
 
 class VirtualMachine(models.Model):
     STATES = (
-            (0, 'down'),
-            (1, 'up'),
+            (0, 'VM_STOPPED'),
+            (1, 'VM_RUNNING'),
+            (2, 'VM_PAUSED'),
+            (3, 'VM_INTERNAL'),
             # FIXME
     )
 
@@ -54,6 +55,11 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField()
     state = models.IntegerField(choices=STATES)
     started = models.DateTimeField()
+    vmid = models.IntegerField()
+    imageid = models.IntegerField()
+    hostid = models.CharField(max_length=100)
+    server_label = models.CharField(max_length=100)
+    image_version = models.CharField(max_length=100)
     owner = models.ForeignKey(OceanUser)
     flavor = models.ForeignKey(Flavor)
 
@@ -63,6 +69,18 @@ class VirtualMachine(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class VirtualMachineAddress(models.Model):
+	ipfour = models.CharField(max_length=15)
+	ipsix = models.CharField(max_length=100)
+	public = models.BooleanField()
+	vmachine = models.ForeignKey(VirtualMachine)
+	
+	class Meta:
+		verbose_name = u'Virtual Machine Network Address'
+		
+	def __unicode__(self):
+		return u'%s address for vm named' % ( self.ipfour, self.vm_id.name )
 
 class ChargingLog(models.Model):
     vm = models.ForeignKey(VirtualMachine)

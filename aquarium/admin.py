@@ -14,15 +14,6 @@ class LimitAdmin(admin.ModelAdmin):
 
     form = LimitForm
 
-class UserForm(forms.ModelForm):
-    class Meta:
-        model = OceanUser
-
-class UserAdmin(admin.ModelAdmin):
-    ""    
-    form = UserForm
-
-
 class UserLimitForm(forms.ModelForm):
     class Meta:
         model = UserLimit
@@ -61,8 +52,16 @@ class ChargingLogAdmin(admin.ModelAdmin):
 
     form = ChargingLogForm
 
+class OceanUserForm(forms.ModelForm):
+    class Meta:
+	    model = OceanUser
+
+class OceanUserAdmin(admin.ModelAdmin):
+    ""
+    form = OceanUserForm
+
 admin.site.register(Limit, LimitAdmin)
-admin.site.register(OceanUser, UserAdmin)
+admin.site.register(OceanUser, OceanUserAdmin)
 admin.site.register(UserLimit, UserLimitAdmin)
 admin.site.register(Flavor, FlavorAdmin)
 admin.site.register(VirtualMachine, VirtualMachineAdmin)

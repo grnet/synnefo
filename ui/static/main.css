@@ -72,6 +72,10 @@ ul.css-tabs {
     overflow: hidden; 	
 }
 
+ul.css-tabs .secondary {
+    display: none;
+}
+
 /* single tab */
 ul.css-tabs li {  
 	float:left;	 
@@ -124,8 +128,37 @@ ul.css-tabs a#networks.current {
   color: #9d6d6a;
 }
 
-ul.css-tabs a:hover {
+ul.css-tabs a#files {
+    color: #a3bbc5;
+}
 
+ul.css-tabs a#files.current {
+  color: #87aade;
+}
+
+ul.css-tabs a#desktops {
+    color: #deb358;
+}
+
+ul.css-tabs a#desktops.current {
+    color: #dea842;
+}
+
+ul.css-tabs a#apps {
+    color: #9ba97b;
+}
+
+ul.css-tabs a#apps.current {
+    color: #87a06d;
+}
+
+.more-tabs {
+    float: right;
+    margin: -15px 50px 0px 0px;
+}
+
+.more-tabs:hover {
+    cursor: pointer;
 }
 	
 /* selected tab */
@@ -857,6 +890,14 @@ div#user a.current_lang {
     background-color: #9d6d6a;
 }
 
+#desktops.seperator {
+    background-color: #dea842;
+}
+
+#apps.seperator {
+    background-color: #87a06d;
+}
+
 .machine .seperator {
     width: 508px;
     height: 1px;
@@ -934,13 +975,3 @@ div.list table thead tr .headerSortDown {
 div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
     background-color: #87AADE;
 }
-
-.more-tabs {
-    float: right;
-    margin: -15px 50px 0px 0px;
-}
-
-.more-tabs:hover {
-    cursor: pointer;
-}
-

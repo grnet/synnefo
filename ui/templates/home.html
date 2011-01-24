@@ -27,14 +27,20 @@
         </div>
         <!-- tabs -->
         <ul class="css-tabs">
-	        <li><a href="machines" title="{% trans "manage your virtual machines" %}" id="machines">{% trans "machines" %}
-                </a></li>
-	        <li><a href="disks" title="{% trans "manage your storage volumes" %}" id="disks">{% trans "disks" %}</a></li>
-	        <li><a href="images" title="{% trans "manage boot images" %}" id="images">{% trans "images" %}</a></li>
-	        <li><a href="networks" title="{% trans "configure networking" %}" id="networks">{% trans "networks" %}</a></li>
-            <li><a href="files" title="{% trans "your files" %}" id="files">{% trans "files" %}</a></li>
-	        <li><a href="desktops" title="{% trans "your desktops" %}" id="desktops">{% trans "desktops" %}</a></li>
-	        <li><a href="apps" title="{% trans "your apps" %}" id="apps">{% trans "apps" %}</a></li>
+	        <li><a href="machines" title="{% trans "manage your virtual machines" %}" class="primary" id="machines">
+                {% trans "machines" %}</a></li>
+	        <li><a href="disks" title="{% trans "manage your storage volumes" %}" class="primary" id="disks">
+                {% trans "disks" %}</a></li>
+	        <li><a href="images" title="{% trans "manage boot images" %}" class="primary" id="images">
+                {% trans "images" %}</a></li>
+	        <li><a href="networks" title="{% trans "configure networking" %}" class="primary" id="networks">
+                {% trans "networks" %}</a></li>
+            <li><a href="files" title="{% trans "your files" %}" class="secondary" id="files">
+                {% trans "files" %}</a></li>
+	        <li><a href="desktops" title="{% trans "your desktops" %}" class="secondary" id="desktops">
+                {% trans "desktops" %}</a></li>
+	        <li><a href="apps" title="{% trans "your apps" %}" class="secondary" id="apps">
+                {% trans "apps" %}</a></li>
         </ul>
         <div class="more-tabs"><img src="static/arrow.png" id="arrow"></img></div>
         <div class="css-panes">
@@ -86,15 +92,21 @@
         
         // what is working
         $("#arrow").click(function(event){
-            var state = true; 
+            var state = true;
+            $("ul.css-tabs li .primary").hide();
+            $("ul.css-tabs li .secondary").show();
             $(this).rotate({animateAngle: (90), bind:[{
                 "click":function(){
                     if (state) {
                         $(this).rotateAnimation(90);
+                        $("ul.css-tabs li .primary").hide();
+                        $("ul.css-tabs li .secondary").show();
                         state = false;
                         }
                     else {
                        $(this).rotateAnimation(0);
+                        $("ul.css-tabs li .primary").show();
+                        $("ul.css-tabs li .secondary").hide();
                        state = true;
                         }
                 }}]

@@ -34,3 +34,15 @@ def disks(request):
 def networks(request):
     context = {}
     return template('networks', context)
+
+def files(request): 
+    context = {}
+    return template('files', context)
+
+def desktops(request):
+    context = {}
+    return template('desktops', context)
+
+def apps(request):
+    context = {}
+    return template('apps', context)

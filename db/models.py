@@ -9,7 +9,7 @@ class Limit(models.Model):
         return self.description
 
 
-class User(models.Model):
+class OceanUser(models.Model):
     name = models.CharField(max_length=255)
     credit = models.IntegerField()
     quota = models.IntegerField()
@@ -19,7 +19,6 @@ class User(models.Model):
 
     def __unicode__(self):
         return self.name
-
 
 class UserLimit(models.Model):
     user = models.ForeignKey(User)

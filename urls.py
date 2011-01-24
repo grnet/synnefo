@@ -4,10 +4,14 @@
 #
 
 from django.conf.urls.defaults import *
+from django.contrib import admin
+
+admin.autodiscover()
 
 urlpatterns = patterns('',
     (r'^lang/$', 'synnefo.ui.i18n.set_language'),
     (r'^auth/api/', include('synnefo.auth.urls')),
     (r'^api/', include('synnefo.api.urls')),
     (r'^', include('synnefo.ui.urls')),
+    (r'^admin/(.*)', admin.site.root)
 )

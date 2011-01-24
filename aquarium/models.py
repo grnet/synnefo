@@ -1,6 +1,7 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 
 from django.db import models
+from django.contrib.auth.models import User
 
 class Limit(models.Model):
     description = models.CharField(max_length=45)
@@ -15,13 +16,14 @@ class OceanUser(models.Model):
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
+    user = models.ForeignKey(User,  blank=True, null=True)
     limits = models.ManyToManyField(Limit, through='UserLimit')
 
     def __unicode__(self):
         return self.name
 
 class UserLimit(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(OceanUser)
     limit = models.ForeignKey(Limit)
     value = models.IntegerField()
 
@@ -52,7 +54,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField()
     state = models.IntegerField(choices=STATES)
     started = models.DateTimeField()
-    owner = models.ForeignKey(User)
+    owner = models.ForeignKey(OceanUser)
     flavor = models.ForeignKey(Flavor)
 
     class Meta:

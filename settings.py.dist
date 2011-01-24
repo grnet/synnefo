@@ -13,8 +13,8 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'aquarium.db',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -77,6 +77,7 @@ TEMPLATE_LOADERS = (
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
     'django.core.context_processors.i18n',
+    'django.contrib.auth.context_processors.auth'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -102,11 +103,12 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
-    # 'django.contrib.admin',
+    'django.contrib.admin',
     # 'django.contrib.admindocs',
     'synnefo.auth',
     'synnefo.api',
     'synnefo.ui',
+	'synnefo.aquarium'
 )
 
 GANETI_CLUSTER_INFO = None #('ganeti.example.org', 5080)

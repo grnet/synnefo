@@ -69,34 +69,38 @@
 		        }
 	        });
         });
-        // what should work
+        // what should be working
         /*
-        $("#arrow").click(function(event){
-            $(this).addClass("clicked");
+        $(".inactive#arrow").click(function(event){
+            $(this).removeClass("inactive");
+            $(this).addClass("active");
             $(this).rotateAnimation(90);
         });
 
-        $(".clicked").click(function(event){
-            $(this).removeClass("clicked");
+        $(".active#arrow").click(function(event){
+            $(this).removeClass("active");
+            $(this).addClass("inactive");
             $(this).rotateAnimation(0);
         });
         */
         
         // what is working
-        var counter = 1;
-        var angle;
-
         $("#arrow").click(function(event){
+            var state = true; 
             $(this).rotate({animateAngle: (90), bind:[{
                 "click":function(){
-                    if (counter % 2 == 0)
+                    if (state) {
                         $(this).rotateAnimation(90);
-                    else
-                       $(this).rotateAnimation(0); 
-                    counter += 1;
+                        state = false;
+                        }
+                    else {
+                       $(this).rotateAnimation(0);
+                       state = true;
+                        }
                 }}]
             });
         });
+
     </script>
 </body>
 </html>

@@ -15,7 +15,7 @@ class OceanUser(models.Model):
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
-    user = models.ForeignKey(User,  blank=True, null=True)
+    user = models.ForeignKey(User, unique=True)    
     limits = models.ManyToManyField(Limit, through='UserLimit')
 
     def __unicode__(self):
@@ -53,7 +53,7 @@ class VirtualMachine(models.Model):
 
     name = models.CharField(max_length=255)
     created = models.DateTimeField()
-    state = models.IntegerField(choices=STATES)
+    state = models.IntegerField(choices=STATES, default=0)
     started = models.DateTimeField()
     vmid = models.IntegerField()
     imageid = models.IntegerField()

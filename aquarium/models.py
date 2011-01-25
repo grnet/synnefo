@@ -77,10 +77,10 @@ class VirtualMachineAddress(models.Model):
 	vmachine = models.ForeignKey(VirtualMachine)
 	
 	class Meta:
-		verbose_name = u'Virtual Machine Network Address'
+            verbose_name = u'Virtual Machine Network Address'
 		
 	def __unicode__(self):
-		return u'%s address for vm named' % ( self.ipfour, self.vm_id.name )
+            return u'%s address for vm named' % ( self.ipfour, self.vm_id.name )
 
 class ChargingLog(models.Model):
     vm = models.ForeignKey(VirtualMachine)

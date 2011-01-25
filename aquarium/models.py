@@ -71,16 +71,16 @@ class VirtualMachine(models.Model):
         return self.name
 
 class VirtualMachineAddress(models.Model):
-	ipfour = models.CharField(max_length=15)
-	ipsix = models.CharField(max_length=100)
-	public = models.BooleanField()
-	vmachine = models.ForeignKey(VirtualMachine)
+    ipfour = models.CharField(max_length=15)
+    ipsix = models.CharField(max_length=100)
+    public = models.BooleanField()
+    vmachine = models.ForeignKey(VirtualMachine)
 	
-	class Meta:
-            verbose_name = u'Virtual Machine Network Address'
-		
-	def __unicode__(self):
-            return u'%s address for vm named' % ( self.ipfour, self.vm_id.name )
+    class Meta:
+        verbose_name = u'Virtual Machine Network Address'
+        
+    def __unicode__(self):
+        return u'%s address for vm named' % ( self.ipfour, self.vm_id.name )
 
 class ChargingLog(models.Model):
     vm = models.ForeignKey(VirtualMachine)

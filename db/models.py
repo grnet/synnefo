@@ -2,6 +2,9 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
+import datetime
+
 import vocabs
 
 class Limit(models.Model):
@@ -106,3 +109,18 @@ class AccountingLog(models.Model):
 
 	def __unicode__(self):
 		return u'%s %s %s' % ( self.vm.name, self.date, self.state )
+
+
+class Image(models.Model):
+    name = models.CharField(max_length=255, help_text=_('description'))
+    updated = models.DateTimeField(help_text=_("Image update date"))
+    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
+    state = models.CharField(choices=vocabs.STATES, max_length=30)
+    description = models.TextField(help_text=_('description'))
+    serverid = models.IntegerField(help_text=_('description'))
+    
+    class Meta:
+        verbose_name = u'Image'
+
+	def __unicode__(self):
+		return u'%s' % ( self.name )

@@ -75,6 +75,7 @@
 		        }
 	        });
         });
+
         // what should be working
         /*
         $(".inactive#arrow").click(function(event){
@@ -92,23 +93,41 @@
         
         // what is working
         $("#arrow").click(function(event){
-            var state = true;
-            $("ul.css-tabs li .primary").hide();
-            $("ul.css-tabs li .secondary").show();
+            $("ul.css-tabs li a.current").removeClass("current");
+            $("ul.css-tabs li a").animate({top:'30px'}, {complete: function() { 
+                $(this).hide(); 
+                $("ul.css-tabs li a.secondary").show();
+                $("ul.css-tabs li a.secondary").animate({top:'9px'}, {complete: function() {
+                     $("ul.css-tabs li a.secondary#files").addClass("current");
+                }});            
+            }});
+            var state = false;
             $(this).rotate({animateAngle: (-180), bind:[{
                 "click":function(){
                     if (state) {
                         $(this).rotateAnimation(-180);
-                        $("ul.css-tabs li .primary").hide();
-                        $("ul.css-tabs li .secondary").show();
+                        $("ul.css-tabs li a.current").removeClass("current");
+                        $("ul.css-tabs li a").animate({top:'30px'}, {complete: function() { 
+                            $(this).hide(); 
+                            $("ul.css-tabs li a.secondary").show();
+                            $("ul.css-tabs li a.secondary").animate({top:'9px'}, {complete: function() {
+                                 $("ul.css-tabs li a.secondary#files").addClass("current");
+                            }});            
+                        }});
                         state = false;
                         }
                     else {
                        $(this).rotateAnimation(0);
-                        $("ul.css-tabs li .primary").show();
-                        $("ul.css-tabs li .secondary").hide();
+                        $("ul.css-tabs li a.current").removeClass("current");
+                        $("ul.css-tabs li a").animate({top:'30px'}, {complete: function() { 
+                            $(this).hide(); 
+                            $("ul.css-tabs li a.primary").show();
+                            $("ul.css-tabs li a.primary").animate({top:'9px'}, {complete: function() {
+                                 $("ul.css-tabs li a.primary#machines").addClass("current");
+                            }});            
+                        }});
                        state = true;
-                        }
+                       }
                 }}]
             });
         });

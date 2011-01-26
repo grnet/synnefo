@@ -3,7 +3,7 @@
 #
 
 import zmq
-from aquarium.models import *
+from db.models import *
 
 def main():
 	context = zmq.Context()

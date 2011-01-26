@@ -2,7 +2,7 @@
 #
 #
 
-from aquarium.models import *
+from db.models import *
 
 # main entry point
 def main():

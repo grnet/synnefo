@@ -93,24 +93,30 @@
         
         // what is working
         $("#arrow").click(function(event){
+            var primary = $("ul.css-tabs li a.primary");
+            var secondary = $("ul.css-tabs li a.secondary");
+            var all = $("ul.css-tabs li a");
+
             $("ul.css-tabs li a.current").removeClass("current");
-            $("ul.css-tabs li a").animate({top:'30px'}, {complete: function() { 
+            all.animate({top:'30px'}, {complete: function() { 
                 $(this).hide(); 
-                $("ul.css-tabs li a.secondary").show();
-                $("ul.css-tabs li a.secondary").animate({top:'9px'}, {complete: function() {
+                secondary.show();
+                secondary.animate({top:'9px'}, {complete: function() {
                      $("ul.css-tabs li a.secondary#files").addClass("current");
                 }});            
             }});
+
             var state = false;
+
             $(this).rotate({animateAngle: (-180), bind:[{
                 "click":function(){
                     if (state) {
                         $(this).rotateAnimation(-180);
                         $("ul.css-tabs li a.current").removeClass("current");
-                        $("ul.css-tabs li a").animate({top:'30px'}, {complete: function() { 
+                        all.animate({top:'30px'}, {complete: function() { 
                             $(this).hide(); 
-                            $("ul.css-tabs li a.secondary").show();
-                            $("ul.css-tabs li a.secondary").animate({top:'9px'}, {complete: function() {
+                            secondary.show();
+                            secondary.animate({top:'9px'}, {complete: function() {
                                  $("ul.css-tabs li a.secondary#files").addClass("current");
                             }});            
                         }});
@@ -119,10 +125,10 @@
                     else {
                        $(this).rotateAnimation(0);
                         $("ul.css-tabs li a.current").removeClass("current");
-                        $("ul.css-tabs li a").animate({top:'30px'}, {complete: function() { 
+                        all.animate({top:'30px'}, {complete: function() { 
                             $(this).hide(); 
-                            $("ul.css-tabs li a.primary").show();
-                            $("ul.css-tabs li a.primary").animate({top:'9px'}, {complete: function() {
+                            primary.show();
+                            primary.animate({top:'9px'}, {complete: function() {
                                  $("ul.css-tabs li a.primary#machines").addClass("current");
                             }});            
                         }});

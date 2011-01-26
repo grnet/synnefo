@@ -9,7 +9,7 @@ from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.vocabs import MOCK_SERVERS, MOCK_IMAGES
-from synnefo.aquarium.models import VirtualMachine, User
+from synnefo.db.models import VirtualMachine, User
 
 
 if settings.GANETI_CLUSTER_INFO:

@@ -108,7 +108,7 @@ INSTALLED_APPS = (
     'synnefo.auth',
     'synnefo.api',
     'synnefo.ui',
-	'synnefo.aquarium'
+    'synnefo.db'
 )
 
 GANETI_CLUSTER_INFO = None #('ganeti.example.org', 5080)

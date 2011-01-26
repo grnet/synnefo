@@ -6,7 +6,7 @@ Installation
     $ sudo easy_install virtualenv
     ....
     $ git clone https://user@code.grnet.gr/git/synnefo synnefo
-    $ virtualenv synnefo --no-site-packages
+    $ virtualenv --python=python2.6 synnefo --no-site-packages
     ...
     $ cd synnefo
     $ ./bin/pip install django django-piston pycurl simplejson

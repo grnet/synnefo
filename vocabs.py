@@ -1,3 +1,11 @@
+# Virtual machine instance states
+STATES = (
+        (0, 'VM_STOPPED'),
+        (1, 'VM_RUNNING'),
+        (2, 'VM_PAUSED'),
+        (3, 'VM_INTERNAL'),
+)
+
 IMAGE_TAGS = {
                 1: 'archlinux',
                 2: 'centos',
@@ -11,7 +19,7 @@ IMAGE_TAGS = {
                 10: 'suse',
                 11: 'ubuntu',
                 12: 'windows',
-               }
+             }
 
 MOCK_IMAGES = [
                 {

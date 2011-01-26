@@ -9,6 +9,8 @@ from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.vocabs import MOCK_SERVERS, MOCK_IMAGES
+from synnefo.aquarium.models import VirtualMachine, User
+
 
 if settings.GANETI_CLUSTER_INFO:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
@@ -67,7 +69,18 @@ class ServerHandler(BaseHandler):
     def read_all(self, request, detail=False):
         if not rapi: # No ganeti backend. Return mock objects
             if detail:
-                return { "servers": MOCK_SERVERS }
+                return { "servers":  MOCK_SERVERS }
+                virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
+                #get the first user, since we don't have any user data yet
+                virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
+                    'name': server.name, 'id': server.id, 'imageId': server.imageid, 
+                    'metadata': {'Server_Label': server.server_label, \
+                    'Image_Version': server.image_version}, \
+                    'hostId': '9e107d9d372bb6826bd81d3542a419d6',  \
+                    'addresses': {'public': ['67.23.10.133'], 'private': ['10.176.42.17']}} \
+                        for server in virtual_servers]
+                #pass some fake data regarding ip, since we don't have any such data
+                return { "servers":  virtual_servers_list }                
             else:
                 return { "servers": [ { "id": s['id'], "name": s['name'] } for s in MOCK_SERVERS ] }
 

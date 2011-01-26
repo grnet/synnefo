@@ -219,13 +219,13 @@ function update() {
                 machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
                 machine.find("a.ip span.public").text(String(server.addresses.public));            
 
-                if (server.status == 'BUILD'){
+                if (server.status == 'PE_VM_MIGRATING'){
                     machine.find(".status").text('Building');
                     machine.appendTo(".running");
-                } else if (server.status == 'ACTIVE') {
+                } else if (server.status == 'PE_VM_RUNNING') {
                     machine.find(".status").text('Running');
                     machine.appendTo(".running");
-                } else if (server.status == 'SUSPENDED') {
+                } else if (server.status == 'PE_VM_SUSPENDED') {
                     machine.find(".status").text('Terminated');
                     machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
                     machine.appendTo(".terminated");

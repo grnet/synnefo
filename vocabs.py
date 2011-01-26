@@ -27,35 +27,35 @@ MOCK_IMAGES = [
                     "name" : "CentOS 5.2",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "ACTIVE"
+                    "status" : "PE_VM_RUNNING"
                 },
                 {
                     "id" : 3,
                     "name" : "Debian Lenny",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "ACTIVE"
+                    "status" : "PE_VM_RUNNING"
                 },
                 {
                     "id" : 11,
                     "name" : "Ubuntu 10.04 server 64bit",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "ACTIVE"
+                    "status" : "PE_VM_RUNNING"
                 },
                 {
                     "id" : 20,
                     "name" : "Ubuntu 10.10 server 64bit",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "ACTIVE"
+                    "status" : "PE_VM_RUNNING"
                 },
                 {
                     "id" : 4,
                     "name" : "FreeBSD 8.1 Release i386",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "ACTIVE"
+                    "status" : "PE_VM_RUNNING"
                 },
                 {
                     "id" : 12,
@@ -76,7 +76,7 @@ MOCK_SERVERS = [
                 "imageId" : 11,
                 "flavorId" : 1,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "BUILD",
+                "status" : "PE_VM_MIGRATING",
                 "progress" : 60,
                 "addresses" : {
                     "public" : [
@@ -88,8 +88,8 @@ MOCK_SERVERS = [
                         ]
                     },
                 "metadata" : {
-                        "Server Label" : "Web Head 1",
-                        "Image Version" : "2.1"
+                        "Server_Label" : "Web Head 1",
+                        "Image_Version" : "2.1"
                     }
                 },
                 {
@@ -98,7 +98,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.133"
@@ -108,7 +108,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "DB 1"
+                            "Server_Label" : "DB 1"
                         }
                 },
                 {
@@ -117,7 +117,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.143"
@@ -127,7 +127,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "DB 19"
+                            "Server_Label" : "DB 19"
                         }
                 },
                 {
@@ -136,7 +136,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.118"
@@ -146,7 +146,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "DB 5"
+                            "Server_Label" : "DB 5"
                         }
                 },
                 {
@@ -155,11 +155,11 @@ MOCK_SERVERS = [
                     "imageId" : 12,
                     "flavorId" : 2,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "SUSPENDED",
+                    "status" : "PE_VM_SUSPENDED",
                     "addresses" : {
                         },
                     "metadata" : {
-                            "Server Label" : "DB 2"
+                            "Server_Label" : "DB 2"
                         }
                 },
                 {
@@ -168,7 +168,7 @@ MOCK_SERVERS = [
                 "imageId" : 3,
                 "flavorId" : 1,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "BUILD",
+                "status" : "PE_VM_MIGRATING",
                 "progress" : 20,
                 "addresses" : {
                     "public" : [
@@ -180,8 +180,8 @@ MOCK_SERVERS = [
                         ]
                     },
                 "metadata" : {
-                        "Server Label" : "Web Head 8",
-                        "Image Version" : "3.0"
+                        "Server_Label" : "Web Head 8",
+                        "Image_Version" : "3.0"
                     }
                 },
                 {
@@ -190,7 +190,7 @@ MOCK_SERVERS = [
                 "imageId" : 5,
                 "flavorId" : 5,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "BUILD",
+                "status" : "PE_VM_MIGRATING",
                 "progress" : 33,
                 "addresses" : {
                     "public" : [
@@ -202,8 +202,8 @@ MOCK_SERVERS = [
                         ]
                     },
                 "metadata" : {
-                        "Server Label" : "My Web Server 33",
-                        "Image Version" : "3.3"
+                        "Server_Label" : "My Web Server 33",
+                        "Image_Version" : "3.3"
                     }
                 },
                 {
@@ -212,7 +212,7 @@ MOCK_SERVERS = [
                 "imageId" : 5,
                 "flavorId" : 5,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "BUILD",
+                "status" : "PE_VM_MIGRATING",
                 "progress" : 66,
                 "addresses" : {
                     "public" : [
@@ -224,8 +224,8 @@ MOCK_SERVERS = [
                         ]
                     },
                 "metadata" : {
-                        "Server Label" : "My Web Server 66",
-                        "Image Version" : "6.6"
+                        "Server_Label" : "My Web Server 66",
+                        "Image_Version" : "6.6"
                     }
                 },
                 {
@@ -234,7 +234,7 @@ MOCK_SERVERS = [
                 "imageId" : 3,
                 "flavorId" : 12,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "BUILD",
+                "status" : "PE_VM_MIGRATING",
                 "progress" : 66,
                 "addresses" : {
                     "public" : [
@@ -246,8 +246,8 @@ MOCK_SERVERS = [
                         ]
                     },
                 "metadata" : {
-                        "Server Label" : "My Web Server 18",
-                        "Image Version" : "5.5"
+                        "Server_Label" : "My Web Server 18",
+                        "Image_Version" : "5.5"
                     }
                 },
                 {
@@ -256,11 +256,11 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 9,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "SUSPENDED",
+                    "status" : "PE_VM_SUSPENDED",
                     "addresses" : {
                         },
                     "metadata" : {
-                            "Server Label" : "Mysql DB production"
+                            "Server_Label" : "Mysql DB production"
                         }
                 },
                 {
@@ -269,7 +269,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" :6,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.11.55"
@@ -279,7 +279,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "Mongodb production"
+                            "Server_Label" : "Mongodb production"
                         }
                 },
                 {
@@ -288,7 +288,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 6,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.56"
@@ -298,7 +298,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "Sample Server 29"
+                            "Server_Label" : "Sample Server 29"
                         }
                 },
                 {
@@ -307,7 +307,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 3,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.96"
@@ -317,7 +317,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "Sample Server 15"
+                            "Server_Label" : "Sample Server 15"
                         }
                 },
                 {
@@ -326,7 +326,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 3,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.20"
@@ -336,7 +336,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "Sample Server 20"
+                            "Server_Label" : "Sample Server 20"
                         }
                 },
                 {
@@ -345,7 +345,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.29"
@@ -355,7 +355,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "Sample Server 29"
+                            "Server_Label" : "Sample Server 29"
                         }
                 },
                 {
@@ -364,7 +364,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 7,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "ACTIVE",
+                    "status" : "PE_VM_RUNNING",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.77"
@@ -374,7 +374,7 @@ MOCK_SERVERS = [
                             ]
                         },
                     "metadata" : {
-                            "Server Label" : "Sample Server 77"
+                            "Server_Label" : "Sample Server 77"
                         }
                 },
                 {
@@ -383,14 +383,14 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 12,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "SUSPENDED",
+                    "status" : "PE_VM_SUSPENDED",
                     "addresses" : {
                         "public" : [
                                 "67.23.11.177"
                             ],
                         },
                     "metadata" : {
-                            "Server Label" : "DB 3"
+                            "Server_Label" : "DB 3"
                         }
                 }
                ]

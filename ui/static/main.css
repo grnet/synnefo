@@ -73,7 +73,7 @@ ul.css-tabs {
 }
 
 ul.css-tabs .secondary {
-    display: none;
+    position:relative;
 }
 
 /* single tab */

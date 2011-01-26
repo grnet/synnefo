@@ -43,14 +43,14 @@ class VirtualMachineAdmin(admin.ModelAdmin):
     form = VirtualMachineForm
 
 
-class ChargingLogForm(forms.ModelForm):
+class AccountingLogForm(forms.ModelForm):
     class Meta:
-        model = ChargingLog
+        model = AccountingLog
 
-class ChargingLogAdmin(admin.ModelAdmin):
+class AccountingLogAdmin(admin.ModelAdmin):
     ""    
 
-    form = ChargingLogForm
+    form = AccountingLogForm
 
 class OceanUserForm(forms.ModelForm):
     class Meta:
@@ -60,10 +60,20 @@ class OceanUserAdmin(admin.ModelAdmin):
     ""
     form = OceanUserForm
 
+class ImageForm(forms.ModelForm):
+    class Meta:
+        model = Image
+
+class ImageAdmin(admin.ModelAdmin):
+    ""
+    form = ImageForm
+
+
 admin.site.register(Limit, LimitAdmin)
 admin.site.register(OceanUser, OceanUserAdmin)
 admin.site.register(UserLimit, UserLimitAdmin)
 admin.site.register(Flavor, FlavorAdmin)
 admin.site.register(VirtualMachine, VirtualMachineAdmin)
-admin.site.register(ChargingLog, ChargingLogAdmin)
+admin.site.register(AccountingLog, AccountingLogAdmin)
+admin.site.register(Image, ImageAdmin)
 

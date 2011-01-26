@@ -44,7 +44,7 @@ class UserLimit(models.Model):
 
 
 class Flavor(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = property(_get_name)
 	cpu = models.IntegerField(default=0)
 	ram = models.IntegerField(default=0)
 	disk = models.IntegerField(default=0)
@@ -53,6 +53,9 @@ class Flavor(models.Model):
 
 	class Meta:
 		verbose_name = u'Virtual Machine flavors'
+
+	def _get_name(self):
+		return u'c%dr%dd%d' % ( cpu, ram, disk )
 
     def __unicode__(self):
         return self.name

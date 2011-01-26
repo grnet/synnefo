@@ -1,10 +1,10 @@
 # Virtual machine instance states
 STATES = (
-        (0, 'VM_STOPPED'),
-        (1, 'VM_RUNNING'),
-        (2, 'VM_PAUSED'),
-        (3, 'VM_INTERNAL'),
-)
+			'VM_STOPPED',
+			'VM_RUNNING',
+			'VM_PAUSED',
+			'VM_INTERNAL',
+		 )
 
 IMAGE_TAGS = {
                 1: 'archlinux',

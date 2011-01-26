@@ -45,7 +45,9 @@ class UserLimit(models.Model):
 
 class Flavor(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    description = models.CharField(max_length=1000)
+	cpu = models.IntegerField(default=0)
+	ram = models.IntegerField(default=0)
+	disk = models.IntegerField(default=0)
     cost_active = models.PositiveIntegerField()
     cost_inactive = models.PositiveIntegerField()
 
@@ -59,13 +61,14 @@ class Flavor(models.Model):
 class VirtualMachine(models.Model):
     name = models.CharField(max_length=255)
     created = models.DateTimeField()
-    state = models.IntegerField(choices=vocabs.STATES, default=0)
+    state = models.CharField(choices=vocabs.STATES, default=0)
     started = models.DateTimeField()
-    vmid = models.IntegerField()
     imageid = models.IntegerField()
     hostid = models.CharField(max_length=100)
     server_label = models.CharField(max_length=100)
     image_version = models.CharField(max_length=100)
+	ipfour = models.IPAddressField()
+	ipsix = models.CharField(max_length=100)
     owner = models.ForeignKey(OceanUser)
     flavor = models.ForeignKey(Flavor)
 
@@ -77,10 +80,10 @@ class VirtualMachine(models.Model):
         return self.name
 
 
-class ChargingLog(models.Model):
+class AccountingLog(models.Model):
     vm = models.ForeignKey(VirtualMachine)
     date = models.DateTimeField()
-	state = models.IntegerField(choices=vocabs.STATES, default=0)
+	state = models.CharField(choices=vocabs.STATES, default=0)
 
     class Meta:
         verbose_name = u'Charging log'

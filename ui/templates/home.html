@@ -95,10 +95,10 @@
             var state = true;
             $("ul.css-tabs li .primary").hide();
             $("ul.css-tabs li .secondary").show();
-            $(this).rotate({animateAngle: (90), bind:[{
+            $(this).rotate({animateAngle: (-180), bind:[{
                 "click":function(){
                     if (state) {
-                        $(this).rotateAnimation(90);
+                        $(this).rotateAnimation(-180);
                         $("ul.css-tabs li .primary").hide();
                         $("ul.css-tabs li .secondary").show();
                         state = false;

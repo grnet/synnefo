@@ -54,7 +54,7 @@ class ChargingLogAdmin(admin.ModelAdmin):
 
 class OceanUserForm(forms.ModelForm):
     class Meta:
-	    model = OceanUser
+        model = OceanUser
 
 class OceanUserAdmin(admin.ModelAdmin):
     ""

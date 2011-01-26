@@ -938,6 +938,8 @@ div.list table thead tr .header {
 	background-image: url(bg.gif);
 	background-repeat: no-repeat;
 	background-position: center right;
+    text-align: left;
+    vertical-align: middle;
 	cursor: pointer;
 }
 
@@ -951,6 +953,7 @@ div.list table thead tr .header#ip {
 
 div.list table thead tr th#selection, div.list table thead tr th#os {
     width: 10px;
+    vertical-align:middle;
 }
 
 div.list table tbody td {

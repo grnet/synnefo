@@ -733,13 +733,13 @@ div.list .state {
     margin-right: 10px;
 }
 
-div.list .running {
+div.list table tbody.running {
     margin-top: 8px;
     max-height: 310px;
     overflow: auto;
 }
 
-div.list .terminated {
+div.list table tbody.terminated {
     max-height: 200px;
     overflow: auto;
 }

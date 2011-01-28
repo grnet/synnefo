@@ -266,7 +266,38 @@ function update() {
             });
         }
     });
+
+//TESTING $.ajax POST+DELETE. api/handlers.py/ServerHandler and ServerActionHandler receive these calls
+//DELETE is working, while POST is not (maybe this has to do with piston+django csrf?
+
+    $.ajax({
+        url: '/api/v1.0/servers/1234/action',
+        type: "POST",
+        data: {
+                  "reboot": {
+                      "type" : "HARD"
+                  }
+               },
+        dataType: "json",
+        success: function() {
+                            }
+            });
+
+
+
+    $.ajax({
+        url: '/api/v1.0/servers/1234',
+        type: "DELETE",
+    //    async: false,
+        dataType: "json",
+        success: function(data) {
 }
+           });
+
+//DELETE TILL HERE
+}
+
+
 
 update();
 

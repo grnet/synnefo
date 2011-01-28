@@ -10,12 +10,14 @@ from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.vocabs import MOCK_SERVERS, MOCK_IMAGES
 from synnefo.db.models import VirtualMachine, User
+from util.rapi import GanetiRapiClient
 
 
 if settings.GANETI_CLUSTER_INFO:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 else:
     rapi = None
+
 
 VERSIONS = [
     {
@@ -25,6 +27,10 @@ VERSIONS = [
         "wadl" : "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl"
     },
 ]
+
+def VirtualMachineName(id):
+    "returns the VirtualMachine, given it's id"
+    return VirtualMachine.objects.get(id=id)
 
 class VersionHandler(AnonymousBaseHandler):
     allowed_methods = ('GET',)
@@ -49,6 +55,7 @@ class ServerHandler(BaseHandler):
     def read(self, request, id=None):
         from time import sleep
         sleep(1)
+        #TODO: delete the sleep once the mock objects are removed
         if id is None:
             return self.read_all(request)
         elif id == "detail":
@@ -69,7 +76,7 @@ class ServerHandler(BaseHandler):
     def read_all(self, request, detail=False):
         if not rapi: # No ganeti backend. Return mock objects
             if detail:
-                return { "servers":  MOCK_SERVERS }
+                return { "servers":  MOCK_SERVERS } #TODO: remove once the mock objects are removed
                 virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
                 #get the first user, since we don't have any user data yet
                 virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
@@ -101,6 +108,9 @@ class ServerHandler(BaseHandler):
         return noContent
 
     def delete(self, request, id):
+        machine = 'sample-server' #VirtualMachineName(id)
+        print 'deleting machine %s' % machine
+        rapi.DeleteInstance(machine.name)
         return accepted
 
 
@@ -109,6 +119,7 @@ class ServerAddressHandler(BaseHandler):
 
     def read(self, request, id, type=None):
         """List IP addresses for a server"""
+
         if type is None:
             pass
         elif type == "private":
@@ -127,12 +138,31 @@ class ServerAddressHandler(BaseHandler):
 
 
 class ServerActionHandler(BaseHandler):
-    allowed_methods = ('POST',)
+    allowed_methods = ('POST', 'DELETE', 'GET', 'PUT')
+#TODO: remove GET/PUT
+    
+    def read(self, request, id):
+        return accepted
 
     def create(self, request, id):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
-        print ("server action %s" % id)
+        #print "server id: %s, action_id: %s" % (id, action_id)
         return accepted
+
+
+    def delete(self, request, id):
+        """Delete an Instance"""
+        return accepted
+
+    def update(self, request, id):
+        return noContent
+
+
+
+#read is called on GET requests
+#create is called on POST, and creates new objects, and should return them (or rc.CREATED.)
+#update is called on PUT, and should update an existing product and return them (or rc.ALL_OK.)
+#delete is called on DELETE, and should delete an existing object. Should not return anything, just rc.DELETED.'''
 
 
 class ServerBackupHandler(BaseHandler):

@@ -1,5 +1,20 @@
 <script src="http://tablesorter.com/jquery.tablesorter.min.js"></script>
 
+<script>
+$(function() {
+$(".destroy").click(function() {
+    $.ajax({
+        url: '/api/v1.0/servers/1234',
+//SERVER ID HERE
+        type: "DELETE",
+        dataType: "json",
+        success: function(data) {
+                                }
+            });
+}
+</script>
+
+
 <div id="machinesview" class="list">
     <div id="spinner"></div>
     <div class="actions">

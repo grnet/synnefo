@@ -198,6 +198,7 @@ var image_tags = {
                 20: 'ubuntu',
                };
 
+// populate listings of machines
 function update() {
 
     $(".running").text('');
@@ -208,7 +209,7 @@ function update() {
     $.ajax({
         url: '/api/v1.0/servers/detail',
         type: "GET",
-    //    async: false,
+        //async: false,
         dataType: "json",
         success: function(data) {
             $.each(data.servers, function(i,server){
@@ -248,7 +249,7 @@ function update() {
     $.ajax({
         url: '/api/v1.0/images/detail',
         type: "GET",
-    //    async: false,
+        //async: false,
         dataType: "json",
         success: function(data) {
             $.each(data.images, function(i,image){
@@ -266,41 +267,35 @@ function update() {
             });
         }
     });
+}
 
-//TESTING $.ajax POST+DELETE. api/handlers.py/ServerHandler and ServerActionHandler receive these calls
-//DELETE is working, while POST is not (maybe this has to do with piston+django csrf?
+update();
 
+// reboot action
+$(".reboot").click(function(event) {
     $.ajax({
         url: '/api/v1.0/servers/1234/action',
         type: "POST",
         data: {
-                  "reboot": {
-                      "type" : "HARD"
-                  }
-               },
+            "reboot": {"type" : "HARD"}
+            },
         dataType: "json",
-        success: function() {
-                            }
-            });
+        success: function() {}
+    });
+});
 
-
-
+// destroy action
+$(".destroy").click(function(event) {
     $.ajax({
         url: '/api/v1.0/servers/1234',
         type: "DELETE",
-    //    async: false,
+        //async: false,
         dataType: "json",
-        success: function(data) {
-}
-           });
+        success: function(data) {}
+    });
+});
 
-//DELETE TILL HERE
-}
-
-
-
-update();
-
+// switch to list view
 $("#list").click(function(event){
     $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
@@ -309,6 +304,7 @@ $("#list").click(function(event){
     return false;
 });
 
+// switch to standard view
 $("a#standard").click(function(event){
     href=$("a#standard").attr("href");
     $("div.pane#machines-pane").load(href);

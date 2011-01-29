@@ -76,68 +76,45 @@
 	        });
         });
 
-        // what should be working
-        /*
-        $(".inactive#arrow").click(function(event){
-            $(this).removeClass("inactive");
-            $(this).addClass("active");
-            $(this).rotateAnimation(90);
-        });
-
-        $(".active#arrow").click(function(event){
-            $(this).removeClass("active");
-            $(this).addClass("inactive");
-            $(this).rotateAnimation(0);
-        });
-        */
-        
-        // what is working
+        // toggle main menu
         $("#arrow").click(function(event){
-            var primary = $("ul.css-tabs li a.primary");
+        	toggleMenu();
+        }); 
+                
+		function toggleMenu() {
+        	var primary = $("ul.css-tabs li a.primary");
             var secondary = $("ul.css-tabs li a.secondary");
-            var all = $("ul.css-tabs li a");
-
-            $("ul.css-tabs li a.current").removeClass("current");
+            var all = $("ul.css-tabs li a");			
+			var toggled = $('ul.css-tabs li a.current').hasClass('secondary');
+			
+			// if anything is still moving, do nothing
+        	if ($(":animated").length) {
+        		return;
+        	} 
+            $('ul.css-tabs li a.current').removeClass('current');
+			
             all.animate({top:'30px'}, {complete: function() { 
-                $(this).hide(); 
-                secondary.show();
-                secondary.animate({top:'9px'}, {complete: function() {
-                     $("ul.css-tabs li a.secondary#files").addClass("current");
-                }});            
+                $(this).hide();
+                if (toggled) {
+	                primary.show();
+	                primary.animate({top:'9px'}, {complete: function() {
+	                	$('ul.css-tabs li a.primary#machines').addClass('current');
+	                	$('a#machines').click();                           	
+	                }});
+                } else {
+                	secondary.show();
+                	secondary.animate({top:'9px'}, {complete: function() {
+	                	$('ul.css-tabs li a.secondary#files').addClass('current');
+	                	$('a#files').click();                           			                	
+                	}});
+                }            	                          
             }});
-
-            var state = false;
-
-            $(this).rotate({animateAngle: (-180), bind:[{
-                "click":function(){
-                    if (state) {
-                        $(this).rotateAnimation(-180);
-                        $("ul.css-tabs li a.current").removeClass("current");
-                        all.animate({top:'30px'}, {complete: function() { 
-                            $(this).hide(); 
-                            secondary.show();
-                            secondary.animate({top:'9px'}, {complete: function() {
-                                 $("ul.css-tabs li a.secondary#files").addClass("current");
-                            }});            
-                        }});
-                        state = false;
-                        }
-                    else {
-                       $(this).rotateAnimation(0);
-                        $("ul.css-tabs li a.current").removeClass("current");
-                        all.animate({top:'30px'}, {complete: function() { 
-                            $(this).hide(); 
-                            primary.show();
-                            primary.animate({top:'9px'}, {complete: function() {
-                                 $("ul.css-tabs li a.primary#machines").addClass("current");
-                            }});            
-                        }});
-                       state = true;
-                       }
-                }}]
-            });
-        });
-
+            if (toggled) {
+            	$("#arrow").rotateAnimation(0);
+            } else {
+            	$("#arrow").rotateAnimation(-180);
+            }            
+		}  
     </script>
 </body>
 </html>

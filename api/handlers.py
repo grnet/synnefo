@@ -9,7 +9,7 @@ from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.vocabs import MOCK_SERVERS, MOCK_IMAGES
-from synnefo.db.models import VirtualMachine, User
+from synnefo.db.models import VirtualMachine, User, id_from_instance_name
 from util.rapi import GanetiRapiClient
 
 
@@ -18,6 +18,7 @@ if settings.GANETI_CLUSTER_INFO:
 else:
     rapi = None
 
+ganeti_prefix_id = settings.GANETI_PREFIX_ID
 
 VERSIONS = [
     {
@@ -28,9 +29,6 @@ VERSIONS = [
     },
 ]
 
-def VirtualMachineName(id):
-    "returns the VirtualMachine, given it's id"
-    return VirtualMachine.objects.get(id=id)
 
 class VersionHandler(AnonymousBaseHandler):
     allowed_methods = ('GET',)
@@ -108,7 +106,7 @@ class ServerHandler(BaseHandler):
         return noContent
 
     def delete(self, request, id):
-        machine = 'sample-server' #VirtualMachineName(id)
+        machine = 'sample-server' #VirtualMachine.objects.get(id=id_from_instance_name(id))
         print 'deleting machine %s' % machine
         rapi.DeleteInstance(machine.name)
         return accepted
@@ -146,6 +144,7 @@ class ServerActionHandler(BaseHandler):
 
     def create(self, request, id):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
+        print 'createm'
         #print "server id: %s, action_id: %s" % (id, action_id)
         return accepted
 

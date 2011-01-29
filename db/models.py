@@ -1,11 +1,24 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
+
 import datetime
 
 import vocabs
+
+ganeti_prefix_id = settings.GANETI_PREFIX_ID
+
+
+
+def id_from_instance_name(name):    
+    "Returns VirtualMachine's Django id, given a ganeti machine name"
+    "Strips the ganeti prefix atm. Needs a better name!"
+    return '%s' % (str(name).strip(ganeti_prefix_id))
+
+
 
 class Limit(models.Model):
     description = models.CharField(max_length=45)
@@ -86,6 +99,10 @@ class VirtualMachine(models.Model):
     def __unicode__(self):
         return self.name
 
+    def _get_ganeti_id(self):
+        "Returns the ganeti-prefix + id of the VM, for ganeti"
+        return '%s%s' % (ganeti_prefix_id, str(self.id))
+    ganeti_id = property(_get_ganeti_id)
 
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)

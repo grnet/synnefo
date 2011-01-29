@@ -112,6 +112,7 @@ INSTALLED_APPS = (
 )
 
 GANETI_CLUSTER_INFO = None #("x.y.z.a",5080,"userX","passY")
+GANETI_PREFIX_ID = "snf-" #ganeti needs each machine to have a unique name
 
 LANGUAGES = (
   ('el', u'Ελληνικά'),

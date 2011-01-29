@@ -110,9 +110,9 @@
                 }            	                          
             }});
             if (toggled) {
-            	$("#arrow").rotateAnimation(0);
+            	$("#arrow").rotate({animateAngle: (0), bind:[{"click":function(){toggleMenu()}}]});
             } else {
-            	$("#arrow").rotateAnimation(-180);
+            	$("#arrow").rotate({animateAngle: (-180), bind:[{"click":function(){toggleMenu()}}]});
             }            
 		}  
     </script>

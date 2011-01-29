@@ -15,4 +15,12 @@ Installation
     $ cp settings.py.dist settings.py
     $ ./bin/python manage.py runserver
 
-(On ubuntu systems, apt-get install libcurl3-gnutls libcurl3-gnutls-dev was needed)
+Notes
+1) On ubuntu systems, apt-get install libcurl3-gnutls libcurl3-gnutls-dev was needed
+2) jQuery.ajax POST is not working unless you edit piston/utils.py. 
+On def content_type change
+
+        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded)
+
+to 
+        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded).split(";")[0]

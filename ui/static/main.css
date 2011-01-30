@@ -735,13 +735,21 @@ div.list .state {
 
 div.list table tbody.running {
     margin-top: 8px;
-    max-height: 310px;
+    height: 310px;
     overflow: auto;
 }
 
 div.list table tbody.terminated {
     max-height: 200px;
     overflow: auto;
+}
+
+div.list table tbody.terminated td {
+	height: 20px !important;
+}
+
+th.scroll {
+	width:7px;
 }
 
 div.list .stopped {
@@ -943,16 +951,21 @@ div.list table thead tr .header {
 	cursor: pointer;
 }
 
-div.list table thead tr .header#group, div.list table thead tr .header#name{
+div.list table thead tr .header#group {
     width: 80px;
 }
 
 div.list table thead tr .header#ip {
-    width: 180px;
+    width: 100px;
 }
 
-div.list table thead tr th#selection, div.list table thead tr th#os {
-    width: 10px;
+div.list table thead #selection {
+	width: 35px;
+	text-align: left;
+}
+
+div.list table thead #os {
+    width: 32px;
     vertical-align:middle;
 }
 
@@ -978,3 +991,5 @@ div.list table thead tr .headerSortDown {
 div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
     background-color: #87AADE;
 }
+
+span.imagetag { display: none;}

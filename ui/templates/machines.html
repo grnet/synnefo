@@ -20,7 +20,7 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
         </div>
-        <img class="logo" src="path/to/logos" />
+        <img class="logo" src="" />
         <a href="#" class="name">
             <h5>Νame: <span class="name">node.name</span><span class="rename"></span></h5>
         </a>
@@ -68,7 +68,7 @@
 		            <li id="image-template" style="display:none">
 			            <label for="image.id"> 
                             <a><div class="image">
-                                <img src="static/os_logos/image.logo" class="image-logo"/>
+                                <img src="" class="image-logo"/>
                                 <strong class="image-title">image.title</strong>
                                 <input class="radio" type="radio" name="image-id" id="image-id" />
                                 <br />
@@ -198,7 +198,6 @@ var image_tags = {
                 20: 'ubuntu',
                };
 
-// populate listings of machines
 function update() {
 
     $(".running").text('');
@@ -209,7 +208,7 @@ function update() {
     $.ajax({
         url: '/api/v1.0/servers/detail',
         type: "GET",
-        //async: false,
+    //    async: false,
         dataType: "json",
         success: function(data) {
             $.each(data.servers, function(i,server){
@@ -218,7 +217,10 @@ function update() {
                 machine.find("a.name span.name").text(server.name);
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
                 machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
-                machine.find("a.ip span.public").text(String(server.addresses.public));            
+                machine.find("img.list-logo").attr("title",image_tags[server.imageId]);
+                machine.find("span.imagetag").text(image_tags[server.imageId]);
+
+                machine.find("a.ip span.public").text(String(server.addresses.public).replace(',',' '));            
 
                 if (server.status == 'PE_VM_MIGRATING'){
                     machine.find(".status").text('Building');
@@ -239,8 +241,9 @@ function update() {
             });
             $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();
+            $(".list table").show();
             $(".list table").tablesorter({ 
-                headers: { 0: { sorter: false}, 1: {sorter: false} }, 
+                headers: { 0: { sorter: false}, 6: { sorter: false }}, 
                 sortMultiSortKey: "ctrlKey" }).show();
             $(".list .actions").show();
         }
@@ -249,7 +252,7 @@ function update() {
     $.ajax({
         url: '/api/v1.0/images/detail',
         type: "GET",
-        //async: false,
+    //    async: false,
         dataType: "json",
         success: function(data) {
             $.each(data.images, function(i,image){
@@ -267,35 +270,41 @@ function update() {
             });
         }
     });
-}
 
-update();
-
-// reboot action
-$(".reboot").click(function(event) {
+//TESTING $.ajax POST+DELETE. api/handlers.py/ServerHandler and ServerActionHandler receive these calls
+//DELETE is working, while POST is not (maybe this has to do with piston+django csrf?
+/*
     $.ajax({
         url: '/api/v1.0/servers/1234/action',
         type: "POST",
         data: {
-            "reboot": {"type" : "HARD"}
-            },
+                  "reboot": {
+                      "type" : "HARD"
+                  }
+               },
         dataType: "json",
-        success: function() {}
-    });
-});
+        success: function() {
+                            }
+            });
 
-// destroy action
-$(".destroy").click(function(event) {
+
+
     $.ajax({
         url: '/api/v1.0/servers/1234',
         type: "DELETE",
-        //async: false,
+    //    async: false,
         dataType: "json",
-        success: function(data) {}
-    });
-});
+        success: function(data) {
+}
+           });
+*/
+//DELETE TILL HERE
+}
 
-// switch to list view
+
+
+update();
+
 $("#list").click(function(event){
     $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
@@ -304,7 +313,6 @@ $("#list").click(function(event){
     return false;
 });
 
-// switch to standard view
 $("a#standard").click(function(event){
     href=$("a#standard").attr("href");
     $("div.pane#machines-pane").load(href);

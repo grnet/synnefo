@@ -1,5 +1,3 @@
-<script src="http://tablesorter.com/jquery.tablesorter.min.js"></script>
-
 <div id="machinesview" class="list">
     <div id="spinner"></div>
     <div class="actions">
@@ -29,12 +27,13 @@
                 <th id="ip">IP</th> 
                 <th id="group">Group</th>
                 <th id="status">Status</th> 
+                <th class="scroll"></th>
             </tr> 
         </thead> 
         <tbody class="running">
             <tr id="machine-template" style="display: none">
                 <td><input type="checkbox" class="machine" id="node-id" /></td>
-                <td><img class="list-logo" src="static/os_logos/node.thumb" width="16" height="16" /></td>
+                <td><span class="imagetag"></span><img class="list-logo" src="" width="16" height="16" /></td>
                 <td><a class="name"><span class="name">node.name</span></a></td> 
                 <td><a class="ip"><span class="public">node.public_ip</span></a></td>
                 <td>group</td>
@@ -57,3 +56,17 @@
         <tbody class="terminated"></tbody>
     </table>
 </div>
+
+
+<script>
+$(function() {
+	$(".destroy").click(function() {
+    	$.ajax({
+     	   url: '/api/v1.0/servers/1234',
+			//SERVER ID HERE
+        	type: "DELETE",
+        	dataType: "json",
+        	success: function(data) {}
+        });
+}
+</script>

@@ -5,6 +5,8 @@
 	<!-- include the Tools -->
 	<script src="static/jquery.tools.min.js"></script>
     <script src="static/jQueryRotate.js"></script>
+    <script src="static/jquery.tablesorter.min.js"></script>
+    
 	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
     <link href='http://fonts.googleapis.com/css?family=PT+Sans' rel='stylesheet' type='text/css' />
 
@@ -62,6 +64,7 @@
                 $('ul.css-tabs li a:not(.current)').animate({top:'9px'},{queue:false,duration:150});
 		    });
 		});
+		
         $(function() {
 	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
 		        onBeforeClick: function(event, i) {

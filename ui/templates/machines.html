@@ -173,6 +173,8 @@
 		</div>
 	</div>
 </form>
+<! -- TODO: remove and put into the Create VM from the wizard -->
+<a href="#" class="post-create">DIMIOURGIA VM</a>
 
 <div class="modal" id="misc">
     <h3>Your VM is being created!</h3>
@@ -412,3 +414,22 @@ $(function() {
 });
 </script>
 
+
+<script>
+// create action
+$(function() {
+$(".post-create").click(function() {
+    $.ajax({
+        url: '/api/v1.0/servers',
+        type: "POST",
+        data: {
+            "create": {"foo" : "foo"}
+            },
+        //TODO: get the real data
+        //async: false,
+        dataType: "json",
+        success: function() {}
+    });
+});
+});
+</script>

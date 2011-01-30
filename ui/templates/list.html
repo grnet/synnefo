@@ -47,26 +47,6 @@ $(".shutdown").click(function() {
 });
 });
 
-
-// shutdown action. Not implemented by rackspace API atm
-$(function() {
-$(".create").click(function() {
-    $.ajax({
-        url: '/api/v1.0/servers/1234/action',
-        type: "POST",
-        data: {
-            "create": {"foo" : "foo"}
-            },
-        //TODO: get the server's id, instead of foo id 1234
-        //async: false,
-        dataType: "json",
-        success: function() {}
-    });
-});
-});
-
-
-
 </script>
 
 

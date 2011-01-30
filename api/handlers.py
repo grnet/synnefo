@@ -144,8 +144,13 @@ class ServerActionHandler(BaseHandler):
 
     def create(self, request, id):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
-        print 'createm'
-        #print "server id: %s, action_id: %s" % (id, action_id)
+        post_request = request.POST
+        reboot_request = request.POST.get('reboot', None)
+        shutdown_request = request.POST.get('shutdown', None)
+        if reboot_request:
+            print 'reboot was asked, with options: %s' % reboot_request   
+        elif shutdown_request:
+            print 'shutdown was asked, with options: %s' % shutdown_request               
         return accepted
 
 

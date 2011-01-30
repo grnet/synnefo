@@ -246,6 +246,7 @@ function update() {
         }
     });
 
+
     $.ajax({
         url: '/api/v1.0/images/detail',
         type: "GET",
@@ -270,20 +271,6 @@ function update() {
 }
 
 update();
-
-// reboot action
-$(".reboot").click(function(event) {
-    $.ajax({
-        url: '/api/v1.0/servers/1234/action',
-        //TODO: get the server's id, instead of foo id 1234
-        type: "POST",
-        data: {
-            "reboot": {"type" : "HARD"}
-            },
-        dataType: "json",
-        success: function() {}
-    });
-});
 
 // switch to list view
 $("#list").click(function(event){

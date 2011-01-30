@@ -216,7 +216,9 @@ function update() {
         success: function(data) {
             $.each(data.servers, function(i,server){
 
-                var machine = $("#machine-template").clone().attr("id",server.id).fadeIn("slow");
+                var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
+                machine.find("input[type='checkbox']").attr("id", "input-" + server.id);
+                machine.find("input[type='checkbox']").attr("class", server.status);
                 machine.find("a.name span.name").text(server.name);
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
                 machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');

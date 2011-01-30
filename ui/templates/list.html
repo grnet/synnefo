@@ -1,22 +1,22 @@
 <div id="machinesview" class="list">
     <div id="spinner"></div>
     <div class="actions">
-        <a class="start">Start</a>
-        <a href="#" id="1" class="reboot">Reboot</a>
-        <a href="#" id="1" class="shutdown">Shutdown</a>
+        <a id="action-start">Start</a>
+        <a id="action-reboot">Reboot</a>
+        <a id="action-shutdown">Shutdown</a>
         <br />
-        <a href="#" id="1" class="destroy">Destroy</a>
+        <a id="action-destroy">Destroy</a>
         <br />
-        <a class="details">Show Details</a>
-        <a class="group">Add to group</a>
+        <a id="action-details">Show Details</a>
+        <a id="action-group">Add to group</a>
         <br />
-        <a class="band">Out of band</a>
+        <a id="action-band">Out of band</a>
         <br />
-        <a class="attach">Attach disk</a>
-        <a class="detach">Detach disk</a>
+        <a id="action-attach">Attach disk</a>
+        <a id="action-detach">Detach disk</a>
         <br />
-        <a class="connect">Connect to network</a>
-        <a class="disconnect">Disconnect from net</a>
+        <a id="action-connect">Connect to network</a>
+        <a id="action-disconnect">Disconnect from net</a>
     </div>
     <table>
         <thead> 
@@ -32,12 +32,12 @@
         </thead> 
         <tbody class="running">
             <tr id="machine-template" style="display: none">
-                <td><input type="checkbox" class="machine" id="node-id" /></td>
+                <td><input type="checkbox" id="node-id" /></td>
                 <td><span class="imagetag"></span><img class="list-logo" src="" width="16" height="16" /></td>
                 <td><a class="name"><span class="name">node.name</span></a></td> 
                 <td><a class="ip"><span class="public">node.public_ip</span></a></td>
                 <td>group</td>
-                <td class="status">Running</td>    
+                <td class="status">Running</td>
             </tr>
         </tbody>
     </table>
@@ -59,8 +59,12 @@
 
 
 <script>
+// on checkbox click, update the actions
+$("input[type='checkbox']").click(function() {
+	
+});
+
 // destroy action
-$(function() {
 $(".destroy").click(function() {
     $.ajax({
         url: '/api/v1.0/servers/1234',
@@ -71,11 +75,9 @@ $(".destroy").click(function() {
         success: function() {}
     });
 });
-});
 
 // reboot action
-$(function() {
-$(".reboot").click(function() {
+$(".enabled#action-reboot").click(function() {
     $.ajax({
         url: '/api/v1.0/servers/1234/action',
         type: "POST",
@@ -88,11 +90,9 @@ $(".reboot").click(function() {
         success: function() {}
     });
 });
-});
 
 // shutdown action. Not implemented by rackspace API atm
-$(function() {
-$(".shutdown").click(function() {
+$(".enabled#action-shutdown").click(function() {
     $.ajax({
         url: '/api/v1.0/servers/1234/action',
         type: "POST",
@@ -104,7 +104,6 @@ $(".shutdown").click(function() {
         dataType: "json",
         success: function() {}
     });
-});
 });
 
 </script>

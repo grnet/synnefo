@@ -1,3 +1,19 @@
+<script>
+// destroy action
+$(function() {
+$(".destroy").click(function() {
+    $.ajax({
+        url: '/api/v1.0/servers/1234',
+        type: "DELETE",
+        //TODO: get the server's id, instead of foo id 1234
+        //async: false,
+        dataType: "json",
+        success: function() {}
+    });
+});
+});
+</script>
+
 <script src="http://tablesorter.com/jquery.tablesorter.min.js"></script>
 
 <div id="machinesview" class="list">
@@ -7,7 +23,7 @@
         <a class="reboot">Reboot</a>
         <a class="shutdown">Shutdown</a>
         <br />
-        <a class="destroy">Destroy</a>
+        <a href="#" id="1" class="destroy">Destroy</a>
         <br />
         <a class="details">Show Details</a>
         <a class="group">Add to group</a>

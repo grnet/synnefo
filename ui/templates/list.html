@@ -2,10 +2,10 @@
     <div id="spinner"></div>
     <div class="actions">
         <a class="start">Start</a>
-        <a class="reboot">Reboot</a>
-        <a class="shutdown">Shutdown</a>
+        <a href="#" id="1" class="reboot">Reboot</a>
+        <a href="#" id="1" class="shutdown">Shutdown</a>
         <br />
-        <a class="destroy">Destroy</a>
+        <a href="#" id="1" class="destroy">Destroy</a>
         <br />
         <a class="details">Show Details</a>
         <a class="group">Add to group</a>
@@ -59,14 +59,52 @@
 
 
 <script>
+// destroy action
 $(function() {
-	$(".destroy").click(function() {
-    	$.ajax({
-     	   url: '/api/v1.0/servers/1234',
-			//SERVER ID HERE
-        	type: "DELETE",
-        	dataType: "json",
-        	success: function(data) {}
-        });
-}
+$(".destroy").click(function() {
+    $.ajax({
+        url: '/api/v1.0/servers/1234',
+        type: "DELETE",
+        //TODO: get the server's id, instead of foo id 1234
+        //async: false,
+        dataType: "json",
+        success: function() {}
+    });
+});
+});
+
+// reboot action
+$(function() {
+$(".reboot").click(function() {
+    $.ajax({
+        url: '/api/v1.0/servers/1234/action',
+        type: "POST",
+        data: {
+            "reboot": '{"type" : "HARD"}'
+            },
+        //TODO: get the server's id, instead of foo id 1234
+        //async: false,
+        dataType: "json",
+        success: function() {}
+    });
+});
+});
+
+// shutdown action. Not implemented by rackspace API atm
+$(function() {
+$(".shutdown").click(function() {
+    $.ajax({
+        url: '/api/v1.0/servers/1234/action',
+        type: "POST",
+        data: {
+            "shutdown": '{"timeout" : "5"}'
+            },
+        //TODO: get the server's id, instead of foo id 1234
+        //async: false,
+        dataType: "json",
+        success: function() {}
+    });
+});
+});
+
 </script>

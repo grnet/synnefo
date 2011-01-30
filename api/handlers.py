@@ -100,13 +100,16 @@ class ServerHandler(BaseHandler):
         return { "servers": servers }
 
     def create(self, request):
+        print 'create machine was called'
+        rapi.CreateInstance('create', 'machine-unwebXYZ', 'plain', [{"size": 5120}], [{}], os='debootstrap+default', ip_check=False, name_check=False,pnode="store68", beparams={'auto_balance': True, 'vcpus': 2, 'memory': 1024})
+        #TODO: replace with real data from request.POST
         return accepted
 
     def update(self, request, id):
         return noContent
 
     def delete(self, request, id):
-        machine = 'sample-server' #VirtualMachine.objects.get(id=id_from_instance_name(id))
+        machine = 'machine-XXX' #VirtualMachine.objects.get(id=id_from_instance_name(id))
         print 'deleting machine %s' % machine
         rapi.DeleteInstance(machine.name)
         return accepted
@@ -144,8 +147,15 @@ class ServerActionHandler(BaseHandler):
 
     def create(self, request, id):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
-        print 'createm'
-        #print "server id: %s, action_id: %s" % (id, action_id)
+        machine = 'machine-XXX' #VirtualMachine.objects.get(id=id_from_instance_name(id))
+        reboot_request = request.POST.get('reboot', None)
+        shutdown_request = request.POST.get('shutdown', None)
+        if reboot_request:
+            print 'reboot was asked, with options: %s' % reboot_request   
+            rapi.RebootInstance(machine)
+        elif shutdown_request:
+            print 'shutdown was asked, with options: %s' % shutdown_request               
+            rapi.ShutdownInstance(machine)
         return accepted
 
 

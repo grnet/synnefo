@@ -3,6 +3,7 @@
 #
 
 import zmq
+
 from db.models import *
 
 def main():

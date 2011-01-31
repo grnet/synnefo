@@ -18,7 +18,6 @@ def id_from_instance_name(name):
     return '%s' % (str(name).strip(ganeti_prefix_id))
 
 
-
 class Limit(models.Model):
     description = models.CharField(max_length=45)
     
@@ -50,7 +49,7 @@ class OceanUser(models.Model):
         """
         self.credit = self.credit + self.monthly_rate
         
-		# ensure that the user has not more credits than his quota
+        # ensure that the user has not more credits than his quota
         if self.credit > self.quota:
             self.credit = self.quota
 

@@ -25,7 +25,7 @@ class Limit(models.Model):
     description = models.CharField(max_length=45)
     
     class Meta:
-        verbose_name = u'Available limits for users'
+        verbose_name = u'User limit'
     
     def __unicode__(self):
         return self.description
@@ -61,7 +61,7 @@ class UserLimit(models.Model):
     
     class Meta:
         unique_together = ('user', 'limit')
-        verbose_name = u'Enforced limits for each user'
+        verbose_name = u'Enforced limit for user'
     
     def __unicode__(self):
         return u'Limit %s for user %s: %d' % (self.limit, self.user, self.value)
@@ -75,7 +75,7 @@ class Flavor(models.Model):
     cost_inactive = models.PositiveIntegerField()
     
     class Meta:
-        verbose_name = u'Virtual Machine flavors'
+        verbose_name = u'Virtual machine flavor'
     
     def _get_name(self):
         return u'C%dR%dD%d' % ( self.cpu, self.ram, self.disk )
@@ -119,7 +119,7 @@ class VirtualMachineMetadata(models.Model):
     vm = models.ForeignKey(VirtualMachine)
     
     class Meta:
-        verbose_name = u'A key-value pair of metadata for a VM.'
+        verbose_name = u'Key-value pair of metadata for a VM.'
     
     def __unicode__(self):
         return u'%s, %s for %s' % ( self.key, self.value, self.vm.name )

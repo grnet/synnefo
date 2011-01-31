@@ -12,7 +12,6 @@ import vocabs
 ganeti_prefix_id = settings.GANETI_PREFIX_ID
 
 
-
 def id_from_instance_name(name):    
     "Returns VirtualMachine's Django id, given a ganeti machine name"
     "Strips the ganeti prefix atm. Needs a better name!"
@@ -102,6 +101,7 @@ class VirtualMachine(models.Model):
     def _get_ganeti_id(self):
         "Returns the ganeti-prefix + id of the VM, for ganeti"
         return '%s%s' % (ganeti_prefix_id, str(self.id))
+
     ganeti_id = property(_get_ganeti_id)
 
 class VirtualMachineMetadata(models.Model):
@@ -124,8 +124,8 @@ class AccountingLog(models.Model):
     class Meta:
         verbose_name = u'Charging log'
 
-	def __unicode__(self):
-		return u'%s %s %s' % ( self.vm.name, self.date, self.state )
+    def __unicode__(self):
+        return u'%s %s %s' % ( self.vm.name, self.date, self.state )
 
 
 class Image(models.Model):
@@ -135,9 +135,10 @@ class Image(models.Model):
     state = models.CharField(choices=vocabs.STATES, max_length=30)
     description = models.TextField(help_text=_('description'))
     serverid = models.IntegerField(help_text=_('description'))
+    vm = models.ForeignKey(VirtualMachine)
     
     class Meta:
         verbose_name = u'Image'
 
-	def __unicode__(self):
-		return u'%s' % ( self.name )
+    def __unicode__(self):
+        return u'%s' % ( self.name )

@@ -8,17 +8,20 @@
 
 from db.models import *
 
+from django.db.models import F
+
 # main entry point
-def main():
-    all_users = OceanUser.objects.all()
+def allocate_credit():
+    """
+    This method allocates credits for the users according to their montly rate
+    """
+    
+    # Select the users that their monthly
+    user_list = OceanUser.objects.filter(quota__lte=F('credit') + F('monthly_rate'))
 
-    for u in all_users:
-        if u.credit < u.quota:
-            u.credit = u.credit + u.monthly_rate
-        if u.credit > u.quota:
-            u.credit = u.quota
-        print "Add %d credits to %s. Total: %d" % ( u.monthly_rate, u.name, u.credit )
-        u.save()
+    for user in user_list:
+        user.allocateCredit()
+        print "Add %d credits to %s. Total: %d" % ( user.monthly_rate, user.name, user.credit )
+        user.save()
 
-#
-main()
+allocate_credit()

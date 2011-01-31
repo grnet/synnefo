@@ -43,7 +43,16 @@ class OceanUser(models.Model):
     
     def __unicode__(self):
         return self.name
-
+        
+    def allocateCredit(self):
+        """
+        Allocate credits. Add monthly rate to user credit reserve
+        """
+        self.credit = self.credit + self.monthly_rate
+        
+		# ensure that the user has not more credits than his quota
+        if self.credit > self.quota:
+            self.credit = self.quota
 
 class UserLimit(models.Model):
     user = models.ForeignKey(OceanUser)

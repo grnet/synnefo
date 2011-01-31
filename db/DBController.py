@@ -1,5 +1,9 @@
 #
+# Bill Allocator - Administration script
+#
 # Run all the time, and wait for messages from ganeti, then update the database
+#
+# Copyright © 2010 Greek Research and Technology Network
 #
 
 import zmq

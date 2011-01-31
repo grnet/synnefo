@@ -13,8 +13,11 @@ ganeti_prefix_id = settings.GANETI_PREFIX_ID
 
 
 def id_from_instance_name(name):    
-    "Returns VirtualMachine's Django id, given a ganeti machine name"
-    "Strips the ganeti prefix atm. Needs a better name!"
+    """ Returns VirtualMachine's Django id, given a ganeti machine name.
+
+    Strips the ganeti prefix atm. Needs a better name!
+
+    """
     return '%s' % (str(name).strip(ganeti_prefix_id))
 
 
@@ -44,9 +47,7 @@ class OceanUser(models.Model):
         return self.name
         
     def allocateCredit(self):
-        """
-        Allocate credits. Add monthly rate to user credit reserve
-        """
+        """Allocate credits. Add monthly rate to user credit reserve."""
         self.credit = self.credit + self.monthly_rate
         
         # ensure that the user has not more credits than his quota
@@ -77,7 +78,7 @@ class Flavor(models.Model):
         verbose_name = u'Virtual Machine flavors'
     
     def _get_name(self):
-        return u'c%dr%dd%d' % ( self.cpu, self.ram, self.disk )
+        return u'C%dR%dD%d' % ( self.cpu, self.ram, self.disk )
 
     name = property(_get_name)
 
@@ -100,14 +101,14 @@ class VirtualMachine(models.Model):
     flavor = models.ForeignKey(Flavor)
     
     class Meta:
-        verbose_name = u'Virtual machine instances'
+        verbose_name = u'Virtual machine instance'
         get_latest_by = 'created'
     
     def __unicode__(self):
         return self.name
 
     def _get_ganeti_id(self):
-        "Returns the ganeti-prefix + id of the VM, for ganeti"
+        """Returns the ganeti id for this VM by prepending ganeti-prefix."""
         return '%s%s' % (ganeti_prefix_id, str(self.id))
 
     ganeti_id = property(_get_ganeti_id)
@@ -118,7 +119,7 @@ class VirtualMachineMetadata(models.Model):
     vm = models.ForeignKey(VirtualMachine)
     
     class Meta:
-        verbose_name = u'Metadata for virtual machine instances'
+        verbose_name = u'A key-value pair of metadata for a VM.'
     
     def __unicode__(self):
         return u'%s, %s for %s' % ( self.key, self.value, self.vm.name )

@@ -740,7 +740,8 @@ div.list .state {
 div.list table tbody.running {
     margin-top: 8px;
     height: 310px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: scroll;
 }
 
 div.list table tbody.terminated {

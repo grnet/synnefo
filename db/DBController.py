@@ -15,9 +15,9 @@ from db.models import *
 def init_publisher(context):
     request = context.socket(zmq.REQ)
     request.connect('tcp://127.0.0.1:6666')
-    request.send('hello')
+    request.send_json('{ "message" : "hello" }')
     
-    message = request.recv()
+    message = request.recv_json()
 
 def main():
     context = zmq.Context()
@@ -32,12 +32,6 @@ def main():
     init_publisher(context)
     
     while True:
-        message = sock.recv()
-        
-        # do something
-        if message == 'start':
-            print "start"
-        elif message == 'stop':
-            print "stop"
+        message = sock.recv_json()        
     
     subscriber.close()

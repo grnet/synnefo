@@ -824,8 +824,19 @@ div.list div.actions a {
 }
 
 div.list div.actions a:hover{
-    text-decoration: underline;
+    cursor: default;
+    text-decoration: none;
+
+}
+
+div.list div.actions a.enabled {
+    color: black;
+    opacity: 1.0;
+}
+
+div.list div.actions a.enabled:hover{
     cursor: pointer;
+    text-decoration: underline;
 }
 
 input.machine {

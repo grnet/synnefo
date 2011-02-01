@@ -447,12 +447,8 @@ $(function() {
     });
 // ]]>
 });
-</script>
 
-
-<script>
 // create action
-$(function() {
 $(".post-create").click(function() {
     $.ajax({
         url: '/api/v1.0/servers',
@@ -465,6 +461,5 @@ $(".post-create").click(function() {
         dataType: "json",
         success: function() {}
     });
-});
 });
 </script>

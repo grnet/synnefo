@@ -59,9 +59,60 @@
 
 
 <script>
+
+var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
+				'shutdown':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
+				'connect':		['PE_VM_RUNNING', ],
+				'disconnect':	['PE_VM_RUNNING', 'network'],
+				'band':			['PE_VM_RUNNING', 'PE_VM_MIGRATING'],
+				'details':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'PE_VM_SUSPENDED'],
+				'start': 		['PE_VM_SUSPENDED', 'multiple'],
+				'destroy':		['PE_VM_RUNNING', 'PE_VM_SUSPENDED', 'PE_VM_MIGRATING', 'multiple'],
+				'group':		['PE_VM_RUNNING', 'PE_VM_SUSPENDED', 'PE_VM_MIGRATING','multiple'],
+			   };
+
 // on checkbox click, update the actions
-$("input[type='checkbox']").click(function() {
+$("input[type='checkbox']").live('change', function() {
+	var states = [];
+	var on = [];
+	var checked = $("input[type='checkbox']:checked").toArray();
 	
+	// disable all actions to begin with
+	for (action in actions) {
+		$("#action-" + action).removeClass('enabled');
+	}
+	
+	// are there multiple machines selected?
+	if (checked.length>1)
+		states[0] = 'multiple';
+	
+	// check the states of selected machines
+	checked.forEach(function(checkbox) {
+		states[states.length] = checkbox.className;
+		var ip = $("#" + checkbox.id.replace('input-','') + ".ip span.public").text();
+		if (ip.replace('undefined','').length)
+			states[states.length] = 'network';
+	});
+
+	// decide which actions should be enabled
+	for (a in actions) {
+		var enabled = false;
+		for (s in states) {
+			if (actions[a].indexOf(states[s]) != -1 ) {
+				enabled = true;
+			} else {
+				enabled = false;
+				break;
+			}
+		}
+		if (enabled)
+			on[on.length]=a;
+	}
+	
+	// enable those actions
+	for (action in on) {
+		$("#action-" + on[action]).addClass('enabled');
+	}
 });
 
 // destroy action

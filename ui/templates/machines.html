@@ -174,9 +174,6 @@
 	</div>
 </form>
 
-<! -- TODO: remove and put into the Create VM from the wizard -->
-<a href="#" class="post-create">Create VM</a>
-
 <div class="modal" id="misc">
     <h3>Your VM is being created!</h3>
     <p>{% trans "Your password is:" %}<strong> sdeEFre</strong></p>
@@ -211,7 +208,7 @@ function update() {
     $.ajax({
         url: '/api/v1.0/servers/detail',
         type: "GET",
-    //    async: false,
+        //async: false,
         dataType: "json",
         success: function(data) {
             $.each(data.servers, function(i,server){
@@ -254,11 +251,10 @@ function update() {
         }
     });
 
-
     $.ajax({
         url: '/api/v1.0/images/detail',
         type: "GET",
-    //    async: false,
+        //async: false,
         dataType: "json",
         success: function(data) {
             $.each(data.images, function(i,image){
@@ -276,37 +272,7 @@ function update() {
             });
         }
     });
-
-//TESTING $.ajax POST+DELETE. api/handlers.py/ServerHandler and ServerActionHandler receive these calls
-//DELETE is working, while POST is not (maybe this has to do with piston+django csrf?
-/*
-    $.ajax({
-        url: '/api/v1.0/servers/1234/action',
-        type: "POST",
-        data: {
-                  "reboot": {
-                      "type" : "HARD"
-                  }
-               },
-        dataType: "json",
-        success: function() {
-                            }
-            });
-
-
-
-    $.ajax({
-        url: '/api/v1.0/servers/1234',
-        type: "DELETE",
-    //    async: false,
-        dataType: "json",
-        success: function(data) {
 }
-           });
-*/
-//DELETE TILL HERE
-}
-
 
 update();
 
@@ -447,13 +413,8 @@ $(function() {
     });
 // ]]>
 });
-</script>
 
-
-<script>
-// create action
-$(function() {
-$(".post-create").click(function() {
+$("#start").click(function() {
     $.ajax({
         url: '/api/v1.0/servers',
         type: "POST",
@@ -465,6 +426,5 @@ $(".post-create").click(function() {
         dataType: "json",
         success: function() {}
     });
-});
 });
 </script>

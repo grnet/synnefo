@@ -116,45 +116,57 @@ $("input[type='checkbox']").live('change', function() {
 });
 
 // destroy action
-$(".destroy").click(function() {
-    $.ajax({
-        url: '/api/v1.0/servers/1234',
-        type: "DELETE",
-        //TODO: get the server's id, instead of foo id 1234
-        //async: false,
-        dataType: "json",
-        success: function() {}
-    });
+$("a.enabled#action-destroy").live('click', function() {
+	var checked = $("input[type='checkbox']:checked").toArray();	
+	for (c in checked) {
+		alert('ajax');
+		$.ajax({
+			url: '/api/v1.0/servers/' + checked[c].id.replace('input-',''),
+			type: "DELETE",
+			//TODO: get the server's id, instead of foo id 1234
+			//async: false,
+			dataType: "json",
+			success: function() {}
+		});
+	}
 });
 
 // reboot action
-$(".enabled#action-reboot").click(function() {
-    $.ajax({
-        url: '/api/v1.0/servers/1234/action',
-        type: "POST",
-        data: {
-            "reboot": '{"type" : "HARD"}'
-            },
-        //TODO: get the server's id, instead of foo id 1234
-        //async: false,
-        dataType: "json",
-        success: function() {}
-    });
+$("a.enabled#action-reboot").live('click', function() {
+	var checked = $("input[type='checkbox']:checked").toArray();	
+	for (c in checked) {
+		alert('ajax');
+		$.ajax({
+			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
+			type: "POST",
+			data: {
+				"reboot": '{"type" : "HARD"}'
+				},
+			//TODO: get the server's id, instead of foo id 1234
+			//async: false,
+			dataType: "json",
+			success: function() {}
+		});
+	}
 });
 
 // shutdown action. Not implemented by rackspace API atm
-$(".enabled#action-shutdown").click(function() {
-    $.ajax({
-        url: '/api/v1.0/servers/1234/action',
-        type: "POST",
-        data: {
-            "shutdown": '{"timeout" : "5"}'
-            },
-        //TODO: get the server's id, instead of foo id 1234
-        //async: false,
-        dataType: "json",
-        success: function() {}
-    });
+$("a.enabled#action-shutdown").live('click', function() {
+	var checked = $("input[type='checkbox']:checked").toArray();	
+	for (c in checked) {
+		alert('ajax');
+		$.ajax({
+			url: '/api/v1.0/servers/1234/action',
+			type: "POST",
+			data: {
+				"shutdown": '{"timeout" : "5"}'
+				},
+			//TODO: get the server's id, instead of foo id 1234
+			//async: false,
+			dataType: "json",
+			success: function() {}
+		});
+	}
 });
 
 </script>

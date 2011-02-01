@@ -45,8 +45,19 @@ class OceanUser(models.Model):
     
     def __unicode__(self):
         return self.name
+    
+    def chargeCredits(self, cost):
+        """Reduce user credits for the specified cost. 
+        Returns amount of credits remaining. Negative if the user surpassed his limit."""
+        self.credit = self.credit - cost
+        rcredit = self.credit
+                
+        if self.credit < 0:
+            self.credit = 0
         
-    def allocateCredit(self):
+        return rcredit        
+    
+    def allocateCredits(self):
         """Allocate credits. Add monthly rate to user credit reserve."""
         self.credit = self.credit + self.monthly_rate
         

@@ -24,6 +24,6 @@ def allocate_credit():
         return
 
     for user in user_list:
-        user.allocateCredit()
+        user.allocateCredits()
         print "Add %d credits to %s. Total: %d" % ( user.monthly_rate, user.name, user.credit )
         user.save()

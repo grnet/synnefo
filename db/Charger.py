@@ -8,8 +8,6 @@
 
 from db.models import *
 
-import vocabs
-
 def stopVirtualMachine(vm):
     """This method send message to ganeti in order to suspend a virtual machine"""
     return

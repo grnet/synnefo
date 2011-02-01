@@ -109,6 +109,7 @@ INSTALLED_APPS = (
     'synnefo.api',
     'synnefo.ui',
     'synnefo.db',
+    'synnefo.ganneti'
 )
 
 GANETI_CLUSTER_INFO = None #("x.y.z.a",5080,"userX","passY")

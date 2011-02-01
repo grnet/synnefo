@@ -229,11 +229,16 @@ class ImageHandler(BaseHandler):
                 badRequest, itemNotFound
         """
         images = Image.objects.all()
+        images = [ {'created': image.created.isoformat(), 'id': image.id, \
+              'name': image.name, 'updated': image.updated.isoformat(), \
+               'description': image.description, 'state': image.state, 'serverid': image.serverid, \
+               'vm_id': image.vm_id} for image in images]
+
         if not rapi: # No ganeti backend. Return mock objects
             if id == "detail":
                 return { "images": images }
             elif id is None:
-                return { "images": [ { "id": s.id, "name": s.name } for s in images ] }
+                return { "images": [ { "id": s['id'], "name": s['name'] } for s in images ] }
             else:
                 return { "image": images[0] }
         if id is None:

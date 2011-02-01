@@ -20,7 +20,7 @@ IMAGE_TAGS = {
                 11: 'ubuntu',
                 12: 'windows',
              }
-
+#not used any more
 MOCK_IMAGES = [
                 {
                     "id" : 2,
@@ -69,6 +69,7 @@ MOCK_IMAGES = [
               ]
 
 
+#not used any more
 MOCK_SERVERS = [
                 {
                 "id" : 1234,

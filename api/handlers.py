@@ -8,8 +8,7 @@ from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
-from synnefo.vocabs import MOCK_SERVERS, MOCK_IMAGES
-from synnefo.db.models import VirtualMachine, User, id_from_instance_name
+from synnefo.db.models import VirtualMachine, Image, User, id_from_instance_name
 from util.rapi import GanetiRapiClient
 
 
@@ -63,7 +62,8 @@ class ServerHandler(BaseHandler):
 
     def read_one(self, request, id):
         if not rapi: # No ganeti backend. Return mock objects
-            return { "server": MOCK_SERVERS[0] }
+            servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
+            return { "server": servers[0] }
         try:
             instance = rapi.GetInstance(id)
             return { "server": instance_to_server(instance) }
@@ -74,7 +74,6 @@ class ServerHandler(BaseHandler):
     def read_all(self, request, detail=False):
         if not rapi: # No ganeti backend. Return mock objects
             if detail:
-                return { "servers":  MOCK_SERVERS } #TODO: remove once the mock objects are removed
                 virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
                 #get the first user, since we don't have any user data yet
                 virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
@@ -87,7 +86,8 @@ class ServerHandler(BaseHandler):
                 #pass some fake data regarding ip, since we don't have any such data
                 return { "servers":  virtual_servers_list }                
             else:
-                return { "servers": [ { "id": s['id'], "name": s['name'] } for s in MOCK_SERVERS ] }
+                virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
+                return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
 
         if not detail:
             instances = rapi.GetInstances(bulk=False)
@@ -239,13 +239,14 @@ class ImageHandler(BaseHandler):
         Faults: cloudServersFault, serviceUnavailable, unauthorized,
                 badRequest, itemNotFound
         """
+        images = Image.objects.all()
         if not rapi: # No ganeti backend. Return mock objects
             if id == "detail":
-                return { "images": MOCK_IMAGES }
+                return { "images": images }
             elif id is None:
-                return { "images": [ { "id": s['id'], "name": s['name'] } for s in MOCK_IMAGES ] }
+                return { "images": [ { "id": s.id, "name": s.name } for s in images ] }
             else:
-                return { "image": MOCK_IMAGES[0] }
+                return { "image": images[0] }
         if id is None:
             return {}
         elif id == "detail":

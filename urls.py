@@ -13,5 +13,5 @@ urlpatterns = patterns('',
     (r'^auth/api/', include('synnefo.auth.urls')),
     (r'^api/', include('synnefo.api.urls')),
     (r'^', include('synnefo.ui.urls')),
-    (r'^admin/(.*)', admin.site.root)
+    (r'^admin/', include(admin.site.urls)),
 )

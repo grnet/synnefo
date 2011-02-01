@@ -24,3 +24,8 @@ On def content_type change
 
 to 
         ctype = self.request.META.get('CONTENT_TYPE', type_formencoded).split(";")[0]
+
+Initial data
+---------
+Initial data come with sqlite database.sqlite. 
+

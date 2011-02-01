@@ -10,6 +10,15 @@ import zmq
 
 from db.models import *
 
+#GANETI_ZMQ_PUBLISHER = "tcp://ganeti-master:5801"
+
+def init_publisher(context):
+    request = context.socket(zmq.REQ)
+    request.connect('tcp://127.0.0.1:6666')
+    request.send('hello')
+    
+    message = request.recv()
+
 def main():
     context = zmq.Context()
     
@@ -19,6 +28,8 @@ def main():
     # accept all messages
     subscriber.setsockopt(zmq.IDENTITY, "DBController")
     subscriber.setsockopt(zmq.SUBSCRIBE, '')
+    
+    init_publisher(context)
     
     while True:
         message = sock.recv()

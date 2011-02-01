@@ -8,7 +8,7 @@ from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
-from synnefo.db.models import VirtualMachine, Image, User, id_from_instance_name
+from synnefo.db.models import VirtualMachine, Flavor, Image, User, id_from_instance_name
 from util.rapi import GanetiRapiClient
 
 
@@ -190,20 +190,9 @@ class ServerBackupHandler(BaseHandler):
 
 class FlavorHandler(BaseHandler):
     allowed_methods = ('GET',)
-    flavors = [
-          {
-            "id" : 1,
-            "name" : "256 MB Server",
-            "ram" : 256,
-            "disk" : 10
-          },
-          {
-            "id" : 2,
-            "name" : "512 MB Server",
-            "ram" : 512,
-            "disk" : 20
-          }
-        ]
+    flavors = Flavor.objects.all()
+    flavors = [ {'id': flavor.id, 'name': flavor.name, 'ram': flavor.ram, \
+             'disk': flavor.disk} for flavor in flavors]
 
     def read(self, request, id=None):
         """
@@ -215,15 +204,15 @@ class FlavorHandler(BaseHandler):
         """
         if id is None:
             simple = map(lambda v: {
-                        "id": v["id"],
-                        "name": v["name"],
+                        "id": v['id'],
+                        "name": v['name'],
                     }, self.flavors)
             return { "flavors": simple }
         elif id == "detail":
             return { "flavors": self.flavors }
         else:
             for flavor in self.flavors:
-                if str(flavor["id"]) == id:
+                if str(flavor['id']) == id:
                     return { "flavor": flavor }
             raise fault.itemNotFound
 

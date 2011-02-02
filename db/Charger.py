@@ -8,12 +8,12 @@
 
 from db.models import *
 
-def stopVirtualMachine(vm):
-    """This method send message to ganeti in order to suspend a virtual machine"""
+def stop_virtual_machine(vm):
+    """Stop a virtual machine instance"""
     return
 
 def charge():
-    """This method scans all the virtual machines and charge each user"""
+    """Scan all virtual machines and charge each user"""
     all_vms = VirtualMachine.objects.all()
     
     if len(all_vms) == 0:
@@ -28,7 +28,7 @@ def charge():
         elif vm.state == 'PE_PE_VM_STOPPED':
             cost = vm.flavor.cost_inactive
           
-        user_credits = vm.user.chargeCredits(cost)
+        user_credits = vm.user.charge_credits(cost)
         
         if user_credits <= 0:
-            stopVirtualMachine(vm)
+            stop_virtual_machine(vm)

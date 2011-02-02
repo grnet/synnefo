@@ -12,11 +12,10 @@ import vocabs
 ganeti_prefix_id = settings.GANETI_PREFIX_ID
 
 
-def id_from_instance_name(name):    
+def id_from_instance_name(name):
     """ Returns VirtualMachine's Django id, given a ganeti machine name.
 
     Strips the ganeti prefix atm. Needs a better name!
-
     """
     return '%s' % (str(name).strip(ganeti_prefix_id))
 
@@ -46,7 +45,7 @@ class OceanUser(models.Model):
     def __unicode__(self):
         return self.name
     
-    def chargeCredits(self, cost):
+    def charge_credits(self, cost):
         """Reduce user credits for the specified cost. 
         Returns amount of credits remaining. Negative if the user surpassed his limit."""
         self.credit = self.credit - cost
@@ -57,7 +56,7 @@ class OceanUser(models.Model):
         
         return rcredit        
     
-    def allocateCredits(self):
+    def allocate_credits(self):
         """Allocate credits. Add monthly rate to user credit reserve."""
         self.credit = self.credit + self.monthly_rate
         
@@ -142,7 +141,7 @@ class AccountingLog(models.Model):
     state = models.CharField(choices=vocabs.STATES, max_length=30)
     
     class Meta:
-        verbose_name = u'Charging log'
+        verbose_name = u'Accounting log'
 
     def __unicode__(self):
         return u'%s %s %s' % ( self.vm.name, self.date, self.state )

@@ -81,8 +81,6 @@ class Flavor(models.Model):
     cpu = models.IntegerField(default=0)
     ram = models.IntegerField(default=0)
     disk = models.IntegerField(default=0)
-    cost_active = models.PositiveIntegerField()
-    cost_inactive = models.PositiveIntegerField()
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -94,6 +92,19 @@ class Flavor(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class FlavorCostHistory(models.Model):
+    cost_active = models.PositiveIntegerField()
+    cost_inactive = models.PositiveIntegerField()
+    effective_from = models.DateField()
+    flavor = models.ForeignKey(Flavor)
+    
+    class Meta:
+        verbose_name = u'Pricing history for flavors'
+    
+    def __unicode__(self):
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % ( cost_active, cost_inactive, flavor.name, effective_from )
 
 
 class VirtualMachine(models.Model):

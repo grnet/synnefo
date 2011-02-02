@@ -12,14 +12,6 @@ import vocabs
 ganeti_prefix_id = settings.GANETI_PREFIX_ID
 
 
-def id_from_instance_name(name):
-    """ Returns VirtualMachine's Django id, given a ganeti machine name.
-
-    Strips the ganeti prefix atm. Needs a better name!
-    """
-    return '%s' % (str(name).strip(ganeti_prefix_id))
-
-
 class Limit(models.Model):
     description = models.CharField(max_length=45)
     
@@ -84,7 +76,7 @@ class Flavor(models.Model):
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
-    
+            
     def _get_name(self):
         return u'C%dR%dD%d' % ( self.cpu, self.ram, self.disk )
 
@@ -133,6 +125,13 @@ class VirtualMachine(models.Model):
         return '%s%s' % (ganeti_prefix_id, str(self.id))
 
     ganeti_id = property(_get_ganeti_id)
+    
+    def id_from_instance_name(name):
+        """ Returns VirtualMachine's Django id, given a ganeti machine name.
+
+        Strips the ganeti prefix atm. Needs a better name!
+        """
+        return '%s' % (str(name).strip(ganeti_prefix_id))
 
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)

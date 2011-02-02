@@ -126,6 +126,7 @@ class VirtualMachine(models.Model):
 
     ganeti_id = property(_get_ganeti_id)
     
+    @staticmethod
     def id_from_instance_name(name):
         """ Returns VirtualMachine's Django id, given a ganeti machine name.
 

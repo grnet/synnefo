@@ -120,11 +120,11 @@ class VirtualMachine(models.Model):
     def __unicode__(self):
         return self.name
 
-    def _get_ganeti_id(self):
-        """Returns the ganeti id for this VM by prepending ganeti-prefix."""
+    def _get_backend_id(self):
+        """Returns the backend id for this VM by prepending backend-prefix."""
         return '%s%s' % (ganeti_prefix_id, str(self.id))
 
-    ganeti_id = property(_get_ganeti_id)
+    backend_id = property(_get_backend_id)
     
     @staticmethod
     def id_from_instance_name(name):

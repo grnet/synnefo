@@ -14,7 +14,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'vasi.sqlite',                      # Or path to database file if using sqlite3.
+        'NAME': 'database.sqlite',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -109,11 +109,11 @@ INSTALLED_APPS = (
     'synnefo.api',
     'synnefo.ui',
     'synnefo.db',
-    'synnefo.ganeti'
+    'synnefo.ganeti',
 )
 
-GANETI_CLUSTER_INFO = None #("x.y.z.a",5080,"userX","passY")
-GANETI_PREFIX_ID = "snf-" #ganeti needs each machine to have a unique name
+GANETI_CLUSTER_INFO = None #("62.217.120.78",5080,"synnefo","ocean!")
+BACKEND_PREFIX_ID = "snf-" #ganeti needs each machine to have a unique name
 
 LANGUAGES = (
   ('el', u'Ελληνικά'),

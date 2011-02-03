@@ -11,7 +11,8 @@ import vocabs
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
-
+#this needs to be called not only from inside VirtualMachine. 
+#atm it is not working with the current ganeti naming - machine1, machine2
 def id_from_instance_name(name):
     """ Returns VirtualMachine's Django id, given a ganeti machine name.
 

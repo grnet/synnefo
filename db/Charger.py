@@ -29,6 +29,7 @@ def charge():
             cost = vm.flavor.cost_inactive
           
         user_credits = vm.user.charge_credits(cost)
+        vm.user.save()
         
         if user_credits <= 0:
             stop_virtual_machine(vm)

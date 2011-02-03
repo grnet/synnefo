@@ -21,7 +21,6 @@ def id_from_instance_name(name):
     return '%s' % (str(name).strip(backend_prefix_id))
 
 
-
 class Limit(models.Model):
     description = models.CharField(max_length=45)
     
@@ -88,9 +87,27 @@ class Flavor(models.Model):
         verbose_name = u'Virtual machine flavor'
             
     def _get_name(self):
+        """Returns flavor name"""
         return u'C%dR%dD%d' % ( self.cpu, self.ram, self.disk )
 
+    def _get_cost_inactive(self):
+        self._update_costs()
+        return self._cost_active
+
+    def _get_cost_active(self):
+        self._update_costs()
+        return self._cost_inactive
+    
+    def _update_costs(self):
+        # if _cost
+        if '_cost_active' not in dir(self):
+            fch = FlavorCostHistory.objects.filter(flavor=self).order_by('effective_from')[0]
+            self._cost_active = fch.cost_active
+            self._cost_inactive = fch.cost_inactive
+
     name = property(_get_name)
+    cost_active = property(_get_cost_active)
+    cost_inactive = property(_get_cost_inactive)
 
     def __unicode__(self):
         return self.name
@@ -135,7 +152,8 @@ class VirtualMachine(models.Model):
         return '%s%s' % (backend_prefix_id, str(self.id))
 
     backend_id = property(_get_backend_id)
-    
+
+
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)

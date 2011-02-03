@@ -17,7 +17,7 @@ if settings.GANETI_CLUSTER_INFO:
 else:
     rapi = None
 
-ganeti_prefix_id = settings.GANETI_PREFIX_ID
+backend_prefix_id = settings.BACKEND_PREFIX_ID
 
 VERSIONS = [
     {

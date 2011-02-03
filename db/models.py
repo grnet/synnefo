@@ -9,7 +9,16 @@ import datetime
 
 import vocabs
 
-ganeti_prefix_id = settings.GANETI_PREFIX_ID
+backend_prefix_id = settings.BACKEND_PREFIX_ID
+
+
+def id_from_instance_name(name):
+    """ Returns VirtualMachine's Django id, given a ganeti machine name.
+
+    Strips the ganeti prefix atm. Needs a better name!
+    """
+    return '%s' % (str(name).strip(backend_prefix_id))
+
 
 
 class Limit(models.Model):
@@ -122,18 +131,10 @@ class VirtualMachine(models.Model):
 
     def _get_backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
-        return '%s%s' % (ganeti_prefix_id, str(self.id))
+        return '%s%s' % (backend_prefix_id, str(self.id))
 
     backend_id = property(_get_backend_id)
     
-    @staticmethod
-    def id_from_instance_name(name):
-        """ Returns VirtualMachine's Django id, given a ganeti machine name.
-
-        Strips the ganeti prefix atm. Needs a better name!
-        """
-        return '%s' % (str(name).strip(ganeti_prefix_id))
-
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)

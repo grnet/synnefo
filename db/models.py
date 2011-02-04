@@ -92,11 +92,11 @@ class Flavor(models.Model):
 
     def _get_cost_inactive(self):
         self._update_costs()
-        return self._cost_active
+        return self._cost_inactive
 
     def _get_cost_active(self):
         self._update_costs()
-        return self._cost_inactive
+        return self._cost_active
     
     def _update_costs(self):
         # if _cost

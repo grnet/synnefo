@@ -815,15 +815,13 @@ div.list div.actions {
     margin-top: 37px;
     text-align: right;
     width: 150px;
-    height: 1000px;
 }
 
 div.list div.actions a {
     clear: left;
-    color: #3D3D3D !important;
+    color: #D3D3D3;
     display: block;
     font-size:9pt;
-    opacity: 0.6;
 }
 
 div.list div.actions a:hover{

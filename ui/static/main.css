@@ -246,7 +246,7 @@ div#wrapper {
     height:20em;
     padding:1em;
     text-align:left;
-    opacity:0.9;
+    opacity: 0.9;
 }
 	
 /* scrollable root element */
@@ -707,17 +707,6 @@ div.machine-type {
     margin: 4px 10px 20px 0;
 }
 
-div.active, div.inactive {
-    min-height: 200px;
-    width: 500px;
-    overflow: auto;
-}
-
-div.inactive {
-    opacity: .6;
-    margin-bottom: 17px;
-}
-
 #machinesview {
     min-height: 270px;
 }
@@ -835,7 +824,6 @@ div.list div.actions a:hover{
 
 div.list div.actions a.enabled {
     color: black;
-    opacity: 1.0;
 }
 
 div.list div.actions a.enabled:hover{
@@ -888,7 +876,7 @@ div#user a{
 }
 
 div#user a.current_lang {
-    opacity: .5;
+    color: #d3d3d3;
 }
 
 .seperator {

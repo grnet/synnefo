@@ -37,7 +37,7 @@ class OceanUser(models.Model):
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
-    user = models.ForeignKey(User, unique=True)
+    #user = models.ForeignKey(User, unique=True)
     limits = models.ManyToManyField(Limit, through='UserLimit')
     
     class Meta:

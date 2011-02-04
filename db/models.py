@@ -101,7 +101,7 @@ class Flavor(models.Model):
     def _update_costs(self):
         # if _cost
         if '_cost_active' not in dir(self):
-            fch = FlavorCostHistory.objects.filter(flavor=self).order_by('effective_from')[0]
+            fch = FlavorCostHistory.objects.filter(flavor=self).order_by('-effective_from')[0]
             self._cost_active = fch.cost_active
             self._cost_inactive = fch.cost_inactive
 

@@ -55,10 +55,18 @@ class FlavorTestCase(unittest.TestCase):
         fch.flavor = flavor
         fch.save()
         
+        fch = FlavorCostHistory(pk=2, cost_active=2, cost_inactive=1)
+        fch.effective_from = date(day=01, month=01, year=2010)
+        fch.flavor = flavor
+        fch.save()
+        
     def tearDown(self):
         """Cleaning up the data"""
         flavor = Flavor.objects.get(pk=1)
         flavor.delete()
+        
+        fch = FlavorCostHistory(pk=2)
+        fch.delete()
                 
     def test_flavor(self):
         """Test a flavor object, its internal cost calculation and naming methods"""
@@ -75,7 +83,7 @@ class ChargerTestcase(unittest.TestCase):
         # add the user
         user = OceanUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.save() 
+        user.save()
         
     def tearDown(self):
         """Cleaning up the data"""

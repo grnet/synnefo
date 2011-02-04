@@ -233,11 +233,13 @@ function update() {
                 } else if (server.status == 'PE_VM_SUSPENDED') {
                     machine.find(".status").text('Terminated');
                     machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                    machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
                     machine.appendTo(".terminated");
                     $("#mini.seperator").fadeIn("slow");
                 } else {
                     machine.find(".status").text('Unknown');
                     machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                    machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
                     machine.appendTo(".terminated");
                 }
             });
@@ -334,6 +336,19 @@ $("#cancel").click(function(event){
 });
 
 $("#start").click(function(event){
+    // send create call
+    $.ajax({
+    url: '/api/v1.0/servers',
+    type: "POST",
+    data: {
+        "create": {"foo" : "foo"}
+        },
+    //TODO: get the real data
+    //async: false,
+    dataType: "json",
+    success: function() {}
+    });
+    // bring up notification
     var triggers = $("a#notify").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
@@ -415,17 +430,4 @@ $(function() {
 // ]]>
 });
 
-$("#start").click(function() {
-    $.ajax({
-        url: '/api/v1.0/servers',
-        type: "POST",
-        data: {
-            "create": {"foo" : "foo"}
-            },
-        //TODO: get the real data
-        //async: false,
-        dataType: "json",
-        success: function() {}
-    });
-});
 </script>

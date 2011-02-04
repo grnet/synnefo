@@ -992,12 +992,21 @@ div.list table thead tr .headerSortUp {
 	background-image: url(asc.gif);
 }
 
-div.list table thead tr .headerSortDown {
+div.list table thead tr .headerSortDown, div.list table thead tr #selection.expand{
 	background-image: url(desc.gif);
 }
 
 div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
     background-color: #87AADE;
+}
+
+div.list table thead tr #selection {
+	background-image: url(asc.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+    text-align: left;
+    vertical-align: middle;
+	cursor: pointer;
 }
 
 span.imagetag { display: none;}

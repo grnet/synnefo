@@ -21,7 +21,7 @@
     <table>
         <thead> 
             <tr> 
-                <th id="selection"><input type="checkbox" id="check" /></th> 
+                <th id="selection"><input type="checkbox" class="select-running"/></th> 
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
                 <th id="ip">IP</th> 
@@ -45,7 +45,7 @@
     <table>
         <thead> 
             <tr> 
-                <th id="selection"><input type="checkbox" id="check" /></th> 
+                <th id="selection"><input type="checkbox" class="select-terminated"/></th> 
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
                 <th id="ip">IP</th> 
@@ -59,6 +59,18 @@
 
 
 <script>
+
+// select/deselect all from checkbox widget of table headers
+$("table thead tr th#selection :checkbox").live('change', function() {
+    // select/deselect running or terminated?
+    var state = $(this).attr("class").replace('select-','.');
+    if ( $(this).is(":checked") ) {
+        $(state + " :checkbox").attr("checked", true);
+    }
+    else {
+        $(state + " :checkbox").attr("checked", false);
+    }
+});
 
 var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
 				'shutdown':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
@@ -81,7 +93,7 @@ $("input[type='checkbox']").live('change', function() {
 	for (action in actions) {
 		$("#action-" + action).removeClass('enabled');
 	}
-	
+
 	// are there multiple machines selected?
 	if (checked.length>1)
 		states[0] = 'multiple';

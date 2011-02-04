@@ -763,6 +763,8 @@ div.list .stopped {
 
 div.list #mini.seperator {
     margin-top: 0;
+    margin-left: -16px;
+    width: 531px;
 }
 
 /* root element for tabs  */
@@ -898,7 +900,7 @@ div#user a.current_lang {
 #mini.seperator {
     width: 535px;
     height: 5px;
-    margin: 17px 0 17px -16px;
+    margin: 17px 0 17px -36px;
     display: none;
 }
 

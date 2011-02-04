@@ -65,6 +65,7 @@ class OceanUser(models.Model):
         if self.credit > self.quota:
             self.credit = self.quota
 
+
 class UserLimit(models.Model):
     user = models.ForeignKey(OceanUser)
     limit = models.ForeignKey(Limit)

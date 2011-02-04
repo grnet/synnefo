@@ -152,3 +152,45 @@ class ChargerTestcase(unittest.TestCase):
         self.assertEquals(user.credit, 0, 'Error in charging process (%d!=0, running)' % ( user.credit, ))
         
         
+class VirtualMachineTestCase(unittest.TestCase):
+    def setUp(self):
+        """Setup the test"""
+        # Add a user
+        user = OceanUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user.created = datetime.datetime.now()
+        user.save()
+        
+        # add a Flavor 
+        flavor = Flavor(pk=1, cpu=10, ram=10, disk=10)
+        flavor.save()
+        
+        # Now, add a VM
+        vm = VirtualMachine(pk=1)
+        vm.created = datetime.datetime.now()
+        vm.state = 'PE_VM_RUNNING'
+        vm.charged = datetime.datetime.now()
+        vm.imageid = 1
+        vm.hostid = 'testhostid'
+        vm.server_label = 'agreatserver'
+        vm.image_version = '1.0.0'
+        vm.ipfour = '127.0.0.1'
+        vm.ipsix = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
+        vm.owner = user
+        vm.flavor = flavor
+        
+        vm.save()
+        
+        
+    def tearDown(self):
+        """Cleaning up the data"""
+        user = OceanUser.objects.get(pk=1)
+        user.delete()
+        
+        flavor = Flavor.objects.get(pk=1)
+        flavor.delete()
+        
+        
+    def test_virtual_machine(self):
+        """VirtualMachine (model) unit test"""
+        
+        

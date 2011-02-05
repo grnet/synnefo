@@ -31,8 +31,8 @@
             {% trans "Show:" %} <a href="#">{% trans "disks" %}</a> | <a href="#">{% trans "networks" %}</a> | <a href="#">{% trans "group" %}</a>
         </h5>
         <div class="actions">
-            <a href="#" class="action">{% trans "Reboot" %}</a>
-            <a href="#" class="action">{% trans "Shutdown" %}</a>
+            <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
+            <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
             <a href="#" class="more">{% trans "more &hellip;" %}</a>
         </div>
         <div class="seperator"></div>
@@ -181,7 +181,7 @@
 </div>
 
 <script>
-// <![CDATA[ 
+// hardcoded image types
 var image_tags = {
                 1: 'archlinux',
                 2: 'centos',
@@ -198,6 +198,28 @@ var image_tags = {
                 20: 'ubuntu',
                };
 
+// create tabs for main menu
+$("ul.tabs").tabs("div.panes ul");
+
+// switch to list view
+$("#list").click(function(event){
+    $("div.standard#machinesview").load($("#list").attr("href"));
+    $("a#standard")[0].className += ' activelink'
+    this.style.color = '#5f8dd3';
+    update(); 
+    return false;
+});
+
+// switch to standard view
+$("a#standard").click(function(event){
+    href=$("a#standard").attr("href");
+    $("div.pane#machines-pane").load(href);
+    //$("a#standard")[0].className += ' activelink'
+    //this.style.color = '#5f8dd3';
+    return false;
+});
+
+// get and show list of running and terminated machines
 function update() {
 
     $(".running").text('');
@@ -277,116 +299,15 @@ function update() {
     });
 }
 
+// execute the above function to populate the list
 update();
 
-// switch to list view
-$("#list").click(function(event){
-    $("div.standard#machinesview").load($("#list").attr("href"));
-    $("a#standard")[0].className += ' activelink'
-    this.style.color = '#5f8dd3';
-    update(); 
-    return false;
-});
-
-$("a#standard").click(function(event){
-    href=$("a#standard").attr("href");
-    $("div.pane#machines-pane").load(href);
-    //$("a#standard")[0].className += ' activelink'
-    //this.style.color = '#5f8dd3';
-    return false;
-});
-
-$("ul.tabs").tabs("div.panes ul");
-
-$(":range").rangeinput({progress:true});
-
-function disableSliders() {
-    $("#cpu").attr('disabled',true);
-    $("#ram").attr('disabled',true);
-    $("#storage").attr('disabled',true);
-}
-
-$("#custom").click(function(event){
-    $("#cpu").attr('disabled',false);
-    $("#ram").attr('disabled',false);
-    $("#storage").attr('disabled',false);
-    $("strong.sliders").style = 'color: #778899;';
-});
-
-$("#small").click(function(event){
-    $("#cpu").data('rangeinput').setValue(1);
-    $("#ram").data('rangeinput').setValue(256);
-    $("#storage").data('rangeinput').setValue(5);
-});
-
-$("#medium").click(function(event){
-    $("#cpu").data('rangeinput').setValue(4);
-    $("#ram").data('rangeinput').setValue(1024);
-    $("#storage").data('rangeinput').setValue(30);
-});
-
-$("#large").click(function(event){
-    $("#cpu").data('rangeinput').setValue(8);
-    $("#ram").data('rangeinput').setValue(4096);
-    $("#storage").data('rangeinput').setValue(80);
-});
-
-$("#cancel").click(function(event){
-    $("a#create[rel]").overlay().close();
-});
-
-$("#start").click(function(event){
-    // send create call
-    $.ajax({
-    url: '/api/v1.0/servers',
-    type: "POST",
-    data: {
-        "create": {"foo" : "foo"}
-        },
-    //TODO: get the real data
-    //async: false,
-    dataType: "json",
-    success: function() {}
-    });
-    // bring up notification
-    var triggers = $("a#notify").overlay({
-	    // some mask tweaks suitable for modal dialogs
-	    mask: {
-		    color: '#ebecff',
-		    opacity: '0.9'
-	    },
-        top: 'center',
-	    closeOnClick: false,
-        oneInstance: false,
-        load: true,
-        onClose: function(event){
-            $("div.pane#machines-pane").load($("a#standard").attr("href"));
-        }
-    });
-    $("#wizard").hide();
-    update();
-});
-
+// launch VM creation wizard
 $("a#create").click(function(event){
     $("#wizard").scrollable().begin();
 });
 
-$("#cpu").change(function(event){
-    $("#custom").click();
-});
-
-$("#ram").change(function(event){
-    $("#custom").click();
-});
-
-$("#storage").change(function(event){
-    $("#custom").click();
-});
-
-$(function() { 
-    $("a#create[rel]").overlay({mask: '#000', effect: 'default', top: '5%', oneInstance: false, closeOnClick: false});
-});
-
+// wizard
 $(function() {
     var root = $("#wizard").scrollable();
 
@@ -427,7 +348,137 @@ $(function() {
 		    e.preventDefault();
 	    }
     });
-// ]]>
 });
 
+// sliders for selecting VM flavor
+$(":range").rangeinput({progress:true});
+
+// disable sliders in flavor selection
+function disableSliders() {
+    $("#cpu").attr('disabled',true);
+    $("#ram").attr('disabled',true);
+    $("#storage").attr('disabled',true);
+}
+
+// selecting the small size
+$("#small").click(function(event){
+    $("#cpu").data('rangeinput').setValue(1);
+    $("#ram").data('rangeinput').setValue(256);
+    $("#storage").data('rangeinput').setValue(5);
+});
+
+// selecting the medium size
+$("#medium").click(function(event){
+    $("#cpu").data('rangeinput').setValue(4);
+    $("#ram").data('rangeinput').setValue(1024);
+    $("#storage").data('rangeinput').setValue(30);
+});
+
+// selecting the large size
+$("#large").click(function(event){
+    $("#cpu").data('rangeinput').setValue(8);
+    $("#ram").data('rangeinput').setValue(4096);
+    $("#storage").data('rangeinput').setValue(80);
+});
+
+// selecting the custom flavor enables the sliders
+$("#custom").click(function(event){
+    $("#cpu").attr('disabled',false);
+    $("#ram").attr('disabled',false);
+    $("#storage").attr('disabled',false);
+    $("strong.sliders").style = 'color: #778899;';
+});
+
+// get cpu value for custom flavor
+$("#cpu").change(function(event){
+    $("#custom").click();
+});
+
+// get ram value for custom flavor
+$("#ram").change(function(event){
+    $("#custom").click();
+});
+
+// get storage value for custom flavor
+$("#storage").change(function(event){
+    $("#custom").click();
+});
+
+// exit the wizard
+$("#cancel").click(function(event){
+    $("a#create[rel]").overlay().close();
+});
+
+// starting a new VM through the wizard
+$("#start").click(function(event){
+    // send create call
+    $.ajax({
+    url: '/api/v1.0/servers',
+    type: "POST",
+    data: {
+        "create": {"foo" : "foo"}
+        },
+    //TODO: get the real data
+    //async: false,
+    dataType: "json",
+    success: function() {}
+    });
+    // bring up notification
+    var triggers = $("a#notify").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+	    closeOnClick: false,
+        oneInstance: false,
+        load: true,
+        onClose: function(event){
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
+        }
+    });
+    $("#wizard").hide();
+    update();
+});
+
+// generate notification after completing all wizard steps
+$(function() { 
+    $("a#create[rel]").overlay({
+        mask: '#000', 
+        effect: 'default', 
+        top: '5%', 
+        oneInstance: false,
+        closeOnClick: false
+    });
+});
+
+$("a.action-reboot").click(function(){
+
+    $.ajax({
+	    url: '/api/v1.0/servers/' + '/action',
+	    type: "POST",
+	    data: {
+		    "reboot": '{"type" : "HARD"}'
+		    },
+	    //TODO: get the server's id, instead of foo id 1234
+	    //async: false,
+	    dataType: "json",
+	    success: function() {}
+    });
+});
+
+$("a.action-shutdown").click(function(){
+	$.ajax({
+		url: '/api/v1.0/servers/' + '/action',
+		type: "POST",
+		data: {
+			"shutdown": '{"timeout" : "5"}'
+			},
+		//TODO: get the server's id, instead of foo id 1234
+		//async: false,
+		dataType: "json",
+		success: function() {}
+	});
+});
 </script>

@@ -165,7 +165,7 @@ $("a.enabled#action-shutdown").live('click', function() {
 	var checked = $("input[type='checkbox']:checked").toArray();	
 	for (c in checked) {
 		$.ajax({
-			url: '/api/v1.0/servers/1234/action',
+			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
 			type: "POST",
 			data: {
 				"shutdown": '{"timeout" : "5"}'

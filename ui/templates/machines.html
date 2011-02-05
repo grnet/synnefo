@@ -453,9 +453,11 @@ $(function() {
     });
 });
 
-$("a.action-reboot").live('click', function(){
+// reboot action
+$("div.actions a.action-reboot").live('click', function(){
+    var serverID = $(this).parent().parent().attr("id");
     $.ajax({
-	    url: '/api/v1.0/servers/' + $(this).parent().parent().attr("id") + '/action',
+	    url: '/api/v1.0/servers/' + serverID + '/action',
 	    type: "POST",
 	    data: {
 		    "reboot": '{"type" : "HARD"}'
@@ -466,9 +468,11 @@ $("a.action-reboot").live('click', function(){
     });
 });
 
-$("a.action-shutdown").live('click', function(){
+// shutdown action
+$("div.actions a.action-shutdown").live('click', function(){
+    var serverID = $(this).parent().parent().attr("id");
 	$.ajax({
-		url: '/api/v1.0/servers/' + $(this).parent().parent().attr("id") + '/action',
+		url: '/api/v1.0/servers/' + serverID + '/action',
 		type: "POST",
 		data: {
 			"shutdown": '{"timeout" : "5"}'

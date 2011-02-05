@@ -28,9 +28,7 @@
                 <th id="group">Group</th>
                 <th id="status">Status</th> 
                 <th class="scroll"></th>
-            </tr> 
-        </thead> 
-        <tbody class="running">
+            </tr>
             <tr id="machine-template" style="display: none">
                 <td><input type="checkbox" id="node-id" /></td>
                 <td><span class="imagetag"></span><img class="list-logo" src="" width="16" height="16" /></td>
@@ -38,7 +36,10 @@
                 <td><a class="ip"><span class="public">node.public_ip</span></a></td>
                 <td>group</td>
                 <td class="status">Running</td>
-            </tr>
+            </tr>			
+        </thead> 
+        <tbody class="running">
+
         </tbody>
     </table>
     <div id="mini" class="seperator"></div>
@@ -70,6 +71,7 @@ $("table thead tr th#selection :checkbox").live('change', function() {
     else {
         $(state + " :checkbox").attr("checked", false);
     }
+	updateActions();
 });
 
 var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
@@ -84,10 +86,12 @@ var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
 			   };
 
 // on checkbox click, update the actions
-$("input[type='checkbox']").live('change', function() {
+$("tbody input[type='checkbox']").live('change', updateActions);
+
+function updateActions() {
 	var states = [];
 	var on = [];
-	var checked = $("input[type='checkbox']:checked").toArray();
+	var checked = $("table tbody input[type='checkbox']:checked").toArray();
 	
 	// disable all actions to begin with
 	for (action in actions) {
@@ -120,16 +124,15 @@ $("input[type='checkbox']").live('change', function() {
 		if (enabled)
 			on[on.length]=a;
 	}
-	
 	// enable those actions
 	for (action in on) {
 		$("#action-" + on[action]).addClass('enabled');
 	}
-});
+}
 
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
-	var checked = $("input[type='checkbox']:checked").toArray();	
+	var checked = $("tbody input[type='checkbox']:checked").toArray();	
 	for (c in checked) {
 		$.ajax({
 			url: '/api/v1.0/servers/' + checked[c].id.replace('input-',''),
@@ -144,7 +147,7 @@ $("a.enabled#action-destroy").live('click', function() {
 
 // reboot action
 $("a.enabled#action-reboot").live('click', function() {
-	var checked = $("input[type='checkbox']:checked").toArray();	
+	var checked = $("tbody input[type='checkbox']:checked").toArray();	
 	for (c in checked) {
 		$.ajax({
 			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
@@ -162,10 +165,10 @@ $("a.enabled#action-reboot").live('click', function() {
 
 // shutdown action. Not implemented by rackspace API atm
 $("a.enabled#action-shutdown").live('click', function() {
-	var checked = $("input[type='checkbox']:checked").toArray();	
+	var checked = $("tbody input[type='checkbox']:checked").toArray();	
 	for (c in checked) {
 		$.ajax({
-			url: '/api/v1.0/servers/1234/action',
+			url: '/api/v1.0/servers/1234/' + checked[c].id.replace('input-','') + '/action',
 			type: "POST",
 			data: {
 				"shutdown": '{"timeout" : "5"}'

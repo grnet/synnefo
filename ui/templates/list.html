@@ -21,7 +21,14 @@
     <table>
         <thead> 
             <tr> 
-                <th id="selection"><input type="checkbox" class="select-running"/></th> 
+                <th id="selection" class="select-running">
+                    <input type="checkbox"/>
+                    <ul>
+                        <li><a class="select-all" href="#">All</a></li>
+                        <li><a class="select-none" href="#">None</a></li>
+                        <li><a class="select-group" href="#">group</a></li>
+                    </ul>                
+                </th> 
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
                 <th id="ip">IP</th> 
@@ -46,7 +53,14 @@
     <table>
         <thead> 
             <tr> 
-                <th id="selection"><input type="checkbox" class="select-terminated"/></th> 
+                <th id="selection" class="select-terminated">
+                    <input type="checkbox"/>
+                    <ul>
+                        <li><a class="select-all" href="#">All</a></li>
+                        <li><a class="select-none" href="#">None</a></li>
+                        <li><a class="select-group" href="#">group</a></li>
+                    </ul>  
+                </th> 
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
                 <th id="ip">IP</th> 
@@ -64,13 +78,33 @@
 // select/deselect all from checkbox widget of table headers
 $("table thead tr th#selection :checkbox").live('change', function() {
     // select/deselect running or terminated?
-    var state = $(this).attr("class").replace('select-','.');
+    var state = $(this).parent().attr("class").replace('select-','');
     if ( $(this).is(":checked") ) {
-        $(state + " :checkbox").attr("checked", true);
+        $("." + state + " :checkbox").attr("checked", true);
     }
     else {
-        $(state + " :checkbox").attr("checked", false);
+        $("." + state + " :checkbox").attr("checked", false);
     }
+	updateActions();
+});
+
+// select all/none from drop down menu
+$("table thead tr th#selection ul li a").live('click', function() {
+    // find the state of the machines
+    var state = $(this).closest("th#selection").attr("class").replace('select-','');
+    // all or none?
+    var all = ($(this).attr("class") == "select-all");
+    // toggle checkboxes
+    $("." + state + " :checkbox").attr("checked", all);
+    // update actions
+	updateActions();
+});
+
+// select group from drop down menu
+$("table thead tr th#selection ul li a.select-group").live('click', function() {
+    // find the state of the machines
+    var state = $(this).closest("th#selection").attr("class").replace('select-','');
+    $("." + state + " :checkbox").attr("checked", true);
 	updateActions();
 });
 

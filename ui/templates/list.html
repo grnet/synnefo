@@ -134,7 +134,6 @@ $("a.enabled#action-destroy").live('click', function() {
 		$.ajax({
 			url: '/api/v1.0/servers/' + checked[c].id.replace('input-',''),
 			type: "DELETE",
-			//TODO: get the server's id, instead of foo id 1234
 			//async: false,
 			dataType: "json",
 			success: function() {}
@@ -152,7 +151,6 @@ $("a.enabled#action-reboot").live('click', function() {
 			data: {
 				"reboot": '{"type" : "HARD"}'
 				},
-			//TODO: get the server's id, instead of foo id 1234
 			//async: false,
 			dataType: "json",
 			success: function() {}
@@ -170,7 +168,6 @@ $("a.enabled#action-shutdown").live('click', function() {
 			data: {
 				"shutdown": '{"timeout" : "5"}'
 				},
-			//TODO: get the server's id, instead of foo id 1234
 			//async: false,
 			dataType: "json",
 			success: function() {}

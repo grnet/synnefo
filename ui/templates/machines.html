@@ -202,7 +202,7 @@ var image_tags = {
 $("ul.tabs").tabs("div.panes ul");
 
 // switch to list view
-$("#list").click(function(event){
+$("#list").click(function(){
     $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
     this.style.color = '#5f8dd3';
@@ -211,7 +211,7 @@ $("#list").click(function(event){
 });
 
 // switch to standard view
-$("a#standard").click(function(event){
+$("a#standard").click(function(){
     href=$("a#standard").attr("href");
     $("div.pane#machines-pane").load(href);
     //$("a#standard")[0].className += ' activelink'
@@ -303,7 +303,7 @@ function update() {
 update();
 
 // launch VM creation wizard
-$("a#create").click(function(event){
+$("a#create").click(function(){
     $("#wizard").scrollable().begin();
 });
 
@@ -361,28 +361,28 @@ function disableSliders() {
 }
 
 // selecting the small size
-$("#small").click(function(event){
+$("#small").click(function(){
     $("#cpu").data('rangeinput').setValue(1);
     $("#ram").data('rangeinput').setValue(256);
     $("#storage").data('rangeinput').setValue(5);
 });
 
 // selecting the medium size
-$("#medium").click(function(event){
+$("#medium").click(function(){
     $("#cpu").data('rangeinput').setValue(4);
     $("#ram").data('rangeinput').setValue(1024);
     $("#storage").data('rangeinput').setValue(30);
 });
 
 // selecting the large size
-$("#large").click(function(event){
+$("#large").click(function(){
     $("#cpu").data('rangeinput').setValue(8);
     $("#ram").data('rangeinput').setValue(4096);
     $("#storage").data('rangeinput').setValue(80);
 });
 
 // selecting the custom flavor enables the sliders
-$("#custom").click(function(event){
+$("#custom").click(function(){
     $("#cpu").attr('disabled',false);
     $("#ram").attr('disabled',false);
     $("#storage").attr('disabled',false);
@@ -390,27 +390,27 @@ $("#custom").click(function(event){
 });
 
 // get cpu value for custom flavor
-$("#cpu").change(function(event){
+$("#cpu").change(function(){
     $("#custom").click();
 });
 
 // get ram value for custom flavor
-$("#ram").change(function(event){
+$("#ram").change(function(){
     $("#custom").click();
 });
 
 // get storage value for custom flavor
-$("#storage").change(function(event){
+$("#storage").change(function(){
     $("#custom").click();
 });
 
 // exit the wizard
-$("#cancel").click(function(event){
+$("#cancel").click(function(){
     $("a#create[rel]").overlay().close();
 });
 
 // starting a new VM through the wizard
-$("#start").click(function(event){
+$("#start").click(function(){
     // send create call
     $.ajax({
     url: '/api/v1.0/servers',
@@ -434,7 +434,7 @@ $("#start").click(function(event){
 	    closeOnClick: false,
         oneInstance: false,
         load: true,
-        onClose: function(event){
+        onClose: function(){
             $("div.pane#machines-pane").load($("a#standard").attr("href"));
         }
     });
@@ -453,29 +453,26 @@ $(function() {
     });
 });
 
-$("a.action-reboot").click(function(){
-
+$("a.action-reboot").live('click', function(){
     $.ajax({
-	    url: '/api/v1.0/servers/' + '/action',
+	    url: '/api/v1.0/servers/' + $(this).parent().parent().attr("id") + '/action',
 	    type: "POST",
 	    data: {
 		    "reboot": '{"type" : "HARD"}'
 		    },
-	    //TODO: get the server's id, instead of foo id 1234
 	    //async: false,
 	    dataType: "json",
 	    success: function() {}
     });
 });
 
-$("a.action-shutdown").click(function(){
+$("a.action-shutdown").live('click', function(){
 	$.ajax({
-		url: '/api/v1.0/servers/' + '/action',
+		url: '/api/v1.0/servers/' + $(this).parent().parent().attr("id") + '/action',
 		type: "POST",
 		data: {
 			"shutdown": '{"timeout" : "5"}'
 			},
-		//TODO: get the server's id, instead of foo id 1234
 		//async: false,
 		dataType: "json",
 		success: function() {}

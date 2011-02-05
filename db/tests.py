@@ -11,8 +11,8 @@ import unittest
 from datetime import datetime, date
 
 from db.models import *
-from db import CreditAllocator
-from db import Charger
+from db import credit_allocator
+from db import charger
 
 from django.conf import settings
 
@@ -31,14 +31,14 @@ class CreditAllocatorTestCase(unittest.TestCase):
     def test_credit_allocator(self):
         """Credit Allocator unit test method"""
         # test the allocator
-        CreditAllocator.allocate_credit() 
+        credit_allocator.allocate_credit() 
                
         user = OceanUser.objects.get(pk=1)
         self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: %d (should be 10)' % ( user.credit, ) )
         
         # test if the quota policy is endorced
         for i in range(1, 10):
-            CreditAllocator.allocate_credit()
+            credit_allocator.allocate_credit()
         
         user = OceanUser.objects.get(pk=1)
         self.assertEquals(user.credit, user.quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, user.quota) )
@@ -124,7 +124,7 @@ class ChargerTestcase(unittest.TestCase):
         """Charger unit test method"""
         
         # charge when the vm is running
-        Charger.charge()
+        charger.charge()
         
         user = OceanUser.objects.get(pk=1)
         self.assertEquals(user.credit, 90, 'Error in charging process (%d!=90, running)' % ( user.credit, ))
@@ -134,7 +134,7 @@ class ChargerTestcase(unittest.TestCase):
         vm.state = 'PE_VM_STOPPED'
         vm.save()
         
-        Charger.charge()
+        charger.charge()
         
         user = OceanUser.objects.get(pk=1)
         self.assertEquals(user.credit, 85, 'Error in charging process (%d!=85, stopped)' % ( user.credit, ))
@@ -146,7 +146,7 @@ class ChargerTestcase(unittest.TestCase):
         
         # the user now has 85, charge until his credits drop to zero
         for i in range(1, 10):
-            Charger.charge()
+            charger.charge()
         
         user = OceanUser.objects.get(pk=1)
         self.assertEquals(user.credit, 0, 'Error in charging process (%d!=0, running)' % ( user.credit, ))

@@ -11,7 +11,7 @@ from db.models import *
 from datetime import datetime
 
 def stop_virtual_machine(vm):
-    """Stop a virtual machine instance"""
+    """Send message to stop a virtual machine instance"""
     
     # send the message to ganeti
     

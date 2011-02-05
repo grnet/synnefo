@@ -1,8 +1,6 @@
 #
 # Charge Users Command - Management Script
 #
-# Charger administration utility management command
-#
 # Copyright 2010 Greek Research and Technology Network
 #
 

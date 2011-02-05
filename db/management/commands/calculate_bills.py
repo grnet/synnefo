@@ -1,15 +1,15 @@
 #
-# Credit Allocator Command - Management Script
+# bill Calculator Command - Management Script
 #
 # Copyright 2010 Greek Research and Technology Network
 #
 
 from django.core.management.base import NoArgsCommand
 
-from db import credit_allocator
+from db import bill_calculator
 
 class Command(NoArgsCommand):
-    help = 'Add credits to users according to their monthly rate'
+    help = ''
     
     def handle_noargs(self, **options):
-        credit_allocator.allocate_credit()
+        bill_calculator.calculate_bills()

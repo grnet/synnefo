@@ -1,15 +1,15 @@
 #
-# Credit Allocator Command - Management Script
+# Run DB Control Command - Management Script
 #
 # Copyright 2010 Greek Research and Technology Network
 #
 
 from django.core.management.base import NoArgsCommand
 
-from db import credit_allocator
+from db import db_controller
 
 class Command(NoArgsCommand):
-    help = 'Add credits to users according to their monthly rate'
+    help = ''
     
     def handle_noargs(self, **options):
-        credit_allocator.allocate_credit()
+        db_controller.main()

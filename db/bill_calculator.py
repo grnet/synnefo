@@ -6,7 +6,5 @@
 # Copyright 2010 Greek Research and Technology Network
 #
 
-def billAllocator():
+def calculate_bills():
     return
-    
-billAllocator()

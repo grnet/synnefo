@@ -8,7 +8,7 @@
 
 import unittest
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from db.models import *
 from db import credit_allocator
@@ -101,7 +101,7 @@ class ChargerTestcase(unittest.TestCase):
         vm = VirtualMachine(pk=1)
         vm.created = datetime.datetime.now()
         vm.state = 'PE_VM_RUNNING'
-        vm.charged = datetime.datetime.now()
+        vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
         vm.imageid = 1
         vm.hostid = 'testhostid'
         vm.server_label = 'agreatserver'
@@ -132,6 +132,7 @@ class ChargerTestcase(unittest.TestCase):
         # charge when the vm is stopped
         vm = VirtualMachine.objects.get(pk=1)
         vm.state = 'PE_VM_STOPPED'
+        vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
         vm.save()
         
         charger.charge()
@@ -142,10 +143,14 @@ class ChargerTestcase(unittest.TestCase):
         # try charge until the user spends all his credits, see if the charger
         vm = VirtualMachine.objects.get(pk=1)
         vm.state = 'PE_VM_RUNNING'
+        vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
         vm.save()
         
         # the user now has 85, charge until his credits drop to zero
         for i in range(1, 10):
+            vm = VirtualMachine.objects.get(pk=1)
+            vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
+            vm.save()
             charger.charge()
         
         user = OceanUser.objects.get(pk=1)

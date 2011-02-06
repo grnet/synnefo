@@ -32,9 +32,11 @@ def charge():
             cost = vm.flavor.cost_active
         elif vm.state == 'PE_VM_STOPPED':
             cost = vm.flavor.cost_inactive
-          
-        user_credits = vm.owner.charge_credits(cost)        
-        vm.charged = datetime.now()
+        
+        start = vm.charged
+        end = datetime.now()
+        user_credits = vm.owner.charge_credits(cost, start, end)
+        vm.charged = end
         
         # update the values in the database
         vm.save()

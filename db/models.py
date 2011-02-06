@@ -46,16 +46,25 @@ class OceanUser(models.Model):
     def __unicode__(self):
         return self.name
     
-    def charge_credits(self, cost):
-        """Reduce user credits for the specified cost. 
+    def _total_hours(self, start, end):
+        """Calculate duration in hours"""
+        td = end - start
+        sec = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / float(10**6)
+        
+        return float(sec) / float(60.0*60.0)
+    
+    def charge_credits(self, cost, start, end):
+        """Reduce user credits for specified duration. 
         Returns amount of credits remaining. Negative if the user surpassed his limit."""
-        self.credit = self.credit - cost
+        total_cost = float(cost)*self._total_hours(start, end)
+        
+        self.credit = self.credit - round(total_cost)
         rcredit = self.credit
                 
         if self.credit < 0:
             self.credit = 0
         
-        return rcredit        
+        return rcredit 
     
     def allocate_credits(self):
         """Allocate credits. Add monthly rate to user credit reserve."""

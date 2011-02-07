@@ -164,6 +164,21 @@ class VirtualMachine(models.Model):
     backend_id = property(_get_backend_id)
 
 
+class VirtualMachineGroup(models.Model):
+    "Groups of VM's for OceanUsers"
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(User)
+    machines = models.ManyToManyField(VirtualMachine)
+    created = models.DateTimeField(help_text=_("Group creation date"), default=datetime.datetime.now)
+
+    class Meta:
+        verbose_name = u'Virtual Machine Group'
+        verbose_name_plural = 'Virtual Machine Groups'
+        ordering = ['name']
+    
+    def __unicode__(self):
+        return self.name
+
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)

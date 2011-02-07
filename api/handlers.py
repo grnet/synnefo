@@ -8,7 +8,7 @@ from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
-from synnefo.db.models import VirtualMachine, Flavor, Image, User, id_from_instance_name
+from synnefo.db.models import *
 from util.rapi import GanetiRapiClient
 
 
@@ -281,6 +281,35 @@ class SharedIPGroupHandler(BaseHandler):
     def delete(self, request, id):
         """Deletes a Shared IP Group"""
         return noContent
+
+
+class VirtualMachineGroupHandler(BaseHandler):
+    allowed_methods = ('GET', 'POST', 'DELETE')
+
+    def read(self, request, id=None):
+        """List Groups"""
+        vmgroups = VirtualMachineGroup.objects.all() 
+        vmgroups = [ {'id': vmgroup.id, \
+              'name': vmgroup.name,  \
+               'server_id': [machine.id for machine in vmgroup.machines.all()] \
+               } for vmgroup in vmgroups]
+        if rapi: # Group info is stored in the DB. Ganeti is not aware of this
+            if id == "detail":
+                return { "groups": vmgroups }
+            elif id is None:
+                return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups ] }
+            else:
+                return { "groups": vmgroups[0] }
+
+
+    def create(self, request, id):
+        """Creates a Group"""
+        return created
+
+    def delete(self, request, id):
+        """Deletes a  Group"""
+        return noContent
+
 
 
 class LimitHandler(BaseHandler):

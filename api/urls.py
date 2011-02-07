@@ -46,8 +46,8 @@ v10patterns = patterns('',
     url_with_format(r'^images/(?P<id>[^/]+)$', image_handler),
     url_with_format(r'^shared_ip_groups$', shared_ip_group_handler),
     url_with_format(r'^shared_ip_groups/(?P<id>[^/]+)$', shared_ip_group_handler),
-    url_with_format(r'^virtual_machine_groups$', virtual_machine_group_handler),
-    url_with_format(r'^virtual_machine_groups/(?P<id>[^/]+)$', virtual_machine_group_handler),
+    url_with_format(r'^groups$', virtual_machine_group_handler),
+    url_with_format(r'^groups/(?P<id>[^/]+)$', virtual_machine_group_handler),
     url(r'^.+', notFound), # catch-all
 )
 

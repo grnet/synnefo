@@ -264,27 +264,30 @@ function update() {
         //async: false,
         dataType: "json",
         success: function(data) {
-            $.each(data.images, function(i,image){
-                var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
-                img.find("label").attr('for',"img-radio-" + image.id);
-                img.find(".image-title").text(image.name);
-                img.find(".description").text(image.description);
-                img.find("input.radio").attr('id',"img-radio-" + image.id);
-                if (i==0) img.find("input.radio").attr("checked","checked"); 
-                img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
-                if (image.serverId) {
-                    img.appendTo("ul#custom-images");
-                } else {
-                    img.appendTo("ul#standard-images");
-                }
-            });
+            if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
+                $.each(data.images, function(i,image){
+                    var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
+                    img.find("label").attr('for',"img-radio-" + image.id);
+                    img.find(".image-title").text(image.name);
+                    img.find(".description").text(image.description);
+                    img.find("input.radio").attr('id',"img-radio-" + image.id);
+                    if (i==0) img.find("input.radio").attr("checked","checked"); 
+                    img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
+                    if (image.serverId) {
+                        img.appendTo("ul#custom-images");
+                    } else {
+                        img.appendTo("ul#standard-images");
+                    }
+                });
+            }
         }
     });
+    return false;
 }
 
 // switch to list view
 $("#list").click(function(){
-    $.cookie("list", '1');
+    $.cookie("list", '1'); // set list cookie
     $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
     this.style.color = '#5f8dd3';
@@ -302,10 +305,11 @@ $("a#standard").click(function(){
     return false;
 });
 
+// redirect to list view if the list cookie is set
 if ($.cookie("list") == '1') {
     $("#list").click();
 } else {
-    // execute the above function to populate the list
+    // execute the update function to populate the list
     update();
 }
 
@@ -461,8 +465,9 @@ $(function() {
 });
 
 // reboot action
-$("div.actions a.action-reboot").live('click', function(){
+function reboot(){
     var serverID = $(this).parent().parent().attr("id");
+    alert("rebooting " + serverID);
     $.ajax({
 	    url: '/api/v1.0/servers/' + serverID + '/action',
 	    type: "POST",
@@ -473,11 +478,13 @@ $("div.actions a.action-reboot").live('click', function(){
 	    dataType: "json",
 	    success: function() {}
     });
-});
+    return false;
+}
 
 // shutdown action
-$("div.actions a.action-shutdown").live('click', function(){
+function shutdown() {
     var serverID = $(this).parent().parent().attr("id");
+    alert("shutting down " + serverID);
 	$.ajax({
 		url: '/api/v1.0/servers/' + serverID + '/action',
 		type: "POST",
@@ -488,5 +495,12 @@ $("div.actions a.action-shutdown").live('click', function(){
 		dataType: "json",
 		success: function() {}
 	});
-});
+    return false;    
+}
+
+// intercept action clicks
+$("div.actions a.action-shutdown").live('click', shutdown);
+$("div.actions a.action-reboot").live('click', reboot);
+
+
 </script>

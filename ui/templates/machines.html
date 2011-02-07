@@ -201,24 +201,6 @@ var image_tags = {
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 
-// switch to list view
-$("#list").click(function(){
-    $("div.standard#machinesview").load($("#list").attr("href"));
-    $("a#standard")[0].className += ' activelink'
-    this.style.color = '#5f8dd3';
-    update(); 
-    return false;
-});
-
-// switch to standard view
-$("a#standard").click(function(){
-    href=$("a#standard").attr("href");
-    $("div.pane#machines-pane").load(href);
-    //$("a#standard")[0].className += ' activelink'
-    //this.style.color = '#5f8dd3';
-    return false;
-});
-
 // get and show list of running and terminated machines
 function update() {
 
@@ -226,45 +208,46 @@ function update() {
     $(".terminated").text('');
     $("ul#standard-images").text('');
     $("ul#custom-images").text('');
-
     $.ajax({
         url: '/api/v1.0/servers/detail',
         type: "GET",
         //async: false,
         dataType: "json",
         success: function(data) {
-            $.each(data.servers, function(i,server){
-
-                var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
-                machine.find("input[type='checkbox']").attr("id", "input-" + server.id);
-                machine.find("input[type='checkbox']").attr("class", server.status);
-                machine.find("a.name span.name").text(server.name);
-                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
-                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
-                machine.find("img.list-logo").attr("title",image_tags[server.imageId]);
-                machine.find("span.imagetag").text(image_tags[server.imageId]);
-
-                machine.find("a.ip span.public").text(String(server.addresses.public).replace(',',' '));            
-
-                if (server.status == 'PE_VM_MIGRATING'){
-                    machine.find(".status").text('Building');
-                    machine.appendTo(".running");
-                } else if (server.status == 'PE_VM_RUNNING') {
-                    machine.find(".status").text('Running');
-                    machine.appendTo(".running");
-                } else if (server.status == 'PE_VM_SUSPENDED') {
-                    machine.find(".status").text('Terminated');
-                    machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                    machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
-                    machine.appendTo(".terminated");
-                    $("#mini.seperator").fadeIn("slow");
-                } else {
-                    machine.find(".status").text('Unknown');
-                    machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                    machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
-                    machine.appendTo(".terminated");
-                }
-            });
+            if ($(".running a.name").toArray().length + $(".terminated a.name").toArray().length == 0) {
+            
+                $.each(data.servers, function(i,server){
+                    var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
+                    machine.find("input[type='checkbox']").attr("id", "input-" + server.id);
+                    machine.find("input[type='checkbox']").attr("class", server.status);
+                    machine.find("a.name span.name").text(server.name);
+                    machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
+                    machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
+                    machine.find("img.list-logo").attr("title",image_tags[server.imageId]);
+                    machine.find("span.imagetag").text(image_tags[server.imageId]);
+    
+                    machine.find("a.ip span.public").text(String(server.addresses.public).replace(',',' '));            
+    
+                    if (server.status == 'PE_VM_MIGRATING'){
+                        machine.find(".status").text('Building');
+                        machine.appendTo(".running");
+                    } else if (server.status == 'PE_VM_RUNNING') {
+                        machine.find(".status").text('Running');
+                        machine.appendTo(".running");
+                    } else if (server.status == 'PE_VM_SUSPENDED') {
+                        machine.find(".status").text('Terminated');
+                        machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                        machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
+                        machine.appendTo(".terminated");
+                        $("#mini.seperator").fadeIn("slow");
+                    } else {
+                        machine.find(".status").text('Unknown');
+                        machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                        machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
+                        machine.appendTo(".terminated");
+                    }
+                });
+            }
             $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();
             $(".list table").show();
@@ -299,8 +282,32 @@ function update() {
     });
 }
 
-// execute the above function to populate the list
-update();
+// switch to list view
+$("#list").click(function(){
+    $.cookie("list", '1');
+    $("div.standard#machinesview").load($("#list").attr("href"));
+    $("a#standard")[0].className += ' activelink'
+    this.style.color = '#5f8dd3';
+    update();
+    return false;
+});
+
+// switch to standard view
+$("a#standard").click(function(){
+    $.cookie("list", '0');
+    href=$("a#standard").attr("href");
+    $("div.pane#machines-pane").load(href);
+    //$("a#standard")[0].className += ' activelink'
+    //this.style.color = '#5f8dd3';
+    return false;
+});
+
+if ($.cookie("list") == '1') {
+    $("#list").click();
+} else {
+    // execute the above function to populate the list
+    update();
+}
 
 // launch VM creation wizard
 $("a#create").click(function(){

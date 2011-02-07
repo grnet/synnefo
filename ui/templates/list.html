@@ -120,7 +120,7 @@ var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
 			   };
 
 // on checkbox click, update the actions
-$("tbody input[type='checkbox']").live('change', updateActions);
+$("tbody input[type='checkbox']").live('change', function() { updateActions(); });
 
 function updateActions() {
 	var states = [];

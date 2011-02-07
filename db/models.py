@@ -37,7 +37,7 @@ class OceanUser(models.Model):
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
-    #user = models.ForeignKey(User, unique=True)
+    user = models.ForeignKey(User, unique=True)
     limits = models.ManyToManyField(Limit, through='UserLimit')
     
     class Meta:
@@ -211,6 +211,7 @@ class Image(models.Model):
     description = models.TextField(help_text=_('description'))
     serverid = models.IntegerField(help_text=_('description'))
     vm = models.ForeignKey(VirtualMachine)
+    owner = models.ForeignKey(User,blank=True, null=True)   
     
     class Meta:
         verbose_name = u'Image'

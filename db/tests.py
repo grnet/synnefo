@@ -15,17 +15,23 @@ from db import credit_allocator
 from db import charger
 
 from django.conf import settings
+from django.contrib.auth.models import User
 
 class CreditAllocatorTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
+        djuser = User.objects.create_user('oceandj', 'lennon@thebeatles.com', 'johnpassword')
+        djuser.is_staff = True
+        djuser.save()
+        
         user = OceanUser(pk=1, name='Test User', credit=0, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
+        user.user = djuser
         user.save()
     
     def tearDown(self):
         """Cleaning up the data"""
-        user = OceanUser.objects.get(pk=1)
+        user = User.objects.get(username="oceandj")
         user.delete()
     
     def test_credit_allocator(self):
@@ -82,9 +88,14 @@ class FlavorTestCase(unittest.TestCase):
 class ChargerTestcase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
+        djuser = User.objects.create_user('oceandj', 'lennon@thebeatles.com', 'johnpassword')
+        djuser.is_staff = True
+        djuser.save()
+        
         # add a user
         user = OceanUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
+        user.user = djuser
         user.save()
         
         # add a Flavor 
@@ -115,7 +126,7 @@ class ChargerTestcase(unittest.TestCase):
         
     def tearDown(self):
         """Cleaning up the data"""
-        user = OceanUser.objects.get(pk=1)
+        user = User.objects.get(username="oceandj")
         user.delete()
         
         flavor = Flavor.objects.get(pk=1)
@@ -160,9 +171,14 @@ class ChargerTestcase(unittest.TestCase):
 class VirtualMachineTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
+        djuser = User.objects.create_user('oceandj', 'lennon@thebeatles.com', 'johnpassword')
+        djuser.is_staff = True
+        djuser.save()        
+        
         # Add a user
         user = OceanUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
+        user.user = djuser
         user.save()
         
         # add a Flavor 
@@ -188,7 +204,7 @@ class VirtualMachineTestCase(unittest.TestCase):
         
     def tearDown(self):
         """Cleaning up the data"""
-        user = OceanUser.objects.get(pk=1)
+        user = User.objects.get(username="oceandj")
         user.delete()
         
         flavor = Flavor.objects.get(pk=1)

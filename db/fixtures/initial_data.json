@@ -1,0 +1,59 @@
+[
+    {
+        "model": "db.SynnefoUser",
+        "pk": 1,
+        "fields": {
+            "name": "admin user",
+            "credit": 1,
+            "quota": 1,
+            "created": "2011-02-06",
+            "monthly_rate": 1
+   	    }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 1,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 10
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 2,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 10
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 1001,
+        "fields": {
+            "name": "snf-1001",
+            "created": "2011-02-06 00:00:00",
+            "charged": "2011-02-06 00:00:00",
+            "sourceimage": 1,
+            "hostid": "HAL-9000",
+            "description": "database server",
+            "ipfour": "192.168.2.1",
+            "ipsix": "::1",
+            "owner": 1,
+            "flavor": 1,
+            "operstate": "BUILD"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 1,
+        "fields": {
+            "name": "Debian Squeeze",
+            "updated": "2011-02-06 00:00:00",
+            "created": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Full Debian Squeeze Installation"
+        }
+    }
+]

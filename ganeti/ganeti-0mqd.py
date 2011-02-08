@@ -64,11 +64,12 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
             # Construct message
             msg = {
-                "type": "Ganeti-op-status",
+                "type": "ganeti-op-status",
                 "instance": instances,
                 "operation": op.input.OP_ID,
                 "jobId": int(job.id),
-                "status": op.status
+                "status": op.status,
+		"logmsg": logmsg
             }
             if logmsg:
                 msg["message"] = logmsg

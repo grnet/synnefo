@@ -1,9 +1,7 @@
 # Virtual machine instance states
 STATES = (
-            ('PE_VM_STOPPED', 'Stop'),
-            ('PE_VM_RUNNING', 'Running'),
-            ('PE_VM_SUSPENDED', 'Suspended'),
-            ('PE_VM_MIGRATING', 'Migrating'),
+            ('ACTIVE', 'Running'),
+            ('STOPPED', 'Stopped'),
          )
 
 IMAGE_TAGS = {
@@ -27,35 +25,35 @@ MOCK_IMAGES = [
                     "name" : "CentOS 5.2",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "PE_VM_RUNNING"
+                    "status" : "ACTIVE"
                 },
                 {
                     "id" : 3,
                     "name" : "Debian Lenny",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "PE_VM_RUNNING"
+                    "status" : "ACTIVE"
                 },
                 {
                     "id" : 11,
                     "name" : "Ubuntu 10.04 server 64bit",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "PE_VM_RUNNING"
+                    "status" : "ACTIVE"
                 },
                 {
                     "id" : 20,
                     "name" : "Ubuntu 10.10 server 64bit",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "PE_VM_RUNNING"
+                    "status" : "ACTIVE"
                 },
                 {
                     "id" : 4,
                     "name" : "FreeBSD 8.1 Release i386",
                     "updated" : "2010-10-10T12:00:00Z",
                     "created" : "2010-08-10T12:00:00Z",
-                    "status" : "PE_VM_RUNNING"
+                    "status" : "ACTIVE"
                 },
                 {
                     "id" : 12,
@@ -77,7 +75,7 @@ MOCK_SERVERS = [
                 "imageId" : 11,
                 "flavorId" : 1,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "PE_VM_MIGRATING",
+                "status" : "STOPPED",
                 "progress" : 60,
                 "addresses" : {
                     "public" : [
@@ -99,7 +97,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.133"
@@ -118,7 +116,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.143"
@@ -137,7 +135,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.118"
@@ -156,7 +154,7 @@ MOCK_SERVERS = [
                     "imageId" : 12,
                     "flavorId" : 2,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_SUSPENDED",
+                    "status" : "STOPPED",
                     "addresses" : {
                         },
                     "metadata" : {
@@ -169,7 +167,7 @@ MOCK_SERVERS = [
                 "imageId" : 3,
                 "flavorId" : 1,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "PE_VM_MIGRATING",
+                "status" : "STOPPED",
                 "progress" : 20,
                 "addresses" : {
                     "public" : [
@@ -191,7 +189,7 @@ MOCK_SERVERS = [
                 "imageId" : 5,
                 "flavorId" : 5,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "PE_VM_MIGRATING",
+                "status" : "STOPPED",
                 "progress" : 33,
                 "addresses" : {
                     "public" : [
@@ -213,7 +211,7 @@ MOCK_SERVERS = [
                 "imageId" : 5,
                 "flavorId" : 5,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "PE_VM_MIGRATING",
+                "status" : "STOPPED",
                 "progress" : 66,
                 "addresses" : {
                     "public" : [
@@ -235,7 +233,7 @@ MOCK_SERVERS = [
                 "imageId" : 3,
                 "flavorId" : 12,
                 "hostId" : "e4d909c290d0fb1ca068ffaddf22cbd0",
-                "status" : "PE_VM_MIGRATING",
+                "status" : "STOPPED",
                 "progress" : 66,
                 "addresses" : {
                     "public" : [
@@ -257,7 +255,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 9,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_SUSPENDED",
+                    "status" : "STOPPED",
                     "addresses" : {
                         },
                     "metadata" : {
@@ -270,7 +268,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" :6,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.11.55"
@@ -289,7 +287,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 6,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.56"
@@ -308,7 +306,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 3,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.96"
@@ -327,7 +325,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 3,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.20"
@@ -346,7 +344,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 1,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.29"
@@ -365,7 +363,7 @@ MOCK_SERVERS = [
                     "imageId" : 6,
                     "flavorId" : 7,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_RUNNING",
+                    "status" : "ACTIVE",
                     "addresses" : {
                         "public" : [
                                 "67.23.10.77"
@@ -384,7 +382,7 @@ MOCK_SERVERS = [
                     "imageId" : 3,
                     "flavorId" : 12,
                     "hostId" : "9e107d9d372bb6826bd81d3542a419d6",
-                    "status" : "PE_VM_SUSPENDED",
+                    "status" : "STOPPED",
                     "addresses" : {
                         "public" : [
                                 "67.23.11.177"

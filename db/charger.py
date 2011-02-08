@@ -44,3 +44,5 @@ def charge():
         
         if user_credits <= 0:
             stop_virtual_machine(vm)
+
+# vim: set ts=4 sts=4 sw=4 et ai :

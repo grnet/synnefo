@@ -22,7 +22,7 @@ def allocate_credit():
     logging.info('Time: %s' % ( datetime.now().isoformat(), ))
     
     # Select the users that their monthly
-    user_list = OceanUser.objects.filter(credit__lt=F('quota'))
+    user_list = SynnefoUser.objects.filter(credit__lt=F('quota'))
     
     if len(user_list) == 0:
         logging.warning('No users found')

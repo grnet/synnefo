@@ -1,6 +1,6 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 #
-# Copyright © 2010 Greek Research and Technology Network
+# Copyright Â© 2010 Greek Research and Technology Network
 #
 
 from django.conf import settings
@@ -79,8 +79,7 @@ class ServerHandler(BaseHandler):
                 #get the first user, since we don't have any user data yet
                 virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
                     'name': server.name, 'id': server.id, 'imageId': server.imageid, 
-                    'metadata': {'Server_Label': server.server_label, \
-                    'Image_Version': server.image_version}, \
+                    'metadata': {'Server_Label': server.description, \
                     'hostId': '9e107d9d372bb6826bd81d3542a419d6',  \
                     'addresses': {'public': ['67.23.10.133'], 'private': ['10.176.42.17']}} \
                         for server in virtual_servers]
@@ -99,8 +98,7 @@ class ServerHandler(BaseHandler):
             virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
             virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
                 'name': server.name, 'id': server.id, 'imageId': server.imageid, 
-                'metadata': {'Server_Label': server.server_label, \
-                'Image_Version': server.image_version}, \
+                'metadata': {'Server_Label': server.description, \
                 'hostId': '9e107d9d372bb6826bd81d3542a419d6',  \
                 'addresses': {'public': ['67.23.10.133'], 'private': ['10.176.42.17']}} \
                    for server in virtual_servers]

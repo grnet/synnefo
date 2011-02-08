@@ -24,7 +24,7 @@ class CreditAllocatorTestCase(unittest.TestCase):
         djuser.is_staff = True
         djuser.save()
         
-        user = OceanUser(pk=1, name='Test User', credit=0, quota=100, monthly_rate=10)
+        user = SynnefoUser(pk=1, name='Test User', credit=0, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = djuser
         user.save()
@@ -39,14 +39,14 @@ class CreditAllocatorTestCase(unittest.TestCase):
         # test the allocator
         credit_allocator.allocate_credit() 
                
-        user = OceanUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: %d (should be 10)' % ( user.credit, ) )
         
         # test if the quota policy is endorced
         for i in range(1, 10):
             credit_allocator.allocate_credit()
         
-        user = OceanUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, user.quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, user.quota) )
 
 
@@ -93,7 +93,7 @@ class ChargerTestcase(unittest.TestCase):
         djuser.save()
         
         # add a user
-        user = OceanUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = djuser
         user.save()
@@ -137,7 +137,7 @@ class ChargerTestcase(unittest.TestCase):
         # charge when the vm is running
         charger.charge()
         
-        user = OceanUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 90, 'Error in charging process (%d!=90, running)' % ( user.credit, ))
         
         # charge when the vm is stopped
@@ -148,7 +148,7 @@ class ChargerTestcase(unittest.TestCase):
         
         charger.charge()
         
-        user = OceanUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 85, 'Error in charging process (%d!=85, stopped)' % ( user.credit, ))
         
         # try charge until the user spends all his credits, see if the charger
@@ -164,7 +164,7 @@ class ChargerTestcase(unittest.TestCase):
             vm.save()
             charger.charge()
         
-        user = OceanUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 0, 'Error in charging process (%d!=0, running)' % ( user.credit, ))
         
         
@@ -176,7 +176,7 @@ class VirtualMachineTestCase(unittest.TestCase):
         djuser.save()        
         
         # Add a user
-        user = OceanUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = djuser
         user.save()

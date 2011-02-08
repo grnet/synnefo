@@ -7,18 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 import datetime
 
-import vocabs
-
 backend_prefix_id = settings.BACKEND_PREFIX_ID
-
-#this needs to be called not only from inside VirtualMachine. 
-#atm it is not working with the current ganeti naming - machine1, machine2
-def id_from_instance_name(name):
-    """ Returns VirtualMachine's Django id, given a ganeti machine name.
-
-    Strips the ganeti prefix atm. Needs a better name!
-    """
-    return '%s' % (str(name).strip(backend_prefix_id))
 
 
 class Limit(models.Model):
@@ -31,17 +20,17 @@ class Limit(models.Model):
         return self.description
 
 
-class OceanUser(models.Model):
+class SynnefoUser(models.Model):
     name = models.CharField(max_length=255)
     credit = models.IntegerField()
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
-    user = models.ForeignKey(User, unique=True)
+    #user = models.ForeignKey(User, unique=True)
     limits = models.ManyToManyField(Limit, through='UserLimit')
     
     class Meta:
-        verbose_name = u'Ocean User'
+        verbose_name = u'Synnefo User'
     
     def __unicode__(self):
         return self.name
@@ -76,7 +65,7 @@ class OceanUser(models.Model):
 
 
 class UserLimit(models.Model):
-    user = models.ForeignKey(OceanUser)
+    user = models.ForeignKey(SynnefoUser)
     limit = models.ForeignKey(Limit)
     value = models.IntegerField()
     
@@ -98,7 +87,7 @@ class Flavor(models.Model):
             
     def _get_name(self):
         """Returns flavor name"""
-        return u'C%dR%dD%d' % ( self.cpu, self.ram, self.disk )
+        return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
 
     def _get_cost_inactive(self):
         self._update_costs()
@@ -133,29 +122,183 @@ class FlavorCostHistory(models.Model):
         verbose_name = u'Pricing history for flavors'
     
     def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % ( cost_active, cost_inactive, flavor.name, effective_from )
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % (cost_active, cost_inactive, flavor.name, effective_from)
 
 
 class VirtualMachine(models.Model):
+    ACTIONS = (
+       ('CREATE', 'Create VM'),
+       ('START', 'Start VM'),
+       ('STOP', 'Shutdown VM'),
+       ('SUSPEND', 'Admin Suspend VM'),
+       ('REBOOT', 'Reboot VM'),
+       ('DESTROY', 'Destroy VM')
+    )
+
+    OPER_STATES = (
+        ('BUILD', 'Queued for creation'),
+        ('ERROR', 'Creation failed'),
+        ('STOPPED', 'Stopped'),
+        ('STARTED', 'Started'),
+        ('DESTROYED', 'Destroyed')
+    )
+
+    BACKEND_OPCODES = (
+        ('OP_INSTANCE_CREATE', 'Create Instance'),
+        ('OP_INSTANCE_REMOVE', 'Remove Instance'),
+        ('OP_INSTANCE_STARTUP', 'Startup Instance'),
+        ('OP_INSTANCE_SHUTDOWN', 'Shutdown Instance'),
+        ('OP_INSTANCE_REBOOT', 'Reboot Instance')
+    )
+
+    BACKEND_STATUSES = (
+        ('queued', 'request queued'),
+        ('waiting', 'request waiting for locks'),
+        ('canceling', 'request being canceled'),
+        ('running', 'request running'),
+        ('canceled', 'request canceled'),
+        ('success', 'request completed successfully'),
+        ('error', 'request returned error')
+    )
+
+    # The operating state of a VM,
+    # upon the successful completion of a backend operation.
+    OPER_STATE_FROM_OPCODE = {
+        'OP_INSTANCE_CREATE': 'STARTED',
+        'OP_INSTANCE_REMOVE': 'DESTROYED',
+        'OP_INSTANCE_STARTUP': 'STARTED',
+        'OP_INSTANCE_SHUTDOWN': 'STOPPED',
+        'OP_INSTANCE_REBOOT': 'STARTED'
+    }
+
+    RSAPI_STATE_FROM_OPER_STATE = {
+        "BUILD": "BUILD",
+        "ERROR": "ERROR",
+        "STOPPED": "STOPPED",
+        "STARTED": "ACTIVE",
+        "DESTROYED": "DELETED"
+    }
+
     name = models.CharField(max_length=255)
-    created = models.DateTimeField()
-    state = models.CharField(choices=vocabs.STATES, max_length=30)
+    created = models.DateTimeField(help_text=_('VM creation date'), default=datetime.datetime.now)
     charged = models.DateTimeField()
-    imageid = models.IntegerField()
+    # Use string reference to avoid circular ForeignKey def.
+    # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
+    sourceimage = models.ForeignKey("Image") 
     hostid = models.CharField(max_length=100)
-    server_label = models.CharField(max_length=100)
-    image_version = models.CharField(max_length=100)
+    description = models.TextField(help_text=_('description'))
     ipfour = models.IPAddressField()
     ipsix = models.CharField(max_length=100)
-    owner = models.ForeignKey(OceanUser)
+    owner = models.ForeignKey(SynnefoUser)
     flavor = models.ForeignKey(Flavor)
-    
-    class Meta:
-        verbose_name = u'Virtual machine instance'
-        get_latest_by = 'created'
-    
-    def __unicode__(self):
-        return self.name
+    suspended = models.BooleanField('Administratively Suspended')
+
+    # VM State [volatile data]
+    updated = models.DateTimeField(null=True)
+    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
+    operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
+    backendjobid = models.PositiveIntegerField(null=True)
+    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
+    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
+    backendlogmsg = models.TextField(null=True)
+
+    # Error classes
+    class InvalidBackendIdError(Exception):
+         def __init__(self, value):
+            self.value = value
+         def __str__(self):
+            return repr(self.value)
+
+    class InvalidBackendMsgError(Exception):
+         def __init__(self, opcode, status):
+            self.opcode = opcode
+            self.status = status
+         def __str__(self):
+            return repr("<opcode: %s, status: %s>" % (str(self.opcode), str(self.status)))
+
+    class InvalidActionError(Exception):
+         def __init__(self, action):
+            self.action = action
+         def __str__(self):
+            return repr(str(self.action))
+
+
+    @staticmethod
+    def id_from_instance_name(name):
+        """Returns VirtualMachine's Django id, given a ganeti machine name.
+
+        Strips the ganeti prefix atm. Needs a better name!
+        
+        """
+        if not str(name).startswith(backend_prefix_id):
+            raise VirtualMachine.InvalidBackendIdError(str(name))
+        ns = str(name).lstrip(backend_prefix_id)
+        if not ns.isdigit():
+            raise VirtualMachine.InvalidBackendIdError(str(name))
+        return int(ns)
+
+    def __init__(self, *args, **kw): 
+        """Initialize state for just created VM instances."""
+        super(VirtualMachine, self).__init__(*args, **kw)
+        # Before this instance gets save()d
+        if not self.pk: 
+            self.action = None
+            self.operstate = "BUILD"
+            self.updated = datetime.datetime.now()
+            self.backendjobid = None
+            self.backendjobstatus = None
+            self.backendopcode = None
+            self.backendlogmsg = None
+
+    def process_backend_msg(self, jobid, opcode, status, logmsg):
+        """Process a job progress notification from the backend.
+
+        Process an incoming message from the backend (currently Ganeti).
+        Job notifications with a terminating status (sucess, error, or canceled),
+        also update the operating state of the VM.
+
+        """
+        if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
+           status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]):
+            raise VirtualMachine.InvalidBackendMsgError(opcode, status)
+
+        self.backendjobid = jobid
+        self.backendjobstatus = status
+        self.backendopcode = opcode
+        self.backendlogmsg = logmsg
+
+        # Notifications of success change the operating state
+        if status == 'success':
+            self.operstate = VirtualMachine.OPER_STATE_FROM_OPCODE[opcode]
+        # Special cases OP_INSTANCE_CREATE fails --> ERROR
+        if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
+            self.operstate = 'ERROR'
+        # Any other notification of failure leaves the operating state unchanged
+
+        # FIXME: Should be implemented in a pre-save signal handler.
+        self.updated = datetime.datetime.now()
+        self.save()
+
+    def start_action(self, action):
+        """Update the state of a VM when a new action is initiated."""
+        if not action in [x[0] for x in VirtualMachine.ACTIONS]:
+            raise VirtualMachine.InvalidActionError(action)
+
+        self.action = action
+        self.backendjobid = None
+        self.backendopcode = None
+        self.backendlogmsg = None
+        self.updated = datetime.datetime.now()
+        self.save()
+
+    # FIXME: Perhaps move somewhere else, outside the model?
+    def _get_rsapi_state(self):
+        try:
+            return VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self.operstate]
+        except KeyError:
+            return "UNKNOWN"
+
+    rsapi_state = property(_get_rsapi_state)
 
     def _get_backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
@@ -163,9 +306,16 @@ class VirtualMachine(models.Model):
 
     backend_id = property(_get_backend_id)
 
+    class Meta:
+        verbose_name = u'Virtual machine instance'
+        get_latest_by = 'created'
+    
+    def __unicode__(self):
+        return self.name
+
 
 class VirtualMachineGroup(models.Model):
-    "Groups of VM's for OceanUsers"
+    "Groups of VM's for SynnefoUsers"
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(User)
     machines = models.ManyToManyField(VirtualMachine)
@@ -188,33 +338,42 @@ class VirtualMachineMetadata(models.Model):
         verbose_name = u'Key-value pair of metadata for a VM.'
     
     def __unicode__(self):
-        return u'%s, %s for %s' % ( self.key, self.value, self.vm.name )
+        return u'%s, %s for %s' % (self.key, self.value, self.vm.name)
 
 
 class AccountingLog(models.Model):
     vm = models.ForeignKey(VirtualMachine)
     date = models.DateTimeField()
-    state = models.CharField(choices=vocabs.STATES, max_length=30)
+    state = models.CharField(choices=VirtualMachine.OPER_STATES, max_length=30)
     
     class Meta:
         verbose_name = u'Accounting log'
 
     def __unicode__(self):
-        return u'%s %s %s' % ( self.vm.name, self.date, self.state )
+        return u'%s %s %s' % (self.vm.name, self.date, self.state)
 
 
 class Image(models.Model):
+    # This is WIP, FIXME
+    IMAGE_STATES = (
+        ('ACTIVE', 'Active'),
+        ('SAVING', 'Saving'),
+        ('DELETED', 'Deleted')
+    )
+
     name = models.CharField(max_length=255, help_text=_('description'))
     updated = models.DateTimeField(help_text=_("Image update date"))
     created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
-    state = models.CharField(choices=vocabs.STATES, max_length=30)
+    state = models.CharField(choices=IMAGE_STATES, max_length=30)
     description = models.TextField(help_text=_('description'))
-    serverid = models.IntegerField(help_text=_('description'))
-    vm = models.ForeignKey(VirtualMachine)
     owner = models.ForeignKey(User,blank=True, null=True)   
-    
+    vm = models.ForeignKey(VirtualMachine, null=True)
+    #FIXME: ImageMetadata, as in VirtualMachineMetadata
+    #       "os" contained in metadata. Newly created Server inherits value of "os" metadata key from Image.
+    #       The Web UI uses the value of "os" to determine the icon to use.
+
     class Meta:
         verbose_name = u'Image'
 
     def __unicode__(self):
-        return u'%s' % ( self.name )
+        return u'%s' % (self.name)

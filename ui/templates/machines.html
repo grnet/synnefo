@@ -250,11 +250,18 @@ function update() {
             }
             $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();
-            $(".list table").show();
-            $(".list table").tablesorter({ 
-                headers: { 0: { sorter: false}, 6: { sorter: false }}, 
-                sortMultiSortKey: "ctrlKey" }).show();
-            $(".list .actions").show();
+            if ($("div.list table.list-running tbody.running tr").length > 0) {
+                $(".list table.list-running").tablesorter({ 
+                    headers: { 0: { sorter: false}, 6: { sorter: false }}, 
+                    sortMultiSortKey: "ctrlKey" }).show();
+                $(".list .actions").show();
+            }
+            if ($("div.list table.list-terminated tbody.terminated tr").length > 0) {
+                $(".list table.list-terminated").tablesorter({ 
+                    headers: { 0: { sorter: false}, 6: { sorter: false }}, 
+                    sortMultiSortKey: "ctrlKey" }).show();
+                $(".list .actions").show();
+            }
         }
     });
 

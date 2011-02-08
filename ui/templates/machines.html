@@ -3,7 +3,7 @@
 <div id="machines" class="seperator"></div>
 
 <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
-<a id="notify" rel="#misc" href="#"></a>
+<a id="notify" rel="#creation-note" href="#"></a>
 <div id="view-select">
     <a id="standard" class="current" href="/machines">#</a>
     <span class="view-seperator">|</span>
@@ -174,7 +174,7 @@
 	</div>
 </form>
 
-<div class="modal" id="misc">
+<div class="modal" id="creation-note">
     <h3>Your VM is being created!</h3>
     <p>{% trans "Your password is:" %}<strong> sdeEFre</strong></p>
     <p>{% trans "Please copy this! Without it you can not connect to your VM." %}</p>
@@ -325,6 +325,17 @@ $("a#create").click(function(){
     $("#wizard").scrollable().begin();
 });
 
+// create wizard overlay
+$(function() { 
+    $("a#create[rel]").overlay({
+        mask: '#000', 
+        effect: 'default', 
+        top: '5%', 
+        oneInstance: false,
+        closeOnClick: false
+    });
+});
+
 // wizard
 $(function() {
     var root = $("#wizard").scrollable();
@@ -458,17 +469,6 @@ $("#start").click(function(){
     });
     $("#wizard").hide();
     update();
-});
-
-// generate notification after completing all wizard steps
-$(function() { 
-    $("a#create[rel]").overlay({
-        mask: '#000', 
-        effect: 'default', 
-        top: '5%', 
-        oneInstance: false,
-        closeOnClick: false
-    });
 });
 
 // reboot action

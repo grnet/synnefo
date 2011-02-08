@@ -987,7 +987,7 @@ div.list table thead tr .headerSortUp {
 	background-image: url(asc.gif);
 }
 
-div.list table thead tr .headerSortDown, div.list table thead tr #selection.expand{
+div.list table thead tr .headerSortDown {
 	background-image: url(desc.gif);
 }
 
@@ -995,13 +995,34 @@ div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
     background-color: #87AADE;
 }
 
-div.list table thead tr #selection {
+div.list table thead tr th#selection div.expand-icon {
 	background-image: url(asc.gif);
 	background-repeat: no-repeat;
-	background-position: center right;
-    text-align: left;
-    vertical-align: middle;
+    position: relative;
 	cursor: pointer;
+    width: 15px;
+    height: 4px;
+    left: 19px;
+    top: -11px;
 }
 
-span.imagetag { display: none;}
+div.list table thead tr ul {
+    background-color: #E6EEEE;
+    position: absolute;
+    margin-left: -4px;
+    display: block;
+    opacity: 0.8;
+}
+
+div.list table thead tr ul li {
+    padding: 5px;
+}
+
+div.list table thead tr ul li a{
+    color: black;
+    text-decoration: none;
+}
+
+span.imagetag { 
+    display: none;
+}

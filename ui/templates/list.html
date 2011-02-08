@@ -23,12 +23,14 @@
             <tr> 
                 <th id="selection" class="select-running">
                     <input type="checkbox"/>
-                    <ul>
-                        <li><a class="select-all" href="#">All</a></li>
-                        <li><a class="select-none" href="#">None</a></li>
+                    <div class="expand-icon"></div>
+                    <ul style="display: none">
+                        <li><a class="select-all" href="#">all</a></li>
+                        <li><a class="select-none" href="#">none</a></li>
                         <li><a class="select-group" href="#">group</a></li>
-                    </ul>                
-                </th> 
+                    </ul>            
+                </th>
+     
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
                 <th id="ip">IP</th> 
@@ -55,12 +57,13 @@
             <tr> 
                 <th id="selection" class="select-terminated">
                     <input type="checkbox"/>
-                    <ul>
-                        <li><a class="select-all" href="#">All</a></li>
-                        <li><a class="select-none" href="#">None</a></li>
+                    <div class="expand-icon"></div>
+                    <ul style="display: none">
+                        <li><a class="select-all" href="#">all</a></li>
+                        <li><a class="select-none" href="#">none</a></li>
                         <li><a class="select-group" href="#">group</a></li>
-                    </ul>  
-                </th> 
+                    </ul> 
+                </th>
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
                 <th id="ip">IP</th> 
@@ -74,7 +77,6 @@
 
 
 <script>
-
 // select/deselect all from checkbox widget of table headers
 $("table thead tr th#selection :checkbox").live('change', function() {
     // select/deselect running or terminated?
@@ -91,7 +93,7 @@ $("table thead tr th#selection :checkbox").live('change', function() {
 // select all/none from drop down menu
 $("table thead tr th#selection ul li a").live('click', function() {
     // find the state of the machines
-    var state = $(this).closest("th#selection").attr("class").replace('select-','');
+    var state = $(this).closest("th#selection").attr("class").replace('select-','list-');
     // all or none?
     var all = ($(this).attr("class") == "select-all");
     // toggle checkboxes
@@ -106,6 +108,28 @@ $("table thead tr th#selection ul li a.select-group").live('click', function() {
     var state = $(this).closest("th#selection").attr("class").replace('select-','');
     $("." + state + " :checkbox").attr("checked", true);
 	updateActions();
+});
+
+// menu toggle, running menu
+$("table.list-running thead tr th#selection div.expand-icon").live('click', function () {
+	$("table.list-running thead tr th#selection ul").slideToggle('medium');
+    return false;
+});
+
+$("table.list-running thead tr th#selection ul").live('click', function () {
+	$("table.list-running thead tr th#selection ul").slideToggle('medium');
+    return false;
+});
+
+// menu toggle, terminated menu
+$("table.list-terminated thead tr th#selection div.expand-icon").live('click', function () {
+	$("table.list-terminated thead tr th#selection ul").slideToggle('medium');
+    return false;
+});
+
+$("table.list-terminated thead tr th#selection ul").live('click', function () {
+	$("table.list-terminated thead tr th#selection ul").slideToggle('medium');
+    return false;
 });
 
 var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],

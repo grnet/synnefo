@@ -12,11 +12,10 @@ and updates VM state in the DB accordingly.
 from django.core.management import setup_environ
 
 import sys
-# FIXME
-# WIP: Fix the $PATH, append /home/devel, where synnefo/ resides.
-# Eventually, there will be a wrapper script for synnefo.db.DBController.
-sys.path.append("/home/devel")
-from synnefo import settings
+import os
+path = os.path.normpath(os.path.join(os.getcwd(), '..'))
+sys.path.append(path)
+import settings
 
 setup_environ(settings)
 

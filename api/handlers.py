@@ -61,6 +61,8 @@ class ServerHandler(BaseHandler):
             return self.read_one(request, id)
 
     def read_one(self, request, id):
+        virtual_servers = VirtualMachine.objects.all()
+        #get all VM's for now, FIX it to take the user's VMs only yet
         if not rapi: # No ganeti backend. Return mock objects
             servers = VirtualMachine.objects.all()[0]
             return { "server": servers[0] }
@@ -73,16 +75,23 @@ class ServerHandler(BaseHandler):
 
     @paginator
     def read_all(self, request, detail=False):
+        virtual_servers = VirtualMachine.objects.all()
+        #get all VM's for now, FIX it to take the user's VMs only yet
+
         if not rapi: # No ganeti backend. Return mock objects
             if detail:
-                virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
-                #get the first user, since we don't have any user data yet
-                virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
-                    'name': server.name, 'id': server.id, 'imageId': server.imageid, 
-                    'metadata': {'Server_Label': server.description, \
-                    'hostId': '9e107d9d372bb6826bd81d3542a419d6',  \
-                    'addresses': {'public': ['67.23.10.133'], 'private': ['10.176.42.17']}} \
-                        for server in virtual_servers]
+                virtual_servers_list = [{'status': server.operstate, 
+                                         'flavorId': server.flavor.id, 
+                                         'name': server.name, 
+                                         'id': server.id, 
+                                         'imageId': server.sourceimage.id, 
+                                         'metadata': {'Server_Label': server.description, 
+                                                      'hostId': '9e107d9d372bb6826bd81d3542a419d6',
+                                                      'addresses': {'public': ['67.23.10.133'],
+                                                                    'private': ['10.176.42.17'],
+                                                                    }
+                                                      }
+                                        } for server in virtual_servers]
                 #pass some fake data regarding ip, since we don't have any such data
                 return { "servers":  virtual_servers_list }                
             else:
@@ -95,13 +104,18 @@ class ServerHandler(BaseHandler):
             virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
             return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
         else:
-            virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
-            virtual_servers_list = [{'status': server.state, 'flavorId': server.flavor, \
-                'name': server.name, 'id': server.id, 'imageId': server.imageid, 
-                'metadata': {'Server_Label': server.description, \
-                'hostId': '9e107d9d372bb6826bd81d3542a419d6',  \
-                'addresses': {'public': ['67.23.10.133'], 'private': ['10.176.42.17']}} \
-                   for server in virtual_servers]
+            virtual_servers_list = [{'status': server.operstate, 
+                                     'flavorId': server.flavor.id, 
+                                     'name': server.name, 
+                                     'id': server.id, 
+                                     'imageId': server.sourceimage.id, 
+                                     'metadata': {'Server_Label': server.description, 
+                                                  'hostId': '9e107d9d372bb6826bd81d3542a419d6',
+                                                  'addresses': {'public': ['67.23.10.133'],
+                                                                'private': ['10.176.42.17'],
+                                                                }
+                                                  }
+                                    } for server in virtual_servers]
             #pass some fake data regarding ip, since we don't have any such data
             return { "servers":  virtual_servers_list }                
 
@@ -236,10 +250,15 @@ class ImageHandler(BaseHandler):
                 badRequest, itemNotFound
         """
         images = Image.objects.all()
-        images = [ {'created': image.created.isoformat(), 'id': image.id, \
-              'name': image.name, 'updated': image.updated.isoformat(), \
-               'description': image.description, 'state': image.state, 'serverid': image.serverid, \
-               'vm_id': image.vm_id} for image in images]
+        images = [ {'created': image.created.isoformat(), 
+                    'id': image.id,
+                    'name': image.name,
+                    'updated': image.updated.isoformat(),    
+                    'description': image.description, 
+                    'state': image.state, 
+                    'serverid': image.vm_id, 
+                    'vm_id': image.vm_id
+                   } for image in images]
 
         if rapi: # Images info is stored in the DB. Ganeti is not aware of this
             if id == "detail":

@@ -23,29 +23,25 @@ import sys
 import zmq
 import time
 import json
+import signal
 import logging
 import traceback
+
+from threading import Thread
 
 from synnefo.db.models import VirtualMachine
 
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801" # FIXME: move to settings.py
 
-def main():
-    # Connect to ganeti-0mqd
-    zmqc = zmq.Context()
-    subscriber = zmqc.socket(zmq.SUB)
-    subscriber.setsockopt(zmq.IDENTITY, "snf-db-controller")
-    subscriber.setsockopt(zmq.SUBSCRIBE, "")
-    subscriber.connect(GANETI_ZMQ_PUBLISHER)
-
-    # FIXME: Logging
-    logging.info("Subscribed to %s. Press Ctrl-\ to quit." % GANETI_ZMQ_PUBLISHER)
-
-    # Get updates, expect random Ctrl-C death
-    # FIXME: Ctrl-C (SIGINT) does not work with .recv(),
-    # try Ctrl-\ (SIGQUIT) instead.
+def zmq_sub_thread(subscriber):
     while True:
+        #
+        # This completely blocks any interrupts,
+        # how do I asynchronously terminate the thread?
+        #
+        logging.debug("Entering 0mq to wait for message on SUB socket.")
         data = subscriber.recv()
+        logging.debug("Received message on 0mq SUB socket.")
         try:
             msg = json.loads(data)
 
@@ -71,6 +67,31 @@ def main():
             logging.error("Unexpected error:\n" + "".join(traceback.format_exception(*sys.exc_info())))
             continue
 
+def main():
+    # Connect to ganeti-0mqd
+    zmqc = zmq.Context()
+    subscriber = zmqc.socket(zmq.SUB)
+    subscriber.setsockopt(zmq.IDENTITY, "snf-db-controller")
+    subscriber.setsockopt(zmq.SUBSCRIBE, "")
+    subscriber.connect(GANETI_ZMQ_PUBLISHER)
+
+    zmqt = Thread(target = zmq_sub_thread, args = (subscriber,))
+    zmqt.start()
+
+    try:
+        while True:
+            print "In main thread."
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        print "OK, I'm barfing."
+        # Do whatever clean-up may be necessary.
+        # Gloriously commit seppuku.
+        os.kill(os.getpid(), signal.SIGQUIT)
+        # These don't seem to work, must find out way.
+        # In general, they seem to want to join the I/O thread, which blocks forever.
+        raise SystemExit()
+        sys.exit(1)
+        
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     sys.exit(main())

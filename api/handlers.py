@@ -80,7 +80,7 @@ class ServerHandler(BaseHandler):
 
         if not rapi: # No ganeti backend. Return mock objects
             if detail:
-                virtual_servers_list = [{'status': server.operstate, 
+                virtual_servers_list = [{'status': server.rsapi_state, 
                                          'flavorId': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 
@@ -104,7 +104,7 @@ class ServerHandler(BaseHandler):
             virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
             return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
         else:
-            virtual_servers_list = [{'status': server.operstate, 
+            virtual_servers_list = [{'status': server.rsapi_state, 
                                      'flavorId': server.flavor.id, 
                                      'name': server.name, 
                                      'id': server.id, 

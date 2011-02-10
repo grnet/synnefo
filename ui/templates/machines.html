@@ -228,13 +228,17 @@ function update() {
     
                     machine.find("a.ip span.public").text(String(server.metadata.addresses.public).replace(',',' '));            
     
-                    if (server.status == 'PE_VM_MIGRATING'){
+                    // TODO: handle SHARE_IP, SHARE_IP_NO_CONFIG, DELETE_IP, REBUILD, QUEUE_RESIZE, PREP_RESIZE, RESIZE, VERIFY_RESIZE, PASSWORD, RESCUE
+                    if (server.status == 'BUILD'){
                         machine.find(".status").text('Building');
                         machine.appendTo(".running");
-                    } else if (server.status == 'PE_VM_RUNNING') {
+                    } else if (server.status == 'ACTIVE') {
                         machine.find(".status").text('Running');
+                        machine.appendTo(".running"); 
+                    } else if (server.status == 'REBOOT' || server.status == 'HARD_REBOOT') {
+                        machine.find(".status").text('Rebooting');
                         machine.appendTo(".running");
-                    } else if (server.status == 'PE_VM_SUSPENDED') {
+                    } else if (server.status == 'SUSPENDED') {
                         machine.find(".status").text('Terminated');
                         machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
                         machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');

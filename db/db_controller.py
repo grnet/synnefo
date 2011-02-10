@@ -80,7 +80,7 @@ def main():
 
     try:
         while True:
-            print "In main thread."
+            # print "In main thread."
             time.sleep(0.5)
     except KeyboardInterrupt:
         print "OK, I'm barfing."

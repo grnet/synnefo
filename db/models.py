@@ -196,11 +196,11 @@ class VirtualMachine(models.Model):
     # VM State [volatile data]
     updated = models.DateTimeField(null=True)
     action = models.CharField(choices=ACTIONS, max_length=30, null=True)
-    operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
-    backendjobid = models.PositiveIntegerField(null=True)
-    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
-    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
-    backendlogmsg = models.TextField(null=True)
+    _operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
+    _backendjobid = models.PositiveIntegerField(null=True)
+    _backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
+    _backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
+    _backendlogmsg = models.TextField(null=True)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -218,9 +218,9 @@ class VirtualMachine(models.Model):
 
     class InvalidActionError(Exception):
          def __init__(self, action):
-            self.action = action
+            self.__action = action
          def __str__(self):
-            return repr(str(self.action))
+            return repr(str(self._action))
 
 
     @staticmethod
@@ -242,13 +242,13 @@ class VirtualMachine(models.Model):
         super(VirtualMachine, self).__init__(*args, **kw)
         # Before this instance gets save()d
         if not self.pk: 
-            self.action = None
-            self.operstate = "BUILD"
+            self._action = None
+            self._operstate = "BUILD"
             self.updated = datetime.datetime.now()
-            self.backendjobid = None
-            self.backendjobstatus = None
-            self.backendopcode = None
-            self.backendlogmsg = None
+            self._backendjobid = None
+            self._backendjobstatus = None
+            self._backendopcode = None
+            self._backendlogmsg = None
 
     def process_backend_msg(self, jobid, opcode, status, logmsg):
         """Process a job progress notification from the backend.
@@ -262,17 +262,17 @@ class VirtualMachine(models.Model):
            status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]):
             raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
-        self.backendjobid = jobid
-        self.backendjobstatus = status
-        self.backendopcode = opcode
-        self.backendlogmsg = logmsg
+        self._backendjobid = jobid
+        self._backendjobstatus = status
+        self._backendopcode = opcode
+        self._backendlogmsg = logmsg
 
         # Notifications of success change the operating state
         if status == 'success':
-            self.operstate = VirtualMachine.OPER_STATE_FROM_OPCODE[opcode]
+            self._operstate = VirtualMachine.OPER_STATE_FROM_OPCODE[opcode]
         # Special cases OP_INSTANCE_CREATE fails --> ERROR
         if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-            self.operstate = 'ERROR'
+            self._operstate = 'ERROR'
         # Any other notification of failure leaves the operating state unchanged
 
         # FIXME: Should be implemented in a pre-save signal handler.
@@ -284,17 +284,17 @@ class VirtualMachine(models.Model):
         if not action in [x[0] for x in VirtualMachine.ACTIONS]:
             raise VirtualMachine.InvalidActionError(action)
 
-        self.action = action
-        self.backendjobid = None
-        self.backendopcode = None
-        self.backendlogmsg = None
+        self._action = action
+        self._backendjobid = None
+        self._backendopcode = None
+        self._backendlogmsg = None
         self.updated = datetime.datetime.now()
         self.save()
 
     # FIXME: Perhaps move somewhere else, outside the model?
     def _get_rsapi_state(self):
         try:
-            return VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self.operstate]
+            return VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self._operstate]
         except KeyError:
             return "UNKNOWN"
 

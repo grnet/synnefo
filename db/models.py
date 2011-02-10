@@ -9,6 +9,30 @@ import datetime
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
+class Image(models.Model):
+    # This is WIP, FIXME
+    IMAGE_STATES = (
+        ('ACTIVE', 'Active'),
+        ('SAVING', 'Saving'),
+        ('DELETED', 'Deleted')
+    )
+
+    name = models.CharField(max_length=255, help_text=_('description'))
+    updated = models.DateTimeField(help_text=_("Image update date"))
+    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
+    state = models.CharField(choices=IMAGE_STATES, max_length=30)
+    description = models.TextField(help_text=_('description'))
+    owner = models.ForeignKey(User,blank=True, null=True)
+    #FIXME: ImageMetadata, as in VirtualMachineMetadata
+    #       "os" contained in metadata. Newly created Server inherits value of "os" metadata key from Image.
+    #       The Web UI uses the value of "os" to determine the icon to use.
+
+    class Meta:
+        verbose_name = u'Image'
+
+    def __unicode__(self):
+        return u'%s' % (self.name)
+
 
 class Limit(models.Model):
     description = models.CharField(max_length=45)
@@ -26,7 +50,7 @@ class SynnefoUser(models.Model):
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
-    #user = models.ForeignKey(User, unique=True)
+    user = models.ForeignKey(User, unique=True)
     limits = models.ManyToManyField(Limit, through='UserLimit')
     
     class Meta:
@@ -184,7 +208,7 @@ class VirtualMachine(models.Model):
     charged = models.DateTimeField()
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
-    sourceimage = models.ForeignKey("Image") 
+    sourceimage = models.ForeignKey(Image) 
     hostid = models.CharField(max_length=100)
     description = models.TextField(help_text=_('description'))
     ipfour = models.IPAddressField()
@@ -352,28 +376,3 @@ class AccountingLog(models.Model):
     def __unicode__(self):
         return u'%s %s %s' % (self.vm.name, self.date, self.state)
 
-
-class Image(models.Model):
-    # This is WIP, FIXME
-    IMAGE_STATES = (
-        ('ACTIVE', 'Active'),
-        ('SAVING', 'Saving'),
-        ('DELETED', 'Deleted')
-    )
-
-    name = models.CharField(max_length=255, help_text=_('description'))
-    updated = models.DateTimeField(help_text=_("Image update date"))
-    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
-    state = models.CharField(choices=IMAGE_STATES, max_length=30)
-    description = models.TextField(help_text=_('description'))
-    owner = models.ForeignKey(User,blank=True, null=True)   
-    vm = models.ForeignKey(VirtualMachine, null=True)
-    #FIXME: ImageMetadata, as in VirtualMachineMetadata
-    #       "os" contained in metadata. Newly created Server inherits value of "os" metadata key from Image.
-    #       The Web UI uses the value of "os" to determine the icon to use.
-
-    class Meta:
-        verbose_name = u'Image'
-
-    def __unicode__(self):
-        return u'%s' % (self.name)

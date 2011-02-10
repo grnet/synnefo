@@ -19,14 +19,9 @@ from django.contrib.auth.models import User
 
 class CreditAllocatorTestCase(unittest.TestCase):
     def setUp(self):
-        """Setup the test"""
-        djuser = User.objects.create_user('oceandj', 'lennon@thebeatles.com', 'johnpassword')
-        djuser.is_staff = True
-        djuser.save()
-        
         user = SynnefoUser(pk=1, name='Test User', credit=0, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.user = djuser
+        user.user = User.objects.all()[0]
         user.save()
     
     def tearDown(self):
@@ -37,8 +32,8 @@ class CreditAllocatorTestCase(unittest.TestCase):
     def test_credit_allocator(self):
         """Credit Allocator unit test method"""
         # test the allocator
-        credit_allocator.allocate_credit() 
-               
+        credit_allocator.allocate_credit()
+        
         user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: %d (should be 10)' % ( user.credit, ) )
         
@@ -67,7 +62,7 @@ class FlavorTestCase(unittest.TestCase):
         fch.effective_from = date(day=01, month=01, year=2010)
         fch.flavor = flavor
         fch.save()
-        
+    
     def tearDown(self):
         """Cleaning up the data"""
         flavor = Flavor.objects.get(pk=1)
@@ -75,7 +70,7 @@ class FlavorTestCase(unittest.TestCase):
         
         fch = FlavorCostHistory(pk=2)
         fch.delete()
-                
+    
     def test_flavor(self):
         """Test a flavor object, its internal cost calculation and naming methods"""
         flavor = Flavor.objects.get(pk=1)
@@ -88,17 +83,13 @@ class FlavorTestCase(unittest.TestCase):
 class ChargerTestcase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
-        djuser = User.objects.create_user('oceandj', 'lennon@thebeatles.com', 'johnpassword')
-        djuser.is_staff = True
-        djuser.save()
-        
         # add a user
         user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.user = djuser
+        user.user = User.objects.all()[0]
         user.save()
         
-        # add a Flavor 
+        # add a Flavor
         flavor = Flavor(pk=1, cpu=10, ram=10, disk=10)
         flavor.save()
         
@@ -123,7 +114,7 @@ class ChargerTestcase(unittest.TestCase):
         vm.flavor = flavor
         
         vm.save()
-        
+    
     def tearDown(self):
         """Cleaning up the data"""
         user = User.objects.get(username="oceandj")
@@ -167,21 +158,17 @@ class ChargerTestcase(unittest.TestCase):
         user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 0, 'Error in charging process (%d!=0, running)' % ( user.credit, ))
         
-        
+
 class VirtualMachineTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
-        djuser = User.objects.create_user('oceandj', 'lennon@thebeatles.com', 'johnpassword')
-        djuser.is_staff = True
-        djuser.save()        
-        
         # Add a user
         user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.user = djuser
+        user.user = User.objects.all()[0]
         user.save()
         
-        # add a Flavor 
+        # add a Flavor
         flavor = Flavor(pk=1, cpu=10, ram=10, disk=10)
         flavor.save()
         
@@ -201,7 +188,7 @@ class VirtualMachineTestCase(unittest.TestCase):
         
         vm.save()
         
-        
+    
     def tearDown(self):
         """Cleaning up the data"""
         user = User.objects.get(username="oceandj")
@@ -210,7 +197,7 @@ class VirtualMachineTestCase(unittest.TestCase):
         flavor = Flavor.objects.get(pk=1)
         flavor.delete()
         
-        
+    
     def test_virtual_machine(self):
         """VirtualMachine (model) unit test"""
         

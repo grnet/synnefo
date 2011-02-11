@@ -239,9 +239,13 @@ function update() {
                     alert('{% trans "Cannot connect to the backend! Please inform the admins" %}');
                               },
         success: function(data) {
-            if ($(".running a.name").toArray().length + $(".terminated a.name").toArray().length == 0) {
+            if ($(".running a.name").length + $(".terminated a.name").length == 0) {
             
                 $.each(data.servers, function(i,server){
+                    // if the machine is deleted it should not be included in any list
+                    if (server.status == 'DELETED') {
+                        continue;
+                    }
                     var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
                     machine.find("input[type='checkbox']").attr("id", "input-" + server.id);
                     machine.find("input[type='checkbox']").attr("class", server.status);
@@ -263,19 +267,28 @@ function update() {
                     } else if (server.status == 'REBOOT' || server.status == 'HARD_REBOOT') {
                         machine.find(".status").text('Rebooting');
                         machine.appendTo(".running");
-                    } else if (server.status == 'SUSPENDED') {
-                        machine.find(".status").text('Terminated');
+                    } else if (server.status == 'STOPPED') {
+                        machine.find(".status").text('Stopped');
                         machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
                         machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
                         machine.appendTo(".terminated");
-                        $("#mini.seperator").fadeIn("slow");
-                    } else {
+                    } else if (server.status == 'ERROR') {
+                        machine.find(".status").text('Error');
+                        machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                        machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
+                        machine.appendTo(".terminated");
+                    } 
+                    else {
                         machine.find(".status").text('Unknown');
                         machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
                         machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
                         machine.appendTo(".terminated");
                     }
                 });
+                // if the terminated list is populated then the seperator must be shown
+                if ($(".terminated a.name").length > 0) {
+                    $("#mini.seperator").fadeIn("slow");
+                }
             }
             $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();

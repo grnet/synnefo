@@ -234,6 +234,10 @@ function update() {
         type: "GET",
         //async: false,
         dataType: "json",
+        error: function(data) {
+                    $("#spinner").hide();
+                    alert('{% trans "Cannot connect to the backend! Please inform the admins" %}');
+                              },
         success: function(data) {
             if ($(".running a.name").toArray().length + $(".terminated a.name").toArray().length == 0) {
             
@@ -508,7 +512,7 @@ function reboot(){
 		    },
 	    //async: false,
 	    dataType: "json",
-	    success: function() {}
+	    success: function() {},
     });
     return false;
 }

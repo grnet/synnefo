@@ -12,10 +12,13 @@ from synnefo.db.models import *
 from util.rapi import GanetiRapiClient
 
 
-if settings.GANETI_CLUSTER_INFO:
+try:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
-else:
-    rapi = None
+    rapi.GetVersion()
+except:
+    raise fault.serviceUnavailable
+#If we can't connect to the rapi successfully, don't do anything
+#TODO: add logging/admin alerting
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
@@ -63,9 +66,6 @@ class ServerHandler(BaseHandler):
     def read_one(self, request, id):
         virtual_servers = VirtualMachine.objects.all()
         #get all VM's for now, FIX it to take the user's VMs only yet
-        if not rapi: # No ganeti backend. Return mock objects
-            servers = VirtualMachine.objects.all()[0]
-            return { "server": servers[0] }
         try:
             instance = rapi.GetInstance(id)
             servers = VirtualMachine.objects.all()[0]
@@ -78,28 +78,6 @@ class ServerHandler(BaseHandler):
         virtual_servers = VirtualMachine.objects.all()
         #get all VM's for now, FIX it to take the user's VMs only yet
 
-        if not rapi: # No ganeti backend. Return mock objects
-            if detail:
-                virtual_servers_list = [{'status': server.rsapi_state, 
-                                         'flavorId': server.flavor.id, 
-                                         'name': server.name, 
-                                         'id': server.id, 
-                                         'imageId': server.sourceimage.id, 
-                                         'metadata': {'Server_Label': server.description, 
-                                                      'hostId': '9e107d9d372bb6826bd81d3542a419d6',
-                                                      'addresses': {'public': ['67.23.10.133'],
-                                                                    'private': ['10.176.42.17'],
-                                                                    }
-                                                      }
-                                        } for server in virtual_servers]
-                #pass some fake data regarding ip, since we don't have any such data
-                return { "servers":  virtual_servers_list }                
-            else:
-                virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
-                return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
-
-        #ganeti can't ask for instances of user X. The DB is responsible for this
-        #also here we ask for the instances of the first user, since the user system is not ready
         if not detail:
             virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
             return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
@@ -168,7 +146,10 @@ class ServerActionHandler(BaseHandler):
 
     def create(self, request, id):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
-        machine = 'machine-XXX' #VirtualMachine.objects.get(id=id_from_instance_name(id))
+        try:
+            machine = VirtualMachine.objects.get(id=id)
+        except:
+            raise fault.itemNotFound
         reboot_request = request.POST.get('reboot', None)
         shutdown_request = request.POST.get('shutdown', None)
         if reboot_request:
@@ -250,7 +231,7 @@ class ImageHandler(BaseHandler):
                 badRequest, itemNotFound
         """
         images = Image.objects.all()
-        images = [ {'created': image.created.isoformat(), 
+        images_list = [ {'created': image.created.isoformat(), 
                     'id': image.id,
                     'name': image.name,
                     'updated': image.updated.isoformat(),    
@@ -258,16 +239,26 @@ class ImageHandler(BaseHandler):
                     'state': image.state, 
                     'vm_id': image.vm_id
                    } for image in images]
-
         if rapi: # Images info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
-                return { "images": images }
+                return { "images": images_list }
             elif id is None:
-                return { "images": [ { "id": s['id'], "name": s['name'] } for s in images ] }
+                return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
             else:
-                return { "image": images[0] }
+                try:
+                    image = images.get(id=id)
+                    return { "image":  {'created': image.created.isoformat(), 
+                    'id': image.id,
+                    'name': image.name,
+                    'updated': image.updated.isoformat(),    
+                    'description': image.description, 
+                    'state': image.state, 
+                    'vm_id': image.vm_id
+                   } }
+                except: 
+                    raise fault.itemNotFound
         else:
-            print 'return error message! TODO'
+            raise fault.serviceUnavailable
 
     def create(self, request):
         """Create a new image"""

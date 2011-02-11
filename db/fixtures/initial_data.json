@@ -5,7 +5,7 @@
         "fields": {
             "name": "admin user",
             "credit": 1,
-            "quota": 1,
+            "quota": 20,
             "created": "2011-02-06",
             "monthly_rate": 1,
             "user" : 1

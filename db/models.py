@@ -353,6 +353,7 @@ class VirtualMachineGroup(models.Model):
     def __unicode__(self):
         return self.name
 
+
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)

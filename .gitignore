@@ -9,10 +9,4 @@ include/
 lib/
 *.pt.py
 *.installed.cfg
-ui.pyramid/bin/
-ui.pyramid/develop-eggs/
-ui.pyramid/eggs/
-ui.pyramid/parts/
-ui.pyramid/src/synnefo.egg-info/
-ui.pyramid/include/
-ui/lib/
+*.sqlite

@@ -19,14 +19,18 @@ from django.contrib.auth.models import User
 
 class CreditAllocatorTestCase(unittest.TestCase):
     def setUp(self):
+        """Setup the test"""
+        userdj = User.objects.create(username='testuser')
+        userdj.save()
+        
         user = SynnefoUser(pk=1, name='Test User', credit=0, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.user = User.objects.all()[0]
+        user.user = User.objects.get(username='testuser')
         user.save()
     
     def tearDown(self):
         """Cleaning up the data"""
-        user = User.objects.get(username="oceandj")
+        user = User.objects.get(username="testuser")
         user.delete()
     
     def test_credit_allocator(self):
@@ -42,7 +46,7 @@ class CreditAllocatorTestCase(unittest.TestCase):
             credit_allocator.allocate_credit()
         
         user = SynnefoUser.objects.get(pk=1)
-        self.assertEquals(user.credit, user.quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, user.quota) )
+        self.assertEquals(user.credit, user.quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, user.quota ) )
 
 
 class FlavorTestCase(unittest.TestCase):
@@ -83,10 +87,13 @@ class FlavorTestCase(unittest.TestCase):
 class ChargerTestcase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
+        userdj = User.objects.create_user('testuser','test','test2')
+        userdj.save()
+        
         # add a user
         user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.user = User.objects.all()[0]
+        user.user = userdj
         user.save()
         
         # add a Flavor
@@ -99,12 +106,19 @@ class ChargerTestcase(unittest.TestCase):
         fch.flavor = flavor
         fch.save()
         
+        # add an Image
+        si = Image(name='Test Name')
+        si.updated = datetime.datetime.now()
+        si.created = datetime.datetime.now()
+        si.state = 'ACTIVE'
+        si.owner = user
+        si.description = 'testing 1.2.3'
+        si.save()
+        
         # Now, add a VM
         vm = VirtualMachine(pk=1)
         vm.created = datetime.datetime.now()
-        vm.state = 'PE_VM_RUNNING'
         vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
-        vm.imageid = 1
         vm.hostid = 'testhostid'
         vm.server_label = 'agreatserver'
         vm.image_version = '1.0.0'
@@ -112,12 +126,13 @@ class ChargerTestcase(unittest.TestCase):
         vm.ipsix = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
         vm.owner = user
         vm.flavor = flavor
+        vm.sourceimage = si
         
         vm.save()
     
     def tearDown(self):
         """Cleaning up the data"""
-        user = User.objects.get(username="oceandj")
+        user = User.objects.get(username="testname")
         user.delete()
         
         flavor = Flavor.objects.get(pk=1)
@@ -162,10 +177,13 @@ class ChargerTestcase(unittest.TestCase):
 class VirtualMachineTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
+        userdj = User.objects.create(username='testuser')
+        userdj.save()
+        
         # Add a user
         user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
-        user.user = User.objects.all()[0]
+        user.user = User.objects.get(username='testuser')
         user.save()
         
         # add a Flavor
@@ -175,7 +193,6 @@ class VirtualMachineTestCase(unittest.TestCase):
         # Now, add a VM
         vm = VirtualMachine(pk=1)
         vm.created = datetime.datetime.now()
-        vm.state = 'PE_VM_RUNNING'
         vm.charged = datetime.datetime.now()
         vm.imageid = 1
         vm.hostid = 'testhostid'
@@ -191,7 +208,7 @@ class VirtualMachineTestCase(unittest.TestCase):
     
     def tearDown(self):
         """Cleaning up the data"""
-        user = User.objects.get(username="oceandj")
+        user = User.objects.get(username="testname")
         user.delete()
         
         flavor = Flavor.objects.get(pk=1)

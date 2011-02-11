@@ -9,31 +9,6 @@ import datetime
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
-class Image(models.Model):
-    # This is WIP, FIXME
-    IMAGE_STATES = (
-        ('ACTIVE', 'Active'),
-        ('SAVING', 'Saving'),
-        ('DELETED', 'Deleted')
-    )
-
-    name = models.CharField(max_length=255, help_text=_('description'))
-    updated = models.DateTimeField(help_text=_("Image update date"))
-    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
-    state = models.CharField(choices=IMAGE_STATES, max_length=30)
-    description = models.TextField(help_text=_('description'))
-    owner = models.ForeignKey(User,blank=True, null=True)
-    #FIXME: ImageMetadata, as in VirtualMachineMetadata
-    #       "os" contained in metadata. Newly created Server inherits value of "os" metadata key from Image.
-    #       The Web UI uses the value of "os" to determine the icon to use.
-
-    class Meta:
-        verbose_name = u'Image'
-
-    def __unicode__(self):
-        return u'%s' % (self.name)
-
-
 class Limit(models.Model):
     description = models.CharField(max_length=45)
     
@@ -50,7 +25,7 @@ class SynnefoUser(models.Model):
     quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
-    user = models.ForeignKey(User, unique=True)
+    user = models.ForeignKey(User)
     limits = models.ManyToManyField(Limit, through='UserLimit')
     
     class Meta:
@@ -86,6 +61,31 @@ class SynnefoUser(models.Model):
         # ensure that the user has not more credits than his quota
         if self.credit > self.quota:
             self.credit = self.quota
+
+
+class Image(models.Model):
+    # This is WIP, FIXME
+    IMAGE_STATES = (
+                ('ACTIVE', 'Active'),
+                ('SAVING', 'Saving'),
+                ('DELETED', 'Deleted')
+    )
+
+    name = models.CharField(max_length=255, help_text=_('description'))
+    updated = models.DateTimeField(help_text=_("Image update date"))
+    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
+    state = models.CharField(choices=IMAGE_STATES, max_length=30)
+    description = models.TextField(help_text=_('description'))
+    owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
+    #FIXME: ImageMetadata, as in VirtualMachineMetadata
+    #       "os" contained in metadata. Newly created Server inherits value of "os" metadata key from Image.
+    #       The Web UI uses the value of "os" to determine the icon to use.
+
+    class Meta:
+        verbose_name = u'Image'
+
+    def __unicode__(self):
+        return u'%s' % (self.name)
 
 
 class UserLimit(models.Model):
@@ -341,7 +341,7 @@ class VirtualMachine(models.Model):
 class VirtualMachineGroup(models.Model):
     "Groups of VM's for SynnefoUsers"
     name = models.CharField(max_length=255)
-    owner = models.ForeignKey(User)
+    owner = models.ForeignKey(SynnefoUser)
     machines = models.ManyToManyField(VirtualMachine)
     created = models.DateTimeField(help_text=_("Group creation date"), default=datetime.datetime.now)
 

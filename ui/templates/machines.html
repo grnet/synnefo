@@ -2,14 +2,17 @@
 
 <div id="machines" class="seperator"></div>
 
+<!-- the create button -->
 <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
-<a id="notify" rel="#creation-note" href="#"></a>
+
+<!-- changing between standard/list view -->
 <div id="view-select">
     <a id="standard" class="current" href="/machines">#</a>
     <span class="view-seperator">|</span>
     <a id="list" href="/machines/list">=</a>
 </div>
 
+<!-- the standard view -->
 <div id="machinesview" class="standard">
     <div id="spinner"></div>
     <div class="machine" id="machine-template" style="display:none">
@@ -174,10 +177,28 @@
 	</div>
 </form>
 
+<!-- notification after wizard completion -->
+<a id="notify" rel="#creation-note" href="#"></a>
+
 <div class="modal" id="creation-note">
     <h3>Your VM is being created!</h3>
     <p>{% trans "Your password is:" %}<strong> sdeEFre</strong></p>
     <p>{% trans "Please copy this! Without it you can not connect to your VM." %}</p>
+</div>
+
+<!-- verification before executing an action -->
+<a id="verification" rel="#yesno" href="#"></a>
+
+<div class="modal" id="yesno">
+    <h3>You are about to</h3>
+    <p>This action reffers to the following machines:</p>
+    <ul>
+        <li>machine1</li>
+        <li>...</li>
+    </ul>
+    <p>Are you sure you want to proceed?</p>
+    <button> Yes </button>
+	<button> No </button>
 </div>
 
 <script>

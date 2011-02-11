@@ -28,7 +28,7 @@ On def content_type change
 
 to 
         ctype = self.request.META.get('CONTENT_TYPE', type_formencoded).split(";")[0]
-3)./bin/python pip install pyzmq is needed. On Ubuntu 10.04 (tested by mgogoulos) you'll have to download 
+3)./bin/pip install pyzmq is needed. On Ubuntu 10.04 (tested by mgogoulos) you'll have to download 
 http://pypi.python.org/pypi/pyzmq-static/2.0.8 and run python setup.py install before pyzmq can be installed 
 
 

@@ -244,7 +244,7 @@ function update() {
                 $.each(data.servers, function(i,server){
                     // if the machine is deleted it should not be included in any list
                     if (server.status == 'DELETED') {
-                        continue;
+                        return;
                     }
                     var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
                     machine.find("input[type='checkbox']").attr("id", "input-" + server.id);

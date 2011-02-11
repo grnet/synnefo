@@ -132,15 +132,15 @@ $("table.list-terminated thead tr th#selection ul").live('click', function () {
     return false;
 });
 
-var actions = { 'reboot':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
-				'shutdown':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'multiple'],
-				'connect':		['PE_VM_RUNNING', ],
-				'disconnect':	['PE_VM_RUNNING', 'network'],
-				'band':			['PE_VM_RUNNING', 'PE_VM_MIGRATING'],
-				'details':		['PE_VM_RUNNING', 'PE_VM_MIGRATING', 'PE_VM_SUSPENDED'],
-				'start': 		['PE_VM_SUSPENDED', 'multiple'],
-				'destroy':		['PE_VM_RUNNING', 'PE_VM_SUSPENDED', 'PE_VM_MIGRATING', 'multiple'],
-				'group':		['PE_VM_RUNNING', 'PE_VM_SUSPENDED', 'PE_VM_MIGRATING','multiple'],
+var actions = { 'reboot':		['ACTIVE', 'REBOOT', 'multiple'],
+				'shutdown':		['ACTIVE', 'REBOOT', 'multiple'],
+				'connect':		['ACTIVE', ],
+				'disconnect':	['ACTIVE', 'network'],
+				'band':			['ACTIVE', 'REBOOT'],
+				'details':		['ACTIVE', 'REBOOT', 'STOPPED'],
+				'start': 		['STOPPED', 'multiple'],
+				'destroy':		['ACTIVE', 'STOPPED', 'REBOOT', 'multiple'],
+				'group':		['ACTIVE', 'STOPPED', 'REBOOT','multiple'],
 			   };
 
 // on checkbox click, update the actions

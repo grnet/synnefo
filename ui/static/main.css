@@ -515,29 +515,29 @@ div.machine {
     margin-right: 3px;
 }
 
-.actions {
+div.machine div.actions {
     float: right;
     width: 70px;
     margin:-60px -70px 0 0;
     font-weight: normal;
 }
 
-.actions a {
+div.machine div.actions a {
     color: transparent;
     margin: 0 0 5px 8px;
     display: none;
 }
 
-.actions a.more {
+div.machine div.actions a.more {
     margin-top: 18px;
 }
 
-.actions a:hover{
+div.machine div.actions a:hover{
     color: black !important;
     display: block;
 }
 
-.actions a:focus, .actions:hover a,.machine:hover .actions a {
+div.machine div.actions a:focus, div.machine div.actions:hover a, .machine:hover .actions a {
     color: #3d3d3d;
     display: block;
 }
@@ -810,11 +810,6 @@ div.list div.actions a {
     color: #D3D3D3;
     display: block;
     font-size:9pt;
-}
-
-div.list div.actions a:hover{
-    cursor: default;
-    text-decoration: none;
 }
 
 div.list div.actions a.enabled {

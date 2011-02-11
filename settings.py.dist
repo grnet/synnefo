@@ -124,4 +124,6 @@ AUTH_PROFILE_MODULE = 'synnefo.OceanUser'
 #needed for django. this is the class that implements the User system. We use this to allow users to add stuff for themselves (about, image etc)
 #http://docs.djangoproject.com/en/dev/topics/auth/#auth-profiles
 
+TIMEOUT = 10*1000
+#after this time passes and the client gets no response, it raises an alert that there are network problems
 

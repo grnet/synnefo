@@ -76,7 +76,7 @@ class ServerHandler(BaseHandler):
     @paginator
     def read_all(self, request, detail=False):
         virtual_servers = VirtualMachine.objects.all()
-        #get all VM's for now, FIX it to take the user's VMs only yet
+        #get all VM's for now, FIX it to take the user's VMs only
 
         if not detail:
             virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])

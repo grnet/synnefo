@@ -202,6 +202,7 @@
 </div>
 
 <script>
+
 // hardcoded image types
 var image_tags = {
                 1: 'archlinux',
@@ -234,10 +235,18 @@ function update() {
         type: "GET",
         //async: false,
         dataType: "json",
-        error: function(data) {
+        timeout: {{timeout}},
+        error: function(data, strError) {
                     $("#spinner").hide();
-                    alert('{% trans "Cannot connect to the backend! Please inform the admins" %}');
-                              },
+                    if (strError == 'timeout'){
+                        alert('{% trans "timeout error. Check your network connection" %}');
+                        return false;
+                                              }
+                    else{
+                        alert('{% trans "Cannot connect to the backend! Please inform the admins" %}');
+                        return false;
+                        }
+                          },
         success: function(data) {
             if ($(".running a.name").length + $(".terminated a.name").length == 0) {
             
@@ -312,6 +321,13 @@ function update() {
         type: "GET",
         //async: false,
         dataType: "json",
+        timeout: {{timeout}},
+        error: function(data, strError) {
+                    if (strError == 'timeout'){
+                        alert('{% trans "timeout error. Check your network connection" %}');
+                        return false;
+                                              }                    
+                          },
         success: function(data) {
             if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
                 $.each(data.images, function(i,image){

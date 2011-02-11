@@ -1,9 +1,11 @@
 import os
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.template import Context, loader
 from django.http import HttpResponse
 from django.utils.translation import get_language
 
+TIMEOUT = settings.TIMEOUT
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")  
@@ -16,7 +18,7 @@ def home(request):
     return template('home', context)
 
 def machines(request):
-    context = {}
+    context = {'timeout': TIMEOUT}
     return template('machines', context)
    
 def machines_list(request):

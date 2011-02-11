@@ -87,6 +87,14 @@ class Image(models.Model):
     def __unicode__(self):
         return u'%s' % (self.name)
 
+    def get_vmid(self):
+        """Returns first Virtual Machine's id, if any"""
+        if self.virtualmachine_set.all():
+            return self.virtualmachine_set.all()[0].id
+        else:
+            return ''
+
+    vm_id = property(get_vmid)
 
 class UserLimit(models.Model):
     user = models.ForeignKey(SynnefoUser)

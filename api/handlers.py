@@ -256,7 +256,6 @@ class ImageHandler(BaseHandler):
                     'updated': image.updated.isoformat(),    
                     'description': image.description, 
                     'state': image.state, 
-                    'serverid': image.vm_id, 
                     'vm_id': image.vm_id
                    } for image in images]
 
@@ -267,12 +266,8 @@ class ImageHandler(BaseHandler):
                 return { "images": [ { "id": s['id'], "name": s['name'] } for s in images ] }
             else:
                 return { "image": images[0] }
-#        if id is None:
-#            return {}
-#        elif id == "detail":
-#            return {}
-#        else:
-#            raise fault.itemNotFound
+        else:
+            print 'return error message! TODO'
 
     def create(self, request):
         """Create a new image"""

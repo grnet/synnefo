@@ -15,7 +15,7 @@ Installation
     $ cp settings.py.dist settings.py
     $ ./bin/python manage.py syncdb
     $ cd synnefo/db
-    $ ../bin/python dbcontroller.py
+    $ ../bin/python db_controller.py
     ...
     $ cd synnefo
     $ ./bin/python manage.py runserver

@@ -33,5 +33,5 @@ Notes
 
 3)On Ubuntu 10.04 (tested by mgogoulos) you'll have to install zmq-static with:
         sudo aptitude install uuid-dev 
-        ./bin/python pip install pyzmq-static
+        ./bin/pip install pyzmq-static
 

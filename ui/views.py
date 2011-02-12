@@ -14,11 +14,11 @@ def template(name, context):
     return HttpResponse(t.render(Context(context)))
 
 def home(request):
-    context = { 'project' : '+nefo', 'request': request, 'current_lang' : get_language() or 'en' }
+    context = { 'timeout': TIMEOUT, 'project' : '+nefo', 'request': request, 'current_lang' : get_language() or 'en' }
     return template('home', context)
 
 def machines(request):
-    context = {'timeout': TIMEOUT}
+    context = {}
     return template('machines', context)
    
 def machines_list(request):

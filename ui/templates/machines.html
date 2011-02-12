@@ -196,7 +196,13 @@
 	<button> No </button>
 </div>
 
+<script type="text/javascript"> 
+var TIMEOUT = {{timeout}};
+</script>
+
 <script>
+
+
 
 // hardcoded image types
 var image_tags = {
@@ -229,8 +235,8 @@ function update() {
         url: '/api/v1.0/servers/detail',
         type: "GET",
         //async: false,
+        timeout: TIMEOUT,
         dataType: "json",
-        timeout: {{timeout}},
         error: function(data, strError) {
                     $("#spinner").hide();
                     if (strError == 'timeout'){
@@ -316,7 +322,7 @@ function update() {
         type: "GET",
         //async: false,
         dataType: "json",
-        timeout: {{timeout}},
+        timeout: TIMEOUT,
         error: function(data, strError) {
                     if (strError == 'timeout'){
                         alert('{% trans "timeout error. Check your network connection" %}');
@@ -547,6 +553,7 @@ function reboot(){
 	    var yes = buttons.index(this) === 0;
         // if user wants to proceed
         if (yes) {
+            $("a#verification[rel]").overlay().close(); //close the window, no matter what happens
             $.ajax({
 	            url: '/api/v1.0/servers/' + serverID + '/action',
 	            type: "POST",
@@ -555,9 +562,19 @@ function reboot(){
 		            },
 	            //async: false,
 	            dataType: "json",
-                error: function(){},
+                timeout: TIMEOUT,
+                error: function(data, strError) {
+                        if (strError == 'timeout'){
+                            alert('{% trans "timeout error. Check your network connection" %}');
+                                                   }
+                        else {
+                            alert('{% trans "the reboot request could not be made" %}');
+                            //get exact error with data.responseText (json)                      
+                                                }
+                        return false;
+                                                },
 	            success: function() {
-                    $("a#verification[rel]").overlay().close();
+                         alert('{% trans "the reboot request was executed!" %}');
                 }
             });            
         }

@@ -303,16 +303,30 @@ function update() {
             $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();
             if ($("div.list table.list-running tbody.running tr").length > 0) {
-                $(".list table.list-running").tablesorter({ 
-                    headers: { 0: { sorter: false}, 6: { sorter: false }}, 
-                    sortMultiSortKey: "ctrlKey" }).show();
-                $(".list .actions").show();
+                $("div.list table.list-running").dataTable({
+                    "bInfo": false,
+                    "bPaginate": false,
+            		"bSort": true,    
+            		"bAutoWidth": false,
+                    "bStateSave": true//,
+                    //"sScrollY": "310px",
+                    //"bScrollCollapse": true
+                });
+                $("div.list table.list-running").show();
+                $("div.list div.actions").show();
             }
             if ($("div.list table.list-terminated tbody.terminated tr").length > 0) {
-                $(".list table.list-terminated").tablesorter({ 
-                    headers: { 0: { sorter: false}, 6: { sorter: false }}, 
-                    sortMultiSortKey: "ctrlKey" }).show();
-                $(".list .actions").show();
+                $("div.list table.list-terminated").dataTable({
+                    "bInfo": false,
+                    "bPaginate": false,
+            		"bSort": true,    
+            		"bAutoWidth": false,
+                    "bStateSave": true//,
+                    //"sScrollY": "200px",
+                    //"bScrollCollapse": true
+                });
+                $("div.list table.list-terminated").show();
+                $("div.list div.actions").show();
             }
         }
     });

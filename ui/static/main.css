@@ -727,22 +727,14 @@ div.list .state {
 
 div.list table tbody.running {
     margin-top: 8px;
-    height: 310px;
-    overflow-x: hidden;
-    overflow-y: scroll;
 }
 
 div.list table tbody.terminated {
-    max-height: 200px;
-    overflow: auto;
+
 }
 
 div.list table tbody.terminated td {
 	height: 20px !important;
-}
-
-th.scroll {
-	width:7px;
 }
 
 div.list .stopped {
@@ -930,7 +922,6 @@ div#user a.current_lang {
 div.list table {
     width: 515px;
     font-size: 9pt;
-    display: none;
 }
 
 div.list table thead tr th, div.list table tfoot tr th {

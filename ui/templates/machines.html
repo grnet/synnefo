@@ -190,12 +190,7 @@
 <a id="verification" rel="#yesno" href="#"></a>
 
 <div class="modal" id="yesno">
-    <h3>You are about to</h3>
-    <p>This action reffers to the following machines:</p>
-    <ul>
-        <li>machine1</li>
-        <li>...</li>
-    </ul>
+    <h3>You are about to xxx machine yyy</h3>
     <p>Are you sure you want to proceed?</p>
     <button> Yes </button>
 	<button> No </button>
@@ -526,23 +521,53 @@ $("#start").click(function(){
         }
     });
     $("#wizard").hide();
-    update();
 });
 
 // reboot action
 function reboot(){
     var serverID = $(this).parent().parent().attr("id");
-    alert("rebooting " + serverID);
-    $.ajax({
-	    url: '/api/v1.0/servers/' + serverID + '/action',
-	    type: "POST",
-	    data: {
-		    "reboot": '{"type" : "HARD"}'
-		    },
-	    //async: false,
-	    dataType: "json",
-	    success: function() {},
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    $("#yesno h3").text('You are about to reboot vm ' + serverName);
+    // action verification overlay
+    var triggers = $("a#verification").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+        load: true,
+        onClose: function(){
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
+        }
     });
+    // yes or no?
+    var buttons = $("#yesno button").click(function(e) {
+	    // get user input
+	    var yes = buttons.index(this) === 0;
+        // if user wants to proceed
+        if (yes) {
+            $.ajax({
+	            url: '/api/v1.0/servers/' + serverID + '/action',
+	            type: "POST",
+	            data: {
+		            "reboot": '{"type" : "HARD"}'
+		            },
+	            //async: false,
+	            dataType: "json",
+                error: function(){},
+	            success: function() {
+                    $("a#verification[rel]").overlay().close();
+                }
+            });            
+        }
+        // if user does not want to proceed
+        else {
+	        // just close the overlay
+            $("a#verification[rel]").overlay().close();
+        }   
+    });
+
     return false;
 }
 

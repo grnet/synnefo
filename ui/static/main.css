@@ -828,13 +828,13 @@ input.machine {
     overflow: hidden;
 }
 
-#creation-note {
+#creation-note, #yesno {
     height: 100px;
     border: 5px solid #87AADE;
     z-index: 9999;
 }
 
-#creation-note p {
+#creation-note p, #yesno p, #yesno button {
     margin-top: 15px;
 }
 

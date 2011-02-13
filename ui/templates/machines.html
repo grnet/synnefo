@@ -219,14 +219,14 @@ var image_tags = {
                };
 
 // ajax error checking  
-function ajax_error(data, textStatus, jqXHR) {
-    alert('ajax error');
+function ajax_error(jqXHR, textStatus, errorThrown) {
+    alert('error with code ' + jqXHR.status);
     return false;
 }
 
 // ajax success checking
-function ajax_succes(data, textStatus, jqXHR) {
-    alert('ajax success');
+function ajax_success(data, textStatus, jqXHR) {
+    alert('success with code ' + jqXHR.status);
     return false;
 }
 
@@ -590,8 +590,7 @@ $("#start").click(function(){
 // reboot action
 function reboot(){
     var serverID = $(this).parent().parent().attr("id");
-    if ( confirm_action('reboot') ) {
-        alert("in if for ajax");
+    //if ( confirm_action('reboot') ) {
         $.ajax({
             url: '/api/v1.0/servers/' + serverID + '/action',
             type: "POST",
@@ -600,21 +599,21 @@ function reboot(){
                 },
             dataType: "json",
             timeout: TIMEOUT,
-            error: function(data, textStatus, jqXHR) { 
-                        ajax_error(data, textStatus, jqXHR);
+            error: function(jqXHR, textStatus, errorThrown) { 
+                        ajax_error(jqXHR, textStatus, errorThrown);
                         },
             success: function(data, textStatus, jqXHR) {
                         ajax_success(data, textStatus, jqXHR);
                         }
         });
-    }            
+    //}            
     return false;
 }
 
 // shutdown action
 function shutdown() {
     var serverID = $(this).parent().parent().attr("id");
-    if ( confirm_action('shutdown') ) {
+    //if ( confirm_action('shutdown') ) {
 	    $.ajax({
 		    url: '/api/v1.0/servers/' + serverID + '/action',
 		    type: "POST",
@@ -623,14 +622,14 @@ function shutdown() {
 			    },
 		    dataType: "json",
             timeout: TIMEOUT,
-            error: function(data, textStatus, jqXHR) { 
-                        ajax_error(data, textStatus, jqXHR);
+            error: function(jqXHR, textStatus, errorThrown) { 
+                        ajax_error(jqXHR, textStatus, errorThrown);
                         },
             success: function(data, textStatus, jqXHR) {
                         ajax_success(data, textStatus, jqXHR);
                         }
         });
-    }
+    //}
     return false;    
 }
 

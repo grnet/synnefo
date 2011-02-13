@@ -558,12 +558,12 @@ $("#storage").change(function(){
 
 // exit the wizard
 $("#cancel").click(function(){
-    $("a#create[rel]").overlay().close();
+    $("a#create").overlay().close();
 });
 
 // starting a new VM through the wizard
 $("#start").click(function(){
-    // send create call
+    // ajax port create call
     $.ajax({
     url: '/api/v1.0/servers',
     type: "POST",
@@ -571,20 +571,20 @@ $("#start").click(function(){
         "create": {"foo" : "foo"}
         },
     //TODO: get the real data
-    //async: false,
     dataType: "json",
     error: function(jqXHR, textStatus, errorThrown) { 
                 ajax_error(jqXHR);
-                },
+           },
     success: function(data, textStatus, jqXHR) {
-        notify();
-        }
+                notify();
+             }
     });
     $("#wizard").hide();
 });
 
 // reboot action
 function reboot(serverID){
+    // ajax post reboot call
     $.ajax({
         url: '/api/v1.0/servers/' + serverID + '/action',
         type: "POST",
@@ -608,6 +608,7 @@ function reboot(serverID){
 
 // shutdown action
 function shutdown(serverID) {
+    // ajax post shutdown call
     $.ajax({
 	    url: '/api/v1.0/servers/' + serverID + '/action',
 	    type: "POST",
@@ -635,7 +636,7 @@ function shutdown(serverID) {
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 
-// intercept action clicks
+// intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
@@ -643,6 +644,7 @@ $("div.actions a.action-reboot").live('click', function(){
     return false;
 });
 
+// intercept shutdown click
 $("div.actions a.action-shutdown").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();

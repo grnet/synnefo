@@ -219,13 +219,13 @@ var image_tags = {
                };
 
 // ajax error checking  
-function ajax_error(jqXHR, textStatus, errorThrown) {
+function ajax_error(jqXHR) {
     alert('error with code ' + jqXHR.status);
     return false;
 }
 
 // ajax success checking
-function ajax_success(data, textStatus, jqXHR) {
+function ajax_success(jqXHR) {
     alert('success with code ' + jqXHR.status);
     return false;
 }
@@ -600,10 +600,10 @@ function reboot(){
             dataType: "json",
             timeout: TIMEOUT,
             error: function(jqXHR, textStatus, errorThrown) { 
-                        ajax_error(jqXHR, textStatus, errorThrown);
+                        ajax_error(jqXHR);
                         },
             success: function(data, textStatus, jqXHR) {
-                        ajax_success(data, textStatus, jqXHR);
+                        ajax_success(jqXHR);
                         }
         });
     //}            
@@ -623,10 +623,10 @@ function shutdown() {
 		    dataType: "json",
             timeout: TIMEOUT,
             error: function(jqXHR, textStatus, errorThrown) { 
-                        ajax_error(jqXHR, textStatus, errorThrown);
+                        ajax_error(jqXHR);
                         },
             success: function(data, textStatus, jqXHR) {
-                        ajax_success(data, textStatus, jqXHR);
+                        ajax_success(jqXHR);
                         }
         });
     //}

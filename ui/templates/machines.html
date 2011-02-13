@@ -229,8 +229,31 @@ function ajax_succes() {
 }
 
 // confirmation overlay generation
-function confirm_action() {
-    return false;
+function confirm_action(action) {
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    $("#yesno h3").text('You are about to ' + action + ' vm ' + serverName);
+    // action confirmation overlay
+    var triggers = $("a#confirmation").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+        load: true,
+        onClose: function(){
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
+        }
+    });
+    // yes or no?
+    var buttons = $("#yesno button").click(function(e) {
+	    // get user input
+	    var yes = buttons.index(this) === 0;
+        //close the window, no matter the answer
+        $("a#confirmation").overlay().close(); 
+        // return true=yes or false=no
+        return yes; 
+    });
 }
 
 // get and show a list of running and terminated machines
@@ -341,7 +364,6 @@ function update_vms() {
     return false;
 }
 
-
 // get and show a list of anvailable standard and custom images
 function update_images() { 
     $.ajax({
@@ -414,7 +436,7 @@ $("a#create").click(function(){
 
 // create wizard overlay
 $(function() { 
-    $("a#create[rel]").overlay({
+    $("a#create").overlay({
         mask: '#000', 
         effect: 'default', 
         top: '5%', 
@@ -560,58 +582,31 @@ $("#start").click(function(){
 // reboot action
 function reboot(){
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    $("#yesno h3").text('You are about to reboot vm ' + serverName);
-    // action confirmation overlay
-    var triggers = $("a#confirmation").overlay({
-	    // some mask tweaks suitable for modal dialogs
-	    mask: {
-		    color: '#ebecff',
-		    opacity: '0.9'
-	    },
-        top: 'center',
-        load: true,
-        onClose: function(){
-            $("div.pane#machines-pane").load($("a#standard").attr("href"));
-        }
-    });
-    // yes or no?
-    var buttons = $("#yesno button").click(function(e) {
-	    // get user input
-	    var yes = buttons.index(this) === 0;
-        // if user wants to proceed
-        if (yes) {
-            $("a#confirmation[rel]").overlay().close(); //close the window, no matter what happens
-            $.ajax({
-	            url: '/api/v1.0/servers/' + serverID + '/action',
-	            type: "POST",
-	            data: {
-		            "reboot": '{"type" : "HARD"}'
-		            },
-	            dataType: "json",
-                timeout: TIMEOUT,
-                error: function(data, strError) {
-                        if (strError == 'timeout'){
+    alert(serverID);
+    if ( confirm_action('reboot') ) {
+        alert("in if for ajax");
+        $.ajax({
+            url: '/api/v1.0/servers/' + serverID + '/action',
+            type: "POST",
+            data: {
+                "reboot": '{"type" : "HARD"}'
+                },
+            dataType: "json",
+            timeout: TIMEOUT,
+            error: function(data, strError) {
+                        if (strError == 'timeout') {
                             alert('{% trans "timeout error. Check your network connection" %}');
-                                                   }
-                        else {
+                        } else {
                             alert('{% trans "the reboot request could not be made" %}');
-                            //get exact error with data.responseText (json)                      
-                                                }
+                            //get exact error with data.responseText (json)                     
+                        }
                         return false;
-                                                },
-	            success: function() {
-                         alert('{% trans "the reboot request was executed!" %}');
-                }
-            });            
-        }
-        // if user does not want to proceed
-        else {
-	        // just close the overlay
-            $("a#confirmation[rel]").overlay().close();
-        }   
-    });
-
+                    },
+            success: function() {
+                        alert('{% trans "the reboot request was executed!" %}');
+            }
+        });
+    }            
     return false;
 }
 

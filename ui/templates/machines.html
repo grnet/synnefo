@@ -178,18 +178,17 @@
 </form>
 
 <!-- notification after wizard completion -->
-<a id="notification" rel="#creation" href="#"></a>
+<a id="notification" rel="#error-success" href="#"></a>
 
-<div class="modal" id="creation">
-    <h3>{% trans "Your VM is being created!" %}</h3>
-    <p>{% trans "Your password is: " %}<strong>some code</strong></p>
-    <p>{% trans "Please copy this! Without it you can not connect to your VM." %}</p>
+<div class="modal" id="error-success">
+    <h3>{% trans "Error!/Success!" %}</h3>
+    <p>{% trans "More details about the result"%}</p>
 </div>
 
 <!-- confirmation before executing an action -->
-<a id="confirmation" rel="#yesno" href="#"></a>
+<a id="confirmation" rel="#yes-no" href="#"></a>
 
-<div class="modal" id="yesno">
+<div class="modal" id="yes-no">
     <h3>{% trans "You are about to xxx machine yyy" %}</h3>
     <p>{% trans "Are you sure you want to proceed?" %}</p>
     <button>{% trans "Yes" %}</button>
@@ -219,50 +218,10 @@ var image_tags = {
                };
 
 // ajax error checking  
-function ajax_error(jqXHR) {
-    alert('error with code ' + jqXHR.status);
-    return false;
-}
-
-// ajax success checking
-function ajax_success() {
-    alert('success!!');
-    return false;
-}
-
-// confirmation overlay generation
-function confirm_action(action_string, action_function, serverID, serverName) {
-    $("#yesno h3").text('You are about to ' + action_string + ' vm ' + serverName);
-    // action confirmation overlay
-    var triggers = $("a#confirmation").overlay({
-	    // some mask tweaks suitable for modal dialogs
-	    mask: {
-		    color: '#ebecff',
-		    opacity: '0.9'
-	    },
-        top: 'center',
-        load: true,
-        onClose: function(){
-            $("div.pane#machines-pane").load($("a#standard").attr("href"));
-        }
-    });
-    // yes or no?
-    var buttons = $("#yesno button").click(function(e) {
-	    // get user input
-	    var yes = buttons.index(this) === 0;
-        // return true=yes or false=no
-        if (yes) {
-            action_function(serverID);
-        }
-        //close the window, no matter the answer
-        $("a#confirmation").overlay().close(); 
-    });
-    //close the window, no matter the answer
-    return false;
-}
-
-// notification overlay generation
-function notify() {
+function ajax_error(jqXHR) {; 
+    // prepare the error message
+    $("#error-success h3").text('Error!');
+    $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
     // bring up notification
     var triggers = $("a#notification").overlay({
 	    // some mask tweaks suitable for modal dialogs
@@ -278,6 +237,58 @@ function notify() {
             $("div.pane#machines-pane").load($("a#standard").attr("href"));
         }
     });
+    return false;
+}
+
+// ajax success checking
+function ajax_success() {
+    // prepare the error message
+    $("#error-success h3").text('Success!');
+    $("#error-success p").text('Your request has been succefully executed.');
+    // bring up notification
+    var triggers = $("a#notification").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+	    closeOnClick: false,
+        oneInstance: false,
+        load: true,
+        onClose: function(){
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
+        }
+    });
+    return false;
+}
+
+// confirmation overlay generation
+function confirm_action(action_string, action_function, serverID, serverName) {
+    $("#yes-no h3").text('You are about to ' + action_string + ' vm ' + serverName);
+    // action confirmation overlay
+    var triggers = $("a#confirmation").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+        load: true
+    });
+    // yes or no?
+    var buttons = $("#yes-no button").click(function(e) {
+	    // get user input
+	    var yes = buttons.index(this) === 0;
+        //close the confirmation window
+        $("a#confirmation").overlay().close(); 
+        // return true=yes or false=no
+        if (yes) {
+            action_function(serverID);
+        }
+    });
+    //close the window, no matter the answer
+    return false;
 }
 
 // get and show a list of running and terminated machines
@@ -576,8 +587,11 @@ $("#start").click(function(){
                 ajax_error(jqXHR);
            },
     success: function(data, textStatus, jqXHR) {
-                notify();
-             }
+                if ( jqXHR.status == '202') {
+                    ajax_success(jqXHR);
+                } else {
+                    ajax_error(jqXHR);
+                }}
     });
     $("#wizard").hide();
 });
@@ -623,7 +637,6 @@ function shutdown(serverID) {
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
                         ajax_success(jqXHR);
-                        $("div.pane#machines-pane").load($("a#standard").attr("href"));
                     } else {
                         ajax_error(jqXHR);
                     }}             
@@ -648,7 +661,7 @@ $("div.actions a.action-reboot").live('click', function(){
 $("div.actions a.action-shutdown").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    confirm_action('shoutdown', shutdown, serverID, serverName);
+    confirm_action('shutdown', shutdown, serverID, serverName);
     return false;
 });
 </script>

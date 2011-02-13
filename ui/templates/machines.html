@@ -256,6 +256,25 @@ function confirm_action(action) {
     });
 }
 
+// notification overlay generation
+function notify() {
+    // bring up notification
+    var triggers = $("a#notification").overlay({
+	    // some mask tweaks suitable for modal dialogs
+	    mask: {
+		    color: '#ebecff',
+		    opacity: '0.9'
+	    },
+        top: 'center',
+	    closeOnClick: false,
+        oneInstance: false,
+        load: true,
+        onClose: function(){
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
+        }
+    });
+}
+
 // get and show a list of running and terminated machines
 function update_vms() {
     $(".running").text('');
@@ -559,21 +578,8 @@ $("#start").click(function(){
     //TODO: get the real data
     //async: false,
     dataType: "json",
-    success: function() {}
-    });
-    // bring up notification
-    var triggers = $("a#notification").overlay({
-	    // some mask tweaks suitable for modal dialogs
-	    mask: {
-		    color: '#ebecff',
-		    opacity: '0.9'
-	    },
-        top: 'center',
-	    closeOnClick: false,
-        oneInstance: false,
-        load: true,
-        onClose: function(){
-            $("div.pane#machines-pane").load($("a#standard").attr("href"));
+    success: function() {
+        notify();
         }
     });
     $("#wizard").hide();

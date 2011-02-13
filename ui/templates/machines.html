@@ -225,15 +225,14 @@ function ajax_error(jqXHR) {
 }
 
 // ajax success checking
-function ajax_success(jqXHR) {
-    alert('success with code ' + jqXHR.status);
+function ajax_success() {
+    alert('success!!');
     return false;
 }
 
 // confirmation overlay generation
-function confirm_action(action) {
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    $("#yesno h3").text('You are about to ' + action + ' vm ' + serverName);
+function confirm_action(action_string, action_function, serverID, serverName) {
+    $("#yesno h3").text('You are about to ' + action_string + ' vm ' + serverName);
     // action confirmation overlay
     var triggers = $("a#confirmation").overlay({
 	    // some mask tweaks suitable for modal dialogs
@@ -251,11 +250,15 @@ function confirm_action(action) {
     var buttons = $("#yesno button").click(function(e) {
 	    // get user input
 	    var yes = buttons.index(this) === 0;
+        // return true=yes or false=no
+        if (yes) {
+            action_function(serverID);
+        }
         //close the window, no matter the answer
         $("a#confirmation").overlay().close(); 
-        // return true=yes or false=no
-        return yes; 
     });
+    //close the window, no matter the answer
+    return false;
 }
 
 // notification overlay generation
@@ -279,28 +282,21 @@ function notify() {
 
 // get and show a list of running and terminated machines
 function update_vms() {
+
     $(".running").text('');
     $(".terminated").text('');
     $("ul#standard-images").text('');
     $("ul#custom-images").text('');
+
     $.ajax({
         url: '/api/v1.0/servers/detail',
         type: "GET",
-        //async: false,
         timeout: TIMEOUT,
         dataType: "json",
-        error: function(data, strError) {
-                    $("#spinner").hide();
-                    if (strError == 'timeout'){
-                        alert('{% trans "timeout error. Check your network connection" %}');
-                        return false;
-                                              }
-                    else{
-                        alert('{% trans "Cannot connect to the backend! Please inform the admins" %}');
-                        return false;
-                        }
-                          },
-        success: function(data) {
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    ajax_error(jqXHR);
+                    },
+        success: function(data, textStatus, jqXHR) {
             if ($(".running a.name").length + $(".terminated a.name").length == 0) {
             
                 $.each(data.servers, function(i,server){
@@ -393,13 +389,10 @@ function update_images() {
         //async: false,
         dataType: "json",
         timeout: TIMEOUT,
-        error: function(data, strError) {
-                    if (strError == 'timeout'){
-                        alert('{% trans "timeout error. Check your network connection" %}');
-                        return false;
-                                              }                    
-                          },
-        success: function(data) {
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    ajax_error(jqXHR);
+                    },
+        success: function(data, textStatus, jqXHR) {
             if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
                 $.each(data.images, function(i,image){
                     var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
@@ -580,7 +573,10 @@ $("#start").click(function(){
     //TODO: get the real data
     //async: false,
     dataType: "json",
-    success: function() {
+    error: function(jqXHR, textStatus, errorThrown) { 
+                ajax_error(jqXHR);
+                },
+    success: function(data, textStatus, jqXHR) {
         notify();
         }
     });
@@ -588,48 +584,49 @@ $("#start").click(function(){
 });
 
 // reboot action
-function reboot(){
-    var serverID = $(this).parent().parent().attr("id");
-    //if ( confirm_action('reboot') ) {
-        $.ajax({
-            url: '/api/v1.0/servers/' + serverID + '/action',
-            type: "POST",
-            data: {
-                "reboot": '{"type" : "HARD"}'
-                },
-            dataType: "json",
-            timeout: TIMEOUT,
-            error: function(jqXHR, textStatus, errorThrown) { 
-                        ajax_error(jqXHR);
-                        },
-            success: function(data, textStatus, jqXHR) {
+function reboot(serverID){
+    $.ajax({
+        url: '/api/v1.0/servers/' + serverID + '/action',
+        type: "POST",
+        data: {
+            "reboot": '{"type" : "HARD"}'
+            },
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    ajax_error(jqXHR);
+                    },
+        success: function(data, textStatus, jqXHR) {
+                    if ( jqXHR.status == '202') {
                         ajax_success(jqXHR);
-                        }
-        });
-    //}            
+                    } else {
+                        ajax_error(jqXHR);
+                    }}
+    });
     return false;
 }
 
 // shutdown action
-function shutdown() {
-    var serverID = $(this).parent().parent().attr("id");
-    //if ( confirm_action('shutdown') ) {
-	    $.ajax({
-		    url: '/api/v1.0/servers/' + serverID + '/action',
-		    type: "POST",
-		    data: {
-			    "shutdown": '{"timeout" : "5"}'
-			    },
-		    dataType: "json",
-            timeout: TIMEOUT,
-            error: function(jqXHR, textStatus, errorThrown) { 
-                        ajax_error(jqXHR);
-                        },
-            success: function(data, textStatus, jqXHR) {
+function shutdown(serverID) {
+    $.ajax({
+	    url: '/api/v1.0/servers/' + serverID + '/action',
+	    type: "POST",
+	    data: {
+		    "shutdown": '{"timeout" : "5"}'
+		    },
+	    dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    ajax_error(jqXHR);
+                    },
+        success: function(data, textStatus, jqXHR) {
+                    if ( jqXHR.status == '202') {
                         ajax_success(jqXHR);
-                        }
-        });
-    //}
+                        $("div.pane#machines-pane").load($("a#standard").attr("href"));
+                    } else {
+                        ajax_error(jqXHR);
+                    }}             
+    });
     return false;    
 }
 
@@ -639,6 +636,17 @@ function shutdown() {
 $("ul.tabs").tabs("div.panes ul");
 
 // intercept action clicks
-$("div.actions a.action-shutdown").live('click', shutdown);
-$("div.actions a.action-reboot").live('click', reboot);
+$("div.actions a.action-reboot").live('click', function(){ 
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    confirm_action('reboot', reboot, serverID, serverName);
+    return false;
+});
+
+$("div.actions a.action-shutdown").live('click', function(){ 
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    confirm_action('shoutdown', shutdown, serverID, serverName);
+    return false;
+});
 </script>

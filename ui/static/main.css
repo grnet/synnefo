@@ -820,21 +820,21 @@ input.machine {
     overflow: hidden;
 }
 
-#creation-note, #yesno {
+#creation, #yesno {
     height: 100px;
     border: 5px solid #87AADE;
     z-index: 9999;
 }
 
-#creation-note p, #yesno p, #yesno button {
+#creation p, #yesno p, #yesno button {
     margin-top: 15px;
 }
 
-#creation-note strong {
+#creation strong {
     color: #F49C1A;
 }
 
-#creation-note .close {
+#creation .close {
 	background-image: url(/static/close.png);
 	position: absolute;
 	right: -19px;

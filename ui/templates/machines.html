@@ -178,22 +178,22 @@
 </form>
 
 <!-- notification after wizard completion -->
-<a id="notify" rel="#creation-note" href="#"></a>
+<a id="notification" rel="#creation" href="#"></a>
 
-<div class="modal" id="creation-note">
-    <h3>Your VM is being created!</h3>
-    <p>{% trans "Your password is:" %}<strong> sdeEFre</strong></p>
+<div class="modal" id="creation">
+    <h3>{% trans "Your VM is being created!" %}</h3>
+    <p>{% trans "Your password is: " %}<strong>some code</strong></p>
     <p>{% trans "Please copy this! Without it you can not connect to your VM." %}</p>
 </div>
 
-<!-- verification before executing an action -->
-<a id="verification" rel="#yesno" href="#"></a>
+<!-- confirmation before executing an action -->
+<a id="confirmation" rel="#yesno" href="#"></a>
 
 <div class="modal" id="yesno">
-    <h3>You are about to xxx machine yyy</h3>
-    <p>Are you sure you want to proceed?</p>
-    <button> Yes </button>
-	<button> No </button>
+    <h3>{% trans "You are about to xxx machine yyy" %}</h3>
+    <p>{% trans "Are you sure you want to proceed?" %}</p>
+    <button>{% trans "Yes" %}</button>
+	<button>{% trans "No" %}</button>
 </div>
 
 <script type="text/javascript"> 
@@ -201,9 +201,6 @@ var TIMEOUT = {{timeout}};
 </script>
 
 <script>
-
-
-
 // hardcoded image types
 var image_tags = {
                 1: 'archlinux',
@@ -221,12 +218,23 @@ var image_tags = {
                 20: 'ubuntu',
                };
 
-// create tabs for main menu
-$("ul.tabs").tabs("div.panes ul");
+// ajax error checking  
+function ajax_error() {
+    return false;
+}
 
-// get and show list of running and terminated machines
-function update() {
+// ajax success checking
+function ajax_succes() {
+    return false;
+}
 
+// confirmation overlay generation
+function confirm_action() {
+    return false;
+}
+
+// get and show a list of running and terminated machines
+function update_vms() {
     $(".running").text('');
     $(".terminated").text('');
     $("ul#standard-images").text('');
@@ -330,7 +338,12 @@ function update() {
             }
         }
     });
+    return false;
+}
 
+
+// get and show a list of anvailable standard and custom images
+function update_images() { 
     $.ajax({
         url: '/api/v1.0/images/detail',
         type: "GET",
@@ -371,7 +384,7 @@ $("#list").click(function(){
     $("div.standard#machinesview").load($("#list").attr("href"));
     $("a#standard")[0].className += ' activelink'
     this.style.color = '#5f8dd3';
-    update();
+    update_vms();
     return false;
 });
 
@@ -380,8 +393,6 @@ $("a#standard").click(function(){
     $.cookie("list", '0');
     href=$("a#standard").attr("href");
     $("div.pane#machines-pane").load(href);
-    //$("a#standard")[0].className += ' activelink'
-    //this.style.color = '#5f8dd3';
     return false;
 });
 
@@ -390,11 +401,14 @@ if ($.cookie("list") == '1') {
     $("#list").click();
 } else {
     // execute the update function to populate the list
-    update();
+    update_vms();
 }
 
 // launch VM creation wizard
 $("a#create").click(function(){
+    // populate image list
+    update_images();
+    // launch the wizard
     $("#wizard").scrollable().begin();
 });
 
@@ -526,7 +540,7 @@ $("#start").click(function(){
     success: function() {}
     });
     // bring up notification
-    var triggers = $("a#notify").overlay({
+    var triggers = $("a#notification").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
 		    color: '#ebecff',
@@ -548,8 +562,8 @@ function reboot(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     $("#yesno h3").text('You are about to reboot vm ' + serverName);
-    // action verification overlay
-    var triggers = $("a#verification").overlay({
+    // action confirmation overlay
+    var triggers = $("a#confirmation").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
 		    color: '#ebecff',
@@ -567,14 +581,13 @@ function reboot(){
 	    var yes = buttons.index(this) === 0;
         // if user wants to proceed
         if (yes) {
-            $("a#verification[rel]").overlay().close(); //close the window, no matter what happens
+            $("a#confirmation[rel]").overlay().close(); //close the window, no matter what happens
             $.ajax({
 	            url: '/api/v1.0/servers/' + serverID + '/action',
 	            type: "POST",
 	            data: {
 		            "reboot": '{"type" : "HARD"}'
 		            },
-	            //async: false,
 	            dataType: "json",
                 timeout: TIMEOUT,
                 error: function(data, strError) {
@@ -595,7 +608,7 @@ function reboot(){
         // if user does not want to proceed
         else {
 	        // just close the overlay
-            $("a#verification[rel]").overlay().close();
+            $("a#confirmation[rel]").overlay().close();
         }   
     });
 
@@ -612,16 +625,18 @@ function shutdown() {
 		data: {
 			"shutdown": '{"timeout" : "5"}'
 			},
-		//async: false,
 		dataType: "json",
 		success: function() {}
 	});
     return false;    
 }
 
+// basic functions executed on page load
+
+// create tabs for main menu
+$("ul.tabs").tabs("div.panes ul");
+
 // intercept action clicks
 $("div.actions a.action-shutdown").live('click', shutdown);
 $("div.actions a.action-reboot").live('click', reboot);
-
-
 </script>

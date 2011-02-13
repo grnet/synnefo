@@ -219,12 +219,14 @@ var image_tags = {
                };
 
 // ajax error checking  
-function ajax_error() {
+function ajax_error(data, textStatus, jqXHR) {
+    alert('ajax error');
     return false;
 }
 
 // ajax success checking
-function ajax_succes() {
+function ajax_succes(data, textStatus, jqXHR) {
+    alert('ajax success');
     return false;
 }
 
@@ -588,7 +590,6 @@ $("#start").click(function(){
 // reboot action
 function reboot(){
     var serverID = $(this).parent().parent().attr("id");
-    alert(serverID);
     if ( confirm_action('reboot') ) {
         alert("in if for ajax");
         $.ajax({
@@ -599,17 +600,12 @@ function reboot(){
                 },
             dataType: "json",
             timeout: TIMEOUT,
-            error: function(data, strError) {
-                        if (strError == 'timeout') {
-                            alert('{% trans "timeout error. Check your network connection" %}');
-                        } else {
-                            alert('{% trans "the reboot request could not be made" %}');
-                            //get exact error with data.responseText (json)                     
+            error: function(data, textStatus, jqXHR) { 
+                        ajax_error(data, textStatus, jqXHR);
+                        },
+            success: function(data, textStatus, jqXHR) {
+                        ajax_success(data, textStatus, jqXHR);
                         }
-                        return false;
-                    },
-            success: function() {
-                        alert('{% trans "the reboot request was executed!" %}');
             }
         });
     }            
@@ -619,16 +615,24 @@ function reboot(){
 // shutdown action
 function shutdown() {
     var serverID = $(this).parent().parent().attr("id");
-    alert("shutting down " + serverID);
-	$.ajax({
-		url: '/api/v1.0/servers/' + serverID + '/action',
-		type: "POST",
-		data: {
-			"shutdown": '{"timeout" : "5"}'
-			},
-		dataType: "json",
-		success: function() {}
-	});
+    if ( confirm_action('shutdown') ) {
+	    $.ajax({
+		    url: '/api/v1.0/servers/' + serverID + '/action',
+		    type: "POST",
+		    data: {
+			    "shutdown": '{"timeout" : "5"}'
+			    },
+		    dataType: "json",
+            timeout: TIMEOUT,
+            error: function(data, textStatus, jqXHR) { 
+                        ajax_error(data, textStatus, jqXHR);
+                        },
+            success: function(data, textStatus, jqXHR) {
+                        ajax_success(data, textStatus, jqXHR);
+                        }
+            }
+        });
+    }
     return false;    
 }
 

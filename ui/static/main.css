@@ -1015,3 +1015,12 @@ div.list table thead tr ul li a{
 span.imagetag { 
     display: none;
 }
+
+div.list div.dataTables_filter,  div.list div.dataTables_filter input{
+    font-size: 9pt;
+}
+
+div.list div.dataTables_filter input{
+    height: 12px;
+    margin-bottom: 12px;
+}

@@ -919,43 +919,18 @@ div#user a.current_lang {
 }
 
 /* tables in list view */
-div.list table {
-    width: 515px;
+div.list div.dataTables_filter,  div.list div.dataTables_filter input{
     font-size: 9pt;
 }
 
-div.list table thead tr th, div.list table tfoot tr th {
-    font-weight: normal; 
-	background-color: #E6EEEE;
-	border: 1px solid #FFF;
-	padding: 4px;
+div.list div.dataTables_filter input{
+    height: 12px;
+    margin-bottom: 12px;
 }
 
-div.list table thead tr .header {
-	background-image: url(bg.gif);
-	background-repeat: no-repeat;
-	background-position: center right;
-    text-align: left;
-    vertical-align: middle;
-	cursor: pointer;
-}
-
-div.list table thead tr .header#group {
-    width: 80px;
-}
-
-div.list table thead tr .header#ip {
-    width: 100px;
-}
-
-div.list table thead #selection {
-	width: 35px;
-	text-align: left;
-}
-
-div.list table thead #os {
-    width: 32px;
-    vertical-align:middle;
+div.list table {
+    width: 515px;
+    font-size: 9pt;
 }
 
 div.list table tbody td {
@@ -965,23 +940,38 @@ div.list table tbody td {
 	vertical-align: middle;
 }
 
-div.list table tbody tr.odd td {
-	background-color:#FFF;
+div.list table thead tr th {
+	background-color: #E6EEEE;
+	background-image: url(bg.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+    font-weight: normal; 
+	border: 1px solid #FFF;
+	padding: 4px;
+    text-align: left;
+    vertical-align: middle;
+	cursor: pointer;
 }
 
-div.list table thead tr .headerSortUp {
-	background-image: url(asc.gif);
-}
-
-div.list table thead tr .headerSortDown {
-	background-image: url(desc.gif);
-}
-
-div.list table thead tr .headerSortDown, div.list table thead tr .headerSortUp {
+div.list table thead .sorting_asc, div.list table thead .sorting_desc {
     background-color: #87AADE;
 }
 
-div.list table thead tr th#selection div.expand-icon {
+div.list table thead .sorting_asc {
+	background-image: url(asc.gif);
+}
+
+div.list table thead .sorting_desc {
+	background-image: url(desc.gif);
+}
+
+div.list table #selection {
+	width: 35px;
+	text-align: left;
+    background-image: none;
+}
+
+div.list table #selection div.expand-icon {
 	background-image: url(asc.gif);
 	background-repeat: no-repeat;
     position: relative;
@@ -992,35 +982,39 @@ div.list table thead tr th#selection div.expand-icon {
     top: -11px;
 }
 
-div.list table thead tr ul {
+div.list table thead tr th ul {
     background-color: #E6EEEE;
     position: absolute;
     margin-left: -4px;
     display: block;
 }
 
-div.list table thead tr ul li {
+div.list table thead tr th ul li {
     padding: 5px;
 }
 
-div.list table thead tr ul li:hover {
+div.list table thead tr th ul li:hover {
     background-color: #87AADE;
 }
 
-div.list table thead tr ul li a{
+div.list table thead tr th ul li a{
     color: black;
     text-decoration: none;
 }
 
-span.imagetag { 
+div.list table thead #os {
+    width: 32px;
+    vertical-align:middle;
+}
+
+div.list table span.imagetag { 
     display: none;
 }
 
-div.list div.dataTables_filter,  div.list div.dataTables_filter input{
-    font-size: 9pt;
+div.list table thead #ip {
+    width: 100px;
 }
 
-div.list div.dataTables_filter input{
-    height: 12px;
-    margin-bottom: 12px;
+div.list table thead #group {
+    width: 80px;
 }

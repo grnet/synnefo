@@ -221,21 +221,18 @@ var image_tags = {
 function ajax_error(jqXHR) {; 
     // prepare the error message
     $("#error-success h3").text('Error!');
-
-    switch (jqXHR.status)
-    {
-    case 503: // XX error/message
-    $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
-    // bring up notification
-    break;
-    case 400: // YY error/message
-    $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
-    break;
-    default: // XXYY error/message
-    $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+    // check the error code
+    switch (jqXHR.status) {
+        case 503: // XX error/message
+            $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+            break;
+        case 400: // YY error/message
+            $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+            break;
+        default: // XXYY error/message
+            $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
     }
-
-
+    // bring up error notification
     var triggers = $("a#notification").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
@@ -258,7 +255,7 @@ function ajax_success() {
     // prepare the error message
     $("#error-success h3").text('Success!');
     $("#error-success p").text('Your request has been succefully executed.');
-    // bring up notification
+    // bring up success notification
     var triggers = $("a#notification").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {
@@ -378,9 +375,12 @@ function update_vms() {
                 $("div.list table.list-running").dataTable({
                     "bInfo": false,
                     "bPaginate": false,
-            		"bSort": true,    
             		"bAutoWidth": false,
-                    "bStateSave": true//,
+            		"bSort": true,    
+                    "bStateSave": true,
+                    "aoColumnDefs": [
+                        { "bSortable": false, "aTargets": [ 0 ] }
+                    ]//,
                     //"sScrollY": "310px",
                     //"bScrollCollapse": true
                 });
@@ -393,7 +393,10 @@ function update_vms() {
                     "bPaginate": false,
             		"bSort": true,    
             		"bAutoWidth": false,
-                    "bStateSave": true//,
+                    "bStateSave": true,
+                    "aoColumnDefs": [
+                        { "bSortable": false, "aTargets": [ 0 ] }
+                    ]//,
                     //"sScrollY": "200px",
                     //"bScrollCollapse": true
                 });

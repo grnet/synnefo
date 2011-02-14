@@ -35,9 +35,9 @@
                     <input type="checkbox"/>
                     <div class="expand-icon"></div>
                     <ul style="display: none">
-                        <li><a class="select-all" href="#">all</a></li>
-                        <li><a class="select-none" href="#">none</a></li>
-                        <li><a class="select-group" href="#">group</a></li>
+                        <li class="select-all" ><a href="#">all</a></li>
+                        <li class="select-none"><a href="#">none</a></li>
+                        <li class="select-group"><a href="#">group</a></li>
                     </ul>            
                 </th>
                 <th id="os">OS</th> 
@@ -57,9 +57,9 @@
                     <input type="checkbox"/>
                     <div class="expand-icon"></div>
                     <ul style="display: none">
-                        <li><a class="select-all" href="#">all</a></li>
-                        <li><a class="select-none" href="#">none</a></li>
-                        <li><a class="select-group" href="#">group</a></li>
+                        <li class="select-all"><a href="#">all</a></li>
+                        <li class="select-none"><a href="#">none</a></li>
+                        <li class="select-group"><a href="#">group</a></li>
                     </ul> 
                 </th>
                 <th id="os">OS</th> 
@@ -78,7 +78,7 @@
 // select/deselect all from checkbox widget of table headers
 $("table thead tr th#selection :checkbox").live('change', function() {
     // select/deselect running or terminated?
-    var state = $(this).parent().attr("class").replace('select-','');
+    var state = $(this).closest("table").attr("class").replace('list-','');
     if ( $(this).is(":checked") ) {
         $("." + state + " :checkbox").attr("checked", true);
     }
@@ -88,23 +88,21 @@ $("table thead tr th#selection :checkbox").live('change', function() {
 	updateActions();
 });
 
-// select all/none from drop down menu
-$("table thead tr th#selection ul li a").live('click', function() {
+// select all/none/group from drop down menu
+$("table thead tr th#selection ul li").live('click', function() {
     // find the state of the machines
-    var state = $(this).closest("th#selection").attr("class").replace('select-','list-');
+    var state = $(this).closest("table").attr("class");
     // all or none?
-    var all = ($(this).attr("class") == "select-all");
-    // toggle checkboxes
-    $("." + state + " :checkbox").attr("checked", all);
+    if ( $(this).attr("class") == "select-all" || $(this).attr("class") == "select-none") {
+        var all = ($(this).attr("class") == "select-all");
+        // toggle checkboxes
+        $("." + state + " :checkbox").attr("checked", all);
+    } else if ($(this).attr("class") == "select-group"){
+        // TODO: This shoud select only the vms in the selected group
+        // right now the folowing has the functionality of select-all        
+        $("." + state + " :checkbox").attr("checked", true);
+    }
     // update actions
-	updateActions();
-});
-
-// select group from drop down menu
-$("table thead tr th#selection ul li a.select-group").live('click', function() {
-    // find the state of the machines
-    var state = $(this).closest("th#selection").attr("class").replace('select-','');
-    $("." + state + " :checkbox").attr("checked", true);
 	updateActions();
 });
 
@@ -130,6 +128,7 @@ $("table.list-terminated thead tr th#selection ul").live('click', function () {
     return false;
 });
 
+// TODO: This should be populated with more rules for all available states
 var actions = { 'reboot':		['ACTIVE', 'REBOOT', 'multiple'],
 				'shutdown':		['ACTIVE', 'REBOOT', 'multiple'],
 				'connect':		['ACTIVE', ],
@@ -193,7 +192,6 @@ $("a.enabled#action-destroy").live('click', function() {
 		$.ajax({
 			url: '/api/v1.0/servers/' + checked[c].id.replace('input-',''),
 			type: "DELETE",
-			//async: false,
 			dataType: "json",
 			success: function() {}
 		});
@@ -210,7 +208,6 @@ $("a.enabled#action-reboot").live('click', function() {
 			data: {
 				"reboot": '{"type" : "HARD"}'
 				},
-			//async: false,
 			dataType: "json",
 			success: function() {}
 		});
@@ -227,7 +224,6 @@ $("a.enabled#action-shutdown").live('click', function() {
 			data: {
 				"shutdown": '{"timeout" : "5"}'
 				},
-			//async: false,
 			dataType: "json",
 			success: function() {}
 		});

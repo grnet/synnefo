@@ -96,6 +96,19 @@ class Image(models.Model):
 
     vm_id = property(get_vmid)
 
+
+class ImageMetadata(models.Model):
+    meta_key = models.CharField(max_length=50)
+    meta_value = models.CharField(max_length=500)
+    image = models.ForeignKey(Image)
+    
+    class Meta:
+        verbose_name = u'Key-value pair of metadata for an Image.'
+    
+    def __unicode__(self):
+        return u'%s, %s for %s' % (self.meta_key, self.meta_value, self.image.name)
+
+
 class UserLimit(models.Model):
     user = models.ForeignKey(SynnefoUser)
     limit = models.ForeignKey(Limit)
@@ -371,7 +384,7 @@ class VirtualMachineMetadata(models.Model):
         verbose_name = u'Key-value pair of metadata for a VM.'
     
     def __unicode__(self):
-        return u'%s, %s for %s' % (self.key, self.value, self.vm.name)
+        return u'%s, %s for %s' % (self.meta_key, self.meta_value, self.vm.name)
 
 
 class AccountingLog(models.Model):

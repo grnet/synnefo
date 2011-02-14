@@ -221,8 +221,21 @@ var image_tags = {
 function ajax_error(jqXHR) {; 
     // prepare the error message
     $("#error-success h3").text('Error!');
+
+    switch (jqXHR.status)
+    {
+    case 503: // XX error/message
     $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
     // bring up notification
+    break;
+    case 400: // YY error/message
+    $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+    break;
+    default: // XXYY error/message
+    $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+    }
+
+
     var triggers = $("a#notification").overlay({
 	    // some mask tweaks suitable for modal dialogs
 	    mask: {

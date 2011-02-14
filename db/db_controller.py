@@ -23,27 +23,46 @@ import sys
 import zmq
 import time
 import json
-import signal
+import platform
 import logging
 import traceback
 
-from threading import Thread
+from threading import Thread, Event, currentThread
 
 from synnefo.db.models import VirtualMachine
 
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801" # FIXME: move to settings.py
 
+class StoppableThread(Thread):
+    """Thread class with a stop() moethod.
+    
+    The thread needs to check regularly for the stopped() condition.
+    When it does, it exits, so that another thread may .join() it.
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(StoppableThread, self).__init__(*args, **kwargs)
+        self._stop = Event()
+
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()
+
+
 def zmq_sub_thread(subscriber):
     while True:
-        #
-        # This completely blocks any interrupts,
-        # how do I asynchronously terminate the thread?
-        #
         logging.debug("Entering 0mq to wait for message on SUB socket.")
         data = subscriber.recv()
         logging.debug("Received message on 0mq SUB socket.")
         try:
             msg = json.loads(data)
+
+            if currentThread().stopped():
+                logging.debug("Thread has been stopped, leaving request loop.")
+                return
 
             if msg["type"] != "ganeti-op-status":
                 logging.debug("Ignoring message of uknown type %s." % (msg["type"]))
@@ -68,30 +87,41 @@ def zmq_sub_thread(subscriber):
             continue
 
 def main():
-    # Connect to ganeti-0mqd
+    # Create an inproc PUB socket, for inter-thread communication
     zmqc = zmq.Context()
+    inproc = zmqc.socket(zmq.PUB)
+    inproc.bind("inproc://threads")
+
+    # Create a SUB socket, connect to ganeti-0mqd and the inproc PUB socket
     subscriber = zmqc.socket(zmq.SUB)
-    subscriber.setsockopt(zmq.IDENTITY, "snf-db-controller")
+    subscriber.setsockopt(zmq.IDENTITY, platform.node() + "snf-db-controller")
     subscriber.setsockopt(zmq.SUBSCRIBE, "")
     subscriber.connect(GANETI_ZMQ_PUBLISHER)
+    subscriber.connect("inproc://threads")
 
-    zmqt = Thread(target = zmq_sub_thread, args = (subscriber,))
+    # Use a separate thread to process incoming messages,
+    # needed because the Python runtime interacts badly with 0mq's blocking semantics.
+    zmqt = StoppableThread(target = zmq_sub_thread, args = (subscriber,))
     zmqt.start()
 
     try:
+        logging.info("in main thread.");
         while True:
-            # print "In main thread."
-            time.sleep(0.5)
-    except KeyboardInterrupt:
-        print "OK, I'm barfing."
-        # Do whatever clean-up may be necessary.
-        # Gloriously commit seppuku.
-        os.kill(os.getpid(), signal.SIGQUIT)
-        # These don't seem to work, must find out way.
-        # In general, they seem to want to join the I/O thread, which blocks forever.
-        raise SystemExit()
-        sys.exit(1)
+            logging.info("When I grow up, I'll be syncing with Ganeti at this point.")
+            time.sleep(600)
+    except:
+        logging.error("Caught exception:\n" + "".join(traceback.format_exception(*sys.exc_info())))
         
+        #
+        # Cleanup.
+        #
+        # Cancel the suscriber thread, wake it up, then join it.
+        zmqt.stop()
+        inproc.send_json({"type":"null"})
+        zmqt.join()
+
+        return 1
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     sys.exit(main())

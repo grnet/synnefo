@@ -149,16 +149,15 @@ class ServerActionHandler(BaseHandler):
         try:
             machine = VirtualMachine.objects.get(id=id)
         except:
-            raise fault.itemNotFound
+            return noContent
+        #FIXME: for now make a list with only one machine. This will be a list of machines (for the list view)
         reboot_request = request.POST.get('reboot', None)
         shutdown_request = request.POST.get('shutdown', None)
         if reboot_request:
-            print 'reboot was asked, with options: %s' % reboot_request   
-            rapi.RebootInstance(machine)
+            return self.action_start([machine], 'reboot')          
         elif shutdown_request:
-            print 'shutdown was asked, with options: %s' % shutdown_request               
-            rapi.ShutdownInstance(machine)
-        return accepted
+            return self.action_start([machine], 'shutdown')          
+        return noContent #FIXME: when does this happen?
 
 
     def delete(self, request, id):
@@ -168,6 +167,21 @@ class ServerActionHandler(BaseHandler):
     def update(self, request, id):
         return noContent
 
+    def action_start(self, list_of_machines, action):
+        if action == 'reboot':
+            try:
+                for machine in list_of_machines:
+                    rapi.RebootInstance(machine)
+                return accepted
+            except: # something bad happened. FIXME: return code
+                return noContent
+        if action == 'shutdown':        
+            try:
+                for machine in list_of_machines:
+                    rapi.ShutdownInstance(machine)
+                return accepted
+            except: # something bad happened. FIXME: return code
+                return noContent
 
 
 #read is called on GET requests

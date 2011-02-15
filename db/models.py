@@ -49,9 +49,6 @@ class SynnefoUser(models.Model):
         self.credit = self.credit - round(total_cost)
         rcredit = self.credit
                 
-        if self.credit < 0:
-            self.credit = 0
-        
         return rcredit 
     
     def allocate_credits(self):
@@ -73,7 +70,7 @@ class Image(models.Model):
 
     name = models.CharField(max_length=255, help_text=_('description'))
     updated = models.DateTimeField(help_text=_("Image update date"))
-    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now)
+    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now())
     state = models.CharField(choices=IMAGE_STATES, max_length=30)
     description = models.TextField(help_text=_('description'))
     owner = models.ForeignKey(SynnefoUser,blank=True, null=True)

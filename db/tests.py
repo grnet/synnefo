@@ -84,7 +84,7 @@ class FlavorTestCase(unittest.TestCase):
         self.assertEquals(flavor.name, u'C10R10D10', 'Invalid flavor name!')
 
 
-class ChargerTestcase(unittest.TestCase):
+class ChargerTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
         userdj = User.objects.create_user('testuser','test','test2')

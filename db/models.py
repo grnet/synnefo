@@ -249,12 +249,11 @@ class VirtualMachine(models.Model):
     charged = models.DateTimeField()
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
-    sourceimage = models.ForeignKey(Image) 
+    sourceimage = models.ForeignKey(Image, null=False) 
     hostid = models.CharField(max_length=100)
     description = models.TextField(help_text=_('description'))
     ipfour = models.IPAddressField()
     ipsix = models.CharField(max_length=100)
-    owner = models.ForeignKey(SynnefoUser)
     flavor = models.ForeignKey(Flavor)
     suspended = models.BooleanField('Administratively Suspended')
 
@@ -415,5 +414,11 @@ class AccountingLog(models.Model):
         verbose_name = u'Accounting log'
 
     def __unicode__(self):
-        return u'%s %s %s' % (self.vm.name, self.date, self.state)
+        return u'%s - %s - %s' % (self.vm.name, str(self.date), self.state)
+        
+    def get_log_info(self, vm_obj, date_from):
+        """Returns log entries for the specified vm after a date"""
+        entries = AccountingLog.objects.filter(vm=vm_obj).filter(date__gte=date_from).order_by('-date')
+        
+        return entries
 

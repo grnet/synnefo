@@ -124,6 +124,52 @@ class FlavorTestCase(unittest.TestCase):
         self.assertEquals(flavor.name, u'C10R10D10', 'Invalid flavor name!')
 
 
+class AccountingLogTestCase(unittest.TestCase):
+    def setUp(self):
+        """Setup the test"""
+        userdj = User.objects.create_user('testuser','test','test2')
+        userdj.save()
+        
+        # add a user
+        user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user.created = datetime.datetime.now()
+        user.user = userdj
+        user.save()
+        
+        # add an Image
+        si = Image(name='Test Name')
+        si.updated = datetime.datetime.now()
+        si.created = datetime.datetime.now()
+        si.state = 'ACTIVE'
+        si.owner = user
+        si.description = 'testing 1.2.3'
+        si.save()
+        
+        # Now, add a VM
+        vm = VirtualMachine(pk=1)
+        vm.created = datetime.datetime.now()
+        vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
+        vm.hostid = 'testhostid'
+        vm.server_label = 'agreatserver'
+        vm.image_version = '1.0.0'
+        vm.ipfour = '127.0.0.1'
+        vm.ipsix = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
+        vm.owner = user
+        vm.flavor = flavor
+        vm.sourceimage = si
+        
+        vm.save()
+   
+        
+    def tearDown(self):
+        """Cleaning up the data"""
+        user = User.objects.get(username='testuser')
+        user.delete()
+        
+    def test_accounting_log(self):
+        """Test the Accounting Log unit method"""
+        
+
 class ChargerTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""

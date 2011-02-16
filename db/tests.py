@@ -78,6 +78,18 @@ class FlavorCostHistoryTestCase(unittest.TestCase):
         
         self.assertEquals(len(fch_list), 2, 'Price list should have two objects! (%d!=2)' % ( len(fch_list), ))
         
+        # 2010-10-10, active should be 2, inactive 1
+        ex_date = date(year=2010, month=10, day=10)
+        r = FlavorCostHistory.find_cost(fch_list, ex_date)
+        
+        self.assertEquals(r.cost_active, 2, 'Active cost for 2010-10-10 should be 2 (%d!=2)' % ( r.cost_active, ))
+        self.assertEquals(r.cost_inactive, 1, 'Inactive cosr for 2010-10-10 should be 1 (%d!=1)' % ( r.cost_inactive, ))
+        
+        # 2011-11-11, active should be 10, inactive 5
+        ex_date = date(year=2011, month=11, day=11)
+        r = FlavorCostHistory.find_cost(fch_list, ex_date)
+        self.assertEquals(r.cost_active, 10, 'Active cost for 2011-11-11 should be 10 (%d!=10)' % ( r.cost_active, ))
+        self.assertEquals(r.cost_inactive, 5, 'Inactive cost for 2011-11-11 should be 5 (%d!=5)' % ( r.cost_inactive, ))
 
 
 class FlavorTestCase(unittest.TestCase):

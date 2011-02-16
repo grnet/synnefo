@@ -164,6 +164,19 @@ class AccountingLogTestCase(unittest.TestCase):
         vm.sourceimage = si
         vm.save()
         
+        # Now add the log entries
+        alog = AccountingLog()
+        alog.vm = vm
+        alog.date = datetime.datetime(year=2010, month=01, day=01)
+        alog.state = 'STARTED'
+        alog.save()
+        
+        alog = AccountingLog()
+        alog.vm = vm
+        alog.date = datetime.datetime(year=2011, month=02, day=01)
+        alog.state = 'STOPPED'
+        alog.save()
+        
     def tearDown(self):
         """Cleaning up the data"""
         user = User.objects.get(username='testuser')
@@ -171,10 +184,19 @@ class AccountingLogTestCase(unittest.TestCase):
         
         flavor = Flavor.objects.get(pk=11)
         flavor.delete()
-        
+                
     def test_accounting_log(self):
         """Test the Accounting Log unit method"""
+        vm = VirtualMachine.objects.get(pk=10)
         
+        # get all entries, should be 2
+        entries = AccountingLog.get_log_entries(vm, datetime.datetime(year=2009, month=01, day=01))
+        self.assertEquals(len(entries), 2, 'Log entries should be 2 (%d!=2)' % ( len(entries), ))
+        
+        # get enrties only for 2011, should be 1
+        entries = AccountingLog.get_log_entries(vm, datetime.datetime(year=2011, month=01, day=01))
+        self.assertEquals(len(entries), 1, 'Log entries should be 1 (%d!=1)' % ( len(entries), ))
+
 
 class ChargerTestCase(unittest.TestCase):
     def setUp(self):

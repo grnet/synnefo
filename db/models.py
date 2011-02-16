@@ -415,8 +415,9 @@ class AccountingLog(models.Model):
 
     def __unicode__(self):
         return u'%s - %s - %s' % (self.vm.name, str(self.date), self.state)
-        
-    def get_log_info(self, vm_obj, date_from):
+    
+    @staticmethod   
+    def get_log_entries(vm_obj, date_from):
         """Returns log entries for the specified vm after a date"""
         entries = AccountingLog.objects.filter(vm=vm_obj).filter(date__gte=date_from).order_by('-date')
         

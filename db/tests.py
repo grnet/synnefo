@@ -131,9 +131,11 @@ class AccountingLogTestCase(unittest.TestCase):
         userdj.save()
         
         # add a user
-        user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user = SynnefoUser(pk=3, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = userdj
+        user.violations = 0
+        user.max_violations = 5
         user.save()
         
         # add an Image
@@ -145,8 +147,12 @@ class AccountingLogTestCase(unittest.TestCase):
         si.description = 'testing 1.2.3'
         si.save()
         
+        # add a Flavor
+        flavor = Flavor(pk=11, cpu=10, ram=10, disk=10)
+        flavor.save()
+        
         # Now, add a VM
-        vm = VirtualMachine(pk=1)
+        vm = VirtualMachine(pk=10)
         vm.created = datetime.datetime.now()
         vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
         vm.hostid = 'testhostid'
@@ -154,17 +160,17 @@ class AccountingLogTestCase(unittest.TestCase):
         vm.image_version = '1.0.0'
         vm.ipfour = '127.0.0.1'
         vm.ipsix = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
-        vm.owner = user
         vm.flavor = flavor
         vm.sourceimage = si
-        
         vm.save()
-   
         
     def tearDown(self):
         """Cleaning up the data"""
         user = User.objects.get(username='testuser')
         user.delete()
+        
+        flavor = Flavor.objects.get(pk=11)
+        flavor.delete()
         
     def test_accounting_log(self):
         """Test the Accounting Log unit method"""
@@ -180,6 +186,8 @@ class ChargerTestCase(unittest.TestCase):
         user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = userdj
+        user.violations = 0
+        user.max_violations = 5
         user.save()
         
         # add a Flavor

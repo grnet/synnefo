@@ -49,6 +49,34 @@ class CreditAllocatorTestCase(unittest.TestCase):
         self.assertEquals(user.credit, user.quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, user.quota ) )
 
 
+class FlavorCostHistoryTestCase(unittest.TestCase):
+    def setUp(self):
+        """Setup the test"""
+        flavor = Flavor(pk=3, cpu=10, ram=10, disk=10)
+        flavor.save()
+        
+        # Add the FlavorCostHistory
+        fch = FlavorCostHistory(pk=1, cost_active=10, cost_inactive=5)
+        fch.effective_from = date(day=01, month=01, year=2011)
+        fch.flavor = flavor
+        fch.save()
+        
+        fch = FlavorCostHistory(pk=2, cost_active=2, cost_inactive=1)
+        fch.effective_from = date(day=01, month=01, year=2010)
+        fch.flavor = flavor
+        fch.save()
+        
+    def tearDown(self):
+        """Cleaning up the data"""
+        flavor = Flavor.objects.get(pk=3)
+        flavor.delete()
+        
+    def test_flavor_cost_history(self):
+        """Flavor Cost History unit test method"""
+        flavor = Flavor.objects.get(pk=3)
+        
+
+
 class FlavorTestCase(unittest.TestCase):
     def setUp(self):
         """Setup the test"""
@@ -71,9 +99,6 @@ class FlavorTestCase(unittest.TestCase):
         """Cleaning up the data"""
         flavor = Flavor.objects.get(pk=1)
         flavor.delete()
-        
-        fch = FlavorCostHistory(pk=2)
-        fch.delete()
     
     def test_flavor(self):
         """Test a flavor object, its internal cost calculation and naming methods"""

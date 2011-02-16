@@ -10,3 +10,4 @@ lib/
 *.pt.py
 *.installed.cfg
 *.sqlite
+.Python

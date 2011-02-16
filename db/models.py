@@ -143,11 +143,16 @@ class Flavor(models.Model):
         return self._cost_active
     
     def _update_costs(self):
-        # if _cost
+        # if _cost_active is not defined, then define it!
         if '_cost_active' not in dir(self):
-            fch = FlavorCostHistory.objects.filter(flavor=self).order_by('-effective_from')[0]
-            self._cost_active = fch.cost_active
-            self._cost_inactive = fch.cost_inactive
+            fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('-effective_from')
+            if len(fch_list) > 0:
+                fch = fch_list[0]
+                self._cost_active = fch.cost_active
+                self._cost_inactive = fch.cost_inactive
+            else:
+                self._cost_active = 0
+                self._cost_inactive = 0
 
     name = property(_get_name)
     cost_active = property(_get_cost_active)
@@ -155,6 +160,11 @@ class Flavor(models.Model):
 
     def __unicode__(self):
         return self.name
+    
+    def get_price_list(self):
+        fch_list = FlavorCostHistory.objects.get(flavor=self).order_by('effective_from')
+        
+        return fch_list            
 
 
 class FlavorCostHistory(models.Model):
@@ -167,7 +177,17 @@ class FlavorCostHistory(models.Model):
         verbose_name = u'Pricing history for flavors'
     
     def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (cost_active, cost_inactive, flavor.name, effective_from)
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % (self.cost_active, self.cost_inactive, flavor.name, self.effective_from)
+        
+    @staticmethod
+    def find_cost(fch_list, dat):
+        rdate = fch_list[0]
+
+        for fc in fch_list:
+            if dat > fc.effective_from:
+                rdate = fc
+        
+        return rdate
 
 
 class VirtualMachine(models.Model):
@@ -281,7 +301,7 @@ class VirtualMachine(models.Model):
             raise VirtualMachine.InvalidBackendIdError(str(name))
         return int(ns)
 
-    def __init__(self, *args, **kw): 
+    def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)
         # Before this instance gets save()d

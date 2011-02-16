@@ -162,7 +162,7 @@ class Flavor(models.Model):
         return self.name
     
     def get_price_list(self):
-        fch_list = FlavorCostHistory.objects.get(flavor=self).order_by('effective_from')
+        fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('effective_from')
         
         return fch_list            
 

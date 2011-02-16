@@ -74,6 +74,9 @@ class FlavorCostHistoryTestCase(unittest.TestCase):
     def test_flavor_cost_history(self):
         """Flavor Cost History unit test method"""
         flavor = Flavor.objects.get(pk=3)
+        fch_list = flavor.get_price_list()
+        
+        self.assertEquals(len(fch_list), 2, 'Price list should have two objects! (%d!=2)' % ( len(fch_list), ))
         
 
 

@@ -44,9 +44,8 @@ class SynnefoUser(models.Model):
         total_cost = float(cost)*total_hours
         
         self.credit = self.credit - round(total_cost)
-        rcredit = self.credit
                 
-        return rcredit
+        return self.credit
     
     def allocate_credits(self):
         """Allocate credits. Add monthly rate to user credit reserve."""

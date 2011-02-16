@@ -225,7 +225,7 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField(max_length=255)
-    created = models.DateTimeField(help_text=_('VM creation date'), default=datetime.datetime.now)
+    created = models.DateTimeField(help_text=_('VM creation date'), default=datetime.datetime.now())
     charged = models.DateTimeField()
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
@@ -266,7 +266,6 @@ class VirtualMachine(models.Model):
             self.__action = action
          def __str__(self):
             return repr(str(self._action))
-
 
     @staticmethod
     def id_from_instance_name(name):
@@ -364,7 +363,7 @@ class VirtualMachineGroup(models.Model):
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(SynnefoUser)
     machines = models.ManyToManyField(VirtualMachine)
-    created = models.DateTimeField(help_text=_("Group creation date"), default=datetime.datetime.now)
+    created = models.DateTimeField(help_text=_("Group creation date"), default=datetime.datetime.now())
 
     class Meta:
         verbose_name = u'Virtual Machine Group'

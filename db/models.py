@@ -27,6 +27,8 @@ class SynnefoUser(models.Model):
     monthly_rate = models.IntegerField()
     user = models.ForeignKey(User)
     limits = models.ManyToManyField(Limit, through='UserLimit')
+    violations = models.IntegerField()
+    max_violations = models.IntegerField(default=3)
     
     class Meta:
         verbose_name = u'Synnefo User'
@@ -44,6 +46,11 @@ class SynnefoUser(models.Model):
         total_cost = float(cost)*total_hours
         
         self.credit = self.credit - round(total_cost)
+        
+        if self.credit < 0:
+            self.violations = self.violations + 1
+        else:
+            self.violations = 0
                 
         return self.credit
     

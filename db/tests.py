@@ -26,6 +26,8 @@ class CreditAllocatorTestCase(unittest.TestCase):
         user = SynnefoUser(name='CreditAllocatorTestUser', credit=0, quota=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = User.objects.get(username='testuser')
+        user.violations = 0
+        user.max_violations = 5
         user.save()
     
     def tearDown(self):

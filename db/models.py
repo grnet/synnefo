@@ -88,7 +88,10 @@ class Image(models.Model):
         return u'%s' % (self.name)
 
     def get_vmid(self):
-        """Returns first Virtual Machine's id, if any"""
+        """Returns first Virtual Machine's id, if any
+           an Image might be the ForeignKey to one or many VirtualMachines
+           we want the vm that created the Image (the first one)
+        """
         if self.virtualmachine_set.all():
             return self.virtualmachine_set.all()[0].id
         else:

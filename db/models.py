@@ -37,8 +37,11 @@ class SynnefoUser(models.Model):
         return self.name
     
     def charge_credits(self, cost, start, end):
-        """Reduce user credits for specified duration. 
-        Returns amount of credits remaining. Negative if the user surpassed his limit."""
+        """Reduce user credits for specified duration.
+        
+        Returns amount of credits remaining. Negative if the user has surpassed his limit.
+        
+        """
         td = end - start
         sec = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / float(10**6)
         
@@ -138,16 +141,18 @@ class Flavor(models.Model):
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
 
     def _get_cost_inactive(self):
+        """Returns the inactive cost for a VM (usually only disk usage counts)"""
         self._update_costs()
         return self._cost_inactive
 
     def _get_cost_active(self):
+        """Returns the active cost for a VM"""
         self._update_costs()
         return self._cost_active
     
     def _update_costs(self):
-        # if _cost_active is not defined, then define it!
-        if '_cost_active' not in dir(self):
+        """Update the internal cost_active, cost_inactive variables"""
+        if not hasattr(self, '_cost_active'):
             fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('-effective_from')
             if len(fch_list) > 0:
                 fch = fch_list[0]

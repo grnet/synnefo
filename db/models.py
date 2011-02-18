@@ -137,16 +137,16 @@ class Flavor(models.Model):
         verbose_name = u'Virtual machine flavor'
             
     def _get_name(self):
-        """Returns flavor name"""
+        """Returns flavor name (generated)"""
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
 
     def _get_cost_inactive(self):
-        """Returns the inactive cost for a VM (usually only disk usage counts)"""
+        """Returns the inactive cost for a Flavor (usually only disk usage counts)"""
         self._update_costs()
         return self._cost_inactive
 
     def _get_cost_active(self):
-        """Returns the active cost for a VM"""
+        """Returns the active cost for a Flavor"""
         self._update_costs()
         return self._cost_active
     
@@ -170,6 +170,7 @@ class Flavor(models.Model):
         return self.name
     
     def get_price_list(self):
+        """Returns the price catalog for this Flavor"""
         fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('effective_from')
         
         return fch_list            

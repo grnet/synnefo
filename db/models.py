@@ -429,6 +429,19 @@ class AccountingLog(models.Model):
     def get_log_entries(vm_obj, date_from):
         """Returns log entries for the specified vm after a date"""
         entries = AccountingLog.objects.filter(vm=vm_obj).filter(date__gte=date_from).order_by('-date')
-        
+    
         return entries
 
+
+class Disk(models.Model):
+    name = models.CharField(max_length=255)
+    created = models.DateTimeField('Disk creation date', default=datetime.datetime.now())
+    size = models.PositiveIntegerField('Disk size in GBs')
+    vm = models.ForeignKey(VirtualMachine, blank=True, null=True)
+    owner = models.ForeignKey(SynnefoUser, blank=True, null=True)  
+    
+    class Meta:
+        verbose_name = u'Disk instance'
+
+    def __unicode__(self):
+        return self.name

@@ -1,6 +1,6 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 #
-# Copyright Â© 2010 Greek Research and Technology Network
+# Copyright ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© 2010 Greek Research and Technology Network
 #
 
 from django.conf import settings
@@ -29,6 +29,12 @@ VERSIONS = [
         "docURL" : "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20090714.pdf ",
         "wadl" : "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl"
     },
+    {
+        "status": "CURRENT",
+        "id": "v1.0grnet1",
+        "docURL" : "None yet",
+        "wad1" : "None yet"
+    }
 ]
 
 
@@ -325,7 +331,6 @@ class VirtualMachineGroupHandler(BaseHandler):
         return noContent
 
 
-
 class LimitHandler(BaseHandler):
     allowed_methods = ('GET',)
 
@@ -391,3 +396,66 @@ class LimitHandler(BaseHandler):
                 "absolute": self.absolute,
                }
             }
+
+
+class DiskHandler(BaseHandler):
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def read(self, request, id=None):
+        """List Disks"""
+        if id is None:
+            return self.read_all(request)
+        elif id == "detail":
+            return self.read_all(request, detail=True)
+        else:
+            return self.read_one(request, id)
+
+    def read_one(self, request, id):
+        """List one Disk with the specified id with all details"""
+        # FIXME Get detailed info from the DB 
+        # for the Disk with the specified id
+        try:
+            disk = Disk.objects.get(pk=id)
+            disk_details = {
+                "id" : disk.id, 
+                "name" : disk.name, 
+                "size" : disk.size,
+                "created" : disk.created, 
+                "serverId" : disk.vm.id
+            }
+            return { "disks" : disk_details }
+        except:
+            raise fault.itemNotFound
+
+    @paginator
+    def read_all(self, request, detail=False):
+        """List all Disks. If -detail- is set list them with all details"""
+        if not detail:
+            disks = Disk.objects.filter(owner=SynnefoUser.objects.all()[0])
+            return { "disks": [ { "id": disk.id, "name": disk.name } for disk in disks ] }
+        else:
+            disks = Disk.objects.filter(owner=SynnefoUser.objects.all()[0])
+            disks_details = [ {
+                "id" : disk.id, 
+                "name" : disk.name,
+                "size" : disk.size,
+                "created" : disk.created, 
+                "serverId" : disk.vm.id,
+            } for disk in disks ]
+            return { "disks":  disks_details }                
+
+    def create(self, request):
+        """Create a new Disk"""
+        # FIXME Create a partial DB entry, 
+        # then call the backend for actual creation
+        pass
+
+    def update(self, request, id):
+        """Rename the Disk with the specified id"""
+        # FIXME Change the Disk's name in the DB
+        pass
+
+    def delete(self, request, id):
+        """Destroy the Disk with the specified id"""
+        # Call the backend for actual destruction
+        pass

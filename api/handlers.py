@@ -54,7 +54,7 @@ class ServerHandler(BaseHandler):
 
     def read(self, request, id=None):
         from time import sleep
-        sleep(1)
+        sleep(0.5)
         #TODO: delete the sleep once the mock objects are removed
         if id is None:
             return self.read_all(request)
@@ -64,22 +64,19 @@ class ServerHandler(BaseHandler):
             return self.read_one(request, id)
 
     def read_one(self, request, id):
-        virtual_servers = VirtualMachine.objects.all()
-        #get all VM's for now, FIX it to take the user's VMs only yet
         try:
-            instance = rapi.GetInstance(id)
-            servers = VirtualMachine.objects.all()[0]
-            return { "server": instance_to_server(instance) }
-        except GanetiApiError:
+            instance = VirtualMachine.objects.get(id=id)
+            return { "server": instance } #FIXME
+        except:
             raise fault.itemNotFound
 
     @paginator
     def read_all(self, request, detail=False):
         virtual_servers = VirtualMachine.objects.all()
-        #get all VM's for now, FIX it to take the user's VMs only
+        virtual_servers = [virtual_server for virtual_server in  virtual_servers if virtual_server.rsapi_state !="DELETED"]
+        #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
 
         if not detail:
-            virtual_servers = VirtualMachine.objects.filter(owner=User.objects.all()[0])
             return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
         else:
             virtual_servers_list = [{'status': server.rsapi_state, 

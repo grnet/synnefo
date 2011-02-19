@@ -37,6 +37,7 @@
             <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
             <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
             <a href="#" class="more">{% trans "more &hellip;" %}</a>
+            <a href="#" class="action-start">{% trans "Start" %}</a>
         </div>
         <div class="seperator"></div>
     </div>
@@ -660,6 +661,32 @@ function shutdown(serverID) {
     return false;    
 }
 
+
+// reboot action
+function start(serverID){
+    // ajax post start call
+    $.ajax({
+        url: '/api/v1.0/servers/' + serverID + '/action',
+        type: "POST",
+        data: {
+            "start": '{"type" : "NORMAL"}'
+            },
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    ajax_error(jqXHR);
+                    },
+        success: function(data, textStatus, jqXHR) {
+                    if ( jqXHR.status == '202') {
+                        ajax_success(jqXHR);
+                    } else {
+                        ajax_error(jqXHR);
+                    }}
+    });
+    return false;
+}
+
+
 // basic functions executed on page load
 
 // create tabs for main menu
@@ -678,6 +705,13 @@ $("div.actions a.action-shutdown").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     confirm_action('shutdown', shutdown, serverID, serverName);
+    return false;
+});
+// intercept start click
+$("div.actions a.action-start").live('click', function(){ 
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    confirm_action('start', start, serverID, serverName);
     return false;
 });
 </script>

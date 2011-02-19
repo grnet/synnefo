@@ -156,10 +156,13 @@ class ServerActionHandler(BaseHandler):
         #FIXME: for now make a list with only one machine. This will be a list of machines (for the list view)
         reboot_request = request.POST.get('reboot', None)
         shutdown_request = request.POST.get('shutdown', None)
+        start_request = request.POST.get('start', None)
         if reboot_request:
             return self.action_start([machine], 'reboot')          
         elif shutdown_request:
             return self.action_start([machine], 'shutdown')          
+        elif start_request:
+            return self.action_start([machine], 'start')          
         return noContent #FIXME: when does this happen?
 
 
@@ -176,7 +179,8 @@ class ServerActionHandler(BaseHandler):
                 for machine in list_of_machines:
                     rapi.RebootInstance(machine)
                 return accepted
-            except: # something bad happened. FIXME: return code
+            except: # something bad happened.
+#FIXME: return code. Rackspace error response code(s): cloudServersFault (400, 500), serviceUnavailable (503), unauthorized(401), badRequest (400), badMediaType(415), itemNotFound (404), buildInProgress (409), overLimit (413)
                 return noContent
         if action == 'shutdown':        
             try:
@@ -185,6 +189,14 @@ class ServerActionHandler(BaseHandler):
                 return accepted
             except: # something bad happened. FIXME: return code
                 return noContent
+        if action == 'start':    
+            try:
+                for machine in list_of_machines:
+                    rapi.StartupInstance(machine)
+                return accepted
+            except: # something bad happened. FIXME: return code
+                return noContent
+
 
 
 #read is called on GET requests

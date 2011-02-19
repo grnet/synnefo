@@ -1,7 +1,7 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 #
-# Copyright ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© 2010 Greek Research and Technology Network
-#
+# Copyright © 2010 Greek Research and Technology Network
+
 
 from django.conf import settings
 from piston.handler import BaseHandler, AnonymousBaseHandler

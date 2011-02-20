@@ -66,27 +66,7 @@ class FlavorCostHistoryTestCase(TestCase):
 
 
 class FlavorTestCase(TestCase):
-    def setUp(self):
-        """Setup the test"""
-        # Add the Flavor object
-        flavor = Flavor(pk=1, cpu=10, ram=10, disk=10)
-        flavor.save()
-        
-        # Add the FlavorCostHistory
-        fch = FlavorCostHistory(pk=1, cost_active=10, cost_inactive=5)
-        fch.effective_from = date(day=01, month=01, year=2011)
-        fch.flavor = flavor
-        fch.save()
-        
-        fch = FlavorCostHistory(pk=2, cost_active=2, cost_inactive=1)
-        fch.effective_from = date(day=01, month=01, year=2010)
-        fch.flavor = flavor
-        fch.save()
-    
-    def tearDown(self):
-        """Cleaning up the data"""
-        flavor = Flavor.objects.get(pk=1)
-        flavor.delete()
+    fixtures = [ 'db_test_data' ]
     
     def test_flavor(self):
         """Test a flavor object, its internal cost calculation and naming methods"""

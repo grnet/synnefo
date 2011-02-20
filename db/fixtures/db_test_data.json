@@ -1,0 +1,171 @@
+[
+    {
+        "model": "db.SynnefoUser",
+        "pk": 1,
+        "fields": {
+            "name": "admin user",
+            "credit": 0,
+            "created": "2011-02-06",
+            "monthly_rate": 10,
+            "user" : 1,
+            "violations" : 0
+   	    }
+    },
+    {
+        "model" : "db.Limit",
+        "pk" : 1,
+        "fields" : {
+            "name" : "QUOTA_CREDIT",
+            "user" : 1,
+            "value" : 100
+        }
+    }
+    ,
+    {
+        "model": "db.Flavor",
+        "pk": 1,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 10
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 2,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 10
+        }
+    },
+    {
+        "model" : "db.FlavorCostHistory",
+        "pk" : 1,
+        "fields" : {
+            "cost_active" : 10,
+            "cost_inactive" : 5,
+            "effective_from" : "2011-01-01",
+            "flavor" : 1
+        }
+    },
+    {
+        "model" : "db.FlavorCostHistory",
+        "pk" : 2,
+        "fields" : {
+            "cost_active" : 2,
+            "cost_inactive" : 1,
+            "effective_from" : "2010-01-01",
+            "flavor" : 1
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 1001,
+        "fields": {
+            "name": "snf-1001",
+            "created": "2011-02-06 00:00:00",
+            "charged": "2011-02-06 00:00:00",
+            "sourceimage": 1,
+            "hostid": "HAL-9000",
+            "description": "database server",
+            "ipfour": "192.168.2.1",
+            "ipsix": "::1",
+            "flavor": 1,
+            "_operstate": "STOPPED"
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 1002,
+        "fields": {
+            "name": "snf-1002",
+            "created": "2011-02-10 00:00:00",
+            "charged": "2011-02-10 00:00:00",
+            "sourceimage": 1,
+            "hostid": "HAL-9000",
+            "description": "mail server",
+            "ipfour": "192.168.2.2",
+            "ipsix": "::2",
+            "flavor": 1,
+            "_operstate": "BUILD"
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 1003,
+        "fields": {
+            "name": "snf-1003",
+            "created": "2011-02-10 00:00:00",
+            "charged": "2011-02-10 00:00:00",
+            "sourceimage": 1,
+            "hostid": "HAL-9000",
+            "description": "my server",
+            "ipfour": "192.168.2.3",
+            "ipsix": "::3",
+            "flavor": 1,
+            "_operstate": "STARTED"
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 1004,
+        "fields": {
+            "name": "snf-1004",
+            "created": "2011-02-10 00:00:00",
+            "charged": "2011-02-10 00:00:00",
+            "sourceimage": 1,
+            "hostid": "HAL-9000",
+            "description": "my 2nd server",
+            "ipfour": "192.168.2.4",
+            "ipsix": "::4",
+            "flavor": 1,
+            "_operstate": "STARTED"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 1,
+        "fields": {
+            "name": "Debian Squeeze",
+            "updated": "2011-02-06 00:00:00",
+            "created": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Full Debian Squeeze Installation"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 2,
+        "fields": {
+            "name": "Slackware 13.1",
+            "updated": "2011-02-10 00:00:00",
+            "created": "2011-02-10 00:00:00",
+            "state": "ACTIVE",
+            "description": "Full Slackware 13.1 Installation",
+            "owner" : 1
+        }
+    },   
+    {
+        "model": "db.Disk",
+        "pk": 1,
+        "fields": {
+            "name": "My_Music",
+            "created": "2011-02-10 00:00:00",
+            "size" : "20",
+            "vm" : "1001",
+            "owner" : "1"
+        }
+    }, 
+    {
+        "model": "db.Disk",
+        "pk": 2,
+        "fields": {
+            "name": "My_Videos",
+            "created": "2011-02-10 00:00:00",
+            "size" : "300",
+            "vm" : "1001",
+            "owner" : "1"
+        }
+    } 
+]

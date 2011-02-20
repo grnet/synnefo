@@ -2,7 +2,7 @@
 #
 # Copyright © 2010 Greek Research and Technology Network
 
-
+import json
 from django.conf import settings
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
@@ -103,9 +103,22 @@ class ServerHandler(BaseHandler):
 
     def create(self, request):
         print 'create machine was called'
-        rapi.CreateInstance('create', 'machine-unwebXYZ', 'plain', [{"size": 5120}], [{}], os='debootstrap+default', ip_check=False, name_check=False,pnode="store68", beparams={'auto_balance': True, 'vcpus': 2, 'memory': 1024})
+        #TODO: add random pass, metadata       
+        try:
+            options_request = json.loads(request.POST.get('create', None)) #here we have the options for cpu, ram etc
+            cpu = options_request.get('cpu','')
+            ram = options_request.get('ram','')
+            name = options_request.get('name','')
+            storage = options_request.get('storage','')
+            pnode = rapi.GetNodes()[0]
+            rapi.CreateInstance('create', name, 'plain', [{"size": storage}], [{}], os='debootstrap+default', ip_check=False, name_check=False,pnode=pnode, beparams={'auto_balance': True, 'vcpus': cpu, 'memory': ram})
+            print accepted
+            return accepted
+        except: # something bad happened. FIXME: return code
+            return noContent
+
         #TODO: replace with real data from request.POST
-        return accepted
+        #TODO: create the VM in the database
 
     def update(self, request, id):
         return noContent

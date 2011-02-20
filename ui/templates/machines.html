@@ -596,16 +596,20 @@ $("#start").click(function(){
     url: '/api/v1.0/servers',
     type: "POST",
     data: {
-        "create": {"foo" : "foo"}
+        "create": '{"cpu" : "2", "ram": "1024", "storage": "15", "name": "image name"}'
         },
     //TODO: get the real data
     dataType: "json",
+    timeout: TIMEOUT,
     error: function(jqXHR, textStatus, errorThrown) { 
                 ajax_error(jqXHR);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
-                    ajax_success(jqXHR);
+                    alert(data);
+                    alert(textStatus);
+                    alert(jqXHR);
+                    ajax_success(jqXHR);                   
                 } else {
                     ajax_error(jqXHR);
                 }}

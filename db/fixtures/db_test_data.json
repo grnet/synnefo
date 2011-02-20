@@ -124,6 +124,24 @@
         }
     },
     {
+        "model" : "db.AccountingLog",
+        "pk" : 1,
+        "fields" : {
+            "vm" : 1001,
+            "date" : "2010-01-01",
+            "state" : "STARTED"
+        }
+    },
+    {
+        "model" : "db.AccountingLog",
+        "pk" : 2,
+        "fields" : {
+            "vm" : 1001,
+            "date" : "2011-02-01",
+            "state" : "STARTED"
+        }
+    },
+    {
         "model": "db.Image",
         "pk": 1,
         "fields": {

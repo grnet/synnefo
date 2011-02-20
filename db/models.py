@@ -9,26 +9,14 @@ import datetime
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
-class Limit(models.Model):
-    description = models.CharField(max_length=45)
-    
-    class Meta:
-        verbose_name = u'User limit'
-    
-    def __unicode__(self):
-        return self.description
-
 
 class SynnefoUser(models.Model):
     name = models.CharField(max_length=255)
     credit = models.IntegerField()
-    quota = models.IntegerField()
     created = models.DateField()
     monthly_rate = models.IntegerField()
     user = models.ForeignKey(User)
-    limits = models.ManyToManyField(Limit, through='UserLimit')
     violations = models.IntegerField()
-    max_violations = models.IntegerField(default=3)
     
     class Meta:
         verbose_name = u'Synnefo User'
@@ -116,12 +104,15 @@ class ImageMetadata(models.Model):
 
 
 class UserLimit(models.Model):
+    LIMITS = (
+        ('QUOTA_CREDIT', 'Maximum number of credits per user'),
+        ('MAX_VIOLATIONS', 'Maximum number of credit violation per user')
+    )
     user = models.ForeignKey(SynnefoUser)
-    limit = models.ForeignKey(Limit)
+    limit = models.CharField(choices=LIMITS, max_length=30, null=False)
     value = models.IntegerField()
     
     class Meta:
-        unique_together = ('user', 'limit')
         verbose_name = u'Enforced limit for user'
     
     def __unicode__(self):

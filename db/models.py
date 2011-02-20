@@ -9,7 +9,6 @@ import datetime
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
-
 class SynnefoUser(models.Model):
     name = models.CharField(max_length=255)
     credit = models.IntegerField()
@@ -103,7 +102,7 @@ class ImageMetadata(models.Model):
         return u'%s, %s for %s' % (self.meta_key, self.meta_value, self.image.name)
 
 
-class UserLimit(models.Model):
+class Limit(models.Model):
     LIMITS = (
         ('QUOTA_CREDIT', 'Maximum number of credits per user'),
         ('MAX_VIOLATIONS', 'Maximum number of credit violation per user')
@@ -181,11 +180,13 @@ class FlavorCostHistory(models.Model):
         
     @staticmethod
     def find_cost(fch_list, dat):
-        rdate = fch_list[0]
+        """Returns FlavorCostHistory instance from a list (fch_list) for a specified date (dat)"""
+        rdate = None
 
         for fc in fch_list:
             if dat > fc.effective_from:
                 rdate = fc
+                break
         
         return rdate
 

@@ -390,6 +390,14 @@ class VirtualMachine(models.Model):
     def __unicode__(self):
         return self.name
 
+    def get_accounting_logs(self):
+        """Returns all AcountingLog records after the charged field"""
+        acc_logs = AccountingLog.objects.filter(date__gte=self.charged, vm=self)
+        if len(acc_logs) == 0:
+            return []
+            
+        return acc_logs
+
 
 class VirtualMachineGroup(models.Model):
     "Groups of VM's for SynnefoUsers"

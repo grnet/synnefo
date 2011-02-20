@@ -96,8 +96,8 @@
         "pk": 1003,
         "fields": {
             "name": "snf-1003",
-            "created": "2011-02-10 00:00:00",
-            "charged": "2011-02-10 00:00:00",
+            "created": "2009-02-10 00:00:00",
+            "charged": "2010-01-01 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
             "description": "my server",
@@ -142,6 +142,33 @@
         }
     },
     {
+        "model" : "db.AccountingLog",
+        "pk" : 3,
+        "fields" : {
+            "vm" : 1003,
+            "date" : "2010-01-01",
+            "state" : "STARTED"
+        }
+    },
+    {
+        "model" : "db.AccountingLog",
+        "pk" : 4,
+        "fields" : {
+            "vm" : 1003,
+            "date" : "2010-03-01",
+            "state" : "STOPPED"
+        }
+    },
+    {
+        "model" : "db.AccountingLog",
+        "pk" : 5,
+        "fields" : {
+            "vm" : 1003,
+            "date" : "2011-01-01",
+            "state" : "STARTED"
+        }
+    },
+    {
         "model": "db.Image",
         "pk": 1,
         "fields": {
@@ -171,7 +198,7 @@
             "name": "My_Music",
             "created": "2011-02-10 00:00:00",
             "size" : "20",
-            "vm" : "1001",
+            "vm" : 1001,
             "owner" : "1"
         }
     }, 
@@ -182,7 +209,7 @@
             "name": "My_Videos",
             "created": "2011-02-10 00:00:00",
             "size" : "300",
-            "vm" : "1001",
+            "vm" : 1001,
             "owner" : "1"
         }
     } 

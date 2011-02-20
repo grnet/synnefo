@@ -28,10 +28,7 @@ def charge():
         cost = 0
         
         # Running and Stopped is charged, else the cost is zero
-        if vm.state == 'PE_VM_RUNNING':
-            cost = vm.flavor.cost_active
-        elif vm.state == 'PE_VM_STOPPED':
-            cost = vm.flavor.cost_inactive
+        
         
         start = vm.charged
         end = datetime.now()

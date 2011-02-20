@@ -95,6 +95,18 @@ class AccountingLogTestCase(TestCase):
         self.assertEquals(len(entries), 1, 'Log entries should be 1 (%d!=1)' % ( len(entries), ))
 
 
+class VirtualMachineTestCase(TestCase):
+    fixtures = [ 'db_test_data' ]
+    
+    def test_virtual_machine(self):
+        """Virtual Machine (model) unit test method"""
+        vm = VirtualMachine.objects.get(pk=1003)
+        
+        # should be three
+        acc_logs = vm.get_accounting_logs()
+        
+        self.assertEquals(len(acc_logs), 3, 'Log Entries should be 3 (%d!=3)' % ( len(acc_logs), ))
+
 # FIXME, this test is broken
 class ChargerTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
@@ -102,15 +114,20 @@ class ChargerTestCase(TestCase):
     def test_charger(self):
         """Charger unit test method"""
         
+        # user with pk=1 should have 100 credits
+        user = SynnefoUser.objects.get(pk=1)
+        user.credit = 100
+        user.save()
+        
         # charge when the vm is running
         charger.charge()
         
         user = SynnefoUser.objects.get(pk=1)
+        
         self.assertEquals(user.credit, 90, 'Error in charging process (%d!=90, running)' % ( user.credit, ))
         
         # charge when the vm is stopped
         vm = VirtualMachine.objects.get(pk=1)
-        vm.state = 'PE_VM_STOPPED'
         vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
         vm.save()
         
@@ -121,7 +138,6 @@ class ChargerTestCase(TestCase):
         
         # try charge until the user spends all his credits, see if the charger
         vm = VirtualMachine.objects.get(pk=1)
-        vm.state = 'PE_VM_RUNNING'
         vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
         vm.save()
         

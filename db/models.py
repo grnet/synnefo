@@ -198,6 +198,7 @@ class FlavorCostHistory(models.Model):
         for fc in fch_list:
             if dat > fc.effective_from:
                 rdate = fc
+            else:
                 break
         
         return rdate

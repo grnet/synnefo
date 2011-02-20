@@ -41,31 +41,12 @@ class CreditAllocatorTestCase(TestCase):
         self.assertEquals(user.credit, limit_quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, limit_quota ) )
 
 
-class FlavorCostHistoryTestCase(unittest.TestCase):
-    def setUp(self):
-        """Setup the test"""
-        flavor = Flavor(pk=3, cpu=10, ram=10, disk=10)
-        flavor.save()
-        
-        # Add the FlavorCostHistory
-        fch = FlavorCostHistory(pk=1, cost_active=10, cost_inactive=5)
-        fch.effective_from = date(day=01, month=01, year=2011)
-        fch.flavor = flavor
-        fch.save()
-        
-        fch = FlavorCostHistory(pk=2, cost_active=2, cost_inactive=1)
-        fch.effective_from = date(day=01, month=01, year=2010)
-        fch.flavor = flavor
-        fch.save()
-        
-    def tearDown(self):
-        """Cleaning up the data"""
-        flavor = Flavor.objects.get(pk=3)
-        flavor.delete()
-        
+class FlavorCostHistoryTestCase(TestCase):
+    fixtures = [ 'db_test_data' ]
+    
     def test_flavor_cost_history(self):
         """Flavor Cost History unit test method"""
-        flavor = Flavor.objects.get(pk=3)
+        flavor = Flavor.objects.get(pk=1)
         fch_list = flavor.get_price_list()
         
         self.assertEquals(len(fch_list), 2, 'Price list should have two objects! (%d!=2)' % ( len(fch_list), ))
@@ -84,7 +65,7 @@ class FlavorCostHistoryTestCase(unittest.TestCase):
         self.assertEquals(r.cost_inactive, 5, 'Inactive cost for 2011-11-11 should be 5 (%d!=5)' % ( r.cost_inactive, ))
 
 
-class FlavorTestCase(unittest.TestCase):
+class FlavorTestCase(TestCase):
     def setUp(self):
         """Setup the test"""
         # Add the Flavor object
@@ -116,7 +97,7 @@ class FlavorTestCase(unittest.TestCase):
         self.assertEquals(flavor.name, u'C10R10D10', 'Invalid flavor name!')
 
 
-class AccountingLogTestCase(unittest.TestCase):
+class AccountingLogTestCase(TestCase):
     def setUp(self):
         """Setup the test"""
         userdj = User.objects.create_user('testuser','test','test2')
@@ -189,7 +170,7 @@ class AccountingLogTestCase(unittest.TestCase):
         self.assertEquals(len(entries), 1, 'Log entries should be 1 (%d!=1)' % ( len(entries), ))
 
 
-class ChargerTestCase(unittest.TestCase):
+class ChargerTestCase(TestCase):
     def setUp(self):
         """Setup the test"""
         userdj = User.objects.create_user('testuser','test','test2')

@@ -16,36 +16,17 @@ from db import charger
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.test import TestCase
 
-class CreditAllocatorTestCase(unittest.TestCase):
-    def setUp(self):
-        """Setup the test"""
-        userdj = User.objects.create(username='testuser')
-        userdj.save()
+class CreditAllocatorTestCase(TestCase):
+    fixtures = [ 'db_test_data' ]
         
-        user = SynnefoUser(name='CreditAllocatorTestUser', credit=0, monthly_rate=10)
-        user.created = datetime.datetime.now()
-        user.user = User.objects.get(username='testuser')
-        user.violations = 0
-        user.save()
-        
-        limit = Limit()
-        limit.user = user
-        limit.name = 'QUOTA_CREDIT'
-        limit.value = 100
-        limit.save()
-    
-    def tearDown(self):
-        """Cleaning up the data"""
-        user = User.objects.get(username="testuser")
-        user.delete()
-    
     def test_credit_allocator(self):
         """Credit Allocator unit test method"""
         # test the allocator
         credit_allocator.allocate_credit()
         
-        user = SynnefoUser.objects.get(name='CreditAllocatorTestUser')
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: (%d!=10)' % ( user.credit, ) )
         
         # get the quota from Limit model and check the answer
@@ -56,7 +37,7 @@ class CreditAllocatorTestCase(unittest.TestCase):
         for i in range(1, 10):
             credit_allocator.allocate_credit()
                 
-        user = SynnefoUser.objects.get(name='CreditAllocatorTestUser')
+        user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, limit_quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, limit_quota ) )
 
 
@@ -142,11 +123,10 @@ class AccountingLogTestCase(unittest.TestCase):
         userdj.save()
         
         # add a user
-        user = SynnefoUser(pk=3, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user = SynnefoUser(pk=3, name='Test User', credit=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = userdj
         user.violations = 0
-        user.max_violations = 5
         user.save()
         
         # add an Image
@@ -216,7 +196,7 @@ class ChargerTestCase(unittest.TestCase):
         userdj.save()
         
         # add a user
-        user = SynnefoUser(pk=1, name='Test User', credit=100, quota=100, monthly_rate=10)
+        user = SynnefoUser(pk=1, name='Test User', credit=100, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = userdj
         user.violations = 0

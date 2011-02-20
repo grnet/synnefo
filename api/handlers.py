@@ -112,7 +112,6 @@ class ServerHandler(BaseHandler):
             storage = options_request.get('storage','')
             pnode = rapi.GetNodes()[0]
             rapi.CreateInstance('create', name, 'plain', [{"size": storage}], [{}], os='debootstrap+default', ip_check=False, name_check=False,pnode=pnode, beparams={'auto_balance': True, 'vcpus': cpu, 'memory': ram})
-            print accepted
             return accepted
         except: # something bad happened. FIXME: return code
             return noContent
@@ -124,10 +123,14 @@ class ServerHandler(BaseHandler):
         return noContent
 
     def delete(self, request, id):
-        machine = 'machine-XXX' #VirtualMachine.objects.get(id=id_from_instance_name(id))
-        print 'deleting machine %s' % machine
-        rapi.DeleteInstance(machine.name)
-        return accepted
+        try:
+            instance = VirtualMachine.objects.get(id=id)
+            print 'deleting machine %s' % instance.name
+            instance._operstate = 'DESTROYED'
+            return accepted
+            #rapi.DeleteInstance(instance.name)
+        except:
+            raise fault.itemNotFound
 
 
 class ServerAddressHandler(BaseHandler):

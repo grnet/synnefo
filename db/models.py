@@ -49,8 +49,10 @@ class SynnefoUser(models.Model):
         self.credit = self.credit + self.monthly_rate
         
         # ensure that the user has not more credits than his quota
-        if self.credit > self.quota:
-            self.credit = self.quota
+        limit_quota = Limit.get_limit_for_user('QUOTA_CREDIT', self)
+                
+        if self.credit > limit_quota:
+            self.credit = limit_quota
 
 
 class Image(models.Model):
@@ -108,7 +110,7 @@ class Limit(models.Model):
         ('MAX_VIOLATIONS', 'Maximum number of credit violation per user')
     )
     user = models.ForeignKey(SynnefoUser)
-    limit = models.CharField(choices=LIMITS, max_length=30, null=False)
+    name = models.CharField(choices=LIMITS, max_length=30, null=False)
     value = models.IntegerField()
     
     class Meta:
@@ -117,6 +119,16 @@ class Limit(models.Model):
     def __unicode__(self):
         return u'Limit %s for user %s: %d' % (self.limit, self.user, self.value)
 
+    @staticmethod
+    def get_limit_for_user(limit_name, user_obj):
+        """Returns the limit value for the specified limit"""
+        limit_objs = Limit.objects.filter(name=limit_name, user=user_obj)
+        
+        if len(limit_objs) == 1:
+            return limit_objs[0].value
+        
+        return 0
+        
 
 class Flavor(models.Model):
     cpu = models.IntegerField(default=0)
@@ -180,7 +192,7 @@ class FlavorCostHistory(models.Model):
         
     @staticmethod
     def find_cost(fch_list, dat):
-        """Returns FlavorCostHistory instance from a list (fch_list) for a specified date (dat)"""
+        """Returns FlavorCostHistory instance from a list (fch_list) for the specified date (dat)"""
         rdate = None
 
         for fc in fch_list:

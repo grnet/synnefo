@@ -5,12 +5,10 @@
         "fields": {
             "name": "admin user",
             "credit": 1,
-            "quota": 20,
             "created": "2011-02-06",
             "monthly_rate": 1,
             "user" : 1,
-            "violations" : 0,
-            "max_violations" : 5
+            "violations" : 0
    	    }
     },
     {

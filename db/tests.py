@@ -23,12 +23,17 @@ class CreditAllocatorTestCase(unittest.TestCase):
         userdj = User.objects.create(username='testuser')
         userdj.save()
         
-        user = SynnefoUser(name='CreditAllocatorTestUser', credit=0, quota=100, monthly_rate=10)
+        user = SynnefoUser(name='CreditAllocatorTestUser', credit=0, monthly_rate=10)
         user.created = datetime.datetime.now()
         user.user = User.objects.get(username='testuser')
         user.violations = 0
-        user.max_violations = 5
         user.save()
+        
+        limit = Limit()
+        limit.user = user
+        limit.name = 'QUOTA_CREDIT'
+        limit.value = 100
+        limit.save()
     
     def tearDown(self):
         """Cleaning up the data"""
@@ -41,14 +46,18 @@ class CreditAllocatorTestCase(unittest.TestCase):
         credit_allocator.allocate_credit()
         
         user = SynnefoUser.objects.get(name='CreditAllocatorTestUser')
-        self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: %d (should be 10)' % ( user.credit, ) )
+        self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: (%d!=10)' % ( user.credit, ) )
+        
+        # get the quota from Limit model and check the answer
+        limit_quota = Limit.get_limit_for_user('QUOTA_CREDIT', user)
+        self.assertEquals(limit_quota, 100, 'User quota has not retrieved correctly (%d!=100)' % ( limit_quota, ))
         
         # test if the quota policy is endorced
         for i in range(1, 10):
             credit_allocator.allocate_credit()
                 
         user = SynnefoUser.objects.get(name='CreditAllocatorTestUser')
-        self.assertEquals(user.credit, user.quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, user.quota ) )
+        self.assertEquals(user.credit, limit_quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, limit_quota ) )
 
 
 class FlavorCostHistoryTestCase(unittest.TestCase):

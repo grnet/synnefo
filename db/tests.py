@@ -72,9 +72,11 @@ class FlavorTestCase(TestCase):
         """Test a flavor object, its internal cost calculation and naming methods"""
         flavor = Flavor.objects.get(pk=1)
         
+        flavor_name = u'C%dR%dD%d' % ( flavor.cpu, flavor.ram, flavor.disk )
+        
         self.assertEquals(flavor.cost_active, 10, 'Active cost is not calculated correctly! (%d!=10)' % ( flavor.cost_active, ) )
         self.assertEquals(flavor.cost_inactive, 5, 'Inactive cost is not calculated correctly! (%d!=5)' % ( flavor.cost_inactive, ) )
-        self.assertEquals(flavor.name, u'C10R10D10', 'Invalid flavor name!')
+        self.assertEquals(flavor.name, flavor_name, 'Invalid flavor name!')
 
 
 class AccountingLogTestCase(TestCase):

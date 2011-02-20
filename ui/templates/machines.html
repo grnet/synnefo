@@ -606,9 +606,6 @@ $("#start").click(function(){
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
-                    alert(data);
-                    alert(textStatus);
-                    alert(jqXHR);
                     ajax_success(jqXHR);                   
                 } else {
                     ajax_error(jqXHR);
@@ -666,7 +663,7 @@ function shutdown(serverID) {
 }
 
 
-// reboot action
+// start action
 function start(serverID){
     // ajax post start call
     $.ajax({

@@ -192,7 +192,7 @@ class FlavorCostHistory(models.Model):
         
     @staticmethod
     def find_cost(fch_list, dat):
-        """Returns FlavorCostHistory instance from a list (fch_list) for the specified date (dat)"""
+        """Returns FlavorCostHistory instance (fch_list) for the specified date (dat)"""
         rdate = None
 
         for fc in fch_list:

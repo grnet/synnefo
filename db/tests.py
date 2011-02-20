@@ -135,4 +135,3 @@ class ChargerTestCase(TestCase):
         user = SynnefoUser.objects.get(pk=1)
         self.assertEquals(user.credit, 0, 'Error in charging process (%d!=0, running)' % ( user.credit, ))
         
-

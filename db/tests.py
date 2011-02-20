@@ -95,60 +95,9 @@ class AccountingLogTestCase(TestCase):
         self.assertEquals(len(entries), 1, 'Log entries should be 1 (%d!=1)' % ( len(entries), ))
 
 
+# FIXME, this test is broken
 class ChargerTestCase(TestCase):
-    def setUp(self):
-        """Setup the test"""
-        userdj = User.objects.create_user('testuser','test','test2')
-        userdj.save()
-        
-        # add a user
-        user = SynnefoUser(pk=1, name='Test User', credit=100, monthly_rate=10)
-        user.created = datetime.datetime.now()
-        user.user = userdj
-        user.violations = 0
-        user.max_violations = 5
-        user.save()
-        
-        # add a Flavor
-        flavor = Flavor(pk=1, cpu=10, ram=10, disk=10)
-        flavor.save()
-        
-        # and fill the pricing list
-        fch = FlavorCostHistory(pk=1, cost_active=10, cost_inactive=5)
-        fch.effective_from = date(day=01, month=01, year=2010)
-        fch.flavor = flavor
-        fch.save()
-        
-        # add an Image
-        si = Image(name='Test Name')
-        si.updated = datetime.datetime.now()
-        si.created = datetime.datetime.now()
-        si.state = 'ACTIVE'
-        si.owner = user
-        si.description = 'testing 1.2.3'
-        si.save()
-        
-        # Now, add a VM
-        vm = VirtualMachine(pk=1)
-        vm.created = datetime.datetime.now()
-        vm.charged = datetime.datetime.now() - datetime.timedelta(hours=1)
-        vm.hostid = 'testhostid'
-        vm.server_label = 'agreatserver'
-        vm.image_version = '1.0.0'
-        vm.ipfour = '127.0.0.1'
-        vm.ipsix = '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
-        vm.owner = user
-        vm.flavor = flavor
-        vm.sourceimage = si
-        
-        vm.save()
-    
-    def tearDown(self):
-        """Cleaning up the data"""
-        user = User.objects.get(username="testname")
-        user.delete()
-        
-        flavor = Flavor.objects.get(pk=1)
+    fixtures = [ 'db_test_data' ]
     
     def test_charger(self):
         """Charger unit test method"""

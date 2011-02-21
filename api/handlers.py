@@ -35,6 +35,11 @@ VERSIONS = [
     }
 ]
 
+#read is called on GET requests
+#create is called on POST, and creates new objects
+#update is called on PUT, and should update an existing product
+#delete is called on DELETE, and should delete an existing object
+
 
 class VersionHandler(AnonymousBaseHandler):
     allowed_methods = ('GET',)
@@ -54,6 +59,15 @@ class VersionHandler(AnonymousBaseHandler):
 
 
 class ServerHandler(BaseHandler):
+    """Handler responsible for the Servers
+
+     handles the listing of Virtual Machines, Creates and Destroys VM's
+
+     @HTTP methods: POST, DELETE, PUT, GET
+     @Parameters: POST data with the create data (cpu, ram, etc)
+     @Responses: HTTP 202 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+
+    """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def read(self, request, id=None):
@@ -179,14 +193,20 @@ class ServerAddressHandler(BaseHandler):
 
 
 class ServerActionHandler(BaseHandler):
-    allowed_methods = ('POST', 'DELETE', 'GET', 'PUT')
-    #TODO: remove GET/PUT
-    
-    def read(self, request, id):
-        return accepted
+    """Handler responsible for Server Actions
+
+     handles Reboot, Shutdown and Start actions. 
+
+     @HTTP methods: POST, DELETE, PUT
+     @Parameters: POST data with the action (reboot, shutdown, start)
+     @Responses: HTTP 202 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+
+    """
+
+    allowed_methods = ('POST', 'DELETE',  'PUT')
 
     def create(self, request, id):
-        """Reboot, rebuild, resize, confirm resized, revert resized"""
+        """Reboot, Shutdown, Start virtual machine"""
 
         reboot_request = request.POST.get('reboot', None)
         shutdown_request = request.POST.get('shutdown', None)
@@ -223,8 +243,6 @@ class ServerActionHandler(BaseHandler):
         except Exception, e:
             raise fault.serviceUnavailable
 
-#FIXME: rackspace api error codes: cloudServersFault (400, 500), serviceUnavailable (503), unauthorized(401), badRequest (400), badMediaType(415), itemNotFound (404), buildInProgress (409), overLimit (413)
-
     def delete(self, request, id):
         """Delete an Instance"""
         return accepted
@@ -233,10 +251,6 @@ class ServerActionHandler(BaseHandler):
         return noContent
 
 
-#read is called on GET requests
-#create is called on POST, and creates new objects, and should return them (or rc.CREATED.)
-#update is called on PUT, and should update an existing product and return them (or rc.ALL_OK.)
-#delete is called on DELETE, and should delete an existing object. Should not return anything, just rc.DELETED.'''
 
 
 class ServerBackupHandler(BaseHandler):
@@ -283,6 +297,17 @@ class FlavorHandler(BaseHandler):
 
 
 class ImageHandler(BaseHandler):
+    """Handler responsible for Images
+
+     handles the listing, creation and delete of Images. 
+
+     @HTTP methods: GET, POST
+     @Parameters: POST data 
+     @Responses: HTTP 202 if successfully create Image or get the Images list, itemNotFound, serviceUnavailable otherwise
+
+    """
+
+
     allowed_methods = ('GET', 'POST')
 
     def read(self, request, id=None):

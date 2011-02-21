@@ -317,6 +317,7 @@ function update_vms() {
         dataType: "json",
         error: function(jqXHR, textStatus, errorThrown) { 
                     ajax_error(jqXHR);
+                    return false;
                     },
         success: function(data, textStatus, jqXHR) {
             if ($(".running a.name").length + $(".terminated a.name").length == 0) {

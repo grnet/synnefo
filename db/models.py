@@ -177,7 +177,7 @@ class Flavor(models.Model):
         return fch_list
         
     def find_cost(self, the_date):
-        """Returns FlavorCostHistory instance (fch_list) for the specified date (dat)"""
+        """Returns costs (FlavorCostHistory instance) for the specified date (the_date)"""
         rdate = None
         fch_list = self.get_price_list()
         

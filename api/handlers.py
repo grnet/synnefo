@@ -7,15 +7,13 @@ from django.conf import settings
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
-from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
+from synnefo.util.rapi import GanetiRapiClient, GanetiApiError, CertificateError
 from synnefo.db.models import *
-from util.rapi import GanetiRapiClient
-
 
 try:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
     rapi.GetVersion()
-except:
+except Exception, e:
     raise fault.serviceUnavailable
 #If we can't connect to the rapi successfully, don't do anything
 #TODO: add logging/admin alerting
@@ -71,10 +69,15 @@ class ServerHandler(BaseHandler):
 
     def read_one(self, request, id):
         try:
-            instance = VirtualMachine.objects.get(id=id)
-            return { "server": instance } #FIXME
-        except:
+            vm = VirtualMachine.objects.get(id=id)
+        except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            raise fault.serviceUnavailable
+        return { "server": vm } 
+
 
     @paginator
     def read_all(self, request, detail=False):
@@ -102,36 +105,55 @@ class ServerHandler(BaseHandler):
 
 
     def create(self, request):
-        print 'create machine was called'
         #TODO: add random pass, metadata       
         try:
-            options_request = json.loads(request.POST.get('create', None)) #here we have the options for cpu, ram etc
-            cpu = options_request.get('cpu','')
-            ram = options_request.get('ram','')
-            name = options_request.get('name','')
-            storage = options_request.get('storage','')
+            #here we have the options for cpu, ram etc
+            options_request = json.loads(request.POST.get('create', None)) 
+        except Exception, e:
+            raise fault.serviceUnavailable
+        cpu = options_request.get('cpu','')
+        ram = options_request.get('ram','')
+        name = options_request.get('name','')
+        storage = options_request.get('storage','')
+
+        try:
             pnode = rapi.GetNodes()[0]
             rapi.CreateInstance('create', name, 'plain', [{"size": storage}], [{}], os='debootstrap+default', ip_check=False, name_check=False,pnode=pnode, beparams={'auto_balance': True, 'vcpus': cpu, 'memory': ram})
-            return accepted
-        except: # something bad happened. FIXME: return code
-            return noContent
+        except GanetiApiError, CertificateError:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            raise fault.serviceUnavailable
+        return accepted
 
-        #TODO: replace with real data from request.POST
-        #TODO: create the VM in the database
+        #TODO: replace with real data from request.POST and create the VM in the database
 
     def update(self, request, id):
         return noContent
 
     def delete(self, request, id):
         try:
-            instance = VirtualMachine.objects.get(id=id)
-            print 'deleting machine %s' % instance.name
-            instance._operstate = 'DESTROYED'
-            return accepted
-            #rapi.DeleteInstance(instance.name)
-        except:
+            vm = VirtualMachine.objects.get(id=id)
+        except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            raise fault.serviceUnavailable
 
+        #TODO: set the status to DESTROYED
+        try:
+            vm.start_action('DESTROY')
+        except Exception, e:
+            raise fault.serviceUnavailable
+
+        try:
+            rapi.DeleteInstance(vm.backend_id)
+        except GanetiApiError, CertificateError:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            raise fault.serviceUnavailable
+
+        return accepted        
 
 class ServerAddressHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
@@ -158,29 +180,50 @@ class ServerAddressHandler(BaseHandler):
 
 class ServerActionHandler(BaseHandler):
     allowed_methods = ('POST', 'DELETE', 'GET', 'PUT')
-#TODO: remove GET/PUT
+    #TODO: remove GET/PUT
     
     def read(self, request, id):
         return accepted
 
     def create(self, request, id):
         """Reboot, rebuild, resize, confirm resized, revert resized"""
-        try:
-            machine = VirtualMachine.objects.get(id=id)
-        except:
-            return noContent
-        #FIXME: for now make a list with only one machine. This will be a list of machines (for the list view)
+
         reboot_request = request.POST.get('reboot', None)
         shutdown_request = request.POST.get('shutdown', None)
         start_request = request.POST.get('start', None)
-        if reboot_request:
-            return self.action_start([machine], 'reboot')          
-        elif shutdown_request:
-            return self.action_start([machine], 'shutdown')          
-        elif start_request:
-            return self.action_start([machine], 'start')          
-        return noContent #FIXME: when does this happen?
+        #action not implemented
+        action = reboot_request and 'REBOOT' or shutdown_request and 'SUSPEND' or start_request and 'START'
+        if not action:
+            raise fault.notImplemented 
+        #test if we can get the vm
+        try:
+            vm = VirtualMachine.objects.get(id=id)
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            raise fault.serviceUnavailable
 
+        try:
+            vm.start_action(action)
+        except Exception, e:
+            raise fault.serviceUnavailable
+
+        try:
+            if reboot_request:
+                rapi.RebootInstance(vm.backend_id)
+            elif shutdown_request:
+                rapi.ShutdownInstance(vm.backend_id)
+            elif start_request:
+                rapi.StartupInstance(vm.backend_id)
+            return accepted
+        except GanetiApiError, CertificateError:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            raise fault.serviceUnavailable
+
+#FIXME: rackspace api error codes: cloudServersFault (400, 500), serviceUnavailable (503), unauthorized(401), badRequest (400), badMediaType(415), itemNotFound (404), buildInProgress (409), overLimit (413)
 
     def delete(self, request, id):
         """Delete an Instance"""
@@ -188,31 +231,6 @@ class ServerActionHandler(BaseHandler):
 
     def update(self, request, id):
         return noContent
-
-    def action_start(self, list_of_machines, action):
-        if action == 'reboot':
-            try:
-                for machine in list_of_machines:
-                    rapi.RebootInstance(machine)
-                return accepted
-            except: # something bad happened.
-#FIXME: return code. Rackspace error response code(s): cloudServersFault (400, 500), serviceUnavailable (503), unauthorized(401), badRequest (400), badMediaType(415), itemNotFound (404), buildInProgress (409), overLimit (413)
-                return noContent
-        if action == 'shutdown':        
-            try:
-                for machine in list_of_machines:
-                    rapi.ShutdownInstance(machine)
-                return accepted
-            except: # something bad happened. FIXME: return code
-                return noContent
-        if action == 'start':    
-            try:
-                for machine in list_of_machines:
-                    rapi.StartupInstance(machine)
-                return accepted
-            except: # something bad happened. FIXME: return code
-                return noContent
-
 
 
 #read is called on GET requests

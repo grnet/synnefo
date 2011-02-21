@@ -14,14 +14,6 @@ class LimitAdmin(admin.ModelAdmin):
 
     form = LimitForm
 
-class UserLimitForm(forms.ModelForm):
-    class Meta:
-        model = UserLimit
-
-class UserLimitAdmin(admin.ModelAdmin):
-    ""    
-
-    form = UserLimitForm
 
 class FlavorForm(forms.ModelForm):
     class Meta:
@@ -79,7 +71,6 @@ class ImageAdmin(admin.ModelAdmin):
 
 admin.site.register(Limit, LimitAdmin)
 admin.site.register(SynnefoUser, SynnefoUserAdmin)
-admin.site.register(UserLimit, UserLimitAdmin)
 admin.site.register(Flavor, FlavorAdmin)
 admin.site.register(VirtualMachine, VirtualMachineAdmin)
 admin.site.register(VirtualMachineGroup, VirtualMachineGroupAdmin)

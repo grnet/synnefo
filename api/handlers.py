@@ -308,9 +308,18 @@ class ImageHandler(BaseHandler):
             elif id is None:
                 return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
             else:
+
+
                 try:
                     image = images.get(id=id)
-                    return { "image":  {'created': image.created.isoformat(), 
+                except Image.DoesNotExist:
+                    raise fault.itemNotFound
+                except Image.MultipleObjectsReturned:
+                    raise fault.serviceUnavailable
+                except Exception, e:
+                    raise fault.serviceUnavailable
+
+                return { "image":  {'created': image.created.isoformat(), 
                     'id': image.id,
                     'name': image.name,
                     'updated': image.updated.isoformat(),    
@@ -318,8 +327,7 @@ class ImageHandler(BaseHandler):
                     'state': image.state, 
                     'vm_id': image.vm_id
                    } }
-                except: 
-                    raise fault.itemNotFound
+
         else:
             raise fault.serviceUnavailable
 

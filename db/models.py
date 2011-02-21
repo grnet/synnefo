@@ -49,11 +49,20 @@ class SynnefoUser(models.Model):
         self.credit = self.credit + self.monthly_rate
         
         # ensure that the user has not more credits than his quota
-        limit_quota = Limit.get_limit_for_user('QUOTA_CREDIT', self)
+        limit_quota = self.get_limit('QUOTA_CREDIT')
                 
         if self.credit > limit_quota:
             self.credit = limit_quota
 
+    def get_limit(self, limit_name):
+        """Returns the limit value for the specified limit"""
+        limit_objs = Limit.objects.filter(name=limit_name, user=self)
+        
+        if len(limit_objs) == 1:
+            return limit_objs[0].value
+        
+        return 0
+        
 
 class Image(models.Model):
     # This is WIP, FIXME
@@ -119,16 +128,6 @@ class Limit(models.Model):
     def __unicode__(self):
         return u'Limit %s for user %s: %d' % (self.limit, self.user, self.value)
 
-    @staticmethod
-    def get_limit_for_user(limit_name, user_obj):
-        """Returns the limit value for the specified limit"""
-        limit_objs = Limit.objects.filter(name=limit_name, user=user_obj)
-        
-        if len(limit_objs) == 1:
-            return limit_objs[0].value
-        
-        return 0
-        
 
 class Flavor(models.Model):
     cpu = models.IntegerField(default=0)

@@ -30,7 +30,7 @@ class CreditAllocatorTestCase(TestCase):
         self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: (%d!=10)' % ( user.credit, ) )
         
         # get the quota from Limit model and check the answer
-        limit_quota = Limit.get_limit_for_user('QUOTA_CREDIT', user)
+        limit_quota = user.get_limit('QUOTA_CREDIT')
         self.assertEquals(limit_quota, 100, 'User quota has not retrieved correctly (%d!=100)' % ( limit_quota, ))
         
         # test if the quota policy is endorced

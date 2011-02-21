@@ -41,30 +41,6 @@ class CreditAllocatorTestCase(TestCase):
         self.assertEquals(user.credit, limit_quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, limit_quota ) )
 
 
-class FlavorCostHistoryTestCase(TestCase):
-    fixtures = [ 'db_test_data' ]
-    
-    def test_flavor_cost_history(self):
-        """Flavor Cost History unit test method"""
-        flavor = Flavor.objects.get(pk=1)
-        fch_list = flavor.get_price_list()
-        
-        self.assertEquals(len(fch_list), 2, 'Price list should have two objects! (%d!=2)' % ( len(fch_list), ))
-        
-        # 2010-10-10, active should be 2, inactive 1
-        ex_date = date(year=2010, month=10, day=10)
-        r = FlavorCostHistory.find_cost(fch_list, ex_date)
-        
-        self.assertEquals(r.cost_active, 2, 'Active cost for 2010-10-10 should be 2 (%d!=2)' % ( r.cost_active, ))
-        self.assertEquals(r.cost_inactive, 1, 'Inactive cosr for 2010-10-10 should be 1 (%d!=1)' % ( r.cost_inactive, ))
-        
-        # 2011-11-11, active should be 10, inactive 5
-        ex_date = date(year=2011, month=11, day=11)
-        r = FlavorCostHistory.find_cost(fch_list, ex_date)
-        self.assertEquals(r.cost_active, 10, 'Active cost for 2011-11-11 should be 10 (%d!=10)' % ( r.cost_active, ))
-        self.assertEquals(r.cost_inactive, 5, 'Inactive cost for 2011-11-11 should be 5 (%d!=5)' % ( r.cost_inactive, ))
-
-
 class FlavorTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
     
@@ -77,6 +53,26 @@ class FlavorTestCase(TestCase):
         self.assertEquals(flavor.cost_active, 10, 'Active cost is not calculated correctly! (%d!=10)' % ( flavor.cost_active, ) )
         self.assertEquals(flavor.cost_inactive, 5, 'Inactive cost is not calculated correctly! (%d!=5)' % ( flavor.cost_inactive, ) )
         self.assertEquals(flavor.name, flavor_name, 'Invalid flavor name!')
+
+    def test_flavor_cost_history(self):
+        """Flavor unit test (find_cost method)"""
+        flavor = Flavor.objects.get(pk=1)
+        fch_list = flavor.get_price_list()
+
+        self.assertEquals(len(fch_list), 2, 'Price list should have two objects! (%d!=2)' % ( len(fch_list), ))
+
+        # 2010-10-10, active should be 2, inactive 1
+        ex_date = date(year=2010, month=10, day=10)
+        r = flavor.find_cost(ex_date)
+
+        self.assertEquals(r.cost_active, 2, 'Active cost for 2010-10-10 should be 2 (%d!=2)' % ( r.cost_active, ))
+        self.assertEquals(r.cost_inactive, 1, 'Inactive cosr for 2010-10-10 should be 1 (%d!=1)' % ( r.cost_inactive, ))
+
+        # 2011-11-11, active should be 10, inactive 5
+        ex_date = date(year=2011, month=11, day=11)
+        r = flavor.find_cost(ex_date)
+        self.assertEquals(r.cost_active, 10, 'Active cost for 2011-11-11 should be 10 (%d!=10)' % ( r.cost_active, ))
+        self.assertEquals(r.cost_inactive, 5, 'Inactive cost for 2011-11-11 should be 5 (%d!=5)' % ( r.cost_inactive, ))
 
 
 class AccountingLogTestCase(TestCase):
@@ -106,6 +102,7 @@ class VirtualMachineTestCase(TestCase):
         acc_logs = vm.get_accounting_logs()
         
         self.assertEquals(len(acc_logs), 3, 'Log Entries should be 3 (%d!=3)' % ( len(acc_logs), ))
+
 
 # FIXME, this test is broken
 class ChargerTestCase(TestCase):

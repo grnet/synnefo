@@ -174,7 +174,20 @@ class Flavor(models.Model):
         """Returns the price catalog for this Flavor"""
         fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('effective_from')
         
-        return fch_list            
+        return fch_list
+        
+    def find_cost(self, the_date):
+        """Returns FlavorCostHistory instance (fch_list) for the specified date (dat)"""
+        rdate = None
+        fch_list = self.get_price_list()
+        
+        for fc in fch_list:
+            if the_date > fc.effective_from:
+                rdate = fc
+            else:
+                break
+        
+        return rdate
 
 
 class FlavorCostHistory(models.Model):
@@ -188,19 +201,6 @@ class FlavorCostHistory(models.Model):
     
     def __unicode__(self):
         return u'Costs (up, down)=(%d, %d) for %s since %s' % (self.cost_active, self.cost_inactive, flavor.name, self.effective_from)
-        
-    @staticmethod
-    def find_cost(fch_list, dat):
-        """Returns FlavorCostHistory instance (fch_list) for the specified date (dat)"""
-        rdate = None
-
-        for fc in fch_list:
-            if dat > fc.effective_from:
-                rdate = fc
-            else:
-                break
-        
-        return rdate
 
 
 class VirtualMachine(models.Model):

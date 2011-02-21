@@ -110,7 +110,7 @@ class ServerHandler(BaseHandler):
             #here we have the options for cpu, ram etc
             options_request = json.loads(request.POST.get('create', None)) 
         except Exception, e:
-            raise fault.serviceUnavailable
+            raise fault.badRequest
         cpu = options_request.get('cpu','')
         ram = options_request.get('ram','')
         name = options_request.get('name','')
@@ -308,8 +308,6 @@ class ImageHandler(BaseHandler):
             elif id is None:
                 return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
             else:
-
-
                 try:
                     image = images.get(id=id)
                 except Image.DoesNotExist:

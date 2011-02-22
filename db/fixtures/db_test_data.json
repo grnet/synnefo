@@ -3,7 +3,7 @@
         "model": "db.SynnefoUser",
         "pk": 30000,
         "fields": {
-            "name": "admin user",
+            "name": "test db user",
             "credit": 0,
             "created": "2011-02-06",
             "monthly_rate": 10,
@@ -16,7 +16,7 @@
         "pk" : 30000,
         "fields" : {
             "name" : "QUOTA_CREDIT",
-            "user" : 1,
+            "user" : 30000,
             "value" : 100
         }
     },

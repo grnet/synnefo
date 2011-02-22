@@ -26,7 +26,7 @@ class CreditAllocatorTestCase(TestCase):
         # test the allocator
         credit_allocator.allocate_credit()
         
-        user = SynnefoUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=30000)
         self.assertEquals(user.credit, 10, 'Allocation of credits failed, credit: (%d!=10)' % ( user.credit, ) )
         
         # get the quota from Limit model and check the answer
@@ -37,7 +37,7 @@ class CreditAllocatorTestCase(TestCase):
         for i in range(1, 10):
             credit_allocator.allocate_credit()
                 
-        user = SynnefoUser.objects.get(pk=1)
+        user = SynnefoUser.objects.get(pk=30000)
         self.assertEquals(user.credit, limit_quota, 'User exceeded quota! (cr:%d, qu:%d)' % ( user.credit, limit_quota ) )
 
 

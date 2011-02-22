@@ -63,14 +63,14 @@ class SynnefoUser(models.Model):
             return limit_objs[0].value
         
         return 0
-        
+
 
 class Image(models.Model):
     # This is WIP, FIXME
     IMAGE_STATES = (
-                ('ACTIVE', 'Active'),
-                ('SAVING', 'Saving'),
-                ('DELETED', 'Deleted')
+        ('ACTIVE', 'Active'),
+        ('SAVING', 'Saving'),
+        ('DELETED', 'Deleted')
     )
 
     name = models.CharField(max_length=255, help_text=_('description'))
@@ -79,6 +79,7 @@ class Image(models.Model):
     owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
+    sourcevm = models.ForeignKey("VirtualMachine", null=True)
 
     class Meta:
         verbose_name = u'Image'
@@ -128,9 +129,9 @@ class Limit(models.Model):
 
 
 class Flavor(models.Model):
-    cpu = models.IntegerField(default=0)
-    ram = models.IntegerField(default=0)
-    disk = models.IntegerField(default=0)
+    cpu = models.IntegerField(default=0, unique=False)
+    ram = models.IntegerField(default=0, unique=False)
+    disk = models.IntegerField(default=0, unique=False)
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -267,7 +268,7 @@ class VirtualMachine(models.Model):
     charged = models.DateTimeField('Time of last charge', default=datetime.datetime.now())
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
-    sourceimage = models.ForeignKey(Image, null=False) 
+    sourceimage = models.ForeignKey("Image", null=False) 
     hostid = models.CharField(max_length=100)
     description = models.TextField(help_text=_('description'))
     ipfour = models.IPAddressField()

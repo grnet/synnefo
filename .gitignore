@@ -4,6 +4,7 @@ settings.py
 *~
 *.sw*
 bin/
+share/
 build/
 include/
 lib/

@@ -12,7 +12,8 @@ backend_prefix_id = settings.BACKEND_PREFIX_ID
 class SynnefoUser(models.Model):
     name = models.CharField(max_length=255)
     credit = models.IntegerField()
-    created = models.DateField()
+    created = models.DateTimeField('Time of creation', auto_now_add=True)
+    updated = models.DateTimeField('Time of last update', auto_now=True)
     monthly_rate = models.IntegerField()
     user = models.ForeignKey(User)
     violations = models.IntegerField()
@@ -73,14 +74,11 @@ class Image(models.Model):
     )
 
     name = models.CharField(max_length=255, help_text=_('description'))
-    updated = models.DateTimeField(help_text=_("Image update date"))
-    created = models.DateTimeField(help_text=_("Image creation date"), default=datetime.datetime.now())
     state = models.CharField(choices=IMAGE_STATES, max_length=30)
     description = models.TextField(help_text=_('description'))
     owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
-    #FIXME: ImageMetadata, as in VirtualMachineMetadata
-    #       "os" contained in metadata. Newly created Server inherits value of "os" metadata key from Image.
-    #       The Web UI uses the value of "os" to determine the icon to use.
+    created = models.DateTimeField('Time of creation', auto_now_add=True)
+    updated = models.DateTimeField('Time of last update', auto_now=True)
 
     class Meta:
         verbose_name = u'Image'
@@ -258,8 +256,10 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField(max_length=255)
-    created = models.DateTimeField(help_text=_('VM creation date'), default=datetime.datetime.now())
-    charged = models.DateTimeField()
+    owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
+    created = models.DateTimeField('Time of creation', auto_now_add=True)
+    updated = models.DateTimeField('Time of last update', auto_now=True)
+    charged = models.DateTimeField('Time of last charge', default=datetime.datetime.now())
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
     sourceimage = models.ForeignKey(Image, null=False) 
@@ -270,8 +270,14 @@ class VirtualMachine(models.Model):
     flavor = models.ForeignKey(Flavor)
     suspended = models.BooleanField('Administratively Suspended')
 
-    # VM State [volatile data]
-    updated = models.DateTimeField(null=True)
+    # VM State 
+    # The following fields are volatile data, in the sense
+    # that they need not be persistent in the DB, but rather
+    # get generated at runtime by quering Ganeti and applying
+    # updates received from Ganeti.
+    #
+    # They belong to a separate caching layer, in the long run.
+    # [vkoukis] after discussion with [faidon].
     action = models.CharField(choices=ACTIONS, max_length=30, null=True)
     _operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
     _backendjobid = models.PositiveIntegerField(null=True)
@@ -320,7 +326,6 @@ class VirtualMachine(models.Model):
         if not self.pk: 
             self._action = None
             self._operstate = "BUILD"
-            self.updated = datetime.datetime.now()
             self._backendjobid = None
             self._backendjobstatus = None
             self._backendopcode = None
@@ -351,8 +356,6 @@ class VirtualMachine(models.Model):
             self._operstate = 'ERROR'
         # Any other notification of failure leaves the operating state unchanged
 
-        # FIXME: Should be implemented in a pre-save signal handler.
-        self.updated = datetime.datetime.now()
         self.save()
 
     def start_action(self, action):
@@ -364,7 +367,7 @@ class VirtualMachine(models.Model):
         self._backendjobid = None
         self._backendopcode = None
         self._backendlogmsg = None
-        self.updated = datetime.datetime.now()
+        
         self.save()
 
     # FIXME: Perhaps move somewhere else, outside the model?
@@ -399,11 +402,12 @@ class VirtualMachine(models.Model):
 
 
 class VirtualMachineGroup(models.Model):
-    "Groups of VM's for SynnefoUsers"
+    """Groups of VMs for SynnefoUsers"""
     name = models.CharField(max_length=255)
+    created = models.DateTimeField('Time of creation', auto_now_add=True)
+    updated = models.DateTimeField('Time of last update', auto_now=True)
     owner = models.ForeignKey(SynnefoUser)
     machines = models.ManyToManyField(VirtualMachine)
-    created = models.DateTimeField(help_text=_("Group creation date"), default=datetime.datetime.now())
 
     class Meta:
         verbose_name = u'Virtual Machine Group'
@@ -447,11 +451,12 @@ class AccountingLog(models.Model):
 
 class Disk(models.Model):
     name = models.CharField(max_length=255)
-    created = models.DateTimeField('Disk creation date', default=datetime.datetime.now())
+    created = models.DateTimeField('Time of creation', auto_now_add=True)
+    updated = models.DateTimeField('Time of last update', auto_now=True)
     size = models.PositiveIntegerField('Disk size in GBs')
     vm = models.ForeignKey(VirtualMachine, blank=True, null=True)
     owner = models.ForeignKey(SynnefoUser, blank=True, null=True)  
-    
+
     class Meta:
         verbose_name = u'Disk instance'
 

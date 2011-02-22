@@ -134,6 +134,7 @@ class Flavor(models.Model):
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
+        unique_together = ("cpu","ram","disk")
             
     def _get_name(self):
         """Returns flavor name (generated)"""

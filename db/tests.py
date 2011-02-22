@@ -46,7 +46,7 @@ class FlavorTestCase(TestCase):
     
     def test_flavor(self):
         """Test a flavor object, its internal cost calculation and naming methods"""
-        flavor = Flavor.objects.get(pk=1)
+        flavor = Flavor.objects.get(pk=30000)
         
         flavor_name = u'C%dR%dD%d' % ( flavor.cpu, flavor.ram, flavor.disk )
         
@@ -56,7 +56,7 @@ class FlavorTestCase(TestCase):
 
     def test_flavor_cost_history(self):
         """Flavor unit test (find_cost method)"""
-        flavor = Flavor.objects.get(pk=1)
+        flavor = Flavor.objects.get(pk=30000)
         fch_list = flavor.get_price_list()
 
         self.assertEquals(len(fch_list), 2, 'Price list should have two objects! (%d!=2)' % ( len(fch_list), ))

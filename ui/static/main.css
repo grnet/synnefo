@@ -802,14 +802,16 @@ div.list div.actions a {
     color: #D3D3D3;
     display: block;
     font-size:9pt;
+    margin-bottom: 2px;
 }
 
 div.list div.actions a.enabled {
-    color: black;
+    color: #3D3D3D;
 }
 
 div.list div.actions a.enabled:hover{
     cursor: pointer;
+    color: black;
     text-decoration: underline;
 }
 

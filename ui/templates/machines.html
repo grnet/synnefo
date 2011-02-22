@@ -366,13 +366,13 @@ function update_vms() {
                         machine.appendTo(".terminated");
                     }
                 });
-                // if the terminated list is populated then the seperator must be shown
-                if ($(".terminated a.name").length > 0) {
-                    $("#mini.seperator").fadeIn("slow");
-                }
             }
-            $("div.machine:last-child").find("div.seperator").hide();
             $("#spinner").hide();
+            $("div.machine:last-child").find("div.seperator").hide();
+            // if the terminated list is populated then the seperator must be shown
+            if ($(".terminated a.name").length > 0) {
+                $("#mini.seperator").fadeIn("slow");
+            }
             if ($("div.list table.list-running tbody.running tr").length > 0) {
                 $("div.list table.list-running").dataTable({
                     "bInfo": false,

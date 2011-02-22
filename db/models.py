@@ -10,11 +10,10 @@ import datetime
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
 class SynnefoUser(models.Model):
-    name = models.CharField(max_length=255)
-    credit = models.IntegerField()
+    name = models.CharField('Synnefo Username', max_length=255)
+    credit = models.IntegerField('Credit Balance')
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-    monthly_rate = models.IntegerField()
     user = models.ForeignKey(User)
     violations = models.IntegerField()
     
@@ -50,7 +49,7 @@ class SynnefoUser(models.Model):
         self.credit = self.credit + self.monthly_rate
         
         # ensure that the user has not more credits than his quota
-        limit_quota = self.get_limit('QUOTA_CREDIT')
+        limit_quota = self.credit_quota
                 
         if self.credit > limit_quota:
             self.credit = limit_quota
@@ -63,6 +62,24 @@ class SynnefoUser(models.Model):
             return limit_objs[0].value
         
         return 0
+        
+    def _get_credit_quota(self):
+        """Internal getter function for credit quota"""
+        return self.get_limit('QUOTA_CREDIT')
+        
+    credit_quota = property(_get_credit_quota)
+    
+    def _get_monthly_rate(self):
+        """Internal getter function for monthly credit issue rate"""
+        return self.get_limit('MONTHLY_RATE')
+        
+    monthly_rate = property(_get_monthly_rate)
+    
+    def _get_max_violations(self):
+        """Internal getter function for maximum number of violations"""
+        return self.get_limit('MAX_VIOLATIONS')
+        
+    max_violations = property(_get_max_violations)
 
 
 class Image(models.Model):
@@ -115,7 +132,8 @@ class ImageMetadata(models.Model):
 class Limit(models.Model):
     LIMITS = (
         ('QUOTA_CREDIT', 'Maximum number of credits per user'),
-        ('MAX_VIOLATIONS', 'Maximum number of credit violation per user')
+        ('MAX_VIOLATIONS', 'Maximum number of credit violation per user'),
+        ('MONTHLY_RATE', 'Monthly credit issue rate')
     )
     user = models.ForeignKey(SynnefoUser)
     name = models.CharField(choices=LIMITS, max_length=30, null=False)

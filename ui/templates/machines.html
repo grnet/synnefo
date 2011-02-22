@@ -297,6 +297,8 @@ function confirm_action(action_string, action_function, serverID, serverName) {
         if (yes) {
             action_function(serverID);
         }
+        // reload page
+        $("div.pane#machines-pane").load($("a#standard").attr("href"));
     });
     return false;
 }

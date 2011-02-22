@@ -537,7 +537,7 @@ div.machine div.actions a:hover{
     display: block;
 }
 
-div.machine div.actions a:focus, div.machine div.actions:hover a, .machine:hover .actions a {
+div.machine div.actions:hover a, .machine:hover .actions a {
     color: #3d3d3d;
     display: block;
 }

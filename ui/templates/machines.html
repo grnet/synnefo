@@ -296,9 +296,10 @@ function confirm_action(action_string, action_function, serverID, serverName) {
         // return true=yes or false=no
         if (yes) {
             action_function(serverID);
+        } else {
+            // reload page
+            $("div.pane#machines-pane").load($("a#standard").attr("href"));
         }
-        // reload page
-        $("div.pane#machines-pane").load($("a#standard").attr("href"));
     });
     return false;
 }

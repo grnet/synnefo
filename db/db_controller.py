@@ -19,7 +19,6 @@ import settings
 
 setup_environ(settings)
 
-import sys
 import zmq
 import time
 import json
@@ -34,7 +33,7 @@ from synnefo.db.models import VirtualMachine
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801" # FIXME: move to settings.py
 
 class StoppableThread(Thread):
-    """Thread class with a stop() moethod.
+    """Thread class with a stop() method.
     
     The thread needs to check regularly for the stopped() condition.
     When it does, it exits, so that another thread may .join() it.

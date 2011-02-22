@@ -202,6 +202,7 @@ class FlavorCostHistory(models.Model):
 
 
 class VirtualMachine(models.Model):
+    # The list of possible actions for a VM
     ACTIONS = (
        ('CREATE', 'Create VM'),
        ('START', 'Start VM'),
@@ -210,7 +211,7 @@ class VirtualMachine(models.Model):
        ('REBOOT', 'Reboot VM'),
        ('DESTROY', 'Destroy VM')
     )
-
+    # The internal operating state of a VM
     OPER_STATES = (
         ('BUILD', 'Queued for creation'),
         ('ERROR', 'Creation failed'),
@@ -218,7 +219,7 @@ class VirtualMachine(models.Model):
         ('STARTED', 'Started'),
         ('DESTROYED', 'Destroyed')
     )
-
+    # The list of possible operations on the backend
     BACKEND_OPCODES = (
         ('OP_INSTANCE_CREATE', 'Create Instance'),
         ('OP_INSTANCE_REMOVE', 'Remove Instance'),
@@ -226,7 +227,7 @@ class VirtualMachine(models.Model):
         ('OP_INSTANCE_SHUTDOWN', 'Shutdown Instance'),
         ('OP_INSTANCE_REBOOT', 'Reboot Instance')
     )
-
+    # A backend job may be in one of the following possible states
     BACKEND_STATUSES = (
         ('queued', 'request queued'),
         ('waiting', 'request waiting for locks'),
@@ -247,6 +248,9 @@ class VirtualMachine(models.Model):
         'OP_INSTANCE_REBOOT': 'STARTED'
     }
 
+    # This dictionary contains the correspondence between
+    # internal operating states and Server States as defined
+    # by the Rackspace API.
     RSAPI_STATE_FROM_OPER_STATE = {
         "BUILD": "BUILD",
         "ERROR": "ERROR",
@@ -278,7 +282,7 @@ class VirtualMachine(models.Model):
     #
     # They belong to a separate caching layer, in the long run.
     # [vkoukis] after discussion with [faidon].
-    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
+    _action = models.CharField(choices=ACTIONS, max_length=30, null=True)
     _operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
     _backendjobid = models.PositiveIntegerField(null=True)
     _backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
@@ -301,7 +305,7 @@ class VirtualMachine(models.Model):
 
     class InvalidActionError(Exception):
          def __init__(self, action):
-            self.__action = action
+            self._action = action
          def __str__(self):
             return repr(str(self._action))
 

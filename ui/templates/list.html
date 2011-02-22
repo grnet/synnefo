@@ -28,7 +28,7 @@
             <td class="status">Running</td>
         </tr>	
     </table>
-    <table class="list-running" style="display: none">
+    <table class="list-machines" style="display: none">
         <thead> 
             <tr> 
                 <th id="selection" class="select-running">
@@ -47,84 +47,46 @@
                 <th id="status">Status</th> 
             </tr>
         </thead> 
-        <tbody class="running"></tbody>
-    </table>
-    <div id="mini" class="seperator"></div>
-    <table class="list-terminated" style="display: none">
-        <thead> 
-            <tr> 
-                <th id="selection" class="select-terminated">
-                    <input type="checkbox"/>
-                    <div class="expand-icon"></div>
-                    <ul style="display: none">
-                        <li class="select-all"><a href="#">all</a></li>
-                        <li class="select-none"><a href="#">none</a></li>
-                        <li class="select-group"><a href="#">group</a></li>
-                    </ul> 
-                </th>
-                <th id="os">OS</th> 
-                <th id="name">Name</th> 
-                <th id="ip">IP</th> 
-                <th id="group">Group</th>
-                <th id="status">Status</th> 
-            </tr>  
-        </thead> 
-        <tbody class="terminated"></tbody>
+        <tbody class="running terminated"></tbody>
     </table>
 </div>
-
 
 <script>
 // select/deselect all from checkbox widget of table headers
 $("table thead tr th#selection :checkbox").live('change', function() {
-    // select/deselect running or terminated?
-    var state = $(this).closest("table").attr("class").replace('list-','');
     if ( $(this).is(":checked") ) {
-        $("." + state + " :checkbox").attr("checked", true);
+        $(":checkbox").attr("checked", true);
     }
     else {
-        $("." + state + " :checkbox").attr("checked", false);
+        $(":checkbox").attr("checked", false);
     }
 	updateActions();
 });
 
 // select all/none/group from drop down menu
 $("table thead tr th#selection ul li").live('click', function() {
-    // find the state of the machines
-    var state = $(this).closest("table").attr("class");
     // all or none?
     if ( $(this).attr("class") == "select-all" || $(this).attr("class") == "select-none") {
         var all = ($(this).attr("class") == "select-all");
         // toggle checkboxes
-        $("." + state + " :checkbox").attr("checked", all);
+        $(":checkbox").attr("checked", all);
     } else if ($(this).attr("class") == "select-group"){
         // TODO: This shoud select only the vms in the selected group
         // right now the folowing has the functionality of select-all        
-        $("." + state + " :checkbox").attr("checked", true);
+        $(":checkbox").attr("checked", true);
     }
     // update actions
 	updateActions();
 });
 
 // menu toggle, running menu
-$("table.list-running thead tr th#selection div.expand-icon").live('click', function () {
-	$("table.list-running thead tr th#selection ul").slideToggle('medium');
+$("table.list-machines thead tr th#selection div.expand-icon").live('click', function () {
+	$("table.list-machines thead tr th#selection ul").slideToggle('medium');
     return false;
 });
 
-$("table.list-running thead tr th#selection ul").live('click', function () {
-	$("table.list-running thead tr th#selection ul").slideToggle('medium');
-    return false;
-});
-
-// menu toggle, terminated menu
-$("table.list-terminated thead tr th#selection div.expand-icon").live('click', function () {
-	$("table.list-terminated thead tr th#selection ul").slideToggle('medium');
-    return false;
-});
-
-$("table.list-terminated thead tr th#selection ul").live('click', function () {
-	$("table.list-terminated thead tr th#selection ul").slideToggle('medium');
+$("table.list-machines thead tr th#selection ul").live('click', function () {
+	$("table.list-machines thead tr th#selection ul").slideToggle('medium');
     return false;
 });
 

@@ -737,26 +737,12 @@ div.list .state {
     margin-right: 10px;
 }
 
-div.list table tbody.running {
+div.list table tbody {
     margin-top: 8px;
-}
-
-div.list table tbody.terminated {
-
-}
-
-div.list table tbody.terminated td {
-	height: 20px !important;
 }
 
 div.list .stopped {
     margin-top: 8px;
-}
-
-div.list #mini.seperator {
-    margin-top: 0;
-    margin-left: -16px;
-    width: 531px;
 }
 
 /* root element for tabs  */

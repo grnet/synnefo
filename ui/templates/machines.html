@@ -375,8 +375,9 @@ function update_vms() {
             if ($(".terminated a.name").length > 0) {
                 $("#mini.seperator").fadeIn("slow");
             }
-            if ($("div.list table.list-running tbody.running tr").length > 0) {
-                $("div.list table.list-running").dataTable({
+            // creating the table in list view, if there are machines to show
+            if ($("div.list table.list-machines tbody").length > 0) {
+                $("div.list table.list-machines").dataTable({
                     "bInfo": false,
                     "bPaginate": false,
             		"bAutoWidth": false,
@@ -384,27 +385,9 @@ function update_vms() {
                     "bStateSave": true,
                     "aoColumnDefs": [
                         { "bSortable": false, "aTargets": [ 0 ] }
-                    ]//,
-                    //"sScrollY": "310px",
-                    //"bScrollCollapse": true
+                    ]
                 });
-                $("div.list table.list-running").show();
-                $("div.list div.actions").show();
-            }
-            if ($("div.list table.list-terminated tbody.terminated tr").length > 0) {
-                $("div.list table.list-terminated").dataTable({
-                    "bInfo": false,
-                    "bPaginate": false,
-            		"bSort": true,    
-            		"bAutoWidth": false,
-                    "bStateSave": true,
-                    "aoColumnDefs": [
-                        { "bSortable": false, "aTargets": [ 0 ] }
-                    ]//,
-                    //"sScrollY": "200px",
-                    //"bScrollCollapse": true
-                });
-                $("div.list table.list-terminated").show();
+                $("div.list table.list-machines").show();
                 $("div.list div.actions").show();
             }
         }

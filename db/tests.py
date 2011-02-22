@@ -80,7 +80,7 @@ class AccountingLogTestCase(TestCase):
                 
     def test_accounting_log(self):
         """Test the Accounting Log unit method"""
-        vm = VirtualMachine.objects.get(pk=1001)
+        vm = VirtualMachine.objects.get(pk=30000)
         
         # get all entries, should be 2
         entries = AccountingLog.get_log_entries(vm, datetime.datetime(year=2009, month=01, day=01))
@@ -96,7 +96,7 @@ class VirtualMachineTestCase(TestCase):
     
     def test_virtual_machine(self):
         """Virtual Machine (model) unit test method"""
-        vm = VirtualMachine.objects.get(pk=1003)
+        vm = VirtualMachine.objects.get(pk=30002)
         
         # should be three
         acc_logs = vm.get_accounting_logs()

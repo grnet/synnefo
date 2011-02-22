@@ -542,6 +542,18 @@ div.machine div.actions:hover a, .machine:hover .actions a {
     display: block;
 }
 
+div.running div.machine a.action-start {
+    display: none;
+}
+
+div.terminated div.machine a.action-reboot, div.terminated div.machine a.action-shutdown{
+    display: none;
+}
+
+div.terminated div.machine div.actions a.more {
+    margin-top: 34px;
+}
+
 .machine:hover {
     background-color:#dcdcdc;
 }

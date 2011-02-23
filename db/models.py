@@ -15,7 +15,7 @@ class SynnefoUser(models.Model):
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     user = models.ForeignKey(User)
-    violations = models.IntegerField()
+    violations = models.IntegerField('Number of Violations')
     
     class Meta:
         verbose_name = u'Synnefo User'
@@ -90,9 +90,9 @@ class Image(models.Model):
         ('DELETED', 'Deleted')
     )
 
-    name = models.CharField(max_length=255, help_text=_('description'))
-    state = models.CharField(choices=IMAGE_STATES, max_length=30)
-    description = models.TextField(help_text=_('description'))
+    name = models.CharField('Image name', max_length=255)
+    state = models.CharField('Current Image State',choices=IMAGE_STATES, max_length=30)
+    description = models.TextField('General description')
     owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
@@ -118,8 +118,8 @@ class Image(models.Model):
 
 
 class ImageMetadata(models.Model):
-    meta_key = models.CharField(max_length=50)
-    meta_value = models.CharField(max_length=500)
+    meta_key = models.CharField('Image metadata key name', max_length=50)
+    meta_value = models.CharField('Image metadata value', max_length=500)
     image = models.ForeignKey(Image)
     
     class Meta:
@@ -136,8 +136,8 @@ class Limit(models.Model):
         ('MONTHLY_RATE', 'Monthly credit issue rate')
     )
     user = models.ForeignKey(SynnefoUser)
-    name = models.CharField(choices=LIMITS, max_length=30, null=False)
-    value = models.IntegerField()
+    name = models.CharField('Limit key name', choices=LIMITS, max_length=30, null=False)
+    value = models.IntegerField('Limit current value')
     
     class Meta:
         verbose_name = u'Enforced limit for user'
@@ -147,9 +147,9 @@ class Limit(models.Model):
 
 
 class Flavor(models.Model):
-    cpu = models.IntegerField(default=0, unique=False)
-    ram = models.IntegerField(default=0, unique=False)
-    disk = models.IntegerField(default=0, unique=False)
+    cpu = models.IntegerField('Number of CPUs', default=0)
+    ram = models.IntegerField('Size of RAM', default=0)
+    disk = models.IntegerField('Size of Disk space'default=0)
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -209,8 +209,8 @@ class Flavor(models.Model):
 
 
 class FlavorCostHistory(models.Model):
-    cost_active = models.PositiveIntegerField()
-    cost_inactive = models.PositiveIntegerField()
+    cost_active = models.PositiveIntegerField('Active Cost')
+    cost_inactive = models.PositiveIntegerField('Inactive Cost')
     effective_from = models.DateField()
     flavor = models.ForeignKey(Flavor)
     

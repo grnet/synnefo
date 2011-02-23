@@ -383,6 +383,9 @@ function update_vms() {
             		"bAutoWidth": false,
             		"bSort": true,    
                     "bStateSave": true,
+                    //"sScrollY": "250px",
+                    //"sScrollX": "500px",
+                    //"sScrollXInner": "480px",
                     "aoColumnDefs": [
                         { "bSortable": false, "aTargets": [ 0 ] }
                     ]
@@ -428,6 +431,22 @@ function update_images() {
     return false;
 }
 
+// get and configure flavor selection
+function update_flavors() { 
+    $.ajax({
+        url: '/api/v1.0/flavors/detail',
+        type: "GET",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    ajax_error(jqXHR);
+                    },
+        success: function(data, textStatus, jqXHR) {
+        }
+    });
+    return false;
+}
 // switch to list view
 $("#list").click(function(){
     $.cookie("list", '1'); // set list cookie
@@ -458,6 +477,8 @@ if ($.cookie("list") == '1') {
 $("a#create").click(function(){
     // populate image list
     update_images();
+    // configure flavors
+    update_flavors(); 
     // launch the wizard
     $("#wizard").scrollable().begin();
 });

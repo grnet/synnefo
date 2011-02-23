@@ -17,7 +17,7 @@ from db import charger
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
-from django.test import skip
+#from django.test import skip
 
 class CreditAllocatorTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
@@ -109,7 +109,7 @@ class VirtualMachineTestCase(TestCase):
 class ChargerTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
 
-    @skip
+    #@skip
     def test_charger(self):
         """Charger unit test method"""
         

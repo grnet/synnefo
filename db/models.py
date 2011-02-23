@@ -149,7 +149,7 @@ class Limit(models.Model):
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('Size of RAM', default=0)
-    disk = models.IntegerField('Size of Disk space'default=0)
+    disk = models.IntegerField('Size of Disk space', default=0)
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -279,11 +279,12 @@ class VirtualMachine(models.Model):
         "DESTROYED": "DELETED"
     }
 
-    name = models.CharField(max_length=255)
+    name = models.CharField('Virtual Machine Name', max_length=255)
     owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     charged = models.DateTimeField('Time of last charge', default=datetime.datetime.now())
+    inactive = models.BooleanField('Inactive Virtual Machine (not charged if true)', default=False)
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
     sourceimage = models.ForeignKey("Image", null=False) 

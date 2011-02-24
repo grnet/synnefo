@@ -284,7 +284,6 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     charged = models.DateTimeField('Time of last charge', default=datetime.datetime.now())
-    inactive = models.BooleanField('Inactive Virtual Machine (not charged if true)', default=False)
     # Use string reference to avoid circular ForeignKey def.
     # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
     sourceimage = models.ForeignKey("Image", null=False) 
@@ -293,7 +292,8 @@ class VirtualMachine(models.Model):
     ipfour = models.IPAddressField()
     ipsix = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
-    suspended = models.BooleanField('Administratively Suspended')
+    deleted = models.BooleanField('Deleted', default=False)
+    suspended = models.BooleanField('Administratively Suspended', default=False)
 
     # VM State 
     # The following fields are volatile data, in the sense
@@ -388,11 +388,21 @@ class VirtualMachine(models.Model):
         if not action in [x[0] for x in VirtualMachine.ACTIONS]:
             raise VirtualMachine.InvalidActionError(action)
 
+        # No actions to deleted or suspended virtual machines
+        # FIXME: How does a VM get unsuspended?
+        if deleted or suspended:
+            raise VirtualMachine.InvalidActionError(action)
+
         self._action = action
         self._backendjobid = None
         self._backendopcode = None
         self._backendlogmsg = None
-        
+
+        # Update the relevant flags if the VM is being suspended or destroyed
+        if action == "DESTROY":
+            deleted = True
+        if action == "SUSPEND":
+            suspended = True
         self.save()
 
     # FIXME: Perhaps move somewhere else, outside the model?

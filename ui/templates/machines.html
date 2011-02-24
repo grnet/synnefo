@@ -338,7 +338,7 @@ function update_vms() {
                     machine.find("img.list-logo").attr("title",image_tags[server.imageId]);
                     machine.find("span.imagetag").text(image_tags[server.imageId]);
     
-                    machine.find("a.ip span.public").text(String(server.metadata.addresses.public).replace(',',' '));            
+                    machine.find("a.ip span.public").text(String(server.addresses.ip_four.ip.addr).replace(',',' '));            
     
                     // TODO: handle SHARE_IP, SHARE_IP_NO_CONFIG, DELETE_IP, REBUILD, QUEUE_RESIZE, PREP_RESIZE, RESIZE, VERIFY_RESIZE, PASSWORD, RESCUE
                     if (server.status == 'BUILD'){

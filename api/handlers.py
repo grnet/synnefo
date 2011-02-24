@@ -107,14 +107,12 @@ class ServerHandler(BaseHandler):
                                      'name': server.name, 
                                      'id': server.id, 
                                      'imageId': server.sourceimage.id, 
-                                     'metadata': {'Server_Label': server.description, 
-                                                  'hostId': '9e107d9d372bb6826bd81d3542a419d6',
-                                                  'addresses': {'public': ['67.23.10.133'],
-                                                                'private': ['10.176.42.17'],
-                                                                }
-                                                  }
+                                     'hostId': server.hostid, 
+                                     #'metadata': {'Server_Label': server.description },
+                                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                     
+                                     'addresses': {'ip_four': { 'ip': {'addr': server.ipfour}},'ip_six': { 'ip': {'addr': server.ipsix}}},            
                                     } for server in virtual_servers]
-            #pass some fake data regarding ip, since we don't have any such data
+            #pass some fake data regarding ip, since we don't have any such data            
             return { "servers":  virtual_servers_list }                
 
 

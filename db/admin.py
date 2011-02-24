@@ -69,7 +69,19 @@ class ImageAdmin(admin.ModelAdmin):
     form = ImageForm
 
 
+
+class VirtualMachineMetadataForm(forms.ModelForm):
+    class Meta:
+        model = VirtualMachineMetadata
+
+class VirtualMachineMetadataAdmin(admin.ModelAdmin):
+    ""
+    form = VirtualMachineMetadataForm
+
+
+
 admin.site.register(Limit, LimitAdmin)
+admin.site.register(VirtualMachineMetadata, VirtualMachineMetadataAdmin)
 admin.site.register(SynnefoUser, SynnefoUserAdmin)
 admin.site.register(Flavor, FlavorAdmin)
 admin.site.register(VirtualMachine, VirtualMachineAdmin)

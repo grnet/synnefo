@@ -83,14 +83,25 @@ class ServerHandler(BaseHandler):
 
     def read_one(self, request, id):
         try:
-            vm = VirtualMachine.objects.get(id=id)
+            server = VirtualMachine.objects.get(id=id)
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
             raise fault.serviceUnavailable
-        return { "server": vm } 
+
+        server = {'status': server.rsapi_state, 
+                                     'flavorId': server.flavor.id, 
+                                     'name': server.name, 
+                                     'id': server.id, 
+                                     'imageId': server.sourceimage.id, 
+                                     'hostId': server.hostid, 
+                                     #'metadata': {'Server_Label': server.description },
+                                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
+                                     'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
+                }
+        return { "server": server } 
 
 
     @paginator

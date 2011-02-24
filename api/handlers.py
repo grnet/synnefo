@@ -95,8 +95,7 @@ class ServerHandler(BaseHandler):
 
     @paginator
     def read_all(self, request, detail=False):
-        virtual_servers = VirtualMachine.objects.all()
-        virtual_servers = [virtual_server for virtual_server in  virtual_servers if virtual_server.rsapi_state !="DELETED"]
+        virtual_servers = VirtualMachine.objects.filter(deleted=False) 
         #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
 
         if not detail:
@@ -109,8 +108,9 @@ class ServerHandler(BaseHandler):
                                      'imageId': server.sourceimage.id, 
                                      'hostId': server.hostid, 
                                      #'metadata': {'Server_Label': server.description },
-                                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                     
-                                     'addresses': {'ip_four': { 'ip': {'addr': server.ipfour}},'ip_six': { 'ip': {'addr': server.ipsix}}},            
+                                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
+                                     'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
+
                                     } for server in virtual_servers]
             #pass some fake data regarding ip, since we don't have any such data            
             return { "servers":  virtual_servers_list }                

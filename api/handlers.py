@@ -151,7 +151,12 @@ class ServerHandler(BaseHandler):
             raise fault.badRequest
 
         # add the new VM to the local db
-        vm = VirtualMachine.objects.create(sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)        
+        try:
+            vm = VirtualMachine.objects.create(sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)
+        except Exception as e:
+            log.error("Can't save vm: %s" % e)
+            raise fault.serviceUnavailable
+
         try:
             vm.name = 'snf-%s' % vm.id
             vm.description = descr
@@ -176,11 +181,16 @@ class ServerHandler(BaseHandler):
                             'memory': flavor.ram,
                         },
                 )
-        except (GanetiApiError, CertificateError, Exception) as e:
+        except (GanetiApiError, CertificateError) as e:
             log.error('CreateInstance failed: %s' % e)
             vm.deleted = True
             vm.save()
             raise fault.serviceUnavailable
+        except Exception as e:
+            log.error('Unexpected error: %s' % e)
+            vm.deleted = True
+            vm.save()
+            raise fault.notImplemented            
         
 
         # take a power nap but don't forget to poll the ganeti job right after

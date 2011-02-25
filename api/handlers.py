@@ -334,7 +334,8 @@ class ImageHandler(BaseHandler):
                     'updated': image.updated.isoformat(),    
                     'description': image.description, 
                     'status': image.state, 
-                    'serverId': image.vm_id
+                    'size': image.size, 
+                    'serverId': image.sourcevm and image.sourcevm.id or ""
                    } for image in images]
         if rapi: # Images info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
@@ -357,7 +358,8 @@ class ImageHandler(BaseHandler):
                     'updated': image.updated.isoformat(),    
                     'description': image.description, 
                     'status': image.state, 
-                    'serverId': image.vm_id
+                    'size': image.size, 
+                    'serverId': image.sourcevm and image.sourcevm.id or ""
                    } }
 
         else:

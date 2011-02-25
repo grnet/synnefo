@@ -66,5 +66,14 @@
             "flavor": 1,
             "_operstate": "STARTED"
         }
+    },
+    {
+        "model": "db.VirtualMachineMetadata",
+        "pk": 1,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "debian",
+            "vm": 1001
+        }
     }
 ]

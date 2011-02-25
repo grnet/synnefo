@@ -1,9 +1,9 @@
 #
 # Unit Tests for api
 #
-# Provides automated tests for db module
+# Provides automated tests for api module
 #
-# Copyright 2010 Greek Research and Technology Network
+# Copyright 2011 Greek Research and Technology Network
 #
 
 from django.test import TestCase
@@ -18,7 +18,7 @@ class APITestCase(TestCase):
         self.client = Client()
 
     def testAPIVersion(self):
-        """ check if the v1.0 version of the rackspace cloud servers API is provided
+        """ check rackspace cloud servers API version
         """
         response = self.client.get('/api/v1.0/')
         # Check that the response is 200 OK.
@@ -60,18 +60,18 @@ class APITestCase(TestCase):
         """ test if the create server call returns the expected response if a valid request has been speficied
         """
         request = {
-                            'server': {
-                                'name'          : 'new-server-test',
-                                "imageId"       : 1,
-                                "flavorId"      : 1,
-                                "metadata"      : {
-                                    "My Server Name": "Apache1",
-                                },
-                                "personality"   : [],
-                            }
+                    "server": {
+                        "name"          : "new-server-test",
+                        "imageId"       : 1,
+                        "flavorId"      : 1,
+                        "metadata"      : {
+                            "My Server Name": "Apache1"
+                        },
+                        "personality"   : []
+                    }
         }
-        response = self.client.post('/api/v1.0/servers', request)
-        self.assertEqual(response.status_code, 200)
+        response = self.client.post('/api/v1.0/servers', json.dumps(request), content_type='application/json')
+        self.assertEqual(response.status_code, 202)
         #TODO: check response.content      
         #TODO: check create server with wrong options (eg flavor that not exist)
     

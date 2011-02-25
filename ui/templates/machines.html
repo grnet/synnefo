@@ -432,6 +432,8 @@ function update_images() {
     return false;
 }
 
+var flavors = {};
+
 // get and configure flavor selection
 function update_flavors() { 
     $.ajax({
@@ -444,10 +446,15 @@ function update_flavors() {
                     ajax_error(jqXHR);
                     },
         success: function(data, textStatus, jqXHR) {
+                    flavors = data;                
         }
     });
     return false;
 }
+
+// TODO: return flavorId from cpu, disk ,ram values
+function identify_flavor(cpu, disk, ram){ return 1; }
+
 // switch to list view
 $("#list").click(function(){
     $.cookie("list", '1'); // set list cookie
@@ -599,15 +606,23 @@ $("#cancel").click(function(){
 
 // starting a new VM through the wizard
 $("#start").click(function(){
-    // ajax port create call
-    $.ajax({
-    url: '/api/v1.0/servers',
-    type: "POST",
-    data: {
-        "create": '{"cpu" : "2", "ram": "1024", "storage": "15", "name": "image name"}'
-        },
     //TODO: get the real data
-    dataType: "json",
+    var payload = {
+            "server": {
+                "name": "image-name",
+                "imageId": 1,
+                "flavorId" : 1,
+                "metadata" : {
+                    "My Server Name" : "Apache1"
+                },
+            }
+    };
+    
+    $.ajax({
+    url: "/api/v1.0/servers",
+    type: "POST",
+    dataType: "json",    
+    data: JSON.stringify(payload),
     timeout: TIMEOUT,
     error: function(jqXHR, textStatus, errorThrown) { 
                 ajax_error(jqXHR);
@@ -617,8 +632,10 @@ $("#start").click(function(){
                     ajax_success(jqXHR);                   
                 } else {
                     ajax_error(jqXHR);
-                }}
+                }
+            }
     });
+
     $("#wizard").hide();
 });
 

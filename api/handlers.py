@@ -2,13 +2,18 @@
 #
 # Copyright © 2010 Greek Research and Technology Network
 
-import json
+import simplejson as json
 from django.conf import settings
+from django.http import HttpResponse
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError, CertificateError
 from synnefo.db.models import *
+from time import sleep
+import logging
+
+log = logging.getLogger('synnefo.api.handlers')
 
 try:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
@@ -128,27 +133,89 @@ class ServerHandler(BaseHandler):
 
 
     def create(self, request):
-        #TODO: add random pass, metadata       
+        """ Parse RAPI create request to generate Ganeti create instance request
+        
+            TODO: auto generate and set password
+        """
+        #Check if we have all the necessary data in the JSON request       
         try:
-            #here we have the options for cpu, ram etc
-            options_request = json.loads(request.POST.get('create', None)) 
-        except Exception, e:
+            server = json.loads(request.raw_post_data)['server']
+            descr = server['name']
+            flavorId = server['flavorId']
+            flavor = Flavor.objects.get(id=flavorId)
+            imageId = server['imageId']
+            metadata = server['metadata']
+            personality = server.get('personality', None)
+        except Exception as e:
+            log.error('Malformed create request: %s - %s' % (e, request.raw_post_data))    
             raise fault.badRequest
-        cpu = options_request.get('cpu','')
-        ram = options_request.get('ram','')
-        name = options_request.get('name','')
-        storage = options_request.get('storage','')
 
+        # add the new VM to the local db
+        vm = VirtualMachine.objects.create(sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)        
         try:
-            pnode = rapi.GetNodes()[0]
-            rapi.CreateInstance('create', name, 'plain', [{"size": storage}], [{}], os='debootstrap+default', ip_check=False, name_check=False,pnode=pnode, beparams={'auto_balance': True, 'vcpus': cpu, 'memory': ram})
-        except GanetiApiError, CertificateError:
+            vm.name = 'snf-%s' % vm.id
+            vm.description = descr
+            vm.save()            
+            jobId = rapi.CreateInstance(
+                'create',
+                'snf-%s' % vm.id,
+                'plain',
+                [{"size": flavor.disk}],
+                [{}],
+                # TODO: select OS from imageId
+                os='debootstrap+default',
+                ip_check=False,
+                name_check=False,
+                #TODO: verify if this is necessary
+                pnode = rapi.GetNodes()[0],
+                # Dry run when called by unit tests
+                dry_run = request.META['SERVER_NAME'] == 'testserver',
+                beparams={
+                            'auto_balance': True,
+                            'vcpus': flavor.cpu,
+                            'memory': flavor.ram,
+                        },
+                )
+        except (GanetiApiError, CertificateError, Exception) as e:
+            log.error('CreateInstance failed: %s' % e)
+            vm.deleted = True
+            vm.save()
             raise fault.serviceUnavailable
-        except Exception, e:
-            raise fault.serviceUnavailable
-        return accepted
+        
 
-        #TODO: replace with real data from request.POST and create the VM in the database
+        # take a power nap but don't forget to poll the ganeti job right after
+        sleep(1)
+        job = rapi.GetJobStatus(jobId)
+        
+        if job['status'] == 'error':
+            log.error('Create Job failed: %s' % job['opresult'])
+            raise fault.badRequest
+        elif job['status'] in ['running', 'success']:
+            log.info('creating instance %s' % job['ops'][0]['instance_name'])     
+            #import pdb;pdb.set_trace()
+            # Build the response
+            status = job['status'] == 'running' and 'BUILD' or 'ACTIVE';
+            ret = {'server': {
+                    'id' : vm.id,
+                    'name' : vm.name,
+                    "imageId" : imageId,
+                    "flavorId" : flavorId,
+                    "hostId" : vm.hostid,
+                    "progress" : 0,
+                    "status" : status,
+                    "adminPass" : "GFf1j9aP",
+                    "metadata" : {"My Server Name" : vm.description},
+                    "addresses" : {
+                        "public" : [  ],
+                        "private" : [  ],
+                        },
+                    },
+            }
+            return HttpResponse(json.dumps(ret), mimetype="application/json", status=202)
+        else:
+            # TODO: handle all possible job statuses
+            log.error('Unhandled job status: %s' % job['status'])
+            return fault.notImplemented
 
     def update(self, request, id):
         return noContent

@@ -133,7 +133,7 @@ class ServerHandler(BaseHandler):
 
 
     def create(self, request):
-        """ Parse RAPI create request to generate Ganeti create instance request
+        """ Parse RackSpace API create request to generate rapi create request
         
             TODO: auto generate and set password
         """

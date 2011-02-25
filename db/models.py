@@ -400,9 +400,9 @@ class VirtualMachine(models.Model):
 
         # Update the relevant flags if the VM is being suspended or destroyed
         if action == "DESTROY":
-            deleted = True
+            self.deleted = True
         if action == "SUSPEND":
-            suspended = True
+            self.suspended = True
         self.save()
 
     # FIXME: Perhaps move somewhere else, outside the model?

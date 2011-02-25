@@ -280,7 +280,7 @@ class FlavorHandler(BaseHandler):
     allowed_methods = ('GET',)
     flavors = Flavor.objects.all()
     flavors = [ {'id': flavor.id, 'name': flavor.name, 'ram': flavor.ram, \
-             'disk': flavor.disk} for flavor in flavors]
+             'disk': flavor.disk, 'cpu': flavor.cpu} for flavor in flavors]
 
     def read(self, request, id=None):
         """

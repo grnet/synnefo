@@ -416,6 +416,7 @@ function update_images() {
                     img.find("label").attr('for',"img-radio-" + image.id);
                     img.find(".image-title").text(image.name);
                     img.find(".description").text(image.description);
+                    img.find(".size").text(image.size);
                     img.find("input.radio").attr('id',"img-radio-" + image.id);
                     if (i==0) img.find("input.radio").attr("checked","checked"); 
                     img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');

@@ -26,7 +26,7 @@ class OSXMLEmitter(Emitter):
             'ip': ['addr'],
             'ip6': ['addr'],
             'meta': ['key'],
-            "flavor": [ "id", "name", "ram", "disk" ],
+            "flavor": [ "id", "name", "ram", "disk", "cpu" ],
             "image": [ "id", "name", "updated", "created", "status",
                        "serverId", "progress" ],
         }

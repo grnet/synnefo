@@ -152,7 +152,7 @@ class ServerHandler(BaseHandler):
 
         # add the new VM to the local db
         try:
-            vm = VirtualMachine.objects.create(id=1001,sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)
+            vm = VirtualMachine.objects.create(sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)
         except Exception as e:
             log.error("Can't save vm: %s" % e)
             raise fault.serviceUnavailable

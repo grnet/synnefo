@@ -152,7 +152,7 @@ class ServerHandler(BaseHandler):
 
         # add the new VM to the local db
         try:
-            vm = VirtualMachine.objects.create(sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)
+            vm = VirtualMachine.objects.create(id=1001,sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)
         except Exception as e:
             log.error("Can't save vm: %s" % e)
             raise fault.serviceUnavailable
@@ -163,7 +163,7 @@ class ServerHandler(BaseHandler):
             vm.save()            
             jobId = rapi.CreateInstance(
                 'create',
-                'snf-%s' % vm.id,
+                request.META['SERVER_NAME'] == 'testserver' and 'test-server' or 'snf-%s' % vm.id,
                 'plain',
                 [{"size": flavor.disk}],
                 [{}],
@@ -293,10 +293,11 @@ class ServerActionHandler(BaseHandler):
 
     def create(self, request, id):
         """Reboot, Shutdown, Start virtual machine"""
-
-        reboot_request = request.POST.get('reboot', None)
-        shutdown_request = request.POST.get('shutdown', None)
-        start_request = request.POST.get('start', None)
+        
+        requested_action = json.loads(request.raw_post_data)
+        reboot_request = requested_action.get('reboot', None)
+        shutdown_request = requested_action.get('shutdown', None)
+        start_request = requested_action.get('start', None)
         #action not implemented
         action = reboot_request and 'REBOOT' or shutdown_request and 'SUSPEND' or start_request and 'START'
         if not action:

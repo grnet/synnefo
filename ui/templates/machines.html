@@ -124,15 +124,20 @@
                     </li>
                     <li>
 			            <label><strong class="sliders">CPU (cores)</strong></label>
-                        <input type="range" id="cpu" value="1" max="8" min="1" />
+                        <input type="range" id="cpu" style="display:none" />
+                        <input type="text" class="range" id="cpu-indicator" />
                     </li>
                     <li>
 			            <label><strong class="sliders">RAM (MB)</strong></label>
-                        <input type="range" id="ram" value="256" max="2048" min="256" step="256" />
+                        <input type="range" id="ram" style="display:none" />
+                        <input type="text" class="range" id="ram-indicator" />
+
                     </li>
                     <li>
 		                <label><strong class="sliders">Storage (GB)</strong></label>
-                        <input type="range" id="storage" value="5" step="1" max="100" min="2" />
+                        <input type="range" id="storage" style="display:none" />
+                        <input type="text" class="range" id="storage-indicator" />
+
                     </li>
                     <li>
                         <div class="cost">
@@ -153,16 +158,16 @@
                         </label>
                     </li>
                     <li>
-                        <strong>{% trans "Image:" %}</strong> <span>Ubuntu 10.04 x86_64 server</span>
+                        <strong>{% trans "Image:" %}</strong> <span id="machine_image-label">Ubuntu 10.04 x86_64 server</span>
                     </li>
                     <li>
-                        <strong>{% trans "CPU:" %}</strong> <span>2 cores</span>
+                        <strong>{% trans "CPU:" %}</strong> <span id="machine_cpu-label">2</span> <span>{% trans "cores" %}</span>
                     </li>
                     <li>
-                        <strong>{% trans "RAM:" %}</strong> <span>1024MB</span>
+                        <strong>{% trans "RAM:" %}</strong> <span id="machine_ram-label">1024</span><span>MB</span>
                     </li>
                     <li>
-                        <strong>{% trans "Storage:" %}</strong> <span>10GB</span>
+                        <strong>{% trans "Storage:" %}</strong> <span id="machine_storage-label">10</span><span>GB</span>
                     </li>
                     <li>
                         <strong>{% trans "Cost per hour:" %}</strong> <span>20 {% trans "credits" %}</span>
@@ -432,7 +437,23 @@ function update_images() {
     return false;
 }
 
-var flavors = {};
+var flavors = {}, disks = [], cpus = [], ram = [];
+
+Array.prototype.unique = function () {
+	var r = new Array();
+	o:for(var i = 0, n = this.length; i < n; i++)
+	{
+		for(var x = 0, y = r.length; x < y; x++)
+		{
+			if(r[x]==this[i])
+			{
+				continue o;
+			}
+		}
+		r[r.length] = this[i];
+	}
+	return r;
+}
 
 // get and configure flavor selection
 function update_flavors() { 
@@ -443,17 +464,50 @@ function update_flavors() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR);
-                    },
+            ajax_error(jqXHR);
+        },
         success: function(data, textStatus, jqXHR) {
-                    flavors = data;                
+            flavors = data.flavors;
+            $.each(flavors, function(i, flavor) {
+                cpus[i] = flavor['cpu'];
+                disks[i] = flavor['disk'];
+                ram[i] = flavor['ram'];
+            });
+            cpus = cpus.unique();
+            disks = disks.unique();
+            ram = ram.unique();
+            // sliders for selecting VM flavor
+            $("#cpu:range").rangeinput({min:0,
+                                       value:0,
+                                       step:1,
+                                       max:cpus.length-1});
+            $("#cpu-indicator")[0].value = $("#cpu-indicator")[0].value ? $("#cpu-indicator")[0].value : cpus[0];
+            
+            $("#storage:range").rangeinput({min:0,
+                                       value:0,
+                                       step:1,
+                                       max:disks.length-1});
+            $("#storage-indicator")[0].value = $("#storage-indicator")[0].value ? $("#storage-indicator")[0].value : disks[0];
+
+            $("#ram:range").rangeinput({min:0,
+                                       value:0,
+                                       step:1,
+                                       max:ram.length-1});
+            $("#ram-indicator")[0].value = $("#ram-indicator")[0].value ? $("#ram-indicator")[0].value : ram[0];            
+            
         }
     });
     return false;
 }
-
-// TODO: return flavorId from cpu, disk ,ram values
-function identify_flavor(cpu, disk, ram){ return 1; }
+// return flavorId from cpu, disk, ram values
+function identify_flavor(cpu, disk, ram){
+    for (i=0;i<flavors.length;i++){
+        if (flavors[i]['cpu'] == cpu && flavors[i]['disk']==disk && flavors[i]['ram']==ram) {
+            return flavors[i]['id']
+        }
+    }
+    return 0;
+}
 
 // switch to list view
 $("#list").click(function(){
@@ -533,6 +587,19 @@ $(function() {
 	    }
 	    // update status bar
 	    $("#status li").removeClass("active").eq(i).addClass("active");
+        
+        // update confirm step
+        var image = $("input[type=radio][name=image-id]:checked");
+        var imageId = image.length ? image[0].id : false
+        if (imageId) {
+            var imageName = $("label[for=" + imageId + "] .image-title").text();
+            $("#machine_image-label")[0].textContent = imageName;
+            $("input[type=text][name=machine_name]")[0].value = "My " + imageName + " server";
+        }
+        $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
+        $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
+        $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
+        
     });
 
     // if tab is pressed on the next button seek to next page
@@ -543,10 +610,8 @@ $(function() {
 		    e.preventDefault();
 	    }
     });
-});
 
-// sliders for selecting VM flavor
-$(":range").rangeinput({progress:true});
+});
 
 // disable sliders in flavor selection
 function disableSliders() {
@@ -557,23 +622,23 @@ function disableSliders() {
 
 // selecting the small size
 $("#small").click(function(){
-    $("#cpu").data('rangeinput').setValue(1);
-    $("#ram").data('rangeinput').setValue(256);
-    $("#storage").data('rangeinput').setValue(5);
+    $("#cpu").data('rangeinput').setValue(0);
+    $("#ram").data('rangeinput').setValue(0);
+    $("#storage").data('rangeinput').setValue(0);
 });
 
 // selecting the medium size
 $("#medium").click(function(){
-    $("#cpu").data('rangeinput').setValue(4);
-    $("#ram").data('rangeinput').setValue(1024);
-    $("#storage").data('rangeinput').setValue(30);
+    $("#cpu").data('rangeinput').setValue(1);
+    $("#ram").data('rangeinput').setValue(1);
+    $("#storage").data('rangeinput').setValue(1);
 });
 
 // selecting the large size
 $("#large").click(function(){
-    $("#cpu").data('rangeinput').setValue(8);
-    $("#ram").data('rangeinput').setValue(4096);
-    $("#storage").data('rangeinput').setValue(80);
+    $("#cpu").data('rangeinput').setValue(2);
+    $("#ram").data('rangeinput').setValue(2);
+    $("#storage").data('rangeinput').setValue(2);
 });
 
 // selecting the custom flavor enables the sliders
@@ -589,6 +654,18 @@ $("#cpu").change(function(){
     $("#custom").click();
 });
 
+// update cpu indicator
+$("#cpu:range").change(function(event, value){
+    $("#cpu-indicator")[0].value = cpus[Number(value)];
+    return false;
+});
+
+// update ram indicator
+$("#ram:range").change(function(event, value){
+    $("#ram-indicator")[0].value = ram[Number(value)];
+    return false;
+});
+
 // get ram value for custom flavor
 $("#ram").change(function(){
     $("#custom").click();
@@ -599,6 +676,12 @@ $("#storage").change(function(){
     $("#custom").click();
 });
 
+// update disk indicator
+$("#storage:range").change(function(event, value){
+    $("#storage-indicator")[0].value = disks[Number(value)];
+    return false;
+});
+
 // exit the wizard
 $("#cancel").click(function(){
     $("a#create").overlay().close();
@@ -607,17 +690,18 @@ $("#cancel").click(function(){
 // starting a new VM through the wizard
 $("#start").click(function(){
     //TODO: get the real data
+    var flavorId = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var payload = {
         "server": {
             "name": "image-name",
             "imageId": 1,
-            "flavorId" : 1,
+            "flavorId" : flavorId,
             "metadata" : {
-                "My Server Name" : "Apache1"
+                "My Server Name" : $("input[name=machine_name]")[0].value
             },
         }
     };
-    
+
     $.ajax({
     url: "/api/v1.0/servers",
     type: "POST",

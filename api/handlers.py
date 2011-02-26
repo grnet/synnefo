@@ -181,6 +181,7 @@ class ServerHandler(BaseHandler):
                             'memory': flavor.ram,
                         },
                 )
+            log.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
         except (GanetiApiError, CertificateError) as e:
             log.error('CreateInstance failed: %s' % e)
             vm.deleted = True

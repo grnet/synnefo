@@ -608,14 +608,14 @@ $("#cancel").click(function(){
 $("#start").click(function(){
     //TODO: get the real data
     var payload = {
-            "server": {
-                "name": "image-name",
-                "imageId": 1,
-                "flavorId" : 1,
-                "metadata" : {
-                    "My Server Name" : "Apache1"
-                },
-            }
+        "server": {
+            "name": "image-name",
+            "imageId": 1,
+            "flavorId" : 1,
+            "metadata" : {
+                "My Server Name" : "Apache1"
+            },
+        }
     };
     
     $.ajax({
@@ -642,13 +642,15 @@ $("#start").click(function(){
 // reboot action
 function reboot(serverID){
     // ajax post reboot call
+    var payload = {
+        "reboot": {"type" : "HARD"}
+    };   
+
     $.ajax({
         url: '/api/v1.0/servers/' + serverID + '/action',
-        type: "POST",
-        data: {
-            "reboot": '{"type" : "HARD"}'
-            },
+        type: "POST",        
         dataType: "json",
+        data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
                     ajax_error(jqXHR);
@@ -666,13 +668,15 @@ function reboot(serverID){
 // shutdown action
 function shutdown(serverID) {
     // ajax post shutdown call
+    var payload = {
+        "shutdown": {"timeout" : "5"}
+    };   
+
     $.ajax({
 	    url: '/api/v1.0/servers/' + serverID + '/action',
 	    type: "POST",
-	    data: {
-		    "shutdown": '{"timeout" : "5"}'
-		    },
 	    dataType: "json",
+        data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
                     ajax_error(jqXHR);
@@ -691,13 +695,15 @@ function shutdown(serverID) {
 // start action
 function start(serverID){
     // ajax post start call
+    var payload = {
+        "start": {"type" : "NORMAL"}
+    };   
+
     $.ajax({
         url: '/api/v1.0/servers/' + serverID + '/action',
         type: "POST",
-        data: {
-            "start": '{"type" : "NORMAL"}'
-            },
         dataType: "json",
+        data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
                     ajax_error(jqXHR);

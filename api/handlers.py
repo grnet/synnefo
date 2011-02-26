@@ -200,7 +200,7 @@ class ServerHandler(BaseHandler):
         if job['status'] == 'error':
             log.error('Create Job failed: %s' % job['opresult'])
             raise fault.badRequest
-        elif job['status'] in ['running', 'success']:
+        elif job['status'] in ['running', 'success', 'queued', 'waiting']:
             log.info('creating instance %s' % job['ops'][0]['instance_name'])     
             #import pdb;pdb.set_trace()
             # Build the response

@@ -49,6 +49,30 @@ class APITestCase(TestCase):
         self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
         self.assertTrue(response.status_code in [200,203])
 
+    def testServersDetails(self):
+        """ test if the servers details are returned by the API
+        """
+        response = self.client.get('/api/v1.0/servers/detail')     
+        id_list = [vm.id for vm in VirtualMachine.objects.all()]
+        number = 0
+        for vm_id in id_list:
+            vm_from_api = json.loads(response.content)['servers'][number]
+            vm_from_db = VirtualMachine.objects.get(id=vm_id)
+            self.assertEqual(vm_from_api['flavorId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
+            self.assertEqual(vm_from_api['id'], vm_from_db.id)
+            self.assertEqual(vm_from_api['imageId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['name'], vm_from_db.name)
+            self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
+            number += 1
+        self.assertTrue(response.status_code in [200,203])
+
+    def testWrongServer(self):
+        """ test if a non existent server is asked, if a 404 itemNotFound returned
+        """
+        response = self.client.get('/api/v1.0/servers/1231231001')
+        self.assertEqual(response.status_code, 404)
+
     def testCreateServerEmpty(self):
         """ test if the create server call returns a 400 badRequest if no
             attributes are specified
@@ -57,7 +81,8 @@ class APITestCase(TestCase):
         self.assertEqual(response.status_code, 400)
                                     
     def testCreateServer(self):
-        """ test if the create server call returns the expected response if a valid request has been speficied
+        """ test if the create server call returns the expected response
+            if a valid request has been speficied
         """
         request = {
                     "server": {
@@ -70,63 +95,72 @@ class APITestCase(TestCase):
                         "personality"   : []
                     }
         }
-        response = self.client.post('/api/v1.0/servers', json.dumps(request), content_type='application/json')
+        response = self.client.post('/api/v1.0/servers', 
+                                    json.dumps(request), 
+                                    content_type='application/json')
         self.assertEqual(response.status_code, 202)
         #TODO: check response.content      
         #TODO: check create server with wrong options (eg flavor that not exist)
     
-    def testServersDetails(self):
-        """ test if the servers details are returned by the API
-        """
-        #TODO
-        pass
-
 
     def testRebootServer(self):
         """ test if the specified server is rebooted
         """
-        #TODO
-        pass
+        request = {
+            "reboot": '{"type" : "HARD"}'
+            }
+        response = self.client.post('/api/v1.0/servers/1004/action', 
+                                    json.dumps(request),
+                                    content_type='application/json')  
+        self.assertEqual(response.status_code, 202)
+        #server id that does not exist
+        response = self.client.post('/api/v1.0/servers/665544331004/action', 
+                                   json.dumps(request), 
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 404)
 
 
     def testShutdownServer(self):
         """ test if the specified server is shutdown
         """
-        #TODO
-        pass
+        request = {
+            "shutdown": {"timeout" : "5"}
+            }
+        response = self.client.post('/api/v1.0/servers/1004/action',
+                                    json.dumps(request), 
+                                    content_type='application/json')  
+        self.assertEqual(response.status_code, 202)
+        #server id that does not exist
+        response = self.client.post('/api/v1.0/servers/665544331004/action',
+                                    json.dumps(request), 
+                                    content_type='application/json')
+        self.assertEqual(response.status_code, 404)
 
 
     def testStartServer(self):
         """ test if the specified server is started
         """
-        #TODO
-        pass
+        request = {
+            "start": {"type" : "NORMAL"}
+            }
+        response = self.client.post('/api/v1.0/servers/1004/action', 
+                                    json.dumps(request),
+                                    content_type='application/json')  
+        self.assertEqual(response.status_code, 202)
+        #server id that does not exist
+        response = self.client.post('/api/v1.0/servers/665544331004/action', 
+                                    json.dumps(request), 
+                                    content_type='application/json')
+        self.assertEqual(response.status_code, 404)
 
     def testDeleteServer(self):
         """ test if the specified server is deleted
         """
-        #TODO
-        pass
-
-    def testRebootWrongServer(self):
-        """ test if the reboot server call returns a 404 itemNotFound if a not existing server
-            is specified
-        """
-        #TODO
-        pass
-
-    def testServerWrongAction(self):
-        """ test if the action sent to the specified server is not one of 
-            create, start, reboot, stop or destroy if 501 notImplemented is returned
-        """
-        #TODO
-        pass
-
-    def testWrongServer(self):
-        """ test if a non existent server is asked, if a 404 itemNotFound returned
-        """
-        #TODO
-        pass
+        response = self.client.delete('/api/v1.0/servers/1001')  
+        self.assertEqual(response.status_code, 202)
+        #server id that does not exist      
+        response = self.client.delete('/api/v1.0/servers/1231231231231001')  
+        self.assertEqual(response.status_code, 404)
 
 
     def testFlavorList(self):
@@ -139,15 +173,23 @@ class APITestCase(TestCase):
         self.assertTrue(response.status_code in [200,203])
 
 
-    def testFlavorDetails(self):
-        """ test if the expected flavor is returned by the API
-        """
-        #TODO
-        pass
-
-
     def testFlavorsDetails(self):
         """ test if the flavors details are returned by the API
+        """
+        response = self.client.get('/api/v1.0/flavors/detail')     
+        for number in range(0, len(Flavor.objects.all())):
+            flavor_from_api = json.loads(response.content)['flavors'][number]
+            flavor_from_db = Flavor.objects.get(id=number+1)
+            self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
+            self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
+            self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
+            self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
+            self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
+        self.assertTrue(response.status_code in [200,203])
+
+
+    def testFlavorDetails(self):
+        """ test if the expected flavor is returned by the API
         """
         response = self.client.get('/api/v1.0/flavors/1')
         flavor_from_api = json.loads(response.content)['flavor']
@@ -163,8 +205,8 @@ class APITestCase(TestCase):
     def testWrongFlavor(self):
         """ test if a non existent flavor is asked, if a 404 itemNotFound returned
         """
-        #TODO
-        pass
+        response = self.client.get('/api/v1.0/flavors/1231231001')
+        self.assertEqual(response.status_code, 404)
 
 
     def testImageList(self):
@@ -196,13 +238,23 @@ class APITestCase(TestCase):
     def testImagesDetails(self):
         """ test if the images details are returned by the API
         """
-        #TODO
-        pass
+        response = self.client.get('/api/v1.0/images/detail')     
+        for number in range(0, len(Image.objects.all())):
+            image_from_api = json.loads(response.content)['images'][number]
+            image_from_db = Image.objects.get(id=number+1)
+            self.assertEqual(image_from_api['name'], image_from_db.name)
+            self.assertEqual(image_from_api['id'], image_from_db.id)
+            self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
+            self.assertEqual(image_from_api['size'], image_from_db.size)
+            self.assertEqual(image_from_api['status'], image_from_db.state)
+            self.assertEqual(image_from_api['description'], image_from_db.description)
+        self.assertTrue(response.status_code in [200,203])
+
 
 
     def testWrongImage(self):
         """ test if a non existent image is asked, if a 404 itemNotFound returned
         """
-        #TODO
-        pass
+        response = self.client.get('/api/v1.0/images/1231231001')
+        self.assertEqual(response.status_code, 404)
 

@@ -43,14 +43,14 @@ class VirtualMachineGroupAdmin(admin.ModelAdmin):
 
     form = VirtualMachineGroupForm
 
-class AccountingLogForm(forms.ModelForm):
+class DebitForm(forms.ModelForm):
     class Meta:
-        model = AccountingLog
+        model = Debit
 
-class AccountingLogAdmin(admin.ModelAdmin):
+class DebitAdmin(admin.ModelAdmin):
     ""    
 
-    form = AccountingLogForm
+    form = DebitForm
 
 class SynnefoUserForm(forms.ModelForm):
     class Meta:
@@ -86,6 +86,6 @@ admin.site.register(SynnefoUser, SynnefoUserAdmin)
 admin.site.register(Flavor, FlavorAdmin)
 admin.site.register(VirtualMachine, VirtualMachineAdmin)
 admin.site.register(VirtualMachineGroup, VirtualMachineGroupAdmin)
-admin.site.register(AccountingLog, AccountingLogAdmin)
+admin.site.register(Debit, DebitAdmin)
 admin.site.register(Image, ImageAdmin)
 

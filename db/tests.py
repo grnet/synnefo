@@ -76,7 +76,7 @@ class FlavorTestCase(TestCase):
         self.assertEquals(r.cost_inactive, 5, 'Inactive cost for 2011-11-11 should be 5 (%d!=5)' % ( r.cost_inactive, ))
 
 
-class AccountingLogTestCase(TestCase):
+class DebitTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
                 
     def test_accounting_log(self):
@@ -84,11 +84,11 @@ class AccountingLogTestCase(TestCase):
         vm = VirtualMachine.objects.get(pk=30000)
         
         # get all entries, should be 2
-        entries = AccountingLog.get_log_entries(vm, datetime.datetime(year=2009, month=01, day=01))
+        entries = Debit.get_log_entries(vm, datetime.datetime(year=2009, month=01, day=01))
         self.assertEquals(len(entries), 2, 'Log entries should be 2 (%d!=2)' % ( len(entries), ))
         
         # get enrties only for 2011, should be 1
-        entries = AccountingLog.get_log_entries(vm, datetime.datetime(year=2011, month=01, day=01))
+        entries = Debit.get_log_entries(vm, datetime.datetime(year=2011, month=01, day=01))
         self.assertEquals(len(entries), 1, 'Log entries should be 1 (%d!=1)' % ( len(entries), ))
 
 

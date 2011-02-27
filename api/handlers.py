@@ -94,6 +94,7 @@ class ServerHandler(BaseHandler):
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
+            log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
         server = {'status': server.rsapi_state, 
@@ -238,12 +239,14 @@ class ServerHandler(BaseHandler):
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
+            log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
         #TODO: set the status to DESTROYED
         try:
             vm.start_action('DESTROY')
         except Exception, e:
+            log.error('Unexpected error: %s' % e)            
             raise fault.serviceUnavailable
 
         try:
@@ -251,6 +254,7 @@ class ServerHandler(BaseHandler):
         except GanetiApiError, CertificateError:
             raise fault.serviceUnavailable
         except Exception, e:
+            log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
         return accepted        
@@ -310,11 +314,13 @@ class ServerActionHandler(BaseHandler):
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
+            log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
         try:
             vm.start_action(action)
         except Exception, e:
+            log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
         try:
@@ -328,6 +334,7 @@ class ServerActionHandler(BaseHandler):
         except GanetiApiError, CertificateError:
             raise fault.serviceUnavailable
         except Exception, e:
+            log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
     def delete(self, request, id):
@@ -428,6 +435,7 @@ class ImageHandler(BaseHandler):
                 except Image.MultipleObjectsReturned:
                     raise fault.serviceUnavailable
                 except Exception, e:
+                    log.error('Unexpected error: %s' % e)
                     raise fault.serviceUnavailable
 
                 return { "image":  {'created': image.created.isoformat(), 

@@ -160,33 +160,58 @@ $("a.enabled#action-destroy").live('click', function() {
 	}
 });
 
-// reboot action
+
 $("a.enabled#action-reboot").live('click', function() {
+    // reboot action
+    var payload = {
+        "reboot": {"type" : "HARD"}
+    };   
+
 	var checked = $("tbody input[type='checkbox']:checked").toArray();	
 	for (c in checked) {
 		$.ajax({
 			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
 			type: "POST",
-			data: {
-				"reboot": '{"type" : "HARD"}'
-				},
 			dataType: "json",
+            data: JSON.stringify(payload),
 			success: function() {}
 		});
 	}
 });
 
-// shutdown action. Not implemented by rackspace API atm
-$("a.enabled#action-shutdown").live('click', function() {
+
+$("a.enabled#action-start").live('click', function() {
+    // start action
+    var payload = {
+        "start": {"type" : "NORMAL"}
+    };   
+
 	var checked = $("tbody input[type='checkbox']:checked").toArray();	
 	for (c in checked) {
 		$.ajax({
 			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
 			type: "POST",
-			data: {
-				"shutdown": '{"timeout" : "5"}'
-				},
+            dataType: "json",
+            data: JSON.stringify(payload),
+			success: function() {}
+		});
+	}
+});
+
+
+$("a.enabled#action-shutdown").live('click', function() {
+    // shutdown action. Not implemented by rackspace API atm
+    var payload = {
+        "shutdown": {"timeout" : "5"}
+    };   
+
+	var checked = $("tbody input[type='checkbox']:checked").toArray();	
+	for (c in checked) {
+		$.ajax({
+			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
+			type: "POST",			
 			dataType: "json",
+            data: JSON.stringify(payload),
 			success: function() {}
 		});
 	}

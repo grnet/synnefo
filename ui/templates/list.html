@@ -77,6 +77,7 @@ $("table thead tr th#selection ul li").live('click', function() {
     }
     // update actions
 	updateActions();
+	return false;
 });
 
 // menu toggle, running menu
@@ -108,8 +109,7 @@ $("tbody input[type='checkbox']").live('change', function() { updateActions(); }
 function updateActions() {
 	var states = [];
 	var on = [];
-	var checked = $("table tbody input[type='checkbox']:checked").toArray();
-	
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
 	// disable all actions to begin with
 	for (action in actions) {
 		$("#action-" + action).removeClass('enabled');
@@ -120,7 +120,7 @@ function updateActions() {
 		states[0] = 'multiple';
 	
 	// check the states of selected machines
-	checked.forEach(function(checkbox) {
+	checked.each(function(i,checkbox) {
 		states[states.length] = checkbox.className;
 		var ip = $("#" + checkbox.id.replace('input-','') + ".ip span.public").text();
 		if (ip.replace('undefined','').length)
@@ -130,7 +130,7 @@ function updateActions() {
 	// decide which actions should be enabled
 	for (a in actions) {
 		var enabled = false;
-		for (s in states) {
+		for (var s =0; s<states.length; s++) {
 			if (actions[a].indexOf(states[s]) != -1 ) {
 				enabled = true;
 			} else {
@@ -149,15 +149,17 @@ function updateActions() {
 
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
-	var checked = $("tbody input[type='checkbox']:checked").toArray();	
-	for (c in checked) {
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+	checked.each(function(i,c) {
 		$.ajax({
-			url: '/api/v1.0/servers/' + checked[c].id.replace('input-',''),
+			url: '/api/v1.0/servers/' + c.id.replace('input-',''),
 			type: "DELETE",
 			dataType: "json",
 			success: function() {}
 		});
-	}
+		console.warn('destroying ' + c.id.replace('input-',''))
+	});
+	return false;
 });
 
 
@@ -167,16 +169,18 @@ $("a.enabled#action-reboot").live('click', function() {
         "reboot": {"type" : "HARD"}
     };   
 
-	var checked = $("tbody input[type='checkbox']:checked").toArray();	
-	for (c in checked) {
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");	
+	checked.each(function(i,c) {
 		$.ajax({
-			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
+			url: '/api/v1.0/servers/' + c.id.replace('input-','') + '/action',
 			type: "POST",
 			dataType: "json",
             data: JSON.stringify(payload),
 			success: function() {}
 		});
-	}
+		console.warn('rebooting ' + c.id.replace('input-',''))
+	});
+	return false;
 });
 
 
@@ -186,16 +190,18 @@ $("a.enabled#action-start").live('click', function() {
         "start": {"type" : "NORMAL"}
     };   
 
-	var checked = $("tbody input[type='checkbox']:checked").toArray();	
-	for (c in checked) {
+	var checked = $("tbody input[type='checkbox']:checked");	
+	checked.each(function(i,c) {
 		$.ajax({
-			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
+			url: '/api/v1.0/servers/' + c.id.replace('input-','') + '/action',
 			type: "POST",
             dataType: "json",
             data: JSON.stringify(payload),
 			success: function() {}
 		});
-	}
+		console.warn('starting ' + c.id.replace('input-',''))		
+	});
+	return false;
 });
 
 
@@ -205,16 +211,18 @@ $("a.enabled#action-shutdown").live('click', function() {
         "shutdown": {"timeout" : "5"}
     };   
 
-	var checked = $("tbody input[type='checkbox']:checked").toArray();	
-	for (c in checked) {
+	var checked = $("tbody input[type='checkbox']:checked");	
+	checked.each(function(i,c) {
 		$.ajax({
-			url: '/api/v1.0/servers/' + checked[c].id.replace('input-','') + '/action',
+			url: '/api/v1.0/servers/' + c.id.replace('input-','') + '/action',
 			type: "POST",			
 			dataType: "json",
             data: JSON.stringify(payload),
 			success: function() {}
 		});
-	}
+		console.warn('shutting down ' + c.id.replace('input-',''))
+	});
+	return false;
 });
 
 </script>

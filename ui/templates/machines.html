@@ -715,6 +715,7 @@ $("#start").click(function(){
                 }
             }
     });
+    console.warn('creating ' + $("input[name=machine_name]")[0].value)
 
     $("#wizard").hide();
 });
@@ -742,6 +743,7 @@ function reboot(serverID){
                         ajax_error(jqXHR);
                     }}
     });
+    console.warn('rebooting ' + serverID);    
     return false;
 }
 
@@ -768,6 +770,7 @@ function shutdown(serverID) {
                         ajax_error(jqXHR);
                     }}             
     });
+    console.warn('shutting down ' + serverID);        
     return false;    
 }
 
@@ -795,6 +798,7 @@ function start(serverID){
                         ajax_error(jqXHR);
                     }}
     });
+    console.warn('starting ' + serverID);        
     return false;
 }
 

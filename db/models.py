@@ -332,9 +332,9 @@ class VirtualMachine(models.Model):
         if not action in [x[0] for x in VirtualMachine.ACTIONS]:
             raise VirtualMachine.InvalidActionError(action)
 
-        # No actions to deleted or suspended virtual machines
+        # No actions to deleted and no actions beside destroy to suspended vms
         # FIXME: How does a VM get unsuspended?
-        if self.deleted or self.suspended:
+        if self.deleted or (self.suspended and action != "DESTROY"):
             raise VirtualMachine.InvalidActionError(action)
 
         self._action = action

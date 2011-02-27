@@ -167,7 +167,7 @@ class ServerHandler(BaseHandler):
                 'plain',
                 [{"size": flavor.disk}],
                 [{}],
-                # TODO: select OS from imageId
+                #TODO: select OS from imageId
                 os='debootstrap+default',
                 ip_check=False,
                 name_check=False,
@@ -203,7 +203,6 @@ class ServerHandler(BaseHandler):
             raise fault.badRequest
         elif job['status'] in ['running', 'success', 'queued', 'waiting']:
             log.info('creating instance %s' % job['ops'][0]['instance_name'])     
-            #import pdb;pdb.set_trace()
             # Build the response
             status = job['status'] == 'running' and 'BUILD' or 'ACTIVE';
             ret = {'server': {

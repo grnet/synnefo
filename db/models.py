@@ -15,49 +15,16 @@ class SynnefoUser(models.Model):
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     user = models.ForeignKey(User)
-    violations = models.IntegerField('Number of Violations')
     
     class Meta:
         verbose_name = u'Synnefo User'
     
     def __unicode__(self):
-        return self.name
-    
-    def charge_credits(self, cost, start, end):
-        """Reduce user credits for specified duration.
-        
-        Returns amount of credits remaining. Negative if the user has surpassed his limit.
-        
-        """
-        td = end - start
-        sec = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / float(10**6)
-        
-        total_hours = float(sec) / float(60.0*60.0)
-        total_cost = float(cost)*total_hours
-        
-        self.credit = self.credit - round(total_cost)
-        
-        if self.credit < 0:
-            self.violations = self.violations + 1
-        else:
-            self.violations = 0
-                
-        return self.credit
-    
-    def allocate_credits(self):
-        """Allocate credits. Add monthly rate to user credit reserve."""
-        self.credit = self.credit + self.monthly_rate
-        
-        # ensure that the user has not more credits than his quota
-        limit_quota = self.credit_quota
-                
-        if self.credit > limit_quota:
-            self.credit = limit_quota
+        return self.name 
 
     def get_limit(self, limit_name):
         """Returns the limit value for the specified limit"""
-        limit_objs = Limit.objects.filter(name=limit_name, user=self)
-        
+        limit_objs = Limit.objects.filter(name=limit_name, user=self)        
         if len(limit_objs) == 1:
             return limit_objs[0].value
         
@@ -75,11 +42,19 @@ class SynnefoUser(models.Model):
         
     monthly_rate = property(_get_monthly_rate)
     
-    def _get_max_violations(self):
+    def _get_min_credits(self):
         """Internal getter function for maximum number of violations"""
-        return self.get_limit('MAX_VIOLATIONS')
+        return self.get_limit('MIN_CREDITS')
         
-    max_violations = property(_get_max_violations)
+    min_credits = property(_get_min_credits)
+    
+    def debit_account(self, amount, vm, description):
+        """Charges the user with the specified amount of credits for a vm (resource)"""
+        return
+
+    def credit_account(self, amount, creditor, description):
+        """No clue :)"""
+        return
 
 
 class Image(models.Model):
@@ -120,8 +95,8 @@ class ImageMetadata(models.Model):
 
 class Limit(models.Model):
     LIMITS = (
-        ('QUOTA_CREDIT', 'Maximum number of credits per user'),
-        ('MAX_VIOLATIONS', 'Maximum number of credit violation per user'),
+        ('QUOTA_CREDIT', 'Maximum amount of credits per user'),
+        ('MIN_CREDITS', 'Minimum amount of credits per user'),
         ('MONTHLY_RATE', 'Monthly credit issue rate')
     )
     user = models.ForeignKey(SynnefoUser)
@@ -147,57 +122,39 @@ class Flavor(models.Model):
     def _get_name(self):
         """Returns flavor name (generated)"""
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
+        
+    def _current_cost_active(self):
+        fch_list = FlavorCost.objects.filter(flavor=self).order_by('-effective_from')
+        if len(fch_list) > 0:
+            return fch_list[0].cost_active
+        
+        return 0
 
-    def _get_cost_inactive(self):
-        """Returns the inactive cost for a Flavor (usually only disk usage counts)"""
-        self._update_costs()
-        return self._cost_inactive
-
-    def _get_cost_active(self):
-        """Returns the active cost for a Flavor"""
-        self._update_costs()
-        return self._cost_active
-    
-    def _update_costs(self):
-        """Update the internal cost_active, cost_inactive variables"""
-        if not hasattr(self, '_cost_active'):
-            fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('-effective_from')
-            if len(fch_list) > 0:
-                fch = fch_list[0]
-                self._cost_active = fch.cost_active
-                self._cost_inactive = fch.cost_inactive
-            else:
-                self._cost_active = 0
-                self._cost_inactive = 0
+    def _current_cost_inactive(self):
+        fch_list = FlavorCost.objects.filter(flavor=self).order_by('-effective_from')
+        if len(fch_list) > 0:
+            return fch_list[0].cost_inactive
+        
+        return 0
 
     name = property(_get_name)
-    cost_active = property(_get_cost_active)
-    cost_inactive = property(_get_cost_inactive)
+    current_cost_active = property(_current_cost_active)
+    current_cost_inactive = property(_current_cost_inactive)
 
     def __unicode__(self):
         return self.name
     
-    def get_price_list(self):
-        """Returns the price catalog for this Flavor"""
-        fch_list = FlavorCostHistory.objects.filter(flavor=self).order_by('effective_from')
+    def get_cost_active(self, start_datetime, end_datetime):
+        """Returns a list with the active costs for the specified duration"""
         
-        return fch_list
+        return []
         
-    def find_cost(self, the_date):
-        """Returns costs (FlavorCostHistory instance) for the specified date (the_date)"""
-        rdate = None
-        fch_list = self.get_price_list()
-        
-        for fc in fch_list:
-            if the_date > fc.effective_from:
-                rdate = fc
-            else:
-                break
-        
-        return rdate
+    def get_cost_inactive(self, start_datetime, end_datetime):
+        """Returns a list with the active costs for the specified duration"""
+        return []
 
 
-class FlavorCostHistory(models.Model):
+class FlavorCost(models.Model):
     cost_active = models.PositiveIntegerField('Active Cost')
     cost_inactive = models.PositiveIntegerField('Inactive Cost')
     effective_from = models.DateField()
@@ -270,14 +227,12 @@ class VirtualMachine(models.Model):
 
     name = models.CharField('Virtual Machine Name', max_length=255)
     owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    charged = models.DateTimeField('Time of last charge', default=datetime.datetime.now())
-    # Use string reference to avoid circular ForeignKey def.
-    # FIXME: "sourceimage" works, "image" causes validation errors. See "related_name" in the Django docs.
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    charged = models.DateTimeField(default=datetime.datetime.now())
     sourceimage = models.ForeignKey("Image", null=False) 
     hostid = models.CharField(max_length=100)
-    description = models.TextField(help_text=_('description'))
+    description = models.TextField()
     ipfour = models.IPAddressField()
     ipsix = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
@@ -416,13 +371,13 @@ class VirtualMachine(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_accounting_logs(self):
-        """Returns all AcountingLog records after the charged field"""
-        acc_logs = AccountingLog.objects.filter(date__gte=self.charged, vm=self)
-        if len(acc_logs) == 0:
-            return []
-            
-        return acc_logs
+    def charge(self):
+        """Charges the VM owner
+        
+        Charges the VM owner from vm.charged to datetime.now()
+        
+        """
+        return
 
 
 class VirtualMachineGroup(models.Model):
@@ -454,23 +409,17 @@ class VirtualMachineMetadata(models.Model):
         return u'%s, %s for %s' % (self.meta_key, self.meta_value, self.vm.name)
 
 
-class AccountingLog(models.Model):
+class Debit(models.Model):
+    when = models.DateTimeField()
+    user = models.ForeignKey(SynnefoUser)
     vm = models.ForeignKey(VirtualMachine)
-    date = models.DateTimeField()
-    state = models.CharField(choices=VirtualMachine.OPER_STATES, max_length=30)
+    description = models.TextField()
     
     class Meta:
         verbose_name = u'Accounting log'
 
     def __unicode__(self):
         return u'%s - %s - %s' % (self.vm.name, str(self.date), self.state)
-    
-    @staticmethod   
-    def get_log_entries(vm_obj, date_from):
-        """Returns log entries for the specified vm after a date"""
-        entries = AccountingLog.objects.filter(vm=vm_obj).filter(date__gte=date_from).order_by('-date')
-    
-        return entries
 
 
 class Disk(models.Model):

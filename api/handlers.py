@@ -166,7 +166,10 @@ class ServerHandler(BaseHandler):
                 'create',
                 request.META['SERVER_NAME'] == 'testserver' and 'test-server' or 'snf-%s' % vm.id,
                 'plain',
-                [{"size": flavor.disk}],
+                # disk field of Flavor object is in GB, value specified here is in MB
+                # FIXME: Always ask for a 2GB disk, current LVM physical groups are too small:
+                # [{"size": flavor.disk * 1000}],
+                [{"size": 2000}],
                 [{}],
                 #TODO: select OS from imageId
                 os='debootstrap+default',

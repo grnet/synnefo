@@ -1,23 +1,53 @@
-"""
-This file demonstrates two different styles of tests (one doctest and one
-unittest). These will both pass when you run "manage.py test".
-
-Replace these with more appropriate tests for your application.
-"""
-
 from django.test import TestCase
+from selenium import selenium
+from multiprocessing import Process
+from time import sleep
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.failUnlessEqual(1 + 1, 2)
+class FunctionalCase(TestCase):
+    """
+    Functional tests for synnefo.ui using Selenium
+    """
 
-__test__ = {"doctest": """
-Another way to test that 1 + 1 is equal to 2.
+    def setUp(self):
+        """Make the selenium connection"""
+        TestCase.setUp(self)
+        self.verificationErrors = []
+        self.selenium = selenium("localhost", 4444, "*firefox",
+                                 "http://localhost:8000/")
+        self.selenium.start()
 
->>> 1 + 1 == 2
-True
-"""}
+        
+    def tearDown(self):
+        """Kill processes"""
+        TestCase.tearDown(self)
+        self.selenium.stop()
+        self.assertEqual([], self.verificationErrors)
+        
+    def test_wizard(self):
+        sel = self.selenium
+        sel.open("/")
+        sel.wait_for_page_to_load("10000")
+        self.failUnless(sel.is_text_present("machines"))
+        sleep(2)
+        sel.click("create")
+        sel.click("small")
+        sel.click("//div[@id='wizard']/div/div[1]/button[2]")
+        sel.click("medium")
+        sleep(.5)
+        try: self.assertEqual("2048", sel.get_value("ram-indicator"))
+        except AssertionError, e: self.verificationErrors.append(str(e))
+        try: self.assertEqual("2", sel.get_value("cpu-indicator"))
+        except AssertionError, e: self.verificationErrors.append(str(e))
+        try: self.assertEqual("40", sel.get_value("storage-indicator"))
+        except AssertionError, e: self.verificationErrors.append(str(e))
+        sel.click("//div[@id='wizard']/div/div[2]/button[2]")
+        sleep(.5)
+        self.assertEqual("2", sel.get_text("machine_cpu-label"))
+        self.assertEqual("Debian Squeeze", sel.get_text("machine_image-label"))
+        self.assertEqual("2048", sel.get_text("machine_ram-label"))
+        self.assertEqual("40", sel.get_text("machine_storage-label"))
+        sel.click("start")
+        sleep(.5)
+        try: self.failUnless(sel.is_text_present("Success"))
+        except AssertionError, e: self.verificationErrors.append(str(e))
 

@@ -17,7 +17,6 @@ from db import charger
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
-import unittest
 
 class CreditAllocatorTestCase(TestCase):
     fixtures = [ 'db_test_data' ]

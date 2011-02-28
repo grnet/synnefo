@@ -480,16 +480,19 @@ function update_flavors() {
             $("#cpu:range").rangeinput({min:0,
                                        value:0,
                                        step:1,
+                                       progress: true,
                                        max:cpus.length-1});
             
             $("#storage:range").rangeinput({min:0,
                                        value:0,
                                        step:1,
+                                       progress: true,
                                        max:disks.length-1});
 
             $("#ram:range").rangeinput({min:0,
                                        value:0,
                                        step:1,
+                                       progress: true,
                                        max:ram.length-1});
             $("#small").click();
 

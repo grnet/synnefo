@@ -21,7 +21,6 @@ class APITestCase(TestCase):
     test_wrong_flavor_id = 99999999
     #make the testing with these id's
 
-    
 
     def setUp(self):
         self.client = Client()
@@ -32,9 +31,13 @@ class APITestCase(TestCase):
         response = self.client.get('/api/v1.0/')
         # Check that the response is 200 OK.
         self.assertEqual(response.status_code, 200)
-        expected = '{\n    "version": {\n        "status": "CURRENT", \n        "wadl": "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl", \n        "docURL": "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20090714.pdf ", \n        "id": "v1.0"\n    }\n}'
-        self.assertEqual(response.content, expected)
-    
+        api_version = json.loads(response.content)['version']
+        self.assertEqual(api_version['status'], 'CURRENT')
+        self.assertEqual(api_version['wadl'], 'http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl')
+        self.assertEqual(api_version['docURL'], 'http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20110112.pdf')
+        self.assertEqual(api_version['id'], 'v1.0')
+
+
     def testServerList(self):
         """ test if the expected list of servers is returned by the API
         """        
@@ -43,6 +46,11 @@ class APITestCase(TestCase):
         vms_from_db = VirtualMachine.objects.filter(deleted=False)
         self.assertEqual(len(vms_from_api), len(vms_from_db))
         self.assertTrue(response.status_code in [200,203])
+        for vm_from_api in vms_from_api:
+            vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
+            self.assertEqual(vm_from_api['id'], vm_from_db.id)
+            self.assertEqual(vm_from_api['name'], vm_from_db.name)
+
 
     def testServerDetails(self):
         """ test if the expected server is returned by the API
@@ -58,11 +66,13 @@ class APITestCase(TestCase):
         self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
         self.assertTrue(response.status_code in [200,203])
 
+
     def testServersDetails(self):
         """ test if the servers details are returned by the API
         """
         response = self.client.get('/api/v1.0/servers/detail')     
-        id_list = [vm.id for vm in VirtualMachine.objects.all()]
+        vms_from_db = VirtualMachine.objects.filter(deleted=False)
+        id_list = [vm.id for vm in vms_from_db]
         number = 0
         for vm_id in id_list:
             vm_from_api = json.loads(response.content)['servers'][number]
@@ -74,7 +84,17 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
             number += 1
+        vms_from_api = json.loads(response.content)['servers']
+        for vm_from_api in vms_from_api:
+            vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
+            self.assertEqual(vm_from_api['flavorId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
+            self.assertEqual(vm_from_api['id'], vm_from_db.id)
+            self.assertEqual(vm_from_api['imageId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['name'], vm_from_db.name)
+            self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)            
         self.assertTrue(response.status_code in [200,203])
+
 
     def testWrongServer(self):
         """ test if a non existent server is asked, if a 404 itemNotFound returned
@@ -82,13 +102,15 @@ class APITestCase(TestCase):
         response = self.client.get('/api/v1.0/servers/' + str(self.test_wrong_server_id))
         self.assertEqual(response.status_code, 404)
 
+
     def testCreateServerEmpty(self):
         """ test if the create server call returns a 400 badRequest if no
             attributes are specified
         """
         response = self.client.post('/api/v1.0/servers',{})
         self.assertEqual(response.status_code, 400)
-                                    
+
+
     def testCreateServer(self):
         """ test if the create server call returns the expected response
             if a valid request has been speficied
@@ -180,6 +202,10 @@ class APITestCase(TestCase):
         flavors_from_db = Flavor.objects.all()
         self.assertEqual(len(flavors_from_api), len(flavors_from_db))
         self.assertTrue(response.status_code in [200,203])
+        for flavor_from_api in flavors_from_api:
+            flavor_from_db = Flavor.objects.get(id=flavor_from_api['id'])
+            self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
+            self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
 
 
     def testFlavorsDetails(self):
@@ -189,6 +215,14 @@ class APITestCase(TestCase):
         for number in range(0, len(Flavor.objects.all())):
             flavor_from_api = json.loads(response.content)['flavors'][number]
             flavor_from_db = Flavor.objects.get(id=number+1)
+            self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
+            self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
+            self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
+            self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
+            self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
+        flavors_from_api = json.loads(response.content)['flavors']
+        for flavor_from_api in flavors_from_api:
+            flavor_from_db = Flavor.objects.get(id=flavor_from_api['id'])
             self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
             self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
             self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
@@ -226,6 +260,10 @@ class APITestCase(TestCase):
         images_from_db = Image.objects.all()
         self.assertEqual(len(images_from_api), len(images_from_db))
         self.assertTrue(response.status_code in [200,203])
+        for image_from_api in images_from_api:
+            image_from_db = Image.objects.get(id=image_from_api['id'])
+            self.assertEqual(image_from_api['id'], image_from_db.id)
+            self.assertEqual(image_from_api['name'], image_from_db.name)
 
 
     def testImageDetails(self):
@@ -243,7 +281,6 @@ class APITestCase(TestCase):
         self.assertTrue(response.status_code in [200,203])
 
 
-
     def testImagesDetails(self):
         """ test if the images details are returned by the API
         """
@@ -257,8 +294,16 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
             self.assertEqual(image_from_api['description'], image_from_db.description)
+        images_from_api = json.loads(response.content)['images']
+        for image_from_api in images_from_api:
+            image_from_db = Image.objects.get(id=image_from_api['id'])
+            self.assertEqual(image_from_api['name'], image_from_db.name)
+            self.assertEqual(image_from_api['id'], image_from_db.id)
+            self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
+            self.assertEqual(image_from_api['size'], image_from_db.size)
+            self.assertEqual(image_from_api['status'], image_from_db.state)
+            self.assertEqual(image_from_api['description'], image_from_db.description)
         self.assertTrue(response.status_code in [200,203])
-
 
 
     def testWrongImage(self):
@@ -266,4 +311,3 @@ class APITestCase(TestCase):
         """
         response = self.client.get('/api/v1.0/images/' + str(self.test_wrong_image_id))
         self.assertEqual(response.status_code, 404)
-

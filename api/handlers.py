@@ -11,6 +11,8 @@ from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError, CertificateError
 from synnefo.db.models import *
 from time import sleep
+import random
+import string
 import logging
 
 log = logging.getLogger('synnefo.api.handlers')
@@ -195,41 +197,34 @@ class ServerHandler(BaseHandler):
             log.error('Unexpected error: %s' % e)
             vm.deleted = True
             vm.save()
-            raise fault.notImplemented            
+            raise fault.serviceUnavailable            
         
 
-        # take a power nap but don't forget to poll the ganeti job right after
-        sleep(1)
-        job = rapi.GetJobStatus(jobId)
-        
-        if job['status'] == 'error':
-            log.error('Create Job failed: %s' % job['opresult'])
-            raise fault.badRequest
-        elif job['status'] in ['running', 'success', 'queued', 'waiting']:
-            log.info('creating instance %s' % job['ops'][0]['instance_name'])     
-            # Build the response
-            status = job['status'] == 'running' and 'BUILD' or 'ACTIVE';
-            ret = {'server': {
-                    'id' : vm.id,
-                    'name' : vm.name,
-                    "imageId" : imageId,
-                    "flavorId" : flavorId,
-                    "hostId" : vm.hostid,
-                    "progress" : 0,
-                    "status" : status,
-                    "adminPass" : "GFf1j9aP",
-                    "metadata" : {"My Server Name" : vm.description},
-                    "addresses" : {
-                        "public" : [  ],
-                        "private" : [  ],
-                        },
+        ret = {'server': {
+                'id' : vm.id,
+                'name' : vm.name,
+                "imageId" : imageId,
+                "flavorId" : flavorId,
+                "hostId" : vm.hostid,
+                "progress" : 0,
+                "status" : 'BUILD',
+                "adminPass" : self.random_password(),
+                "metadata" : {"My Server Name" : vm.description},
+                "addresses" : {
+                    "public" : [  ],
+                    "private" : [  ],
                     },
-            }
-            return HttpResponse(json.dumps(ret), mimetype="application/json", status=202)
-        else:
-            # TODO: handle all possible job statuses
-            log.error('Unhandled job status: %s' % job['status'])
-            return fault.notImplemented
+                },
+        }
+        return HttpResponse(json.dumps(ret), mimetype="application/json", status=202)
+
+
+    def random_password(self):
+        "return random password"
+        number_of_chars = 8
+        possible_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        return ''.join(random.choice(possible_chars) for x in range(number_of_chars))
+
 
     def update(self, request, id):
         return noContent

@@ -227,7 +227,7 @@ class ServerHandler(BaseHandler):
 
 
     def update(self, request, id):
-        return noContent
+        raise fault.itemNotFound
 
     def delete(self, request, id):
         try:
@@ -340,7 +340,7 @@ class ServerActionHandler(BaseHandler):
         return accepted
 
     def update(self, request, id):
-        return noContent
+        raise fault.itemNotFound
 
 
 
@@ -469,7 +469,7 @@ class SharedIPGroupHandler(BaseHandler):
 
     def delete(self, request, id):
         """Deletes a Shared IP Group"""
-        return noContent
+        raise fault.itemNotFound
 
 
 class VirtualMachineGroupHandler(BaseHandler):
@@ -497,7 +497,7 @@ class VirtualMachineGroupHandler(BaseHandler):
 
     def delete(self, request, id):
         """Deletes a  Group"""
-        return noContent
+        raise fault.itemNotFound
 
 
 class LimitHandler(BaseHandler):

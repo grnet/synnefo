@@ -141,7 +141,7 @@ class ServerHandler(BaseHandler):
         #Check if we have all the necessary data in the JSON request       
         try:
             server = json.loads(request.raw_post_data)['server']
-            descr = server['name']
+            name = server['name']
             flavorId = server['flavorId']
             flavor = Flavor.objects.get(id=flavorId)
             imageId = server['imageId']
@@ -159,12 +159,12 @@ class ServerHandler(BaseHandler):
             raise fault.serviceUnavailable
 
         try:
-            vm.name = 'snf-%s' % vm.id
-            vm.description = descr
+            vm.name = name
+            #vm.description = descr
             vm.save()            
             jobId = rapi.CreateInstance(
                 'create',
-                request.META['SERVER_NAME'] == 'testserver' and 'test-server' or 'snf-%s' % vm.id,
+                request.META['SERVER_NAME'] == 'testserver' and 'test-server' or vm.backend_id,
                 'plain',
                 # disk field of Flavor object is in GB, value specified here is in MB
                 # FIXME: Always ask for a 2GB disk, current LVM physical groups are too small:

@@ -29,7 +29,7 @@ VERSIONS = [
     {
         "status": "CURRENT",
         "id": "v1.0",
-        "docURL" : "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20090714.pdf ",
+        "docURL" : "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20110112.pdf",
         "wadl" : "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl"
     },
     {
@@ -425,34 +425,31 @@ class ImageHandler(BaseHandler):
                     'size': image.size, 
                     'serverId': image.sourcevm and image.sourcevm.id or ""
                    } for image in images]
-        if rapi: # Images info is stored in the DB. Ganeti is not aware of this
-            if id == "detail":
-                return { "images": images_list }
-            elif id is None:
-                return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
-            else:
-                try:
-                    image = images.get(id=id)
-                except Image.DoesNotExist:
-                    raise fault.itemNotFound
-                except Image.MultipleObjectsReturned:
-                    raise fault.serviceUnavailable
-                except Exception, e:
-                    log.error('Unexpected error: %s' % e)
-                    raise fault.serviceUnavailable
-
-                return { "image":  {'created': image.created.isoformat(), 
-                    'id': image.id,
-                    'name': image.name,
-                    'updated': image.updated.isoformat(),    
-                    'description': image.description, 
-                    'status': image.state, 
-                    'size': image.size, 
-                    'serverId': image.sourcevm and image.sourcevm.id or ""
-                   } }
-
+        # Images info is stored in the DB. Ganeti is not aware of this
+        if id == "detail":
+            return { "images": images_list }
+        elif id is None:
+            return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
         else:
-            raise fault.serviceUnavailable
+            try:
+                image = images.get(id=id)
+            except Image.DoesNotExist:
+                raise fault.itemNotFound
+            except Image.MultipleObjectsReturned:
+                raise fault.serviceUnavailable
+            except Exception, e:
+                log.error('Unexpected error: %s' % e)
+                raise fault.serviceUnavailable
+            return { "image":  {'created': image.created.isoformat(), 
+                'id': image.id,
+                'name': image.name,
+                'updated': image.updated.isoformat(),    
+                'description': image.description, 
+                'status': image.state, 
+                'size': image.size, 
+                'serverId': image.sourcevm and image.sourcevm.id or ""
+               } }
+
 
     def create(self, request):
         """Create a new image"""
@@ -490,13 +487,13 @@ class VirtualMachineGroupHandler(BaseHandler):
               'name': vmgroup.name,  \
                'server_id': [machine.id for machine in vmgroup.machines.all()] \
                } for vmgroup in vmgroups]
-        if rapi: # Group info is stored in the DB. Ganeti is not aware of this
-            if id == "detail":
-                return { "groups": vmgroups }
-            elif id is None:
-                return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups ] }
-            else:
-                return { "groups": vmgroups[0] }
+        # Group info is stored in the DB. Ganeti is not aware of this
+        if id == "detail":
+            return { "groups": vmgroups }
+        elif id is None:
+            return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups ] }
+        else:
+            return { "groups": vmgroups[0] }
 
 
     def create(self, request, id):

@@ -13,6 +13,15 @@ from synnefo.db.models import VirtualMachine, Flavor, Image
 
 class APITestCase(TestCase):
     fixtures = [ 'api_test_data' ]
+    test_server_id = 1001
+    test_image_id = 1
+    test_flavor_id = 1
+    test_wrong_server_id = 99999999
+    test_wrong_image_id = 99999999
+    test_wrong_flavor_id = 99999999
+    #make the testing with these id's
+
+    
 
     def setUp(self):
         self.client = Client()
@@ -38,9 +47,9 @@ class APITestCase(TestCase):
     def testServerDetails(self):
         """ test if the expected server is returned by the API
         """        
-        response = self.client.get('/api/v1.0/servers/1001')
+        response = self.client.get('/api/v1.0/servers/' + str(self.test_server_id))
         vm_from_api = json.loads(response.content)['server']
-        vm_from_db = VirtualMachine.objects.get(id=1001)
+        vm_from_db = VirtualMachine.objects.get(id=self.test_server_id)
         self.assertEqual(vm_from_api['flavorId'], vm_from_db.flavor.id)
         self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
         self.assertEqual(vm_from_api['id'], vm_from_db.id)
@@ -70,7 +79,7 @@ class APITestCase(TestCase):
     def testWrongServer(self):
         """ test if a non existent server is asked, if a 404 itemNotFound returned
         """
-        response = self.client.get('/api/v1.0/servers/1231231001')
+        response = self.client.get('/api/v1.0/servers/' + str(self.test_wrong_server_id))
         self.assertEqual(response.status_code, 404)
 
     def testCreateServerEmpty(self):
@@ -109,12 +118,12 @@ class APITestCase(TestCase):
         request = {
             "reboot": '{"type" : "HARD"}'
             }
-        response = self.client.post('/api/v1.0/servers/1004/action', 
+        response = self.client.post('/api/v1.0/servers/' + str(self.test_server_id) + '/action', 
                                     json.dumps(request),
                                     content_type='application/json')  
         self.assertEqual(response.status_code, 202)
         #server id that does not exist
-        response = self.client.post('/api/v1.0/servers/665544331004/action', 
+        response = self.client.post('/api/v1.0/servers/' + str(self.test_wrong_server_id) + '/action', 
                                    json.dumps(request), 
                                    content_type='application/json')
         self.assertEqual(response.status_code, 404)
@@ -126,12 +135,12 @@ class APITestCase(TestCase):
         request = {
             "shutdown": {"timeout" : "5"}
             }
-        response = self.client.post('/api/v1.0/servers/1004/action',
+        response = self.client.post('/api/v1.0/servers/' + str(self.test_server_id) + '/action',
                                     json.dumps(request), 
                                     content_type='application/json')  
         self.assertEqual(response.status_code, 202)
         #server id that does not exist
-        response = self.client.post('/api/v1.0/servers/665544331004/action',
+        response = self.client.post('/api/v1.0/servers/' + str(self.test_wrong_server_id) + '/action',
                                     json.dumps(request), 
                                     content_type='application/json')
         self.assertEqual(response.status_code, 404)
@@ -143,12 +152,12 @@ class APITestCase(TestCase):
         request = {
             "start": {"type" : "NORMAL"}
             }
-        response = self.client.post('/api/v1.0/servers/1004/action', 
+        response = self.client.post('/api/v1.0/servers/' + str(self.test_server_id) + '/action', 
                                     json.dumps(request),
                                     content_type='application/json')  
         self.assertEqual(response.status_code, 202)
         #server id that does not exist
-        response = self.client.post('/api/v1.0/servers/665544331004/action', 
+        response = self.client.post('/api/v1.0/servers/' + str(self.test_wrong_server_id) + '/action', 
                                     json.dumps(request), 
                                     content_type='application/json')
         self.assertEqual(response.status_code, 404)
@@ -156,10 +165,10 @@ class APITestCase(TestCase):
     def testDeleteServer(self):
         """ test if the specified server is deleted
         """
-        response = self.client.delete('/api/v1.0/servers/1001')  
+        response = self.client.delete('/api/v1.0/servers/' + str(self.test_server_id))
         self.assertEqual(response.status_code, 202)
         #server id that does not exist      
-        response = self.client.delete('/api/v1.0/servers/1231231231231001')  
+        response = self.client.delete('/api/v1.0/servers/' + str(self.test_wrong_server_id))  
         self.assertEqual(response.status_code, 404)
 
 
@@ -191,9 +200,9 @@ class APITestCase(TestCase):
     def testFlavorDetails(self):
         """ test if the expected flavor is returned by the API
         """
-        response = self.client.get('/api/v1.0/flavors/1')
+        response = self.client.get('/api/v1.0/flavors/' + str(self.test_flavor_id))
         flavor_from_api = json.loads(response.content)['flavor']
-        flavor_from_db = Flavor.objects.get(id=1)
+        flavor_from_db = Flavor.objects.get(id=self.test_flavor_id)
         self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
         self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
         self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
@@ -205,7 +214,7 @@ class APITestCase(TestCase):
     def testWrongFlavor(self):
         """ test if a non existent flavor is asked, if a 404 itemNotFound returned
         """
-        response = self.client.get('/api/v1.0/flavors/1231231001')
+        response = self.client.get('/api/v1.0/flavors/' + str(self.test_wrong_flavor_id))
         self.assertEqual(response.status_code, 404)
 
 
@@ -222,9 +231,9 @@ class APITestCase(TestCase):
     def testImageDetails(self):
         """ test if the expected image is returned by the API
         """
-        response = self.client.get('/api/v1.0/images/1')
+        response = self.client.get('/api/v1.0/images/' + str(self.test_image_id))
         image_from_api = json.loads(response.content)['image']
-        image_from_db = Image.objects.get(id=1)
+        image_from_db = Image.objects.get(id=self.test_image_id)
         self.assertEqual(image_from_api['name'], image_from_db.name)
         self.assertEqual(image_from_api['id'], image_from_db.id)
         self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
@@ -255,6 +264,6 @@ class APITestCase(TestCase):
     def testWrongImage(self):
         """ test if a non existent image is asked, if a 404 itemNotFound returned
         """
-        response = self.client.get('/api/v1.0/images/1231231001')
+        response = self.client.get('/api/v1.0/images/' + str(self.test_wrong_image_id))
         self.assertEqual(response.status_code, 404)
 

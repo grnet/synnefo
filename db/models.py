@@ -224,7 +224,7 @@ class Flavor(models.Model):
         return self._get_costs(start_datetime, end_datetime, True)
 
     def get_cost_inactive(self, start_datetime, end_datetime):
-        """Returns a list with the active costs for the specified duration"""
+        """Returns a list with the inactive costs for the specified duration"""
         return self._get_costs(start_datetime, end_datetime, False)
 
 
@@ -348,6 +348,12 @@ class VirtualMachine(models.Model):
          def __str__(self):
             return repr(str(self._action))
 
+    class InvalidOperStateError(Exception):
+        def __init__(self, value):
+            self.value = value
+        def __str__(self):
+            return u'Invalid Operation State: %s (valid: STARTED, STOPPED, BUILD, ERROR, DESTROYED)' % ( self.value, )
+
     @staticmethod
     def id_from_instance_name(name):
         """Returns VirtualMachine's Django id, given a ganeti machine name.
@@ -368,7 +374,11 @@ class VirtualMachine(models.Model):
         # Before this instance gets save()d
         if not self.pk: 
             self._action = None
-            self._operstate = "BUILD"
+
+            # [bkarak] update state change
+            # self._operstate = "BUILD"
+            self.update_state('BUILD')
+
             self._backendjobid = None
             self._backendjobstatus = None
             self._backendopcode = None
@@ -393,13 +403,18 @@ class VirtualMachine(models.Model):
 
         # Notifications of success change the operating state
         if status == 'success':
-            self._operstate = VirtualMachine.OPER_STATE_FROM_OPCODE[opcode]
+            # [bkarak] update state change
+            #self._operstate = VirtualMachine.OPER_STATE_FROM_OPCODE[opcode]
+            self.update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
         # Special cases OP_INSTANCE_CREATE fails --> ERROR
         if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-            self._operstate = 'ERROR'
+            # [bkarak] update state change
+            #self._operstate = 'ERROR'
+            self.update_state('ERROR')
         # Any other notification of failure leaves the operating state unchanged
 
-        self.save()
+        # [bkarak] update_state saves the object
+        #self.save()
 
     def start_action(self, action):
         """Update the state of a VM when a new action is initiated."""
@@ -445,6 +460,27 @@ class VirtualMachine(models.Model):
     def __unicode__(self):
         return self.name
 
+    def update_state(self, new_operstate):
+        """Update the VM current state (never update the _operstate manually)"""
+
+        # Check if the state is valid, need to do this more elegant
+        valid = False
+
+        for state in self.OPER_STATES:
+            if new_operstate == state[0]:
+                valid = True
+                break
+
+        # If valid, then charge the VM and change the state
+        if valid:
+            if self._operstate == 'STARTED' or self._operstate == 'STOPPED':
+                self.charge()
+            self._operstate = new_operstate
+            # FIXME: this should be save (?)
+            self.save()
+        else:
+            raise VirtualMachine.InvalidOperStateError(new_operstate)
+
     def charge(self):
         """Charges the VM owner
         
@@ -457,7 +493,7 @@ class VirtualMachine(models.Model):
         if self._operstate == 'STARTED':
             cost_list = self.flavor.get_cost_active(self.charged, cur_datetime)
         else:
-            cost_list = self.flavot.get_cost_inactive(self.charged, cur_datetime)
+            cost_list = self.flavor.get_cost_inactive(self.charged, cur_datetime)
 
         total_cost = 0
 

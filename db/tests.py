@@ -32,7 +32,6 @@ class FlavorTestCase(TestCase):
 
     def test_flavor_get_costs(self):
         flavor = Flavor.objects.get(pk=30000)
-
         
 
 

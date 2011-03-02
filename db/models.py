@@ -185,8 +185,10 @@ class Flavor(models.Model):
 
             return round(total_cost)
 
+        # Get the related FlavorCost objects, sorted.
         price_list = FlavorCost.objects.filter(flavor=self).order_by('effective_from')
 
+        # add the extra field FlavorCost.effective_to
         for idx in range(0, len(price_list)):
             if idx + 1 == len(price_list):
                 price_list[idx].effective_to = None
@@ -196,6 +198,8 @@ class Flavor(models.Model):
         price_result = []
         found_start = False
 
+        # Find the affected FlavorCost, according to the
+        # dates, and put them in price_result
         for p in price_list:
             if between(p, start_datetime):
                 found_start = True
@@ -209,6 +213,7 @@ class Flavor(models.Model):
 
         results = []
 
+        # Create the list and the result tuples
         for p in price_result:
             if active:
                 cost = p.cost_active
@@ -452,21 +457,11 @@ class VirtualMachine(models.Model):
         Currently calls the charge() method when necessary.
 
         """
-
-        # Check if the state is valid, need to do this more elegant
-        valid = False
-
-        for state in self.OPER_STATES:
-            if new_operstate == state[0]:
-                valid = True
-                break
-
-        # If valid, then charge the VM and change the state
-        if valid:
-            if self._operstate == 'STARTED' or self._operstate == 'STOPPED':
-                self.charge()
+        if self._operstate in ( 'STARTED', 'STOPPED' ):
+            self.charge()
+        else:
+            self.charged = datetime.datetime.now()
             self._operstate = new_operstate
-            # FIXME: this should be save (?)
             self.save()
 
     def charge(self):
@@ -476,24 +471,34 @@ class VirtualMachine(models.Model):
         
         """
         cur_datetime = datetime.datetime.now()
-        cost_list = []
+        valid_states = ( 'STARTED', 'STOPPED' )
 
-        if self._operstate == 'STARTED':
-            cost_list = self.flavor.get_cost_active(self.charged, cur_datetime)
-        elif self._operstate == 'STOPPED':
-            cost_list = self.flavor.get_cost_inactive(self.charged, cur_datetime)
-        else:
+        # Check if the states are valid for charging ...
+        if self._operstate not in valid_states:
+            self.charged = cur_datetime
+            self.save()
             return
 
+        # if so, charge!
+        cost_list = []
+
+        if self._operstate == valid_states[0]:
+            cost_list = self.flavor.get_cost_active(self.charged, cur_datetime)
+        elif self._operstate == valid_state[1]:
+            cost_list = self.flavor.get_cost_inactive(self.charged, cur_datetime)
+
+        # calculate the total cost
         total_cost = 0
 
         for cl in cost_list:
             total_cost = total_cost + cl[1]
 
         # still need to set correctly the message
-        self.owner.debit_account(total_cost, self, "Charged Credits to User")
-
+        description = "Charged %d credits to user id=%d" % ( total_cost, self.owner.id )
+        self.owner.debit_account(total_cost, self, description)
         self.charged = cur_datetime
+
+        # save the VM object
         self.save()
 
 

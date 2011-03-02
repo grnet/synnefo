@@ -21,9 +21,9 @@ try:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
     rapi.GetVersion()
 except Exception, e:
+    log.error('Unexpected error: %s' % e)
     raise fault.serviceUnavailable
 #If we can't connect to the rapi successfully, don't do anything
-#TODO: add logging/admin alerting
 
 backend_prefix_id = settings.BACKEND_PREFIX_ID
 
@@ -52,17 +52,21 @@ class VersionHandler(AnonymousBaseHandler):
     allowed_methods = ('GET',)
 
     def read(self, request, number=None):
-        if number is None:
-            versions = map(lambda v: {
-                        "status": v["status"],
-                        "id": v["id"],
-                    }, VERSIONS)
-            return { "versions": versions }
-        else:
-            for version in VERSIONS:
-                if version["id"] == number:
-                    return { "version": version }
-            raise fault.itemNotFound
+        try:
+            if number is None:
+                versions = map(lambda v: {
+                            "status": v["status"],
+                            "id": v["id"],
+                        }, VERSIONS)
+                return { "versions": versions }
+            else:
+                for version in VERSIONS:
+                    if version["id"] == number:
+                        return { "version": version }
+                raise fault.itemNotFound
+        except Exception, e:
+            log.error('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
 
 class ServerHandler(BaseHandler):
@@ -91,6 +95,18 @@ class ServerHandler(BaseHandler):
     def read_one(self, request, id):
         try:
             server = VirtualMachine.objects.get(id=id)
+
+            server = {'status': server.rsapi_state, 
+                     'flavorId': server.flavor.id, 
+                     'name': server.name, 
+                     'id': server.id, 
+                     'imageId': server.sourceimage.id, 
+                     'hostId': server.hostid, 
+                     #'metadata': {'Server_Label': server.description },
+                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
+                     'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
+                    }
+            return { "server": server } 
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -99,40 +115,32 @@ class ServerHandler(BaseHandler):
             log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-        server = {'status': server.rsapi_state, 
-                                     'flavorId': server.flavor.id, 
-                                     'name': server.name, 
-                                     'id': server.id, 
-                                     'imageId': server.sourceimage.id, 
-                                     'hostId': server.hostid, 
-                                     #'metadata': {'Server_Label': server.description },
-                                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
-                                     'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
-                }
-        return { "server": server } 
-
 
     @paginator
     def read_all(self, request, detail=False):
-        virtual_servers = VirtualMachine.objects.filter(deleted=False) 
-        #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
+        try:
+            virtual_servers = VirtualMachine.objects.filter(deleted=False) 
+            #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
 
-        if not detail:
-            return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
-        else:
-            virtual_servers_list = [{'status': server.rsapi_state, 
-                                     'flavorId': server.flavor.id, 
-                                     'name': server.name, 
-                                     'id': server.id, 
-                                     'imageId': server.sourceimage.id, 
-                                     'hostId': server.hostid, 
-                                     #'metadata': {'Server_Label': server.description },
-                                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
-                                     'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
+            if not detail:
+                return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
+            else:
+                virtual_servers_list = [{'status': server.rsapi_state, 
+                                         'flavorId': server.flavor.id, 
+                                         'name': server.name, 
+                                         'id': server.id, 
+                                         'imageId': server.sourceimage.id, 
+                                         'hostId': server.hostid, 
+                                         #'metadata': {'Server_Label': server.description },
+                                         'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
+                                         'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
 
-                                    } for server in virtual_servers]
-            #pass some fake data regarding ip, since we don't have any such data            
-            return { "servers":  virtual_servers_list }                
+                                        } for server in virtual_servers]
+                #pass some fake data regarding ip, since we don't have any such data            
+                return { "servers":  virtual_servers_list }                
+        except Exception, e:
+            log.error('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
 
     def create(self, request):
@@ -232,30 +240,21 @@ class ServerHandler(BaseHandler):
     def delete(self, request, id):
         try:
             vm = VirtualMachine.objects.get(id=id)
+            #TODO: set the status to DESTROYED
+            vm.start_action('DESTROY')
+            rapi.DeleteInstance(vm.backend_id)
+            return accepted        
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
-        except Exception, e:
-            log.error('Unexpected error: %s' % e)
-            raise fault.serviceUnavailable
-
-        #TODO: set the status to DESTROYED
-        try:
-            vm.start_action('DESTROY')
-        except Exception, e:
-            log.error('Unexpected error: %s' % e)            
-            raise fault.serviceUnavailable
-
-        try:
-            rapi.DeleteInstance(vm.backend_id)
         except GanetiApiError, CertificateError:
             raise fault.serviceUnavailable
         except Exception, e:
             log.error('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-        return accepted        
+
 
 class ServerAddressHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
@@ -296,32 +295,20 @@ class ServerActionHandler(BaseHandler):
     def create(self, request, id):
         """Reboot, Shutdown, Start virtual machine"""
         
-        requested_action = json.loads(request.raw_post_data)
-        reboot_request = requested_action.get('reboot', None)
-        shutdown_request = requested_action.get('shutdown', None)
-        start_request = requested_action.get('start', None)
-        #action not implemented
-        action = reboot_request and 'REBOOT' or shutdown_request and 'SUSPEND' or start_request and 'START'
-        if not action:
-            raise fault.notImplemented 
-        #test if we can get the vm
         try:
+            requested_action = json.loads(request.raw_post_data)
+            reboot_request = requested_action.get('reboot', None)
+            shutdown_request = requested_action.get('shutdown', None)
+            start_request = requested_action.get('start', None)
+            #action not implemented
+            action = reboot_request and 'REBOOT' or shutdown_request and 'SUSPEND' or start_request and 'START'
+
+            if not action:
+                raise fault.notImplemented 
+            #test if we can get the vm
             vm = VirtualMachine.objects.get(id=id)
-        except VirtualMachine.DoesNotExist:
-            raise fault.itemNotFound
-        except VirtualMachine.MultipleObjectsReturned:
-            raise fault.serviceUnavailable
-        except Exception, e:
-            log.error('Unexpected error: %s' % e)
-            raise fault.serviceUnavailable
-
-        try:
             vm.start_action(action)
-        except Exception, e:
-            log.error('Unexpected error: %s' % e)
-            raise fault.serviceUnavailable
 
-        try:
             if reboot_request:
                 rapi.RebootInstance(vm.backend_id)
             elif shutdown_request:
@@ -329,6 +316,10 @@ class ServerActionHandler(BaseHandler):
             elif start_request:
                 rapi.StartupInstance(vm.backend_id)
             return accepted
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
         except GanetiApiError, CertificateError:
             raise fault.serviceUnavailable
         except Exception, e:
@@ -360,10 +351,10 @@ class ServerBackupHandler(BaseHandler):
 
 
 class FlavorHandler(BaseHandler):
+    """Handler responsible for Flavors
+
+    """
     allowed_methods = ('GET',)
-    flavors = Flavor.objects.all()
-    flavors = [ {'id': flavor.id, 'name': flavor.name, 'ram': flavor.ram, \
-             'disk': flavor.disk, 'cpu': flavor.cpu} for flavor in flavors]
 
     def read(self, request, id=None):
         """
@@ -373,19 +364,36 @@ class FlavorHandler(BaseHandler):
         Faults: cloudServersFault, serviceUnavailable, unauthorized,
                 badRequest, itemNotFound
         """
-        if id is None:
-            simple = map(lambda v: {
-                        "id": v['id'],
-                        "name": v['name'],
-                    }, self.flavors)
-            return { "flavors": simple }
-        elif id == "detail":
-            return { "flavors": self.flavors }
-        else:
-            for flavor in self.flavors:
-                if str(flavor['id']) == id:
-                    return { "flavor": flavor }
+        try:
+            flavors = Flavor.objects.all()
+            flavors = [ {'id': flavor.id, 'name': flavor.name, 'ram': flavor.ram, \
+                     'disk': flavor.disk, 'cpu': flavor.cpu} for flavor in flavors]
+
+            if id is None:
+                simple = map(lambda v: {
+                            "id": v['id'],
+                            "name": v['name'],
+                        }, flavors)
+                return { "flavors": simple }
+            elif id == "detail":
+                return { "flavors": flavors }
+            else:
+                flavor = Flavor.objects.get(id=id)
+                return { "flavor":  {
+                    'id': flavor.id,
+                    'name': flavor.name,
+                    'ram': flavor.ram,
+                    'disk': flavor.disk,  
+                    'cpu': flavor.cpu,  
+                   } }
+
+        except Flavor.DoesNotExist:
             raise fault.itemNotFound
+        except Flavor.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.error('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
 
 class ImageHandler(BaseHandler):
@@ -410,8 +418,25 @@ class ImageHandler(BaseHandler):
         Faults: cloudServersFault, serviceUnavailable, unauthorized,
                 badRequest, itemNotFound
         """
-        images = Image.objects.all()
-        images_list = [ {'created': image.created.isoformat(), 
+        try:
+            images = Image.objects.all()
+            images_list = [ {'created': image.created.isoformat(), 
+                        'id': image.id,
+                        'name': image.name,
+                        'updated': image.updated.isoformat(),    
+                        'description': image.description, 
+                        'status': image.state, 
+                        'size': image.size, 
+                        'serverId': image.sourcevm and image.sourcevm.id or ""
+                       } for image in images]
+            # Images info is stored in the DB. Ganeti is not aware of this
+            if id == "detail":
+                return { "images": images_list }
+            elif id is None:
+                return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
+            else:        
+                image = images.get(id=id)
+                return { "image":  {'created': image.created.isoformat(), 
                     'id': image.id,
                     'name': image.name,
                     'updated': image.updated.isoformat(),    
@@ -419,32 +444,14 @@ class ImageHandler(BaseHandler):
                     'status': image.state, 
                     'size': image.size, 
                     'serverId': image.sourcevm and image.sourcevm.id or ""
-                   } for image in images]
-        # Images info is stored in the DB. Ganeti is not aware of this
-        if id == "detail":
-            return { "images": images_list }
-        elif id is None:
-            return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
-        else:
-            try:
-                image = images.get(id=id)
-            except Image.DoesNotExist:
-                raise fault.itemNotFound
-            except Image.MultipleObjectsReturned:
-                raise fault.serviceUnavailable
-            except Exception, e:
-                log.error('Unexpected error: %s' % e)
-                raise fault.serviceUnavailable
-            return { "image":  {'created': image.created.isoformat(), 
-                'id': image.id,
-                'name': image.name,
-                'updated': image.updated.isoformat(),    
-                'description': image.description, 
-                'status': image.state, 
-                'size': image.size, 
-                'serverId': image.sourcevm and image.sourcevm.id or ""
-               } }
-
+                   } }
+        except Image.DoesNotExist:
+                    raise fault.itemNotFound
+        except Image.MultipleObjectsReturned:
+                    raise fault.serviceUnavailable
+        except Exception, e:
+                    log.error('Unexpected error: %s' % e)
+                    raise fault.serviceUnavailable
 
     def create(self, request):
         """Create a new image"""
@@ -477,18 +484,22 @@ class VirtualMachineGroupHandler(BaseHandler):
 
     def read(self, request, id=None):
         """List Groups"""
-        vmgroups = VirtualMachineGroup.objects.all() 
-        vmgroups = [ {'id': vmgroup.id, \
-              'name': vmgroup.name,  \
-               'server_id': [machine.id for machine in vmgroup.machines.all()] \
-               } for vmgroup in vmgroups]
-        # Group info is stored in the DB. Ganeti is not aware of this
-        if id == "detail":
-            return { "groups": vmgroups }
-        elif id is None:
-            return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups ] }
-        else:
-            return { "groups": vmgroups[0] }
+        try:
+            vmgroups = VirtualMachineGroup.objects.all() 
+            vmgroups = [ {'id': vmgroup.id, \
+                  'name': vmgroup.name,  \
+                   'server_id': [machine.id for machine in vmgroup.machines.all()] \
+                   } for vmgroup in vmgroups]
+            # Group info is stored in the DB. Ganeti is not aware of this
+            if id == "detail":
+                return { "groups": vmgroups }
+            elif id is None:
+                return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups ] }
+            else:
+                return { "groups": vmgroups[0] }
+        except Exception, e:
+                    log.error('Unexpected error: %s' % e)
+                    raise fault.serviceUnavailable
 
 
     def create(self, request, id):

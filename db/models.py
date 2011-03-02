@@ -348,12 +348,6 @@ class VirtualMachine(models.Model):
          def __str__(self):
             return repr(str(self._action))
 
-    class InvalidOperStateError(Exception):
-        def __init__(self, value):
-            self.value = value
-        def __str__(self):
-            return u'Invalid Operation State: %s (valid: STARTED, STOPPED, BUILD, ERROR, DESTROYED)' % ( self.value, )
-
     @staticmethod
     def id_from_instance_name(name):
         """Returns VirtualMachine's Django id, given a ganeti machine name.
@@ -374,11 +368,7 @@ class VirtualMachine(models.Model):
         # Before this instance gets save()d
         if not self.pk: 
             self._action = None
-
-            # [bkarak] update state change
-            # self._operstate = "BUILD"
-            self.update_state('BUILD')
-
+            self._update_state('BUILD')
             self._backendjobid = None
             self._backendjobstatus = None
             self._backendopcode = None
@@ -403,14 +393,10 @@ class VirtualMachine(models.Model):
 
         # Notifications of success change the operating state
         if status == 'success':
-            # [bkarak] update state change
-            #self._operstate = VirtualMachine.OPER_STATE_FROM_OPCODE[opcode]
-            self.update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
+            self._update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
         # Special cases OP_INSTANCE_CREATE fails --> ERROR
         if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-            # [bkarak] update state change
-            #self._operstate = 'ERROR'
-            self.update_state('ERROR')
+            self._update_state('ERROR')
         # Any other notification of failure leaves the operating state unchanged
 
         # [bkarak] update_state saves the object
@@ -460,8 +446,12 @@ class VirtualMachine(models.Model):
     def __unicode__(self):
         return self.name
 
-    def update_state(self, new_operstate):
-        """Update the VM current state (never update the _operstate manually)"""
+    def _update_state(self, new_operstate):
+        """Wrapper around updates of the _operstate field
+
+        Currently calls the charge() method when necessary.
+
+        """
 
         # Check if the state is valid, need to do this more elegant
         valid = False
@@ -478,8 +468,6 @@ class VirtualMachine(models.Model):
             self._operstate = new_operstate
             # FIXME: this should be save (?)
             self.save()
-        else:
-            raise VirtualMachine.InvalidOperStateError(new_operstate)
 
     def charge(self):
         """Charges the VM owner
@@ -492,8 +480,10 @@ class VirtualMachine(models.Model):
 
         if self._operstate == 'STARTED':
             cost_list = self.flavor.get_cost_active(self.charged, cur_datetime)
-        else:
+        elif self._operstate == 'STOPPED':
             cost_list = self.flavor.get_cost_inactive(self.charged, cur_datetime)
+        else:
+            return
 
         total_cost = 0
 

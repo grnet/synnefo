@@ -226,17 +226,23 @@ var image_tags = {
 // ajax error checking  
 function ajax_error(jqXHR) {; 
     // prepare the error message
-    $("#error-success h3").text('Error!');
+    $("#error-success h3").text('{% trans "Error!" %}');
     // check the error code
     switch (jqXHR.status) {
-        case 503: // XX error/message
-            $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
-            break;
         case 400: // YY error/message
-            $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+            $("#error-success p").text('{% trans "A Bad Request has been made." %}');
+            break;
+        case 404: // YY error/message
+            $("#error-success p").text('{% trans "Your request has failed." %}');
+            break;
+        case 501: // XX error/message
+            $("#error-success p").text('{% trans "There has been an Internal Error. Our administrators have been notified." %}');
+            break;
+        case 503: // XX error/message
+            $("#error-success p").text('{% trans "This service is unavailble right now, please try again later." %}');
             break;
         default: // XXYY error/message
-            $("#error-success p").text('Your request caused a <strong>' + jqXHR.status + '</strong> error');
+            $("#error-success p").text('{% trans "An Error has happened. Our administrators have been notified." %}');
     }
     // bring up error notification
     var triggers = $("a#notification").overlay({

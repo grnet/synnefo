@@ -12,3 +12,5 @@ lib/
 *.installed.cfg
 *.sqlite
 .Python
+.idea
+.DS_Store

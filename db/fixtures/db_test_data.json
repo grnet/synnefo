@@ -4,7 +4,7 @@
         "pk": 30000,
         "fields": {
             "name": "test db user",
-            "credit": 0,
+            "credit": 10,
             "created": "2011-02-06",
             "user" : 1
    	    }
@@ -22,9 +22,9 @@
         "model" : "db.Limit",
         "pk" : 30001,
         "fields" : {
-            "name" : "MAX_VIOLATIONS",
+            "name" : "MIN_CREDITS",
             "user" : 30000,
-            "value" : 5
+            "value" : -100
         }
     },
     {
@@ -46,16 +46,7 @@
         }
     },
     {
-        "model": "db.Flavor",
-        "pk": 30001,
-        "fields": {
-            "cpu": 1,
-            "ram": 1024,
-            "disk": 20
-        }
-    },
-    {
-        "model" : "db.FlavorCostHistory",
+        "model" : "db.FlavorCost",
         "pk" : 30000,
         "fields" : {
             "cost_active" : 10,
@@ -65,11 +56,31 @@
         }
     },
     {
-        "model" : "db.FlavorCostHistory",
+        "model" : "db.FlavorCost",
         "pk" : 30001,
         "fields" : {
             "cost_active" : 2,
             "cost_inactive" : 1,
+            "effective_from" : "2010-01-01",
+            "flavor" : 30000
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30002,
+        "fields" : {
+            "cost_active" : 5,
+            "cost_inactive" : 2,
+            "effective_from" : "2010-08-01",
+            "flavor" : 30000
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30003,
+        "fields" : {
+            "cost_active" : 4,
+            "cost_inactive" : 10,
             "effective_from" : "2010-01-01",
             "flavor" : 30000
         }
@@ -91,122 +102,18 @@
         }
     },
     {
-        "model": "db.VirtualMachine",
-        "pk": 30001,
-        "fields": {
-            "name": "snf-1002",
-            "created": "2011-02-10 00:00:00",
-            "charged": "2011-02-10 00:00:00",
-            "sourceimage": 30000,
-            "hostid": "HAL-9000",
-            "description": "mail server",
-            "ipfour": "192.168.2.2",
-            "ipsix": "::2",
-            "flavor": 30000,
-            "_operstate": "BUILD"
-        }
-    },
-    {
-        "model": "db.VirtualMachine",
-        "pk": 30002,
-        "fields": {
-            "name": "snf-1003",
-            "created": "2009-02-10 00:00:00",
-            "charged": "2010-01-01 00:00:00",
-            "sourceimage": 30000,
-            "hostid": "HAL-9000",
-            "description": "my server",
-            "ipfour": "192.168.2.3",
-            "ipsix": "::3",
-            "flavor": 30000,
-            "_operstate": "STARTED"
-        }
-    },
-    {
-        "model": "db.VirtualMachine",
-        "pk": 30003,
-        "fields": {
-            "name": "snf-1004",
-            "created": "2011-02-10 00:00:00",
-            "charged": "2011-02-10 00:00:00",
-            "sourceimage": 30000,
-            "hostid": "HAL-9000",
-            "description": "my 2nd server",
-            "ipfour": "192.168.2.4",
-            "ipsix": "::4",
-            "flavor": 30000,
-            "_operstate": "STARTED"
-        }
-    },
-    {
-        "model" : "db.Debit",
-        "pk" : 30000,
-        "fields" : {
-            "vm" : 30000,
-            "date" : "2010-01-01",
-            "state" : "STARTED"
-        }
-    },
-    {
-        "model" : "db.Debit",
-        "pk" : 30001,
-        "fields" : {
-            "vm" : 30000,
-            "date" : "2011-02-01",
-            "state" : "STARTED"
-        }
-    },
-    {
-        "model" : "db.Debit",
-        "pk" : 30002,
-        "fields" : {
-            "vm" : 30002,
-            "date" : "2010-01-01",
-            "state" : "STARTED"
-        }
-    },
-    {
-        "model" : "db.Debit",
-        "pk" : 30003,
-        "fields" : {
-            "vm" : 30002,
-            "date" : "2010-03-01",
-            "state" : "STOPPED"
-        }
-    },
-    {
-        "model" : "db.Debit",
-        "pk" : 30004,
-        "fields" : {
-            "vm" : 30002,
-            "date" : "2011-01-01",
-            "state" : "STARTED"
-        }
-    },
-    {
         "model": "db.Image",
         "pk": 30000,
         "fields": {
             "name": "Debian Squeeze",
             "updated": "2011-02-06 00:00:00",
             "created": "2011-02-06 00:00:00",
+            "size" : 2000,
             "state": "ACTIVE",
             "description": "Full Debian Squeeze Installation",
             "owner" : 30000
         }
     },
-    {
-        "model": "db.Image",
-        "pk": 30001,
-        "fields": {
-            "name": "Slackware 13.1",
-            "updated": "2011-02-10 00:00:00",
-            "created": "2011-02-10 00:00:00",
-            "state": "ACTIVE",
-            "description": "Full Slackware 13.1 Installation",
-            "owner" : 30000
-        }
-    },   
     {
         "model": "db.Disk",
         "pk": 30000,
@@ -217,16 +124,5 @@
             "vm" : 30000,
             "owner" : 30000
         }
-    }, 
-    {
-        "model": "db.Disk",
-        "pk": 30001,
-        "fields": {
-            "name": "My_Videos",
-            "created": "2011-02-10 00:00:00",
-            "size" : 300,
-            "vm" : 30000,
-            "owner" : 30000
-        }
-    } 
+    }
 ]

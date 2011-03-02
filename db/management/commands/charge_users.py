@@ -12,4 +12,4 @@ class Command(NoArgsCommand):
     help = 'Charge the users for VM usage'
     
     def handle_noargs(self, **options):
-        charger.charge()
+        charger.periodically_charge()

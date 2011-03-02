@@ -3,7 +3,6 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
 
 import datetime
 
@@ -50,7 +49,21 @@ class SynnefoUser(models.Model):
     
     def debit_account(self, amount, vm, description):
         """Charges the user with the specified amount of credits for a vm (resource)"""
-        return
+        date_now = datetime.datetime.now()
+
+        # first reduce the user's credits and save
+        self.credit = self.credit - amount
+        self.save()
+
+        # then write the debit entry!
+        debit = Debit()
+
+        debit.user = self
+        debit.vm = vm
+        debit.when = date_now
+        debit.description = description
+
+        debit.save()
 
     def credit_account(self, amount, creditor, description):
         """No clue :)"""
@@ -78,7 +91,7 @@ class Image(models.Model):
         verbose_name = u'Image'
 
     def __unicode__(self):
-        return u'%s' % (self.name)
+        return u'%s' % ( self.name, )
 
 
 class ImageMetadata(models.Model):
@@ -107,7 +120,7 @@ class Limit(models.Model):
         verbose_name = u'Enforced limit for user'
     
     def __unicode__(self):
-        return u'Limit %s for user %s: %d' % (self.limit, self.user, self.value)
+        return u'Limit %s for user %s: %d' % (self.value, self.user, self.value)
 
 
 class Flavor(models.Model):
@@ -122,20 +135,30 @@ class Flavor(models.Model):
     def _get_name(self):
         """Returns flavor name (generated)"""
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
-        
-    def _current_cost_active(self):
+
+    def _current_cost(self, active):
+        """Returns active/inactive cost value
+
+        set active = True to get active cost and False for the inactive.
+
+        """
         fch_list = FlavorCost.objects.filter(flavor=self).order_by('-effective_from')
         if len(fch_list) > 0:
-            return fch_list[0].cost_active
-        
+            if active:
+                return fch_list[0].cost_active
+            else:
+                return fch_list[0].cost_inactive
+
         return 0
+        
+
+    def _current_cost_active(self):
+        """Returns current active cost (property method)"""
+        return self._current_cost(True)
 
     def _current_cost_inactive(self):
-        fch_list = FlavorCost.objects.filter(flavor=self).order_by('-effective_from')
-        if len(fch_list) > 0:
-            return fch_list[0].cost_inactive
-        
-        return 0
+        """Returns current inactive cost (property method)"""
+        return self._current_cost(False)
 
     name = property(_get_name)
     current_cost_active = property(_current_cost_active)
@@ -143,21 +166,72 @@ class Flavor(models.Model):
 
     def __unicode__(self):
         return self.name
-    
+
+    def _get_costs(self, start_datetime, end_datetime, active):
+        """Return a list with FlavorCost objects for the specified duration"""
+        def between(enh_fc, a_date):
+            """Checks if a date is between a FlavorCost duration"""
+            if enh_fc.effective_from <= a_date and enh_fc.effective_to is None:
+                return True
+
+            return enh_fc.effective_from <= a_date and enh_fc.effective_to >= a_date
+
+        def calculate_cost(start_date, end_date, cost):
+            """Calculate the total cost for the specified duration"""
+            td = end_date - start_date
+            sec = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / float(10**6)
+            total_hours = float(sec) / float(60.0*60.0)
+            total_cost = float(cost)*total_hours
+
+            return round(total_cost)
+
+        price_list = FlavorCost.objects.filter(flavor=self).order_by('effective_from')
+
+        for idx in range(0, len(price_list)):
+            if idx + 1 == len(price_list):
+                price_list[idx].effective_to = None
+            else:
+                price_list[idx].effective_to = price_list[idx + 1].effective_from
+
+        price_result = []
+        found_start = False
+
+        for p in price_list:
+            if between(p, start_datetime):
+                found_start = True
+                p.effective_from = start_datetime
+            if between(p, end_datetime):
+                p.effective_to = end_datetime
+                price_result.append(p)
+                break
+            if found_start:
+                price_result.append(p)
+
+        results = []
+
+        for p in price_result:
+            if active:
+                cost = p.cost_active
+            else:
+                cost = p.cost_inactive
+
+            results.append( ( str(p.effective_from), calculate_cost(p.effective_from, p.effective_to, cost)) )
+
+        return results
+
     def get_cost_active(self, start_datetime, end_datetime):
         """Returns a list with the active costs for the specified duration"""
-        
-        return []
-        
+        return self._get_costs(start_datetime, end_datetime, True)
+
     def get_cost_inactive(self, start_datetime, end_datetime):
         """Returns a list with the active costs for the specified duration"""
-        return []
+        return self._get_costs(start_datetime, end_datetime, False)
 
 
 class FlavorCost(models.Model):
     cost_active = models.PositiveIntegerField('Active Cost')
     cost_inactive = models.PositiveIntegerField('Inactive Cost')
-    effective_from = models.DateField()
+    effective_from = models.DateTimeField()
     flavor = models.ForeignKey(Flavor)
     
     class Meta:
@@ -377,7 +451,24 @@ class VirtualMachine(models.Model):
         Charges the VM owner from vm.charged to datetime.now()
         
         """
-        return
+        cur_datetime = datetime.datetime.now()
+        cost_list = []
+
+        if self._operstate == 'STARTED':
+            cost_list = self.flavor.get_cost_active(self.charged, cur_datetime)
+        else:
+            cost_list = self.flavot.get_cost_inactive(self.charged, cur_datetime)
+
+        total_cost = 0
+
+        for cl in cost_list:
+            total_cost = total_cost + cl[1]
+
+        # still need to set correctly the message
+        self.owner.debit_account(total_cost, self, "Charged Credits to User")
+
+        self.charged = cur_datetime
+        self.save()
 
 
 class VirtualMachineGroup(models.Model):
@@ -419,7 +510,7 @@ class Debit(models.Model):
         verbose_name = u'Accounting log'
 
     def __unicode__(self):
-        return u'%s - %s - %s' % (self.vm.name, str(self.date), self.state)
+        return u'%s - %s - %s - %s' % ( self.user.id, self.vm.name, str(self.when), self.description)
 
 
 class Disk(models.Model):

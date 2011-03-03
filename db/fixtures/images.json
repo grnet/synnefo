@@ -1,0 +1,38 @@
+[
+    {
+        "model": "db.Image",
+        "pk": 3,
+        "fields": {
+            "name": "Debian Unstable",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Debian Sid, full installation",
+            "size": 4096
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 4,
+        "fields": {
+            "name": "Red Hat Enterprise Linux",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Red Hat Enterprise Linux, full installation",
+            "size": 2048
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 5,
+        "fields": {
+            "name": "Ubuntu 10.10",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Ubuntu 10.10, full installation",
+            "size": 8192
+        }
+    }
+]

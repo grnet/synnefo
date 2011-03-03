@@ -13,7 +13,11 @@ class SynnefoUser(models.Model):
     credit = models.IntegerField('Credit Balance')
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-    user = models.ForeignKey(User)
+    #
+    # We do not rely on Django's user authentication mechanism.
+    # Hence, no references to the User model.
+    # [vkoukis], after discussion with [faidon].
+    # user = models.ForeignKey(User)
     
     class Meta:
         verbose_name = u'Synnefo User'
@@ -82,10 +86,10 @@ class Image(models.Model):
     )
 
     name = models.CharField('Image name', max_length=255)
-    state = models.CharField('Current Image State',choices=IMAGE_STATES, max_length=30)
+    state = models.CharField('Current Image State', choices=IMAGE_STATES, max_length=30)
     description = models.TextField('General description')
     size = models.PositiveIntegerField('Image size in MBs')
-    owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
+    owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey("VirtualMachine", null=True)
@@ -103,7 +107,7 @@ class ImageMetadata(models.Model):
     image = models.ForeignKey(Image)
     
     class Meta:
-        verbose_name = u'Key-value pair of metadata for an Image.'
+        verbose_name = u'Key-value pair of Image metadata.'
     
     def __unicode__(self):
         return u'%s, %s for %s' % (self.meta_key, self.meta_value, self.image.name)
@@ -327,7 +331,8 @@ class VirtualMachine(models.Model):
     # get generated at runtime by quering Ganeti and applying
     # updates received from Ganeti.
     #
-    # They belong to a separate caching layer, in the long run.
+    # In the future they could be moved to a separate caching layer
+    # and removed from the database.
     # [vkoukis] after discussion with [faidon].
     _action = models.CharField(choices=ACTIONS, max_length=30, null=True)
     _operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)

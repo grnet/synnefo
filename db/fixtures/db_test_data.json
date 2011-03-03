@@ -5,8 +5,7 @@
         "fields": {
             "name": "test db user",
             "credit": 10,
-            "created": "2011-02-06",
-            "user" : 1
+            "created": "2011-02-06"
    	    }
     },
     {

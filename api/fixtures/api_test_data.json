@@ -1,5 +1,260 @@
 [
     {
+        "model": "db.Flavor",
+        "pk": 1,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 2,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 3,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 4,
+        "fields": {
+            "cpu": 1,
+            "ram": 2048,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 5,
+        "fields": {
+            "cpu": 1,
+            "ram": 2048,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 6,
+        "fields": {
+            "cpu": 1,
+            "ram": 2048,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 7,
+        "fields": {
+            "cpu": 1,
+            "ram": 4096,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 8,
+        "fields": {
+            "cpu": 1,
+            "ram": 4096,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 9,
+        "fields": {
+            "cpu": 1,
+            "ram": 4096,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 10,
+        "fields": {
+            "cpu": 2,
+            "ram": 1024,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 11,
+        "fields": {
+            "cpu": 2,
+            "ram": 1024,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 12,
+        "fields": {
+            "cpu": 2,
+            "ram": 1024,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 13,
+        "fields": {
+            "cpu": 2,
+            "ram": 2048,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 14,
+        "fields": {
+            "cpu": 2,
+            "ram": 2048,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 15,
+        "fields": {
+            "cpu": 2,
+            "ram": 2048,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 16,
+        "fields": {
+            "cpu": 2,
+            "ram": 4096,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 17,
+        "fields": {
+            "cpu": 2,
+            "ram": 4096,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 18,
+        "fields": {
+            "cpu": 2,
+            "ram": 4096,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 19,
+        "fields": {
+            "cpu": 4,
+            "ram": 1024,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 20,
+        "fields": {
+            "cpu": 4,
+            "ram": 1024,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 21,
+        "fields": {
+            "cpu": 4,
+            "ram": 1024,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 22,
+        "fields": {
+            "cpu": 4,
+            "ram": 2048,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 23,
+        "fields": {
+            "cpu": 4,
+            "ram": 2048,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 24,
+        "fields": {
+            "cpu": 4,
+            "ram": 2048,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 25,
+        "fields": {
+            "cpu": 4,
+            "ram": 4096,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 26,
+        "fields": {
+            "cpu": 4,
+            "ram": 4096,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 27,
+        "fields": {
+            "cpu": 4,
+            "ram": 4096,
+            "disk": 80 
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 1,
+        "fields": {
+            "name": "Debian Squeeze",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Full Debian Squeeze Installation",
+            "size": 5678
+        }
+    },
+    {
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
@@ -67,289 +322,6 @@
             "_operstate": "STARTED"
         }
     },
-
-    {
-        "model": "db.Flavor",
-        "pk": 1,
-        "fields": {
-            "cpu": 1,
-            "ram": 1024,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 2,
-        "fields": {
-            "cpu": 1,
-            "ram": 1024,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 3,
-        "fields": {
-            "cpu": 1,
-            "ram": 1024,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 4,
-        "fields": {
-            "cpu": 1,
-            "ram": 2048,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 5,
-        "fields": {
-            "cpu": 1,
-            "ram": 2048,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 6,
-        "fields": {
-            "cpu": 1,
-            "ram": 2048,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 7,
-        "fields": {
-            "cpu": 1,
-            "ram": 4096,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 8,
-        "fields": {
-            "cpu": 1,
-            "ram": 4096,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 9,
-        "fields": {
-            "cpu": 1,
-            "ram": 4096,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 10,
-        "fields": {
-            "cpu": 2,
-            "ram": 1024,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 11,
-        "fields": {
-            "cpu": 2,
-            "ram": 1024,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 12,
-        "fields": {
-            "cpu": 2,
-            "ram": 1024,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 13,
-        "fields": {
-            "cpu": 2,
-            "ram": 2048,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 14,
-        "fields": {
-            "cpu": 2,
-            "ram": 2048,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 15,
-        "fields": {
-            "cpu": 2,
-            "ram": 2048,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 16,
-        "fields": {
-            "cpu": 2,
-            "ram": 4096,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 17,
-        "fields": {
-            "cpu": 2,
-            "ram": 4096,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 18,
-        "fields": {
-            "cpu": 2,
-            "ram": 4096,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 19,
-        "fields": {
-            "cpu": 4,
-            "ram": 1024,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 20,
-        "fields": {
-            "cpu": 4,
-            "ram": 1024,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 21,
-        "fields": {
-            "cpu": 4,
-            "ram": 1024,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 22,
-        "fields": {
-            "cpu": 4,
-            "ram": 2048,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 23,
-        "fields": {
-            "cpu": 4,
-            "ram": 2048,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 24,
-        "fields": {
-            "cpu": 4,
-            "ram": 2048,
-            "disk": 80 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 25,
-        "fields": {
-            "cpu": 4,
-            "ram": 4096,
-            "disk": 20 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 26,
-        "fields": {
-            "cpu": 4,
-            "ram": 4096,
-            "disk": 40 
-        }
-    },
-
-    {
-        "model": "db.Flavor",
-        "pk": 27,
-        "fields": {
-            "cpu": 4,
-            "ram": 4096,
-            "disk": 80 
-        }
-    },
-    
-    {
-        "model": "db.Image",
-        "pk": 1,
-        "fields": {
-            "name": "Debian Squeeze",
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "description": "Full Debian Squeeze Installation",
-            "size": 5678
-        }
-    },
     {
         "model": "db.Image",
         "pk": 2,
@@ -365,4 +337,3 @@
         }
     }
 ] 
-

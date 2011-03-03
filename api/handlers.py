@@ -157,6 +157,7 @@ class ServerHandler(BaseHandler):
             flavorId = server['flavorId']
             flavor = Flavor.objects.get(id=flavorId)
             imageId = server['imageId']
+            image = Image.objects.get(id=imageId)
             metadata = server['metadata']
             personality = server.get('personality', None)
         except Exception as e:
@@ -165,7 +166,7 @@ class ServerHandler(BaseHandler):
 
         # add the new VM to the local db
         try:
-            vm = VirtualMachine.objects.create(sourceimage=Image.objects.get(id=imageId),ipfour='0.0.0.0',flavor_id=flavorId)
+            vm = VirtualMachine.objects.create(sourceimage=image, ipfour='0.0.0.0', ipsix='::1', flavor=flavor)
         except Exception as e:
             log.error("Can't save vm: %s" % e)
             raise fault.serviceUnavailable

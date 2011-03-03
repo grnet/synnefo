@@ -1,5 +1,17 @@
 [
     {
+        "model": "db.Image",
+        "pk": 1,
+        "fields": {
+            "name": "Debian Squeeze",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "description": "Full Debian Squeeze Installation",
+            "size": 5678
+        }
+    },
+    {
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
@@ -74,6 +86,20 @@
             "meta_key": "OS",
             "meta_value": "debian",
             "vm": 1001
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 2,
+        "fields": {
+            "name": "Slackware 13.1",
+            "created": "2011-02-10 00:00:00",
+            "updated": "2011-02-10 00:00:00",
+            "state": "ACTIVE",
+            "description": "Full Slackware 13.1 Installation",
+            "size": 1234,
+            "owner" : 1,
+            "sourcevm": 1001
         }
     }
 ]

@@ -35,13 +35,4 @@ Notes
         sudo aptitude install uuid-dev 
         ./bin/pip install pyzmq-static
 
-4) Database initialization: [the following commands assume the DB is at "./database.sqlite"]
-	recreate db, load db/fixtures/initial_data.json:
-
-	$ rm database.sqlite
-	$ bin/python manage.py syncdb
-
-	load fixtures, as necessary [take a look under db/fixtures/]:
-	$ bin/python manage.py loaddata db/fixtures/flavors.json
-	$ bin/python manage.py loaddata db/fixtures/vms.json
-	...
+4) Also see README.DB, which describes setting up a DB with various backends.

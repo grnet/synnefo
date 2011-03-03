@@ -503,10 +503,11 @@ class VirtualMachine(models.Model):
         # FIXME: This must happen inside a transaction.
         # Debiting the owner of this VM and storing a persistent value
         # for self.charged must happen ATOMICALLY.
-        self.owner.debit_account(total_cost, self, description)
         description = "Server = %d, charge = %d for state: %s" % (self.id, total_cost, self._operstate)
+        self.owner.debit_account(total_cost, self, description)
         
         self.save()
+
 
 class VirtualMachineGroup(models.Model):
     """Groups of VMs for SynnefoUsers"""

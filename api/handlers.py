@@ -103,6 +103,7 @@ class ServerHandler(BaseHandler):
                      'id': server.id, 
                      'imageId': server.sourceimage.id, 
                      'hostId': server.hostid, 
+                     'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
                      #'metadata': {'Server_Label': server.description },
                      'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
                      'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
@@ -133,6 +134,7 @@ class ServerHandler(BaseHandler):
                                          'description': server.description, 
                                          'imageId': server.sourceimage.id, 
                                          'hostId': server.hostid, 
+                                         'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
                                          #'metadata': {'Server_Label': server.description },
                                          'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
                                          'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
@@ -429,6 +431,7 @@ class ImageHandler(BaseHandler):
                         'updated': image.updated.isoformat(),    
                         'description': image.description, 
                         'status': image.state, 
+                        'progress': image.state == 'ACTIVE' and 100 or 0, 
                         'size': image.size, 
                         'serverId': image.sourcevm and image.sourcevm.id or ""
                        } for image in images]
@@ -445,6 +448,7 @@ class ImageHandler(BaseHandler):
                     'updated': image.updated.isoformat(),    
                     'description': image.description, 
                     'status': image.state, 
+                    'progress': image.state == 'ACTIVE' and 100 or 0, 
                     'size': image.size, 
                     'serverId': image.sourcevm and image.sourcevm.id or ""
                    } }

@@ -51,11 +51,14 @@ class SynnefoUser(models.Model):
         """Charges the user with the specified amount of credits for a vm (resource)"""
         date_now = datetime.datetime.now()
 
-        # first reduce the user's credits and save
+        # FIXME: The following two actions (debiting the user
+        # and creating the Debit instance must happen ATOMICALLY,
+        # as specified in the documentation.
+
         self.credit = self.credit - amount
         self.save()
 
-        # then write the debit entry!
+        # then write the debit entry
         debit = Debit()
 
         debit.user = self
@@ -370,14 +373,18 @@ class VirtualMachine(models.Model):
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)
-        # Before this instance gets save()d
+        # This gets called BEFORE an instance gets save()d for
+        # the first time.
         if not self.pk: 
             self._action = None
-            self._update_state('BUILD')
             self._backendjobid = None
             self._backendjobstatus = None
             self._backendopcode = None
             self._backendlogmsg = None
+            # Do not use _update_state() for this, 
+            # as this may cause save() to get called in __init__(),
+            # breaking VirtualMachine.object.create() among other things.
+            self._operstate = 'BUILD'
 
     def process_backend_msg(self, jobid, opcode, status, logmsg):
         """Process a job progress notification from the backend.
@@ -404,8 +411,7 @@ class VirtualMachine(models.Model):
             self._update_state('ERROR')
         # Any other notification of failure leaves the operating state unchanged
 
-        # [bkarak] update_state saves the object
-        #self.save()
+        self.save()
 
     def start_action(self, action):
         """Update the state of a VM when a new action is initiated."""
@@ -457,50 +463,45 @@ class VirtualMachine(models.Model):
         Currently calls the charge() method when necessary.
 
         """
-        if self._operstate in ( 'STARTED', 'STOPPED' ):
-            self.charge()
-        else:
-            self.charged = datetime.datetime.now()
-            self._operstate = new_operstate
-            self.save()
+
+        # Call charge() unconditionally before any change of
+        # internal state.
+        self.charge()
+        self._operstate = new_operstate
 
     def charge(self):
-        """Charges the VM owner
+        """Charges the owner of this VM.
         
-        Charges the VM owner from vm.charged to datetime.now()
+        Charges the owner of a VM for the period
+        from vm.charged to datetime.now(), based on the
+        current operating state.
         
         """
-        cur_datetime = datetime.datetime.now()
-        valid_states = ( 'STARTED', 'STOPPED' )
+        charged_states = ('STARTED', 'STOPPED')
+       
+        start_datetime = self.charged
+        self.charged = datetime.datetime.now()
 
-        # Check if the states are valid for charging ...
-        if self._operstate not in valid_states:
-            self.charged = cur_datetime
+        # Only charge for a specific set of states
+        if self._operstate not in charged_states:
             self.save()
             return
 
-        # if so, charge!
         cost_list = []
 
-        if self._operstate == valid_states[0]:
-            cost_list = self.flavor.get_cost_active(self.charged, cur_datetime)
-        elif self._operstate == valid_state[1]:
-            cost_list = self.flavor.get_cost_inactive(self.charged, cur_datetime)
+        if self._operstate == 'STARTED':
+            cost_list = self.flavor.get_cost_active(start_datetime, self.charged)
+        elif self._operstate == 'STOPPED':
+            cost_list = self.flavor.get_cost_inactive(start_datetime, self.charged)
 
-        # calculate the total cost
-        total_cost = 0
-
-        for cl in cost_list:
-            total_cost = total_cost + cl[1]
-
-        # still need to set correctly the message
-        description = "Charged %d credits to user id=%d" % ( total_cost, self.owner.id )
+        total_cost = sum([x[1] for x in cost_list])
+        # FIXME: This must happen inside a transaction.
+        # Debiting the owner of this VM and storing a persistent value
+        # for self.charged must happen ATOMICALLY.
         self.owner.debit_account(total_cost, self, description)
-        self.charged = cur_datetime
-
-        # save the VM object
+        description = "Server = %d, charge = %d for state: %s" % (self.id, total_cost, self._operstate)
+        
         self.save()
-
 
 class VirtualMachineGroup(models.Model):
     """Groups of VMs for SynnefoUsers"""

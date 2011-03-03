@@ -24,6 +24,7 @@ import time
 import json
 import platform
 import logging
+import getpass
 import traceback
 
 from threading import Thread, Event, currentThread
@@ -91,9 +92,16 @@ def main():
     inproc = zmqc.socket(zmq.PUB)
     inproc.bind("inproc://threads")
 
+    #
     # Create a SUB socket, connect to ganeti-0mqd and the inproc PUB socket
+    #
     subscriber = zmqc.socket(zmq.SUB)
-    subscriber.setsockopt(zmq.IDENTITY, platform.node() + "snf-db-controller")
+
+    # Combine the hostname, username and a constant string to get
+    # a hopefully unique identity for this 0mq peer.
+    # Reusing zmq.IDENTITY for two distinct peers triggers this 0mq bug:
+    # https://github.com/zeromq/zeromq2/issues/30
+    subscriber.setsockopt(zmq.IDENTITY, platform.node() + getpass.getuser() + "snf-db-controller")
     subscriber.setsockopt(zmq.SUBSCRIBE, "")
     subscriber.connect(GANETI_ZMQ_PUBLISHER)
     subscriber.connect("inproc://threads")

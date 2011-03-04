@@ -42,3 +42,13 @@ Notes
 6) In Mac computers with Snow Leopard, you may have a problem installing pycurl. Remember to set 64-bit arch when you install it.
 
     env ARCHFLAGS="-arch x86_64" ./bin/pip install pycurl
+
+
+Testing
+-------
+The functional ui tests require the Selenium server to be running.
+
+    $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
+    $ java -jar selenium-server-standalone-2.0b2.jar
+    $ ./bin/python manage.py test ui
+

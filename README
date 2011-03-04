@@ -46,9 +46,10 @@ Notes
 
 Testing
 -------
-The functional ui tests require the Selenium server to be running.
+The functional ui tests require the Selenium server and the synnefo app to be running.
 
     $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
-    $ java -jar selenium-server-standalone-2.0b2.jar
+    $ java -jar selenium-server-standalone-2.0b2.jar &
+    $ ./bin/python manage.py runserver &
     $ ./bin/python manage.py test ui
 

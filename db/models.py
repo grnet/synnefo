@@ -312,7 +312,7 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
-    owner = models.ForeignKey(SynnefoUser,blank=True, null=True)
+    owner = models.ForeignKey(SynnefoUser)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     charged = models.DateTimeField(default=datetime.datetime.now())

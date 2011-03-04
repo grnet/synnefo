@@ -258,6 +258,7 @@
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
+            "owner": 1,
             "name": "snf-1001",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
@@ -275,6 +276,7 @@
         "model": "db.VirtualMachine",
         "pk": 1002,
         "fields": {
+            "owner": 1,
             "name": "snf-1002",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -292,6 +294,7 @@
         "model": "db.VirtualMachine",
         "pk": 1003,
         "fields": {
+            "owner": 1,
             "name": "snf-1003",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -309,6 +312,7 @@
         "model": "db.VirtualMachine",
         "pk": 1004,
         "fields": {
+            "owner": 1,
             "name": "snf-1004",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",

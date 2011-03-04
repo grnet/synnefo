@@ -152,7 +152,7 @@ class ServerHandler(BaseHandler):
         
             TODO: auto generate and set password
         """
-        #Check if we have all the necessary data in the JSON request       
+        # Check if we have all the necessary data in the JSON request       
         try:
             server = json.loads(request.raw_post_data)['server']
             name = server['name']
@@ -166,9 +166,17 @@ class ServerHandler(BaseHandler):
             log.error('Malformed create request: %s - %s' % (e, request.raw_post_data))    
             raise fault.badRequest
 
+        # TODO: Proper Authn, Authz
+        # Everything belongs to a single SynnefoUser for now.
+        try:  	
+            owner = SynnefoUser.objects.all()[0]
+        except Exception as e:
+            log.error('Cannot find a single SynnefoUser in the DB: %s' % (e));
+            raise fault.unauthorized
+
         # add the new VM to the local db
         try:
-            vm = VirtualMachine.objects.create(sourceimage=image, ipfour='0.0.0.0', ipsix='::1', flavor=flavor)
+            vm = VirtualMachine.objects.create(sourceimage=image, ipfour='0.0.0.0', ipsix='::1', flavor=flavor, owner=owner)
         except Exception as e:
             log.error("Can't save vm: %s" % e)
             raise fault.serviceUnavailable

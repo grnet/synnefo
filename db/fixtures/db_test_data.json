@@ -88,6 +88,7 @@
         "model": "db.VirtualMachine",
         "pk": 30000,
         "fields": {
+            "owner": 30000,  
             "name": "snf-1001",
             "created": "2011-02-06 00:00:00",
             "charged": "2011-02-06 00:00:00",

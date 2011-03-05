@@ -14,3 +14,4 @@ lib/
 .Python
 .idea
 .DS_Store
+selenium-server-standalone-2.0b2.jar

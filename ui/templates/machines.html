@@ -596,16 +596,18 @@ $(function() {
 	    $("#status li").removeClass("active").eq(i).addClass("active");
         
         // update confirm step
-        var image = $("input[type=radio][name=image-id]:checked");
-        var imageId = image.length ? image[0].id : false
-        if (imageId) {
-            var imageName = $("label[for=" + imageId + "] .image-title").text();
-            $("#machine_image-label")[0].textContent = imageName;
-            $("input[type=text][name=machine_name]")[0].value = "My " + imageName + " server";
+        if (api.getIndex()==0) {
+            var image = $("input[type=radio][name=image-id]:checked");
+            var imageId = image.length ? image[0].id : false
+            if (imageId) {
+                var imageName = $("label[for=" + imageId + "] .image-title").text();
+                $("#machine_image-label")[0].textContent = imageName;
+                $("input[type=text][name=machine_name]")[0].value = "My " + imageName + " server";
+            }
+            $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
+            $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
+            $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
         }
-        $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
-        $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
-        $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
         
     });
 
@@ -694,15 +696,16 @@ $("#cancel").click(function(){
 
 // starting a new VM through the wizard
 $("#start").click(function(){
-    //TODO: get the real data
+    var imageId = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
     var flavorId = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
+    var machineName = $('input[name=machine_name]')[0].value;
     var payload = {
         "server": {
-            "name": "image-name",
-            "imageId": 1,
+            "name": machineName,
+            "imageId": imageId,
             "flavorId" : flavorId,
             "metadata" : {
-                "My Server Name" : $("input[name=machine_name]")[0].value
+                "My Server Name" : machineName
             },
         }
     };

@@ -424,8 +424,7 @@ class VirtualMachine(models.Model):
             raise VirtualMachine.InvalidActionError(action)
 
         # No actions to deleted and no actions beside destroy to suspended vms
-        # FIXME: How does a VM get unsuspended?
-        if self.deleted or (self.suspended and action != "DESTROY"):
+        if self.deleted or (self.suspended and action not in ["START", "DESTROY"]):
             raise VirtualMachine.InvalidActionError(action)
 
         self._action = action
@@ -436,8 +435,10 @@ class VirtualMachine(models.Model):
         # Update the relevant flags if the VM is being suspended or destroyed
         if action == "DESTROY":
             self.deleted = True
-        if action == "SUSPEND":
+        elif action == "SUSPEND":
             self.suspended = True
+        elif action == "START":
+            self.suspended = False
         self.save()
 
     # FIXME: Perhaps move somewhere else, outside the model?

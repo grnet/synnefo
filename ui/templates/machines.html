@@ -501,7 +501,20 @@ function update_flavors() {
                                        progress: true,
                                        max:ram.length-1});
             $("#small").click();
-
+            
+            // update the indicators when sliding
+            $("#cpu:range").data().rangeinput.onSlide(function(event,value){
+                $("#cpu-indicator")[0].value = cpus[Number(value)];
+                $("#custom").click();
+            });
+            $("#ram:range").data().rangeinput.onSlide(function(event,value){
+                $("#ram-indicator")[0].value = ram[Number(value)];
+                $("#custom").click();
+            });
+            $("#storage:range").data().rangeinput.onSlide(function(event,value){
+                $("#storage-indicator")[0].value = disks[Number(value)];
+                $("#custom").click();
+            });
         }
     });
     return false;
@@ -665,28 +678,6 @@ $("#custom").click(function(){
     $("#ram").attr('disabled',false);
     $("#storage").attr('disabled',false);
     $("strong.sliders").style = 'color: #778899;';
-});
-
-// get cpu value for custom flavor
-$("#cpu:range").change(function(event, value){
-    $("#custom").click();
-    // update cpu indicator
-    $("#cpu-indicator")[0].value = cpus[Number(value)];
-});
-
-// get ram value for custom flavor
-$("#ram:range").change(function(event, value){
-    $("#custom").click();
-    // update ram indicator
-    $("#ram-indicator")[0].value = ram[Number(value)];
-});
-
-// get storage value for custom flavor
-$("#storage:range").change(function(event, value){
-    $("#custom").click();
-    // update disk indicator
-    $("#storage-indicator")[0].value = disks[Number(value)];
-    return false;
 });
 
 // exit the wizard

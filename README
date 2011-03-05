@@ -53,3 +53,13 @@ The functional ui tests require the Selenium server and the synnefo app to be ru
     $ ./bin/python manage.py runserver &
     $ ./bin/python manage.py test ui
 
+Test coverage
+=============
+
+In order to get code coverage reports you need to install django-test-coverage
+   
+   $ ./bin/pip install django-test-coverage
+
+Then edit your settings.py and configure the test runner:
+
+   TEST_RUNNER = 'django-test-coverage.runner.run_tests'

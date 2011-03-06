@@ -686,12 +686,8 @@ a#standard, a#list {
     font-size: 11pt;
 }
 
-a#standard:link, a#standard:visited {
-color:#5f8dd3;
-}
-
-a#list:link, a#list:visited {
-color:white;
+div#view-select a {
+    color:#5f8dd3;
 }
 
 a#list:hover {

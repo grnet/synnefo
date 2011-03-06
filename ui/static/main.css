@@ -735,6 +735,8 @@ div.list .state {
 
 div.list table tbody {
     margin-top: 8px;
+    overflow: -moz-scrollbars-vertical !important;
+    height:380px !important;
 }
 
 div.list .stopped {
@@ -1012,5 +1014,9 @@ div.list table thead #ip {
 }
 
 div.list table thead #group {
-    width: 80px;
+    width: 50px;
+}
+
+div.list table thead #status {
+    width: 70px;
 }

@@ -211,16 +211,21 @@ class APITestCase(TestCase):
     def testFlavorsDetails(self):
         """ test if the flavors details are returned by the API
         """
-        response = self.client.get('/api/v1.0/flavors/detail')     
-        for number in range(0, len(Flavor.objects.all())):
-            flavor_from_api = json.loads(response.content)['flavors'][number]
-            flavor_from_db = Flavor.objects.get(id=number+1)
+        response = self.client.get('/api/v1.0/flavors/detail')
+        flavors_from_db = Flavor.objects.all()
+        flavors_from_api = json.loads(response.content)['flavors']
+        
+        # Assert that all flavors in the db appear inthe API call result
+        for i in range(0, len(flavors_from_db)):
+            flavor_from_api = flavors_from_api[i]
+            flavor_from_db = Flavor.objects.get(id=flavors_from_db[i].id)
             self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
             self.assertEqual(flavor_from_api['id'], flavor_from_db.id)
             self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
             self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
             self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
-        flavors_from_api = json.loads(response.content)['flavors']
+
+        # Assert that all flavors that appear in the API call result are also in the db             
         for flavor_from_api in flavors_from_api:
             flavor_from_db = Flavor.objects.get(id=flavor_from_api['id'])
             self.assertEqual(flavor_from_api['cpu'], flavor_from_db.cpu)
@@ -228,6 +233,8 @@ class APITestCase(TestCase):
             self.assertEqual(flavor_from_api['disk'], flavor_from_db.disk)
             self.assertEqual(flavor_from_api['name'], flavor_from_db.name)
             self.assertEqual(flavor_from_api['ram'], flavor_from_db.ram)
+        
+        # Check if we have the right status_code
         self.assertTrue(response.status_code in [200,203])
 
 
@@ -283,17 +290,19 @@ class APITestCase(TestCase):
     def testImagesDetails(self):
         """ test if the images details are returned by the API
         """
-        response = self.client.get('/api/v1.0/images/detail')     
-        for number in range(0, len(Image.objects.all())):
-            image_from_api = json.loads(response.content)['images'][number]
-            image_from_db = Image.objects.get(id=number+1)
+        response = self.client.get('/api/v1.0/images/detail')
+        images_from_api = json.loads(response.content)['images']
+        images_from_db = Image.objects.all()
+        for i in range(0, len(images_from_db)):
+            image_from_db = Image.objects.get(id=images_from_db[i].id)
+            image_from_api = images_from_api[i]
             self.assertEqual(image_from_api['name'], image_from_db.name)
             self.assertEqual(image_from_api['id'], image_from_db.id)
             self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
             self.assertEqual(image_from_api['description'], image_from_db.description)
-        images_from_api = json.loads(response.content)['images']
+
         for image_from_api in images_from_api:
             image_from_db = Image.objects.get(id=image_from_api['id'])
             self.assertEqual(image_from_api['name'], image_from_db.name)
@@ -302,6 +311,7 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
             self.assertEqual(image_from_api['description'], image_from_db.description)
+            
         self.assertTrue(response.status_code in [200,203])
 
 

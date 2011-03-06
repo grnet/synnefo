@@ -106,7 +106,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
 
 // get and show a list of running and terminated machines
 function update_vms() {
-    console.info('updating machines');
+    try{ console.info('updating machines'); } catch(err){}
     $(".running").text('');
     $(".terminated").text('');
 
@@ -341,7 +341,7 @@ function reboot(serverIDs){
 					if ( jqXHR.status != '202') {
 						ajax_error(jqXHR, serverID);
 					} else {
-						console.info('rebooted ' + serverID);        		
+						try{console.info('rebooted ' + serverID);} catch(err) {}   		
 						reboot(serverIDs);
 					}
 				}
@@ -374,7 +374,7 @@ function shutdown(serverIDs) {
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-						console.info('suspended ' + serverID);        				
+						try{ console.info('suspended ' + serverID); } catch(err) {}       				
                         shutdown(serverIDs);
                     } else {
                         ajax_error(jqXHR);
@@ -406,7 +406,7 @@ function destroy(serverIDs) {
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-						console.info('suspended ' + serverID);        				
+						try { console.info('suspended ' + serverID); } catch (err) {}        				
                         shutdown(serverIDs);
                     } else {
                         ajax_error(jqXHR);
@@ -438,7 +438,7 @@ function start(serverIDs){
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-					    console.info('started ' + serverID);        		
+					    try { console.info('started ' + serverID); } catch(err) {}      		
                         start(serverIDs);
                     } else {
                         ajax_error(jqXHR);

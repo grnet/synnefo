@@ -181,9 +181,9 @@ function update_vms() {
             		"bAutoWidth": false,
             		"bSort": true,    
                     "bStateSave": true,
-                    //"sScrollY": "250px",
-                    //"sScrollX": "500px",
-                    //"sScrollXInner": "480px",
+                    "sScrollY": "270px",
+                    "sScrollX": "515px",
+                    "sScrollXInner": "500px",
                     "aoColumnDefs": [
                         { "bSortable": false, "aTargets": [ 0 ] }
                     ]
@@ -314,6 +314,48 @@ function identify_flavor(cpu, disk, ram){
         }
     }
     return 0;
+}
+
+// update the actions in the 
+function updateActions() {
+	var states = [];
+	var on = [];
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+	// disable all actions to begin with
+	for (action in actions) {
+		$("#action-" + action).removeClass('enabled');
+	}
+
+	// are there multiple machines selected?
+	if (checked.length>1)
+		states[0] = 'multiple';
+	
+	// check the states of selected machines
+	checked.each(function(i,checkbox) {
+		states[states.length] = checkbox.className;
+		var ip = $("#" + checkbox.id.replace('input-','') + ".ip span.public").text();
+		if (ip.replace('undefined','').length)
+			states[states.length] = 'network';
+	});
+
+	// decide which actions should be enabled
+	for (a in actions) {
+		var enabled = false;
+		for (var s =0; s<states.length; s++) {
+			if (actions[a].indexOf(states[s]) != -1 ) {
+				enabled = true;
+			} else {
+				enabled = false;
+				break;
+			}
+		}
+		if (enabled)
+			on[on.length]=a;
+	}
+	// enable those actions
+	for (action in on) {
+		$("#action-" + on[action]).addClass('enabled');
+	}
 }
 
 // reboot action

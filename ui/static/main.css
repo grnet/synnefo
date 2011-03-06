@@ -735,8 +735,6 @@ div.list .state {
 
 div.list table tbody {
     margin-top: 8px;
-    overflow: -moz-scrollbars-vertical !important;
-    height:380px !important;
 }
 
 div.list .stopped {
@@ -933,7 +931,7 @@ div.list table {
 
 div.list table tbody td {
 	color: #3D3D3D;
-	padding: 4px;
+	padding:6px;
 	background-color: #FFF;
 	vertical-align: middle;
 }
@@ -961,12 +959,6 @@ div.list table thead .sorting_asc {
 
 div.list table thead .sorting_desc {
 	background-image: url(desc.gif);
-}
-
-div.list table #selection {
-	width: 35px;
-	text-align: left;
-    background-image: none;
 }
 
 div.list table #selection div.expand-icon {
@@ -1001,7 +993,7 @@ div.list table thead tr th ul li a{
 }
 
 div.list table thead #os {
-    width: 32px;
+    width: 32px !important;
     vertical-align:middle;
 }
 
@@ -1009,14 +1001,24 @@ div.list table span.imagetag {
     display: none;
 }
 
+div.list table #selection {
+	width: 35px !important;
+	text-align: left;
+    background-image: none;
+}
+
 div.list table thead #ip {
-    width: 100px;
+    width: 100px !important;
 }
 
 div.list table thead #group {
-    width: 50px;
+    width: 60px !important;
 }
 
 div.list table thead #status {
-    width: 70px;
+    width: 70px !important;
+}
+
+div.list table thead #name {
+    width: 200px !important;
 }

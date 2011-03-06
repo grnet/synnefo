@@ -7,6 +7,74 @@
     <script src="static/jquery.cookie.js"></script>
     <script src="static/jQueryRotate.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
+    <script>
+        /* These have to be here for the translations to work */
+        // ajax error checking  
+        function ajax_error(jqXHR) {
+            // prepare the error message
+            $("#error-success h3").text('{% trans "Error!" %}');
+            // check the error code
+            switch (jqXHR.status) {
+                case 400: // YY error/message
+                    $("#error-success p").text('{% trans "A Bad Request has been made." %}');
+                    break;
+                case 404: // YY error/message
+                    $("#error-success p").text('{% trans "Your request has failed." %}');
+                    break;
+                case 501: // XX error/message
+                    $("#error-success p").text('{% trans "There has been an Internal Error. Our administrators have been notified." %}');
+                    break;
+                case 503: // XX error/message
+                    $("#error-success p").text('{% trans "This service is unavailable right now, please try again later." %}');
+                    break;
+                default: // XXYY error/message
+                    $("#error-success p").text('{% trans "An error has happened. Our administrators have been notified." %}');
+            }         
+            // bring up error notification
+            var triggers = $("a#notification").overlay({
+                // some mask tweaks suitable for modal dialogs
+                mask: {
+                    color: '#ebecff',
+                    opacity: '0.9'
+                },
+                top: 'center',
+                closeOnClick: false,
+                oneInstance: false,
+                load: false,
+                onClose: function(){
+                    choose_view();
+                }
+            });
+            $("a#notification").data('overlay').load();
+            return false;
+        }
+        
+        // ajax success checking
+        function ajax_success() {          
+            // prepare the error message
+            $("#error-success h3").text('{% trans "Success!" %}');
+            $("#error-success p").text('{% trans "Your request has been succefully executed." %}');             
+            // bring up success notification
+            var triggers = $("a#notification").overlay({
+                // some mask tweaks suitable for modal dialogs
+                mask: {
+                    color: '#ebecff',
+                    opacity: '0.9'
+                },
+                top: 'center',
+                closeOnClick: false,
+                oneInstance: false,
+                load: false,
+                onClose: function(){
+                    choose_view();
+                }
+            });
+            $("a#notification").data('overlay').load();
+            return false;
+        }
+    
+    </script>
+    <script src="static/synnefo.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
 
@@ -73,8 +141,7 @@
 			        var pane = this.getPanes().eq(i);
                     pane.text('');
 			        // load it with a page specified in the tab's href attribute
-			        pane.load(this.getTabs().eq(i).attr("href"));
-
+			        pane.load(this.getTabs().eq(i).attr("href"),function(){if (!i) {choose_view()}});
 		        }
 	        });
         });
@@ -82,50 +149,10 @@
         // toggle main menu
         $("#arrow").click(function(event){
         	toggleMenu();
-        }); 
-                
-		function toggleMenu() {
-        	var primary = $("ul.css-tabs li a.primary");
-            var secondary = $("ul.css-tabs li a.secondary");
-            var all = $("ul.css-tabs li a");			
-			var toggled = $('ul.css-tabs li a.current').hasClass('secondary');
-			
-			// if anything is still moving, do nothing
-        	if ($(":animated").length) {
-        		return;
-        	} 
-        	
-        	// nothing is current to begin with
-            $('ul.css-tabs li a.current').removeClass('current');
-			
-			// move stuff around
-            all.animate({top:'30px'}, {complete: function() { 
-                $(this).hide();
-                if (toggled) {
-	                primary.show();
-	                primary.animate({top:'9px'}, {complete: function() {
-	                	$('ul.css-tabs li a.primary#machines').addClass('current');
-	                	$('a#machines').click();                           	
-	                }});
-                } else {
-                	secondary.show();
-                	secondary.animate({top:'9px'}, {complete: function() {
-	                	$('ul.css-tabs li a.secondary#files').addClass('current');
-	                	$('a#files').click();                           			                	
-                	}});
-                }            	                          
-            }});
-            
-            // rotate arrow icon
-            if (toggled) {
-            	$("#arrow").rotate({animateAngle: (0), bind:[{"click":function(){toggleMenu()}}]});
-            	$("#arrow").rotateAnimation(0);            	
-            } else {
-            	$("#arrow").rotate({animateAngle: (-180), bind:[{"click":function(){toggleMenu()}}]});
-            	$("#arrow").rotateAnimation(-180);
-            }            
-		}  
+        });    
+        
     </script>
+    
 </body>
 </html>
 

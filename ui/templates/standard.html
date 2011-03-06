@@ -1,0 +1,66 @@
+{% load i18n %}
+
+<!-- the standard view -->
+<div id="machinesview" class="standard">
+    <div id="spinner"></div>
+    <div class="machine" id="machine-template" style="display:none">
+        <div class="state">
+            <div class="status">{% trans "Running" %}</div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+        </div>
+        <img class="logo" src="" />
+        <a href="#" class="name">
+            <h5>Name: <span class="name">node.name</span><span class="rename"></span></h5>
+        </a>
+        <a href="#" class="ip">
+            <h5>IP: <span class="public">node.public_ip</span></h5>
+        </a>
+        <h5 class="settings">
+            {% trans "Show:" %} <a href="#">{% trans "disks" %}</a> | <a href="#">{% trans "networks" %}</a> | <a href="#">{% trans "group" %}</a>
+        </h5>
+        <div class="actions">
+            <a href="#" class="action-start">{% trans "Start" %}</a>
+            <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
+            <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
+            <a href="#" class="more">{% trans "more &hellip;" %}</a>
+        </div>
+        <div class="seperator"></div>
+    </div>
+
+    <div class="running"></div>
+    <div id="mini" class="seperator"></div>
+    <div class="terminated"></div>
+</div>
+
+<div id="machines" class="seperator"></div>
+
+<script>
+// intercept reboot click 
+$("div.actions a.action-reboot").live('click', function(){
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    confirm_action('reboot', reboot, [serverID], [serverName]);
+    return false;
+});
+
+// intercept shutdown click
+$("div.actions a.action-shutdown").live('click', function(){ 
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    confirm_action('shutdown', shutdown, [serverID], [serverName]);
+    return false;
+});
+// intercept start click
+$("div.actions a.action-start").live('click', function(){ 
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    confirm_action('start', start, [serverID], [serverName]);
+    return false;
+});
+
+update_vms();
+
+</script>

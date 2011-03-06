@@ -20,7 +20,11 @@ def home(request):
 def machines(request):
     context = {}
     return template('machines', context)
-   
+
+def machines_standard(request):
+    context = {}
+    return template('standard', context)
+    
 def machines_list(request):
     context = {}
     return template('list', context)

@@ -1,3 +1,5 @@
+{% load i18n %}
+
 <div id="machinesview" class="list">
     <div id="spinner"></div>
     <div class="actions">
@@ -150,79 +152,55 @@ function updateActions() {
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+	var serverIDs = [], serverNames=[];
 	checked.each(function(i,c) {
-		$.ajax({
-			url: '/api/v1.0/servers/' + c.id.replace('input-',''),
-			type: "DELETE",
-			dataType: "json",
-			success: function() {}
-		});
-		console.warn('destroying ' + c.id.replace('input-',''))
+		serverID=c.id.replace('input-','');
+		serverIDs.push(serverID);
+		serverNames.push($('tr#'+serverID+' span.name').text());
 	});
+	confirm_action('destroy', destroy, serverIDs, serverNames);
 	return false;
 });
 
 
 $("a.enabled#action-reboot").live('click', function() {
-    // reboot action
-    var payload = {
-        "reboot": {"type" : "HARD"}
-    };   
-
-	var checked = $("table.list-machines tbody input[type='checkbox']:checked");	
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+	var serverIDs = [], serverNames=[];
 	checked.each(function(i,c) {
-		$.ajax({
-			url: '/api/v1.0/servers/' + c.id.replace('input-','') + '/action',
-			type: "POST",
-			dataType: "json",
-            data: JSON.stringify(payload),
-			success: function() {}
-		});
-		console.warn('rebooting ' + c.id.replace('input-',''))
+		serverID=c.id.replace('input-','');
+		serverIDs.push(serverID);
+		serverNames.push($('tr#'+serverID+' span.name').text());
 	});
+	confirm_action('reboot', reboot, serverIDs, serverNames);
 	return false;
 });
 
 
 $("a.enabled#action-start").live('click', function() {
-    // start action
-    var payload = {
-        "start": {"type" : "NORMAL"}
-    };   
-
-	var checked = $("tbody input[type='checkbox']:checked");	
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+	var serverIDs = [], serverNames=[];
 	checked.each(function(i,c) {
-		$.ajax({
-			url: '/api/v1.0/servers/' + c.id.replace('input-','') + '/action',
-			type: "POST",
-            dataType: "json",
-            data: JSON.stringify(payload),
-			success: function() {}
-		});
-		console.warn('starting ' + c.id.replace('input-',''))		
+		serverID=c.id.replace('input-','');
+		serverIDs.push(serverID);
+		serverNames.push($('tr#'+serverID+' span.name').text());
 	});
+	confirm_action('start', start, serverIDs, serverNames);
 	return false;
 });
 
 
 $("a.enabled#action-shutdown").live('click', function() {
-    // shutdown action. Not implemented by rackspace API atm
-    var payload = {
-        "shutdown": {"timeout" : "5"}
-    };   
-
-	var checked = $("tbody input[type='checkbox']:checked");	
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+	var serverIDs = [], serverNames=[];
 	checked.each(function(i,c) {
-		$.ajax({
-			url: '/api/v1.0/servers/' + c.id.replace('input-','') + '/action',
-			type: "POST",			
-			dataType: "json",
-            data: JSON.stringify(payload),
-			success: function() {}
-		});
-		console.warn('shutting down ' + c.id.replace('input-',''))
+		serverID=c.id.replace('input-','');
+		serverIDs.push(serverID);
+		serverNames.push($('tr#'+serverID+' span.name').text());
 	});
+	confirm_action('shutdown', shutdown, serverIDs, serverNames);
 	return false;
 });
+
+update_vms();
 
 </script>

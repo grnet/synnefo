@@ -518,26 +518,48 @@ class SharedIPGroupHandler(BaseHandler):
 
 
 class VirtualMachineGroupHandler(BaseHandler):
+    """Handler responsible for Virtual Machine Groups
+
+     creates, lists, deletes virtual machine groups
+
+     @HTTP methods: GET, POST, DELETE
+     @Parameters: POST data 
+     @Responses: HTTP 202 if successfully get the Groups list, itemNotFound, serviceUnavailable otherwise
+
+    """
+
     allowed_methods = ('GET', 'POST', 'DELETE')
 
     def read(self, request, id=None):
         """List Groups"""
         try:
             vmgroups = VirtualMachineGroup.objects.all() 
-            vmgroups = [ {'id': vmgroup.id, \
+            vmgroups_list = [ {'id': vmgroup.id, \
                   'name': vmgroup.name,  \
                    'server_id': [machine.id for machine in vmgroup.machines.all()] \
                    } for vmgroup in vmgroups]
             # Group info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
-                return { "groups": vmgroups }
+                return { "groups": vmgroups_list }
             elif id is None:
-                return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups ] }
+                return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups_list ] }
             else:
-                return { "groups": vmgroups[0] }
+                vmgroup = vmgroups.get(name=id)
+
+                return { "group":  {'id': vmgroup.id, \
+                  'name': vmgroup.name,  \
+                   'server_id': [machine.id for machine in vmgroup.machines.all()] \
+                   } }
+
+
+        except VirtualMachineGroup.DoesNotExist:
+                    raise fault.itemNotFound
+        except VirtualMachineGroup.MultipleObjectsReturned:
+                    raise fault.serviceUnavailable
         except Exception, e:
                     log.error('Unexpected error: %s' % e)
                     raise fault.serviceUnavailable
+
 
 
     def create(self, request, id):

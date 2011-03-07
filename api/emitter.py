@@ -29,6 +29,8 @@ class OSXMLEmitter(Emitter):
             "flavor": [ "id", "name", "ram", "disk", "cpu" ],
             "image": [ "id", "name", "updated", "created", "status",
                        "serverId", "progress", "size", "description"],
+            "group": [ "id", "name", "server_id"],
+
         }
 
     def _to_xml_node(self, doc, nodename, data):

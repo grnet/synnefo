@@ -320,3 +320,16 @@ class APITestCase(TestCase):
         """
         response = self.client.get('/api/v1.0/images/' + str(self.test_wrong_image_id))
         self.assertEqual(response.status_code, 404)
+
+
+    def testServerMetadata(self):
+        """ test server's metadata (add, edit)
+        """
+        request = {
+            "metadata": {"metadata_key" : "name", "metadata_value" : "a fancy name"}
+            }
+        response = self.client.put('/api/v1.0/servers' + str(self.test_server_id), 
+                                    json.dumps(request),
+                                    content_type='application/json')  
+        self.assertEqual(response.status_code, 404)
+        #TODO: not working atm, due to problem with django piston and PUT

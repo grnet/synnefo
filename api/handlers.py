@@ -248,7 +248,30 @@ class ServerHandler(BaseHandler):
 
 
     def update(self, request, id):
+        """Sets and updates Virtual Machine Metadata. 
+ 
+        """
+        try:
+            metadata_request = json.loads(request.raw_post_data)['metadata']
+            metadata_key = metadata_request.get('metadata_key')
+            metadata_value = metadata_request.get('metadata_value')
+ 
+            vm = VirtualMachine.objects.get(id=id)
+            #we only update virtual machine's name atm
+            if metadata_key == 'name':
+                vm.name = metadata_value
+                vm.save()
+                return accepted
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.error('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+
         raise fault.itemNotFound
+
 
     def delete(self, request, id):
         try:
@@ -344,28 +367,6 @@ class ServerActionHandler(BaseHandler):
         return accepted
 
     def update(self, request, id):
-        """Sets and updates Virtual Machine Metadata. 
- 
-        """
-        try:
-            metadata_request = json.loads(request.raw_post_data)['metadata']
-            metadata_key = metadata_request.get('metadata_key')
-            metadata_value = metadata_request.get('metadata_value')
- 
-            vm = VirtualMachine.objects.get(id=id)
-            #we only update virtual machine's name atm
-            if metadata_key == 'name':
-                vm.name = metadata_value
-                vm.save()
-                return accepted
-        except VirtualMachine.DoesNotExist:
-            raise fault.itemNotFound
-        except VirtualMachine.MultipleObjectsReturned:
-            raise fault.serviceUnavailable
-        except Exception, e:
-            log.error('Unexpected error: %s' % e)
-            raise fault.serviceUnavailable
-
         raise fault.itemNotFound
 
 

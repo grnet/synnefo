@@ -9,16 +9,18 @@
 from django.test import TestCase
 from django.test.client import Client
 import simplejson as json
-from synnefo.db.models import VirtualMachine, Flavor, Image
+from synnefo.db.models import VirtualMachine, Flavor, Image, VirtualMachineGroup
 
 class APITestCase(TestCase):
     fixtures = [ 'api_test_data' ]
     test_server_id = 1001
     test_image_id = 1
     test_flavor_id = 1
+    test_group_id = 1
     test_wrong_server_id = 99999999
     test_wrong_image_id = 99999999
     test_wrong_flavor_id = 99999999
+    test_wrong_group_id = 99999999
     #make the testing with these id's
 
 
@@ -333,3 +335,53 @@ class APITestCase(TestCase):
                                     content_type='application/json')  
         self.assertEqual(response.status_code, 404)
         #TODO: not working atm, due to problem with django piston and PUT
+
+    def testVMgroupList(self):
+        """ test if the expected list of groups is returned by the API
+        """        
+        response = self.client.get('/api/v1.0/groups')
+        groups_from_api = json.loads(response.content)['groups']
+        groups_from_db = VirtualMachineGroup.objects.all()
+        self.assertEqual(len(groups_from_api), len(groups_from_db))
+        self.assertTrue(response.status_code in [200,203])
+        for group_from_api in groups_from_api:
+            group_from_db = VirtualMachineGroup.objects.get(id=group_from_api['id'])
+            self.assertEqual(group_from_api['id'], group_from_db.id)
+            self.assertEqual(group_from_api['name'], group_from_db.name)
+
+    def testVMgroupDetails(self):
+        """ test if the expected virtual machine group is returned by the API
+        """
+        response = self.client.get('/api/v1.0/groups/' + str(self.test_group_id))
+        group_from_api = json.loads(response.content)['group']
+        group_from_db = VirtualMachineGroup.objects.get(id=self.test_group_id)
+        self.assertEqual(group_from_api['name'], group_from_db.name)
+        self.assertEqual(group_from_api['id'], group_from_db.id)
+        self.assertEqual(group_from_api['server_id'], [machine.id for machine in group_from_db.machines.all()])
+        self.assertTrue(response.status_code in [200,203])
+
+    def testWrongVMgroup(self):
+        """ test if a non existent VMgroup is asked, if a 404 itemNotFound returned
+        """
+        response = self.client.get('/api/v1.0/groups/' + str(self.test_wrong_group_id))
+        self.assertEqual(response.status_code, 404)
+
+    def testgroupsDetails(self):
+        """ test if the groups details are returned by the API
+        """
+        response = self.client.get('/api/v1.0/groups/detail')
+        groups_from_api = json.loads(response.content)['groups']
+        groups_from_db = VirtualMachineGroup.objects.all()
+        for i in range(0, len(groups_from_db)):
+            group_from_db = VirtualMachineGroup.objects.get(id=groups_from_db[i].id)
+            group_from_api = groups_from_api[i]
+            self.assertEqual(group_from_api['name'], group_from_db.name)
+            self.assertEqual(group_from_api['id'], group_from_db.id)
+            self.assertEqual(group_from_api['server_id'], [machine.id for machine in group_from_db.machines.all()])
+        for group_from_api in groups_from_api:
+            group_from_db = VirtualMachineGroup.objects.get(id=group_from_api['id'])
+            self.assertEqual(group_from_api['name'], group_from_db.name)
+            self.assertEqual(group_from_api['id'], group_from_db.id)
+            self.assertEqual(group_from_api['server_id'], [machine.id for machine in group_from_db.machines.all()])            
+        self.assertTrue(response.status_code in [200,203])
+

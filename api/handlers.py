@@ -544,7 +544,7 @@ class VirtualMachineGroupHandler(BaseHandler):
             elif id is None:
                 return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups_list ] }
             else:
-                vmgroup = vmgroups.get(name=id)
+                vmgroup = vmgroups.get(id=id)
 
                 return { "group":  {'id': vmgroup.id, \
                   'name': vmgroup.name,  \

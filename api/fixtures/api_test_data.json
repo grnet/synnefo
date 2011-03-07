@@ -339,5 +339,28 @@
             "owner" : 1,
             "sourcevm": 1001
         }
+    }, 
+    {
+        "model": "db.VirtualMachineGroup",
+        "pk": 1,
+        "fields": {
+            "name": "one group of vms",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "owner" : 1,
+            "machines" : [1001,1002]
+        }
+    },
+    {
+        "model": "db.VirtualMachineGroup",
+        "pk": 2,
+        "fields": {
+            "name": "a second group of vms",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "owner" : 1,
+            "machines" : [1003,1004]
+        }
     }
+
 ] 

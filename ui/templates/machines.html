@@ -195,14 +195,16 @@ $("a#standard").click(function(){standard_view(); return false;});
 
 // launch VM creation wizard
 $("a#create").click(function(){
-    // populate image list
-    update_images();
-    // configure flavors
-    update_flavors(); 
-    // launch the wizard
-    $("#wizard").scrollable().begin();
-    $("#wizard").show();
-    $('a#create').data('overlay').load()    
+
+    //do not launch wizard if no images or flavors are found
+    if (images.length == 0 || flavors.length == 0){
+        ajax_error(503);
+        return false;
+    } else {
+        $("#wizard").scrollable().begin();
+        $("#wizard").show();
+        $('a#create').data('overlay').load()    
+    }
 });
 
 // create wizard overlay
@@ -369,5 +371,8 @@ $("#start").click(function(){
 $("ul.tabs").tabs("div.panes ul");
 
 
-
+// populate image list
+update_images();
+// configure flavors
+update_flavors(); 
 </script>

@@ -141,6 +141,7 @@ function update_images() {
                     ajax_error(jqXHR);
                     },
         success: function(data, textStatus, jqXHR) {
+            images = data.images;
             if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
                 $.each(data.images, function(i,image){
                     var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
@@ -163,7 +164,7 @@ function update_images() {
     return false;
 }
 
-var flavors = {}, disks = [], cpus = [], ram = [];
+var flavors = {}, images = {}, disks = [], cpus = [], ram = [];
 
 Array.prototype.unique = function () {
 	var r = new Array();

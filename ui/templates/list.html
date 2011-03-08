@@ -143,7 +143,8 @@ $("a.enabled#action-start").live('click', function() {
 		serverIDs.push(serverID);
 		serverNames.push($('tr#'+serverID+' span.name').text());
 	});
-	confirm_action('start', start, serverIDs, serverNames);
+//	confirm_action('start', start, serverIDs, serverNames);
+    start(serverIDs);
 	return false;
 });
 

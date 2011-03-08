@@ -59,7 +59,8 @@ $("div.actions a.action-shutdown").live('click', function(){
 $("div.actions a.action-start").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    confirm_action('start', start, [serverID], [serverName]);
+//    confirm_action('start', start, [serverID], [serverName]);
+    start([serverID]);
     return false;
 });
 
@@ -150,5 +151,4 @@ function update_machines_view(data){
 }
 
 auto_update_vms(UPDATE_INTERVAL);
-
 </script>

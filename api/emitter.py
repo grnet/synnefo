@@ -48,7 +48,9 @@ class OSXMLEmitter(Emitter):
             attrs = self._metadata.get(nodename, {})
             for k, v in data.items():
                 if k in attrs:
-                    result.setAttribute(k, str(v))
+                    #protect from case where unicode with ascii chars is casted to str
+                    v = v.__class__ == str and v.decode("utf8") or unicode(v)
+                    result.setAttribute(k, v)                    
                 else:
                     node = self._to_xml_node(doc, k, v)
                     result.appendChild(node)

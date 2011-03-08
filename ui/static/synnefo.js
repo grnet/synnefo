@@ -123,6 +123,7 @@ function update_vms() {
                     return false;
                     },
         success: function(data, textStatus, jqXHR) {
+            servers = data.servers;
 			update_machines_view(data);
         }
     });
@@ -164,7 +165,7 @@ function update_images() {
     return false;
 }
 
-var flavors = {}, images = {}, disks = [], cpus = [], ram = [];
+var flavors = {}, images = {}, servers = {}, disks = [], cpus = [], ram = [];
 
 Array.prototype.unique = function () {
 	var r = new Array();

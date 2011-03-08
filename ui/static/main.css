@@ -723,6 +723,13 @@ div.machine-type {
     margin-left: -20px;
 }
 
+#emptymachineslist {
+display:none; 
+color: #A0A0A0;
+margin-top:100px;
+}
+
+
 div.list label img {
     margin: 5px 5px -3px 0;
 }

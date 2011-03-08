@@ -2,6 +2,7 @@
 
 <!-- the standard view -->
 <div id="machinesview" class="standard">
+    <div id="emptymachineslist">{% trans "You have no virtual machines! Press Create New to create some!" %}</div>
     <div id="spinner"></div>
     <div class="machine" id="machine-template" style="display:none">
         <div class="state">
@@ -146,6 +147,10 @@ function update_machines_view(data){
     // if the terminated list is populated then the seperator must be shown
     if ($(".terminated a.name").length > 0) {
         $("#mini.seperator").fadeIn("slow");
+    }
+    // show message in case user has no servers!
+    if (servers.length == 0) {
+        $("#emptymachineslist").fadeIn("slow");
     }
 
 }

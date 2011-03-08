@@ -21,7 +21,7 @@ try:
     rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
     rapi.GetVersion()
 except Exception, e:
-    log.error('Unexpected error: %s' % e)
+    log.exception('Unexpected error: %s' % e)
     raise fault.serviceUnavailable
 #If we can't connect to the rapi successfully, don't do anything
 
@@ -65,7 +65,7 @@ class VersionHandler(AnonymousBaseHandler):
                         return { "version": version }
                 raise fault.itemNotFound
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
 
@@ -114,7 +114,7 @@ class ServerHandler(BaseHandler):
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
 
@@ -143,7 +143,7 @@ class ServerHandler(BaseHandler):
                 #pass some fake data regarding ip, since we don't have any such data            
                 return { "servers":  virtual_servers_list }                
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
 
@@ -163,7 +163,7 @@ class ServerHandler(BaseHandler):
             metadata = server['metadata']
             personality = server.get('personality', None)
         except Exception as e:
-            log.error('Malformed create request: %s - %s' % (e, request.raw_post_data))    
+            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))    
             raise fault.badRequest
 
         # TODO: Proper Authn, Authz
@@ -171,14 +171,14 @@ class ServerHandler(BaseHandler):
         try:  	
             owner = SynnefoUser.objects.all()[0]
         except Exception as e:
-            log.error('Cannot find a single SynnefoUser in the DB: %s' % (e));
+            log.exception('Cannot find a single SynnefoUser in the DB: %s' % (e));
             raise fault.unauthorized
 
         # add the new VM to the local db
         try:
             vm = VirtualMachine.objects.create(sourceimage=image, ipfour='0.0.0.0', ipsix='::1', flavor=flavor, owner=owner)
         except Exception as e:
-            log.error("Can't save vm: %s" % e)
+            log.exception("Can't save vm: %s" % e)
             raise fault.serviceUnavailable
 
         try:
@@ -210,12 +210,12 @@ class ServerHandler(BaseHandler):
                 )
             log.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
         except (GanetiApiError, CertificateError) as e:
-            log.error('CreateInstance failed: %s' % e)
+            log.exception('CreateInstance failed: %s' % e)
             vm.deleted = True
             vm.save()
             raise fault.serviceUnavailable
         except Exception as e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             vm.deleted = True
             vm.save()
             raise fault.serviceUnavailable            
@@ -267,7 +267,7 @@ class ServerHandler(BaseHandler):
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
         raise fault.itemNotFound
@@ -287,7 +287,7 @@ class ServerHandler(BaseHandler):
         except GanetiApiError, CertificateError:
             raise fault.serviceUnavailable
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
 
@@ -359,7 +359,7 @@ class ServerActionHandler(BaseHandler):
         except GanetiApiError, CertificateError:
             raise fault.serviceUnavailable
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
     def delete(self, request, id):
@@ -428,7 +428,7 @@ class FlavorHandler(BaseHandler):
         except Flavor.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
-            log.error('Unexpected error: %s' % e)
+            log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
 
@@ -488,7 +488,7 @@ class ImageHandler(BaseHandler):
         except Image.MultipleObjectsReturned:
                     raise fault.serviceUnavailable
         except Exception, e:
-                    log.error('Unexpected error: %s' % e)
+                    log.exception('Unexpected error: %s' % e)
                     raise fault.serviceUnavailable
 
     def create(self, request):
@@ -557,7 +557,7 @@ class VirtualMachineGroupHandler(BaseHandler):
         except VirtualMachineGroup.MultipleObjectsReturned:
                     raise fault.serviceUnavailable
         except Exception, e:
-                    log.error('Unexpected error: %s' % e)
+                    log.exception('Unexpected error: %s' % e)
                     raise fault.serviceUnavailable
 
 

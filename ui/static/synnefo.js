@@ -72,7 +72,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
     if (serverIDs.length == 1){
         $("#yes-no h3").text('You are about to ' + action_string + ' vm ' + serverNames[0]);
     } else if (serverIDs.length > 1){
-        $("#yes-no h3").text('You are about to ' + action_string + ' ' + serverIDs.length + 'machines');
+        $("#yes-no h3").text('You are about to ' + action_string + ' ' + serverIDs.length + ' machines');
     } else {
         return false;
     }
@@ -104,11 +104,14 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
     return false;
 }
 
+function auto_update_vms(interval) {
+	update_vms();
+	setTimeout(auto_update_vms,interval,interval);
+}
+
 // get and show a list of running and terminated machines
 function update_vms() {
     try{ console.info('updating machines'); } catch(err){}
-    $(".running").text('');
-    $(".terminated").text('');
 
     $.ajax({
         url: '/api/v1.0/servers/detail',
@@ -120,77 +123,7 @@ function update_vms() {
                     return false;
                     },
         success: function(data, textStatus, jqXHR) {
-            if ($(".running a.name").length + $(".terminated a.name").length == 0) {
-            
-                $.each(data.servers, function(i,server){
-                    // if the machine is deleted it should not be included in any list
-                    if (server.status == 'DELETED') {
-                        return;
-                    }
-                    var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
-                    machine.find("input[type='checkbox']").attr("id", "input-" + server.id);
-                    machine.find("input[type='checkbox']").attr("class", server.status);
-                    machine.find("a.name span.name").text(server.name);
-                    machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
-                    machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
-                    machine.find("img.list-logo").attr("title",image_tags[server.imageId]);
-                    machine.find("span.imagetag").text(image_tags[server.imageId]);
-    
-                    machine.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));            
-    
-                    // TODO: handle SHARE_IP, SHARE_IP_NO_CONFIG, DELETE_IP, REBUILD, QUEUE_RESIZE, PREP_RESIZE, RESIZE, VERIFY_RESIZE, PASSWORD, RESCUE
-                    if (server.status == 'BUILD'){
-                        machine.find(".status").text('Building');
-                        machine.appendTo(".running");
-                    } else if (server.status == 'ACTIVE') {
-                        machine.find(".status").text('Running');
-                        machine.appendTo(".running"); 
-                    } else if (server.status == 'REBOOT' || server.status == 'HARD_REBOOT') {
-                        machine.find(".status").text('Rebooting');
-                        machine.appendTo(".running");
-                    } else if (server.status == 'STOPPED') {
-                        machine.find(".status").text('Stopped');
-                        machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                        machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
-                        machine.appendTo(".terminated");
-                    } else if (server.status == 'ERROR') {
-                        machine.find(".status").text('Error');
-                        machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                        machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
-                        machine.appendTo(".terminated");
-                    } 
-                    else {
-                        machine.find(".status").text('Unknown');
-                        machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
-                        machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
-                        machine.appendTo(".terminated");
-                    }
-                });
-            }
-            $("#spinner").hide();
-            $("div.machine:last-child").find("div.seperator").hide();
-            // if the terminated list is populated then the seperator must be shown
-            if ($(".terminated a.name").length > 0) {
-                $("#mini.seperator").fadeIn("slow");
-            }
-            // creating the table in list view, if there are machines to show
-            if ($("div.list table.list-machines tbody").length > 0) {
-                $("div.list table.list-machines").dataTable({
-                    "bInfo": false,
-                    "bPaginate": false,
-            		"bAutoWidth": false,
-            		"bSort": true,    
-                    "bStateSave": true,
-                    "sScrollY": "270px",
-                    "sScrollX": "515px",
-                    "sScrollXInner": "500px",
-                    "aoColumnDefs": [
-                        { "bSortable": false, "aTargets": [ 0 ] }
-                    ]
-                });
-                $("div.list table.list-machines").show();
-                $("div.list div.actions").show();
-            }
+			update_machines_view(data);
         }
     });
     return false;

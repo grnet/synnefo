@@ -21,7 +21,7 @@
         <a id="action-disconnect">Disconnect from net</a>
     </div>
     <table class="list-template" style="display: none">
-        <tr id="machine-template">
+        <tr id="machine-template" class="machine">
             <td><input type="checkbox" id="node-id" /></td>
             <td><span class="imagetag"></span><img class="list-logo" src="" width="16" height="16" /></td>
             <td><a class="name"><span class="name">node.name</span></a></td> 
@@ -159,6 +159,125 @@ $("a.enabled#action-shutdown").live('click', function() {
 	confirm_action('shutdown', shutdown, serverIDs, serverNames);
 	return false;
 });
+
+// TODO
+function update_machines_view(data){
+    /*
+    Go through the already displayed running servers and remove those not in
+    the data or are marked as deleted.
+    */
+    $('.running .machine').each(function(i,entry) {
+        var deleted = true;
+        $.each(data.servers, function(j,server) {
+            if (server.id == entry.id && ['BUILD','ACTIVE'].indexOf(server.status) >= 0) {
+                deleted = false;
+            }
+        });
+        if (deleted) {
+            entry.remove();
+        }
+    });
+    
+    // Do the same for the terminated ones.
+    $('.terminated .machine').each(function(i,entry) {
+        var deleted = true;
+        $.each(data.servers, function(j,server) {
+            if (server.id == entry.id && ['STOPPED','ERROR'].indexOf(server.status) >= 0) {
+                deleted = false;
+            }
+        });
+        if (deleted) {
+            entry.remove();
+        }    
+    });
+    
+    /* 
+    Then go through the servers in the input data. Update existing entries, add
+    new ones to the list
+    */    
+    $.each(data.servers, function(i,server){
+        // if the machine is deleted it should not be included in any list
+        if (server.status == 'DELETED') {
+            return;
+        }
+        
+        existing = $('#'+server.id);
+        
+        if (existing.length>1){
+            existing.remove();
+            existing = [];
+        }
+        
+        
+        if (existing.length){ // simply update the values
+            // TODO
+        } else { // does not exist, we should create it
+            var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
+            machine.find("input[type='checkbox']").attr("id", "input-" + server.id);
+            machine.find("input[type='checkbox']").attr("class", server.status);
+            machine.find("a.name span.name").text(server.name);
+            machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
+            machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'.png');
+            machine.find("img.list-logo").attr("title",image_tags[server.imageId]);
+            machine.find("span.imagetag").text(image_tags[server.imageId]);
+    
+            machine.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));            
+    
+            if (server.status == 'BUILD'){
+                machine.find(".status").text('Building');
+                machine.appendTo(".running");
+            } else if (server.status == 'ACTIVE') {
+                machine.find(".status").text('Running');
+                machine.appendTo(".running"); 
+            } else if (server.status == 'REBOOT' || server.status == 'HARD_REBOOT') {
+                machine.find(".status").text('Rebooting');
+                machine.appendTo(".running");
+            } else if (server.status == 'STOPPED') {
+                machine.find(".status").text('Stopped');
+                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
+                machine.appendTo(".terminated");
+            } else if (server.status == 'ERROR') {
+                machine.find(".status").text('Error');
+                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
+                machine.appendTo(".terminated");
+            } 
+            else {
+                machine.find(".status").text('Unknown');
+                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');
+                machine.appendTo(".terminated");
+            }
+        }
+    });
+	
+    // creating the table in list view, if there are machines to show
+    if ($("div.list table.list-machines tbody").length > 0) {
+        $("div.list table.list-machines").dataTable({
+            "bInfo": false,
+            "bPaginate": false,
+            "bAutoWidth": false,
+            "bSort": true,    
+            "bStateSave": true,
+            "sScrollY": "270px",
+            "sScrollX": "515px",
+            "sScrollXInner": "500px",
+            "aoColumnDefs": [
+                { "bSortable": false, "aTargets": [ 0 ] }
+            ]
+        });
+        $("div.list table.list-machines").show();
+        $("div.list div.actions").show();
+    }
+	
+    $("#spinner").hide();
+    $("div.machine:last-child").find("div.seperator").hide();
+    // if the terminated list is populated then the seperator must be shown
+    if ($(".terminated a.name").length > 0) {
+        $("#mini.seperator").fadeIn("slow");
+    }	
+}
 
 update_vms();
 

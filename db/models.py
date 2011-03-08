@@ -424,7 +424,7 @@ class VirtualMachine(models.Model):
             raise VirtualMachine.InvalidActionError(action)
 
         # No actions to deleted and no actions beside destroy to suspended vms
-        if self.deleted or (self.suspended and action not in ["START", "DESTROY"]):
+        if self.deleted:
             raise VirtualMachine.InvalidActionError(action)
 
         self._action = action

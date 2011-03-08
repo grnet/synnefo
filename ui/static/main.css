@@ -558,9 +558,13 @@ div.terminated div.machine div.actions a.more {
     background-color:#dcdcdc;
 }
 
-.machine img {
+.standard .machine img {
     float: left;
     margin: 7px 14px 0;
+}
+
+.list .machine img {
+    margin: 0;
 }
 
 div.ip, div.state {

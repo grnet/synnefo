@@ -38,6 +38,7 @@
 <div id="machines" class="seperator"></div>
 
 <script>
+    
 // intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
@@ -53,6 +54,7 @@ $("div.actions a.action-shutdown").live('click', function(){
     confirm_action('shutdown', shutdown, [serverID], [serverName]);
     return false;
 });
+
 // intercept start click
 $("div.actions a.action-start").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
@@ -61,6 +63,92 @@ $("div.actions a.action-start").live('click', function(){
     return false;
 });
 
-update_vms();
+// update the servers list
+function update_machines_view(data){
+    /*
+    Go through the already displayed running servers and remove those not in
+    the data or are marked as deleted.
+    */
+    $('.running .machine').each(function(i,entry) {
+        var deleted = true;
+        $.each(data.servers, function(j,server) {
+            if (server.id == entry.id && ['BUILD','ACTIVE'].indexOf(server.status) >= 0) {
+                deleted = false;
+            }
+        });
+        if (deleted) {
+            $('#'+entry.id).remove();
+        }
+    });
+    
+    // Do the same for the terminated ones.
+    $('.terminated .machine').each(function(i,entry) {
+        var deleted = true;
+        $.each(data.servers, function(j,server) {
+            if (server.id == entry.id && ['STOPPED','ERROR'].indexOf(server.status) >= 0) {
+                deleted = false;
+            }
+        });
+        if (deleted) {
+            $('#'+entry.id).remove();
+        }    
+    });
+    
+    /* 
+    Then go through the servers in the input data. Update existing entries, add
+    new ones to the list
+    */    
+    $.each(data.servers, function(i,server){
+        // if the machine is deleted it should not be included in any list
+        if (server.status == 'DELETED') {
+            return;
+        }
+        
+        existing = $('#'+server.id);
+        
+        if (existing.length>1){
+            existing.remove();
+            existing = [];
+        }
+        
+        
+        if (existing.length){ 
+            // If the machine already exists in the DOM then simply update it
+            if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
+                try {console.info(existing.find("a.name span.name").text() + ' from ' + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);} catch(err) {}
+                existing.find(".status").text(STATUS_MESSAGES[server.status]);
+            }
+            existing.find("a.name span.name").text(server.name);
+            existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
+        } else {
+            // If it does not exist, we should create it
+            var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
+            machine.find("a.name span.name").text(server.name);
+            machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'.png');
+            machine.find("span.imagetag").text(image_tags[server.imageId]);
+            machine.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));            
+            machine.find(".status").text(STATUS_MESSAGES[server.status]);
+            
+            if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
+                machine.appendTo(".running");
+            } else {
+                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageId]+'-off.png');
+                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageId]+'-off.png');            
+                machine.appendTo(".terminated");
+            }
+
+        }
+    });
+
+    $("#spinner").hide();
+    $("div.machine:last-child").find("div.seperator").hide();
+    // if the terminated list is populated then the seperator must be shown
+    if ($(".terminated a.name").length > 0) {
+        $("#mini.seperator").fadeIn("slow");
+    }
+
+}
+
+auto_update_vms(UPDATE_INTERVAL);
 
 </script>

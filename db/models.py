@@ -2,7 +2,7 @@
 
 from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
+from django.db import transaction
 
 import datetime
 
@@ -50,15 +50,11 @@ class SynnefoUser(models.Model):
         return self.get_limit('MIN_CREDITS')
         
     min_credits = property(_get_min_credits)
-    
+
+    @transaction.commit_on_success
     def debit_account(self, amount, vm, description):
         """Charges the user with the specified amount of credits for a vm (resource)"""
         date_now = datetime.datetime.now()
-
-        # FIXME: The following two actions (debiting the user
-        # and creating the Debit instance must happen ATOMICALLY,
-        # as specified in the documentation.
-
         self.credit = self.credit - amount
         self.save()
 
@@ -227,7 +223,7 @@ class Flavor(models.Model):
             else:
                 cost = p.cost_inactive
 
-            results.append( ( str(p.effective_from), calculate_cost(p.effective_from, p.effective_to, cost)) )
+            results.append( ( p.effective_from, calculate_cost(p.effective_from, p.effective_to, cost)) )
 
         return results
 
@@ -475,6 +471,7 @@ class VirtualMachine(models.Model):
         self.charge()
         self._operstate = new_operstate
 
+    @transaction.commit_on_success
     def charge(self):
         """Charges the owner of this VM.
         
@@ -495,15 +492,16 @@ class VirtualMachine(models.Model):
 
         cost_list = []
 
+        # remember, we charge only for Started and Stopped
         if self._operstate == 'STARTED':
             cost_list = self.flavor.get_cost_active(start_datetime, self.charged)
         elif self._operstate == 'STOPPED':
             cost_list = self.flavor.get_cost_inactive(start_datetime, self.charged)
 
+        # find the total vost
         total_cost = sum([x[1] for x in cost_list])
-        # FIXME: This must happen inside a transaction.
-        # Debiting the owner of this VM and storing a persistent value
-        # for self.charged must happen ATOMICALLY.
+
+        # add the debit entry
         description = "Server = %d, charge = %d for state: %s" % (self.id, total_cost, self._operstate)
         self.owner.debit_account(total_cost, self, description)
         

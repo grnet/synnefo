@@ -337,7 +337,7 @@ class ServerActionHandler(BaseHandler):
             shutdown_request = requested_action.get('shutdown', None)
             start_request = requested_action.get('start', None)
             #action not implemented
-            action = reboot_request and 'REBOOT' or shutdown_request and 'SUSPEND' or start_request and 'START'
+            action = reboot_request and 'REBOOT' or shutdown_request and 'STOP' or start_request and 'START'
 
             if not action:
                 raise fault.notImplemented 

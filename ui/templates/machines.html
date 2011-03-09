@@ -34,15 +34,16 @@
                 <div class="panes">
 		            <li id="image-template" style="display:none">
 			            <label for="image.id"> 
-                            <a><div class="image">
-                                <img src="" class="image-logo"/>
-                                <strong class="image-title">image.title</strong>
-                                <input class="radio" type="radio" name="image-id" id="image-id" />
-                                <br />
-                                <span class="description">image.description</span> 
-                                <span class="size">?? MB</span>
-                                
-                            </div></a>
+                            <a>
+                                <div class="image">
+                                    <img src="" class="image-logo"/>
+                                    <strong class="image-title">image.title</strong>
+                                    <input class="radio" type="radio" name="image-id" id="image-id" />
+                                    <br />
+                                    <span class="description">image.description</span> 
+                                    <span class="size">?? MB</span>                              
+                                </div>
+                            </a>
 			            </label>
 		            </li>
                     <ul class="pane" id="standard-images">
@@ -50,7 +51,6 @@
 				    </ul>
                     <ul class="pane" id="custom-images">
 					    <!-- custom images -->
-
                     </ul>
                 </div>
 				<button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
@@ -167,10 +167,8 @@
 <div id="machinesview"></div>
 
 <script>
-
-
-    
 // hardcoded image types
+// TODO: get this from the metadata
 var image_tags = {
                 1: 'archlinux',
                 2: 'centos',
@@ -188,10 +186,16 @@ var image_tags = {
                };
 
 // switch to list view
-$("a#list").click(function(){list_view(); return false;});
-// switch to standard view
-$("a#standard").click(function(){standard_view(); return false;});
+$("a#list").click(function(){
+    list_view(); 
+    return false;
+});
 
+// switch to standard view
+$("a#standard").click(function(){
+    standard_view();
+    return false;
+});
 
 // launch VM creation wizard
 $("a#create").click(function(){
@@ -259,10 +263,8 @@ $(function() {
             $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
             $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
             $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
-        }
-        
+        }    
     });
-
     // if tab is pressed on the next button seek to next page
     root.find("button.next").keydown(function(e) {
 	    if (e.keyCode == 9) {
@@ -271,7 +273,6 @@ $(function() {
 		    e.preventDefault();
 	    }
     });
-
 });
 
 // disable sliders in flavor selection
@@ -363,13 +364,10 @@ $("#start").click(function(){
     $("#wizard").hide();
 });
 
-
-
 // basic functions executed on page load
 
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
-
 
 // populate image list
 update_images();

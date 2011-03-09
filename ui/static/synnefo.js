@@ -95,9 +95,6 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
         // return true=yes or false=no
         if (yes) {
             action_function(serverIDs);
-        } else {
-            // reload page
-            choose_view();
         }
     });
     $("a#confirmation").data('overlay').load();

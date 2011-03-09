@@ -1,6 +1,6 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 #
-# Copyright © 2010 Greek Research and Technology Network
+# Copyright ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© 2010 Greek Research and Technology Network
 
 import simplejson as json
 from django.conf import settings
@@ -33,6 +33,12 @@ VERSIONS = [
         "id": "v1.0",
         "docURL" : "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20110112.pdf",
         "wadl" : "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl"
+    },
+    {
+        "status": "CURRENT",
+        "id": "v1.1",
+        "docURL" : "http://docs.openstack.org/openstack-compute/developer/content/",
+        "wadl" : "None yet"
     },
     {
         "status": "CURRENT",
@@ -370,8 +376,6 @@ class ServerActionHandler(BaseHandler):
         raise fault.itemNotFound
 
 
-
-
 class ServerBackupHandler(BaseHandler):
     """ Backup Schedules are not implemented yet, return notImplemented """
     allowed_methods = ('GET', 'POST', 'DELETE')
@@ -383,6 +387,74 @@ class ServerBackupHandler(BaseHandler):
         raise fault.notImplemented
 
     def delete(self, request, id):
+        raise fault.notImplemented
+
+
+class ServerMetadataHandler(BaseHandler):
+    """Handles Metadata of a specific Server
+
+    the handler Lists, Creates, Updates and Deletes Metadata values
+
+    @HTTP methods: POST, DELETE, PUT, GET
+    @Parameters: POST data with key value pairs
+
+    """
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def read(self, request, id, key=None):
+        """List metadata of the specific server"""
+        if key is None:
+            return self.read_allkeys(request, id)
+        else:
+            return self.read_onekey(request, id, key)
+
+    def read_allkeys(self, request, id):
+        """Returns all the key value pairs of the specified server"""
+        try:
+            server = VirtualMachine.objects.get(pk=id)
+            return {
+                "metadata": {
+                    "values": [
+                        {m.meta_key: m.meta_value} for m in server.virtualmachinemetadata_set.all()
+                    ]
+                }
+            }
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+        
+    def read_onekey(self, request, id, key):
+        """Returns the specified metadata key of the specified server"""
+        try:
+            server = VirtualMachine.objects.get(pk=id)
+            return {
+                "metadata": {
+                    "values": [
+                        {m.meta_key: m.meta_value} for m in server.virtualmachinemetadata_set.filter(meta_key=key)
+                    ]
+                }
+            }
+        except VirtualMachineMetadata.DoesNotExist:
+            raise fault.itemNotFound            
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+
+    def create(self, request, id):
+        raise fault.notImplemented
+
+    def update(self, request, id, key):
+        raise fault.notImplemented
+
+    def delete(self, request, id, key):
         raise fault.notImplemented
 
 
@@ -494,6 +566,72 @@ class ImageHandler(BaseHandler):
     def create(self, request):
         """Create a new image"""
         return accepted
+
+
+class ImageMetadataHandler(BaseHandler):
+    """Handles Metadata of a specific Image
+
+    the handler Lists, Creates, Updates and Deletes Metadata values
+
+    @HTTP methods: POST, DELETE, PUT, GET
+    @Parameters: POST data with key value pairs
+
+    """
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def read(self, request, id, key=None):
+        """List metadata of the specific server"""
+        if key is None:
+            return self.read_allkeys(request, id)
+        else:
+            return self.read_onekey(request, id, key)
+
+    def read_allkeys(self, request, id):
+        """Returns all the key value pairs of the specified server"""
+        try:
+            server = Image.objects.get(pk=id)
+            return {
+                "metadata": [{
+                    "meta": { 
+                        "key": {m.meta_key: m.meta_value}}} for m in server.imagemetadata_set.all()]
+            }
+        except Image.DoesNotExist:
+            raise fault.itemNotFound
+        except Image.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+        
+    def read_onekey(self, request, id, key):
+        """Returns the specified metadata key of the specified server"""
+        try:
+            image = Image.objects.get(pk=id)
+            return {
+                "metadata": {
+                    "values": [
+                        {m.meta_key: m.meta_value} for m in image.imagemetadata_set.filter(meta_key=key)
+                    ]
+                }
+            }
+        except ImageMetadata.DoesNotExist:
+            raise fault.itemNotFound            
+        except Image.DoesNotExist:
+            raise fault.itemNotFound
+        except Image.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+
+    def create(self, request, id):
+        raise fault.notImplemented
+
+    def update(self, request, id, key):
+        raise fault.notImplemented
+
+    def delete(self, request, id, key):
+        raise fault.notImplemented
 
 
 class SharedIPGroupHandler(BaseHandler):

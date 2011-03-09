@@ -45,6 +45,25 @@
         }
     },
     {
+        "model": "db.Flavor",
+        "pk": 30001,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 20
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30010,
+        "fields" : {
+            "cost_active" : 10,
+            "cost_inactive" : 5,
+            "effective_from" : "2010-01-01",
+            "flavor" : 30001
+        }
+    },
+    {
         "model" : "db.FlavorCost",
         "pk" : 30000,
         "fields" : {
@@ -56,21 +75,11 @@
     },
     {
         "model" : "db.FlavorCost",
-        "pk" : 30001,
-        "fields" : {
-            "cost_active" : 2,
-            "cost_inactive" : 1,
-            "effective_from" : "2010-01-01",
-            "flavor" : 30000
-        }
-    },
-    {
-        "model" : "db.FlavorCost",
         "pk" : 30002,
         "fields" : {
             "cost_active" : 5,
             "cost_inactive" : 2,
-            "effective_from" : "2010-08-01",
+            "effective_from" : "2010-12-01",
             "flavor" : 30000
         }
     },
@@ -90,11 +99,28 @@
         "fields": {
             "owner": 30000,  
             "name": "snf-1001",
-            "created": "2011-02-06 00:00:00",
-            "charged": "2011-02-06 00:00:00",
+            "created": "2009-02-06 00:00:00",
+            "charged": "2010-02-06 00:00:00",
             "sourceimage": 30000,
             "hostid": "HAL-9000",
-            "description": "database server",
+            "description": "database server #1",
+            "ipfour": "192.168.2.1",
+            "ipsix": "::1",
+            "flavor": 30000,
+            "_operstate": "STARTED"
+        }
+    },
+{
+        "model": "db.VirtualMachine",
+        "pk": 30001,
+        "fields": {
+            "owner": 30000,
+            "name": "snf-1002",
+            "created": "2009-02-06 00:00:00",
+            "charged": "2010-02-06 00:00:00",
+            "sourceimage": 30000,
+            "hostid": "HAL-9000",
+            "description": "database server #2",
             "ipfour": "192.168.2.1",
             "ipsix": "::1",
             "flavor": 30000,

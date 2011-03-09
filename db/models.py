@@ -486,24 +486,21 @@ class VirtualMachine(models.Model):
         self.charged = datetime.datetime.now()
 
         # Only charge for a specific set of states
-        if self._operstate not in charged_states:
-            self.save()
-            return
+        if self._operstate in charged_states:
+            cost_list = []
 
-        cost_list = []
+            # remember, we charge only for Started and Stopped
+            if self._operstate == 'STARTED':
+                cost_list = self.flavor.get_cost_active(start_datetime, self.charged)
+            elif self._operstate == 'STOPPED':
+                cost_list = self.flavor.get_cost_inactive(start_datetime, self.charged)
 
-        # remember, we charge only for Started and Stopped
-        if self._operstate == 'STARTED':
-            cost_list = self.flavor.get_cost_active(start_datetime, self.charged)
-        elif self._operstate == 'STOPPED':
-            cost_list = self.flavor.get_cost_inactive(start_datetime, self.charged)
+            # find the total vost
+            total_cost = sum([x[1] for x in cost_list])
 
-        # find the total vost
-        total_cost = sum([x[1] for x in cost_list])
-
-        # add the debit entry
-        description = "Server = %d, charge = %d for state: %s" % (self.id, total_cost, self._operstate)
-        self.owner.debit_account(total_cost, self, description)
+            # add the debit entry
+            description = "Server = %s, charge = %d for state: %s" % (self.name, total_cost, self._operstate)
+            self.owner.debit_account(total_cost, self, description)
         
         self.save()
 

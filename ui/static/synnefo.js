@@ -373,7 +373,7 @@ function destroy(serverIDs) {
 
 	serverID = serverIDs.pop()
     $.ajax({
-	    url: '/api/v1.0/servers/' + serverID + '/action',
+	    url: '/api/v1.0/servers/' + serverID,
 	    type: "DELETE",
 	    dataType: "json",
         data: JSON.stringify(payload),

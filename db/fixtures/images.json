@@ -34,5 +34,23 @@
             "description": "Ubuntu 10.10, full installation",
             "size": 8192
         }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 1,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "debian",
+            "image": 3
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 22,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.37",
+            "image": 3
+        }
     }
 ]

@@ -178,7 +178,6 @@ function update_machines_view(data){
             entry.remove();
         }
     });
-    
     // Do the same for the terminated ones.
     $('.terminated .machine').each(function(i,entry) {
         var deleted = true;
@@ -191,7 +190,6 @@ function update_machines_view(data){
             entry.remove();
         }    
     });
-    
     /* 
     Then go through the servers in the input data. Update existing entries, add
     new ones to the list
@@ -207,8 +205,7 @@ function update_machines_view(data){
         if (existing.length>1){
             existing.remove();
             existing = [];
-        }
-        
+        }   
         
         if (existing.length){ // simply update the values
             // TODO
@@ -271,13 +268,7 @@ function update_machines_view(data){
         $("div.list table.list-machines").show();
         $("div.list div.actions").show();
     }
-	
-    $("#spinner").hide();
-    $("div.machine:last-child").find("div.seperator").hide();
-    // if the terminated list is populated then the seperator must be shown
-    if ($(".terminated a.name").length > 0) {
-        $("#mini.seperator").fadeIn("slow");
-    }	
+    $("#spinner").hide();	
 }
 
 update_vms();

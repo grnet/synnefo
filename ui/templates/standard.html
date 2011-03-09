@@ -39,7 +39,6 @@
 <div id="machines" class="seperator"></div>
 
 <script>
-    
 // intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
@@ -82,7 +81,6 @@ function update_machines_view(data){
             $('#'+entry.id).remove();
         }
     });
-    
     // Do the same for the terminated ones.
     $('.terminated .machine').each(function(i,entry) {
         var deleted = true;
@@ -95,7 +93,6 @@ function update_machines_view(data){
             $('#'+entry.id).remove();
         }    
     });
-    
     /* 
     Then go through the servers in the input data. Update existing entries, add
     new ones to the list
@@ -112,7 +109,6 @@ function update_machines_view(data){
             existing.remove();
             existing = [];
         }
-        
         
         if (existing.length){ 
             // If the machine already exists in the DOM then simply update it
@@ -144,15 +140,14 @@ function update_machines_view(data){
 
     $("#spinner").hide();
     $("div.machine:last-child").find("div.seperator").hide();
-    // if the terminated list is populated then the seperator must be shown
-    if ($(".terminated a.name").length > 0) {
+    // the seperator shows only when running and terminated machines are available
+    if ($(".terminated a.name").length > 0 && $(".running a.name").length > 0) {
         $("#mini.seperator").fadeIn("slow");
     }
     // show message in case user has no servers!
     if (servers.length == 0) {
         $("#emptymachineslist").fadeIn("slow");
     }
-
 }
 
 auto_update_vms(UPDATE_INTERVAL);

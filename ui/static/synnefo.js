@@ -380,8 +380,8 @@ function destroy(serverIDs) {
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-						try { console.info('suspended ' + serverID); } catch (err) {}        				
-                        shutdown(serverIDs);
+						try { console.info('destroy ' + serverID);} catch (err) {}        				
+                        destroy(serverIDs);
                     } else {
                         ajax_error(jqXHR);
                     }}             

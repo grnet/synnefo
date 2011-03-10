@@ -928,6 +928,7 @@ div#user a.current_lang {
 /* tables in list view */
 div.list div.dataTables_filter,  div.list div.dataTables_filter input{
     font-size: 9pt;
+    display: none;
 }
 
 div.list div.dataTables_filter input{

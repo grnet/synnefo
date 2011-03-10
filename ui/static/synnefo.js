@@ -312,16 +312,17 @@ function reboot(serverIDs){
 					ajax_error(jqXHR, serverID);
 				},
 		success: function(data, textStatus, jqXHR) {
-					if ( jqXHR.status != '202') {
-						ajax_error(jqXHR, serverID);
-					} else {
-						try{console.info('rebooted ' + serverID);} catch(err) {}   		
+					if ( jqXHR.status == '202') {
+                        try {
+                            console.info('rebooted ' + serverID);
+                        } catch(err) {}   		
 						reboot(serverIDs);
+					} else {
+						ajax_error(jqXHR, serverID);
 					}
 				}
-
     });
-	
+
     return false;
 }
 
@@ -348,12 +349,15 @@ function shutdown(serverIDs) {
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-						try{ console.info('suspended ' + serverID); } catch(err) {}       				
+						try {
+                            console.info('suspended ' + serverID);
+                        } catch(err) {}       				
                         shutdown(serverIDs);
                     } else {
                         ajax_error(jqXHR);
                     }}             
     });
+
     return false;    
 }
 
@@ -380,12 +384,15 @@ function destroy(serverIDs) {
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-						try { console.info('destroy ' + serverID);} catch (err) {}        				
+						try {
+                            console.info('destroy ' + serverID);
+                        } catch (err) {}        				
                         destroy(serverIDs);
                     } else {
                         ajax_error(jqXHR);
                     }}             
     });
+
     return false;    
 }
 
@@ -412,11 +419,14 @@ function start(serverIDs){
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
-					    try { console.info('started ' + serverID); } catch(err) {}      		
+					    try {
+                            console.info('started ' + serverID);
+                        } catch(err) {}      		
                         start(serverIDs);
                     } else {
                         ajax_error(jqXHR);
                     }}
     });
+
     return false;
 }

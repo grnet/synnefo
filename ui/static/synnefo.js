@@ -289,7 +289,8 @@ function updateActions() {
 		$("#action-" + on[action]).addClass('enabled');
 	}
 }
-
+var success;
+var error;
 // reboot action
 function reboot(serverIDs){
 	if (!serverIDs.length){
@@ -309,7 +310,8 @@ function reboot(serverIDs){
 		data: JSON.stringify(payload),
 		timeout: TIMEOUT,
 		error: function(jqXHR, textStatus, errorThrown) {
-					ajax_error(jqXHR, serverID);
+					ajax_error(jqXHR);//, serverID);
+                    error = jqXHR;
 				},
 		success: function(data, textStatus, jqXHR) {
 					if ( jqXHR.status == '202') {
@@ -317,8 +319,10 @@ function reboot(serverIDs){
                             console.info('rebooted ' + serverID);
                         } catch(err) {}   		
 						reboot(serverIDs);
+                        success = jqXHR;
 					} else {
-						ajax_error(jqXHR, serverID);
+						ajax_error(jqXHR);//, serverID);
+                        error = jqXHR;
 					}
 				}
     });
@@ -355,7 +359,8 @@ function shutdown(serverIDs) {
                         shutdown(serverIDs);
                     } else {
                         ajax_error(jqXHR);
-                    }}             
+                    }
+                }             
     });
 
     return false;    
@@ -388,7 +393,8 @@ function destroy(serverIDs) {
                         destroy(serverIDs);
                     } else {
                         ajax_error(jqXHR);
-                    }}             
+                    }
+                }             
     });
 
     return false;    
@@ -423,7 +429,8 @@ function start(serverIDs){
                         start(serverIDs);
                     } else {
                         ajax_error(jqXHR);
-                    }}
+                    }
+                }
     });
 
     return false;

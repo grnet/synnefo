@@ -367,10 +367,8 @@ function destroy(serverIDs) {
 		ajax_success();
 		return false;
 	}
-    // ajax post shutdown call
-    var payload = {
-        "shutdown": {"timeout" : "5"}
-    };   
+    // ajax post destroy call can have an empty request body
+    var payload = {};   
 
 	serverID = serverIDs.pop()
     $.ajax({
@@ -385,7 +383,7 @@ function destroy(serverIDs) {
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
 						try {
-                            console.info('destroy ' + serverID);
+                            console.info('destroyed ' + serverID);
                         } catch (err) {}        				
                         destroy(serverIDs);
                     } else {

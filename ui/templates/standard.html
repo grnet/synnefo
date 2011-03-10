@@ -103,7 +103,7 @@ function update_machines_view(data){
             return;
         }
         
-        existing = $('#'+server.id);
+        existing = $('#' + server.id);
         
         if (existing.length > 1){
             existing.remove();
@@ -114,7 +114,8 @@ function update_machines_view(data){
             // If the machine already exists in the DOM then simply update it
             if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
                 try {
-                    console.info(existing.find("a.name span.name").text() + ' from ' + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
+                    console.info(existing.find("a.name span.name").text() + ' from ' 
+                                + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
             }

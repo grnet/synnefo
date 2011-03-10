@@ -1,6 +1,6 @@
 # vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 #
-# Copyright ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© 2010 Greek Research and Technology Network
+# Copyright © 2010 Greek Research and Technology Network
 
 import simplejson as json
 from django.conf import settings
@@ -455,7 +455,19 @@ class ServerMetadataHandler(BaseHandler):
         raise fault.notImplemented
 
     def delete(self, request, id, key):
-        raise fault.notImplemented
+        """Deletes the specified metadata key"""
+        try:
+            server = VirtualMachine.objects.get(pk=id)
+            server.virtualmachinemetadata_set.filter(meta_key=key).delete()
+        except VirtualMachineMetadata.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
 
 class FlavorHandler(BaseHandler):
@@ -589,11 +601,11 @@ class ImageMetadataHandler(BaseHandler):
     def read_allkeys(self, request, id):
         """Returns all the key value pairs of the specified server"""
         try:
-            server = Image.objects.get(pk=id)
+            image = Image.objects.get(pk=id)
             return {
                 "metadata": [{
                     "meta": { 
-                        "key": {m.meta_key: m.meta_value}}} for m in server.imagemetadata_set.all()]
+                        "key": {m.meta_key: m.meta_value}}} for m in image.imagemetadata_set.all()]
             }
         except Image.DoesNotExist:
             raise fault.itemNotFound
@@ -631,7 +643,19 @@ class ImageMetadataHandler(BaseHandler):
         raise fault.notImplemented
 
     def delete(self, request, id, key):
-        raise fault.notImplemented
+        """Deletes the specified metadata key"""
+        try:
+            image = Image.objects.get(pk=id)
+            image.imagemetadata_set.filter(meta_key=key).delete()
+        except ImageMetadata.DoesNotExist:
+            raise fault.itemNotFound
+        except Image.DoesNotExist:
+            raise fault.itemNotFound
+        except Image.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
 
 class SharedIPGroupHandler(BaseHandler):

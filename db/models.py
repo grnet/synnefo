@@ -419,13 +419,14 @@ class VirtualMachine(models.Model):
         if not action in [x[0] for x in VirtualMachine.ACTIONS]:
             raise VirtualMachine.InvalidActionError(action)
 
-        # No actions to deleted and no actions beside destroy to suspended vms
+        # No actions to deleted and no actions beside destroy to suspended VMs
         if self.deleted:
             raise VirtualMachine.InvalidActionError(action)
 
         self._action = action
         self._backendjobid = None
         self._backendopcode = None
+        self._backendjobstatus = None
         self._backendlogmsg = None
 
         # Update the relevant flags if the VM is being suspended or destroyed
@@ -440,9 +441,14 @@ class VirtualMachine(models.Model):
     # FIXME: Perhaps move somewhere else, outside the model?
     def _get_rsapi_state(self):
         try:
-            return VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self._operstate]
+            r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self._operstate]
         except KeyError:
             return "UNKNOWN"
+        # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
+        if r == 'ACTIVE' and self._backendopcode == 'OP_INSTANCE_REBOOT' and \
+            self._backendjobstatus in ('queued', 'waiting', 'running'):
+            return "REBOOT"
+        return r 
 
     rsapi_state = property(_get_rsapi_state)
 

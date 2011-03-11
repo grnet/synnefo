@@ -168,6 +168,10 @@ class ServerHandler(BaseHandler):
             image = Image.objects.get(id=imageId)
             metadata = server['metadata']
             personality = server.get('personality', None)
+        except (Flavor.DoesNotExist, Image.DoesNotExist):
+            raise fault.itemNotFound
+        except (Flavor.MultipleObjectsReturned, Image.MultipleObjectsReturned):
+            raise fault.serviceUnavailable
         except Exception as e:
             log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))    
             raise fault.badRequest

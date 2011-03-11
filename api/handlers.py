@@ -458,11 +458,13 @@ class ServerMetadataHandler(BaseHandler):
         """Deletes the specified metadata key"""
         try:
             server = VirtualMachine.objects.get(pk=id)
-            server.virtualmachinemetadata_set.filter(meta_key=key).delete()
+            server.virtualmachinemetadata_set.get(meta_key=key).delete()
         except VirtualMachineMetadata.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
+        except VirtualMachineMetadata.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
         except VirtualMachine.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:
@@ -646,11 +648,13 @@ class ImageMetadataHandler(BaseHandler):
         """Deletes the specified metadata key"""
         try:
             image = Image.objects.get(pk=id)
-            image.imagemetadata_set.filter(meta_key=key).delete()
+            image.imagemetadata_set.get(meta_key=key).delete()
         except ImageMetadata.DoesNotExist:
             raise fault.itemNotFound
         except Image.DoesNotExist:
             raise fault.itemNotFound
+        except ImageMetadata.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
         except Image.MultipleObjectsReturned:
             raise fault.serviceUnavailable
         except Exception, e:

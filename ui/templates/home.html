@@ -12,7 +12,7 @@
     <script>
         // timeout value from settings.py
         var TIMEOUT = {{timeout}};
-        var UPDATE_INTERVAL = {{60000}};
+        var UPDATE_INTERVAL = {{5000}};
         var STATUS_MESSAGES = {
             'BUILD'     : '{% trans "Building" %}',
             'REBOOT'     : '{% trans "Rebooting" %}',            
@@ -64,7 +64,9 @@
                 oneInstance: false,
                 load: false,
                 onClose: function(){
-                    choose_view();
+                    // With partial refresh working properly,
+                    // it is no longer necessary to refresh the whole page
+                    // choose_view();
                 }
             });
             $("a#notification").data('overlay').load();
@@ -88,7 +90,9 @@
                 oneInstance: false,
                 load: false,
                 onClose: function(){
-                    choose_view();
+                    // With partial refresh working properly,
+                    // it is no longer necessary to refresh the whole page
+                    // choose_view();
                 }
             });
             $("a#notification").data('overlay').load();

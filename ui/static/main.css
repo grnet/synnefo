@@ -580,7 +580,7 @@ div.indicator {
     float:right;
 }
 
-.view-seperator {
+.view-separator {
     color:#5F8DD3;    
 }
 
@@ -868,41 +868,41 @@ div#user a.current_lang {
     color: #d3d3d3;
 }
 
-.seperator {
+.separator {
     background-color: #87AADE;
     height: 10px;
     width: 700px;
     margin: 0 0 0 -36px;
 }
 
-#mini.seperator {
+#mini.separator {
     width: 535px;
     height: 5px;
     margin: 17px 0 17px -36px;
     display: none;
 }
 
-#disks.seperator {
+#disks.separator {
     background-color: #dea842;
 }
 
-#images.seperator {
+#images.separator {
     background-color: #87a06d;
 }
 
-#networks.seperator {
+#networks.separator {
     background-color: #9d6d6a;
 }
 
-#desktops.seperator {
+#desktops.separator {
     background-color: #dea842;
 }
 
-#apps.seperator {
+#apps.separator {
     background-color: #87a06d;
 }
 
-.machine .seperator {
+.machine .separator {
     width: 508px;
     height: 1px;
     margin: 8px 0 0 15px;

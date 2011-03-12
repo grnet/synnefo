@@ -28,15 +28,15 @@
             <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
             <a href="#" class="more">{% trans "more &hellip;" %}</a>
         </div>
-        <div class="seperator"></div>
+        <div class="separator"></div>
     </div>
 
     <div class="running"></div>
-    <div id="mini" class="seperator"></div>
+    <div id="mini" class="separator"></div>
     <div class="terminated"></div>
 </div>
 
-<div id="machines" class="seperator"></div>
+<div id="machines" class="separator"></div>
 
 <script>
 // intercept reboot click 
@@ -142,10 +142,12 @@ function update_machines_view(data){
     });
 
     $("#spinner").hide();
-    $("div.machine:last-child").find("div.seperator").hide();
-    // the seperator shows only when running and terminated machines are available
+    $("div.machine:last-child").find("div.separator").hide();
+    // the separator shows only when running and terminated machines are available
     if ($(".terminated a.name").length > 0 && $(".running a.name").length > 0) {
-        $("#mini.seperator").fadeIn("slow");
+        $("#mini.separator").fadeIn("slow");
+    } else {
+        $("#mini.separator").fadeOut("slow");
     }
     // show message in case user has no servers!
     if (servers.length == 0) {

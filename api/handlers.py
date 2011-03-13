@@ -456,7 +456,33 @@ class ServerMetadataHandler(BaseHandler):
         raise fault.notImplemented
 
     def update(self, request, id, key):
-        raise fault.notImplemented
+        """Update or Create the specified metadata key for the specified VM"""
+        pass        
+        try:
+            metadata = json.loads(request.raw_post_data)['meta']
+            metadata_value = metadata[key]
+        except Exception as e:
+            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            raise fault.badRequest
+
+        try:
+            server = VirtualMachine.objects.get(pk=id)
+            vm_meta, created = server.virtualmachinemetadata_set.get_or_create(meta_key=key)
+            vm_meta.meta_value = metadata_value 
+            vm_meta.save()
+            return {"meta": {vm_meta.meta_key: vm_meta.meta_value}}
+        
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except VirtualMachineMetadata.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachineMetadata.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
     def delete(self, request, id, key):
         """Deletes the specified metadata key"""
@@ -646,7 +672,32 @@ class ImageMetadataHandler(BaseHandler):
         raise fault.notImplemented
 
     def update(self, request, id, key):
-        raise fault.notImplemented
+        """Update or Create the specified metadata key for the specified Image"""
+        try:
+            metadata = json.loads(request.raw_post_data)['meta']
+            metadata_value = metadata[key]
+        except Exception as e:
+            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            raise fault.badRequest
+
+        try:
+            image = Image.objects.get(pk=id)
+            img_meta, created = image.imagemetadata_set.get_or_create(meta_key=key)
+            img_meta.meta_value = metadata_value 
+            img_meta.save()
+            return {"meta": {img_meta.meta_key: img_meta.meta_value}}
+        
+        except Image.DoesNotExist:
+            raise fault.itemNotFound
+        except Image.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except ImageMetadata.DoesNotExist:
+            raise fault.itemNotFound
+        except ImageMetadata.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
     def delete(self, request, id, key):
         """Deletes the specified metadata key"""

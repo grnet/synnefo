@@ -452,12 +452,45 @@ class ServerMetadataHandler(BaseHandler):
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-    def create(self, request, id):
-        raise fault.notImplemented
+    def create(self, request, id, key=None):
+        """Create or Update all metadata for the specified VM"""
+        if key is not None:
+            log.exception('The POST request should not pass a key in the URL')
+            raise fault.badRequest
+        try:
+            metadata = json.loads(request.raw_post_data)['metadata']
+        except Exception as e:
+            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            raise fault.badRequest
 
-    def update(self, request, id, key):
+        try:
+            vm = VirtualMachine.objects.get(pk=id)
+            for x in metadata.keys():
+                vm_meta, created = vm.virtualmachinemetadata_set.get_or_create(meta_key=x)
+                vm_meta.meta_value = metadata[x] 
+                vm_meta.save()
+            return {
+                "metadata": [{
+                    "meta": { 
+                        "key": {m.meta_key: m.meta_value}}} for m in vm.virtualmachinemetadata_set.all()]
+            }        
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except VirtualMachineMetadata.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachineMetadata.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+
+    def update(self, request, id, key=None):
         """Update or Create the specified metadata key for the specified VM"""
-        pass        
+        if key is None:
+            log.exception('No metadata key specified in URL')
+            raise fault.badRequest
         try:
             metadata = json.loads(request.raw_post_data)['meta']
             metadata_value = metadata[key]
@@ -484,8 +517,11 @@ class ServerMetadataHandler(BaseHandler):
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-    def delete(self, request, id, key):
-        """Deletes the specified metadata key"""
+    def delete(self, request, id, key=None):
+        """Delete the specified metadata key"""
+        if key is None:
+            log.exception('No metadata key specified in URL')
+            raise fault.badRequest
         try:
             server = VirtualMachine.objects.get(pk=id)
             server.virtualmachinemetadata_set.get(meta_key=key).delete()
@@ -668,11 +704,45 @@ class ImageMetadataHandler(BaseHandler):
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-    def create(self, request, id):
-        raise fault.notImplemented
+    def create(self, request, id, key=None):
+        """Create or Update all metadata for the specified Image"""
+        if key is not None:
+            log.exception('The POST request should not pass a key in the URL')
+            raise fault.badRequest
+        try:
+            metadata = json.loads(request.raw_post_data)['metadata']
+        except Exception as e:
+            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            raise fault.badRequest
 
-    def update(self, request, id, key):
+        try:
+            image = Image.objects.get(pk=id)
+            for x in metadata.keys():
+                img_meta, created = image.imagemetadata_set.get_or_create(meta_key=x)
+                img_meta.meta_value = metadata[x] 
+                img_meta.save()
+            return {
+                "metadata": [{
+                    "meta": { 
+                        "key": {m.meta_key: m.meta_value}}} for m in image.imagemetadata_set.all()]
+            }        
+        except Image.DoesNotExist:
+            raise fault.itemNotFound
+        except Image.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except ImageMetadata.DoesNotExist:
+            raise fault.itemNotFound
+        except ImageMetadata.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
+
+    def update(self, request, id, key=None):
         """Update or Create the specified metadata key for the specified Image"""
+        if key is None:
+            log.exception('No metadata key specified in URL')
+            raise fault.badRequest
         try:
             metadata = json.loads(request.raw_post_data)['meta']
             metadata_value = metadata[key]
@@ -699,8 +769,11 @@ class ImageMetadataHandler(BaseHandler):
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-    def delete(self, request, id, key):
-        """Deletes the specified metadata key"""
+    def delete(self, request, id, key=None):
+        """Delete the specified metadata key"""
+        if key is None:
+            log.exception('No metadata key specified in URL')
+            raise fault.badRequest
         try:
             image = Image.objects.get(pk=id)
             image.imagemetadata_set.get(meta_key=key).delete()

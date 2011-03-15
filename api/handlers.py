@@ -103,11 +103,13 @@ class ServerHandler(BaseHandler):
             server = VirtualMachine.objects.get(id=id)
 
             server = {'status': server.rsapi_state, 
-                     'flavorId': server.flavor.id, 
+                     'flavorRef': server.flavor.id, 
                      'name': server.name, 
                      'description': server.description, 
                      'id': server.id, 
-                     'imageId': server.sourceimage.id, 
+                     'imageRef': server.sourceimage.id,
+                     'created': server.created, 
+                     'updated': server.updated,  
                      'hostId': server.hostid, 
                      'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
                      #'metadata': {'Server_Label': server.description },
@@ -134,11 +136,13 @@ class ServerHandler(BaseHandler):
                 return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
             else:
                 virtual_servers_list = [{'status': server.rsapi_state, 
-                                         'flavorId': server.flavor.id, 
+                                         'flavorRef': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 
                                          'description': server.description, 
-                                         'imageId': server.sourceimage.id, 
+                                         'created': server.created, 
+                                         'updated': server.updated,  
+                                         'imageRef': server.sourceimage.id, 
                                          'hostId': server.hostid, 
                                          'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
                                          #'metadata': {'Server_Label': server.description },
@@ -162,10 +166,10 @@ class ServerHandler(BaseHandler):
         try:
             server = json.loads(request.raw_post_data)['server']
             name = server['name']
-            flavorId = server['flavorId']
-            flavor = Flavor.objects.get(id=flavorId)
-            imageId = server['imageId']
-            image = Image.objects.get(id=imageId)
+            flavorRef = server['flavorRef']
+            flavor = Flavor.objects.get(id=flavorRef)
+            imageRef = server['imageRef']
+            image = Image.objects.get(id=imageRef)
             metadata = server['metadata']
             personality = server.get('personality', None)
         except (Flavor.DoesNotExist, Image.DoesNotExist):
@@ -204,7 +208,7 @@ class ServerHandler(BaseHandler):
                 # [{"size": flavor.disk * 1000}],
                 [{"size": 2000}],
                 [{}],
-                #TODO: select OS from imageId
+                #TODO: select OS from imageRef
                 os='debootstrap+default',
                 ip_check=False,
                 name_check=False,
@@ -234,8 +238,8 @@ class ServerHandler(BaseHandler):
         ret = {'server': {
                 'id' : vm.id,
                 'name' : vm.name,
-                "imageId" : imageId,
-                "flavorId" : flavorId,
+                "imageRef" : imageRef,
+                "flavorRef" : flavorRef,
                 "hostId" : vm.hostid,
                 "progress" : 0,
                 "status" : 'BUILD',

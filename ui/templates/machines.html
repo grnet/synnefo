@@ -269,9 +269,9 @@ $(function() {
         // update confirm step
         if (api.getIndex()==0) {
             var image = $("input[type=radio][name=image-id]:checked");
-            var imageId = image.length ? image[0].id : false
-            if (imageId) {
-                var imageName = $("label[for=" + imageId + "] .image-title").text();
+            var imageRef = image.length ? image[0].id : false
+            if (imageRef) {
+                var imageName = $("label[for=" + imageRef + "] .image-title").text();
                 $("#machine_image-label")[0].textContent = imageName;
                 $("input[type=text][name=machine_name]")[0].value = "My " + imageName + " server";
             }
@@ -343,14 +343,14 @@ $("#cancel").click(function(){
 
 // starting a new VM through the wizard
 $("#start").click(function(){
-    var imageId = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
-    var flavorId = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
+    var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
+    var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
     var payload = {
         "server": {
             "name": machineName,
-            "imageId": imageId,
-            "flavorId" : flavorId,
+            "imageRef": imageRef,
+            "flavorRef" : flavorRef,
             "metadata" : {
                 "My Server Name" : machineName
             },

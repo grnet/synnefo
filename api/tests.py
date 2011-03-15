@@ -60,10 +60,10 @@ class APITestCase(TestCase):
         response = self.client.get('/api/v1.0/servers/' + str(self.test_server_id))
         vm_from_api = json.loads(response.content)['server']
         vm_from_db = VirtualMachine.objects.get(id=self.test_server_id)
-        self.assertEqual(vm_from_api['flavorId'], vm_from_db.flavor.id)
+        self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
         self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
         self.assertEqual(vm_from_api['id'], vm_from_db.id)
-        self.assertEqual(vm_from_api['imageId'], vm_from_db.flavor.id)
+        self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
         self.assertEqual(vm_from_api['name'], vm_from_db.name)
         self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
         self.assertTrue(response.status_code in [200,203])
@@ -79,20 +79,20 @@ class APITestCase(TestCase):
         for vm_id in id_list:
             vm_from_api = json.loads(response.content)['servers'][number]
             vm_from_db = VirtualMachine.objects.get(id=vm_id)
-            self.assertEqual(vm_from_api['flavorId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['imageId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
             number += 1
         vms_from_api = json.loads(response.content)['servers']
         for vm_from_api in vms_from_api:
             vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
-            self.assertEqual(vm_from_api['flavorId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['imageId'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)            
         self.assertTrue(response.status_code in [200,203])
@@ -120,8 +120,8 @@ class APITestCase(TestCase):
         request = {
                     "server": {
                         "name"          : "new-server-test",
-                        "imageId"       : 1,
-                        "flavorId"      : 1,
+                        "imageRef"       : 1,
+                        "flavorRef"      : 1,
                         "metadata"      : {
                             "My Server Name": "Apache1"
                         },

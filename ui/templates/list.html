@@ -192,7 +192,7 @@ function update_machines_view(data){
             existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
         } else { // does not exist, we should create it
             // check server status to select the appropriate OS icon
-            osTag = image_tags[server.imageId]
+            osTag = image_tags[server.imageRef]
             var osIcon = osTag + ".png";
             if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
                 osIcon = osTag + "-off.png";

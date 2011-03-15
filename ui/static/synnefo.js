@@ -238,7 +238,7 @@ function update_flavors() {
     });
     return false;
 }
-// return flavorId from cpu, disk, ram values
+// return flavorRef from cpu, disk, ram values
 function identify_flavor(cpu, disk, ram){
     for (i=0;i<flavors.length;i++){
         if (flavors[i]['cpu'] == cpu && flavors[i]['disk']==disk && flavors[i]['ram']==ram) {

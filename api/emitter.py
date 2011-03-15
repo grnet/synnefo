@@ -21,8 +21,8 @@ class OSXMLEmitter(Emitter):
     """
 
     _metadata = {
-            "server": [ "id", "imageId", "name", "flavorId", "hostId",
-                        "status", "progress", "progress", "description" ],
+            "server": [ "id", "imageRef", "name", "flavorRef", "hostId",
+                        "status", "progress", "progress", "description", "created", "updated" ],
             'ip': ['addr'],
             'ip6': ['addr'],
             'meta': ['key'],

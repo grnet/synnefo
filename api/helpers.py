@@ -9,8 +9,8 @@ def instance_to_server(instance):
             "id": instance["name"],
             "name": instance["name"],
             "hostId": instance["pnode"],
-            "imageId": 1,
-            "flavorId": 1,
+            "imageRef": 1,
+            "flavorRef": 1,
             "addresses": {
                 "public": [ ],
                 "private": [ ],

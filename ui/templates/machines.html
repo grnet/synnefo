@@ -201,14 +201,30 @@ $("a#standard").click(function(){
 $("a#create").click(function(){
 
     //do not launch wizard if no images or flavors are found
-    if (images.length == 0 || flavors.length == 0){
-        ajax_error(503);
+    if (images.length == 0)
+      {
+        function fake_jqXHR() {
+        this.status = 'no_images';
+        }
+        var jqXHR = new fake_jqXHR();
+        ajax_error(jqXHR);
         return false;
-    } else {
+      } 
+    else if (flavors.length == 0)
+      {
+        function fake_jqXHR() {
+        this.status = 'no_flavors';
+        }
+        var jqXHR = new fake_jqXHR();
+        ajax_error(jqXHR);
+        return false;
+      } 
+    else 
+      {
         $("#wizard").scrollable().begin();
         $("#wizard").show();
         $('a#create').data('overlay').load()    
-    }
+      }
 });
 
 // create wizard overlay

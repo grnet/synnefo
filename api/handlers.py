@@ -309,22 +309,18 @@ class ServerHandler(BaseHandler):
 class ServerAddressHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
 
-    def read(self, request, id, type=None):
+    def read(self, request, id, networkID=None):
         """List IP addresses for a server"""
 
-        if type is None:
-            pass
-        elif type == "private":
-            pass
-        elif type == "public":
+        if networkID is None:
             pass
         return {}
 
-    def update(self, request, id, address):
+    def update(self, request, id, networkID=None):
         """Share an IP address to another in the group"""
         return accepted
 
-    def delete(self, request, id, address):
+    def delete(self, request, id, networkID=None):
         """Unshare an IP address"""
         return accepted
 

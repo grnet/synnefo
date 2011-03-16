@@ -307,22 +307,37 @@ class ServerHandler(BaseHandler):
 
 
 class ServerAddressHandler(BaseHandler):
-    allowed_methods = ('GET', 'PUT', 'DELETE')
+    """Handler responsible for Server Addresses
+
+     handles Reboot, Shutdown and Start actions. 
+
+     @HTTP methods: GET
+     @Parameters: Id of server and networkID (eg public, private)
+     @Responses: HTTP 200 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+
+    """
+    allowed_methods = ('GET',)
 
     def read(self, request, id, networkID=None):
         """List IP addresses for a server"""
 
-        if networkID is None:
-            pass
-        return {}
+        try:
+            server = VirtualMachine.objects.get(id=id)
+            address =  {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''}                                          
+        except VirtualMachine.DoesNotExist:
+            raise fault.itemNotFound
+        except VirtualMachine.MultipleObjectsReturned:
+            raise fault.serviceUnavailable
+        except Exception, e:
+            log.exception('Unexpected error: %s' % e)
+            raise fault.serviceUnavailable
 
-    def update(self, request, id, networkID=None):
-        """Share an IP address to another in the group"""
-        return accepted
+        if networkID == "public":
+            address = {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}}}                            
+        elif networkID == "private":
+            address = {'private': ''}                                        
+        return { "addresses": address } 
 
-    def delete(self, request, id, networkID=None):
-        """Unshare an IP address"""
-        return accepted
 
 
 class ServerActionHandler(BaseHandler):

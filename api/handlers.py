@@ -129,7 +129,12 @@ class ServerHandler(BaseHandler):
     @paginator
     def read_all(self, request, detail=False):
         try:
-            virtual_servers = VirtualMachine.objects.filter(deleted=False)
+            changes_since = request.GET.get("changes-since", "")
+            if changes_since:
+               changes_since = datetime.datetime.now() - datetime.timedelta(hours=1) #TODO:remove
+               virtual_servers = VirtualMachine.objects.filter(updated__gte=changes_since)
+            else:
+                virtual_servers = VirtualMachine.objects.filter(deleted=False)
             #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
 
             if not detail:

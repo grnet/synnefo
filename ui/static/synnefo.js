@@ -103,12 +103,13 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
     return false;
 }
 
+var changes_since = '';
 // get and show a list of running and terminated machines
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
 
     $.ajax({
-        url: '/api/v1.0/servers/detail',
+        url: '/api/v1.0/servers/detail?changes_since=' + changes_since,
         type: "GET",
         timeout: TIMEOUT,
         dataType: "json",
@@ -126,6 +127,7 @@ function update_vms(interval) {
                     return false;
                     },
         success: function(data, textStatus, jqXHR) {
+            changes_since = '';
             try {
 				servers = data.servers;
 			} catch(err) { ajax_error('400');}

@@ -15,7 +15,7 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-import settings
+import synnefo.settings as settings
 
 setup_environ(settings)
 

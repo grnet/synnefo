@@ -6,7 +6,7 @@ import simplejson as json
 from django.conf import settings
 from django.http import HttpResponse
 from piston.handler import BaseHandler, AnonymousBaseHandler
-from synnefo.api.faults import fault, noContent, accepted, created
+from synnefo.api.faults import fault, noContent, accepted, created, notModified
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError, CertificateError
 from synnefo.db.models import *
@@ -14,6 +14,7 @@ from time import sleep
 import random
 import string
 import logging
+from datetime import datetime
 
 log = logging.getLogger('synnefo.api.handlers')
 
@@ -109,7 +110,7 @@ class ServerHandler(BaseHandler):
                      'id': server.id, 
                      'imageRef': server.sourceimage.id,
                      'created': server.created, 
-                     'updated': server.updated,  
+                     'updated': server.updated,
                      'hostId': server.hostid, 
                      'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
                      #'metadata': {'Server_Label': server.description },
@@ -129,10 +130,12 @@ class ServerHandler(BaseHandler):
     @paginator
     def read_all(self, request, detail=False):
         try:
-            changes_since = request.GET.get("changes-since", "")
+            changes_since = request.GET.get("changes_since", 0)
             if changes_since:
-               changes_since = datetime.datetime.now() - datetime.timedelta(hours=1) #TODO:remove
-               virtual_servers = VirtualMachine.objects.filter(updated__gte=changes_since)
+                last_update = datetime.fromtimestamp(int(changes_since))
+                virtual_servers = VirtualMachine.objects.filter(updated__gte=last_update)
+                if not len(virtual_servers):
+                    return notModified
             else:
                 virtual_servers = VirtualMachine.objects.filter(deleted=False)
             #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
@@ -146,7 +149,8 @@ class ServerHandler(BaseHandler):
                                          'id': server.id, 
                                          'description': server.description, 
                                          'created': server.created, 
-                                         'updated': server.updated,  
+                                         'updated': server.updated,
+                                         'deleted': server.deleted,                     
                                          'imageRef': server.sourceimage.id, 
                                          'hostId': server.hostid, 
                                          'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 

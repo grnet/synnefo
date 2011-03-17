@@ -152,45 +152,38 @@ $("a.enabled#action-shutdown").live('click', function() {
 });
 
 function update_machines_view(data){
-    /*
-    Go through the already displayed servers and remove those not in
-    the data or those marked as deleted.
-    */
-    $('.machines tr td input').each(function(i,entry) {
-        var deleted = true;
-        $.each(data.servers, function(j,server) {
-            if (server.id == entry.id && ['BUILD', 'ACTIVE', 'STOPPED', 'ERROR'].indexOf(server.status) >= 0) {
-                deleted = false;
-            }
-        });
-        if (deleted) {
-            vmTable.fnDeleteRow(entry);
-        }
-    });
     /* 
-    Then go through the servers in the input data. Update existing entries, add
+    Go through the servers in the input data. Update existing entries, add
     new ones to the list
-    */    
-    $.each(data.servers, function(i,server){
-        // if the machine is deleted it should not be included in any list
-        if (server.status == 'DELETED') {
-            return;
-        }
+    */
+	tableData = vmTable.fnGetData();
+    $.each(data.servers, function(i,server){        
+        current = -1;
+		
+		// check if the server already exists in the datatable
+		tableData.forEach(function(row,index){
+			
+			if (row[0].split(' ')[2].replace('id=','') == server.id){
+				current = index;
+			} 
+		});
         
-        existing = $('#' + server.id).parent().parent();  
-        
-        if (existing.length){ // simply update the values
-            // If the machine already exists in the DOM then simply update it
-            if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
-                try {
-                    console.info(existing.find("a.name span.name").text() + ' from ' 
-                                + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
-                } catch(err) {}
-                existing.find(".status").text(STATUS_MESSAGES[server.status]);
-            }
-            existing.find("a.name span.name").text(server.name);
-            existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
-        } else { // does not exist, we should create it
+        if (current != -1){ // if it's there, simply update the values
+			try {
+				console.info(server.name + ' from ' 
+							+ tableData[current][5] + ' to ' + STATUS_MESSAGES[server.status]);
+			} catch(err) {}
+			if (server.deleted == true) {
+				vmTable.fnDeleteRow(current);	
+			} else {
+				// update status
+				tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+				tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
+				// TODO: update name & ip
+				vmTable.fnUpdate(tableData[current],current);
+			}
+			updateActions();
+        } else if (server.deleted != true) { // does not exist, we should create it
             // check server status to select the appropriate OS icon
             osTag = image_tags[server.imageRef]
             var osIcon = osTag + ".png";
@@ -209,6 +202,7 @@ function update_machines_view(data){
             ]);
         }
     });
+	updateActions();
 	$("#spinner").hide();	
     // in case there are no data, leave the page empty
     if ($("div.list table.list-machines tbody").length > 0) {

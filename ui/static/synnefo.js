@@ -1,6 +1,9 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
+var changes_since = 0, deferred = 0;
 
 function list_view() {
+	changes_since = 0; // to reload full list
+	clearTimeout(deferred);	// clear old deferred calls
     $.cookie("list", '1'); // set list cookie
     $("div#machinesview").load($("#list").attr("href"), function(){
         $("a#standard")[0].className += ' activelink';
@@ -10,6 +13,8 @@ function list_view() {
 }
 
 function standard_view() {
+	changes_since = 0; // to reload full list
+	clearTimeout(deferred);	// clear old deferred calls
     $.cookie("list", '0');
     href=$("a#standard").attr("href");
     $("div#machinesview").load(href, function(){
@@ -103,38 +108,44 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
     return false;
 }
 
-var changes_since = '';
 // get and show a list of running and terminated machines
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
-
+	var uri='/api/v1.0/servers/detail';
+	
+	if (changes_since > 0)
+		uri+='?changes_since='+changes_since
+		
     $.ajax({
-        url: '/api/v1.0/servers/detail?changes_since=' + changes_since,
+        url: uri,
         type: "GET",
         timeout: TIMEOUT,
         dataType: "json",
         error: function(jqXHR, textStatus, errorThrown) {
-					// don't forget to try again later
-					if (interval) { 
-						setTimeout(update_vms,interval,interval);
-					}
-					// as for now, just show an error message
-                    if (jqXHR.status != undefined) {
-						ajax_error(jqXHR.status);
-					} else {
-						ajax_error();
-					}				
-                    return false;
-                    },
-        success: function(data, textStatus, jqXHR) {
-            changes_since = '';
-            try {
-				servers = data.servers;
-			} catch(err) { ajax_error('400');}
-			update_machines_view(data);
+			// don't forget to try again later
 			if (interval) {
-				setTimeout(update_vms,interval,interval);
+				deferred = setTimeout(update_vms,interval,interval);
 			}
+			// as for now, just show an error message
+			if (jqXHR.status != undefined) {
+				ajax_error(jqXHR.status);
+			} else {
+				ajax_error();
+			}				
+			return false;
+			},
+        success: function(data, textStatus, jqXHR) {
+			changes_since = Date.parse(jqXHR.getResponseHeader('Date'))/1000;
+			if (jqXHR.status != 304) {
+				try {
+					servers = data.servers;
+				} catch(err) { ajax_error('400');}
+				update_machines_view(data);
+			}
+			if (interval) {			
+				deferred = setTimeout(update_vms,interval,interval);
+			}
+			return false;
         }
     });
     return false;
@@ -263,6 +274,7 @@ function update_flavors() {
     });
     return false;
 }
+
 // return flavorRef from cpu, disk, ram values
 function identify_flavor(cpu, disk, ram){
     for (i=0;i<flavors.length;i++){

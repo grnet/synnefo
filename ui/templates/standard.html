@@ -66,42 +66,11 @@ $("div.actions a.action-start").live('click', function(){
 
 // update the servers list
 function update_machines_view(data){
-    /*
-    Go through the already displayed running servers and remove those not in
-    the data or are marked as deleted.
-    */
-    $('.running .machine').each(function(i,entry) {
-        var deleted = true;
-        $.each(data.servers, function(j,server) {
-            if (server.id == entry.id && ['BUILD','ACTIVE'].indexOf(server.status) >= 0) {
-                deleted = false;
-            }
-        });
-        if (deleted) {
-            $('#'+entry.id).remove();
-        }
-    });
-    // Do the same for the terminated ones.
-    $('.terminated .machine').each(function(i,entry) {
-        var deleted = true;
-        $.each(data.servers, function(j,server) {
-            if (server.id == entry.id && ['STOPPED','ERROR'].indexOf(server.status) >= 0) {
-                deleted = false;
-            }
-        });
-        if (deleted) {
-            $('#'+entry.id).remove();
-        }    
-    });
     /* 
-    Then go through the servers in the input data. Update existing entries, add
+    Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */    
     $.each(data.servers, function(i,server){
-        // if the machine is deleted it should not be included in any list
-        if (server.status == 'DELETED') {
-            return;
-        }
         
         existing = $('#' + server.id);
         
@@ -110,19 +79,41 @@ function update_machines_view(data){
             existing = [];
         }
         
-        if (existing.length){ 
-            // If the machine already exists in the DOM then simply update it
-            if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
+        if (existing.length){
+            // If the machine already exists in the DOM then simply update or delete it
+            if (server.deleted == true) {
+                existing.remove();            
                 try {
+                    console.info(existing.find("a.name span.name").text() + ' removed');
+                } catch(err) {}            
+            } else if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
+                
+                try { // firebug console logging
                     console.info(existing.find("a.name span.name").text() + ' from ' 
                                 + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
+                
+                if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
+                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
+                    // from stopped to running
+                    moved = existing.clone().appendTo(".running");
+                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
+                    existing.remove();
+                    existing = moved;
+                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
+                           [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
+                    moved = existing.clone().appendTo(".terminated");
+                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                    existing.remove();
+                    existing = moved;
+                } 
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
+            
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
-        } else {
-            // If it does not exist, we should create it
+        } else if (server.deleted != true) {
+            // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);
             machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
@@ -134,7 +125,6 @@ function update_machines_view(data){
                 machine.appendTo(".running");
             } else {
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
-                machine.find("img.list-logo").attr("src","static/os_logos/"+image_tags[server.imageRef]+'-off.png');            
                 machine.appendTo(".terminated");
             }
 

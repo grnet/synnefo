@@ -199,32 +199,18 @@ $("a#standard").click(function(){
 
 // launch VM creation wizard
 $("a#create").click(function(){
-
-    //do not launch wizard if no images or flavors are found
-    if (images.length == 0)
-      {
-        function fake_jqXHR() {
-        this.status = 'no_images';
-        }
-        var jqXHR = new fake_jqXHR();
-        ajax_error(jqXHR);
-        return false;
-      } 
-    else if (flavors.length == 0)
-      {
-        function fake_jqXHR() {
-        this.status = 'no_flavors';
-        }
-        var jqXHR = new fake_jqXHR();
-        ajax_error(jqXHR);
-        return false;
-      } 
-    else 
-      {
+    // launch wizard only if images and flavors are found
+    if (images.length > 0  && flavors.length > 0) {
         $("#wizard").scrollable().begin();
         $("#wizard").show();
-        $('a#create').data('overlay').load()    
-      }
+        $('a#create').data('overlay').load()   
+    } else if (images.length == 0 ) {
+        ajax_error('NO_IMAGES');
+        return false;   
+    } else if (flavors.length == 0) {
+        ajax_error('NO_FLAVORS');
+        return false;
+    }
 });
 
 // create wizard overlay
@@ -365,13 +351,13 @@ $("#start").click(function(){
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
     error: function(jqXHR, textStatus, errorThrown) { 
-                ajax_error(jqXHR);
+                ajax_error(jqXHR.status);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
-                    ajax_success(jqXHR);                   
+                    ajax_success(jqXHR.status);                   
                 } else {
-                    ajax_error(jqXHR);
+                    ajax_error(jqXHR.status);
                 }
             }
     });
@@ -385,8 +371,4 @@ $("#start").click(function(){
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 
-// populate image list
-update_images();
-// configure flavors
-update_flavors(); 
 </script>

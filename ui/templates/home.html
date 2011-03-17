@@ -3,7 +3,17 @@
 <head>
 	<title>{{ project }}</title>
 	<!-- include the Tools -->
-	<script src="static/jquery.tools.min.js"></script>
+    <!-- jquery tools minified for deployment-->
+    <!--script src="static/jquery.tools.min.js"></script-->
+    
+	<!-- jquery tools source for debugging -->    
+    <script src="http://flowplayer.org/tools/download/1.2.5/jquery-1.4.2.js"></script>   
+	<script src="http://flowplayer.org/tools/download/1.2.5/tabs/tabs.js"></script>
+	<script src="http://flowplayer.org/tools/download/1.2.5/scrollable/scrollable.js"></script>
+	<script src="http://flowplayer.org/tools/download/1.2.5/overlay/overlay.js"></script>
+	<script src="http://flowplayer.org/tools/download/1.2.5/rangeinput/rangeinput.js"></script>
+	<script src="http://flowplayer.org/tools/download/1.2.5/toolbox/toolbox.expose.js"></script>
+    
     <script src="static/jquery.cookie.js"></script>
     <script src="static/jQueryRotate.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
@@ -23,9 +33,9 @@
         
         var ERRORS = {
             // error message header
-            'header' : '{% trans "Error!" %}',
+            'HEADER' : '{% trans "Error!" %}',
             // default
-            'default' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
+            'DEFAULT' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
             // bad request
             '400' : '{% trans "Malformed request." %}',
             // not found
@@ -35,25 +45,25 @@
             // service unavailable
             '503' : '{% trans "This service is unavailable right now, please try again later." %}',
             // no images unavailable
-            'no_images' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
+            'NO_IMAGES' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
             // no images unavailable
-            'no_flavors' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}'
+            'NO_FLAVORS' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}'
         };
         
         var SUCCESS = {
-            'header' : '{% trans "Success!" %}',
-            'default' : '{% trans "Your request has been succefully executed." %}',
+            'HEADER' : '{% trans "Success!" %}',
+            'DEFAULT' : '{% trans "Your request has been succefully executed." %}',
         };
         
         // ajax error checking  
-        function ajax_error(jqXHR) {
+        function ajax_error(status) {
             // prepare the error message
-            $("#error-success h3").text(ERRORS['header']);
+            $("#error-success h3").text(ERRORS['HEADER']);
             
-            if (ERRORS[jqXHR.status]) {
-                $("#error-success p").text(ERRORS[jqXHR.status]);
+            if (status != undefined && ERRORS[status]) {
+                $("#error-success p").text(ERRORS[status]);
             } else {
-                $("#error-success p").text(ERRORS['default']);   
+                $("#error-success p").text(ERRORS['DEFAULT']);   
             }
             
             // bring up error notification
@@ -78,10 +88,10 @@
         }
         
         // ajax success checking
-        function ajax_success() {          
+        function ajax_success(status, password) {
             // prepare the error message
-            $("#error-success h3").text(SUCCESS['header']);
-            $("#error-success p").text(SUCCESS['default']);             
+            $("#error-success h3").text(SUCCESS['HEADER']);
+            $("#error-success p").text(SUCCESS['DEFAULT']);             
             // bring up success notification
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs

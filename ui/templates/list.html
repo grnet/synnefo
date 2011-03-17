@@ -234,6 +234,15 @@ var vmTable = $("div.list table.list-machines").dataTable({
     ]
 });
 
-auto_update_vms(UPDATE_INTERVAL);
+
+if (images.length == 0) {
+    // populate image list
+    update_images();
+}
+if (flavors.length == 0) {
+    // configure flavors
+    update_flavors(); 
+}
+update_vms(UPDATE_INTERVAL);
 
 </script>

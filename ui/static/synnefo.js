@@ -1,3 +1,5 @@
+var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
+
 function list_view() {
     $.cookie("list", '1'); // set list cookie
     $("div#machinesview").load($("#list").attr("href"), function(){
@@ -101,13 +103,8 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
     return false;
 }
 
-function auto_update_vms(interval) {
-	update_vms();
-	setTimeout(auto_update_vms,interval,interval);
-}
-
 // get and show a list of running and terminated machines
-function update_vms() {
+function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
 
     $.ajax({
@@ -115,19 +112,33 @@ function update_vms() {
         type: "GET",
         timeout: TIMEOUT,
         dataType: "json",
-        error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR);
+        error: function(jqXHR, textStatus, errorThrown) {
+					// don't forget to try again later
+					if (interval) { 
+						setTimeout(update_vms,interval,interval);
+					}
+					// as for now, just show an error message
+                    if (jqXHR.status != undefined) {
+						ajax_error(jqXHR.status);
+					} else {
+						ajax_error();
+					}				
                     return false;
                     },
         success: function(data, textStatus, jqXHR) {
-            servers = data.servers;
+            try {
+				servers = data.servers;
+			} catch(err) { ajax_error('400');}
 			update_machines_view(data);
+			if (interval) {
+				setTimeout(update_vms,interval,interval);
+			}
         }
     });
     return false;
 }
 
-// get and show a list of anvailable standard and custom images
+// get and show a list of available standard and custom images
 function update_images() { 
     $.ajax({
         url: '/api/v1.0/images/detail',
@@ -136,10 +147,14 @@ function update_images() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR);
+                    ajax_error(jqXHR.status);
                     },
         success: function(data, textStatus, jqXHR) {
-            images = data.images;
+            try {
+				images = data.images;
+			} catch(err){
+				ajax_error("NO_IMAGES");
+			}
             if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
                 $.each(data.images, function(i,image){
                     var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
@@ -161,8 +176,6 @@ function update_images() {
     });
     return false;
 }
-
-var flavors = {}, images = {}, servers = {}, disks = [], cpus = [], ram = [];
 
 Array.prototype.unique = function () {
 	var r = new Array();
@@ -189,7 +202,11 @@ function update_flavors() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-            ajax_error(jqXHR);
+            try {
+				ajax_error(jqXHR.status);
+			} catch (err) {
+				ajax_error(err);
+			}
         },
         success: function(data, textStatus, jqXHR) {
             flavors = data.flavors;
@@ -224,16 +241,22 @@ function update_flavors() {
             // update the indicators when sliding
             $("#cpu:range").data().rangeinput.onSlide(function(event,value){
                 $("#cpu-indicator")[0].value = cpus[Number(value)];
-                $("#custom").click();
             });
+            $("#cpu:range").data().rangeinput.change(function(event,value){
+                $("#custom").click();				
+			});			
             $("#ram:range").data().rangeinput.onSlide(function(event,value){
                 $("#ram-indicator")[0].value = ram[Number(value)];
-                $("#custom").click();
             });
+            $("#ram:range").data().rangeinput.change(function(event,value){
+                $("#custom").click();
+            });			
             $("#storage:range").data().rangeinput.onSlide(function(event,value){
                 $("#storage-indicator")[0].value = disks[Number(value)];
-                $("#custom").click();
             });
+            $("#storage:range").data().rangeinput.change(function(event,value){
+                $("#custom").click();
+            });			
         }
     });
     return false;
@@ -289,12 +312,11 @@ function updateActions() {
 		$("#action-" + on[action]).addClass('enabled');
 	}
 }
-var success;
-var error;
+
 // reboot action
 function reboot(serverIDs){
 	if (!serverIDs.length){
-		ajax_success();
+		ajax_success('DEFAULT');
 		return false;
 	}	
     // ajax post reboot call
@@ -310,8 +332,7 @@ function reboot(serverIDs){
 		data: JSON.stringify(payload),
 		timeout: TIMEOUT,
 		error: function(jqXHR, textStatus, errorThrown) {
-					ajax_error(jqXHR);//, serverID);
-                    error = jqXHR;
+					ajax_error(jqXHR.status);
 				},
 		success: function(data, textStatus, jqXHR) {
 					if ( jqXHR.status == '202') {
@@ -319,10 +340,8 @@ function reboot(serverIDs){
                             console.info('rebooted ' + serverID);
                         } catch(err) {}   		
 						reboot(serverIDs);
-                        success = jqXHR;
 					} else {
-						ajax_error(jqXHR);//, serverID);
-                        error = jqXHR;
+						ajax_error(jqXHR.status);
 					}
 				}
     });
@@ -333,7 +352,7 @@ function reboot(serverIDs){
 // shutdown action
 function shutdown(serverIDs) {
 	if (!serverIDs.length){
-		ajax_success();
+		ajax_success('DEFAULT');
 		return false;
 	}
     // ajax post shutdown call
@@ -349,7 +368,7 @@ function shutdown(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR);
+                    ajax_error(jqXHR.status);
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -358,7 +377,7 @@ function shutdown(serverIDs) {
                         } catch(err) {}       				
                         shutdown(serverIDs);
                     } else {
-                        ajax_error(jqXHR);
+                        ajax_error(jqXHR.status);
                     }
                 }             
     });
@@ -369,7 +388,7 @@ function shutdown(serverIDs) {
 // destroy action
 function destroy(serverIDs) {
 	if (!serverIDs.length){
-		ajax_success();
+		ajax_success('DEFAULT');
 		return false;
 	}
     // ajax post destroy call can have an empty request body
@@ -383,7 +402,7 @@ function destroy(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR);
+                    ajax_error(jqXHR.status);
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -392,7 +411,7 @@ function destroy(serverIDs) {
                         } catch (err) {}        				
                         destroy(serverIDs);
                     } else {
-                        ajax_error(jqXHR);
+                        ajax_error(jqXHR.status);
                     }
                 }             
     });
@@ -403,7 +422,7 @@ function destroy(serverIDs) {
 // start action
 function start(serverIDs){
 	if (!serverIDs.length){
-		ajax_success();
+		ajax_success('DEFAULT');
 		return false;
 	}	
     // ajax post start call
@@ -419,7 +438,7 @@ function start(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR);
+                    ajax_error(jqXHR.status);
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -428,7 +447,7 @@ function start(serverIDs){
                         } catch(err) {}      		
                         start(serverIDs);
                     } else {
-                        ajax_error(jqXHR);
+                        ajax_error(jqXHR.status);
                     }
                 }
     });

@@ -133,7 +133,7 @@ class ServerHandler(BaseHandler):
             changes_since = request.GET.get("changes_since", 0)
             if changes_since:
                 last_update = datetime.fromtimestamp(int(changes_since))
-                virtual_servers = VirtualMachine.objects.filter(updated__gte=last_update)
+                virtual_servers = VirtualMachine.objects.filter(updated__gt=last_update)
                 if not len(virtual_servers):
                     return notModified
             else:

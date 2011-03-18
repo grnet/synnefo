@@ -852,6 +852,10 @@ input.machine {
 	width: 35px;
 }
 
+div.confirm {
+    display: none;
+}
+
 div#user{
     float:right;
     clear: both;

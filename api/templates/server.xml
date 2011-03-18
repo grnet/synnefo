@@ -1,0 +1,36 @@
+{% spaceless %}
+
+{% if is_root %}
+<?xml version="1.0" encoding="UTF-8"?>
+<server xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"{% else %}<server{% endif %}
+    {% if server.adminPass %}adminPass="{{ server.adminPass }}"{% endif %}
+    created="{{ server.created }}"
+    description="{{ server.description }}"
+    flavorId="{{ server.flavorId }}"
+    hostId="{{ server.hostId }}"
+    id="{{ server.id }}"
+    imageId="{{ server.imageId }}"
+    name="{{ server.name }}"
+    progress="{{ server.progress }}"
+    status="{{ server.status }}"
+    updated="{{ server.updated}}">
+
+    {% if server.metadata.values %}
+    <metadata>
+        {% for key, val in server.metadata.values.items %}<meta key="{{ key }}">{{ val }}</meta>{% endfor %}
+    </metadata>
+    {% endif %}
+    
+    <addresses>
+        {% for network in server.addresses.values %}
+        <network id="{{ network.id }}">
+            {% for ip in network.values %}
+            <ip version="{{ ip.version }}" addr="{{ ip.addr }}"/>
+            {% endfor %}
+        </network>
+        {% endfor %}
+    </addresses>
+
+</server>
+
+{% endspaceless %}

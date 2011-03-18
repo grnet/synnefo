@@ -10,6 +10,8 @@ from django.test import TestCase
 from django.test.client import Client
 import simplejson as json
 from synnefo.db.models import VirtualMachine, Flavor, Image, VirtualMachineGroup
+from synnefo.api.tests_redux import APIReduxTestCase
+
 
 class APITestCase(TestCase):
     fixtures = [ 'api_test_data' ]

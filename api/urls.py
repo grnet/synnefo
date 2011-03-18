@@ -101,6 +101,12 @@ v10grnet10patterns = patterns('',
     url(r'^.+', notFound), # catch-all
 )
 
+# The OpenStack Compute API v1.1 (REDUX)
+v11redux_patterns = patterns('',
+    (r'^servers', include('synnefo.api.servers')),
+    (r'^.+', notFound), # catch-all
+)
+
 version_handler = Resource(VersionHandler)
 
 urlpatterns = patterns('',
@@ -109,5 +115,6 @@ urlpatterns = patterns('',
     url(r'^v1.0/', include(v10patterns)),
     url(r'^v1.1/', include(v11patterns)),
     url(r'^v1.0grnet1/', include(v10grnet10patterns)),
+    url(r'^v1.1redux/', include(v11redux_patterns)),
     url(r'^.+', notFound), # catch-all
 )

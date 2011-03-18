@@ -80,6 +80,8 @@ function update_machines_view(data){
         }
         
         if (existing.length){
+            $("div.machine:last-child").find("div.separator").show();                
+
             // If the machine already exists in the DOM then simply update or delete it
             if (server.deleted == true) {
                 existing.remove();            
@@ -120,7 +122,6 @@ function update_machines_view(data){
             machine.find("span.imagetag").text(image_tags[server.imageRef]);
             machine.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));            
             machine.find(".status").text(STATUS_MESSAGES[server.status]);
-            
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {

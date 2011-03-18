@@ -114,7 +114,7 @@ function update_vms(interval) {
 	var uri='/api/v1.0/servers/detail';
 	
 	if (changes_since > 0)
-		uri+='?changes_since='+changes_since
+		uri+='?changes-since='+changes_since
 		
     $.ajax({
         url: uri,
@@ -256,18 +256,21 @@ function update_flavors() {
                 $("#cpu-indicator")[0].value = cpus[Number(value)];
             });
             $("#cpu:range").data().rangeinput.change(function(event,value){
+                $("#cpu-indicator")[0].value = cpus[Number(value)];				
                 $("#custom").click();				
 			});			
             $("#ram:range").data().rangeinput.onSlide(function(event,value){
                 $("#ram-indicator")[0].value = ram[Number(value)];
             });
             $("#ram:range").data().rangeinput.change(function(event,value){
+                $("#ram-indicator")[0].value = ram[Number(value)];				
                 $("#custom").click();
             });			
             $("#storage:range").data().rangeinput.onSlide(function(event,value){
                 $("#storage-indicator")[0].value = disks[Number(value)];
             });
             $("#storage:range").data().rangeinput.change(function(event,value){
+                $("#storage-indicator")[0].value = disks[Number(value)];				
                 $("#custom").click();
             });			
         }

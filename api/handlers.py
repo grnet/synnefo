@@ -130,7 +130,7 @@ class ServerHandler(BaseHandler):
     @paginator
     def read_all(self, request, detail=False):
         try:
-            changes_since = request.GET.get("changes_since", 0)
+            changes_since = request.GET.get("changes-since", 0)
             if changes_since:
                 last_update = datetime.fromtimestamp(int(changes_since))
                 virtual_servers = VirtualMachine.objects.filter(updated__gt=last_update)

@@ -852,19 +852,15 @@ input.machine {
 	width: 35px;
 }
 
+/* Confirmation boxes */
 div.confirm {
     display: none;
     background-color: #DCDCDC;
+    color: orange;
+    font-size: 9pt;
 }
 
-#single {
-    float: right;
-    width: 90px;
-    height: 70px;
-    margin: -65px -165px 0 0;
-}
-
-#single button{
+div.confirm button{
     font-size: 9pt;
     background-color: #DCDCDC;
     border: 1px solid #a5a5a5;
@@ -873,23 +869,56 @@ div.confirm {
     padding: 0px;
 }
 
-#single button.yes {
+div.confirm button.yes {
     border-color: orange;
-    margin: 5px 0 0 5px;
     padding: 0 12px;
 }
 
-#single button.yes:hover {
+div.confirm button.yes:hover {
     background-color: orange;
 }
 
-#single button.no {
-    margin: 22px 0 0 5px;
+div.confirm button.no {
     padding: 0px 16px;
 }
 
-#single button.no:hover {
+div.confirm button.no:hover {
     background-color: #a5a5a5;
+}
+
+div.confirm#single {
+    float: right;
+    width: 90px;
+    height: 70px;
+    margin: -65px -165px 0 0;
+}
+
+div.confirm#single button.yes {
+    margin: 5px 0 0 5px;
+}
+
+div.confirm#single button.no {
+    margin: 22px 0 0 5px;
+}
+
+div.confirm#multiple {
+    width: 690px;
+    height: 30px;
+    margin: 0 0 10px -30px;
+}
+
+div.confirm#multiple p {
+    float: left;
+    margin: 9px 0 0 200px;
+}
+
+div.confirm#multiple button {
+    float: right;
+    margin: 6px 5px 0 0;
+}
+
+div.confirm#multiple button.no {
+    margin-right: 15px;
 }
 
 div#user{

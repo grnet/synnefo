@@ -166,7 +166,11 @@
 
 <div id="machinesview"></div>
 
-<div id="multiple" class="confirm"></div>
+<div id="multiple" class="confirm">
+    <p>{% trans "Your actions will affect XX machines" %}</p>
+    <button class="yes">{% trans "Confirm" %}</button>
+	<button class="no">{% trans "Cancel" %}</button>
+</div>
 
 <div id="machines" class="separator"></div>
 

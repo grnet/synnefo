@@ -854,6 +854,42 @@ input.machine {
 
 div.confirm {
     display: none;
+    background-color: #DCDCDC;
+}
+
+#single {
+    float: right;
+    width: 90px;
+    height: 70px;
+    margin: -65px -165px 0 0;
+}
+
+#single button{
+    font-size: 9pt;
+    background-color: #DCDCDC;
+    border: 1px solid #a5a5a5;
+    color: #3D3D3D;
+    cursor: pointer;
+    padding: 0px;
+}
+
+#single button.yes {
+    border-color: orange;
+    margin: 5px 0 0 5px;
+    padding: 0 12px;
+}
+
+#single button.yes:hover {
+    background-color: orange;
+}
+
+#single button.no {
+    margin: 22px 0 0 5px;
+    padding: 0px 16px;
+}
+
+#single button.no:hover {
+    background-color: #a5a5a5;
 }
 
 div#user{

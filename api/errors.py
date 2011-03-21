@@ -22,3 +22,5 @@ class Unauthorized(Fault):
 class ItemNotFound(Fault):
     code = 404
 
+class ServiceUnavailable(Fault):
+    code = 503

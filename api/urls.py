@@ -104,6 +104,8 @@ v10grnet10patterns = patterns('',
 # The OpenStack Compute API v1.1 (REDUX)
 v11redux_patterns = patterns('',
     (r'^servers', include('synnefo.api.servers')),
+    (r'^flavors', include('synnefo.api.flavors')),
+    (r'^images', include('synnefo.api.images')),
     (r'^.+', notFound), # catch-all
 )
 

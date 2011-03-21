@@ -27,6 +27,7 @@ def tag_name(e):
     return name if sep else e.tag
 
 def xml_to_dict(s):
+    # XXX Quick and dirty
     def _xml_to_dict(e):
         root = {}
         d = root[tag_name(e)] = dict(e.items())
@@ -60,7 +61,7 @@ def random_password(length=8):
     return ''.join(choice(pool) for i in range(length))
 
 
-def render_fault(fault, request):
+def render_fault(request, fault):
     if settings.DEBUG or request.META.get('SERVER_NAME', None) == 'testserver':
         fault.details = format_exc(fault)
     if request.type == 'xml':
@@ -72,23 +73,32 @@ def render_fault(fault, request):
         data = json.dumps(d)
     return HttpResponse(data, mimetype=mimetype, status=fault.code)    
 
-def api_method(func):
-    @wraps(func)
-    def wrapper(request, *args, **kwargs):
-        try:
-            if request.path.endswith('.json'):
-                type = 'json'
-            elif request.path.endswith('.xml'):
-                type = 'xml'
-            elif request.META.get('HTTP_ACCEPT', None) == 'application/xml':
-                type = 'xml'
-            else:
-                type = 'json'
-            request.type = type
-            return func(request, *args, **kwargs)
-        except Fault, fault:
-            return render_fault(fault, request)
-        except Exception, e:
-            log.exception('Unexpected error: %s' % e)
-            return HttpResponse(status=500)
-    return wrapper
+def api_method(http_method):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            try:
+                if request.path.endswith('.json'):
+                    type = 'json'
+                elif request.path.endswith('.xml'):
+                    type = 'xml'
+                elif request.META.get('HTTP_ACCEPT', None) == 'application/xml':
+                    type = 'xml'
+                else:
+                    type = 'json'
+                request.type = type
+                
+                if request.method != http_method:
+                    raise BadRequest()
+                
+                resp = func(request, *args, **kwargs)
+                resp['Content-Type'] = 'application/xml' if type == 'xml' else 'application/json'
+                return resp
+            except Fault, fault:
+                return render_fault(request, fault)
+            except Exception, e:
+                log.exception('Unexpected error: %s' % e)
+                fault = ServiceUnavailable()
+                return render_fault(request, fault)
+        return wrapper
+    return decorator

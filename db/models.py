@@ -151,15 +151,6 @@ class Flavor(models.Model):
 
             return enh_fc.effective_from <= a_date and enh_fc.effective_to >= a_date
 
-        def calculate_cost(start_date, end_date, cost):
-            """Calculate the total cost for the specified duration"""
-            td = end_date - start_date
-            sec = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / float(10**6)
-            total_hours = float(sec) / float(60.0*60.0)
-            total_cost = float(cost)*total_hours
-
-            return round(total_cost)
-
         # Get the related FlavorCost objects, sorted.
         price_list = FlavorCost.objects.filter(flavor=self).order_by('effective_from')
 
@@ -195,7 +186,7 @@ class Flavor(models.Model):
             else:
                 cost = p.cost_inactive
 
-            results.append( ( p.effective_from, calculate_cost(p.effective_from, p.effective_to, cost)) )
+            results.append( ( p.effective_from, utils.calculate_cost(p.effective_from, p.effective_to, cost)) )
 
         return results
 
@@ -345,30 +336,6 @@ class VirtualMachine(models.Model):
             # breaking VirtualMachine.object.create() among other things.
             self._operstate = 'BUILD'
 
-    def start_action(self, action):
-        """Update the state of a VM when a new action is initiated."""
-        if not action in [x[0] for x in VirtualMachine.ACTIONS]:
-            raise VirtualMachine.InvalidActionError(action)
-
-        # No actions to deleted and no actions beside destroy to suspended VMs
-        if self.deleted:
-            raise VirtualMachine.InvalidActionError(action)
-
-        self._action = action
-        self._backendjobid = None
-        self._backendopcode = None
-        self._backendjobstatus = None
-        self._backendlogmsg = None
-
-        # Update the relevant flags if the VM is being suspended or destroyed
-        if action == "DESTROY":
-            self.deleted = True
-        elif action == "SUSPEND":
-            self.suspended = True
-        elif action == "START":
-            self.suspended = False
-        self.save()
-
     # FIXME: leave this here to preserve the property rsapistate
     def _get_rsapi_state(self):
         return utils.get_rsapi_state(self)
@@ -397,7 +364,7 @@ class VirtualMachine(models.Model):
 
         # Call charge() unconditionally before any change of
         # internal state.
-        credits.charge()
+        credits.charge(self)
         self._operstate = new_operstate
 
 

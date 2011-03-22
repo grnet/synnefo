@@ -33,3 +33,13 @@ def get_rsapi_state(vm):
         vm._backendjobstatus in ('queued', 'waiting', 'running'):
         return "REBOOT"
     return r
+
+
+def calculate_cost(start_date, end_date, cost):
+    """Calculate the total cost for the specified duration"""
+    td = end_date - start_date
+    sec = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / float(10**6)
+    total_hours = float(sec) / float(60.0*60.0)
+    total_cost = float(cost)*total_hours
+
+    return round(total_cost)

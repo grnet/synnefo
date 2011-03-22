@@ -27,3 +27,27 @@ def process_backend_msg(vm, jobid, opcode, status, logmsg):
     # Any other notification of failure leaves the operating state unchanged
 
     vm.save()
+
+def start_action(vm, action):
+    """Update the state of a VM when a new action is initiated."""
+    if not action in [x[0] for x in VirtualMachine.ACTIONS]:
+        raise VirtualMachine.InvalidActionError(action)
+
+    # No actions to deleted and no actions beside destroy to suspended VMs
+    if vm.deleted:
+        raise VirtualMachine.InvalidActionError(action)
+
+    vm._action = action
+    vm._backendjobid = None
+    vm._backendopcode = None
+    vm._backendjobstatus = None
+    vm._backendlogmsg = None
+
+    # Update the relevant flags if the VM is being suspended or destroyed
+    if action == "DESTROY":
+        vm.deleted = True
+    elif action == "SUSPEND":
+        vm.suspended = True
+    elif action == "START":
+        vm.suspended = False
+    vm.save()

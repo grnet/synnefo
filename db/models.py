@@ -161,7 +161,7 @@ class FlavorCost(models.Model):
         verbose_name = u'Pricing history for flavors'
     
     def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (self.cost_active, self.cost_inactive, self.flavor.name, self.effective_from)
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % (int(self.cost_active), int(self.cost_inactive), self.flavor.name, self.effective_from)
 
 
 class VirtualMachine(models.Model):

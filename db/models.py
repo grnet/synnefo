@@ -328,20 +328,6 @@ class VirtualMachine(models.Model):
          def __str__(self):
             return repr(str(self._action))
 
-    @staticmethod
-    def id_from_instance_name(name):
-        """Returns VirtualMachine's Django id, given a ganeti machine name.
-
-        Strips the ganeti prefix atm. Needs a better name!
-        
-        """
-        if not str(name).startswith(settings.BACKEND_PREFIX_ID):
-            raise VirtualMachine.InvalidBackendIdError(str(name))
-        ns = str(name).lstrip(settings.BACKEND_PREFIX_ID)
-        if not ns.isdigit():
-            raise VirtualMachine.InvalidBackendIdError(str(name))
-        return int(ns)
-
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)

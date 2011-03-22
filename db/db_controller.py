@@ -30,6 +30,7 @@ import traceback
 from threading import Thread, Event, currentThread
 
 from synnefo.db.models import VirtualMachine
+from synnefo.logic import utils
 
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801" # FIXME: move to settings.py
 
@@ -65,13 +66,13 @@ def zmq_sub_thread(subscriber):
                 return
 
             if msg["type"] != "ganeti-op-status":
-                logging.debug("Ignoring message of uknown type %s." % (msg["type"]))
+                logging.debug("Ignoring message of uknown type %s." % (msg["type"],))
                 continue
 
-            vmid = VirtualMachine.id_from_instance_name(msg["instance"])
+            vmid = utils.id_from_instance_name(msg["instance"])
             vm = VirtualMachine.objects.get(id=vmid)
     
-            logging.debug("Processing msg: %s" % (msg))
+            logging.debug("Processing msg: %s" % (msg,))
             vm.process_backend_msg(msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
             vm.save()
             logging.debug("Done processing msg for vm %s." % (msg["instance"]))
@@ -79,7 +80,7 @@ def zmq_sub_thread(subscriber):
         except KeyError:
             logging.error("Malformed incoming JSON, missing attributes: " + data)
         except VirtualMachine.InvalidBackendIdError:
-            logging.debug("Ignoring msg for unknown instance %s." % msg["instance"])
+            logging.debug("Ignoring msg for unknown instance %s." % (msg["instance"],))
         except VirtualMachine.DoesNotExist:
             logging.error("VM for instance %s with id %d not found in DB." % (msg["instance"], vmid))
         except Exception as e:

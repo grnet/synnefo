@@ -83,7 +83,7 @@ class ServerHandler(BaseHandler):
 
      @HTTP methods: POST, DELETE, PUT, GET
      @Parameters: POST data with the create data (cpu, ram, etc)
-     @Responses: HTTP 202 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+     @Responses: HTTP 200 if successfully call rapi, 304 if not modified, itemNotFound or serviceUnavailable otherwise
 
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')

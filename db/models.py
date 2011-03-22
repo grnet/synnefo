@@ -2,7 +2,8 @@
 
 from django.conf import settings
 from django.db import models
-from django.db import transaction
+
+from logic.credits import debit_account
 
 import datetime
 
@@ -50,27 +51,6 @@ class SynnefoUser(models.Model):
         return self.get_limit('MIN_CREDITS')
         
     min_credits = property(_get_min_credits)
-
-    @transaction.commit_on_success
-    def debit_account(self, amount, vm, description):
-        """Charges the user with the specified amount of credits for a vm (resource)"""
-        date_now = datetime.datetime.now()
-        self.credit = self.credit - amount
-        self.save()
-
-        # then write the debit entry
-        debit = Debit()
-
-        debit.user = self
-        debit.vm = vm
-        debit.when = date_now
-        debit.description = description
-
-        debit.save()
-
-    def credit_account(self, amount, creditor, description):
-        """No clue :)"""
-        return
 
 
 class Image(models.Model):
@@ -506,7 +486,7 @@ class VirtualMachine(models.Model):
 
             # add the debit entry
             description = "Server = %s, charge = %d for state: %s" % (self.name, total_cost, self._operstate)
-            self.owner.debit_account(total_cost, self, description)
+            debit_account(self.owner, total_cost, self, description)
         
         self.save()
 

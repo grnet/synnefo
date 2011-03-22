@@ -20,3 +20,16 @@ def id_from_instance_name(name):
         raise VirtualMachine.InvalidBackendIdError(str(name))
 
     return int(ns)
+
+
+def get_rsapi_state(vm):
+    """Returns the RSAPI state for a virtual machine"""
+    try:
+        r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[vm._operstate]
+    except KeyError:
+        return "UNKNOWN"
+    # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
+    if r == 'ACTIVE' and vm._backendopcode == 'OP_INSTANCE_REBOOT' and \
+        vm._backendjobstatus in ('queued', 'waiting', 'running'):
+        return "REBOOT"
+    return r

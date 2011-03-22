@@ -30,7 +30,8 @@ import traceback
 from threading import Thread, Event, currentThread
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils
+
+from synnefo.logic import utils, backend
 
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801" # FIXME: move to settings.py
 
@@ -73,7 +74,7 @@ def zmq_sub_thread(subscriber):
             vm = VirtualMachine.objects.get(id=vmid)
     
             logging.debug("Processing msg: %s" % (msg,))
-            vm.process_backend_msg(msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
+            backend.process_backend_msg(msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
             vm.save()
             logging.debug("Done processing msg for vm %s." % (msg["instance"]))
 

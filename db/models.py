@@ -5,6 +5,7 @@ from django.db import models
 
 import datetime
 
+from logic import utils, credits
 
 class SynnefoUser(models.Model):
     name = models.CharField('Synnefo Username', max_length=255)
@@ -344,33 +345,6 @@ class VirtualMachine(models.Model):
             # breaking VirtualMachine.object.create() among other things.
             self._operstate = 'BUILD'
 
-    def process_backend_msg(self, jobid, opcode, status, logmsg):
-        """Process a job progress notification from the backend.
-
-        Process an incoming message from the backend (currently Ganeti).
-        Job notifications with a terminating status (sucess, error, or canceled),
-        also update the operating state of the VM.
-
-        """
-        if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
-           status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]):
-            raise VirtualMachine.InvalidBackendMsgError(opcode, status)
-
-        self._backendjobid = jobid
-        self._backendjobstatus = status
-        self._backendopcode = opcode
-        self._backendlogmsg = logmsg
-
-        # Notifications of success change the operating state
-        if status == 'success':
-            self._update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
-        # Special cases OP_INSTANCE_CREATE fails --> ERROR
-        if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-            self._update_state('ERROR')
-        # Any other notification of failure leaves the operating state unchanged
-
-        self.save()
-
     def start_action(self, action):
         """Update the state of a VM when a new action is initiated."""
         if not action in [x[0] for x in VirtualMachine.ACTIONS]:
@@ -395,17 +369,9 @@ class VirtualMachine(models.Model):
             self.suspended = False
         self.save()
 
-    # FIXME: Perhaps move somewhere else, outside the model?
+    # FIXME: leave this here to preserve the property rsapistate
     def _get_rsapi_state(self):
-        try:
-            r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self._operstate]
-        except KeyError:
-            return "UNKNOWN"
-        # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
-        if r == 'ACTIVE' and self._backendopcode == 'OP_INSTANCE_REBOOT' and \
-            self._backendjobstatus in ('queued', 'waiting', 'running'):
-            return "REBOOT"
-        return r 
+        return utils.get_rsapi_state(self)
 
     rsapi_state = property(_get_rsapi_state)
 
@@ -431,7 +397,7 @@ class VirtualMachine(models.Model):
 
         # Call charge() unconditionally before any change of
         # internal state.
-        self.charge()
+        credits.charge()
         self._operstate = new_operstate
 
 

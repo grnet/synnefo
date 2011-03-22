@@ -142,61 +142,13 @@ class Flavor(models.Model):
     def __unicode__(self):
         return self.name
 
-    def _get_costs(self, start_datetime, end_datetime, active):
-        """Return a list with FlavorCost objects for the specified duration"""
-        def between(enh_fc, a_date):
-            """Checks if a date is between a FlavorCost duration"""
-            if enh_fc.effective_from <= a_date and enh_fc.effective_to is None:
-                return True
-
-            return enh_fc.effective_from <= a_date and enh_fc.effective_to >= a_date
-
-        # Get the related FlavorCost objects, sorted.
-        price_list = FlavorCost.objects.filter(flavor=self).order_by('effective_from')
-
-        # add the extra field FlavorCost.effective_to
-        for idx in range(0, len(price_list)):
-            if idx + 1 == len(price_list):
-                price_list[idx].effective_to = None
-            else:
-                price_list[idx].effective_to = price_list[idx + 1].effective_from
-
-        price_result = []
-        found_start = False
-
-        # Find the affected FlavorCost, according to the
-        # dates, and put them in price_result
-        for p in price_list:
-            if between(p, start_datetime):
-                found_start = True
-                p.effective_from = start_datetime
-            if between(p, end_datetime):
-                p.effective_to = end_datetime
-                price_result.append(p)
-                break
-            if found_start:
-                price_result.append(p)
-
-        results = []
-
-        # Create the list and the result tuples
-        for p in price_result:
-            if active:
-                cost = p.cost_active
-            else:
-                cost = p.cost_inactive
-
-            results.append( ( p.effective_from, utils.calculate_cost(p.effective_from, p.effective_to, cost)) )
-
-        return results
-
     def get_cost_active(self, start_datetime, end_datetime):
         """Returns a list with the active costs for the specified duration"""
-        return self._get_costs(start_datetime, end_datetime, True)
+        return credits.get_costs(self, start_datetime, end_datetime, True)
 
     def get_cost_inactive(self, start_datetime, end_datetime):
         """Returns a list with the inactive costs for the specified duration"""
-        return self._get_costs(start_datetime, end_datetime, False)
+        return credits.get_costs(self, start_datetime, end_datetime, False)
 
 
 class FlavorCost(models.Model):
@@ -209,7 +161,7 @@ class FlavorCost(models.Model):
         verbose_name = u'Pricing history for flavors'
     
     def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (self.cost_active, self.cost_inactive, flavor.name, self.effective_from)
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % (self.cost_active, self.cost_inactive, self.flavor.name, self.effective_from)
 
 
 class VirtualMachine(models.Model):

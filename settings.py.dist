@@ -115,6 +115,7 @@ INSTALLED_APPS = (
     'synnefo.ui',
     'synnefo.db',
     'synnefo.ganeti',
+    'synnefo.logic',
 )
 
 GANETI_CLUSTER_INFO = ("62.217.120.78",5080,"synnefo","ocean!")

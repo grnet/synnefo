@@ -96,7 +96,7 @@ def api_method(http_method):
                 return resp
             except Fault, fault:
                 return render_fault(request, fault)
-            except Exception, e:
+            except BaseException, e:
                 log.exception('Unexpected error: %s' % e)
                 fault = ServiceUnavailable()
                 return render_fault(request, fault)

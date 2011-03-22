@@ -31,7 +31,7 @@ class FlavorTestCase(TestCase):
         self.assertEqual(f_name, 'C1R1024D10', 'flavor.name is not generated correctly, C1R1024D10! (%s)' % (f_name,))
 
     def test_flavor_get_costs(self):
-        """Test the Flavor _get_costs() method"""
+        """Test the Flavor cost-related methods method"""
         # first an easy test, a Flavor with only one FlavorCost entry
         flavor = Flavor.objects.get(pk=30001)
 

@@ -4,8 +4,7 @@ from django.conf import settings
 from django.db import models
 
 import datetime
-
-from logic import utils, credits
+import synnefo
 
 class SynnefoUser(models.Model):
     name = models.CharField('Synnefo Username', max_length=255)
@@ -144,10 +143,12 @@ class Flavor(models.Model):
 
     def get_cost_active(self, start_datetime, end_datetime):
         """Returns a list with the active costs for the specified duration"""
+        from logic import credits
         return credits.get_costs(self, start_datetime, end_datetime, True)
 
     def get_cost_inactive(self, start_datetime, end_datetime):
         """Returns a list with the inactive costs for the specified duration"""
+        from logic import credits
         return credits.get_costs(self, start_datetime, end_datetime, False)
 
 
@@ -290,7 +291,7 @@ class VirtualMachine(models.Model):
 
     # FIXME: leave this here to preserve the property rsapistate
     def _get_rsapi_state(self):
-        return utils.get_rsapi_state(self)
+        return credits.get_rsapi_state(self)
 
     rsapi_state = property(_get_rsapi_state)
 

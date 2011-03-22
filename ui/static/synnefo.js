@@ -127,23 +127,24 @@ function update_vms(interval) {
 				deferred = setTimeout(update_vms,interval,interval);
 			}
 			// as for now, just show an error message
-			if (jqXHR.status != undefined) {
-				ajax_error(jqXHR.status);
-			} else {
-				ajax_error();
-			}				
+			try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
+			ajax_error();						
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
 			changes_since = Date.parse(jqXHR.getResponseHeader('Date'))/1000;
-			if (jqXHR.status != 304) {
+			if (interval) {			
+				deferred = setTimeout(update_vms,interval,interval);
+			}
+			
+			if (jqXHR.status == 200 || jqXHR.status == 203) {
 				try {
 					servers = data.servers;
 				} catch(err) { ajax_error('400');}
 				update_machines_view(data);
-			}
-			if (interval) {			
-				deferred = setTimeout(update_vms,interval,interval);
+			} else if (jqXHR.status != 304){
+				try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
+				//ajax_error();						
 			}
 			return false;
         }

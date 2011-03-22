@@ -1,0 +1,12 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+<addresses xmlns="http://docs.openstack.org/compute/api/v1.1">
+  {% for address in addresses %}
+  <network id="{{ address.id }}">
+    {% for ip in address.values %}
+    <ip version="{{ ip.version }}" addr="{{ ip.addr }}"/>
+    {% endfor %}
+  </network>
+  {% endfor %}
+</addresses>
+{% endspaceless %}

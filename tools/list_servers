@@ -34,7 +34,7 @@ if resp.status != 200:
 buf = resp.read()
 reply = json.loads(buf)
 
-for server in reply['servers']:
+for server in reply['servers']['values']:
     id = server.pop('id')
     name = server.pop('name')
     if options.detail:

@@ -2,11 +2,13 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
+from synnefo.api.actions import server_actions
 from synnefo.api.errors import *
 from synnefo.api.util import *
 from synnefo.db.models import *
 from synnefo.util.rapi import GanetiRapiClient
 
+from django.conf import settings
 from django.conf.urls.defaults import *
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -23,6 +25,9 @@ urlpatterns = patterns('synnefo.api.servers',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_servers', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'server_demux'),
+    (r'^/(\d+)/action(?:.json|.xml)?$', 'server_action'),
+    (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
+    (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
 )
 
 
@@ -47,6 +52,10 @@ def server_demux(request, server_id):
         return render_fault(request, fault)
 
 
+def address_to_dict(ipfour, ipsix):
+    return {'id': 'public',
+            'values': [{'version': 4, 'addr': ipfour}, {'version': 6, 'addr': ipsix}]}
+
 def server_to_dict(server, detail=False):
     d = dict(id=server.id, name=server.name)
     if detail:
@@ -64,9 +73,7 @@ def server_to_dict(server, detail=False):
         if metadata:
             d['metadata'] = dict(values=metadata)
         
-        public_addrs = [dict(version=4, addr=server.ipfour), dict(version=6, addr=server.ipsix)]
-        d['addresses'] = {'values': []}
-        d['addresses']['values'].append({'id': 'public', 'values': public_addrs})
+        d['addresses'] = [address_to_dict(server.ipfour, server.ipsix)]
     return d
 
 def render_server(request, serverdict, status=200):
@@ -227,3 +234,73 @@ def delete_server(request, server_id):
     server.start_action('DESTROY')
     rapi.DeleteInstance(server.backend_id)
     return HttpResponse(status=204)
+
+@api_method('POST')
+def server_action(request, server_id):
+    try:
+        server_id = int(server_id)
+        server = VirtualMachine.objects.get(id=server_id)
+    except VirtualMachine.DoesNotExist:
+        raise ItemNotFound
+
+    req = get_request_dict(request)
+    if len(req) != 1:
+        raise BadRequest
+    
+    key = req.keys()[0]
+    if key not in server_actions:
+        raise BadRequest
+    
+    return server_actions[key](server, req[key])
+
+@api_method('GET')
+def list_addresses(request, server_id):
+    # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       overLimit (413)
+    
+    try:
+        server_id = int(server_id)
+        server = VirtualMachine.objects.get(id=server_id)
+    except VirtualMachine.DoesNotExist:
+        raise ItemNotFound
+    
+    addresses = [address_to_dict(server.ipfour, server.ipsix)]
+    
+    if request.type == 'xml':
+        data = render_to_string('list_addresses.xml', {'addresses': addresses})
+    else:
+        data = json.dumps({'addresses': {'values': addresses}})
+    
+    return HttpResponse(data, status=200)
+
+@api_method('GET')
+def list_addresses_by_network(request, server_id, network_id):
+    # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
+    try:
+        server_id = int(server_id)
+        server = VirtualMachine.objects.get(id=server_id)
+    except VirtualMachine.DoesNotExist:
+        raise ItemNotFound
+    
+    if network_id != 'public':
+        raise ItemNotFound
+    
+    address = address_to_dict(server.ipfour, server.ipsix)
+    
+    if request.type == 'xml':
+        data = render_to_string('address.xml', {'address': address})
+    else:
+        data = json.dumps({'network': address})
+    
+    return HttpResponse(data, status=200)

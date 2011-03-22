@@ -26,8 +26,6 @@ except Exception, e:
     raise fault.serviceUnavailable
 #If we can't connect to the rapi successfully, don't do anything
 
-backend_prefix_id = settings.BACKEND_PREFIX_ID
-
 VERSIONS = [
     {
         "status": "CURRENT",

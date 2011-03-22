@@ -3,23 +3,15 @@
 from django.conf import settings
 from django.db import models
 
-from logic.credits import debit_account
-
 import datetime
 
-backend_prefix_id = settings.BACKEND_PREFIX_ID
 
 class SynnefoUser(models.Model):
     name = models.CharField('Synnefo Username', max_length=255)
     credit = models.IntegerField('Credit Balance')
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-    #
-    # We do not rely on Django's user authentication mechanism.
-    # Hence, no references to the User model.
-    # [vkoukis], after discussion with [faidon].
-    # user = models.ForeignKey(User)
-    
+
     class Meta:
         verbose_name = u'Synnefo User'
     
@@ -133,7 +125,6 @@ class Flavor(models.Model):
                 return fch_list[0].cost_inactive
 
         return 0
-        
 
     def _current_cost_active(self):
         """Returns current active cost (property method)"""
@@ -344,9 +335,9 @@ class VirtualMachine(models.Model):
         Strips the ganeti prefix atm. Needs a better name!
         
         """
-        if not str(name).startswith(backend_prefix_id):
+        if not str(name).startswith(settings.BACKEND_PREFIX_ID):
             raise VirtualMachine.InvalidBackendIdError(str(name))
-        ns = str(name).lstrip(backend_prefix_id)
+        ns = str(name).lstrip(settings.BACKEND_PREFIX_ID)
         if not ns.isdigit():
             raise VirtualMachine.InvalidBackendIdError(str(name))
         return int(ns)
@@ -434,7 +425,7 @@ class VirtualMachine(models.Model):
 
     def _get_backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
-        return '%s%s' % (backend_prefix_id, str(self.id))
+        return '%s%s' % (settings.BACKEND_PREFIX_ID, str(self.id))
 
     backend_id = property(_get_backend_id)
 
@@ -456,39 +447,6 @@ class VirtualMachine(models.Model):
         # internal state.
         self.charge()
         self._operstate = new_operstate
-
-    @transaction.commit_on_success
-    def charge(self):
-        """Charges the owner of this VM.
-        
-        Charges the owner of a VM for the period
-        from vm.charged to datetime.now(), based on the
-        current operating state.
-        
-        """
-        charged_states = ('STARTED', 'STOPPED')
-       
-        start_datetime = self.charged
-        self.charged = datetime.datetime.now()
-
-        # Only charge for a specific set of states
-        if self._operstate in charged_states:
-            cost_list = []
-
-            # remember, we charge only for Started and Stopped
-            if self._operstate == 'STARTED':
-                cost_list = self.flavor.get_cost_active(start_datetime, self.charged)
-            elif self._operstate == 'STOPPED':
-                cost_list = self.flavor.get_cost_inactive(start_datetime, self.charged)
-
-            # find the total vost
-            total_cost = sum([x[1] for x in cost_list])
-
-            # add the debit entry
-            description = "Server = %s, charge = %d for state: %s" % (self.name, total_cost, self._operstate)
-            debit_account(self.owner, total_cost, self, description)
-        
-        self.save()
 
 
 class VirtualMachineGroup(models.Model):

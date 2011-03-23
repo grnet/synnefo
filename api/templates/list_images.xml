@@ -3,6 +3,13 @@
 <images xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom">
   {% for image in images %}
   <image id="{{ image.id }}" name="{{ image.name }}"{% if detail %} updated="{{ image.updated }}" created="{{ image.created }}" status="{{ image.status }}"{% endif %}>
+  {% if image.metadata %}
+  <metadata>
+    {% for key, val in image.metadata.values.items %}
+    <meta key="{{ key }}">{{ val }}</meta>
+    {% endfor %}
+  </metadata>
+  {% endif %}
   </image>
   {% endfor %}
 </images>

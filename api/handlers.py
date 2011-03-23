@@ -81,7 +81,7 @@ class ServerHandler(BaseHandler):
 
      @HTTP methods: POST, DELETE, PUT, GET
      @Parameters: POST data with the create data (cpu, ram, etc)
-     @Responses: HTTP 202 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+     @Responses: HTTP 200 if successfully call rapi, 304 if not modified, itemNotFound or serviceUnavailable otherwise
 
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -137,18 +137,19 @@ class ServerHandler(BaseHandler):
             else:
                 virtual_servers = VirtualMachine.objects.filter(deleted=False)
             #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
-
+        except Exception, e:
+            raise fault.badRequest        
+        try:
             if not detail:
                 return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
             else:
-                virtual_servers_list = [{'status': server.rsapi_state, 
+                virtual_servers_list = [{'status': server.deleted and "DELETED" or server.rsapi_state, 
                                          'flavorRef': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 
                                          'description': server.description, 
                                          'created': server.created, 
                                          'updated': server.updated,
-                                         'deleted': server.deleted,                     
                                          'imageRef': server.sourceimage.id, 
                                          'hostId': server.hostid, 
                                          'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 

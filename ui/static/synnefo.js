@@ -1,9 +1,12 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
-var changes_since = 0, deferred = 0;
+var changes_since = 0, deferred = 0, update_request = false;
 
 function list_view() {
 	changes_since = 0; // to reload full list
 	clearTimeout(deferred);	// clear old deferred calls
+	try {
+		update_request.abort() // cancel pending ajax updates
+	}catch(err){}
     $.cookie("list", '1'); // set list cookie
     $("div#machinesview").load($("#list").attr("href"), function(){
         $("a#standard")[0].className += ' activelink';
@@ -15,6 +18,9 @@ function list_view() {
 function standard_view() {
 	changes_since = 0; // to reload full list
 	clearTimeout(deferred);	// clear old deferred calls
+	try {
+		update_request.abort() // cancel pending ajax updates
+	}catch(err){}	
     $.cookie("list", '0');
     href=$("a#standard").attr("href");
     $("div#machinesview").load(href, function(){
@@ -116,7 +122,7 @@ function update_vms(interval) {
 	if (changes_since > 0)
 		uri+='?changes-since='+changes_since
 		
-    $.ajax({
+    update_request = $.ajax({
         url: uri,
         type: "GET",
         timeout: TIMEOUT,
@@ -124,26 +130,29 @@ function update_vms(interval) {
         error: function(jqXHR, textStatus, errorThrown) {
 			// don't forget to try again later
 			if (interval) {
+				clearTimeout(deferred);	// clear old deferred calls
 				deferred = setTimeout(update_vms,interval,interval);
 			}
 			// as for now, just show an error message
-			if (jqXHR.status != undefined) {
-				ajax_error(jqXHR.status);
-			} else {
-				ajax_error();
-			}				
+			try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
+			ajax_error();						
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
 			changes_since = Date.parse(jqXHR.getResponseHeader('Date'))/1000;
-			if (jqXHR.status != 304) {
+			if (interval) {
+				clearTimeout(deferred);	// clear old deferred calls
+				deferred = setTimeout(update_vms,interval,interval);
+			}
+			
+			if (jqXHR.status == 200 || jqXHR.status == 203) {
 				try {
 					servers = data.servers;
 				} catch(err) { ajax_error('400');}
 				update_machines_view(data);
-			}
-			if (interval) {			
-				deferred = setTimeout(update_vms,interval,interval);
+			} else if (jqXHR.status != 304){
+				try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
+				//ajax_error();						
 			}
 			return false;
         }

@@ -19,6 +19,9 @@ class BadRequest(Fault):
 class Unauthorized(Fault):
     code = 401
 
+class ResizeNotAllowed(Fault):
+    code = 403
+
 class ItemNotFound(Fault):
     code = 404
 

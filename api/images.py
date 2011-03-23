@@ -45,6 +45,14 @@ def image_to_dict(image, detail=True):
         d['description'] = image.description
         if image.sourcevm:
             d['serverRef'] = image.sourcevm.id
+        
+        metadata = {}
+        for meta in ImageMetadata.objects.filter(image=image):
+            metadata[meta.meta_key] = meta.meta_value
+        
+        if metadata:
+            d['metadata'] = {'values': metadata}
+    
     return d
 
 

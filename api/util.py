@@ -79,20 +79,23 @@ def api_method(http_method):
         def wrapper(request, *args, **kwargs):
             try:
                 if request.path.endswith('.json'):
-                    type = 'json'
+                    request.type = 'json'
                 elif request.path.endswith('.xml'):
-                    type = 'xml'
-                elif request.META.get('HTTP_ACCEPT', None) == 'application/xml':
-                    type = 'xml'
+                    request.type = 'xml'
                 else:
-                    type = 'json'
-                request.type = type
+                    request.type = 'json'       # Default response format
+                    for accept in request.META.get('HTTP_ACCEPT', '').split(','):
+                        if accept == 'application/json':
+                            break
+                        elif accept == 'application/xml':
+                            request.type = 'xml'
+                            break
                 
                 if request.method != http_method:
                     raise BadRequest()
                 
                 resp = func(request, *args, **kwargs)
-                resp['Content-Type'] = 'application/xml' if type == 'xml' else 'application/json'
+                resp['Content-Type'] = 'application/xml' if request.type == 'xml' else 'application/json'
                 return resp
             except Fault, fault:
                 return render_fault(request, fault)

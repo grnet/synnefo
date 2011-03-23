@@ -182,7 +182,7 @@ function update_images() {
                     var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
                     img.find("label").attr('for',"img-radio-" + image.id);
                     img.find(".image-title").text(image.name);
-                    img.find(".description").text(image.description);
+                    img.find(".description").text(image.metadata.meta.key.description);
                     img.find(".size").text(image.size);
                     img.find("input.radio").attr('id',"img-radio-" + image.id);
                     if (i==0) img.find("input.radio").attr("checked","checked"); 

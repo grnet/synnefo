@@ -287,7 +287,7 @@ class APITestCase(TestCase):
         self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
         self.assertEqual(image_from_api['size'], image_from_db.size)
         self.assertEqual(image_from_api['status'], image_from_db.state)
-        self.assertEqual(image_from_api['description'], image_from_db.description)
+        self.assertEqual(image_from_api['metadata']['meta']['key']['description'], image_from_db.description)
         self.assertTrue(response.status_code in [200,203])
 
 
@@ -305,7 +305,7 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
-            self.assertEqual(image_from_api['description'], image_from_db.description)
+            self.assertEqual(image_from_api['metadata']['meta']['key']['description'], image_from_db.description)
 
         for image_from_api in images_from_api:
             image_from_db = Image.objects.get(id=image_from_api['id'])
@@ -314,7 +314,7 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
-            self.assertEqual(image_from_api['description'], image_from_db.description)
+            self.assertEqual(image_from_api['metadata']['meta']['key']['description'], image_from_db.description)
             
         self.assertTrue(response.status_code in [200,203])
 

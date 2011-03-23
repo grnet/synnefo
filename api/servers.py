@@ -66,7 +66,7 @@ def server_to_dict(server, detail=False):
         d['created'] = server.created.isoformat()
         d['flavorRef'] = server.flavor.id
         d['imageRef'] = server.sourceimage.id
-        d['description'] = server.description       # XXX Not in OpenStack docs
+        #d['description'] = server.description       # XXX Not in OpenStack docs
         
         server_meta = server.virtualmachinemetadata_set.all()
         metadata = dict((meta.meta_key, meta.meta_value) for meta in server_meta)

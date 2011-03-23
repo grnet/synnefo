@@ -106,7 +106,6 @@ class ServerHandler(BaseHandler):
             server = {'status': server.rsapi_state, 
                      'flavorRef': server.flavor.id, 
                      'name': server.name, 
-                     'description': server.description, 
                      'id': server.id, 
                      'imageRef': server.sourceimage.id,
                      'created': server.created, 
@@ -149,7 +148,6 @@ class ServerHandler(BaseHandler):
                                          'flavorRef': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 
-                                         'description': server.description, 
                                          'created': server.created, 
                                          'updated': server.updated,
                                          'imageRef': server.sourceimage.id, 
@@ -254,7 +252,7 @@ class ServerHandler(BaseHandler):
                 "progress" : 0,
                 "status" : 'BUILD',
                 "adminPass" : self.random_password(),
-                "metadata" : {"My Server Name" : vm.description},
+                "metadata" : {"My Server Name" : vm.name},
                 "addresses" : {
                     "public" : [  ],
                     "private" : [  ],
@@ -639,11 +637,12 @@ class ImageHandler(BaseHandler):
                         'id': image.id,
                         'name': image.name,
                         'updated': image.updated.isoformat(),    
-                        'description': image.description, 
                         'status': image.state, 
                         'progress': image.state == 'ACTIVE' and 100 or 0, 
                         'size': image.size, 
-                        'serverId': image.sourcevm and image.sourcevm.id or ""
+                        'serverId': image.sourcevm and image.sourcevm.id or "",
+                        #'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in image.imagemetadata_set.all()]
+                        'metadata':{'meta': { 'key': {'description': image.description}}},
                        } for image in images]
             # Images info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
@@ -660,7 +659,9 @@ class ImageHandler(BaseHandler):
                     'status': image.state, 
                     'progress': image.state == 'ACTIVE' and 100 or 0, 
                     'size': image.size, 
-                    'serverId': image.sourcevm and image.sourcevm.id or ""
+                    'serverId': image.sourcevm and image.sourcevm.id or "",
+                    #'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in image.imagemetadata_set.all()]
+                    'metadata':{'meta': { 'key': {'description': image.description}}},
                    } }
         except Image.DoesNotExist:
                     raise fault.itemNotFound

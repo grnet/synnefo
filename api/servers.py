@@ -64,8 +64,8 @@ def server_to_dict(server, detail=False):
         d['hostId'] = server.hostid
         d['updated'] = server.updated.isoformat()
         d['created'] = server.created.isoformat()
-        d['flavorId'] = server.flavor.id            # XXX Should use flavorRef instead?
-        d['imageId'] = server.sourceimage.id        # XXX Should use imageRef instead?
+        d['flavorRef'] = server.flavor.id
+        d['imageRef'] = server.sourceimage.id
         d['description'] = server.description       # XXX Not in OpenStack docs
         
         server_meta = server.virtualmachinemetadata_set.all()
@@ -122,8 +122,8 @@ def create_server(request):
     try:
         server = req['server']
         name = server['name']
-        sourceimage = Image.objects.get(id=server['imageId'])
-        flavor = Flavor.objects.get(id=server['flavorId'])
+        sourceimage = Image.objects.get(id=server['imageRef'])
+        flavor = Flavor.objects.get(id=server['flavorRef'])
     except KeyError:
         raise BadRequest
     except Image.DoesNotExist:
@@ -152,9 +152,9 @@ def create_server(request):
         disk_template='plain',
         disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
         nics=[{}],
-        os='debootstrap+default',       #TODO: select OS from imageId
+        os='debootstrap+default',       #TODO: select OS from imageRef
         ip_check=False,
-        nam_check=False,
+        name_check=False,
         pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
         dry_run=dry_run,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))

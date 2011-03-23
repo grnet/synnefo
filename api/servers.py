@@ -71,9 +71,10 @@ def server_to_dict(server, detail=False):
         server_meta = server.virtualmachinemetadata_set.all()
         metadata = dict((meta.meta_key, meta.meta_value) for meta in server_meta)
         if metadata:
-            d['metadata'] = dict(values=metadata)
+            d['metadata'] = {'values': metadata}
         
-        d['addresses'] = [address_to_dict(server.ipfour, server.ipsix)]
+        addresses = [address_to_dict(server.ipfour, server.ipsix)]
+        d['addresses'] = {'values': addresses}
     return d
 
 def render_server(request, serverdict, status=200):

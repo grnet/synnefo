@@ -1,31 +1,44 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
-var changes_since = 0, deferred = 0, update_request = false;
+var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
 
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC. 
     //do not include time zone info (Z) at the end
     //taken from the Mozilla Developer Center 
-    function pad(n){return n<10 ? '0'+n : n}
-    return d.getUTCFullYear()+'-'
-      + pad(d.getUTCMonth()+1)+'-'
-      + pad(d.getUTCDate())+'T'
-      + pad(d.getUTCHours())+':'
-      + pad(d.getUTCMinutes())+':'
-      + pad(d.getUTCSeconds())}
-
-
+    function pad(n){ return n<10 ? '0'+n : n }
+    return  d.getUTCFullYear()+ '-' +
+			pad(d.getUTCMonth()+1) + '-' +
+			pad(d.getUTCDate()) + 'T' +
+			pad(d.getUTCHours()) + ':' +
+			pad(d.getUTCMinutes())+ ':' +
+			pad(d.getUTCSeconds())
+}
 
 function list_view() {
 	changes_since = 0; // to reload full list
 	clearTimeout(deferred);	// clear old deferred calls
 	try {
-		update_request.abort() // cancel pending ajax updates
+		update_request.abort(); // cancel pending ajax updates
+		load_request.abort();
 	}catch(err){}
     $.cookie("list", '1'); // set list cookie
-    $("div#machinesview").load($("#list").attr("href"), function(){
-        $("a#standard")[0].className += ' activelink';
-        $("a#list")[0].className = '';
-    });
+	
+	uri = $("#list").attr("href");
+    load_request = $.ajax({
+        url: uri,
+        type: "GET",
+        timeout: TIMEOUT,
+        dataType: "html",
+        error: function(jqXHR, textStatus, errorThrown) {						
+			return false;
+		},
+        success: function(data, textStatus, jqXHR) {
+			$("a#standard")[0].className += ' activelink';
+			$("a#list")[0].className = '';
+			$("div#machinesview").html(data);
+		}
+	});
+    
     return false;
 }
 
@@ -34,13 +47,26 @@ function standard_view() {
 	clearTimeout(deferred);	// clear old deferred calls
 	try {
 		update_request.abort() // cancel pending ajax updates
+		load_request.abort();
 	}catch(err){}	
     $.cookie("list", '0');
-    href=$("a#standard").attr("href");
-    $("div#machinesview").load(href, function(){
-        $("a#list")[0].className += ' activelink';
-        $("a#standard")[0].className = '';
-    });
+	
+    uri = $("a#standard").attr("href");
+    load_request = $.ajax({
+        url: uri,
+        type: "GET",
+        timeout: TIMEOUT,
+        dataType: "html",
+        error: function(jqXHR, textStatus, errorThrown) {						
+			return false;
+		},
+        success: function(data, textStatus, jqXHR) {
+			$("a#list")[0].className += ' activelink';
+			$("a#standard")[0].className = '';
+			$("div#machinesview").html(data);
+		}
+	});	
+
     return false;
 }
 
@@ -153,8 +179,12 @@ function update_vms(interval) {
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
-            changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
-            changes_since = ISODateString(changes_since_date);
+			// create changes_since string if necessary
+			if (jqXHR.getResponseHeader('Date') != null){
+				changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
+				changes_since = ISODateString(changes_since_date);
+			}
+			
 			if (interval) {
 				clearTimeout(deferred);	// clear old deferred calls
 				deferred = setTimeout(update_vms,interval,interval);

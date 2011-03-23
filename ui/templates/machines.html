@@ -166,10 +166,10 @@
 
 <div id="machinesview"></div>
 
-<div id="multiple" class="confirm">
+<div class="confirm_multiple">
     <p>{% trans "Your actions will affect XX machines" %}</p>
-    <button class="yes">{% trans "Confirm" %}</button>
-	<button class="no">{% trans "Cancel" %}</button>
+    <button class="yes">{% trans "Confirm all" %}</button>
+	<button class="no">{% trans "Cancel all" %}</button>
 </div>
 
 <div id="machines" class="separator"></div>
@@ -291,6 +291,17 @@ function disableSliders() {
     $("#ram").attr('disabled',true);
     $("#storage").attr('disabled',true);
 }
+
+// confirm all actions
+$("div.confirm_multiple .yes").live('click', function(){
+    
+});
+
+// cancel all actions
+$("div.confirm_multiple .no").live('click', function(){
+    pending_actions = [];
+    update_confirmations();
+});
 
 // selecting the small size
 $("#small").click(function(){

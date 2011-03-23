@@ -28,7 +28,7 @@
             <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
             <a href="#" class="more">{% trans "more &hellip;" %}</a>
         </div>
-        <div class="confirm" id="single">
+        <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
         </div>
@@ -45,7 +45,17 @@
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    confirm_action('reboot', reboot, [serverID], [serverName]);
+    var found = false;
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = reboot;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([reboot, serverID, serverName])
+    update_confirmations();
+    //confirm_action('reboot', reboot, [serverID], [serverName]);
     return false;
 });
 
@@ -53,7 +63,17 @@ $("div.actions a.action-reboot").live('click', function(){
 $("div.actions a.action-shutdown").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    confirm_action('shutdown', shutdown, [serverID], [serverName]);
+    var found = false;
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = shutdown;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list 
+        pending_actions.push([shutdown, serverID, serverName])
+    update_confirmations();
+    //confirm_action('shutdown', shutdown, [serverID], [serverName]);
     return false;
 });
 
@@ -61,10 +81,54 @@ $("div.actions a.action-shutdown").live('click', function(){
 $("div.actions a.action-start").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-//    confirm_action('start', start, [serverID], [serverName]);
-    start([serverID]);
+    var found = false;
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = start;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([start, serverID, serverName])
+    update_confirmations();    
+    //start([serverID]);
     return false;
 });
+
+$("div.confirm_single .yes").live('click', function(){
+    var serverID = $(this).parent().parent().attr("id");
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
+        if (pending_actions[i][1]==serverID){
+            action = pending_actions.splice(i,1); // extract action
+            action[0][0]([action[0][1]]); // execute action            
+        }
+    }
+    $(this).parent().hide();
+    return false;
+});
+
+$("div.confirm_single .no").live('click', function(){
+    // remove the action from the pending list
+    var serverID = $(this).parent().parent().attr("id");
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server remove it
+        if (pending_actions[i][1]==serverID){
+            pending_actions.splice(i,1);
+        }
+    }
+    $(this).parent().hide();
+    return false;
+});
+
+function update_confirmations(){
+    $('div.confirm_single').hide() // hide all confirm boxes to begin with
+    $('div.confirm_multiple').hide()
+    
+    for (i=0;i<pending_actions.length;i++){ // show single confirms
+        $("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
+    }
+	if (pending_actions.length>1) // if more than one pending action show multiple confirm box
+		$('div.confirm_multiple').show();
+}
 
 // update the servers list
 function update_machines_view(data){
@@ -85,7 +149,7 @@ function update_machines_view(data){
             $("div.machine:last-child").find("div.separator").show();                
 
             // If the machine already exists in the DOM then simply update or delete it
-            if (server.status == "DELETED") {
+            if (server.deleted == true) {
                 existing.remove();            
                 try {
                     console.info(existing.find("a.name span.name").text() + ' removed');
@@ -116,7 +180,7 @@ function update_machines_view(data){
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
-        } else if (server.status != "DELETED") {
+        } else if (server.deleted != true) {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);

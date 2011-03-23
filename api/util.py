@@ -84,7 +84,8 @@ def api_method(http_method):
                     request.type = 'xml'
                 else:
                     request.type = 'json'       # Default response format
-                    for accept in request.META.get('HTTP_ACCEPT', '').split(','):
+                    for item in request.META.get('HTTP_ACCEPT', '').split(','):
+                        accept, sep, rest = item.strip().partition(';')
                         if accept == 'application/json':
                             break
                         elif accept == 'application/xml':

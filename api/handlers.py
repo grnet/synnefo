@@ -139,7 +139,9 @@ class ServerHandler(BaseHandler):
             else:
                 virtual_servers = VirtualMachine.objects.filter(deleted=False)
             #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
-
+        except Exception, e:
+            raise fault.badRequest        
+        try:
             if not detail:
                 return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
             else:

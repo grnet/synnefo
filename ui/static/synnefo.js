@@ -1,6 +1,20 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false;
 
+function ISODateString(d){
+    //return a date in an ISO 8601 format using UTC. 
+    //do not include time zone info (Z) at the end
+    //taken from the Mozilla Developer Center 
+    function pad(n){return n<10 ? '0'+n : n}
+    return d.getUTCFullYear()+'-'
+      + pad(d.getUTCMonth()+1)+'-'
+      + pad(d.getUTCDate())+'T'
+      + pad(d.getUTCHours())+':'
+      + pad(d.getUTCMinutes())+':'
+      + pad(d.getUTCSeconds())}
+
+
+
 function list_view() {
 	changes_since = 0; // to reload full list
 	clearTimeout(deferred);	// clear old deferred calls
@@ -119,7 +133,7 @@ function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
 	var uri='/api/v1.0/servers/detail';
 	
-	if (changes_since > 0)
+	if (changes_since != 0)
 		uri+='?changes-since='+changes_since
 		
     update_request = $.ajax({
@@ -139,7 +153,8 @@ function update_vms(interval) {
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
-			changes_since = Date.parse(jqXHR.getResponseHeader('Date'))/1000;
+            changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
+            changes_since = ISODateString(changes_since_date);
 			if (interval) {
 				clearTimeout(deferred);	// clear old deferred calls
 				deferred = setTimeout(update_vms,interval,interval);

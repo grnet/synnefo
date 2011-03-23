@@ -128,10 +128,11 @@ class ServerHandler(BaseHandler):
 
     @paginator
     def read_all(self, request, detail=False):
+        #changes_since should be on ISO 8601 format
         try:
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
-                last_update = datetime.fromtimestamp(int(changes_since))
+                last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
                 virtual_servers = VirtualMachine.objects.filter(updated__gt=last_update)
                 if not len(virtual_servers):
                     return notModified
@@ -631,8 +632,20 @@ class ImageHandler(BaseHandler):
         Faults: cloudServersFault, serviceUnavailable, unauthorized,
                 badRequest, itemNotFound
         """
+
+        #changes_since should be on ISO 8601 format
         try:
-            images = Image.objects.all()
+            changes_since = request.GET.get("changes-since", 0)
+            if changes_since:
+                last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                images = Image.objects.filter(updated__gt=last_update)
+                if not len(images):
+                    return notModified
+            else:
+                images = Image.objects.all()
+        except Exception, e:
+            raise fault.badRequest        
+        try:
             images_list = [ {'created': image.created.isoformat(), 
                         'id': image.id,
                         'name': image.name,

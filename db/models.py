@@ -4,7 +4,6 @@ from django.conf import settings
 from django.db import models
 
 import datetime
-import synnefo
 
 class SynnefoUser(models.Model):
     name = models.CharField('Synnefo Username', max_length=255)

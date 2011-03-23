@@ -6,7 +6,7 @@
 
 from datetime import datetime
 
-from db.models import Debit, FlavorCost
+from db.models import Debit, FlavorCost, VirtualMachine
 
 from django.db import transaction
 

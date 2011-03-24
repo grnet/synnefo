@@ -43,7 +43,9 @@
             // not found
             '404' : '{% trans "Your request has failed. Resource not found." %}',
             // internal server error
-            '501' : '{% trans "There has been an Internal Error. Our administrators have been notified." %}',
+            '500' : '{% trans "There has been an Internal Error. Our administrators have been notified." %}',
+            // service unavailable
+            '501' : '{% trans "This server has not been implemented yet." %}',
             // service unavailable
             '503' : '{% trans "This service is unavailable right now, please try again later." %}',
             // no images unavailable

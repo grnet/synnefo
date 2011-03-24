@@ -1,0 +1,373 @@
+#!/usr/bin/env python
+
+from functools import wraps
+from httplib import HTTPConnection
+from optparse import OptionParser
+from os.path import basename
+from sys import argv, exit
+
+import json
+
+DEFAULT_HOST = '127.0.0.1:8000'
+DEFAULT_API = 'v1.1redux'
+
+
+commands = {}
+
+def command_name(name):
+    def decorator(cls):
+        commands[name] = cls
+        return cls
+    return decorator
+
+
+def address_to_string(address):
+    key = address['id']
+    val = ' '.join(ip['addr'] for ip in address['values'])
+    return '%s: %s' % (key, val)
+
+def print_dict(d, show_empty=True):
+    for key, val in sorted(d.items()):
+        if key == 'metadata':
+            val = ', '.join('%s="%s"' % x for x in val['values'].items())
+        if key == 'addresses':
+            val = ', '.join(address_to_string(address) for address in val['values'])
+        if val or show_empty:
+            print '%s: %s' % (key.rjust(12), val)
+
+
+class Command(object):
+    def __init__(self, argv):
+        parser = OptionParser()
+        parser.add_option('--host', dest='host', metavar='HOST', default=DEFAULT_HOST,
+                            help='use server HOST')
+        parser.add_option('--api', dest='api', metavar='API', default=DEFAULT_API,
+                            help='use api API')
+        parser.add_option('-v', action='store_true', dest='verbose', default=False,
+                            help='use verbose output')
+        self.add_options(parser)
+        options, args = parser.parse_args(argv)
+        
+        # Add options to self
+        for opt in parser.option_list:
+            key = opt.dest
+            if key:
+                val = getattr(options, key)
+                setattr(self, key, val)
+        
+        self.execute(*args)
+    
+    def add_options(self, parser):
+        pass
+    
+    def execute(self, *args):
+        pass
+    
+    def http_cmd(self, method, path, body=None, expected_status=200):
+        conn = HTTPConnection(self.host)
+
+        kwargs = {}
+        if body:
+            kwargs['headers'] = {'Content-Type': 'application/json'}
+            kwargs['body'] = body
+        conn.request(method, path, **kwargs)
+
+        resp = conn.getresponse()
+        if self.verbose:
+            print '%d %s' % (resp.status, resp.reason)
+            for key, val in resp.getheaders():
+                print '%s: %s' % (key.capitalize(), val)
+            print
+
+        buf = resp.read() or '{}'
+        reply = json.loads(buf)
+
+        if resp.status != expected_status:
+            if len(reply) == 1:
+                key = reply.keys()[0]
+                val = reply[key]
+                print '%s %s' % (key, val.get('message', ''))
+                if self.verbose:
+                    print val.get('details', '')
+                exit(1)
+
+        return reply
+
+    def http_get(self, path, expected_status=200):
+        return self.http_cmd('GET', path, None, expected_status)
+    
+    def http_post(self, path, body, expected_status=202):
+        return self.http_cmd('POST', path, body, expected_status)
+
+    def http_put(self, path, body, expected_status=204):
+        return self.http_cmd('PUT', path, body, expected_status)
+
+    def http_delete(self, path, expected_status=204):
+        return self.http_cmd('DELETE', path, None, expected_status)
+
+
+@command_name('ls')
+class ListServers(Command):
+    description = 'list servers'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail', default=False,
+                            help='show detailed output')
+        parser.add_option('-a', action='store_true', dest='show_empty', default=False,
+                            help='include empty values')
+    
+    def execute(self):
+        path = '/api/%s/servers' % self.api
+        if self.detail:
+            path += '/detail'
+
+        reply = self.http_get(path)
+
+        for server in reply['servers']['values']:
+            id = server.pop('id')
+            name = server.pop('name')
+            if self.detail:
+                print '%d %s' % (id, name)
+                print_dict(server, self.show_empty)
+                print
+            else:
+                print '%3d %s' % (id, name)
+
+
+@command_name('info')
+class GetServerDetails(Command):
+    description = 'get server details'
+    syntax = '<server id>'
+    
+    def add_options(self, parser):
+        parser.add_option('-a', action='store_true', dest='show_empty', default=False,
+                            help='include empty values')
+    
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d' % (self.api, int(server_id))
+        reply = self.http_get(path)
+        server = reply['server']
+        server.pop('id')
+        print_dict(server, self.show_empty)
+        
+
+@command_name('create')
+class CreateServer(Command):
+    description = 'create server'
+    syntax = '<server name>'
+    
+    def add_options(self, parser):
+        parser.add_option('-f', dest='flavor', metavar='FLAVOR_ID', default=1,
+                            help='use flavor FLAVOR_ID')
+        parser.add_option('-i', dest='image', metavar='IMAGE_ID', default=1,
+                            help='use image IMAGE_ID')
+    
+    def execute(self, name):
+        path = '/api/%s/servers' % self.api
+        server = {'name': name, 'flavorRef': self.flavor, 'imageRef': self.image}
+        body = json.dumps({'server': server})
+        reply = self.http_post(path, body)
+        server = reply['server']
+        server.pop('id')
+        print_dict(server)
+
+
+@command_name('rename')
+class UpdateServerName(Command):
+    description = 'update server name'
+    syntax = '<server id> <new name>'
+    
+    def execute(self, server_id, name):
+        path = '/api/%s/servers/%d' % (self.api, int(server_id))
+        body = json.dumps({'server': {'name': name}})
+        self.http_put(path, body)
+
+
+@command_name('delete')
+class DeleteServer(Command):
+    description = 'delete server'
+    syntax = '<server id>'
+    
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d' % (self.api, int(server_id))
+        self.http_delete(path)
+
+
+@command_name('reboot')
+class RebootServer(Command):
+    description = 'reboot server'
+    syntax = '<server id>'
+    
+    def add_options(self, parser):
+        parser.add_option('-f', action='store_true', dest='hard', default=False,
+                            help='perform a hard reboot')
+    
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        type = 'HARD' if self.hard else 'SOFT'
+        body = json.dumps({'reboot': {'type': type}})
+        self.http_post(path, body)
+    
+
+@command_name('start')
+class StartServer(Command):
+    description = 'start server'
+    syntax = '<server id>'
+    
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        body = json.dumps({'start': {}})
+        self.http_post(path, body)
+
+
+@command_name('shutdown')
+class StartServer(Command):
+    description = 'shutdown server'
+    syntax = '<server id>'
+    
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        body = json.dumps({'shutdown': {}})
+        self.http_post(path, body)
+
+
+@command_name('lsaddr')
+class ListAddresses(Command):
+    description = 'list server addresses'
+    syntax = '<server id> [network]'
+    
+    def execute(self, server_id, network=None):
+        path = '/api/%s/servers/%d/ips' % (self.api, int(server_id))
+        if network:
+            path += '/%s' % network
+        reply = self.http_get(path)
+        
+        addresses = [reply['network']] if network else reply['addresses']['values']
+        for address in addresses:
+            print address_to_string(address)
+
+
+@command_name('lsflv')
+class ListFlavors(Command):
+    description = 'list flavors'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail', default=False,
+                            help='show detailed output')
+    
+    def execute(self):
+        path = '/api/%s/flavors' % self.api
+        if self.detail:
+            path += '/detail'
+        reply = self.http_get(path)
+        
+        for flavor in reply['flavors']['values']:
+            id = flavor.pop('id')
+            name = flavor.pop('name')
+            details = ' '.join('%s=%s' % item for item in sorted(flavor.items()))
+            print '%3d %s %s' % (id, name, details)
+
+
+@command_name('infoflv')
+class GetFlavorDetails(Command):
+    description = 'get flavor details'
+    syntax = '<flavor id>'
+    
+    def execute(self, flavor_id):
+        path = '/api/%s/flavors/%d' % (self.api, int(flavor_id))
+        reply = self.http_get(path)
+        
+        flavor = reply['flavor']
+        id = flavor.pop('id')
+        name = flavor.pop('name')
+        details = ' '.join('%s=%s' % item for item in sorted(flavor.items()))
+        print '%3d %s %s' % (id, name, details)
+
+
+@command_name('lsimg')
+class ListImages(Command):
+    description = 'list images'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail', default=False,
+                            help='show detailed output')
+    
+    def execute(self):
+        path = '/api/%s/images' % self.api
+        if self.detail:
+            path += '/detail'
+        reply = self.http_get(path)
+        
+        for image in reply['images']['values']:
+            id = image.pop('id')
+            name = image.pop('name')
+            if self.detail:
+                print '%d %s' % (id, name)
+                print_dict(image)
+                print
+            else:
+                print '%3d %s' % (id, name)        
+
+
+@command_name('imginfo')
+class GetImageDetails(Command):
+    description = 'get image details'
+    syntax = '<image id>'
+    
+    def execute(self, image_id):
+        path = '/api/%s/images/%d' % (self.api, int(image_id))
+        reply = self.http_get(path)
+        image = reply['image']
+        image.pop('id')
+        print_dict(image)
+
+
+@command_name('createimg')
+class CreateImage(Command):
+    description = 'create image'
+    syntax = '<server id> <image name>'
+    
+    def execute(self, server_id, name):
+        path = '/api/%s/images' % self.api
+        image = {'name': name, 'serverRef': int(server_id)}
+        body = json.dumps({'image': image})
+        reply = self.http_post(path, body)
+        print_dict(reply['image'])
+
+
+@command_name('deleteimg')
+class DeleteImage(Command):
+    description = 'delete image'
+    syntax = '<image id>'
+    
+    def execute(self, image_id):
+        path = '/api/%s/images/%d' % (self.api, int(image_id))
+        self.http_delete(path)
+
+
+def main():
+    try:
+        name = argv[1]    
+        cls = commands[name]
+    except (IndexError, KeyError):
+        print 'Usage: %s <command>' % basename(argv[0])
+        print
+        print 'Commands:'
+        for name, cls in sorted(commands.items()):
+            description = getattr(cls, 'description', '')
+            print '  %s %s' % (name.ljust(12), description)
+        exit(1)
+    
+    try:
+        commands[name](argv[2:])
+    except TypeError:
+        syntax = getattr(cls, 'syntax', '')
+        if syntax:
+            print 'Syntax: %s %s' % (name, syntax)
+        else:
+            print 'Invalid syntax'
+        exit(1)
+
+
+if __name__ == '__main__':
+    main()

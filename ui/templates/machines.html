@@ -296,7 +296,7 @@ function disableSliders() {
 $("div.confirm_multiple .yes").live('click', function(){
     while(pending_actions.length > 0){ // if there is a pending action for this server execute it
         action = pending_actions.pop(); // extract action
-        serverID = action[1];
+        var serverID = action[1];
         action[0]([serverID]); // execute action
         $('#'+serverID+' .spinner').show();
         $('#'+serverID+' .selected').removeClass('selected');
@@ -390,7 +390,9 @@ $("#start").click(function(){
                 }
             }
     });
-    console.warn('creating ' + $("input[name=machine_name]")[0].value)
+    $("#emptymachineslist").hide();
+
+    try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
 
     $("#wizard").hide();
 });

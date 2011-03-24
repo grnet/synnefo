@@ -131,4 +131,5 @@ AUTH_PROFILE_MODULE = 'synnefo.OceanUser'
 
 TIMEOUT = 10*1000
 #after this time passes and the client gets no response, it raises an alert that there are network problems
-
+POLL_LIMIT = 3600
+#maximum number of seconds, needed for server and images polling

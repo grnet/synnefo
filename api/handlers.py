@@ -14,7 +14,7 @@ from time import sleep
 import random
 import string
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 log = logging.getLogger('synnefo.api.handlers')
 
@@ -133,6 +133,9 @@ class ServerHandler(BaseHandler):
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
                 last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                #return a badRequest if the changes_since is older than a limit
+                if datetime.now() - last_update > timedelta(seconds=settings.POLL_LIMIT):
+                    raise fault.badRequest        
                 virtual_servers = VirtualMachine.objects.filter(updated__gt=last_update)
                 if not len(virtual_servers):
                     return notModified
@@ -638,6 +641,9 @@ class ImageHandler(BaseHandler):
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
                 last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                #return a badRequest if the changes_since is older than a limit
+                if datetime.now() - last_update > timedelta(seconds=settings.POLL_LIMIT):
+                    raise fault.badRequest        
                 images = Image.objects.filter(updated__gt=last_update)
                 if not len(images):
                     return notModified

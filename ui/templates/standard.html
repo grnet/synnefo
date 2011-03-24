@@ -155,16 +155,18 @@ function update_machines_view(data){
         
         existing = $('#' + server.id);
         
-        if (existing.length > 1){
+        // if multiple machines exist in the DOM, delete all but one
+        // defensive coding - that shouldn't happen normally
+        while (existing.length > 1){
             existing.remove();
-            existing = [];
         }
         
+        // server already exists in DOM
         if (existing.length){
             $("div.machine:last-child").find("div.separator").show();                
 
-            // If the machine already exists in the DOM then simply update or delete it
-            if (server.deleted == true) {
+            //  if the status is deleted, delete it from the DOM
+            if (server.status == 'DELETED') {
                 existing.remove();            
                 try {
                     console.info(existing.find("a.name span.name").text() + ' removed');
@@ -183,19 +185,21 @@ function update_machines_view(data){
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
                     existing.remove();
                     existing = moved;
+                    existing.find('.spinner').hide();
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
                     moved = existing.clone().appendTo(".terminated");
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                     existing.remove();
                     existing = moved;
+                    existing.find('.spinner').hide();
                 } 
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
-                existing.find('.spinner').hide();            
+                            
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
-        } else if (server.deleted != true) {
+        } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);

@@ -55,6 +55,10 @@
         var SUCCESS = {
             'HEADER' : '{% trans "Success!" %}',
             'DEFAULT' : '{% trans "Your request has been succefully executed." %}',
+            'CREATE_VM_SUCCESS' : '{% trans "Success!" %}',
+            'CREATE_VM_SUCCESS_ONE' : '{% trans "Your machine is now being built." %}',
+            'CREATE_VM_SUCCESS_TWO' : '{% trans "Please write down the following password:" %}',
+            'CREATE_VM_SUCCESS_THREE' : '{% trans "Do not lose this! You will need it to connect to your machine, once it is ready." %}'
         };
         
         // ajax error checking  
@@ -92,9 +96,25 @@
         // ajax success checking
         function ajax_success(status, password) {
             // prepare the error message
-            $("#error-success h3").text(SUCCESS['HEADER']);
-            $("#error-success p").text(SUCCESS['DEFAULT']);             
             // bring up success notification
+            if (status != undefined && SUCCESS[status]) {
+                if (password != undefined && status == "CREATE_VM_SUCCESS") {
+                    $("#error-success h3").text(SUCCESS[status]);
+                    var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_ONE"] + '<br />'
+                        + SUCCESS["CREATE_VM_SUCCESS_TWO"] + '<br /><br />' + '<b>' + password + '</b>'
+                        + '<br /><br />' + SUCCESS["CREATE_VM_SUCCESS_THREE"] ;
+                    $("#error-success p").html(CREATE_VM_SUCCESS_MSG);             
+                } else {
+                    $("#error-success h3").text(SUCCESS['HEADER']);
+                    $("#error-success p").text(SUCCESS[status]);             
+                }
+            } else {
+                $("#error-success h3").text(SUCCESS['HEADER']);
+                $("#error-success p").text(SUCCESS['DEFAULT']);             
+
+            }
+
+
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
                 mask: {

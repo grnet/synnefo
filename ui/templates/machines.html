@@ -384,7 +384,7 @@ $("#start").click(function(){
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
-                    ajax_success(jqXHR.status);                   
+                    ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);                   
                 } else {
                     ajax_error(jqXHR.status);
                 }

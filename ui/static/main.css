@@ -525,7 +525,6 @@ div.machine div.actions {
 div.machine div.actions a {
     color: transparent;
     margin: 0 0 5px 8px;
-    display: none;
 }
 
 div.machine div.actions a.more {
@@ -539,6 +538,11 @@ div.machine div.actions a:hover{
 }
 
 div.machine div.actions:hover a, .machine:hover .actions a {
+    color: #3d3d3d;
+    display: block;
+}
+
+div.machine div.display a{
     color: #3d3d3d;
     display: block;
 }
@@ -1103,4 +1107,28 @@ div.list table thead #status {
 
 div.list table thead #name {
     width: 200px !important;
+}
+
+.spinner {
+    clear: left;
+    background: url("../static/progress.gif") transparent;
+    height: 31px;
+    width: 31px;
+    margin: 20px 0 0 11px;
+    position:absolute;
+}
+
+.wave {
+    background: url("../static/wave.gif");
+    height: 16px;
+    width: 16px;
+}
+
+.hidden {
+    display:none;
+}
+
+.selected {
+    display:block !important;
+    color: orange !important;
 }

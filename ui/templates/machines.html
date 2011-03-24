@@ -168,8 +168,8 @@
 
 <div class="confirm_multiple">
     <p>{% trans "Your actions will affect XX machines" %}</p>
-    <button class="yes">{% trans "Confirm all" %}</button>
-	<button class="no">{% trans "Cancel all" %}</button>
+    <button class="yes">{% trans "Confirm Αll" %}</button>
+	<button class="no">{% trans "Cancel Αll" %}</button>
 </div>
 
 <div id="machines" class="separator"></div>
@@ -300,6 +300,8 @@ $("div.confirm_multiple .yes").live('click', function(){
 // cancel all actions
 $("div.confirm_multiple .no").live('click', function(){
     pending_actions = [];
+    $('.machine .selected').removeClass('selected');
+    $('.machine .display').removeClass('display');
     update_confirmations();
 });
 

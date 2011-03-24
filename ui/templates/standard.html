@@ -11,6 +11,7 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
+            <div class="spinner hidden"></div>
         </div>
         <img class="logo" src="" />
         <a href="#" class="name">
@@ -46,6 +47,10 @@ $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
             pending_actions[i][0] = reboot;
@@ -55,7 +60,6 @@ $("div.actions a.action-reboot").live('click', function(){
     if (!found) // no pending action for this server was found, so let's just add it to the list
         pending_actions.push([reboot, serverID, serverName])
     update_confirmations();
-    //confirm_action('reboot', reboot, [serverID], [serverName]);
     return false;
 });
 
@@ -64,6 +68,10 @@ $("div.actions a.action-shutdown").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
             pending_actions[i][0] = shutdown;
@@ -73,7 +81,6 @@ $("div.actions a.action-shutdown").live('click', function(){
     if (!found) // no pending action for this server was found, so let's just add it to the list 
         pending_actions.push([shutdown, serverID, serverName])
     update_confirmations();
-    //confirm_action('shutdown', shutdown, [serverID], [serverName]);
     return false;
 });
 
@@ -82,6 +89,9 @@ $("div.actions a.action-start").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
             pending_actions[i][0] = start;
@@ -91,7 +101,6 @@ $("div.actions a.action-start").live('click', function(){
     if (!found) // no pending action for this server was found, so let's just add it to the list
         pending_actions.push([start, serverID, serverName])
     update_confirmations();    
-    //start([serverID]);
     return false;
 });
 
@@ -104,12 +113,18 @@ $("div.confirm_single .yes").live('click', function(){
         }
     }
     $(this).parent().hide();
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('.state').children('.spinner').show()
+    $(this).parent().parent().children('div.actions').removeClass('display');
     return false;
 });
 
 $("div.confirm_single .no").live('click', function(){
     // remove the action from the pending list
     var serverID = $(this).parent().parent().attr("id");
+    
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('div.actions').removeClass('display');    
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server remove it
         if (pending_actions[i][1]==serverID){
             pending_actions.splice(i,1);
@@ -176,7 +191,7 @@ function update_machines_view(data){
                     existing = moved;
                 } 
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
-            
+                existing.find('.spinner').hide();            
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
@@ -194,7 +209,6 @@ function update_machines_view(data){
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                 machine.appendTo(".terminated");
             }
-
         }
     });
 

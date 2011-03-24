@@ -18,10 +18,14 @@ function update_confirmations(){
     $('div.confirm_single').hide() // hide all confirm boxes to begin with
     $('div.confirm_multiple').hide()
     
-    for (i=0;i<pending_actions.length;i++){ // show single confirms
-        $("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
-    }
-	if (pending_actions.length>1){ // if more than one pending action show multiple confirm box
+	// standard view only
+	if ($.cookie("list") != '1') { 
+		for (i=0;i<pending_actions.length;i++){ // show single confirms
+			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
+		}		
+	}
+	
+	if (pending_actions.length>1 || $.cookie("list") == '1' && pending_actions.length == 1){ // if more than one pending action show multiple confirm box
 		$('div.confirm_multiple span.actionLen').text(pending_actions.length);
 		$('div.confirm_multiple').show();
 	}

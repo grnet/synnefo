@@ -44,6 +44,7 @@
 </div>
 
 <script>
+
 // select/deselect all from checkbox widget of table headers
 $("table thead tr th#selection :checkbox").live('change', function() {
     if ( $(this).is(":checked") ) {
@@ -101,53 +102,52 @@ $("tbody input[type='checkbox']").live('change', function() { updateActions(); }
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
-	var serverIDs = [], serverNames=[];
+	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
-		serverIDs.push(serverID);
-		serverNames.push($('#'+serverID+' span.name').text());
+		serverName = $('#'+serverID+' span.name').text();
+		pending_actions.push([destroy, serverID]);
 	});
-	confirm_action('destroy', destroy, serverIDs, serverNames);
+	update_confirmations();
 	return false;
 });
 
 
 $("a.enabled#action-reboot").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
-	var serverIDs = [], serverNames=[];
+	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
-		serverIDs.push(serverID);
-		serverNames.push($('#'+serverID+' span.name').text());
+		serverName = $('#'+serverID+' span.name').text();
+		pending_actions.push([reboot, serverID]);
 	});
-	confirm_action('reboot', reboot, serverIDs, serverNames);
+	update_confirmations();
 	return false;
 });
 
 
 $("a.enabled#action-start").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
-	var serverIDs = [], serverNames=[];
+	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
-		serverIDs.push(serverID);
-		serverNames.push($('#'+serverID+' span.name').text());
+		serverName = $('#'+serverID+' span.name').text();
+		pending_actions.push([start, serverID]);
 	});
-//	confirm_action('start', start, serverIDs, serverNames);
-    start(serverIDs);
+	update_confirmations();
 	return false;
 });
 
 
 $("a.enabled#action-shutdown").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
-	var serverIDs = [], serverNames=[];
+	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
-		serverIDs.push(serverID);
-		serverNames.push($('#'+serverID+' span.name').text());
+		serverName = $('#'+serverID+' span.name').text();
+		pending_actions.push([shutdown, serverID]);
 	});
-	confirm_action('shutdown', shutdown, serverIDs, serverNames);
+	update_confirmations();
 	return false;
 });
 
@@ -215,7 +215,7 @@ function update_machines_view(data){
 
 function display_success(serverID) {
 	//TODO
-    ajax_success();
+    $('#'+serverID).parent().parent().find('.list-logo').attr('src','static/wave.gif');
 }
 
 // indicate that the requested action was not completed

@@ -297,10 +297,15 @@ $("div.confirm_multiple .yes").live('click', function(){
     while(pending_actions.length > 0){ // if there is a pending action for this server execute it
         action = pending_actions.pop(); // extract action
         var serverID = action[1];
+        
+        if ($.cookie("list") != '1') { // standard view
+            $('#'+serverID+' .spinner').show();
+            $('#'+serverID+' .selected').removeClass('selected');
+            $('#'+serverID+' .display').removeClass('display');
+        } else { // list view
+            $('#'+serverID).parent().parent().find('.list-logo').attr('src','static/progress.gif');
+        }
         action[0]([serverID]); // execute action
-        $('#'+serverID+' .spinner').show();
-        $('#'+serverID+' .selected').removeClass('selected');
-        $('#'+serverID+' .display').removeClass('display');
     }
     update_confirmations();    
 });

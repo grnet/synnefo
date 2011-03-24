@@ -14,8 +14,23 @@ function ISODateString(d){
 			pad(d.getUTCSeconds())
 }
 
+function update_confirmations(){
+    $('div.confirm_single').hide() // hide all confirm boxes to begin with
+    $('div.confirm_multiple').hide()
+    
+    for (i=0;i<pending_actions.length;i++){ // show single confirms
+        $("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
+    }
+	if (pending_actions.length>1){ // if more than one pending action show multiple confirm box
+		$('div.confirm_multiple span.actionLen').text(pending_actions.length);
+		$('div.confirm_multiple').show();
+	}
+}
+
 function list_view() {
 	changes_since = 0; // to reload full list
+	pending_actions = []; // clear pending actions
+	update_confirmations();
 	clearTimeout(deferred);	// clear old deferred calls
 	try {
 		update_request.abort(); // cancel pending ajax updates
@@ -44,6 +59,8 @@ function list_view() {
 
 function standard_view() {
 	changes_since = 0; // to reload full list
+	pending_actions = []; // clear pending actions
+	update_confirmations();
 	clearTimeout(deferred);	// clear old deferred calls
 	try {
 		update_request.abort() // cancel pending ajax updates

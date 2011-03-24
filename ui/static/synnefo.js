@@ -192,7 +192,7 @@ function update_vms(interval) {
 			}
 			// as for now, just show an error message
 			try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-			ajax_error();						
+			ajax_error(jqXHR.status);						
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {

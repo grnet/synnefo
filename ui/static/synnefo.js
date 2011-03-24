@@ -387,14 +387,14 @@ function updateActions() {
 // reboot action
 function reboot(serverIDs){
 	if (!serverIDs.length){
-		ajax_success('DEFAULT');
+		//ajax_success('DEFAULT');
 		return false;
 	}	
     // ajax post reboot call
     var payload = {
         "reboot": {"type" : "HARD"}
     };
-    serverID = serverIDs.pop();
+    var serverID = serverIDs.pop();
 	
 	$.ajax({
 		url: '/api/v1.0/servers/' + serverID + '/action',
@@ -409,7 +409,10 @@ function reboot(serverIDs){
 					if ( jqXHR.status == '202') {
                         try {
                             console.info('rebooted ' + serverID);
-                        } catch(err) {}   		
+                        } catch(err) {}
+						// indicate that the action succeeded
+						display_success(serverID);
+						// continue with the rest of the servers
 						reboot(serverIDs);
 					} else {
 						ajax_error(jqXHR.status);
@@ -423,7 +426,7 @@ function reboot(serverIDs){
 // shutdown action
 function shutdown(serverIDs) {
 	if (!serverIDs.length){
-		ajax_success('DEFAULT');
+		//ajax_success('DEFAULT');
 		return false;
 	}
     // ajax post shutdown call
@@ -431,7 +434,7 @@ function shutdown(serverIDs) {
         "shutdown": {"timeout" : "5"}
     };   
 
-	serverID = serverIDs.pop()
+	var serverID = serverIDs.pop()
     $.ajax({
 	    url: '/api/v1.0/servers/' + serverID + '/action',
 	    type: "POST",
@@ -445,7 +448,10 @@ function shutdown(serverIDs) {
                     if ( jqXHR.status == '202') {
 						try {
                             console.info('suspended ' + serverID);
-                        } catch(err) {}       				
+                        } catch(err) {}
+						// indicate that the action succeeded
+						display_success(serverID);
+						// continue with the rest of the servers			
                         shutdown(serverIDs);
                     } else {
                         ajax_error(jqXHR.status);
@@ -459,7 +465,7 @@ function shutdown(serverIDs) {
 // destroy action
 function destroy(serverIDs) {
 	if (!serverIDs.length){
-		ajax_success('DEFAULT');
+		//ajax_success('DEFAULT');
 		return false;
 	}
     // ajax post destroy call can have an empty request body
@@ -479,7 +485,10 @@ function destroy(serverIDs) {
                     if ( jqXHR.status == '202') {
 						try {
                             console.info('destroyed ' + serverID);
-                        } catch (err) {}        				
+                        } catch (err) {}
+						// indicate that the action succeeded
+						display_success(serverID);
+						// continue with the rest of the servers
                         destroy(serverIDs);
                     } else {
                         ajax_error(jqXHR.status);
@@ -493,7 +502,7 @@ function destroy(serverIDs) {
 // start action
 function start(serverIDs){
 	if (!serverIDs.length){
-		ajax_success('DEFAULT');
+		//ajax_success('DEFAULT');
 		return false;
 	}	
     // ajax post start call
@@ -501,7 +510,7 @@ function start(serverIDs){
         "start": {"type" : "NORMAL"}
     };   
 
-	serverID = serverIDs.pop()
+	var serverID = serverIDs.pop()
     $.ajax({
         url: '/api/v1.0/servers/' + serverID + '/action',
         type: "POST",
@@ -515,7 +524,10 @@ function start(serverIDs){
                     if ( jqXHR.status == '202') {
 					    try {
                             console.info('started ' + serverID);
-                        } catch(err) {}      		
+                        } catch(err) {}
+						// indicate that the action succeeded
+						display_success(serverID);
+						// continue with the rest of the servers						
                         start(serverIDs);
                     } else {
                         ajax_error(jqXHR.status);

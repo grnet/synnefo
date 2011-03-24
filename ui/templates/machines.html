@@ -294,7 +294,15 @@ function disableSliders() {
 
 // confirm all actions
 $("div.confirm_multiple .yes").live('click', function(){
-    
+    while(pending_actions.length > 0){ // if there is a pending action for this server execute it
+        action = pending_actions.pop(); // extract action
+        serverID = action[1];
+        action[0]([serverID]); // execute action
+        $('#'+serverID+' .spinner').show();
+        $('#'+serverID+' .selected').removeClass('selected');
+        $('#'+serverID+' .display').removeClass('display');
+    }
+    update_confirmations();    
 });
 
 // cancel all actions

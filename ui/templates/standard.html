@@ -108,8 +108,8 @@ $("div.confirm_single .yes").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
         if (pending_actions[i][1]==serverID){
-            action = pending_actions.splice(i,1); // extract action
-            action[0][0]([action[0][1]]); // execute action            
+            action = pending_actions.splice(i,1)[0]; // extract action
+            action[0]([action[1]]); // execute action            
         }
     }
     $(this).parent().hide();
@@ -224,6 +224,13 @@ function update_machines_view(data){
     if (servers.length == 0) {
         $("#emptymachineslist").fadeIn("slow");
     }
+}
+
+// indicate that the requested action was succesfully completed
+function display_success(serverID) {
+    $('#'+serverID+ ' .spinner').addClass('wave');
+    console.info('success '+serverID);
+    setTimeout("$('#'+serverID+ ' .spinner').hide();$('#'+serverID+ ' .wave').removeClass('wave')", 5000);
 }
 
 if (images.length == 0) {

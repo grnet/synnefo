@@ -1119,9 +1119,7 @@ div.list table thead #name {
 }
 
 .wave {
-    background: url("../static/wave.gif");
-    height: 16px;
-    width: 16px;
+    background: url("../static/wave.gif") !important;
 }
 
 .hidden {

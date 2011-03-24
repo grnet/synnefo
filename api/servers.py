@@ -12,10 +12,9 @@ from django.conf import settings
 from django.conf.urls.defaults import *
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.utils import simplejson as json
 
 from logging import getLogger
-
-import json
 
 
 log = getLogger('synnefo.api.servers')

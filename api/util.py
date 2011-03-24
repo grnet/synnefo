@@ -7,6 +7,7 @@ from synnefo.db.models import *
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.utils import simplejson as json
 
 from functools import wraps
 from logging import getLogger
@@ -15,8 +16,6 @@ from string import ascii_letters, digits
 from traceback import format_exc
 from xml.etree import ElementTree
 from xml.parsers.expat import ExpatError
-
-import json
 
 
 log = getLogger('synnefo.api')

@@ -4,8 +4,8 @@
 
 from django.test import TestCase
 from django.test.client import Client
+from django.utils import simplejson as json
 
-import json
 
 API = 'v1.1redux'
 

@@ -8,6 +8,7 @@ from synnefo.db.models import Flavor
 from django.conf.urls.defaults import *
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.utils import simplejson as json
 
 
 urlpatterns = patterns('synnefo.api.flavors',

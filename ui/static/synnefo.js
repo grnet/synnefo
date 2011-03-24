@@ -420,7 +420,7 @@ function reboot(serverIDs){
 		data: JSON.stringify(payload),
 		timeout: TIMEOUT,
 		error: function(jqXHR, textStatus, errorThrown) {
-					ajax_error(jqXHR.status);
+                    display_failure(serverID, jqXHR.status, 'Reboot')
 				},
 		success: function(data, textStatus, jqXHR) {
 					if ( jqXHR.status == '202') {
@@ -459,7 +459,7 @@ function shutdown(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR.status);
+                    display_failure(serverID, jqXHR.status, 'Shutdown')
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -496,7 +496,7 @@ function destroy(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR.status);
+                    display_failure(serverID, jqXHR.status, 'Destroy')
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -535,7 +535,7 @@ function start(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR.status);
+                    display_failure(serverID, jqXHR.status, 'Start')
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {

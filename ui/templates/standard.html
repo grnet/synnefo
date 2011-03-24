@@ -33,6 +33,10 @@
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
         </div>
+        <div class="action_error">
+            {% trans "Error on" %} <span class="action">error action</span>
+            <button class="details">details</button>
+        </div>
         <div class="separator"></div>
     </div>
 
@@ -227,6 +231,14 @@ function display_success(serverID) {
     console.info('success '+serverID);
     setTimeout("$('#"+serverID+ " .spinner').hide();$('#"+serverID+ " .wave').removeClass('wave')", 5000);
 }
+
+// indicate that the requested action was not completed
+function display_failure(serverID, status, action) {
+    $('#'+serverID+ ' .spinner').hide();
+    $('#'+serverID+ ' .action_error .action').text(action);
+    $('#'+serverID+ ' .action_error').show();
+}
+
 
 if (images.length == 0) {
     // populate image list

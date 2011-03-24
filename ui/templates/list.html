@@ -215,8 +215,16 @@ function update_machines_view(data){
 
 function display_success(serverID) {
 	//TODO
-	return false;
+    ajax_success();
 }
+
+// indicate that the requested action was not completed
+function display_failure(serverID, status, action) {
+	//TODO
+    ajax_error(status);
+}
+
+
 
 var vmTable = $("div.list table.list-machines").dataTable({
     "bInfo": false,

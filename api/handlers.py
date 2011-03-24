@@ -148,7 +148,7 @@ class ServerHandler(BaseHandler):
             if not detail:
                 return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
             else:
-                virtual_servers_list = [{'status': server.deleted and "DELETED" or server.rsapi_state, 
+                virtual_servers_list = [{'status': server.rsapi_state, 
                                          'flavorRef': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 

@@ -439,6 +439,8 @@ class VirtualMachine(models.Model):
 
     # FIXME: Perhaps move somewhere else, outside the model?
     def _get_rsapi_state(self):
+        if self.deleted:
+            return 'DELETED'
         try:
             r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[self._operstate]
         except KeyError:

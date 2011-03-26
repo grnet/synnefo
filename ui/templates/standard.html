@@ -33,9 +33,10 @@
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
         </div>
-        <div class="action_error">
-            {% trans "Error on" %} <span class="action">error action</span>
-            <button class="details">details</button>
+        <div class="action_error" align="center">
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">error action</span>
+            <span class="message"></span>
+            <button class="details">Details</button>
         </div>
         <div class="separator"></div>
     </div>
@@ -52,10 +53,11 @@ $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     var found = false;
+    
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
-
+    $(this).parent().addClass('display');
+    $(this).parent().parent().find('.action_error').hide();
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
             pending_actions[i][0] = reboot;
@@ -76,6 +78,7 @@ $("div.actions a.action-shutdown").live('click', function(){
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
@@ -97,6 +100,8 @@ $("div.actions a.action-start").live('click', function(){
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
             pending_actions[i][0] = start;
@@ -140,6 +145,13 @@ $("div.confirm_single .no").live('click', function(){
     update_confirmations();    
     return false;
 });
+
+$("div.action_error .details").live('click', function(){
+    // remove the action from the pending list
+    ajax_error($(this).parent().children('.message').text());
+    $(this).parent().hide();
+});
+
 
 // update the servers list
 function update_machines_view(data){
@@ -237,7 +249,9 @@ function display_success(serverID) {
 function display_failure(serverID, status, action) {
     $('#'+serverID+ ' .spinner').hide();
     $('#'+serverID+ ' .action_error .action').text(action);
+    $('#'+serverID+ ' .action_error .message').text(status);
     $('#'+serverID+ ' .action_error').show();
+    
 }
 
 

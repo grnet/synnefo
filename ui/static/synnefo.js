@@ -15,8 +15,8 @@ function ISODateString(d){
 }
 
 function update_confirmations(){
-    $('div.confirm_single').hide() // hide all confirm boxes to begin with
-    $('div.confirm_multiple').hide()
+    $('div.confirm_single').hide(); // hide all confirm boxes to begin with
+    $('div.confirm_multiple').hide();
     
 	// standard view only
 	if ($.cookie("list") != '1') { 

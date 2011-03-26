@@ -857,11 +857,34 @@ input.machine {
 }
 
 /* Confirmation boxes */
-div.confirm_single, div.confirm_multiple, div.action_error {
+div.confirm_single, div.confirm_multiple {
     display: none;
     background-color: #DCDCDC;
     color: orange;
     font-size: 9pt;
+}
+
+div.action_error {
+    float: right;
+    width: 80px;
+    height: 70px;
+    padding: 5px;
+    margin: -65px -165px 0 0;
+    display: none;
+    background-color: #DCDCDC;
+    font-size: 9pt;
+    color: black;
+    line-height: 1.5;
+}
+
+div.action_error button.details {
+    margin: 15px 0 0 0px;
+    padding: 0 15px;
+    border-color: black;
+}
+
+.orange {
+    color: orange;
 }
 
 div.confirm_single button, div.confirm_multiple button, div.action_error button{
@@ -890,14 +913,14 @@ div.confirm_single button.no:hover, div.confirm_multiple button.no:hover {
     background-color: #a5a5a5;
 }
 
-div.confirm_single, div.action_error {
+div.confirm_single{
     float: right;
     width: 90px;
     height: 70px;
     margin: -65px -165px 0 0;
 }
 
-div.confirm_single button.yes, div.action_error button.details {
+div.confirm_single button.yes {
     margin: 5px 0 0 5px;
 }
 
@@ -1133,4 +1156,8 @@ div.list table thead #name {
 .selected {
     display:block !important;
     color: orange !important;
+}
+
+.message {
+    display: none;
 }

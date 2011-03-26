@@ -220,7 +220,8 @@ function display_success(serverID) {
 
 // indicate that the requested action was not completed
 function display_failure(serverID, status, action) {
-	//TODO
+	osIcon = $('#'+serverID).parent().parent().find('.list-logo');
+	osIcon.attr('src',osIcon.attr('os'));
     ajax_error(status);
 }
 

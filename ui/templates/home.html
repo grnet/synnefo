@@ -68,7 +68,7 @@
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
             
-            if (status != undefined && ERRORS[status]) {
+            if (ERRORS[status] != undefined) {
                 $("#error-success p").text(ERRORS[status]);
             } else {
                 $("#error-success p").text(ERRORS['DEFAULT']);   

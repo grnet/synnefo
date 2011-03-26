@@ -460,7 +460,14 @@ $("#start").click(function(){
 });
 
 // basic functions executed on page load
-
+if (images.length > 0) {
+    // populate image list
+    update_wizard_images();
+}
+if (flavors.length > 0) {
+    // configure flavors
+    update_wizard_flavors(); 
+}
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 

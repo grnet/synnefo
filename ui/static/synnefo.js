@@ -240,29 +240,78 @@ function update_images() {
         success: function(data, textStatus, jqXHR) {
             try {
 				images = data.images;
+				update_wizard_images();
 			} catch(err){
 				ajax_error("NO_IMAGES");
 			}
-            if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
-                $.each(data.images, function(i,image){
-                    var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
-                    img.find("label").attr('for',"img-radio-" + image.id);
-                    img.find(".image-title").text(image.name);
-                    img.find(".description").text(image.metadata.meta.key.description);
-                    img.find(".size").text(image.size);
-                    img.find("input.radio").attr('id',"img-radio-" + image.id);
-                    if (i==0) img.find("input.radio").attr("checked","checked"); 
-                    img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
-                    if (image.serverId) {
-                        img.appendTo("ul#custom-images");
-                    } else {
-                        img.appendTo("ul#standard-images");
-                    }
-                });
-            }
         }
     });
     return false;
+}
+
+function update_wizard_images() {
+	if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
+		$.each(images, function(i,image){
+			var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
+			img.find("label").attr('for',"img-radio-" + image.id);
+			img.find(".image-title").text(image.name);
+			img.find(".description").text(image.metadata.meta.key.description);
+			img.find(".size").text(image.size);
+			img.find("input.radio").attr('id',"img-radio-" + image.id);
+			if (i==0) img.find("input.radio").attr("checked","checked"); 
+			img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
+			if (image.serverId) {
+				img.appendTo("ul#custom-images");
+			} else {
+				img.appendTo("ul#standard-images");
+			}
+		});
+	}	
+}
+
+function update_wizard_flavors(){
+	// sliders for selecting VM flavor
+	$("#cpu:range").rangeinput({min:0,
+							   value:0,
+							   step:1,
+							   progress: true,
+							   max:cpus.length-1});
+	
+	$("#storage:range").rangeinput({min:0,
+							   value:0,
+							   step:1,
+							   progress: true,
+							   max:disks.length-1});
+
+	$("#ram:range").rangeinput({min:0,
+							   value:0,
+							   step:1,
+							   progress: true,
+							   max:ram.length-1});
+	$("#small").click();
+	
+	// update the indicators when sliding
+	$("#cpu:range").data().rangeinput.onSlide(function(event,value){
+		$("#cpu-indicator")[0].value = cpus[Number(value)];
+	});
+	$("#cpu:range").data().rangeinput.change(function(event,value){
+		$("#cpu-indicator")[0].value = cpus[Number(value)];				
+		$("#custom").click();				
+	});			
+	$("#ram:range").data().rangeinput.onSlide(function(event,value){
+		$("#ram-indicator")[0].value = ram[Number(value)];
+	});
+	$("#ram:range").data().rangeinput.change(function(event,value){
+		$("#ram-indicator")[0].value = ram[Number(value)];				
+		$("#custom").click();
+	});			
+	$("#storage:range").data().rangeinput.onSlide(function(event,value){
+		$("#storage-indicator")[0].value = disks[Number(value)];
+	});
+	$("#storage:range").data().rangeinput.change(function(event,value){
+		$("#storage-indicator")[0].value = disks[Number(value)];				
+		$("#custom").click();
+	});				
 }
 
 Array.prototype.unique = function () {
@@ -306,48 +355,7 @@ function update_flavors() {
             cpus = cpus.unique();
             disks = disks.unique();
             ram = ram.unique();
-            // sliders for selecting VM flavor
-            $("#cpu:range").rangeinput({min:0,
-                                       value:0,
-                                       step:1,
-                                       progress: true,
-                                       max:cpus.length-1});
-            
-            $("#storage:range").rangeinput({min:0,
-                                       value:0,
-                                       step:1,
-                                       progress: true,
-                                       max:disks.length-1});
-
-            $("#ram:range").rangeinput({min:0,
-                                       value:0,
-                                       step:1,
-                                       progress: true,
-                                       max:ram.length-1});
-            $("#small").click();
-            
-            // update the indicators when sliding
-            $("#cpu:range").data().rangeinput.onSlide(function(event,value){
-                $("#cpu-indicator")[0].value = cpus[Number(value)];
-            });
-            $("#cpu:range").data().rangeinput.change(function(event,value){
-                $("#cpu-indicator")[0].value = cpus[Number(value)];				
-                $("#custom").click();				
-			});			
-            $("#ram:range").data().rangeinput.onSlide(function(event,value){
-                $("#ram-indicator")[0].value = ram[Number(value)];
-            });
-            $("#ram:range").data().rangeinput.change(function(event,value){
-                $("#ram-indicator")[0].value = ram[Number(value)];				
-                $("#custom").click();
-            });			
-            $("#storage:range").data().rangeinput.onSlide(function(event,value){
-                $("#storage-indicator")[0].value = disks[Number(value)];
-            });
-            $("#storage:range").data().rangeinput.change(function(event,value){
-                $("#storage-indicator")[0].value = disks[Number(value)];				
-                $("#custom").click();
-            });			
+			update_wizard_flavors();
         }
     });
     return false;

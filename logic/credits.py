@@ -6,11 +6,9 @@
 
 from datetime import datetime
 
-from db.models import Debit, FlavorCost, VirtualMachine
+from db.models import Debit, FlavorCost
 
 from django.db import transaction
-
-import synnefo.settings as settings
 
 @transaction.commit_on_success
 def debit_account(user , amount, vm, description):
@@ -54,9 +52,9 @@ def charge(vm):
 
         # remember, we charge only for Started and Stopped
         if vm._operstate == 'STARTED':
-            cost_list = vm.flavor.get_cost_active(start_datetime, vm.charged)
+            cost_list = get_cost_active(vm.flavor, start_datetime, vm.charged)
         elif vm._operstate == 'STOPPED':
-            cost_list = vm.flavor.get_cost_inactive(start_datetime, vm.charged)
+            cost_list = get_cost_inactive(vm.flavor, start_datetime, vm.charged)
 
         # find the total vost
         total_cost = sum([x[1] for x in cost_list])
@@ -66,6 +64,7 @@ def charge(vm):
         debit_account(vm.owner, total_cost, vm, description)
 
     vm.save()
+
 
 def get_costs(vm, start_datetime, end_datetime, active):
     """Return a list with FlavorCost objects for the specified duration"""
@@ -115,33 +114,6 @@ def get_costs(vm, start_datetime, end_datetime, active):
 
     return results
 
-def id_from_instance_name(name):
-    """Returns VirtualMachine's Django id, given a ganeti machine name.
-
-    Strips the ganeti prefix atm. Needs a better name!
-
-    """
-    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
-        raise VirtualMachine.InvalidBackendIdError(str(name))
-    ns = str(name).lstrip(settings.BACKEND_PREFIX_ID)
-    if not ns.isdigit():
-        raise VirtualMachine.InvalidBackendIdError(str(name))
-
-    return int(ns)
-
-
-def get_rsapi_state(vm):
-    """Returns the RSAPI state for a virtual machine"""
-    try:
-        r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[vm._operstate]
-    except KeyError:
-        return "UNKNOWN"
-    # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
-    if r == 'ACTIVE' and vm._backendopcode == 'OP_INSTANCE_REBOOT' and \
-        vm._backendjobstatus in ('queued', 'waiting', 'running'):
-        return "REBOOT"
-    return r
-
 
 def calculate_cost(start_date, end_date, cost):
     """Calculate the total cost for the specified duration"""
@@ -151,3 +123,13 @@ def calculate_cost(start_date, end_date, cost):
     total_cost = float(cost)*total_hours
 
     return round(total_cost)
+
+
+def get_cost_active(vm, start_datetime, end_datetime):
+    """Returns a list with the active costs for the specified duration"""
+    return get_costs(vm, start_datetime, end_datetime, True)
+
+
+def get_cost_inactive(vm, start_datetime, end_datetime):
+    """Returns a list with the inactive costs for the specified duration"""
+    return get_costs(vm, start_datetime, end_datetime, False)

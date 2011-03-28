@@ -140,16 +140,6 @@ class Flavor(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_cost_active(self, start_datetime, end_datetime):
-        """Returns a list with the active costs for the specified duration"""
-        from logic import credits
-        return credits.get_costs(self, start_datetime, end_datetime, True)
-
-    def get_cost_inactive(self, start_datetime, end_datetime):
-        """Returns a list with the inactive costs for the specified duration"""
-        from logic import credits
-        return credits.get_costs(self, start_datetime, end_datetime, False)
-
 
 class FlavorCost(models.Model):
     cost_active = models.PositiveIntegerField('Active Cost')
@@ -287,12 +277,6 @@ class VirtualMachine(models.Model):
             # breaking VirtualMachine.object.create() among other things.
             self._operstate = 'BUILD'
 
-    # FIXME: leave this here to preserve the property rsapistate
-    def _get_rsapi_state(self):
-        return credits.get_rsapi_state(self)
-
-    rsapi_state = property(_get_rsapi_state)
-
     def _get_backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
         return '%s%s' % (settings.BACKEND_PREFIX_ID, str(self.id))
@@ -305,18 +289,6 @@ class VirtualMachine(models.Model):
     
     def __unicode__(self):
         return self.name
-
-    def _update_state(self, new_operstate):
-        """Wrapper around updates of the _operstate field
-
-        Currently calls the charge() method when necessary.
-
-        """
-
-        # Call charge() unconditionally before any change of
-        # internal state.
-        credits.charge(self)
-        self._operstate = new_operstate
 
 
 class VirtualMachineGroup(models.Model):

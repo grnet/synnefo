@@ -346,7 +346,7 @@ class ServerAddressHandler(BaseHandler):
             address = {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}}}                            
         elif networkID == "private":
             address = {'private': ''}    
-        elif networkID != None:
+        elif networkID is not None:
             raise fault.badRequest
         return { "addresses": address } 
 

@@ -29,7 +29,3 @@ class FlavorTestCase(TestCase):
         f_name = flavor.name
 
         self.assertEqual(f_name, 'C1R1024D10', 'flavor.name is not generated correctly, C1R1024D10! (%s)' % (f_name,))
-
-
-
-

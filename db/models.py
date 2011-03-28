@@ -19,7 +19,7 @@ class SynnefoUser(models.Model):
 
     def get_limit(self, limit_name):
         """Returns the limit value for the specified limit"""
-        limit_objs = Limit.objects.filter(name=limit_name, user=self)        
+        limit_objs = Limit.objects.filter(name=limit_name, user=self)
         if len(limit_objs) == 1:
             return limit_objs[0].value
         

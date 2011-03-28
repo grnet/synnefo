@@ -8,17 +8,18 @@
 
 from db.models import *
 
+from logic import credits
 
 def periodically_charge():
     """Scan all virtual machines and charge each user"""
-    all_vms = VirtualMachine.objects.all()
+    active_vms = VirtualMachine.objects.filter(delete=False)
     
-    if not len(all_vms):
+    if not len(active_vms):
         print "No virtual machines found"
         return
     
-    for vm in all_vms:
+    for vm in active_vms:
         # Running and Stopped is charged, else the cost is zero
-        vm.charge()
+        credits.charge(vm)
 
 # vim: set ts=4 sts=4 sw=4 et ai :

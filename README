@@ -39,7 +39,7 @@ Notes
 
 5) The checkout directory name "synnefo" is mandatory
 
-6) In Mac computers with Snow Leopard, you may have a problem installing pycurl. Remember to set 64-bit arch when you install it.
+6) For Mac computers with Snow Leopard, you may have a problem installing pycurl. Remember to set 64-bit arch when you install it.
 
     env ARCHFLAGS="-arch x86_64" ./bin/pip install pycurl
 

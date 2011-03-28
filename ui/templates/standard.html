@@ -11,6 +11,7 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
+            <div class="spinner hidden"></div>
         </div>
         <img class="logo" src="" />
         <a href="#" class="name">
@@ -28,9 +29,14 @@
             <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
             <a href="#" class="more">{% trans "more &hellip;" %}</a>
         </div>
-        <div class="confirm" id="single">
+        <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">error action</span>
+            <span class="message"></span>
+            <button class="details">Details</button>
         </div>
         <div class="separator"></div>
     </div>
@@ -41,11 +47,26 @@
 </div>
 
 <script>
+    
 // intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    confirm_action('reboot', reboot, [serverID], [serverName]);
+    var found = false;
+    
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display');
+    $(this).parent().parent().find('.action_error').hide();
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = reboot;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([reboot, serverID, serverName])
+    update_confirmations();
     return false;
 });
 
@@ -53,7 +74,21 @@ $("div.actions a.action-reboot").live('click', function(){
 $("div.actions a.action-shutdown").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    confirm_action('shutdown', shutdown, [serverID], [serverName]);
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = shutdown;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list 
+        pending_actions.push([shutdown, serverID, serverName])
+    update_confirmations();
     return false;
 });
 
@@ -61,10 +96,62 @@ $("div.actions a.action-shutdown").live('click', function(){
 $("div.actions a.action-start").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-//    confirm_action('start', start, [serverID], [serverName]);
-    start([serverID]);
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = start;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([start, serverID, serverName])
+    update_confirmations();    
     return false;
 });
+
+$("div.confirm_single .yes").live('click', function(){
+    var serverID = $(this).parent().parent().attr("id");
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
+        if (pending_actions[i][1]==serverID){
+            action = pending_actions.splice(i,1)[0]; // extract action
+            action[0]([action[1]]); // execute action            
+        }
+    }
+    $(this).parent().hide();
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('.state').children('.spinner').show()
+    $(this).parent().parent().children('div.actions').removeClass('display');
+    update_confirmations();    
+    return false;
+});
+
+$("div.confirm_single .no").live('click', function(){
+    // remove the action from the pending list
+    var serverID = $(this).parent().parent().attr("id");
+    
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('div.actions').removeClass('display');    
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server remove it
+        if (pending_actions[i][1]==serverID){
+            pending_actions.splice(i,1);
+        }
+    }
+    $(this).parent().hide();
+    update_confirmations();    
+    return false;
+});
+
+$("div.action_error .details").live('click', function(){
+    // remove the action from the pending list
+    ajax_error($(this).parent().children('.message').text());
+    $(this).parent().hide();
+});
+
 
 // update the servers list
 function update_machines_view(data){
@@ -76,16 +163,18 @@ function update_machines_view(data){
         
         existing = $('#' + server.id);
         
-        if (existing.length > 1){
+        // if multiple machines exist in the DOM, delete all but one
+        // defensive coding - that shouldn't happen normally
+        while (existing.length > 1){
             existing.remove();
-            existing = [];
         }
         
+        // server already exists in DOM
         if (existing.length){
             $("div.machine:last-child").find("div.separator").show();                
 
-            // If the machine already exists in the DOM then simply update or delete it
-            if (server.status == "DELETED") {
+            //  if the status is deleted, delete it from the DOM
+            if (server.status == 'DELETED') {
                 existing.remove();            
                 try {
                     console.info(existing.find("a.name span.name").text() + ' removed');
@@ -104,19 +193,21 @@ function update_machines_view(data){
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
                     existing.remove();
                     existing = moved;
+                    existing.find('.spinner').hide();
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
                     moved = existing.clone().appendTo(".terminated");
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                     existing.remove();
                     existing = moved;
+                    existing.find('.spinner').hide();
                 } 
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
-            
+                            
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
-        } else if (server.status != "DELETED") {
+        } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);
@@ -130,7 +221,6 @@ function update_machines_view(data){
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                 machine.appendTo(".terminated");
             }
-
         }
     });
 
@@ -147,6 +237,23 @@ function update_machines_view(data){
         $("#emptymachineslist").fadeIn("slow");
     }
 }
+
+// indicate that the requested action was succesfully completed
+function display_success(serverID) {
+    $('#'+serverID+ ' .spinner').addClass('wave');
+    console.info('success '+serverID);
+    setTimeout("$('#"+serverID+ " .spinner').hide();$('#"+serverID+ " .wave').removeClass('wave')", 5000);
+}
+
+// indicate that the requested action was not completed
+function display_failure(serverID, status, action) {
+    $('#'+serverID+ ' .spinner').hide();
+    $('#'+serverID+ ' .action_error .action').text(action);
+    $('#'+serverID+ ' .action_error .message').text(status);
+    $('#'+serverID+ ' .action_error').show();
+    
+}
+
 
 if (images.length == 0) {
     // populate image list

@@ -36,7 +36,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'UTC'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -132,4 +132,5 @@ AUTH_PROFILE_MODULE = 'synnefo.OceanUser'
 
 TIMEOUT = 10*1000
 #after this time passes and the client gets no response, it raises an alert that there are network problems
-
+POLL_LIMIT = 3600
+#maximum number of seconds, needed for server and images polling

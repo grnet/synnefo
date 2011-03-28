@@ -14,7 +14,7 @@ from time import sleep
 import random
 import string
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 log = logging.getLogger('synnefo.api.handlers')
 
@@ -104,7 +104,6 @@ class ServerHandler(BaseHandler):
             server = {'status': server.rsapi_state, 
                      'flavorRef': server.flavor.id, 
                      'name': server.name, 
-                     'description': server.description, 
                      'id': server.id, 
                      'imageRef': server.sourceimage.id,
                      'created': server.created, 
@@ -127,10 +126,14 @@ class ServerHandler(BaseHandler):
 
     @paginator
     def read_all(self, request, detail=False):
+        #changes_since should be on ISO 8601 format
         try:
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
-                last_update = datetime.fromtimestamp(int(changes_since))
+                last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                #return a badRequest if the changes_since is older than a limit
+                if datetime.now() - last_update > timedelta(seconds=settings.POLL_LIMIT):
+                    raise fault.badRequest        
                 virtual_servers = VirtualMachine.objects.filter(updated__gt=last_update)
                 if not len(virtual_servers):
                     return notModified
@@ -143,11 +146,10 @@ class ServerHandler(BaseHandler):
             if not detail:
                 return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
             else:
-                virtual_servers_list = [{'status': server.deleted and "DELETED" or server.rsapi_state, 
+                virtual_servers_list = [{'status': server.rsapi_state, 
                                          'flavorRef': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 
-                                         'description': server.description, 
                                          'created': server.created, 
                                          'updated': server.updated,
                                          'imageRef': server.sourceimage.id, 
@@ -252,7 +254,7 @@ class ServerHandler(BaseHandler):
                 "progress" : 0,
                 "status" : 'BUILD',
                 "adminPass" : self.random_password(),
-                "metadata" : {"My Server Name" : vm.description},
+                "metadata" : {"My Server Name" : vm.name},
                 "addresses" : {
                     "public" : [  ],
                     "private" : [  ],
@@ -631,17 +633,33 @@ class ImageHandler(BaseHandler):
         Faults: cloudServersFault, serviceUnavailable, unauthorized,
                 badRequest, itemNotFound
         """
+
+        #changes_since should be on ISO 8601 format
         try:
-            images = Image.objects.all()
+            changes_since = request.GET.get("changes-since", 0)
+            if changes_since:
+                last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                #return a badRequest if the changes_since is older than a limit
+                if datetime.now() - last_update > timedelta(seconds=settings.POLL_LIMIT):
+                    raise fault.badRequest        
+                images = Image.objects.filter(updated__gt=last_update)
+                if not len(images):
+                    return notModified
+            else:
+                images = Image.objects.all()
+        except Exception, e:
+            raise fault.badRequest        
+        try:
             images_list = [ {'created': image.created.isoformat(), 
                         'id': image.id,
                         'name': image.name,
                         'updated': image.updated.isoformat(),    
-                        'description': image.description, 
                         'status': image.state, 
                         'progress': image.state == 'ACTIVE' and 100 or 0, 
                         'size': image.size, 
-                        'serverId': image.sourcevm and image.sourcevm.id or ""
+                        'serverId': image.sourcevm and image.sourcevm.id or "",
+                        #'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in image.imagemetadata_set.all()]
+                        'metadata':{'meta': { 'key': {'description': image.description}}},
                        } for image in images]
             # Images info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
@@ -658,7 +676,9 @@ class ImageHandler(BaseHandler):
                     'status': image.state, 
                     'progress': image.state == 'ACTIVE' and 100 or 0, 
                     'size': image.size, 
-                    'serverId': image.sourcevm and image.sourcevm.id or ""
+                    'serverId': image.sourcevm and image.sourcevm.id or "",
+                    #'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in image.imagemetadata_set.all()]
+                    'metadata':{'meta': { 'key': {'description': image.description}}},
                    } }
         except Image.DoesNotExist:
                     raise fault.itemNotFound

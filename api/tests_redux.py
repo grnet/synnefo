@@ -4,8 +4,8 @@
 
 from django.test import TestCase
 from django.test.client import Client
+from django.utils import simplejson as json
 
-import json
 
 API = 'v1.1redux'
 
@@ -26,23 +26,23 @@ class APIReduxTestCase(TestCase):
         {
             "server" : {
                 "name" : "%(name)s",
-                "flavorId" : "%(flavorId)s",
-                "imageId" : "%(imageId)s"
+                "flavorRef" : "%(flavorRef)s",
+                "imageRef" : "%(imageRef)s"
             }
         }
         '''
         
-        def new_server(imageId=1, flavorId=1):
+        def new_server(imageRef=1, flavorRef=1):
             name = self.create_server_name()
-            return name, TEMPLATE % dict(name=name, imageId=imageId, flavorId=flavorId)
+            return name, TEMPLATE % dict(name=name, imageRef=imageRef, flavorRef=flavorRef)
         
         def verify_response(response, name):
             assert response.status_code == 202
             reply =  json.loads(response.content)
             server = reply['server']
             assert server['name'] == name
-            assert server['imageId'] == 1
-            assert server['flavorId'] == 1
+            assert server['imageRef'] == 1
+            assert server['flavorRef'] == 1
             assert server['status'] == 'BUILD'
             assert server['adminPass']
             assert server['addresses']
@@ -69,12 +69,12 @@ class APIReduxTestCase(TestCase):
                                     HTTP_ACCEPT='application/xml')
         verify_response(response, name)
         
-        name, data = new_server(imageId=0)
+        name, data = new_server(imageRef=0)
         url = '/api/%s/servers' % API
         response = self.client.post(url, content_type='application/json', data=data)
         verify_error(response, 404, 'itemNotFound')
         
-        name, data = new_server(flavorId=0)
+        name, data = new_server(flavorRef=0)
         url = '/api/%s/servers' % API
         response = self.client.post(url, content_type='application/json', data=data)
         verify_error(response, 404, 'itemNotFound')

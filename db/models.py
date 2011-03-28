@@ -229,7 +229,6 @@ class VirtualMachine(models.Model):
     charged = models.DateTimeField(default=datetime.datetime.now())
     sourceimage = models.ForeignKey("Image", null=False) 
     hostid = models.CharField(max_length=100)
-    description = models.TextField()
     ipfour = models.IPAddressField()
     ipsix = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)

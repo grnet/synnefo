@@ -43,7 +43,9 @@
             // not found
             '404' : '{% trans "Your request has failed. Resource not found." %}',
             // internal server error
-            '501' : '{% trans "There has been an Internal Error. Our administrators have been notified." %}',
+            '500' : '{% trans "There has been an Internal Error. Our administrators have been notified." %}',
+            // service unavailable
+            '501' : '{% trans "This server has not been implemented yet." %}',
             // service unavailable
             '503' : '{% trans "This service is unavailable right now, please try again later." %}',
             // no images unavailable
@@ -55,6 +57,10 @@
         var SUCCESS = {
             'HEADER' : '{% trans "Success!" %}',
             'DEFAULT' : '{% trans "Your request has been succefully executed." %}',
+            'CREATE_VM_SUCCESS' : '{% trans "Success!" %}',
+            'CREATE_VM_SUCCESS_ONE' : '{% trans "Your machine is now being built." %}',
+            'CREATE_VM_SUCCESS_TWO' : '{% trans "Please write down the following password:" %}',
+            'CREATE_VM_SUCCESS_THREE' : '{% trans "Do not lose this! You will need it to connect to your machine, once it is ready." %}'
         };
         
         // ajax error checking  
@@ -62,7 +68,7 @@
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
             
-            if (status != undefined && ERRORS[status]) {
+            if (ERRORS[status] != undefined) {
                 $("#error-success p").text(ERRORS[status]);
             } else {
                 $("#error-success p").text(ERRORS['DEFAULT']);   
@@ -92,9 +98,25 @@
         // ajax success checking
         function ajax_success(status, password) {
             // prepare the error message
-            $("#error-success h3").text(SUCCESS['HEADER']);
-            $("#error-success p").text(SUCCESS['DEFAULT']);             
             // bring up success notification
+            if (status != undefined && SUCCESS[status]) {
+                if (password != undefined && status == "CREATE_VM_SUCCESS") {
+                    $("#error-success h3").text(SUCCESS[status]);
+                    var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_ONE"] + '<br />'
+                        + SUCCESS["CREATE_VM_SUCCESS_TWO"] + '<br /><br />' + '<b>' + password + '</b>'
+                        + '<br /><br />' + SUCCESS["CREATE_VM_SUCCESS_THREE"] ;
+                    $("#error-success p").html(CREATE_VM_SUCCESS_MSG);             
+                } else {
+                    $("#error-success h3").text(SUCCESS['HEADER']);
+                    $("#error-success p").text(SUCCESS[status]);             
+                }
+            } else {
+                $("#error-success h3").text(SUCCESS['HEADER']);
+                $("#error-success p").text(SUCCESS['DEFAULT']);             
+
+            }
+
+
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
                 mask: {

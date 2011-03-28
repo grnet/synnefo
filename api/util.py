@@ -7,6 +7,7 @@ from synnefo.db.models import *
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.utils import simplejson as json
 
 from functools import wraps
 from logging import getLogger
@@ -15,8 +16,6 @@ from string import ascii_letters, digits
 from traceback import format_exc
 from xml.etree import ElementTree
 from xml.parsers.expat import ExpatError
-
-import json
 
 
 log = getLogger('synnefo.api')
@@ -84,7 +83,8 @@ def api_method(http_method):
                     request.type = 'xml'
                 else:
                     request.type = 'json'       # Default response format
-                    for accept in request.META.get('HTTP_ACCEPT', '').split(','):
+                    for item in request.META.get('HTTP_ACCEPT', '').split(','):
+                        accept, sep, rest = item.strip().partition(';')
                         if accept == 'application/json':
                             break
                         elif accept == 'application/xml':

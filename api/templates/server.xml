@@ -6,10 +6,10 @@
     {% if server.adminPass %}adminPass="{{ server.adminPass }}"{% endif %}
     created="{{ server.created }}"
     description="{{ server.description }}"
-    flavorId="{{ server.flavorId }}"
+    flavorRef="{{ server.flavorRef }}"
     hostId="{{ server.hostId }}"
     id="{{ server.id }}"
-    imageId="{{ server.imageId }}"
+    imageRef="{{ server.imageRef }}"
     name="{{ server.name }}"
     progress="{{ server.progress }}"
     status="{{ server.status }}"

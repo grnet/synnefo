@@ -166,10 +166,10 @@
 
 <div id="machinesview"></div>
 
-<div id="multiple" class="confirm">
-    <p>{% trans "Your actions will affect XX machines" %}</p>
-    <button class="yes">{% trans "Confirm" %}</button>
-	<button class="no">{% trans "Cancel" %}</button>
+<div class="confirm_multiple">
+    <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
+    <button class="yes">{% trans "Confirm Αll" %}</button>
+	<button class="no">{% trans "Cancel Αll" %}</button>
 </div>
 
 <div id="machines" class="separator"></div>
@@ -292,6 +292,89 @@ function disableSliders() {
     $("#storage").attr('disabled',true);
 }
 
+// confirm all actions
+$("div.confirm_multiple .yes").live('click', function(){
+    while(pending_actions.length > 0){ // if there is a pending action for this server execute it
+        action = pending_actions.pop(); // extract action
+        var serverID = action[1];
+        
+        if ($.cookie("list") != '1') { // standard view
+            $('#'+serverID+' .spinner').show();
+            $('#'+serverID+' .selected').removeClass('selected');
+            $('#'+serverID+' .display').removeClass('display');
+        } else { // list view
+            osIcon = $('#'+serverID).parent().parent().find('.list-logo');
+            osIcon.attr('os',osIcon.attr('src'));
+            osIcon.attr('src','static/progress.gif');
+        }
+        action[0]([serverID]); // execute action
+    }
+    update_confirmations();    
+});
+
+// cancel all actions
+$("div.confirm_multiple .no").live('click', function(){
+    pending_actions = [];
+    $('.machine .selected').removeClass('selected');
+    $('.machine .display').removeClass('display');
+    update_confirmations();
+});
+
+// validate cpu input box
+$("#cpu-indicator").live('change',function(){
+    var v = Number(this.value);
+    var i = cpus.indexOf(v);
+    if (isNaN(v)) {
+        $(this).value = cpus[0];
+        $("#cpu").data('rangeinput').setValue(0);
+    } else if (i == -1) {
+        for (var j=0; j < cpus.length; j++)
+            if (v<cpus[j])
+                break;
+        $("#cpu").data('rangeinput').setValue(j);
+    } else {
+        $("#cpu").data('rangeinput').setValue(i);
+    }   
+    return false;
+});
+
+// validate ram input box
+$("#ram-indicator").live('change',function(){
+    var v = Number(this.value);
+    var i = ram.indexOf(v);
+    if (isNaN(v)) {
+        $(this).value = cpus[0];
+        $("#ram").data('rangeinput').setValue(0);
+    } else if (i == -1) {
+        for (var j=0; j < ram.length; j++)
+            if (v<ram[j])
+                break;
+        $("#ram").data('rangeinput').setValue(j);
+    } else {
+        $("#ram").data('rangeinput').setValue(i);
+    }   
+    return false;
+});
+
+
+// validate storage input box
+$("#storage-indicator").live('change',function(){
+    var v = Number(this.value);
+    var i = disks.indexOf(v);
+    if (isNaN(v)) {
+        $(this).value = disks[0];
+        $("#storage").data('rangeinput').setValue(0);
+    } else if (i == -1) {
+        for (var j=0; j < disks.length; j++)
+            if (v<disks[j])
+                break;
+        $("#storage").data('rangeinput').setValue(j);
+    } else {
+        $("#storage").data('rangeinput').setValue(i);
+    }   
+    return false;
+});
+
 // selecting the small size
 $("#small").click(function(){
     $("#cpu").data('rangeinput').setValue(0);
@@ -363,19 +446,28 @@ $("#start").click(function(){
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
-                    ajax_success(jqXHR.status);                   
+                    ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);                   
                 } else {
                     ajax_error(jqXHR.status);
                 }
             }
     });
-    console.warn('creating ' + $("input[name=machine_name]")[0].value)
+    $("#emptymachineslist").hide();
+
+    try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
 
     $("#wizard").hide();
 });
 
 // basic functions executed on page load
-
+if (images.length > 0) {
+    // populate image list
+    update_wizard_images();
+}
+if (flavors.length > 0) {
+    // configure flavors
+    update_wizard_flavors(); 
+}
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 

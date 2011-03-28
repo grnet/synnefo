@@ -6,9 +6,10 @@
 # Copyright 2011 Greek Research and Technology Network
 #
 
+import datetime
+import simplejson as json
 from django.test import TestCase
 from django.test.client import Client
-import simplejson as json
 from synnefo.db.models import VirtualMachine, Flavor, Image, VirtualMachineGroup
 from synnefo.api.tests_redux import APIReduxTestCase
 
@@ -137,6 +138,41 @@ class APITestCase(TestCase):
         #TODO: check response.content      
         #TODO: check create server with wrong options (eg flavor that not exist)
     
+
+    def testServerPolling(self):
+        """ test if the server polling works as expected
+        """
+        response = self.client.get('/api/v1.0/servers/detail')
+        vms_from_api_initial = json.loads(response.content)['servers']
+        then = datetime.datetime.now().isoformat().split('.')[0]
+        
+        #isoformat also gives miliseconds that are not needed
+        response = self.client.get('/api/v1.0/servers/detail?changes-since=%s' % then)
+        self.assertEqual(len(response.content), 0)
+        #no changes were made
+
+        #now create a machine. Then check if it is on the list
+        request = {
+                    "server": {
+                        "name"          : "new-server-test",
+                        "imageRef"       : 1,
+                        "flavorRef"      : 1,
+                        "metadata"      : {
+                            "My Server Name": "Apache1"
+                        },
+                        "personality"   : []
+                    }
+        }
+        response = self.client.post('/api/v1.0/servers', 
+                                    json.dumps(request), 
+                                    content_type='application/json')
+        self.assertEqual(response.status_code, 202)
+
+        response = self.client.get('/api/v1.0/servers/detail?changes-since=%s' % then)        
+        vms_from_api_after = json.loads(response.content)['servers']
+        self.assertEqual(len(vms_from_api_after), 1)
+        #make sure the newly created server is included on the updated list 
+
 
     def testRebootServer(self):
         """ test if the specified server is rebooted
@@ -287,7 +323,7 @@ class APITestCase(TestCase):
         self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
         self.assertEqual(image_from_api['size'], image_from_db.size)
         self.assertEqual(image_from_api['status'], image_from_db.state)
-        self.assertEqual(image_from_api['description'], image_from_db.description)
+        self.assertEqual(image_from_api['metadata']['meta']['key']['description'], image_from_db.description)
         self.assertTrue(response.status_code in [200,203])
 
 
@@ -305,7 +341,7 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
-            self.assertEqual(image_from_api['description'], image_from_db.description)
+            self.assertEqual(image_from_api['metadata']['meta']['key']['description'], image_from_db.description)
 
         for image_from_api in images_from_api:
             image_from_db = Image.objects.get(id=image_from_api['id'])
@@ -314,7 +350,7 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['serverId'], image_from_db.sourcevm and image_from_db.sourcevm.id or "")
             self.assertEqual(image_from_api['size'], image_from_db.size)
             self.assertEqual(image_from_api['status'], image_from_db.state)
-            self.assertEqual(image_from_api['description'], image_from_db.description)
+            self.assertEqual(image_from_api['metadata']['meta']['key']['description'], image_from_db.description)
             
         self.assertTrue(response.status_code in [200,203])
 

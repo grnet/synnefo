@@ -31,9 +31,9 @@ from threading import Thread, Event, currentThread
 
 from synnefo.db.models import VirtualMachine
 
-from synnefo.logic import utils, backend
+from synnefo.settings import GANETI_ZMQ_PUBLISHER
 
-GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801" # FIXME: move to settings.py
+from logic import utils, backend
 
 class StoppableThread(Thread):
     """Thread class with a stop() method.

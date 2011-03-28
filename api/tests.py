@@ -7,7 +7,7 @@
 #
 
 import datetime
-import simplejson as json
+from django.utils import simplejson as json
 from django.test import TestCase
 from django.test.client import Client
 from synnefo.db.models import VirtualMachine, Flavor, Image, VirtualMachineGroup

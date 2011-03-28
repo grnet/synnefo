@@ -241,7 +241,6 @@ function update_machines_view(data){
 // indicate that the requested action was succesfully completed
 function display_success(serverID) {
     $('#'+serverID+ ' .spinner').addClass('wave');
-    console.info('success '+serverID);
     setTimeout("$('#"+serverID+ " .spinner').hide();$('#"+serverID+ " .wave').removeClass('wave')", 5000);
 }
 

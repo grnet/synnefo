@@ -4,7 +4,7 @@
 #
 
 from django.http import HttpResponse
-from django.utils import simplejson
+from django.utils import simplejson as json
 from piston.utils import HttpStatusCode
 
 class Fault(HttpStatusCode):
@@ -78,7 +78,7 @@ class _fault_factory(object):
 
         # piston > 0.2.2 does the serialization for us, but be compatible
         # 'till the next version gets released. XXX: this doesn't do XML!
-        message = simplejson.dumps({ attr: m }, ensure_ascii=False, indent=4)
+        message = json.dumps({ attr: m }, ensure_ascii=False, indent=4)
         code = m['code']
         response = HttpResponse(message, status=code)
 

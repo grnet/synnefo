@@ -2,8 +2,8 @@
 #
 # Copyright © 2010 Greek Research and Technology Network
 
-import simplejson as json
 from django.conf import settings
+from django.utils import simplejson as json
 from django.http import HttpResponse
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created, notModified

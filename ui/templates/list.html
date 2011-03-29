@@ -104,6 +104,10 @@ $("tbody input[type='checkbox']").live('change', function() {
     update_confirmations(); 
 });
 
+$("div.confirm_multiple button").click(function() {
+    $(".selected").removeClass('selected');
+});
+
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");

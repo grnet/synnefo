@@ -933,9 +933,11 @@ div.action_error {
 }
 
 div.confirm_multiple {
-    width: 690px;
+    position: fixed;
+    bottom: 0;
+    width: 700px;
     height: 30px;
-    margin: 0 0 10px -30px;
+    margin: 0 0 0px -36px;
 }
 
 div.confirm_multiple p {
@@ -1085,22 +1087,25 @@ div.list table #selection div.expand-icon {
     top: -11px;
 }
 
-div.list table thead tr th ul {
+ul.dropdown-selector {
     background-color: #E6EEEE;
     position: absolute;
-    margin-left: -4px;
+    margin-left: 1px;
     display: block;
+    top: 255px;
+    font-size:9pt;
+    width:40px;
 }
 
-div.list table thead tr th ul li {
-    padding: 5px;
+ul.dropdown-selector li {
+    padding: 4px;
 }
 
-div.list table thead tr th ul li:hover {
+ul.dropdown-selector li:hover {
     background-color: #87AADE;
 }
 
-div.list table thead tr th ul li a{
+ul.dropdown-selector li a{
     color: black;
     text-decoration: none;
 }

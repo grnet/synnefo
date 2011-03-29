@@ -25,12 +25,7 @@
             <tr> 
                 <th id="selection" class="select-running">
                     <input type="checkbox"/>
-                    <div class="expand-icon"></div>
-                    <ul style="display: none">
-                        <li class="select-all" ><a href="#">all</a></li>
-                        <li class="select-none"><a href="#">none</a></li>
-                        <li class="select-group"><a href="#">group</a></li>
-                    </ul>            
+                    <div class="expand-icon"></div>          
                 </th>
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
@@ -41,6 +36,11 @@
         </thead> 
         <tbody class="machines"></tbody>
     </table>
+	<ul class="dropdown-selector" style="display: none">
+		<li class="select-all" ><a href="#">all</a></li>
+		<li class="select-none"><a href="#">none</a></li>
+		<li class="select-group"><a href="#">group</a></li>
+	</ul>  
 </div>
 
 <script>
@@ -54,33 +54,30 @@ $("table thead tr th#selection :checkbox").live('change', function() {
         $(":checkbox").attr("checked", false);
     }
 	updateActions();
+	return false;
 });
 
-// select all/none/group from drop down menu
-$("table thead tr th#selection ul li").live('click', function() {
-    // all or none?
-    if ( $(this).attr("class") == "select-all" || $(this).attr("class") == "select-none") {
-        var all = ($(this).attr("class") == "select-all");
-        // toggle checkboxes
-        $(":checkbox").attr("checked", all);
-    } else if ($(this).attr("class") == "select-group"){
-        // TODO: This shoud select only the vms in the selected group
-        // right now the folowing has the functionality of select-all        
-        $(":checkbox").attr("checked", true);
-    }
-    // update actions
-	updateActions();
+// select all from drop down menu
+$("ul.dropdown-selector li.select-all a").live('click', function() {
+	$(":checkbox").attr("checked", true);
+	return false;	
+});
+
+// select none from drop down menu
+$("ul.dropdown-selector li.select-none a").live('click', function() {
+	$(":checkbox").attr("checked", false);
+	return false;	
+});
+
+// select group from drop down menu
+$("ul.dropdown-selector li.select-group a").live('click', function() {
+	$(":checkbox").attr("checked", true);
 	return false;
 });
 
 // menu toggle, running menu
-$("table.list-machines thead tr th#selection div.expand-icon").live('click', function () {
-	$("table.list-machines thead tr th#selection ul").slideToggle('medium');
-    return false;
-});
-
-$("table.list-machines thead tr th#selection ul").live('click', function () {
-	$("table.list-machines thead tr th#selection ul").slideToggle('medium');
+$("table.list-machines thead tr th#selection .expand-icon").click( function (obj) {
+	$(".dropdown-selector").slideToggle('medium');
     return false;
 });
 

@@ -16,6 +16,8 @@ import string
 import logging
 from datetime import datetime, timedelta
 
+from logic import backend, utils
+
 log = logging.getLogger('synnefo.api.handlers')
 
 try:
@@ -101,7 +103,7 @@ class ServerHandler(BaseHandler):
         try:
             server = VirtualMachine.objects.get(id=id)
 
-            server = {'status': server.rsapi_state, 
+            server = {'status': utils.get_rsapi_state(server),
                      'flavorRef': server.flavor.id, 
                      'name': server.name, 
                      'id': server.id, 
@@ -109,7 +111,7 @@ class ServerHandler(BaseHandler):
                      'created': server.created, 
                      'updated': server.updated,
                      'hostId': server.hostid, 
-                     'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
+                     'progress': utils.get_rsapi_state(server) == 'ACTIVE' and 100 or 0,
                      #'metadata': {'Server_Label': server.description },
                      'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
                      'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
@@ -146,7 +148,7 @@ class ServerHandler(BaseHandler):
             if not detail:
                 return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
             else:
-                virtual_servers_list = [{'status': server.rsapi_state, 
+                virtual_servers_list = [{'status': utils.get_rsapi_state(server),
                                          'flavorRef': server.flavor.id, 
                                          'name': server.name, 
                                          'id': server.id, 
@@ -154,7 +156,7 @@ class ServerHandler(BaseHandler):
                                          'updated': server.updated,
                                          'imageRef': server.sourceimage.id, 
                                          'hostId': server.hostid, 
-                                         'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
+                                         'progress': utils.get_rsapi_state(server) == 'ACTIVE' and 100 or 0,
                                          #'metadata': {'Server_Label': server.description },
                                          'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
                                          'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
@@ -235,6 +237,7 @@ class ServerHandler(BaseHandler):
             log.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
         except (GanetiApiError, CertificateError) as e:
             log.exception('CreateInstance failed: %s' % e)
+            # FIX: if the instance creation have failed, why it is saved in the db?
             vm.deleted = True
             vm.save()
             raise fault.serviceUnavailable
@@ -301,7 +304,7 @@ class ServerHandler(BaseHandler):
         try:
             vm = VirtualMachine.objects.get(id=id)
             #TODO: set the status to DESTROYED
-            vm.start_action('DESTROY')
+            backend.start_action(vm, 'DESTROY')
             rapi.DeleteInstance(vm.backend_id)
             return accepted        
         except VirtualMachine.DoesNotExist:
@@ -380,7 +383,7 @@ class ServerActionHandler(BaseHandler):
                 raise fault.notImplemented 
             #test if we can get the vm
             vm = VirtualMachine.objects.get(id=id)
-            vm.start_action(action)
+            backend.start_action(vm, action)
 
             if reboot_request:
                 rapi.RebootInstance(vm.backend_id)

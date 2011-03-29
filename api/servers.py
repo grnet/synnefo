@@ -16,6 +16,7 @@ from django.utils import simplejson as json
 
 from logging import getLogger
 
+from logic import utils
 
 log = getLogger('synnefo.api.servers')
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
@@ -58,8 +59,8 @@ def address_to_dict(ipfour, ipsix):
 def server_to_dict(server, detail=False):
     d = dict(id=server.id, name=server.name)
     if detail:
-        d['status'] = server.rsapi_state
-        d['progress'] = 100 if server.rsapi_state == 'ACTIVE' else 0
+        d['status'] = utils.get_rsapi_state(server)
+        d['progress'] = 100 if utils.get_rsapi_state(server) == 'ACTIVE' else 0
         d['hostId'] = server.hostid
         d['updated'] = server.updated.isoformat()
         d['created'] = server.created.isoformat()

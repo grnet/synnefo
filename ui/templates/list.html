@@ -97,11 +97,18 @@ var actions = { 'reboot':		['ACTIVE', 'REBOOT', 'multiple'],
 			   };
 
 // on checkbox click, update the actions
-$("tbody input[type='checkbox']").live('change', function() { updateActions(); });
+$("tbody input[type='checkbox']").live('change', function() { 
+    updateActions();
+    pending_actions = [];
+    $(".selected").removeClass('selected');
+    update_confirmations(); 
+});
 
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -114,6 +121,8 @@ $("a.enabled#action-destroy").live('click', function() {
 
 $("a.enabled#action-reboot").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -126,6 +135,8 @@ $("a.enabled#action-reboot").live('click', function() {
 
 $("a.enabled#action-start").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -138,6 +149,8 @@ $("a.enabled#action-start").live('click', function() {
 
 $("a.enabled#action-shutdown").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;

@@ -6,7 +6,7 @@
 # Copyright 2010 Greek Research and Technology Network
 #
 
-from db.models import *
+from synnefo.db.models import *
 from django.db.models import F
 from datetime import datetime
 

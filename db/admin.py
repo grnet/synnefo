@@ -3,7 +3,7 @@ from django import forms
 from django.db import models
 from django.utils.encoding import iri_to_uri
 from django.utils.translation import gettext_lazy as _
-from models import  *
+from synnefo.db.models import  *
 
 class LimitForm(forms.ModelForm):
     class Meta:

@@ -6,7 +6,7 @@
 
 from django.core.management.base import NoArgsCommand
 
-from db import credit_allocator
+from synnefo.db import credit_allocator
 
 class Command(NoArgsCommand):
     help = 'Add credits to users according to their monthly rate'

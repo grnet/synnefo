@@ -60,18 +60,21 @@ $("table thead tr th#selection :checkbox").live('change', function() {
 // select all from drop down menu
 $("ul.dropdown-selector li.select-all a").live('click', function() {
 	$(":checkbox").attr("checked", true);
+    $(".dropdown-selector").slideToggle('medium');
 	return false;	
 });
 
 // select none from drop down menu
 $("ul.dropdown-selector li.select-none a").live('click', function() {
 	$(":checkbox").attr("checked", false);
+    $(".dropdown-selector").slideToggle('medium');
 	return false;	
 });
 
 // select group from drop down menu
 $("ul.dropdown-selector li.select-group a").live('click', function() {
 	$(":checkbox").attr("checked", true);
+    $(".dropdown-selector").slideToggle('medium');
 	return false;
 });
 

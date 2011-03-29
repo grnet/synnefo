@@ -13,6 +13,7 @@ from django.test.client import Client
 from synnefo.db.models import VirtualMachine, Flavor, Image, VirtualMachineGroup
 from synnefo.api.tests_redux import APIReduxTestCase
 
+from logic import utils
 
 class APITestCase(TestCase):
     fixtures = [ 'api_test_data' ]
@@ -68,7 +69,7 @@ class APITestCase(TestCase):
         self.assertEqual(vm_from_api['id'], vm_from_db.id)
         self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
         self.assertEqual(vm_from_api['name'], vm_from_db.name)
-        self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
+        self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200,203])
 
 
@@ -87,7 +88,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
             self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
-            self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)
+            self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
             number += 1
         vms_from_api = json.loads(response.content)['servers']
         for vm_from_api in vms_from_api:
@@ -97,7 +98,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
             self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
-            self.assertEqual(vm_from_api['status'], vm_from_db.rsapi_state)            
+            self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200,203])
 
 

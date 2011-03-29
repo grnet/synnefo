@@ -156,10 +156,8 @@ print out DDL statements. It should not fail.
 username 
 
 8. Start the system
-    $ cd db
-    $ ../bin/python db_controller.py
-    $ cd ..
-    $ ./bin/python manage.py runserver
+    $ ./bin/python db/db_controller.py  #Ganeti publisher
+    $ ./bin/python manage.py runserver  #Django
      
 9. Done
 

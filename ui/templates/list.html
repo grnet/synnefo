@@ -270,6 +270,10 @@ if (flavors.length == 0) {
     // configure flavors
     update_flavors(); 
 }
+// set the label of the multiple buttons 
+$('div.confirm_multiple button.yes').text('Confirm');
+$('div.confirm_multiple button.no').text('Cancel');
+// start updating vm list
 update_vms(UPDATE_INTERVAL);
 
 </script>

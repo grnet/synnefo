@@ -1,0 +1,7 @@
+DEPLOYMENT notes   
+=================
+
+Debian
+------
+
+ 

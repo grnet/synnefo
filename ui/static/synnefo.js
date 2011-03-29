@@ -27,6 +27,16 @@ function update_confirmations(){
 	
 	if (pending_actions.length>1 || $.cookie("list") == '1' && pending_actions.length == 1){ // if more than one pending action show multiple confirm box
 		$('div.confirm_multiple span.actionLen').text(pending_actions.length);
+        // set the label of the buttons in list view
+        if ($.cookie("list") == '1') {
+            $('div.confirm_multiple button.yes').text('Confirm');
+            $('div.confirm_multiple button.no').text('Cancel');
+        }
+        // set the label of the buttons in standard view
+        else {
+            $('div.confirm_multiple button.yes').text('Confirm All');
+            $('div.confirm_multiple button.no').text('Cancel All');
+        }
 		$('div.confirm_multiple').show();
 	}
 }

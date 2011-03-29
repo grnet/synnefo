@@ -97,11 +97,18 @@ var actions = { 'reboot':		['ACTIVE', 'REBOOT', 'multiple'],
 			   };
 
 // on checkbox click, update the actions
-$("tbody input[type='checkbox']").live('change', function() { updateActions(); });
+$("tbody input[type='checkbox']").live('change', function() { 
+    updateActions();
+    pending_actions = [];
+    $(".selected").removeClass('selected');
+    update_confirmations(); 
+});
 
 // destroy action
 $("a.enabled#action-destroy").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -112,9 +119,10 @@ $("a.enabled#action-destroy").live('click', function() {
 	return false;
 });
 
-
 $("a.enabled#action-reboot").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -125,9 +133,10 @@ $("a.enabled#action-reboot").live('click', function() {
 	return false;
 });
 
-
 $("a.enabled#action-start").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -138,9 +147,10 @@ $("a.enabled#action-start").live('click', function() {
 	return false;
 });
 
-
 $("a.enabled#action-shutdown").live('click', function() {
 	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
 	pending_actions = []; // reset pending actions
 	checked.each(function(i,c) {
 		serverID=c.id;
@@ -159,7 +169,10 @@ function update_machines_view(data){
 	tableData = vmTable.fnGetData();
     $.each(data.servers, function(i,server){        
         current = -1;
-		
+        // check server status to select the appropriate OS icon
+        osTag = image_tags[server.imageRef]
+        var osIcon = osTag + ".png";
+
 		// check if the server already exists in the datatable
 		tableData.forEach(function(row,index){
 			
@@ -178,6 +191,13 @@ function update_machines_view(data){
 			} else {
 				// update status
 				tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+                // check server status to select the appropriate OS icon
+                if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
+                    osIcon = osTag + "-off.png";
+                }
+                tableData[current][1] = "<span class=imagetag>" + osTag + 
+                                        "</span><img class=list-logo src=static/os_logos/" + osIcon +
+                                        " title=" + osTag + " height=16 width=16>";
 				tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
 				// TODO: update name & ip
 				vmTable.fnUpdate(tableData[current],current);
@@ -185,8 +205,6 @@ function update_machines_view(data){
 			updateActions();
         } else if (server.status != "DELETED") { // does not exist, we should create it
             // check server status to select the appropriate OS icon
-            osTag = image_tags[server.imageRef]
-            var osIcon = osTag + ".png";
             if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
                 osIcon = osTag + "-off.png";
             }
@@ -225,8 +243,6 @@ function display_failure(serverID, status, action) {
     ajax_error(status);
 }
 
-
-
 var vmTable = $("div.list table.list-machines").dataTable({
     "bInfo": false,
     "bRetrieve": true,
@@ -241,7 +257,6 @@ var vmTable = $("div.list table.list-machines").dataTable({
         { "bSortable": false, "aTargets": [ 0 ] }
     ]
 });
-
 
 if (images.length == 0) {
     // populate image list

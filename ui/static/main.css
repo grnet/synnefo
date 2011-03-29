@@ -532,8 +532,8 @@ div.machine div.actions a.more {
 }
 
 div.machine div.actions a:hover{
-    color: orange !important;
-    text-decoration: none;
+    color: black !important;
+    text-decoration: underline;
     display: block;
 }
 
@@ -821,8 +821,8 @@ div.list div.actions a.enabled {
 
 div.list div.actions a.enabled:hover{
     cursor: pointer;
-    color: orange !important;
-    text-decoration: none;
+    color: black !important;
+    text-decoration: underline;
 }
 
 input.machine {

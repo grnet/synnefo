@@ -91,8 +91,22 @@ Install the postgres Python library
 	$ bin/pip install psycopg2
 
 Configure a postgres db/account for synnefo
+	Become the postgres user, connect to PostgreSQL:
+	$ sudo su - postgres 
+	$ psql
+	
+	Run the following commands:
+	DROP DATABASE synnefo;
+	DROP USER username;
+	CREATE USER username WITH PASSWORD 'password';
+	CREATE DATABASE synnefo;
+	GRANT ALL PRIVILEGES ON DATABASE synnefo TO username;
+	ALTER DATABASE synnefo OWNER TO username;
+	ALTER USER username CREATEDB;
 
-	<TODO>
+The last line enables the newly created user to create own databases. This is
+needed for Django to create and drop the test_synnefo database for unit
+testing.
 	
 4. At this point you should have a working DB. Now configure Django to access it: 
 Copy the default configuration file 

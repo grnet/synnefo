@@ -43,7 +43,7 @@ that python is already installed on the host.
     $ cd synnefo
     $ ./bin/pip install django django-piston pycurl simplejson selenium pyzmq-static
 
-2. At this point you should have all required dependencies installed. Now you
+3. At this point you should have all required dependencies installed. Now you
 have to select a database engine. The choices are: postgres, mysql and sqlite.
 
 -SQLite
@@ -94,12 +94,12 @@ Configure a postgres db/account for synnefo
 
 	<TODO>
 	
-3. At this point you should have a working DB. Now configure Django to access it: 
+4. At this point you should have a working DB. Now configure Django to access it: 
 Copy the default configuration file 
 
     $ cp settings.py.dist settings.py
     
-and then edit according to the database used:  
+and then copy/edit according to the database used:  
     
 -SQLite
 
@@ -107,15 +107,15 @@ and then edit according to the database used:
 
 	DATABASES = {
 	    'default': {
-		'ENGINE': 'sqlite3', # ATTENTION: This *must* be the absolute path if using sqlite3.
-		'NAME': PROJECT_PATH + 'database.sqlite'
+		'ENGINE': 'django.db.backends.sqlite3',
+		'NAME': PROJECT_PATH + 'synnefo.db' #WARN: This must be an absolute path
 	    }
 	}
 
 -MySQL
 	DATABASES = {
 	    'default': {
-		'ENGINE': 'mysql', 
+		'ENGINE': 'django.db.backends.mysql', 
 		'NAME': 'synnefo',
 		'USER': 'USERNAME'
 		'PASSWORD': 'PASSWORD',
@@ -131,7 +131,7 @@ and then edit according to the database used:
 
     DATABASES = {
 	    'default': {
-		'ENGINE': 'postgresql_psycopg2',
+		'ENGINE': 'django.db.backends.postgresql_psycopg2',
 		'NAME': 'DATABASE',
 		'USER': 'USERNAME',
 		'PASSWORD': 'PASSWORD',
@@ -140,29 +140,33 @@ and then edit according to the database used:
 	    }
 	}
 
-4. Try it out. The following command will attempt to connec to the DB and 
+5. Try it out. The following command will attempt to connect to the DB and 
 print out DDL statements. It should not fail.
 
 	$ ./bin/python manage.py sql db
 	
-5. Create the DB and (optionally) load test data
+6. Create the DB and (optionally) load test data
     
     $ ./bin/python manage.py syncdb
 	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
 	$ ./bin/python manage.py loaddata db/fixtures/images.json
 	$ ./bin/python manage.py loaddata db/fixtures/vms.json
-    
-6. Start the system
+
+7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
+username 
+
+8. Start the system
     $ cd db
     $ ../bin/python db_controller.py
     $ cd ..
     $ ./bin/python manage.py runserver
      
-7. Done
+9. Done
 
 UI Testing
 ----------
-The functional ui tests require the Selenium server and the synnefo app to be running.
+The functional ui tests require the Selenium server and the synnefo app to 
+be running.
 
     $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
     $ java -jar selenium-server-standalone-2.0b2.jar &

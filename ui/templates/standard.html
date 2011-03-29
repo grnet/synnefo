@@ -256,7 +256,6 @@ function display_failure(serverID, status, action) {
     
 }
 
-
 if (images.length == 0) {
     // populate image list
     update_images();
@@ -265,6 +264,9 @@ if (flavors.length == 0) {
     // configure flavors
     update_flavors(); 
 }
-
+// set the label of the multiple buttons 
+$('div.confirm_multiple button.yes').text('Confirm All');
+$('div.confirm_multiple button.no').text('Cancel All');
+// start updating vm list
 update_vms(UPDATE_INTERVAL);
 </script>

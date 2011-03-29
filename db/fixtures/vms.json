@@ -7,7 +7,6 @@
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
-            "description": "Full Debian Squeeze Installation",
             "size": 5678
         }
     },
@@ -22,7 +21,6 @@
             "charged": "2011-02-06 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "description": "database server",
             "ipfour": "192.168.2.1",
             "ipsix": "::1",
             "flavor": 1,
@@ -40,7 +38,6 @@
             "charged": "2011-02-10 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "description": "mail server",
             "ipfour": "192.168.2.2",
             "ipsix": "::2",
             "flavor": 1,
@@ -58,7 +55,6 @@
             "charged": "2011-02-10 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "description": "my server",
             "ipfour": "192.168.2.3",
             "ipsix": "::3",
             "flavor": 1,
@@ -77,7 +73,6 @@
             "charged": "2011-02-10 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "description": "my 2nd server",
             "ipfour": "192.168.2.4",
             "ipsix": "::4",
             "flavor": 1,
@@ -101,7 +96,6 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "state": "ACTIVE",
-            "description": "Full Slackware 13.1 Installation",
             "size": 1234,
             "owner": 1,
             "sourcevm": 1001

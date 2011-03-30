@@ -106,7 +106,7 @@
             "ipfour": "192.168.2.1",
             "ipsix": "::1",
             "flavor": 30000,
-            "_operstate": "STARTED"
+            "operstate": "STARTED"
         }
     },
 {
@@ -122,7 +122,7 @@
             "ipfour": "192.168.2.1",
             "ipsix": "::1",
             "flavor": 30000,
-            "_operstate": "STOPPED"
+            "operstate": "STOPPED"
         }
     },
     {

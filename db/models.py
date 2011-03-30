@@ -230,16 +230,12 @@ class VirtualMachine(models.Model):
     # that they need not be persistent in the DB, but rather
     # get generated at runtime by quering Ganeti and applying
     # updates received from Ganeti.
-    #
-    # In the future they could be moved to a separate caching layer
-    # and removed from the database.
-    # [vkoukis] after discussion with [faidon].
-    _action = models.CharField(choices=ACTIONS, max_length=30, null=True)
-    _operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
-    _backendjobid = models.PositiveIntegerField(null=True)
-    _backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
-    _backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
-    _backendlogmsg = models.TextField(null=True)
+    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
+    operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
+    backendjobid = models.PositiveIntegerField(null=True)
+    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
+    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
+    backendlogmsg = models.TextField(null=True)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -267,15 +263,12 @@ class VirtualMachine(models.Model):
         # This gets called BEFORE an instance gets save()d for
         # the first time.
         if not self.pk: 
-            self._action = None
-            self._backendjobid = None
-            self._backendjobstatus = None
-            self._backendopcode = None
-            self._backendlogmsg = None
-            # Do not use _update_state() for this, 
-            # as this may cause save() to get called in __init__(),
-            # breaking VirtualMachine.object.create() among other things.
-            self._operstate = 'BUILD'
+            self.action = None
+            self.backendjobid = None
+            self.backendjobstatus = None
+            self.backendopcode = None
+            self.backendlogmsg = None
+            self.operstate = 'BUILD'
 
     def _get_backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""

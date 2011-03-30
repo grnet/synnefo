@@ -30,23 +30,19 @@ def id_from_instance_name(name):
 def get_rsapi_state(vm):
     """Returns the RSAPI state for a virtual machine"""
     try:
-        r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[vm._operstate]
+        r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[vm.operstate]
     except KeyError:
         return "UNKNOWN"
     # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
-    if r == 'ACTIVE' and vm._backendopcode == 'OP_INSTANCE_REBOOT' and \
+    if r == 'ACTIVE' and vm.backendopcode == 'OP_INSTANCE_REBOOT' and \
         vm._backendjobstatus in ('queued', 'waiting', 'running'):
         return "REBOOT"
     return r
 
-def update_state(self, new_operstate):
-    """Wrapper around updates of the _operstate field
-
-    Currently calls the charge() method when necessary.
-
-    """
+def update_state(vm, new_operstate):
+    """Wrapper around updates of the VirtualMachine.operstate field"""
 
     # Call charge() unconditionally before any change of
     # internal state.
-    credits.charge(self)
-    self._operstate = new_operstate
+    credits.charge(vm)
+    vm.operstate = new_operstate

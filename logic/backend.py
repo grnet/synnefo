@@ -1,5 +1,6 @@
 
 from db.models import VirtualMachine
+import utils
 
 def process_backend_msg(vm, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend.
@@ -13,17 +14,17 @@ def process_backend_msg(vm, jobid, opcode, status, logmsg):
        status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]):
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
-    vm._backendjobid = jobid
-    vm._backendjobstatus = status
-    vm._backendopcode = opcode
-    vm._backendlogmsg = logmsg
+    vm.backendjobid = jobid
+    vm.backendjobstatus = status
+    vm.backendopcode = opcode
+    vm.backendlogmsg = logmsg
 
     # Notifications of success change the operating state
     if status == 'success':
-        vm._update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
+        utils.update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
     # Special cases OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-        vm._update_state('ERROR')
+        utils.update_state('ERROR')
     # Any other notification of failure leaves the operating state unchanged
 
     vm.save()
@@ -37,11 +38,11 @@ def start_action(vm, action):
     if vm.deleted:
         raise VirtualMachine.InvalidActionError(action)
 
-    vm._action = action
-    vm._backendjobid = None
-    vm._backendopcode = None
-    vm._backendjobstatus = None
-    vm._backendlogmsg = None
+    vm.action = action
+    vm.backendjobid = None
+    vm.backendopcode = None
+    vm.backendjobstatus = None
+    vm.backendlogmsg = None
 
     # Update the relevant flags if the VM is being suspended or destroyed
     if action == "DESTROY":

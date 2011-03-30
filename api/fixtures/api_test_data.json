@@ -268,7 +268,7 @@
             "ipfour": "192.168.2.1",
             "ipsix": "::1",
             "flavor": 1,
-            "_operstate": "STOPPED"
+            "operstate": "STOPPED"
         }
     },
     {
@@ -285,7 +285,7 @@
             "ipfour": "192.168.2.2",
             "ipsix": "::2",
             "flavor": 1,
-            "_operstate": "BUILD"
+            "operstate": "BUILD"
         }
     },
     {
@@ -302,7 +302,7 @@
             "ipfour": "192.168.2.3",
             "ipsix": "::3",
             "flavor": 1,
-            "_operstate": "STARTED"
+            "operstate": "STARTED"
         }
     },
     {
@@ -319,7 +319,7 @@
             "ipfour": "192.168.2.4",
             "ipsix": "::4",
             "flavor": 1,
-            "_operstate": "STARTED"
+            "operstate": "STARTED"
         }
     },
     {

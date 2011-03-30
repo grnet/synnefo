@@ -47,20 +47,20 @@ def charge(vm):
     vm.charged = datetime.now()
 
     # Only charge for a specific set of states
-    if vm._operstate in charged_states:
+    if vm.operstate in charged_states:
         cost_list = []
 
         # remember, we charge only for Started and Stopped
-        if vm._operstate == 'STARTED':
+        if vm.operstate == 'STARTED':
             cost_list = get_cost_active(vm.flavor, start_datetime, vm.charged)
-        elif vm._operstate == 'STOPPED':
+        elif vm.operstate == 'STOPPED':
             cost_list = get_cost_inactive(vm.flavor, start_datetime, vm.charged)
 
         # find the total vost
         total_cost = sum([x[1] for x in cost_list])
 
         # add the debit entry
-        description = "Server = %s, charge = %d for state: %s" % (vm.name, total_cost, vm._operstate)
+        description = "Server = %s, charge = %d for state: %s" % (vm.name, total_cost, vm.operstate)
         debit_account(vm.owner, total_cost, vm, description)
 
     vm.save()

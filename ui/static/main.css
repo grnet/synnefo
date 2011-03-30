@@ -933,7 +933,6 @@ div.action_error {
 }
 
 div.confirm_multiple {
-    position: fixed;
     bottom: 0;
     width: 700px;
     height: 30px;
@@ -1168,4 +1167,8 @@ div.list table thead #name {
 
 .message {
     display: none;
+}
+
+.fixed {
+    position: fixed;
 }

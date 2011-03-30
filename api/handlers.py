@@ -2,7 +2,6 @@
 #
 # Copyright © 2010 Greek Research and Technology Network
 
-from django.conf import settings
 from django.utils import simplejson as json
 from django.http import HttpResponse
 from piston.handler import BaseHandler, AnonymousBaseHandler
@@ -10,7 +9,6 @@ from synnefo.api.faults import fault, noContent, accepted, created, notModified
 from synnefo.api.helpers import instance_to_server, paginator
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError, CertificateError
 from synnefo.db.models import *
-from time import sleep
 import random
 import string
 import logging

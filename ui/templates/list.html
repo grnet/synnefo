@@ -200,7 +200,8 @@ function update_machines_view(data){
                     osIcon = osTag + "-off.png";
                 }
 				
-				if (tableData[current][5].indexOf(STATUS_MESSAGES[server.status]) > -1){
+				if (tableData[current][5].indexOf(STATUS_MESSAGES[server.status]) > -1 ||
+					$('#'+server.id).parent().parent().find('.list-logo').attr('src').indexOf('wave')>-1){
 					imgStr = "<img class=list-logo src=static/os_logos/" + osIcon +
                                         " title=" + osTag + " height=16 width=16 />";
 				} else {
@@ -214,8 +215,9 @@ function update_machines_view(data){
 				imgStr = "<img class=list-logo src=static/os_logos/" + osIcon +
                                         " title=" + osTag + " height=16 width=16 />";
                 tableData[current][1] = "<span class=imagetag>" + osTag + 
-                                        "</span>" + imgStr;						
-				setTimeout(vmTable.fnUpdate,2000,tableData[current],current);
+                                        "</span>" + imgStr;
+				//setTimeout($('#'+server.id).parent().parent().find('.list-logo').attr, 2000,'src',imgStr);
+				//setTimeout("vmTable.fnUpdate('"+tableData[current]+"','"+current+"')",2000);
 
 			}
 			updateActions();
@@ -245,6 +247,12 @@ function update_machines_view(data){
         $("div.list table.list-machines").show();
         $("div.list div.actions").show();
     }
+	
+	// set confirm box position
+    if (window.innerHeight - 235 < $('#machinesview').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
 }
 
 function display_success(serverID) {

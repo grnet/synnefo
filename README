@@ -1,65 +1,20 @@
-Synnefo
+README
 =======
 
-Installation
-------------
-    $ sudo easy_install virtualenv
-    ....
-    $ git clone https://user@code.grnet.gr/git/synnefo synnefo
-    $ virtualenv --python=python2.6 synnefo --no-site-packages
-    ...
-    $ cd synnefo
-    $ ./bin/pip install django django-piston pycurl simplejson selenium pyzmq-static
-    ...
-    ...
-    $ cp settings.py.dist settings.py
-    $ ./bin/python manage.py syncdb
-    $ cd db
-    $ ../bin/python db_controller.py
-    ...
-    $ cd synnefo
-    $ ./bin/python manage.py runserver
+This is the top-level documentation file for the Synnefo cloud management
+web application.
 
-Notes
-------
-1) On ubuntu systems: 
-        sudo aptitude install libcurl3-gnutls libcurl3-gnutls-dev
-
-2) jQuery.ajax POST is not working unless you edit lib/python2.6/site-packages/piston/utils.py. 
-   On def content_type change:
-        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded)
-    to 
-        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded).split(";")[0]
-
-3) On Ubuntu 10.04 (tested by mgogoulos) you'll have to install zmq-static with:
-        sudo aptitude install uuid-dev 
-        ./bin/pip install pyzmq-static
-
-4) Also see README.DB, which describes setting up a DB with various backends.
-
-5) The checkout directory name "synnefo" is mandatory
-
-6) In Mac computers with Snow Leopard, you may have a problem installing pycurl. Remember to set 64-bit arch when you install it.
-
-    env ARCHFLAGS="-arch x86_64" ./bin/pip install pycurl
+Consult:
+  -README.develop: for information on how to setup a development environment
+  -README.deploy : for information on how to deploy the application
+  -README.i18n   : for information on application internationalization
 
 
-Testing
+License
 -------
-The functional ui tests require the Selenium server and the synnefo app to be running.
 
-    $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
-    $ java -jar selenium-server-standalone-2.0b2.jar &
-    $ ./bin/python manage.py runserver &
-    $ ./bin/python manage.py test ui
+Cloud is distributed under the terms of ....
 
-Test coverage
-=============
+The application source code is under copyright
 
-In order to get code coverage reports you need to install django-test-coverage
-   
-   $ ./bin/pip install django-test-coverage
-
-Then edit your settings.py and configure the test runner:
-
-   TEST_RUNNER = 'django-test-coverage.runner.run_tests'
+Copyright 2010 Greek Research and Technology Network

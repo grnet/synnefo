@@ -6,7 +6,7 @@
 
 from django.core.management.base import NoArgsCommand
 
-from db import bill_calculator
+from synnefo.db import bill_calculator
 
 class Command(NoArgsCommand):
     help = ''

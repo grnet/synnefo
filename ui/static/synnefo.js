@@ -15,28 +15,21 @@ function ISODateString(d){
 }
 
 function update_confirmations(){
-    $('div.confirm_single').hide(); // hide all confirm boxes to begin with
+    // hide all confirm boxes to begin with
+    $('div.confirm_single').hide();
     $('div.confirm_multiple').hide();
-    
+   
 	// standard view only
 	if ($.cookie("list") != '1') { 
-		for (i=0;i<pending_actions.length;i++){ // show single confirms
+		for (i=0;i<pending_actions.length;i++){
+            // show single confirms
 			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
 		}		
 	}
-	
-	if (pending_actions.length>1 || $.cookie("list") == '1' && pending_actions.length == 1){ // if more than one pending action show multiple confirm box
+
+	// if more than one pending action show multiple confirm box
+	if (pending_actions.length>1 || $.cookie("list") == '1' && pending_actions.length == 1){ 
 		$('div.confirm_multiple span.actionLen').text(pending_actions.length);
-        // set the label of the buttons in list view
-        if ($.cookie("list") == '1') {
-            $('div.confirm_multiple button.yes').text('Confirm');
-            $('div.confirm_multiple button.no').text('Cancel');
-        }
-        // set the label of the buttons in standard view
-        else {
-            $('div.confirm_multiple button.yes').text('Confirm All');
-            $('div.confirm_multiple button.no').text('Cancel All');
-        }
 		$('div.confirm_multiple').show();
 	}
 }
@@ -381,7 +374,7 @@ function identify_flavor(cpu, disk, ram){
     return 0;
 }
 
-// update the actions in the 
+// update the actions in list view
 function updateActions() {
 	var states = [];
 	var on = [];

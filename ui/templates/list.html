@@ -25,12 +25,7 @@
             <tr> 
                 <th id="selection" class="select-running">
                     <input type="checkbox"/>
-                    <div class="expand-icon"></div>
-                    <ul style="display: none">
-                        <li class="select-all" ><a href="#">all</a></li>
-                        <li class="select-none"><a href="#">none</a></li>
-                        <li class="select-group"><a href="#">group</a></li>
-                    </ul>            
+                    <div class="expand-icon"></div>          
                 </th>
                 <th id="os">OS</th> 
                 <th id="name">Name</th> 
@@ -41,6 +36,11 @@
         </thead> 
         <tbody class="machines"></tbody>
     </table>
+	<ul class="dropdown-selector" style="display: none">
+		<li class="select-all" ><a href="#">all</a></li>
+		<li class="select-none"><a href="#">none</a></li>
+		<li class="select-group"><a href="#">group</a></li>
+	</ul>  
 </div>
 
 <script>
@@ -54,33 +54,33 @@ $("table thead tr th#selection :checkbox").live('change', function() {
         $(":checkbox").attr("checked", false);
     }
 	updateActions();
+	return false;
 });
 
-// select all/none/group from drop down menu
-$("table thead tr th#selection ul li").live('click', function() {
-    // all or none?
-    if ( $(this).attr("class") == "select-all" || $(this).attr("class") == "select-none") {
-        var all = ($(this).attr("class") == "select-all");
-        // toggle checkboxes
-        $(":checkbox").attr("checked", all);
-    } else if ($(this).attr("class") == "select-group"){
-        // TODO: This shoud select only the vms in the selected group
-        // right now the folowing has the functionality of select-all        
-        $(":checkbox").attr("checked", true);
-    }
-    // update actions
-	updateActions();
+// select all from drop down menu
+$("ul.dropdown-selector li.select-all a").live('click', function() {
+	$(":checkbox").attr("checked", true);
+    $(".dropdown-selector").slideToggle('medium');
+	return false;	
+});
+
+// select none from drop down menu
+$("ul.dropdown-selector li.select-none a").live('click', function() {
+	$(":checkbox").attr("checked", false);
+    $(".dropdown-selector").slideToggle('medium');
+	return false;	
+});
+
+// select group from drop down menu
+$("ul.dropdown-selector li.select-group a").live('click', function() {
+	$(":checkbox").attr("checked", true);
+    $(".dropdown-selector").slideToggle('medium');
 	return false;
 });
 
 // menu toggle, running menu
-$("table.list-machines thead tr th#selection div.expand-icon").live('click', function () {
-	$("table.list-machines thead tr th#selection ul").slideToggle('medium');
-    return false;
-});
-
-$("table.list-machines thead tr th#selection ul").live('click', function () {
-	$("table.list-machines thead tr th#selection ul").slideToggle('medium');
+$("table.list-machines thead tr th#selection .expand-icon").click( function (obj) {
+	$(".dropdown-selector").slideToggle('medium');
     return false;
 });
 
@@ -102,6 +102,10 @@ $("tbody input[type='checkbox']").live('change', function() {
     pending_actions = [];
     $(".selected").removeClass('selected');
     update_confirmations(); 
+});
+
+$("div.confirm_multiple button").click(function() {
+    $(".selected").removeClass('selected');
 });
 
 // destroy action
@@ -171,7 +175,7 @@ function update_machines_view(data){
         current = -1;
         // check server status to select the appropriate OS icon
         osTag = image_tags[server.imageRef]
-        var osIcon = osTag + ".png";
+        var osIcon = osTag + ".png", imgStr;
 
 		// check if the server already exists in the datatable
 		tableData.forEach(function(row,index){
@@ -195,12 +199,24 @@ function update_machines_view(data){
                 if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
                     osIcon = osTag + "-off.png";
                 }
+				
+				if (tableData[current][5].indexOf(STATUS_MESSAGES[server.status]) > -1){
+					imgStr = "<img class=list-logo src=static/os_logos/" + osIcon +
+                                        " title=" + osTag + " height=16 width=16 />";
+				} else {
+					imgStr = "<img class=list-logo src=static/wave.gif height=16 width=16 />";	
+				}
                 tableData[current][1] = "<span class=imagetag>" + osTag + 
-                                        "</span><img class=list-logo src=static/os_logos/" + osIcon +
-                                        " title=" + osTag + " height=16 width=16>";
+                                        "</span>" + imgStr;
 				tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
 				// TODO: update name & ip
 				vmTable.fnUpdate(tableData[current],current);
+				imgStr = "<img class=list-logo src=static/os_logos/" + osIcon +
+                                        " title=" + osTag + " height=16 width=16 />";
+                tableData[current][1] = "<span class=imagetag>" + osTag + 
+                                        "</span>" + imgStr;						
+				setTimeout(vmTable.fnUpdate,2000,tableData[current],current);
+
 			}
 			updateActions();
         } else if (server.status != "DELETED") { // does not exist, we should create it
@@ -232,8 +248,7 @@ function update_machines_view(data){
 }
 
 function display_success(serverID) {
-	//TODO
-    $('#'+serverID).parent().parent().find('.list-logo').attr('src','static/wave.gif');
+	// do nothing
 }
 
 // indicate that the requested action was not completed
@@ -266,6 +281,10 @@ if (flavors.length == 0) {
     // configure flavors
     update_flavors(); 
 }
+// set the label of the multiple buttons 
+$('div.confirm_multiple button.yes').text('Confirm');
+$('div.confirm_multiple button.no').text('Cancel');
+// start updating vm list
 update_vms(UPDATE_INTERVAL);
 
 </script>

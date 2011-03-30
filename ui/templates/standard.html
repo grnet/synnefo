@@ -5,13 +5,20 @@
     <div id="emptymachineslist">{% trans "You have no virtual machines! Press Create New to create some!" %}</div>
     <div id="spinner"></div>
     <div class="machine" id="machine-template" style="display:none">
+        <div class="actions">
+            <a href="#" class="action-start">{% trans "Start" %}</a>
+            <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
+            <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
+            <a href="#" class="more">{% trans "more &hellip;" %}</a>
+        </div>        
         <div class="state">
             <div class="status">{% trans "Running" %}</div>
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
-            <div class="spinner hidden"></div>
+            <div class="spinner" style="display:none"></div>
+            <img class="wave" src="" />
         </div>
         <img class="logo" src="" />
         <a href="#" class="name">
@@ -23,12 +30,7 @@
         <h5 class="settings">
             {% trans "Show:" %} <a href="#">{% trans "disks" %}</a> | <a href="#">{% trans "networks" %}</a> | <a href="#">{% trans "group" %}</a>
         </h5>
-        <div class="actions">
-            <a href="#" class="action-start">{% trans "Start" %}</a>
-            <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
-            <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
-            <a href="#" class="more">{% trans "more &hellip;" %}</a>
-        </div>
+
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
@@ -201,7 +203,11 @@ function update_machines_view(data){
                     existing.remove();
                     existing = moved;
                     existing.find('.spinner').hide();
-                } 
+                } else {
+                    existing.find('.spinner').hide();
+                    existing.find(' .wave').attr('src','static/wave.gif');
+                    setTimeout("$('#" + server.id +" .wave').attr('src','')", 3000);
+                }
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
                             
             }
@@ -243,8 +249,7 @@ function update_machines_view(data){
 
 // indicate that the requested action was succesfully completed
 function display_success(serverID) {
-    $('#'+serverID+ ' .spinner').addClass('wave');
-    setTimeout("$('#"+serverID+ " .spinner').hide();$('#"+serverID+ " .wave').removeClass('wave')", 5000);
+
 }
 
 // indicate that the requested action was not completed
@@ -256,7 +261,6 @@ function display_failure(serverID, status, action) {
     
 }
 
-
 if (images.length == 0) {
     // populate image list
     update_images();
@@ -265,6 +269,9 @@ if (flavors.length == 0) {
     // configure flavors
     update_flavors(); 
 }
-
+// set the label of the multiple buttons 
+$('div.confirm_multiple button.yes').text('Confirm All');
+$('div.confirm_multiple button.no').text('Cancel All');
+// start updating vm list
 update_vms(UPDATE_INTERVAL);
 </script>

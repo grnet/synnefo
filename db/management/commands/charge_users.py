@@ -6,7 +6,7 @@
 
 from django.core.management.base import NoArgsCommand
 
-from db import charger
+from synnefo.db import charger
 
 class Command(NoArgsCommand):
     help = 'Charge the users for VM usage'

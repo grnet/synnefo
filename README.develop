@@ -5,7 +5,7 @@ Dependencies
 
 Synnefo depends on the following Python modules
 
-- django
+- django 1.2
 - django-piston 
 - simplejson
 - selenium
@@ -14,6 +14,18 @@ Synnefo depends on the following Python modules
 also, depending on the database engine of choice, on one of the following:
 - MySQL-python
 - psycopg2
+
+Temporary fix - to be removed soon
+----------------------------------
+After going through the installation instructions below, the following fix must
+be applied. 
+
+jQuery.ajax POST is not working unless you edit lib/python2.6/site-packages/piston/utils.py.
+   On def content_type change:
+        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded)
+    to
+        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded).split(";")[0]
+
 
 Preparing the development environment
 -------------------------------------
@@ -43,7 +55,7 @@ that python is already installed on the host.
     $ cd synnefo
     $ ./bin/pip install django django-piston pycurl simplejson selenium pyzmq-static
 
-2. At this point you should have all required dependencies installed. Now you
+3. At this point you should have all required dependencies installed. Now you
 have to select a database engine. The choices are: postgres, mysql and sqlite.
 
 -SQLite
@@ -91,15 +103,29 @@ Install the postgres Python library
 	$ bin/pip install psycopg2
 
 Configure a postgres db/account for synnefo
-
-	<TODO>
+	Become the postgres user, connect to PostgreSQL:
+	$ sudo su - postgres 
+	$ psql
 	
-3. At this point you should have a working DB. Now configure Django to access it: 
+	Run the following commands:
+	DROP DATABASE synnefo;
+	DROP USER username;
+	CREATE USER username WITH PASSWORD 'password';
+	CREATE DATABASE synnefo;
+	GRANT ALL PRIVILEGES ON DATABASE synnefo TO username;
+	ALTER DATABASE synnefo OWNER TO username;
+	ALTER USER username CREATEDB;
+
+The last line enables the newly created user to create own databases. This is
+needed for Django to create and drop the test_synnefo database for unit
+testing.
+	
+4. At this point you should have a working DB. Now configure Django to access it: 
 Copy the default configuration file 
 
     $ cp settings.py.dist settings.py
     
-and then edit according to the database used:  
+and then copy/edit according to the database used:  
     
 -SQLite
 
@@ -107,15 +133,15 @@ and then edit according to the database used:
 
 	DATABASES = {
 	    'default': {
-		'ENGINE': 'sqlite3', # ATTENTION: This *must* be the absolute path if using sqlite3.
-		'NAME': PROJECT_PATH + 'database.sqlite'
+		'ENGINE': 'django.db.backends.sqlite3',
+		'NAME': PROJECT_PATH + 'synnefo.db' #WARN: This must be an absolute path
 	    }
 	}
 
 -MySQL
 	DATABASES = {
 	    'default': {
-		'ENGINE': 'mysql', 
+		'ENGINE': 'django.db.backends.mysql', 
 		'NAME': 'synnefo',
 		'USER': 'USERNAME'
 		'PASSWORD': 'PASSWORD',
@@ -131,7 +157,7 @@ and then edit according to the database used:
 
     DATABASES = {
 	    'default': {
-		'ENGINE': 'postgresql_psycopg2',
+		'ENGINE': 'django.db.backends.postgresql_psycopg2',
 		'NAME': 'DATABASE',
 		'USER': 'USERNAME',
 		'PASSWORD': 'PASSWORD',
@@ -140,29 +166,37 @@ and then edit according to the database used:
 	    }
 	}
 
-4. Try it out. The following command will attempt to connec to the DB and 
+5. Try it out. The following command will attempt to connect to the DB and 
 print out DDL statements. It should not fail.
 
 	$ ./bin/python manage.py sql db
 	
-5. Create the DB and (optionally) load test data
+6. Create the DB and (optionally) load test data
     
     $ ./bin/python manage.py syncdb
 	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
 	$ ./bin/python manage.py loaddata db/fixtures/images.json
+
+The following fictures can be loaded optionally depending on
+testing requirements:
+
 	$ ./bin/python manage.py loaddata db/fixtures/vms.json
-    
-6. Start the system
-    $ cd db
-    $ ../bin/python db_controller.py
-    $ cd ..
-    $ ./bin/python manage.py runserver
-     
-7. Done
+	$ ./bin/python manage.py loaddata db/fixtures/initial_data.json
+	$ ./bin/python manage.py loaddata db/fixtures/disks.json
+
+7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
+username 
+
+8. Start the system
+    $ ./bin/python db/db_controller.py  #DB synch daemon
+    $ ./bin/python manage.py runserver  #Django
+
+9. (Hopefully) Done
 
 UI Testing
 ----------
-The functional ui tests require the Selenium server and the synnefo app to be running.
+The functional ui tests require the Selenium server and the synnefo app to 
+be running.
 
     $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
     $ java -jar selenium-server-standalone-2.0b2.jar &

@@ -6,7 +6,7 @@
 
 from django.core.management.base import NoArgsCommand
 
-from db import db_controller
+from synnefo.db import db_controller
 
 class Command(NoArgsCommand):
     help = ''

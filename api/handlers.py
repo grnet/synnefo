@@ -7,7 +7,8 @@ from django.http import HttpResponse
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created, notModified
 from synnefo.api.helpers import instance_to_server, paginator
-from synnefo.util.rapi import GanetiRapiClient, GanetiApiError, CertificateError
+from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
+from synnefo.util.rapi import CertificateError
 from synnefo.db.models import *
 import random
 import string
@@ -30,20 +31,23 @@ VERSIONS = [
     {
         "status": "CURRENT",
         "id": "v1.0",
-        "docURL" : "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20110112.pdf",
-        "wadl" : "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl"
+        "docURL":
+    "http://docs.rackspacecloud.com/servers/api/v1.0/cs-devguide-20110112.pdf",
+        "wadl":
+            "http://docs.rackspacecloud.com/servers/api/v1.0/application.wadl"
     },
     {
         "status": "CURRENT",
         "id": "v1.1",
-        "docURL" : "http://docs.openstack.org/openstack-compute/developer/content/",
-        "wadl" : "None yet"
+        "docURL":
+            "http://docs.openstack.org/openstack-compute/developer/content/",
+        "wadl": "None yet"
     },
     {
         "status": "CURRENT",
         "id": "v1.0grnet1",
-        "docURL" : "None yet",
-        "wad1" : "None yet"
+        "docURL": "None yet",
+        "wad1": "None yet"
     }
 ]
 
@@ -63,11 +67,11 @@ class VersionHandler(AnonymousBaseHandler):
                             "status": v["status"],
                             "id": v["id"],
                         }, VERSIONS)
-                return { "versions": versions }
+                return {"versions": versions}
             else:
                 for version in VERSIONS:
                     if version["id"] == number:
-                        return { "version": version }
+                        return {"version": version}
                 raise fault.itemNotFound
         except Exception, e:
             log.exception('Unexpected error: %s' % e)
@@ -81,7 +85,8 @@ class ServerHandler(BaseHandler):
 
      @HTTP methods: POST, DELETE, PUT, GET
      @Parameters: POST data with the create data (cpu, ram, etc)
-     @Responses: HTTP 200 if successfully call rapi, 304 if not modified, itemNotFound or serviceUnavailable otherwise
+     @Responses: HTTP 200 if successfully call rapi, 304 if not modified,
+                 itemNotFound or serviceUnavailable otherwise
 
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -101,20 +106,30 @@ class ServerHandler(BaseHandler):
         try:
             server = VirtualMachine.objects.get(id=id)
 
-            server = {'status': server.rsapi_state, 
-                     'flavorRef': server.flavor.id, 
-                     'name': server.name, 
-                     'id': server.id, 
+            server = {'status': server.rsapi_state,
+                     'flavorRef': server.flavor.id,
+                     'name': server.name,
+                     'id': server.id,
                      'imageRef': server.sourceimage.id,
-                     'created': server.created, 
+                     'created': server.created,
                      'updated': server.updated,
-                     'hostId': server.hostid, 
-                     'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
+                     'hostId': server.hostid,
+                     'progress': server.rsapi_state == 'ACTIVE' and 100 or 0,
                      #'metadata': {'Server_Label': server.description },
-                     'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
-                     'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
+                     'metadata': [{'meta': {
+                                    'key': {
+                                     metadata.meta_key: metadata.meta_value
+                                    }
+                                   }
+                        }
+                            for metadata in
+                            server.virtualmachinemetadata_set.all()],
+                     'addresses': {'public': {
+                                    'ip': {'addr': server.ipfour},
+                                    'ip6': {'addr': server.ipsix}},
+                                            'private': ''},
                     }
-            return { "server": server } 
+            return {"server": server}
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -123,56 +138,68 @@ class ServerHandler(BaseHandler):
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-
     @paginator
     def read_all(self, request, detail=False):
         #changes_since should be on ISO 8601 format
         try:
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
-                last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                last_update = datetime.strptime(changes_since,
+                                                "%Y-%m-%dT%H:%M:%S")
                 #return a badRequest if the changes_since is older than a limit
-                if datetime.now() - last_update > timedelta(seconds=settings.POLL_LIMIT):
-                    raise fault.badRequest        
-                virtual_servers = VirtualMachine.objects.filter(updated__gt=last_update)
+                if (datetime.now() - last_update >
+                    timedelta(seconds=settings.POLL_LIMIT)):
+                    raise fault.badRequest
+                virtual_servers = VirtualMachine.objects.filter(
+                    updated__gt=last_update)
                 if not len(virtual_servers):
                     return notModified
             else:
                 virtual_servers = VirtualMachine.objects.filter(deleted=False)
-            #get all VM's for now, FIX it to take the user's VMs only yet. also don't get deleted VM's
+            # get all VM's for now, FIX it to take the user's VMs only yet.
+            # also don't get deleted VM's
         except Exception, e:
-            raise fault.badRequest        
+            raise fault.badRequest
         try:
             if not detail:
-                return { "servers": [ { "id": s.id, "name": s.name } for s in virtual_servers ] }
+                return {"servers": [{
+                    "id": s.id, "name": s.name} for s in virtual_servers]}
             else:
-                virtual_servers_list = [{'status': server.rsapi_state, 
-                                         'flavorRef': server.flavor.id, 
-                                         'name': server.name, 
-                                         'id': server.id, 
-                                         'created': server.created, 
-                                         'updated': server.updated,
-                                         'imageRef': server.sourceimage.id, 
-                                         'hostId': server.hostid, 
-                                         'progress': server.rsapi_state == 'ACTIVE' and 100 or 0, 
-                                         #'metadata': {'Server_Label': server.description },
-                                         'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in server.virtualmachinemetadata_set.all()],                                    
-                                         'addresses': {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''},      
-
-                                        } for server in virtual_servers]
-                #pass some fake data regarding ip, since we don't have any such data            
-                return { "servers":  virtual_servers_list }                
+                virtual_servers_list = [
+                    {'status': server.rsapi_state,
+                     'flavorRef': server.flavor.id,
+                    'name': server.name,
+                    'id': server.id,
+                    'created': server.created,
+                    'updated': server.updated,
+                    'imageRef': server.sourceimage.id,
+                    'hostId': server.hostid,
+                    'progress': (server.rsapi_state == 'ACTIVE' and 100 or 0),
+                     #'metadata': {'Server_Label': server.description },
+                    'metadata':[
+                        {'meta':
+                            {'key': {metadata.meta_key: metadata.meta_value}}}
+                                for metadata in
+                                server.virtualmachinemetadata_set.all()
+                        ],
+                    'addresses': {
+                        'public': {
+                            'ip': {'addr': server.ipfour},
+                            'ip6': {'addr': server.ipsix}
+                        },
+                        'private': ''},
+                    } for server in virtual_servers]
+                #pass fake data regarding ip, since we don't have it yet
+                return {"servers":  virtual_servers_list}
         except Exception, e:
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
 
-
     def create(self, request):
         """ Parse RackSpace API create request to generate rapi create request
-        
             TODO: auto generate and set password
         """
-        # Check if we have all the necessary data in the JSON request       
+        # Check if we have all the necessary data in the JSON request
         try:
             server = json.loads(request.raw_post_data)['server']
             name = server['name']
@@ -187,20 +214,26 @@ class ServerHandler(BaseHandler):
         except (Flavor.MultipleObjectsReturned, Image.MultipleObjectsReturned):
             raise fault.serviceUnavailable
         except Exception as e:
-            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))    
+            log.exception('Malformed create request: %s - %s' %
+                          (e, request.raw_post_data))
             raise fault.badRequest
 
         # TODO: Proper Authn, Authz
         # Everything belongs to a single SynnefoUser for now.
-        try:  	
+        try:
             owner = SynnefoUser.objects.all()[0]
         except Exception as e:
-            log.exception('Cannot find a single SynnefoUser in the DB: %s' % (e));
+            log.exception('Cannot find a single SynnefoUser in the DB: %s' %
+                          (e))
             raise fault.unauthorized
 
         # add the new VM to the local db
         try:
-            vm = VirtualMachine.objects.create(sourceimage=image, ipfour='0.0.0.0', ipsix='::1', flavor=flavor, owner=owner)
+            vm = VirtualMachine.objects.create(sourceimage=image,
+                                               ipfour='0.0.0.0',
+                                               ipsix='::1',
+                                               flavor=flavor,
+                                               owner=owner)
         except Exception as e:
             log.exception("Can't save vm: %s" % e)
             raise fault.serviceUnavailable
@@ -208,13 +241,16 @@ class ServerHandler(BaseHandler):
         try:
             vm.name = name
             #vm.description = descr
-            vm.save()            
+            vm.save()
             jobId = rapi.CreateInstance(
                 'create',
-                request.META['SERVER_NAME'] == 'testserver' and 'test-server' or vm.backend_id,
+                (request.META['SERVER_NAME'] == 'testserver' and
+                'test-server' or vm.backend_id),
                 'plain',
-                # disk field of Flavor object is in GB, value specified here is in MB
-                # FIXME: Always ask for a 2GB disk, current LVM physical groups are too small:
+                # disk field of Flavor object is in GB,
+                # value specified here is in MB
+                # FIXME: Always ask for a 2GB disk,
+                # current LVM physical groups are too small:
                 # [{"size": flavor.disk * 1000}],
                 [{"size": 2000}],
                 [{}],
@@ -223,16 +259,17 @@ class ServerHandler(BaseHandler):
                 ip_check=False,
                 name_check=False,
                 #TODO: verify if this is necessary
-                pnode = rapi.GetNodes()[0],
+                pnode=rapi.GetNodes()[0],
                 # Dry run when called by unit tests
-                dry_run = request.META['SERVER_NAME'] == 'testserver',
+                dry_run=request.META['SERVER_NAME'] == 'testserver',
                 beparams={
                             'auto_balance': True,
                             'vcpus': flavor.cpu,
                             'memory': flavor.ram,
                         },
                 )
-            log.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
+            log.info('created vm with %s cpus, %s ram and %s storage' %
+                     (flavor.cpu, flavor.ram, flavor.disk))
         except (GanetiApiError, CertificateError) as e:
             log.exception('CreateInstance failed: %s' % e)
             vm.deleted = True
@@ -242,44 +279,44 @@ class ServerHandler(BaseHandler):
             log.exception('Unexpected error: %s' % e)
             vm.deleted = True
             vm.save()
-            raise fault.serviceUnavailable            
-        
+            raise fault.serviceUnavailable
 
         ret = {'server': {
-                'id' : vm.id,
-                'name' : vm.name,
-                "imageRef" : imageRef,
-                "flavorRef" : flavorRef,
-                "hostId" : vm.hostid,
-                "progress" : 0,
-                "status" : 'BUILD',
-                "adminPass" : self.random_password(),
-                "metadata" : {"My Server Name" : vm.name},
-                "addresses" : {
-                    "public" : [  ],
-                    "private" : [  ],
+                'id': vm.id,
+                'name': vm.name,
+                "imageRef": imageRef,
+                "flavorRef": flavorRef,
+                "hostId": vm.hostid,
+                "progress": 0,
+                "status": 'BUILD',
+                "adminPass": self.random_password(),
+                "metadata": {"My Server Name": vm.name},
+                "addresses": {
+                    "public": [],
+                    "private": [],
                     },
                 },
         }
-        return HttpResponse(json.dumps(ret), mimetype="application/json", status=202)
-
+        return HttpResponse(json.dumps(ret),
+                            mimetype="application/json", status=202)
 
     def random_password(self):
         "return random password"
         number_of_chars = 8
-        possible_chars = string.ascii_uppercase + string.ascii_lowercase + string.digits
-        return ''.join(random.choice(possible_chars) for x in range(number_of_chars))
-
+        possible_chars = string.ascii_uppercase + string.ascii_lowercase + \
+                         string.digits
+        return ''.join(random.choice(possible_chars) \
+                       for x in range(number_of_chars))
 
     def update(self, request, id):
-        """Sets and updates Virtual Machine Metadata. 
- 
+        """Sets and updates Virtual Machine Metadata.
+
         """
         try:
             metadata_request = json.loads(request.raw_post_data)['metadata']
             metadata_key = metadata_request.get('metadata_key')
             metadata_value = metadata_request.get('metadata_value')
- 
+
             vm = VirtualMachine.objects.get(id=id)
             #we only update virtual machine's name atm
             if metadata_key == 'name':
@@ -296,14 +333,13 @@ class ServerHandler(BaseHandler):
 
         raise fault.itemNotFound
 
-
     def delete(self, request, id):
         try:
             vm = VirtualMachine.objects.get(id=id)
             #TODO: set the status to DESTROYED
             vm.start_action('DESTROY')
             rapi.DeleteInstance(vm.backend_id)
-            return accepted        
+            return accepted
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -315,15 +351,15 @@ class ServerHandler(BaseHandler):
             raise fault.serviceUnavailable
 
 
-
 class ServerAddressHandler(BaseHandler):
     """Handler responsible for Server Addresses
 
-     handles Reboot, Shutdown and Start actions. 
+     handles Reboot, Shutdown and Start actions.
 
      @HTTP methods: GET
      @Parameters: Id of server and networkID (eg public, private)
-     @Responses: HTTP 200 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+     @Responses: HTTP 200 if successfully call rapi, itemNotFound,
+     serviceUnavailable otherwise
 
     """
     allowed_methods = ('GET',)
@@ -333,7 +369,8 @@ class ServerAddressHandler(BaseHandler):
 
         try:
             server = VirtualMachine.objects.get(id=id)
-            address =  {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}},'private': ''}                                          
+            address = {'public': {'ip': {'addr': server.ipfour}, \
+                'ip6': {'addr': server.ipsix}}, 'private': ''}
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -343,23 +380,24 @@ class ServerAddressHandler(BaseHandler):
             raise fault.serviceUnavailable
 
         if networkID == "public":
-            address = {'public': { 'ip': {'addr': server.ipfour}, 'ip6': {'addr': server.ipsix}}}                            
+            address = {'public': {'ip': {'addr': server.ipfour}, \
+                'ip6': {'addr': server.ipsix}}}
         elif networkID == "private":
-            address = {'private': ''}    
+            address = {'private': ''}
         elif networkID != None:
             raise fault.badRequest
-        return { "addresses": address } 
-
+        return {"addresses": address}
 
 
 class ServerActionHandler(BaseHandler):
     """Handler responsible for Server Actions
 
-     handles Reboot, Shutdown and Start actions. 
+     handles Reboot, Shutdown and Start actions.
 
      @HTTP methods: POST, DELETE, PUT
      @Parameters: POST data with the action (reboot, shutdown, start)
-     @Responses: HTTP 202 if successfully call rapi, itemNotFound, serviceUnavailable otherwise
+     @Responses: HTTP 202 if successfully call rapi, itemNotFound,
+     serviceUnavailable otherwise
 
     """
 
@@ -367,17 +405,18 @@ class ServerActionHandler(BaseHandler):
 
     def create(self, request, id):
         """Reboot, Shutdown, Start virtual machine"""
-        
+
         try:
             requested_action = json.loads(request.raw_post_data)
             reboot_request = requested_action.get('reboot', None)
             shutdown_request = requested_action.get('shutdown', None)
             start_request = requested_action.get('start', None)
             #action not implemented
-            action = reboot_request and 'REBOOT' or shutdown_request and 'STOP' or start_request and 'START'
+            action = reboot_request and 'REBOOT' or shutdown_request \
+                     and 'STOP' or start_request and 'START'
 
             if not action:
-                raise fault.notImplemented 
+                raise fault.notImplemented
             #test if we can get the vm
             vm = VirtualMachine.objects.get(id=id)
             vm.start_action(action)
@@ -446,7 +485,8 @@ class ServerMetadataHandler(BaseHandler):
             return {
                 "metadata": {
                     "values": [
-                        {m.meta_key: m.meta_value} for m in server.virtualmachinemetadata_set.all()
+                        {m.meta_key: m.meta_value} \
+                        for m in server.virtualmachinemetadata_set.all()
                     ]
                 }
             }
@@ -457,7 +497,7 @@ class ServerMetadataHandler(BaseHandler):
         except Exception, e:
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
-        
+
     def read_onekey(self, request, id, key):
         """Returns the specified metadata key of the specified server"""
         try:
@@ -465,12 +505,13 @@ class ServerMetadataHandler(BaseHandler):
             return {
                 "metadata": {
                     "values": [
-                        {m.meta_key: m.meta_value} for m in server.virtualmachinemetadata_set.filter(meta_key=key)
+                        {m.meta_key: m.meta_value} for m in
+                        server.virtualmachinemetadata_set.filter(meta_key=key)
                     ]
                 }
             }
         except VirtualMachineMetadata.DoesNotExist:
-            raise fault.itemNotFound            
+            raise fault.itemNotFound
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -487,20 +528,23 @@ class ServerMetadataHandler(BaseHandler):
         try:
             metadata = json.loads(request.raw_post_data)['metadata']
         except Exception as e:
-            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            log.exception('Malformed create request: %s - %s' \
+                          % (e, request.raw_post_data))
             raise fault.badRequest
 
         try:
             vm = VirtualMachine.objects.get(pk=id)
             for x in metadata.keys():
-                vm_meta, created = vm.virtualmachinemetadata_set.get_or_create(meta_key=x)
-                vm_meta.meta_value = metadata[x] 
+                vm_meta, created = (vm.virtualmachinemetadata_set.
+                                    get_or_create(meta_key=x))
+                vm_meta.meta_value = metadata[x]
                 vm_meta.save()
             return {
                 "metadata": [{
-                    "meta": { 
-                        "key": {m.meta_key: m.meta_value}}} for m in vm.virtualmachinemetadata_set.all()]
-            }        
+                    "meta": {
+                        "key": {m.meta_key: m.meta_value}}} \
+                    for m in vm.virtualmachinemetadata_set.all()]
+            }
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -522,16 +566,18 @@ class ServerMetadataHandler(BaseHandler):
             metadata = json.loads(request.raw_post_data)['meta']
             metadata_value = metadata[key]
         except Exception as e:
-            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            log.exception('Malformed create request: %s - %s' \
+                          % (e, request.raw_post_data))
             raise fault.badRequest
 
         try:
             server = VirtualMachine.objects.get(pk=id)
-            vm_meta, created = server.virtualmachinemetadata_set.get_or_create(meta_key=key)
-            vm_meta.meta_value = metadata_value 
+            vm_meta, created = (server.virtualmachinemetadata_set.
+                                get_or_create(meta_key=key))
+            vm_meta.meta_value = metadata_value
             vm_meta.save()
             return {"meta": {vm_meta.meta_key: vm_meta.meta_value}}
-        
+
         except VirtualMachine.DoesNotExist:
             raise fault.itemNotFound
         except VirtualMachine.MultipleObjectsReturned:
@@ -581,26 +627,30 @@ class FlavorHandler(BaseHandler):
         """
         try:
             flavors = Flavor.objects.all()
-            flavors = [ {'id': flavor.id, 'name': flavor.name, 'ram': flavor.ram, \
-                     'disk': flavor.disk, 'cpu': flavor.cpu} for flavor in flavors]
+            flavors = [{'id': flavor.id,
+                        'name': flavor.name,
+                        'ram': flavor.ram,
+                        'disk': flavor.disk,
+                        'cpu': flavor.cpu}
+                        for flavor in flavors]
 
             if id is None:
                 simple = map(lambda v: {
                             "id": v['id'],
                             "name": v['name'],
                         }, flavors)
-                return { "flavors": simple }
+                return {"flavors": simple}
             elif id == "detail":
-                return { "flavors": flavors }
+                return {"flavors": flavors}
             else:
                 flavor = Flavor.objects.get(id=id)
-                return { "flavor":  {
+                return {"flavor":  {
                     'id': flavor.id,
                     'name': flavor.name,
                     'ram': flavor.ram,
-                    'disk': flavor.disk,  
-                    'cpu': flavor.cpu,  
-                   } }
+                    'disk': flavor.disk,
+                    'cpu': flavor.cpu,
+                   }}
 
         except Flavor.DoesNotExist:
             raise fault.itemNotFound
@@ -614,14 +664,14 @@ class FlavorHandler(BaseHandler):
 class ImageHandler(BaseHandler):
     """Handler responsible for Images
 
-     handles the listing, creation and delete of Images. 
+     handles the listing, creation and delete of Images.
 
      @HTTP methods: GET, POST
-     @Parameters: POST data 
-     @Responses: HTTP 202 if successfully create Image or get the Images list, itemNotFound, serviceUnavailable otherwise
+     @Parameters: POST data
+     @Responses: HTTP 202 if successfully create Image or get the Images list,
+     itemNotFound, serviceUnavailable otherwise
 
     """
-
 
     allowed_methods = ('GET', 'POST')
 
@@ -638,48 +688,57 @@ class ImageHandler(BaseHandler):
         try:
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
-                last_update = datetime.strptime(changes_since, "%Y-%m-%dT%H:%M:%S" )
+                last_update = datetime.strptime(changes_since,
+                                                "%Y-%m-%dT%H:%M:%S")
                 #return a badRequest if the changes_since is older than a limit
-                if datetime.now() - last_update > timedelta(seconds=settings.POLL_LIMIT):
-                    raise fault.badRequest        
+                if datetime.now() - last_update > timedelta(
+                    seconds=settings.POLL_LIMIT):
+                    raise fault.badRequest
                 images = Image.objects.filter(updated__gt=last_update)
                 if not len(images):
                     return notModified
             else:
                 images = Image.objects.all()
         except Exception, e:
-            raise fault.badRequest        
+            raise fault.badRequest
         try:
-            images_list = [ {'created': image.created.isoformat(), 
+            images_list = [{'created': image.created.isoformat(),
                         'id': image.id,
                         'name': image.name,
-                        'updated': image.updated.isoformat(),    
-                        'status': image.state, 
-                        'progress': image.state == 'ACTIVE' and 100 or 0, 
-                        'size': image.size, 
+                        'updated': image.updated.isoformat(),
+                        'status': image.state,
+                        'progress': image.state == 'ACTIVE' and 100 or 0,
+                        'size': image.size,
                         'serverId': image.sourcevm and image.sourcevm.id or "",
-                        #'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in image.imagemetadata_set.all()]
-                        'metadata':{'meta': { 'key': {'description': image.description}}},
+                        #'metadata':[{'meta':
+                        #{ 'key': {metadata.meta_key: metadata.meta_value}}}
+                        #for metadata in image.imagemetadata_set.all()]
+                        'metadata':{'meta':
+                            {'key': {'description': image.description}}},
                        } for image in images]
             # Images info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
-                return { "images": images_list }
+                return {"images": images_list}
             elif id is None:
-                return { "images": [ { "id": s['id'], "name": s['name'] } for s in images_list ] }
-            else:        
+                return {"images": [{"id": s['id'], "name": s['name']} \
+                    for s in images_list]}
+            else:
                 image = images.get(id=id)
-                return { "image":  {'created': image.created.isoformat(), 
+                return {"image":  {'created': image.created.isoformat(),
                     'id': image.id,
                     'name': image.name,
-                    'updated': image.updated.isoformat(),    
-                    'description': image.description, 
-                    'status': image.state, 
-                    'progress': image.state == 'ACTIVE' and 100 or 0, 
-                    'size': image.size, 
+                    'updated': image.updated.isoformat(),
+                    'description': image.description,
+                    'status': image.state,
+                    'progress': image.state == 'ACTIVE' and 100 or 0,
+                    'size': image.size,
                     'serverId': image.sourcevm and image.sourcevm.id or "",
-                    #'metadata':[{'meta': { 'key': {metadata.meta_key: metadata.meta_value}}} for metadata in image.imagemetadata_set.all()]
-                    'metadata':{'meta': { 'key': {'description': image.description}}},
-                   } }
+                    #'metadata':[{'meta': { 'key':
+                    #{metadata.meta_key: metadata.meta_value}}}
+                    #for metadata in image.imagemetadata_set.all()]
+                    'metadata': {
+                        'meta': {'key': {'description': image.description}}},
+                   }}
         except Image.DoesNotExist:
                     raise fault.itemNotFound
         except Image.MultipleObjectsReturned:
@@ -717,8 +776,9 @@ class ImageMetadataHandler(BaseHandler):
             image = Image.objects.get(pk=id)
             return {
                 "metadata": [{
-                    "meta": { 
-                        "key": {m.meta_key: m.meta_value}}} for m in image.imagemetadata_set.all()]
+                    "meta": {
+                        "key": {m.meta_key: m.meta_value}}} \
+                    for m in image.imagemetadata_set.all()]
             }
         except Image.DoesNotExist:
             raise fault.itemNotFound
@@ -727,7 +787,7 @@ class ImageMetadataHandler(BaseHandler):
         except Exception, e:
             log.exception('Unexpected error: %s' % e)
             raise fault.serviceUnavailable
-        
+
     def read_onekey(self, request, id, key):
         """Returns the specified metadata key of the specified server"""
         try:
@@ -735,12 +795,13 @@ class ImageMetadataHandler(BaseHandler):
             return {
                 "metadata": {
                     "values": [
-                        {m.meta_key: m.meta_value} for m in image.imagemetadata_set.filter(meta_key=key)
+                        {m.meta_key: m.meta_value} \
+                        for m in image.imagemetadata_set.filter(meta_key=key)
                     ]
                 }
             }
         except ImageMetadata.DoesNotExist:
-            raise fault.itemNotFound            
+            raise fault.itemNotFound
         except Image.DoesNotExist:
             raise fault.itemNotFound
         except Image.MultipleObjectsReturned:
@@ -757,20 +818,23 @@ class ImageMetadataHandler(BaseHandler):
         try:
             metadata = json.loads(request.raw_post_data)['metadata']
         except Exception as e:
-            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            log.exception('Malformed create request: %s - %s' \
+                          % (e, request.raw_post_data))
             raise fault.badRequest
 
         try:
             image = Image.objects.get(pk=id)
             for x in metadata.keys():
-                img_meta, created = image.imagemetadata_set.get_or_create(meta_key=x)
-                img_meta.meta_value = metadata[x] 
+                img_meta, created = (image.imagemetadata_set.
+                                     get_or_create(meta_key=x))
+                img_meta.meta_value = metadata[x]
                 img_meta.save()
             return {
                 "metadata": [{
-                    "meta": { 
-                        "key": {m.meta_key: m.meta_value}}} for m in image.imagemetadata_set.all()]
-            }        
+                    "meta": {
+                        "key": {m.meta_key: m.meta_value}}} \
+                    for m in image.imagemetadata_set.all()]
+            }
         except Image.DoesNotExist:
             raise fault.itemNotFound
         except Image.MultipleObjectsReturned:
@@ -784,7 +848,8 @@ class ImageMetadataHandler(BaseHandler):
             raise fault.serviceUnavailable
 
     def update(self, request, id, key=None):
-        """Update or Create the specified metadata key for the specified Image"""
+        """Update or Create the specified metadata key for the
+        specified Image"""
         if key is None:
             log.exception('No metadata key specified in URL')
             raise fault.badRequest
@@ -792,16 +857,18 @@ class ImageMetadataHandler(BaseHandler):
             metadata = json.loads(request.raw_post_data)['meta']
             metadata_value = metadata[key]
         except Exception as e:
-            log.exception('Malformed create request: %s - %s' % (e, request.raw_post_data))
+            log.exception('Malformed create request: %s - %s' \
+                          % (e, request.raw_post_data))
             raise fault.badRequest
 
         try:
             image = Image.objects.get(pk=id)
-            img_meta, created = image.imagemetadata_set.get_or_create(meta_key=key)
-            img_meta.meta_value = metadata_value 
+            img_meta, created = (image.imagemetadata_set.
+                                 get_or_create(meta_key=key))
+            img_meta.meta_value = metadata_value
             img_meta.save()
             return {"meta": {img_meta.meta_key: img_meta.meta_value}}
-        
+
         except Image.DoesNotExist:
             raise fault.itemNotFound
         except Image.MultipleObjectsReturned:
@@ -862,8 +929,9 @@ class VirtualMachineGroupHandler(BaseHandler):
      creates, lists, deletes virtual machine groups
 
      @HTTP methods: GET, POST, DELETE
-     @Parameters: POST data 
-     @Responses: HTTP 202 if successfully get the Groups list, itemNotFound, serviceUnavailable otherwise
+     @Parameters: POST data
+     @Responses: HTTP 202 if successfully get the Groups list,
+     itemNotFound, serviceUnavailable otherwise
 
     """
 
@@ -872,24 +940,26 @@ class VirtualMachineGroupHandler(BaseHandler):
     def read(self, request, id=None):
         """List Groups"""
         try:
-            vmgroups = VirtualMachineGroup.objects.all() 
-            vmgroups_list = [ {'id': vmgroup.id, \
+            vmgroups = VirtualMachineGroup.objects.all()
+            vmgroups_list = [{'id': vmgroup.id, \
                   'name': vmgroup.name,  \
-                   'server_id': [machine.id for machine in vmgroup.machines.all()] \
+                   'server_id':
+                    [machine.id for machine in vmgroup.machines.all()]
                    } for vmgroup in vmgroups]
             # Group info is stored in the DB. Ganeti is not aware of this
             if id == "detail":
-                return { "groups": vmgroups_list }
+                return {"groups": vmgroups_list}
             elif id is None:
-                return { "groups": [ { "id": s['id'], "name": s['name'] } for s in vmgroups_list ] }
+                return {"groups": [{"id": s['id'],
+                                    "name": s['name']} for s in vmgroups_list]}
             else:
                 vmgroup = vmgroups.get(id=id)
 
-                return { "group":  {'id': vmgroup.id, \
-                  'name': vmgroup.name,  \
-                   'server_id': [machine.id for machine in vmgroup.machines.all()] \
-                   } }
-
+                return {"group":  {'id': vmgroup.id,
+                  'name': vmgroup.name,
+                   'server_id':
+                    [machine.id for machine in vmgroup.machines.all()]
+                   }}
 
         except VirtualMachineGroup.DoesNotExist:
                     raise fault.itemNotFound
@@ -898,8 +968,6 @@ class VirtualMachineGroupHandler(BaseHandler):
         except Exception, e:
                     log.exception('Unexpected error: %s' % e)
                     raise fault.serviceUnavailable
-
-
 
     def create(self, request, id):
         """Creates a Group"""
@@ -917,60 +985,60 @@ class LimitHandler(BaseHandler):
 
     rate = [
         {
-           "verb" : "POST",
-           "URI" : "*",
-           "regex" : ".*",
-           "value" : 10,
-           "remaining" : 2,
-           "unit" : "MINUTE",
-           "resetTime" : 1244425439
+           "verb": "POST",
+           "URI": "*",
+           "regex": ".*",
+           "value": 10,
+           "remaining": 2,
+           "unit": "MINUTE",
+           "resetTime": 1244425439
         },
         {
-           "verb" : "POST",
-           "URI" : "*/servers",
-           "regex" : "^/servers",
-           "value" : 25,
-           "remaining" : 24,
-           "unit" : "DAY",
-           "resetTime" : 1244511839
+           "verb": "POST",
+           "URI": "*/servers",
+           "regex": "^/servers",
+           "value": 25,
+           "remaining": 24,
+           "unit": "DAY",
+           "resetTime": 1244511839
         },
         {
-           "verb" : "PUT",
-           "URI" : "*",
-           "regex" : ".*",
-           "value" : 10,
-           "remaining" : 2,
-           "unit" : "MINUTE",
-           "resetTime" : 1244425439
+           "verb": "PUT",
+           "URI": "*",
+           "regex": ".*",
+           "value": 10,
+           "remaining": 2,
+           "unit": "MINUTE",
+           "resetTime": 1244425439
         },
         {
-           "verb" : "GET",
-           "URI" : "*",
-           "regex" : ".*",
-           "value" : 3,
-           "remaining" : 3,
-           "unit" : "MINUTE",
-           "resetTime" : 1244425439
+           "verb": "GET",
+           "URI": "*",
+           "regex": ".*",
+           "value": 3,
+           "remaining": 3,
+           "unit": "MINUTE",
+           "resetTime": 1244425439
         },
         {
-           "verb" : "DELETE",
-           "URI" : "*",
-           "regex" : ".*",
-           "value" : 100,
-           "remaining" : 100,
-           "unit" : "MINUTE",
-           "resetTime" : 1244425439
+           "verb": "DELETE",
+           "URI": "*",
+           "regex": ".*",
+           "value": 100,
+           "remaining": 100,
+           "unit": "MINUTE",
+           "resetTime": 1244425439
         }
     ]
 
     absolute = {
-        "maxTotalRAMSize" : 51200,
-        "maxIPGroups" : 50,
-        "maxIPGroupMembers" : 25
+        "maxTotalRAMSize": 51200,
+        "maxIPGroups": 50,
+        "maxIPGroupMembers": 25
     }
 
     def read(self, request):
-        return { "limits": {
+        return {"limits": {
                 "rate": self.rate,
                 "absolute": self.absolute,
                }
@@ -991,18 +1059,18 @@ class DiskHandler(BaseHandler):
 
     def read_one(self, request, id):
         """List one Disk with the specified id with all details"""
-        # FIXME Get detailed info from the DB 
+        # FIXME Get detailed info from the DB
         # for the Disk with the specified id
         try:
             disk = Disk.objects.get(pk=id)
             disk_details = {
-                "id" : disk.id, 
-                "name" : disk.name, 
-                "size" : disk.size,
-                "created" : disk.created, 
-                "serverId" : disk.vm.id
+                "id": disk.id,
+                "name": disk.name,
+                "size": disk.size,
+                "created": disk.created,
+                "serverId": disk.vm.id
             }
-            return { "disks" : disk_details }
+            return {"disks": disk_details}
         except:
             raise fault.itemNotFound
 
@@ -1011,21 +1079,22 @@ class DiskHandler(BaseHandler):
         """List all Disks. If -detail- is set list them with all details"""
         if not detail:
             disks = Disk.objects.filter(owner=SynnefoUser.objects.all()[0])
-            return { "disks": [ { "id": disk.id, "name": disk.name } for disk in disks ] }
+            return {"disks": [{"id": disk.id, "name": disk.name} \
+                for disk in disks]}
         else:
             disks = Disk.objects.filter(owner=SynnefoUser.objects.all()[0])
-            disks_details = [ {
-                "id" : disk.id, 
-                "name" : disk.name,
-                "size" : disk.size,
-                "created" : disk.created, 
-                "serverId" : disk.vm.id,
-            } for disk in disks ]
-            return { "disks":  disks_details }                
+            disks_details = [{
+                "id": disk.id,
+                "name": disk.name,
+                "size": disk.size,
+                "created": disk.created,
+                "serverId": disk.vm.id,
+            } for disk in disks]
+            return {"disks":  disks_details}
 
     def create(self, request):
         """Create a new Disk"""
-        # FIXME Create a partial DB entry, 
+        # FIXME Create a partial DB entry,
         # then call the backend for actual creation
         pass
 

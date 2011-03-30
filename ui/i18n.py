@@ -1,6 +1,8 @@
 from django import http
 from django.conf import settings
-from django.utils.translation import check_for_language, activate, to_locale, get_language
+from django.utils.translation import activate, to_locale
+from django.utils.translation import check_for_language, get_language
+
 
 def set_language(request):
     """

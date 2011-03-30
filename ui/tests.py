@@ -3,6 +3,7 @@ from selenium import selenium
 from multiprocessing import Process
 from time import sleep
 
+
 class FunctionalCase(TestCase):
     """
     Functional tests for synnefo.ui using Selenium
@@ -16,13 +17,12 @@ class FunctionalCase(TestCase):
                                  "http://localhost:8000/")
         self.selenium.start()
 
-        
     def tearDown(self):
         """Kill processes"""
         TestCase.tearDown(self)
         self.selenium.stop()
         self.assertEqual([], self.verificationErrors)
-        
+
     def test_wizard(self):
         sel = self.selenium
         sel.open("/")
@@ -35,12 +35,18 @@ class FunctionalCase(TestCase):
         sleep(2)
         sel.click("medium")
         sleep(2)
-        try: self.assertEqual("2048", sel.get_value("ram-indicator"))
-        except AssertionError, e: self.verificationErrors.append(str(e))
-        try: self.assertEqual("2", sel.get_value("cpu-indicator"))
-        except AssertionError, e: self.verificationErrors.append(str(e))
-        try: self.assertEqual("40", sel.get_value("storage-indicator"))
-        except AssertionError, e: self.verificationErrors.append(str(e))
+        try:
+            self.assertEqual("2048", sel.get_value("ram-indicator"))
+        except AssertionError, e:
+            self.verificationErrors.append(str(e))
+        try:
+            self.assertEqual("2", sel.get_value("cpu-indicator"))
+        except AssertionError, e:
+            self.verificationErrors.append(str(e))
+        try:
+            self.assertEqual("40", sel.get_value("storage-indicator"))
+        except AssertionError, e:
+            self.verificationErrors.append(str(e))
         sleep(2)
         sel.click("//div[@id='wizard']/div/div[2]/button[2]")
         sleep(2)
@@ -49,11 +55,13 @@ class FunctionalCase(TestCase):
         self.assertEqual("40", sel.get_text("machine_storage-label"))
         sel.click("start")
         sleep(2)
-        try: self.failUnless(sel.is_text_present("Success"))
-        except AssertionError, e: self.verificationErrors.append(str(e))
+        try:
+            self.failUnless(sel.is_text_present("Success"))
+        except AssertionError, e:
+            self.verificationErrors.append(str(e))
 
-        #self.assertEqual("Success!", sel.get_text("//div[@id='error-success']/h3"))
+        #self.assertEqual("Success!",
+        #                 sel.get_text("//div[@id='error-success']/h3"))
         #sel.click("//div[@id='error-success']/a")
         #try: self.failUnless(sel.is_text_present("My Debian Unstable server"))
         #except AssertionError, e: self.verificationErrors.append(str(e))
-

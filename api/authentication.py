@@ -26,4 +26,3 @@ class TokenAuthentication(object):
 
     def challenge(self):
         return fault.unauthorized.response
-

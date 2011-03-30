@@ -18,7 +18,7 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="spinner" style="display:none"></div>
-            <img class="wave" src="" />
+            <img class="wave" style="display:none" src="" />
         </div>
         <img class="logo" src="" />
         <a href="#" class="name">
@@ -195,19 +195,16 @@ function update_machines_view(data){
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
                     existing.remove();
                     existing = moved;
-                    existing.find('.spinner').hide();
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
                     moved = existing.clone().appendTo(".terminated");
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                     existing.remove();
                     existing = moved;
-                    existing.find('.spinner').hide();
-                } else {
-                    existing.find('.spinner').hide();
-                    existing.find(' .wave').attr('src','static/wave.gif');
-                    setTimeout("$('#" + server.id +" .wave').attr('src','')", 3000);
-                }
+                } 
+                existing.find('.spinner').hide();
+                existing.find(' .wave').attr('src','static/wave.gif').show();
+                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);         
                 existing.find(".status").text(STATUS_MESSAGES[server.status]);
                             
             }
@@ -227,6 +224,8 @@ function update_machines_view(data){
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                 machine.appendTo(".terminated");
             }
+            //machine.find(' .wave').attr('src','static/wave.gif').show();
+            //setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);  
         }
     });
 
@@ -245,6 +244,12 @@ function update_machines_view(data){
     if (servers.length == 0) {
         $("#emptymachineslist").fadeIn("slow");
     }
+    
+    // set confirm box position
+    if (window.innerHeight - 235 < $('#machinesview').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
 }
 
 // indicate that the requested action was succesfully completed

@@ -5,7 +5,7 @@ Dependencies
 
 Synnefo depends on the following Python modules
 
-- django
+- django 1.2
 - django-piston 
 - simplejson
 - selenium
@@ -14,6 +14,18 @@ Synnefo depends on the following Python modules
 also, depending on the database engine of choice, on one of the following:
 - MySQL-python
 - psycopg2
+
+Temporary fix - to be removed soon
+----------------------------------
+After going through the installation instructions below, the following fix must
+be applied. 
+
+jQuery.ajax POST is not working unless you edit lib/python2.6/site-packages/piston/utils.py.
+   On def content_type change:
+        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded)
+    to
+        ctype = self.request.META.get('CONTENT_TYPE', type_formencoded).split(";")[0]
+
 
 Preparing the development environment
 -------------------------------------
@@ -150,16 +162,22 @@ print out DDL statements. It should not fail.
     $ ./bin/python manage.py syncdb
 	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
 	$ ./bin/python manage.py loaddata db/fixtures/images.json
+
+The following fictures can be loaded optionally depending on
+testing requirements:
+
 	$ ./bin/python manage.py loaddata db/fixtures/vms.json
+	$ ./bin/python manage.py loaddata db/fixtures/initial_data.json
+	$ ./bin/python manage.py loaddata db/fixtures/disks.json
 
 7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
 username 
 
 8. Start the system
-    $ ./bin/python db/db_controller.py  #Ganeti publisher
+    $ ./bin/python db/db_controller.py  #DB synch daemon
     $ ./bin/python manage.py runserver  #Django
-     
-9. Done
+
+9. (Hopefully) Done
 
 UI Testing
 ----------

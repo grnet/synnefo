@@ -34,7 +34,7 @@ def get_rsapi_state(vm):
         return "UNKNOWN"
     # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
     if r == 'ACTIVE' and vm.backendopcode == 'OP_INSTANCE_REBOOT' and \
-        vm._backendjobstatus in ('queued', 'waiting', 'running'):
+        vm.backendjobstatus in ('queued', 'waiting', 'running'):
         return "REBOOT"
     return r
 

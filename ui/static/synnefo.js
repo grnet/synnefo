@@ -337,7 +337,7 @@ Array.prototype.unique = function () {
 // get and configure flavor selection
 function update_flavors() { 
     $.ajax({
-        url: '/api/v1.0/flavors/detail',
+        url: API_URL + '/flavors/detail',
         type: "GET",
         //async: false,
         dataType: "json",
@@ -350,7 +350,7 @@ function update_flavors() {
 			}
         },
         success: function(data, textStatus, jqXHR) {
-            flavors = data.flavors;
+            flavors = data.flavors.values;
             $.each(flavors, function(i, flavor) {
                 cpus[i] = flavor['cpu'];
                 disks[i] = flavor['disk'];

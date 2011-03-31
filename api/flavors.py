@@ -23,6 +23,7 @@ def flavor_to_dict(flavor, detail=True):
     if detail:
         d['ram'] = flavor.ram
         d['disk'] = flavor.disk
+        d['cpu'] = flavor.cpu
     return d
 
 

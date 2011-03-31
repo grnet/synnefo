@@ -1,0 +1,24 @@
+.PS
+
+copy "sequence.pic";
+
+# Define the objects
+object(B,"Browser");
+object(S,"Synnefo");
+object(A,"Sibbolleth");
+
+step();
+
+# Message sequences
+active(B);
+active(S);
+active(A);
+message(B,S,"GET /");
+message(S,B,"304 Go to Sibbolleth");
+message(B,A,"304 Go to Sibbolleth");
+
+
+complete(T);
+complete(S);
+complete(A);
+.PE

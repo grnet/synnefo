@@ -1,0 +1,10 @@
+[
+    {
+        "model": "db.SynnefoUser",
+        "pk": 1,
+        "fields": {
+            "name": 1,
+            "credit": 1024
+        }
+    }
+]

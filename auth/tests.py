@@ -10,7 +10,7 @@ from django.test import TestCase
 from django.test.client import Client
 
 class AuthTestCase(TestCase):
-
+    fixtures = ['api_test_data', 'auth_test_data']
     apibase = '/api/v1.0'
 
     def setUp(self):

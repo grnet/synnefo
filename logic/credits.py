@@ -5,10 +5,9 @@
 #
 
 from datetime import datetime
-
-from db.models import Debit, FlavorCost
-
 from django.db import transaction
+
+from synnefo.db.models import Debit, FlavorCost
 
 @transaction.commit_on_success
 def debit_account(user , amount, vm, description):

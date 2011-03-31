@@ -6,9 +6,8 @@
 # Copyright 2010 Greek Research and Technology Network
 #
 
-from db.models import VirtualMachine
-
-from logic import credits
+from synnefo.db.models import VirtualMachine
+from synnefo.logic import credits
 
 import synnefo.settings as settings
 

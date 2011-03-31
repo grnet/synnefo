@@ -1,6 +1,11 @@
+#
+# Business Logic for communication with the Ganeti backend
+#
+# Copyright 2010 Greek Research and Technology Network
+#
 
-from db.models import VirtualMachine
-import utils
+from synnefo.db.models import VirtualMachine
+from synnefo.logic import utils
 
 def process_backend_msg(vm, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend.
@@ -21,10 +26,10 @@ def process_backend_msg(vm, jobid, opcode, status, logmsg):
 
     # Notifications of success change the operating state
     if status == 'success':
-        utils.update_state(VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
+        utils.update_state(vm, VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
     # Special cases OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
-        utils.update_state('ERROR')
+        utils.update_state(vm, 'ERROR')
     # Any other notification of failure leaves the operating state unchanged
 
     vm.save()

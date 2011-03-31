@@ -28,12 +28,9 @@ import getpass
 import traceback
 
 from threading import Thread, Event, currentThread
-
 from synnefo.db.models import VirtualMachine
-
 from synnefo.settings import GANETI_ZMQ_PUBLISHER
-
-from logic import utils, backend
+from synnefo.logic import utils, backend
 
 class StoppableThread(Thread):
     """Thread class with a stop() method.
@@ -74,8 +71,7 @@ def zmq_sub_thread(subscriber):
             vm = VirtualMachine.objects.get(id=vmid)
     
             logging.debug("Processing msg: %s" % (msg,))
-            backend.process_backend_msg(msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
-            vm.save()
+            backend.process_backend_msg(vm, msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
             logging.debug("Done processing msg for vm %s." % (msg["instance"]))
 
         except KeyError:

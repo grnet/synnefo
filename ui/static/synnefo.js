@@ -1,5 +1,6 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
+var API_URL = "/api/v1.1redux";
 
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC. 
@@ -416,6 +417,39 @@ function updateActions() {
 	}
 }
 
+//create server action
+function create_vm(machineName, imageRef, flavorRef){
+    var payload = {
+        "server": {
+            "name": machineName,
+            "imageRef": imageRef,
+            "flavorRef" : flavorRef,
+            "metadata" : {
+                "My Server Name" : machineName
+            },
+        }
+    };
+
+
+    $.ajax({
+    url: "/api/v1.0/servers",
+    type: "POST",
+    dataType: "json",    
+    data: JSON.stringify(payload),
+    timeout: TIMEOUT,
+    error: function(jqXHR, textStatus, errorThrown) { 
+                ajax_error(jqXHR.status);
+           },
+    success: function(data, textStatus, jqXHR) {
+                if ( jqXHR.status == '202') {
+                    ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);                   
+                } else {
+                    ajax_error(jqXHR.status);
+                }
+            }
+    });
+}
+
 // reboot action
 function reboot(serverIDs){
 	if (!serverIDs.length){
@@ -429,7 +463,7 @@ function reboot(serverIDs){
     var serverID = serverIDs.pop();
 	
 	$.ajax({
-		url: '/api/v1.0/servers/' + serverID + '/action',
+		url: API_URL + '/servers/' + serverID + '/action',
 		type: "POST",        
 		dataType: "json",
 		data: JSON.stringify(payload),
@@ -468,7 +502,7 @@ function shutdown(serverIDs) {
 
 	var serverID = serverIDs.pop()
     $.ajax({
-	    url: '/api/v1.0/servers/' + serverID + '/action',
+	    url: API_URL + '/servers/' + serverID + '/action',
 	    type: "POST",
 	    dataType: "json",
         data: JSON.stringify(payload),
@@ -505,7 +539,7 @@ function destroy(serverIDs) {
 
 	serverID = serverIDs.pop()
     $.ajax({
-	    url: '/api/v1.0/servers/' + serverID,
+	    url: API_URL + '/servers/' + serverID,
 	    type: "DELETE",
 	    dataType: "json",
         data: JSON.stringify(payload),
@@ -544,7 +578,7 @@ function start(serverIDs){
 
 	var serverID = serverIDs.pop()
     $.ajax({
-        url: '/api/v1.0/servers/' + serverID + '/action',
+        url: API_URL + '/servers/' + serverID + '/action',
         type: "POST",
         dataType: "json",
         data: JSON.stringify(payload),

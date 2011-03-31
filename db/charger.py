@@ -12,7 +12,7 @@ from logic import credits
 
 def periodically_charge():
     """Scan all virtual machines and charge each user"""
-    active_vms = VirtualMachine.objects.filter(delete=False)
+    active_vms = VirtualMachine.objects.filter(deleted=False)
     
     if not len(active_vms):
         print "No virtual machines found"

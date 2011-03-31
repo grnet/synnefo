@@ -8,6 +8,7 @@ from django.conf.urls.defaults import url
 
 _accept_re = re.compile(r'([^\s;,]+)(?:[^,]*?;\s*q=(\d*(?:\.\d+)?))?')
 
+
 def parse_accept_header(value):
     """Parse an HTTP Accept header
 
@@ -29,6 +30,7 @@ def parse_accept_header(value):
     result.sort(key=lambda x: x[1])
 
     return result
+
 
 def url_with_format(regex, *args, **kwargs):
     """

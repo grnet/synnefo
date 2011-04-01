@@ -899,6 +899,10 @@ div.confirm_single button, div.confirm_multiple button, div.action_error button{
     padding: 0px;
 }
 
+div.confirm_single button, .action_error button {
+    height: 20px !important;
+    width: 80px !important;
+}
 div.confirm_single button.yes, div.confirm_multiple button.yes {
     border-color: orange;
     padding: 0 12px;
@@ -928,7 +932,7 @@ div.confirm_single button.yes {
 }
 
 div.confirm_single button.no {
-    margin: 22px 0 0 5px;
+    margin: 20px 0 0 5px;
 }
 
 div.action_error {
@@ -1143,11 +1147,11 @@ div.list table thead #name {
 }
 
 .spinner, .wave {
-    clear: left;
+    clear: right;
     height: 20px;
     float:right !important;
     width: 20px;
-    margin: 23px 0 0 15px !important;   
+    margin: 5px 16px 0 15px !important;   
 }
 
 .hidden {

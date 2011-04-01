@@ -34,15 +34,11 @@
 # be standalone.
 
 import logging
+import simplejson
 import socket
 import urllib
 import threading
 import pycurl
-
-try:
-  import simplejson as json
-except ImportError:
-  import json
 
 try:
   from cStringIO import StringIO
@@ -75,6 +71,7 @@ NODE_ROLE_REGULAR = "regular"
 # Internal constants
 _REQ_DATA_VERSION_FIELD = "__version__"
 _INST_CREATE_REQV1 = "instance-create-reqv1"
+_INST_REINSTALL_REQV1 = "instance-reinstall-reqv1"
 _INST_NIC_PARAMS = frozenset(["mac", "ip", "mode", "link", "bridge"])
 _INST_CREATE_V0_DISK_PARAMS = frozenset(["size"])
 _INST_CREATE_V0_PARAMS = frozenset([
@@ -239,12 +236,12 @@ def GenericCurlConfig(verbose=False, use_signal=False,
   return _ConfigCurl
 
 
-class GanetiRapiClient(object):
+class GanetiRapiClient(object): # pylint: disable-msg=R0904
   """Ganeti RAPI client.
 
   """
   USER_AGENT = "Ganeti RAPI Client"
-  _json_encoder = json.JSONEncoder(sort_keys=True)
+  _json_encoder = simplejson.JSONEncoder(sort_keys=True)
 
   def __init__(self, host, port=GANETI_RAPI_PORT,
                username=None, password=None, logger=logging,
@@ -421,7 +418,7 @@ class GanetiRapiClient(object):
 
     # Was anything written to the response buffer?
     if encoded_resp_body.tell():
-      response_content = json.loads(encoded_resp_body.getvalue())
+      response_content = simplejson.loads(encoded_resp_body.getvalue())
     else:
       response_content = None
 
@@ -483,6 +480,30 @@ class GanetiRapiClient(object):
     """
     return self._SendRequest(HTTP_GET, "/%s/info" % GANETI_RAPI_VERSION,
                              None, None)
+
+  def RedistributeConfig(self):
+    """Tells the cluster to redistribute its configuration files.
+
+    @return: job id
+
+    """
+    return self._SendRequest(HTTP_PUT,
+                             "/%s/redistribute-config" % GANETI_RAPI_VERSION,
+                             None, None)
+
+  def ModifyCluster(self, **kwargs):
+    """Modifies cluster parameters.
+
+    More details for parameters can be found in the RAPI documentation.
+
+    @rtype: int
+    @return: job id
+
+    """
+    body = kwargs
+
+    return self._SendRequest(HTTP_PUT,
+                             "/%s/modify" % GANETI_RAPI_VERSION, None, body)
 
   def GetClusterTags(self):
     """Gets the cluster tags.
@@ -746,6 +767,65 @@ class GanetiRapiClient(object):
                              ("/%s/instances/%s/modify" %
                               (GANETI_RAPI_VERSION, instance)), None, body)
 
+  def ActivateInstanceDisks(self, instance, ignore_size=None):
+    """Activates an instance's disks.
+
+    @type instance: string
+    @param instance: Instance name
+    @type ignore_size: bool
+    @param ignore_size: Whether to ignore recorded size
+    @return: job id
+
+    """
+    query = []
+    if ignore_size:
+      query.append(("ignore_size", 1))
+
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/instances/%s/activate-disks" %
+                              (GANETI_RAPI_VERSION, instance)), query, None)
+
+  def DeactivateInstanceDisks(self, instance):
+    """Deactivates an instance's disks.
+
+    @type instance: string
+    @param instance: Instance name
+    @return: job id
+
+    """
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/instances/%s/deactivate-disks" %
+                              (GANETI_RAPI_VERSION, instance)), None, None)
+
+  def GrowInstanceDisk(self, instance, disk, amount, wait_for_sync=None):
+    """Grows a disk of an instance.
+
+    More details for parameters can be found in the RAPI documentation.
+
+    @type instance: string
+    @param instance: Instance name
+    @type disk: integer
+    @param disk: Disk index
+    @type amount: integer
+    @param amount: Grow disk by this amount (MiB)
+    @type wait_for_sync: bool
+    @param wait_for_sync: Wait for disk to synchronize
+    @rtype: int
+    @return: job id
+
+    """
+    body = {
+      "amount": amount,
+      }
+
+    if wait_for_sync is not None:
+      body["wait_for_sync"] = wait_for_sync
+
+    return self._SendRequest(HTTP_POST,
+                             ("/%s/instances/%s/disk/%s/grow" %
+                              (GANETI_RAPI_VERSION, instance, disk)),
+                             None, body)
+
   def GetInstanceTags(self, instance):
     """Gets tags for an instance.
 
@@ -862,7 +942,8 @@ class GanetiRapiClient(object):
                              ("/%s/instances/%s/startup" %
                               (GANETI_RAPI_VERSION, instance)), query, None)
 
-  def ReinstallInstance(self, instance, os=None, no_startup=False):
+  def ReinstallInstance(self, instance, os=None, no_startup=False,
+                        osparams=None):
     """Reinstalls an instance.
 
     @type instance: str
@@ -874,6 +955,23 @@ class GanetiRapiClient(object):
     @param no_startup: Whether to start the instance automatically
 
     """
+    if _INST_REINSTALL_REQV1 in self.GetFeatures():
+      body = {
+        "start": not no_startup,
+        }
+      if os is not None:
+        body["os"] = os
+      if osparams is not None:
+        body["osparams"] = osparams
+      return self._SendRequest(HTTP_POST,
+                               ("/%s/instances/%s/reinstall" %
+                                (GANETI_RAPI_VERSION, instance)), None, body)
+
+    # Use old request format
+    if osparams:
+      raise GanetiApiError("Server does not support specifying OS parameters"
+                           " for instance reinstallation")
+
     query = []
     if os:
       query.append(("os", os))
@@ -1025,6 +1123,17 @@ class GanetiRapiClient(object):
     return self._SendRequest(HTTP_PUT,
                              ("/%s/instances/%s/rename" %
                               (GANETI_RAPI_VERSION, instance)), None, body)
+
+  def GetInstanceConsole(self, instance):
+    """Request information for connecting to instance's console.
+
+    @type instance: string
+    @param instance: Instance name
+
+    """
+    return self._SendRequest(HTTP_GET,
+                             ("/%s/instances/%s/console" %
+                              (GANETI_RAPI_VERSION, instance)), None, None)
 
   def GetJobs(self):
     """Gets all jobs for the cluster.
@@ -1356,3 +1465,149 @@ class GanetiRapiClient(object):
     return self._SendRequest(HTTP_DELETE,
                              ("/%s/nodes/%s/tags" %
                               (GANETI_RAPI_VERSION, node)), query, None)
+
+  def GetGroups(self, bulk=False):
+    """Gets all node groups in the cluster.
+
+    @type bulk: bool
+    @param bulk: whether to return all information about the groups
+
+    @rtype: list of dict or str
+    @return: if bulk is true, a list of dictionaries with info about all node
+        groups in the cluster, else a list of names of those node groups
+
+    """
+    query = []
+    if bulk:
+      query.append(("bulk", 1))
+
+    groups = self._SendRequest(HTTP_GET, "/%s/groups" % GANETI_RAPI_VERSION,
+                               query, None)
+    if bulk:
+      return groups
+    else:
+      return [g["name"] for g in groups]
+
+  def GetGroup(self, group):
+    """Gets information about a node group.
+
+    @type group: str
+    @param group: name of the node group whose info to return
+
+    @rtype: dict
+    @return: info about the node group
+
+    """
+    return self._SendRequest(HTTP_GET,
+                             "/%s/groups/%s" % (GANETI_RAPI_VERSION, group),
+                             None, None)
+
+  def CreateGroup(self, name, alloc_policy=None, dry_run=False):
+    """Creates a new node group.
+
+    @type name: str
+    @param name: the name of node group to create
+    @type alloc_policy: str
+    @param alloc_policy: the desired allocation policy for the group, if any
+    @type dry_run: bool
+    @param dry_run: whether to peform a dry run
+
+    @rtype: int
+    @return: job id
+
+    """
+    query = []
+    if dry_run:
+      query.append(("dry-run", 1))
+
+    body = {
+      "name": name,
+      "alloc_policy": alloc_policy
+      }
+
+    return self._SendRequest(HTTP_POST, "/%s/groups" % GANETI_RAPI_VERSION,
+                             query, body)
+
+  def ModifyGroup(self, group, **kwargs):
+    """Modifies a node group.
+
+    More details for parameters can be found in the RAPI documentation.
+
+    @type group: string
+    @param group: Node group name
+    @rtype: int
+    @return: job id
+
+    """
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/groups/%s/modify" %
+                              (GANETI_RAPI_VERSION, group)), None, kwargs)
+
+  def DeleteGroup(self, group, dry_run=False):
+    """Deletes a node group.
+
+    @type group: str
+    @param group: the node group to delete
+    @type dry_run: bool
+    @param dry_run: whether to peform a dry run
+
+    @rtype: int
+    @return: job id
+
+    """
+    query = []
+    if dry_run:
+      query.append(("dry-run", 1))
+
+    return self._SendRequest(HTTP_DELETE,
+                             ("/%s/groups/%s" %
+                              (GANETI_RAPI_VERSION, group)), query, None)
+
+  def RenameGroup(self, group, new_name):
+    """Changes the name of a node group.
+
+    @type group: string
+    @param group: Node group name
+    @type new_name: string
+    @param new_name: New node group name
+
+    @rtype: int
+    @return: job id
+
+    """
+    body = {
+      "new_name": new_name,
+      }
+
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/groups/%s/rename" %
+                              (GANETI_RAPI_VERSION, group)), None, body)
+
+
+  def AssignGroupNodes(self, group, nodes, force=False, dry_run=False):
+    """Assigns nodes to a group.
+
+    @type group: string
+    @param group: Node gropu name
+    @type nodes: list of strings
+    @param nodes: List of nodes to assign to the group
+
+    @rtype: int
+    @return: job id
+
+    """
+    query = []
+
+    if force:
+      query.append(("force", 1))
+
+    if dry_run:
+      query.append(("dry-run", 1))
+
+    body = {
+      "nodes": nodes,
+      }
+
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/groups/%s/assign-nodes" %
+                             (GANETI_RAPI_VERSION, group)), query, body)

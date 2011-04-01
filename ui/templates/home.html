@@ -64,12 +64,17 @@
         };
         
         // ajax error checking  
-        function ajax_error(status) {
+        function ajax_error(status, serverID) {
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
             
             if (ERRORS[status] != undefined) {
-                $("#error-success p").text(ERRORS[status]);
+                if (serverID == undefined){
+                    $("#error-success p").text(ERRORS[status]);
+                } else {
+                    var serverName = $("#"+serverID).parent().parent().find("a.name").text();
+                    $("#error-success p").html("<b>" + serverName + "</b>" + ": " + ERRORS[status]);
+                }
             } else {
                 $("#error-success p").text(ERRORS['DEFAULT']);   
             }

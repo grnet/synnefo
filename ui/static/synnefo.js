@@ -548,7 +548,7 @@ function destroy(serverIDs) {
                     display_failure(serverID, jqXHR.status, 'Destroy')
                     },
         success: function(data, textStatus, jqXHR) {
-                    if ( jqXHR.status == '202') {
+                    if ( jqXHR.status == '204') {
 						try {
                             console.info('destroyed ' + serverID);
                         } catch (err) {}

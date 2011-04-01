@@ -263,7 +263,7 @@ function display_success(serverID) {
 function display_failure(serverID, status, action) {
 	osIcon = $('#'+serverID).parent().parent().find('.list-logo');
 	osIcon.attr('src',osIcon.attr('os'));
-    ajax_error(status);
+    ajax_error(status, serverID);
 }
 
 var vmTable = $("div.list table.list-machines").dataTable({

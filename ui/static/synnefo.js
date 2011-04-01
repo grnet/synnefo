@@ -481,7 +481,7 @@ function reboot(serverIDs){
 						// continue with the rest of the servers
 						reboot(serverIDs);
 					} else {
-						ajax_error(jqXHR.status);
+						ajax_error(jqXHR.status, serverID);
 					}
 				}
     });
@@ -520,7 +520,7 @@ function shutdown(serverIDs) {
 						// continue with the rest of the servers			
                         shutdown(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status);
+                        ajax_error(jqXHR.status, serverID);
                     }
                 }             
     });
@@ -557,7 +557,7 @@ function destroy(serverIDs) {
 						// continue with the rest of the servers
                         destroy(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status);
+                        ajax_error(jqXHR.status, serverID);
                     }
                 }             
     });
@@ -596,7 +596,7 @@ function start(serverIDs){
 						// continue with the rest of the servers						
                         start(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status);
+                        ajax_error(jqXHR.status, serverID);
                     }
                 }
     });

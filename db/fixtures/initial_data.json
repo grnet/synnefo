@@ -1,12 +1,2 @@
 [
-    {
-        "model": "db.SynnefoUser",
-        "pk": 1,
-        "fields": {
-            "name": "admin user",
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "credit": 1
-        }
-    }
 ] 

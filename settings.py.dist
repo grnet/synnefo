@@ -149,3 +149,5 @@ POLL_LIMIT = 3600
 #maximum number of seconds, needed for server and images polling
 
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
+
+SIBBOLLETH_HOST = "http://wayf.grnet.gr/"

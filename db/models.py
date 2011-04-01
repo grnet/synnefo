@@ -2,12 +2,14 @@
 
 from django.conf import settings
 from django.db import models
+from django.contrib.auth.models import User
 
 import datetime
 
-class SynnefoUser(models.Model):
+class SynnefoUser(User):
     name = models.CharField('Synnefo Username', max_length=255)
     credit = models.IntegerField('Credit Balance')
+    auth_token = models.CharField('Authentication Token', max_length=32)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
 
@@ -15,7 +17,7 @@ class SynnefoUser(models.Model):
         verbose_name = u'Synnefo User'
     
     def __unicode__(self):
-        return self.name 
+        return self.name
 
     def get_limit(self, limit_name):
         """Returns the limit value for the specified limit"""

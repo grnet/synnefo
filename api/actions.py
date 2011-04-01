@@ -2,11 +2,12 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
-from synnefo.api.errors import *
-from synnefo.util.rapi import GanetiRapiClient
-
 from django.conf import settings
 from django.http import HttpResponse
+
+from synnefo.api.errors import *
+from synnefo.util.rapi import GanetiRapiClient
+from synnefo.logic import backend, utils
 
 server_actions = {}
 
@@ -51,12 +52,12 @@ def reboot(server, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
     
-    type = args.get('type', '')
-    if type not in ('SOFT', 'HARD'):
+    reboot_type = args.get('type', '')
+    if reboot_type not in ('SOFT', 'HARD'):
         raise BadRequest()
     
-    server.start_action('REBOOT')
-    rapi.RebootInstance(server.backend_id, type.lower())
+    backend.start_action(server, 'REBOOT')
+    rapi.RebootInstance(server.backend_id, reboot_type.lower())
     return HttpResponse(status=202)
 
 @server_action('start')
@@ -64,7 +65,7 @@ def start(server, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503), itemNotFound (404)
 
-    server.start_action('START')
+    backend.start_action(server, 'START')
     rapi.StartupInstance(server.backend_id)
     return HttpResponse(status=202)
 
@@ -73,7 +74,7 @@ def shutdown(server, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503), itemNotFound (404)
     
-    server.start_action('STOP')
+    backend.start_action(server, 'STOP')
     rapi.ShutdownInstance(server.backend_id)
     return HttpResponse(status=202)
 

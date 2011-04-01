@@ -168,8 +168,8 @@
 
 <div class="confirm_multiple">
     <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
-    <button class="yes">{% trans "Confirm Αll" %}</button>
-	<button class="no">{% trans "Cancel Αll" %}</button>
+    <button class="yes">{% trans "Confirm All" %}</button>
+	<button class="no">{% trans "Cancel All" %}</button>
 </div>
 
 <div id="machines" class="separator"></div>
@@ -423,35 +423,10 @@ $("#start").click(function(){
     var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
     var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
-    var payload = {
-        "server": {
-            "name": machineName,
-            "imageRef": imageRef,
-            "flavorRef" : flavorRef,
-            "metadata" : {
-                "My Server Name" : machineName
-            },
-        }
-    };
+
+    create_vm(machineName, imageRef, flavorRef);
 
     $('a#create').data('overlay').close();
-    $.ajax({
-    url: "/api/v1.0/servers",
-    type: "POST",
-    dataType: "json",    
-    data: JSON.stringify(payload),
-    timeout: TIMEOUT,
-    error: function(jqXHR, textStatus, errorThrown) { 
-                ajax_error(jqXHR.status);
-           },
-    success: function(data, textStatus, jqXHR) {
-                if ( jqXHR.status == '202') {
-                    ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);                   
-                } else {
-                    ajax_error(jqXHR.status);
-                }
-            }
-    });
     $("#emptymachineslist").hide();
 
     try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}

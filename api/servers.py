@@ -2,11 +2,7 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
-from synnefo.api.actions import server_actions
-from synnefo.api.errors import *
-from synnefo.api.util import *
-from synnefo.db.models import *
-from synnefo.util.rapi import GanetiRapiClient
+from logging import getLogger
 
 from django.conf import settings
 from django.conf.urls.defaults import *
@@ -14,9 +10,12 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from logging import getLogger
-
-from logic import utils
+from synnefo.api.actions import server_actions
+from synnefo.api.errors import *
+from synnefo.api.util import *
+from synnefo.db.models import *
+from synnefo.util.rapi import GanetiRapiClient
+from synnefo.logic import backend, utils
 
 log = getLogger('synnefo.api.servers')
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
@@ -232,7 +231,7 @@ def delete_server(request, server_id):
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound
     
-    server.start_action('DESTROY')
+    backend.start_action(server, 'DESTROY')
     rapi.DeleteInstance(server.backend_id)
     return HttpResponse(status=204)
 

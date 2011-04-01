@@ -937,20 +937,19 @@ div.action_error {
 }
 
 div.confirm_multiple {
-    bottom: 0;
-    width: 700px;
-    height: 30px;
-    margin: 0 0 0px -36px;
+    width: 692px;
+    height: 25px;
+    margin: 0 0 10px -32px;
 }
 
 div.confirm_multiple p {
     float: left;
-    margin: 9px 0 0 200px;
+    margin: 7px 0 0 200px;
 }
 
 div.confirm_multiple button {
     float: right;
-    margin: 6px 5px 0 0;
+    margin: 4px 5px 0 0;
 }
 
 div.confirm_multiple button.no {
@@ -1174,5 +1173,7 @@ div.actions a.selected, div.actions a.selected:hover {
 }
 
 .fixed {
+    margin: 0 0 0 -32px !important;
+    bottom: 0;
     position: fixed;
 }

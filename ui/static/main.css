@@ -871,7 +871,7 @@ div.confirm_single, div.confirm_multiple {
 div.action_error {
     float: right;
     width: 80px;
-    height: 70px;
+    height: 60px;
     padding: 5px;
     margin: -65px -165px 0 0;
     display: none;
@@ -882,7 +882,7 @@ div.action_error {
 }
 
 div.action_error button.details {
-    margin: 15px 0 0 0px;
+    margin: 5px 0 0 0px;
     padding: 0 15px;
 }
 

@@ -446,11 +446,4 @@ if (flavors.length > 0) {
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 
-$(window).resize(function(){
-    if (this.innerHeight - 200 < $('#machinesview').height())
-        $('.confirm_multiple').addClass('fixed');
-    else
-        $('.confirm_multiple').removeClass('fixed');
-});
-
 </script>

@@ -61,6 +61,7 @@ $("table thead tr th#selection :checkbox").live('change', function() {
 $("ul.dropdown-selector li.select-all a").live('click', function() {
 	$(":checkbox").attr("checked", true);
     $(".dropdown-selector").slideToggle('medium');
+	updateActions();
 	return false;	
 });
 
@@ -68,6 +69,7 @@ $("ul.dropdown-selector li.select-all a").live('click', function() {
 $("ul.dropdown-selector li.select-none a").live('click', function() {
 	$(":checkbox").attr("checked", false);
     $(".dropdown-selector").slideToggle('medium');
+	updateActions();
 	return false;	
 });
 
@@ -75,6 +77,7 @@ $("ul.dropdown-selector li.select-none a").live('click', function() {
 $("ul.dropdown-selector li.select-group a").live('click', function() {
 	$(":checkbox").attr("checked", true);
     $(".dropdown-selector").slideToggle('medium');
+	updateActions();
 	return false;
 });
 
@@ -289,6 +292,15 @@ if (flavors.length == 0) {
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm');
 $('div.confirm_multiple button.no').text('Cancel');
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - 200 < $('#machinesview').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+});
+
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 

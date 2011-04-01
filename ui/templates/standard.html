@@ -246,7 +246,7 @@ function update_machines_view(data){
     }
     
     // set confirm box position
-    if (window.innerHeight - 200 < $('#machinesview').height())
+    if (window.innerHeight - 220 < $('#machinesview').height())
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
@@ -277,6 +277,15 @@ if (flavors.length == 0) {
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm All');
 $('div.confirm_multiple button.no').text('Cancel All');
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - 220 < $('#machinesview').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+});
+
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 </script>

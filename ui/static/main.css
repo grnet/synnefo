@@ -1142,20 +1142,12 @@ div.list table thead #name {
     width: 200px !important;
 }
 
-.spinner {
+.spinner, .wave {
     clear: left;
-    background: url("../static/progress.gif") transparent;
-    height: 31px;
-    width: 31px;
-    margin: 20px 0 0 11px;
-    position:absolute;
-}
-
-.wave {
-    border: none;
-    margin: -5px 0px 0 0px !important;
+    height: 20px;
     float:right !important;
-    clear: both;
+    width: 20px;
+    margin: 23px 0 0 15px !important;   
 }
 
 .hidden {

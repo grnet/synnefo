@@ -897,10 +897,10 @@ div.confirm_single button, div.confirm_multiple button, div.action_error button{
     color: #3D3D3D;
     cursor: pointer;
     padding: 0px;
+    height: 20px !important;
 }
 
 div.confirm_single button, .action_error button {
-    height: 20px !important;
     width: 80px !important;
 }
 div.confirm_single button.yes, div.confirm_multiple button.yes {
@@ -941,7 +941,7 @@ div.action_error {
 
 div.confirm_multiple {
     width: 692px;
-    height: 25px;
+    height: 28px;
     margin: 0 0 10px -32px;
 }
 

@@ -4,6 +4,8 @@
 #
 
 # XXX: most of the keys below are dummy
+from synnefo.api.errors import Unauthorized
+
 def instance_to_server(instance):
     server = {
             "id": instance["name"],
@@ -61,3 +63,24 @@ def paginator(func):
             return { key: [] }
 
     return inner_func
+
+def authenticate(func):
+    """
+    Custom authentication filter supporting the OpenStack API protocol.
+
+    All API methods are required to go through this. Temporarily implemented as
+    a decorator until we find a way to apply it to all incoming requests.
+    """
+    def inner(self, request, *args, **kwargs):
+        if 'X-Auth-Token' in request.META:
+            return func(self, request, *args, **kwargs)
+
+        #An authentication request
+        if 'X-Auth-User' in request.META and 'X-Auth-Key' in request.META \
+           and '/v1.0' == request.path and 'GET' == request.method:
+            #Do authenticate or redirect
+            return
+
+        raise Unauthorized
+
+    return inner

@@ -6,7 +6,7 @@ from django.utils import simplejson as json
 from django.http import HttpResponse
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from synnefo.api.faults import fault, noContent, accepted, created, notModified
-from synnefo.api.helpers import instance_to_server, paginator
+from synnefo.api.helpers import instance_to_server, paginator, authenticate
 from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.util.rapi import CertificateError
 from synnefo.db.models import *
@@ -91,6 +91,7 @@ class ServerHandler(BaseHandler):
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
+    #@authenticate
     def read(self, request, id=None):
         from time import sleep
         sleep(0.5)

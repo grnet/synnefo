@@ -884,7 +884,6 @@ div.action_error {
 div.action_error button.details {
     margin: 15px 0 0 0px;
     padding: 0 15px;
-    border-color: black;
 }
 
 .orange {
@@ -913,7 +912,7 @@ div.confirm_single button.no, div.confirm_multiple button.no {
     padding: 0px 16px;
 }
 
-div.confirm_single button.no:hover, div.confirm_multiple button.no:hover {
+div.confirm_single button.no:hover, div.confirm_multiple button.no:hover, div.action_error button.details:hover {
     background-color: #a5a5a5;
 }
 

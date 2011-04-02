@@ -531,7 +531,7 @@ div.machine div.actions a.more {
     margin-top: 18px;
 }
 
-div.actions a:hover{
+div.actions a.enabled:hover{
     color: black !important;
     text-decoration: underline;
     display: block;
@@ -850,6 +850,12 @@ input.machine {
     color: #F49C1A;
 }
 
+#error-success div {
+    height: 142px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 #error-success .close {
 	background-image: url(/static/close.png);
 	position: absolute;
@@ -1163,7 +1169,7 @@ div.actions a.selected, div.actions a.selected:hover {
     color: orange !important;
 }
 
-.message {
+.action_error .message, .action_error .code {
     display: none;
 }
 

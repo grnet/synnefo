@@ -14,7 +14,7 @@ import random
 import string
 import logging
 from datetime import datetime, timedelta
-
+import iso8601
 from logic import backend, utils
 
 log = logging.getLogger('synnefo.api.handlers')
@@ -144,10 +144,9 @@ class ServerHandler(BaseHandler):
         try:
             changes_since = request.GET.get("changes-since", 0)
             if changes_since:
-                last_update = datetime.strptime(changes_since,
-                                                "%Y-%m-%dT%H:%M:%S")
+                last_update = iso8601.parse_date(changes_since)
                 #return a badRequest if the changes_since is older than a limit
-                if (datetime.now() - last_update >
+                if (datetime.now(last_update.tzinfo) - last_update >
                     timedelta(seconds=settings.POLL_LIMIT)):
                     raise fault.badRequest
                 virtual_servers = VirtualMachine.objects.filter(

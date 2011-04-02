@@ -27,7 +27,10 @@ import gevent
 import rfb
 
 from gevent import socket
+from signal import SIGTERM
+from gevent import signal
 from gevent.select import select
+
 
 class VncAuthProxy(gevent.Greenlet):
     """
@@ -309,6 +312,11 @@ class VncAuthProxy(gevent.Greenlet):
         self._handshake()
 
 
+def fatal_signal_handler(signame):
+    logging.info("Caught %s, will raise SystemExit" % signame)
+    raise SystemExit
+
+
 if __name__ == '__main__':
     from optparse import OptionParser
 
@@ -350,10 +358,17 @@ if __name__ == '__main__':
     logging.info("Initalized, waiting for control connections at %s" %
                  opts.ctrl_socket)
 
+    # Catch SIGTERM to ensure graceful shutdown,
+    # e.g., to make sure the control socket gets unlink()ed.
+    #
+    # Uses gevent.signal so the handler fires even during
+    # gevent.socket.accept()
+    gevent.signal(SIGTERM, fatal_signal_handler, "SIGTERM")
+    
     while True:
         try:
             client, addr = ctrl.accept()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
             break
 
         logging.info("New control connection")
@@ -379,5 +394,7 @@ if __name__ == '__main__':
         VncAuthProxy.spawn(sport, daddr, dport, password, opts.connect_timeout)
         client.close()
 
+    logging.info("Unlinking control socket at %s" %
+                 opts.ctrl_socket)
     os.unlink(opts.ctrl_socket)
     sys.exit(0)

@@ -18,16 +18,22 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 
+DEFAULT_CTRL_SOCKET = "/tmp/vncproxy.sock"
+DEFAULT_LOG_FILE = "/var/log/vncauthproxy/vncauthproxy.log"
+DEFAULT_PID_FILE = "/var/run/vncauthproxy/vncauthproxy.pid"
+DEFAULT_CONNECT_TIMEOUT = 30
 
 import os
 import sys
 import logging
 import gevent
+import daemon
+import daemon.pidlockfile
 
 import rfb
 
 from gevent import socket
-from signal import SIGTERM
+from signal import SIGINT, SIGTERM
 from gevent import signal
 from gevent.select import select
 
@@ -48,8 +54,10 @@ class VncAuthProxy(gevent.Greenlet):
     """
     id = 1
 
-    def __init__(self, sport, daddr, dport, password, connect_timeout=30):
+    def __init__(self, logger, sport, daddr, dport, password, connect_timeout):
         """
+        @type logger: logging.Logger
+        @param logger: the logger to use
         @type sport: int
         @param sport: source port
         @type daddr: str
@@ -70,7 +78,7 @@ class VncAuthProxy(gevent.Greenlet):
         self.daddr = daddr
         self.dport = dport
         self.password = password
-        self.log = logging
+        self.log = logger
         self.server = None
         self.client = None
         self.timeout = connect_timeout
@@ -84,19 +92,19 @@ class VncAuthProxy(gevent.Greenlet):
         raise gevent.GreenletExit
 
     def info(self, msg):
-        logging.info("[C%d] %s" % (self.id, msg))
+        self.log.info("[C%d] %s" % (self.id, msg))
 
     def debug(self, msg):
-        logging.debug("[C%d] %s" % (self.id, msg))
+        self.log.debug("[C%d] %s" % (self.id, msg))
 
     def warn(self, msg):
-        logging.warn("[C%d] %s" % (self.id, msg))
+        self.log.warn("[C%d] %s" % (self.id, msg))
 
     def error(self, msg):
-        logging.error("[C%d] %s" % (self.id, msg))
+        self.log.error("[C%d] %s" % (self.id, msg))
 
     def critical(self, msg):
-        logging.critical("[C%d] %s" % (self.id, msg))
+        self.log.critical("[C%d] %s" % (self.id, msg))
 
     def __str__(self):
         return "VncAuthProxy: %d -> %s:%d" % (self.sport, self.daddr, self.dport)
@@ -313,7 +321,7 @@ class VncAuthProxy(gevent.Greenlet):
 
 
 def fatal_signal_handler(signame):
-    logging.info("Caught %s, will raise SystemExit" % signame)
+    logger.info("Caught %s, will raise SystemExit" % signame)
     raise SystemExit
 
 
@@ -322,28 +330,60 @@ if __name__ == '__main__':
 
     parser = OptionParser()
     parser.add_option("-s", "--socket", dest="ctrl_socket",
-                      help="UNIX socket path for control connections",
-                      default="/tmp/vncproxy.sock",
-                      metavar="PATH")
+                      default=DEFAULT_CTRL_SOCKET,
+                      metavar="PATH",
+                      help="UNIX socket path for control connections (default: %s" %
+                          DEFAULT_CTRL_SOCKET)
     parser.add_option("-d", "--debug", action="store_true", dest="debug",
                       help="Enable debugging information")
-    parser.add_option("-l", "--log", dest="logfile", default=None,
-                      help="Write log to FILE instead of stdout",
-                      metavar="FILE")
+    parser.add_option("-l", "--log", dest="log_file",
+                      default=DEFAULT_LOG_FILE,
+                      metavar="FILE",
+                      help="Write log to FILE instead of %s" % DEFAULT_LOG_FILE),
+    parser.add_option('--pid-file', dest="pid_file",
+                      default=DEFAULT_PID_FILE,
+                      metavar='PIDFILE',
+                      help="Save PID to file (default: %s)" %
+                          DEFAULT_PID_FILE)
     parser.add_option("-t", "--connect-timeout", dest="connect_timeout",
-                      default=30, type="int", metavar="SECONDS",
+                      default=DEFAULT_CONNECT_TIMEOUT, type="int", metavar="SECONDS",
                       help="How long to listen for clients to forward")
 
     (opts, args) = parser.parse_args(sys.argv[1:])
 
+    # Create pidfile
+    pidf = daemon.pidlockfile.TimeoutPIDLockFile(
+        opts.pid_file, 10)
+    
+    # Initialize logger
     lvl = logging.DEBUG if opts.debug else logging.INFO
+    logger = logging.getLogger("vncauthproxy")
+    logger.setLevel(lvl)
+    formatter = logging.Formatter("%(asctime)s vncauthproxy[%(process)d] %(levelname)s: %(message)s",
+        "%Y-%m-%d %H:%M:%S")
+    handler = logging.FileHandler(opts.log_file)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-    logging.basicConfig(level=lvl, filename=opts.logfile,
-                        format="%(asctime)s %(levelname)s: %(message)s",
-                        datefmt="%m/%d/%Y %H:%M:%S")
+    # Become a daemon
+    # Redirecting stdout and stderr to handler.stream to catch
+    # early errors in the daemonization process [e.g., pidfile creation]
+    # which will otherwise go to /dev/null.
+    daemon_context = daemon.DaemonContext(
+        pidfile=pidf,
+        umask=0o0022,
+        stdout=handler.stream,
+        stderr=handler.stream,
+        files_preserve=[handler.stream])
+    daemon_context.open()
+    logger.info("Became a daemon")
+
+    # A fork() has occured while daemonizing,
+    # we *must* reinit gevent
+    gevent.reinit()
 
     if os.path.exists(opts.ctrl_socket):
-        logging.critical("Socket '%s' already exists" % opts.ctrl_socket)
+        logger.critical("Socket '%s' already exists" % opts.ctrl_socket)
         sys.exit(1)
 
     # TODO: make this tunable? chgrp as well?
@@ -355,23 +395,23 @@ if __name__ == '__main__':
     os.umask(old_umask)
 
     ctrl.listen(1)
-    logging.info("Initalized, waiting for control connections at %s" %
+    logger.info("Initialized, waiting for control connections at %s" %
                  opts.ctrl_socket)
 
-    # Catch SIGTERM to ensure graceful shutdown,
+    # Catch signals to ensure graceful shutdown,
     # e.g., to make sure the control socket gets unlink()ed.
     #
     # Uses gevent.signal so the handler fires even during
     # gevent.socket.accept()
+    gevent.signal(SIGINT, fatal_signal_handler, "SIGINT")
     gevent.signal(SIGTERM, fatal_signal_handler, "SIGTERM")
-    
     while True:
         try:
             client, addr = ctrl.accept()
-        except (KeyboardInterrupt, SystemExit):
+        except SystemExit:
             break
 
-        logging.info("New control connection")
+        logger.info("New control connection")
         line = client.recv(1024).strip()
         try:
             # Control message format:
@@ -382,19 +422,20 @@ if __name__ == '__main__':
             # connecting to <source_port>, who will subsequently be forwarded
             # to a VNC server at <destination_address>:<destination_port>
             sport, daddr, dport, password = line.split(':', 3)
-            logging.info("New forwarding [%d -> %s:%d]" %
+            logger.info("New forwarding [%d -> %s:%d]" %
                          (int(sport), daddr, int(dport)))
         except:
-            logging.warn("Malformed request: %s" % line)
+            logger.warn("Malformed request: %s" % line)
             client.send("FAILED\n")
             client.close()
             continue
 
         client.send("OK\n")
-        VncAuthProxy.spawn(sport, daddr, dport, password, opts.connect_timeout)
+        VncAuthProxy.spawn(logger, sport, daddr, dport, password, opts.connect_timeout)
         client.close()
 
-    logging.info("Unlinking control socket at %s" %
+    logger.info("Unlinking control socket at %s" %
                  opts.ctrl_socket)
     os.unlink(opts.ctrl_socket)
+    daemon_context.close()
     sys.exit(0)

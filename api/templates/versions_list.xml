@@ -1,0 +1,12 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+<versions xmlns="http://docs.openstack.org/common/api/v1.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  {% for version in versions %}
+  <version id="{{ version.id }}" status="{{ version.status }}" updated="{{ version.updated }}">
+    {% for link in version.links %}
+      <atom:link rel="{{ link.rel }}" href="{{ link.href }}"/>
+    {% endfor %}
+  </version>
+  {% endfor %}
+</versions>
+{% endspaceless %}

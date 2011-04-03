@@ -2,10 +2,11 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
-from synnefo.api.util import *
-from synnefo.db.models import Image
+from synnefo.api.common import method_not_allowed
+from synnefo.api.util import isoformat, isoparse, get_user, get_image, get_request_dict, api_method
+from synnefo.db.models import Image, ImageMetadata, VirtualMachine
 
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -23,8 +24,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_image(request)
     else:
-        fault = BadRequest()
-        return render_fault(request, fault)
+        return method_not_allowed(request)
 
 def image_demux(request, image_id):
     if request.method == 'GET':
@@ -32,15 +32,14 @@ def image_demux(request, image_id):
     elif request.method == 'DELETE':
         return delete_image(request, image_id)
     else:
-        fault = BadRequest()
-        return render_fault(request, fault)
+        return method_not_allowed(request)
 
 
 def image_to_dict(image, detail=True):
     d = {'id': image.id, 'name': image.name}
     if detail:
-        d['updated'] = image.updated.isoformat()
-        d['created'] = image.created.isoformat()
+        d['updated'] = isoformat(image.updated)
+        d['created'] = isoformat(image.created)
         d['status'] = image.state
         d['progress'] = 100 if image.state == 'ACTIVE' else 0
         d['description'] = image.description
@@ -66,17 +65,23 @@ def list_images(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    all_images = Image.objects.all()
-    images = [image_to_dict(image, detail) for image in all_images]
+    since = isoparse(request.GET.get('changes-since'))
     
-    if request.type == 'xml':
-        mimetype = 'application/xml'
+    if since:
+        avail_images = Image.objects.filter(updated__gt=since)
+        if not avail_images:
+            return HttpResponse(status=304)
+    else:
+        avail_images = Image.objects.all()
+    
+    images = [image_to_dict(image, detail) for image in avail_images]
+    
+    if request.serialization == 'xml':
         data = render_to_string('list_images.xml', {'images': images, 'detail': detail})
     else:
-        mimetype = 'application/json'
         data = json.dumps({'images': {'values': images}})
     
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, status=200)
 
 @api_method('POST')
 def create_image(request):
@@ -110,7 +115,7 @@ def create_image(request):
         raise ItemNotFound
     
     imagedict = image_to_dict(image)
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         data = render_to_string('image.xml', {'image': imagedict})
     else:
         data = json.dumps({'image': imagedict})
@@ -127,13 +132,10 @@ def get_image_details(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    try:
-        image_id = int(image_id)
-        imagedict = image_to_dict(Image.objects.get(id=image_id))
-    except Image.DoesNotExist:
-        raise ItemNotFound
+    image = get_image(image_id)
+    imagedict = image_to_dict(image)
     
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         data = render_to_string('image.xml', {'image': imagedict})
     else:
         data = json.dumps({'image': imagedict})
@@ -149,12 +151,7 @@ def delete_image(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    try:
-        image_id = int(image_id)
-        image = Image.objects.get(id=image_id)
-    except Image.DoesNotExist:
-        raise ItemNotFound
-    
+    image = get_image(image_id)
     if image.owner != get_user():
         raise Unauthorized()
     image.delete()

@@ -9,7 +9,7 @@ from sys import argv, exit
 import json
 
 DEFAULT_HOST = '127.0.0.1:8000'
-DEFAULT_API = 'v1.1redux'
+DEFAULT_API = 'v1.1'
 
 
 commands = {}
@@ -86,7 +86,7 @@ class Command(object):
             if len(reply) == 1:
                 key = reply.keys()[0]
                 val = reply[key]
-                print '%s %s' % (key, val.get('message', ''))
+                print '%s: %s' % (key, val.get('message', ''))
                 if self.verbose:
                     print val.get('details', '')
                 exit(1)
@@ -268,7 +268,7 @@ class ListFlavors(Command):
             print '%3d %s %s' % (id, name, details)
 
 
-@command_name('infoflv')
+@command_name('flvinfo')
 class GetFlavorDetails(Command):
     description = 'get flavor details'
     syntax = '<flavor id>'
@@ -334,7 +334,6 @@ class CreateImage(Command):
         reply = self.http_post(path, body)
         print_dict(reply['image'])
 
-
 @command_name('deleteimg')
 class DeleteImage(Command):
     description = 'delete image'
@@ -343,6 +342,54 @@ class DeleteImage(Command):
     def execute(self, image_id):
         path = '/api/%s/images/%d' % (self.api, int(image_id))
         self.http_delete(path)
+
+@command_name('lsmeta')
+class ListServerMeta(Command):
+    description = 'list server meta'
+    syntax = '<server id> [key]'
+
+    def execute(self, server_id, key=None):
+        path = '/api/%s/servers/%d/meta' % (self.api, int(server_id))
+        if key:
+            path += '/' + key
+        reply = self.http_get(path)
+        if key:
+            print_dict(reply['meta'])
+        else:
+            print_dict(reply['metadata']['values'])
+
+@command_name('setmeta')
+class UpdateServerMeta(Command):
+    description = 'update server meta'
+    syntax = '<server id> <key> <val>'
+
+    def execute(self, server_id, key, val):
+        path = '/api/%s/servers/%d/meta' % (self.api, int(server_id))
+        metadata = {key: val}
+        body = json.dumps({'metadata': metadata})
+        reply = self.http_post(path, body, expected_status=201)
+        print_dict(reply['metadata'])
+
+@command_name('addmeta')
+class CreateServerMeta(Command):
+    description = 'add server meta'
+    syntax = '<server id> <key> <val>'
+
+    def execute(self, server_id, key, val):
+        path = '/api/%s/servers/%d/meta/%s' % (self.api, int(server_id), key)
+        meta = {key: val}
+        body = json.dumps({'meta': meta})
+        reply = self.http_put(path, body, expected_status=201)
+        print_dict(reply['meta'])
+
+@command_name('delmeta')
+class DeleteServerMeta(Command):
+    description = 'delete server meta'
+    syntax = '<server id> <key>'
+
+    def execute(self, server_id, key):
+        path = '/api/%s/servers/%d/meta/%s' % (self.api, int(server_id), key)
+        reply = self.http_delete(path)
 
 
 def main():

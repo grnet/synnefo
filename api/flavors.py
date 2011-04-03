@@ -2,13 +2,13 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
-from synnefo.api.util import *
-from synnefo.db.models import Flavor
-
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
+
+from synnefo.api.util import get_user, get_request_dict, api_method
+from synnefo.db.models import Flavor
 
 
 urlpatterns = patterns('synnefo.api.flavors',
@@ -39,14 +39,12 @@ def list_flavors(request, detail=False):
     all_flavors = Flavor.objects.all()
     flavors = [flavor_to_dict(flavor, detail) for flavor in all_flavors]
     
-    if request.type == 'xml':
-        mimetype = 'application/xml'
+    if request.serialization == 'xml':
         data = render_to_string('list_flavors.xml', {'flavors': flavors, 'detail': detail})
     else:
-        mimetype = 'application/json'
         data = json.dumps({'flavors': {'values': flavors}})
     
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, status=200)
 
 @api_method('GET')
 def get_flavor_details(request, flavor_id):
@@ -64,7 +62,7 @@ def get_flavor_details(request, flavor_id):
     except Flavor.DoesNotExist:
         raise ItemNotFound
     
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         data = render_to_string('flavor.xml', {'flavor': flavor})
     else:
         data = json.dumps({'flavor': flavor})

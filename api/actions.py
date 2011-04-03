@@ -5,9 +5,10 @@
 from django.conf import settings
 from django.http import HttpResponse
 
-from synnefo.api.errors import *
+from synnefo.api.faults import BadRequest, ResizeNotAllowed, ServiceUnavailable
 from synnefo.util.rapi import GanetiRapiClient
-from synnefo.logic import backend, utils
+from synnefo.logic import backend
+
 
 server_actions = {}
 
@@ -15,6 +16,11 @@ rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
 
 def server_action(name):
+    '''Decorator for functions implementing server actions.
+    
+       `name` is the key in the dict passed by the client.
+    '''
+    
     def decorator(func):
         server_actions[name] = func
         return func
@@ -22,7 +28,7 @@ def server_action(name):
 
 
 @server_action('changePassword')
-def change_password(server, args):
+def change_password(vm, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -41,7 +47,7 @@ def change_password(server, args):
     raise ServiceUnavailable()
 
 @server_action('reboot')
-def reboot(server, args):
+def reboot(vm, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -56,30 +62,32 @@ def reboot(server, args):
     if reboot_type not in ('SOFT', 'HARD'):
         raise BadRequest()
     
-    backend.start_action(server, 'REBOOT')
-    rapi.RebootInstance(server.backend_id, reboot_type.lower())
+    backend.start_action(vm, 'REBOOT')
+    rapi.RebootInstance(vm.backend_id, reboot_type.lower())
     return HttpResponse(status=202)
 
 @server_action('start')
-def start(server, args):
+def start(vm, args):
     # Normal Response Code: 202
-    # Error Response Codes: serviceUnavailable (503), itemNotFound (404)
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404)
 
-    backend.start_action(server, 'START')
-    rapi.StartupInstance(server.backend_id)
+    backend.start_action(vm, 'START')
+    rapi.StartupInstance(vm.backend_id)
     return HttpResponse(status=202)
 
 @server_action('shutdown')
-def shutdown(server, args):
+def shutdown(vm, args):
     # Normal Response Code: 202
-    # Error Response Codes: serviceUnavailable (503), itemNotFound (404)
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404)
     
-    backend.start_action(server, 'STOP')
-    rapi.ShutdownInstance(server.backend_id)
+    backend.start_action(vm, 'STOP')
+    rapi.ShutdownInstance(vm.backend_id)
     return HttpResponse(status=202)
 
 @server_action('rebuild')
-def rebuild(server, args):
+def rebuild(vm, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -94,7 +102,7 @@ def rebuild(server, args):
     raise ServiceUnavailable()
 
 @server_action('resize')
-def resize(server, args):
+def resize(vm, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -110,7 +118,7 @@ def resize(server, args):
     raise ResizeNotAllowed()
 
 @server_action('confirmResize')
-def confirm_resize(server, args):
+def confirm_resize(vm, args):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -126,7 +134,7 @@ def confirm_resize(server, args):
     raise ResizeNotAllowed()
 
 @server_action('revertResize')
-def revert_resize(server, args):
+def revert_resize(vm, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),

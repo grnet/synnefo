@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vnc xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom" host="{{ vnc.host }}" port="{{ vnc.port }}" password="{{ vnc.password }}">
+</vnc>

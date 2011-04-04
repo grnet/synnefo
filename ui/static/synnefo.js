@@ -264,7 +264,7 @@ function update_vms(interval) {
 // get and show a list of available standard and custom images
 function update_images() { 
     $.ajax({
-        url: '/api/v1.0/images/detail',
+        url: API_URL + '/images/detail',
         type: "GET",
         //async: false,
         dataType: "json",
@@ -274,7 +274,7 @@ function update_images() {
                     },
         success: function(data, textStatus, jqXHR) {
             try {
-				images = data.images;
+				images = data.images.values;
 				update_wizard_images();
 			} catch(err){
 				ajax_error("NO_IMAGES");
@@ -290,16 +290,26 @@ function update_wizard_images() {
 			var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
 			img.find("label").attr('for',"img-radio-" + image.id);
 			img.find(".image-title").text(image.name);
-			img.find(".description").text(image.metadata.meta.key.description);
-			img.find(".size").text(image.size);
+            if (image.metadata) {
+                if (image.metadata.values.description != undefined) {
+                    img.find(".description").text(image.metadata.values.description);
+                }
+                if (image.metadata.values.size != undefined) {
+    			    img.find(".size").text(image.metadata.values.size);
+                }
+            }
 			img.find("input.radio").attr('id',"img-radio-" + image.id);
 			if (i==0) img.find("input.radio").attr("checked","checked"); 
 			img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
-			if (image.serverId) {
-				img.appendTo("ul#custom-images");
-			} else {
-				img.appendTo("ul#standard-images");
-			}
+            if (image.metadata) {
+                if (image.metadata.values.serverId != undefined) {
+                    img.appendTo("ul#custom-images");
+                } else {
+                    img.appendTo("ul#standard-images");
+                }
+            } else {
+                img.appendTo("ul#standard-images");
+            }
 		});
 	}	
 }

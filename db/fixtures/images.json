@@ -46,10 +46,64 @@
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 22,
+        "pk": 2,
         "fields": {
             "meta_key": "kernel",
             "meta_value": "2.6.37",
+            "image": 3
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 3,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Red Hat Enterprise Linux, full installation",
+            "image": 4
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 4,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2048",
+            "image": 4
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 5,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Ubuntu 10.10, full installation",
+            "image": 5
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 6,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "8192",
+            "image": 5
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 7,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Debian Sid, full installation",
+            "image": 3
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 8,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "8192",
             "image": 3
         }
     }

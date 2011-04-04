@@ -162,8 +162,7 @@ function update_machines_view(data){
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */    
-    $.each(data.servers, function(i,server){
-        
+    $.each(data.servers.values, function(i,server){
         existing = $('#' + server.id);
         
         // if multiple machines exist in the DOM, delete all but one
@@ -210,14 +209,14 @@ function update_machines_view(data){
                             
             }
             existing.find("a.name span.name").text(server.name);
-            existing.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));
+            existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);
             machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
             machine.find("span.imagetag").text(image_tags[server.imageRef]);
-            machine.find("a.ip span.public").text(String(server.addresses.public.ip.addr).replace(',',' '));            
+            machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            
             machine.find(".status").text(STATUS_MESSAGES[server.status]);
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");

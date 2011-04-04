@@ -2,22 +2,24 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
-from logging import getLogger
-
 from django.conf import settings
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.actions import server_actions
-from synnefo.api.errors import *
+from synnefo.api.common import method_not_allowed
+from synnefo.api.faults import BadRequest, ItemNotFound
 from synnefo.api.util import *
-from synnefo.db.models import *
+from synnefo.db.models import Image, Flavor, VirtualMachine, VirtualMachineMetadata
+from synnefo.logic.utils import get_rsapi_state
 from synnefo.util.rapi import GanetiRapiClient
-from synnefo.logic import backend, utils
+from synnefo.logic import backend
 
-log = getLogger('synnefo.api.servers')
+import logging
+
+
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
 urlpatterns = patterns('synnefo.api.servers',
@@ -27,6 +29,8 @@ urlpatterns = patterns('synnefo.api.servers',
     (r'^/(\d+)/action(?:.json|.xml)?$', 'server_action'),
     (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
+    (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
 )
 
 
@@ -36,8 +40,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        fault = BadRequest()
-        return render_fault(request, fault)
+        return method_not_allowed(request)
 
 def server_demux(request, server_id):
     if request.method == 'GET':
@@ -47,42 +50,62 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        fault = BadRequest()
-        return render_fault(request, fault)
+        return method_not_allowed(request)
+
+def metadata_demux(request, server_id):
+    if request.method == 'GET':
+        return list_metadata(request, server_id)
+    elif request.method == 'POST':
+        return update_metadata(request, server_id)
+    else:
+        return method_not_allowed(request)
+
+def metadata_item_demux(request, server_id, key):
+    if request.method == 'GET':
+        return get_metadata_item(request, server_id, key)
+    elif request.method == 'PUT':
+        return create_metadata_item(request, server_id, key)
+    elif request.method == 'DELETE':
+        return delete_metadata_item(request, server_id, key)
+    else:
+        return method_not_allowed(request)
 
 
 def address_to_dict(ipfour, ipsix):
     return {'id': 'public',
             'values': [{'version': 4, 'addr': ipfour}, {'version': 6, 'addr': ipsix}]}
 
-def server_to_dict(server, detail=False):
-    d = dict(id=server.id, name=server.name)
+def metadata_to_dict(vm):
+    vm_meta = vm.virtualmachinemetadata_set.all()
+    return dict((meta.meta_key, meta.meta_value) for meta in vm_meta)
+
+def vm_to_dict(vm, detail=False):
+    d = dict(id=vm.id, name=vm.name)
     if detail:
-        d['status'] = utils.get_rsapi_state(server)
-        d['progress'] = 100 if utils.get_rsapi_state(server) == 'ACTIVE' else 0
-        d['hostId'] = server.hostid
-        d['updated'] = server.updated.isoformat()
-        d['created'] = server.created.isoformat()
-        d['flavorRef'] = server.flavor.id
-        d['imageRef'] = server.sourceimage.id
-        #d['description'] = server.description       # XXX Not in OpenStack docs
+        d['status'] = get_rsapi_state(vm)
+        d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' else 0
+        d['hostId'] = vm.hostid
+        d['updated'] = isoformat(vm.updated)
+        d['created'] = isoformat(vm.created)
+        d['flavorRef'] = vm.flavor.id
+        d['imageRef'] = vm.sourceimage.id
         
-        server_meta = server.virtualmachinemetadata_set.all()
-        metadata = dict((meta.meta_key, meta.meta_value) for meta in server_meta)
+        metadata = metadata_to_dict(vm)
         if metadata:
             d['metadata'] = {'values': metadata}
         
-        addresses = [address_to_dict(server.ipfour, server.ipsix)]
+        addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
         d['addresses'] = {'values': addresses}
     return d
 
-def render_server(request, serverdict, status=200):
-    if request.type == 'xml':
-        data = render_to_string('server.xml', dict(server=serverdict, is_root=True))
-    else:
-        data = json.dumps({'server': serverdict})
-    return HttpResponse(data, status=status)
 
+def render_server(request, server, status=200):
+    if request.serialization == 'xml':
+        data = render_to_string('server.xml', {'server': server, 'is_root': True})
+    else:
+        data = json.dumps({'server': server})
+    return HttpResponse(data, status=status)
+    
 
 @api_method('GET')
 def list_servers(request, detail=False):
@@ -94,11 +117,18 @@ def list_servers(request, detail=False):
     #                       overLimit (413)
     
     owner = get_user()
-    user_servers = VirtualMachine.objects.filter(owner=owner, deleted=False)
-    servers = [server_to_dict(server, detail) for server in user_servers]
+    since = isoparse(request.GET.get('changes-since'))
     
-    if request.type == 'xml':
-        data = render_to_string('list_servers.xml', dict(servers=servers, detail=detail))
+    if since:
+        user_vms = VirtualMachine.objects.filter(updated__gt=since)
+        if not user_vms:
+            return HttpResponse(status=304)
+    else:
+        user_vms = VirtualMachine.objects.filter(owner=owner, deleted=False)
+    servers = [vm_to_dict(server, detail) for server in user_vms]
+    
+    if request.serialization == 'xml':
+        data = render_to_string('list_servers.xml', {'servers': servers, 'detail': detail})
     else:
         data = json.dumps({'servers': {'values': servers}})
     
@@ -124,13 +154,13 @@ def create_server(request):
         sourceimage = Image.objects.get(id=server['imageRef'])
         flavor = Flavor.objects.get(id=server['flavorRef'])
     except KeyError:
-        raise BadRequest
+        raise BadRequest('Malformed request.')
     except Image.DoesNotExist:
         raise ItemNotFound
     except Flavor.DoesNotExist:
         raise ItemNotFound
     
-    server = VirtualMachine.objects.create(
+    vm = VirtualMachine.objects.create(
         name=name,
         owner=get_user(),
         sourceimage=sourceimage,
@@ -142,7 +172,7 @@ def create_server(request):
         name = 'test-server'
         dry_run = True
     else:
-        name = server.backend_id
+        name = vm.backend_id
         dry_run = False
     
     jobId = rapi.CreateInstance(
@@ -158,14 +188,14 @@ def create_server(request):
         dry_run=dry_run,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
     
-    server.save()
+    vm.save()
         
-    log.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
+    logging.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
     
-    serverdict = server_to_dict(server, detail=True)
-    serverdict['status'] = 'BUILD'
-    serverdict['adminPass'] = random_password()
-    return render_server(request, serverdict, status=202)
+    server = vm_to_dict(vm, detail=True)
+    server['status'] = 'BUILD'
+    server['adminPass'] = random_password()
+    return render_server(request, server, status=202)
 
 @api_method('GET')
 def get_server_details(request, server_id):
@@ -177,14 +207,9 @@ def get_server_details(request, server_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    try:
-        server_id = int(server_id)
-        server = VirtualMachine.objects.get(id=server_id)
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
-    
-    serverdict = server_to_dict(server, detail=True)
-    return render_server(request, serverdict)
+    vm = get_vm(server_id)
+    server = vm_to_dict(vm, detail=True)
+    return render_server(request, server)
 
 @api_method('PUT')
 def update_server_name(request, server_id):
@@ -202,15 +227,12 @@ def update_server_name(request, server_id):
     
     try:
         name = req['server']['name']
-        server_id = int(server_id)
-        server = VirtualMachine.objects.get(id=server_id)
     except KeyError:
-        raise BadRequest
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
+        raise BadRequest('Malformed request.')
     
-    server.name = name
-    server.save()
+    vm = get_vm(server_id)
+    vm.name = name
+    vm.save()
     
     return HttpResponse(status=204)
 
@@ -225,33 +247,28 @@ def delete_server(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
     
-    try:
-        server_id = int(server_id)
-        server = VirtualMachine.objects.get(id=server_id)
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
-    
-    backend.start_action(server, 'DESTROY')
-    rapi.DeleteInstance(server.backend_id)
+    vm = get_vm(server_id)
+    backend.start_action(vm, 'DESTROY')
+    rapi.DeleteInstance(vm.backend_id)
     return HttpResponse(status=204)
 
 @api_method('POST')
 def server_action(request, server_id):
-    try:
-        server_id = int(server_id)
-        server = VirtualMachine.objects.get(id=server_id)
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
-
+    vm = get_vm(server_id)
     req = get_request_dict(request)
     if len(req) != 1:
-        raise BadRequest
+        raise BadRequest('Malformed request.')
     
     key = req.keys()[0]
-    if key not in server_actions:
-        raise BadRequest
+    val = req[key]
     
-    return server_actions[key](request, server, req[key])
+    try:
+        assert isinstance(val, dict)
+        return server_actions[key](request, vm, req[key])
+    except KeyError:
+        raise BadRequest('Unknown action.')
+    except AssertionError:
+        raise BadRequest('Invalid argument.')
 
 @api_method('GET')
 def list_addresses(request, server_id):
@@ -262,15 +279,10 @@ def list_addresses(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    try:
-        server_id = int(server_id)
-        server = VirtualMachine.objects.get(id=server_id)
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
+    vm = get_vm(server_id)
+    addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
     
-    addresses = [address_to_dict(server.ipfour, server.ipsix)]
-    
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
         data = json.dumps({'addresses': {'values': addresses}})
@@ -287,20 +299,136 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    try:
-        server_id = int(server_id)
-        server = VirtualMachine.objects.get(id=server_id)
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
-    
+    vm = get_vm(server_id)
     if network_id != 'public':
-        raise ItemNotFound
+        raise ItemNotFound('Unknown network.')
     
-    address = address_to_dict(server.ipfour, server.ipsix)
+    address = address_to_dict(vm.ipfour, vm.ipsix)
     
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         data = render_to_string('address.xml', {'address': address})
     else:
         data = json.dumps({'network': address})
     
     return HttpResponse(data, status=200)
+
+@api_method('GET')
+def list_metadata(request, server_id):
+    # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       overLimit (413)
+
+    vm = get_vm(server_id)
+    metadata = metadata_to_dict(vm)
+    
+    if request.serialization == 'xml':
+        data = render_to_string('metadata.xml', {'metadata': metadata})
+    else:
+        data = json.dumps({'metadata': {'values': metadata}})
+    
+    return HttpResponse(data, status=200)
+    
+
+@api_method('POST')
+def update_metadata(request, server_id):
+    # Normal Response Code: 201
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       overLimit (413)
+
+    vm = get_vm(server_id)
+    req = get_request_dict(request)
+    try:
+        metadata = req['metadata']
+        assert isinstance(metadata, dict)
+    except (KeyError, AssertionError):
+        raise BadRequest('Malformed request.')
+    
+    updated = {}
+    
+    for key, val in metadata.items():
+        try:
+            meta = VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
+            meta.meta_value = val
+            meta.save()
+            updated[key] = val
+        except VirtualMachineMetadata.DoesNotExist:
+            pass    # Ignore non-existent metadata
+    
+    if request.serialization == 'xml':
+        data = render_to_string('servers/metadata.xml', {'metadata': updated})
+    else:
+        data = json.dumps({'metadata': updated})
+    return HttpResponse(data, status=201)
+
+@api_method('GET')
+def get_metadata_item(request, server_id, key):
+    # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    #                       overLimit (413)
+
+    meta = get_vm_meta(server_id, key)
+    if request.serialization == 'xml':
+        data = render_to_string('meta.xml', {'meta': meta})
+    else:
+        data = json.dumps({'meta': {key: meta.meta_value}})
+    return HttpResponse(data, status=200)
+
+@api_method('PUT')
+def create_metadata_item(request, server_id, key):
+    # Normal Response Code: 201
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       overLimit (413)
+
+    vm = get_vm(server_id)
+    req = get_request_dict(request)
+    try:
+        metadict = req['meta']
+        assert isinstance(metadict, dict)
+        assert len(metadict) == 1
+        assert key in metadict
+    except (KeyError, AssertionError):
+        raise BadRequest('Malformed request.')
+    
+    meta, created = VirtualMachineMetadata.objects.get_or_create(meta_key=key, vm=vm)
+    meta.meta_value = metadict[key]
+    meta.save()
+    
+    if request.serialization == 'xml':
+        data = render_to_string('servers/meta.xml', {'meta': meta})
+    else:
+        data = json.dumps({'meta': {key: meta.meta_value}})
+    return HttpResponse(data, status=201)
+
+@api_method('DELETE')
+def delete_metadata_item(request, server_id, key):
+    # Normal Response Code: 204
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       overLimit (413),
+
+    meta = get_vm_meta(server_id, key)
+    meta.delete()
+    return HttpResponse(status=204)

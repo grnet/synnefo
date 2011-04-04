@@ -6,11 +6,11 @@ Dependencies
 Synnefo depends on the following Python modules
 
 - django 1.2
-- django-piston 
 - simplejson
 - selenium
 - pyzmq-static
 - iso8601
+- dateutil
 
 also, depending on the database engine of choice, on one of the following:
 - MySQL-python

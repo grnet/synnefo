@@ -1,6 +1,6 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
-var API_URL = "/api/v1.1redux";
+var API_URL = "/api/v1.1";
 
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC. 
@@ -213,7 +213,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
 // get and show a list of running and terminated machines
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
-	var uri='/api/v1.0/servers/detail';
+	var uri= API_URL + '/servers/detail';
 	
 	if (changes_since != 0)
 		uri+='?changes-since='+changes_since
@@ -248,7 +248,7 @@ function update_vms(interval) {
 			
 			if (jqXHR.status == 200 || jqXHR.status == 203) {
 				try {
-					servers = data.servers;
+					servers = data.servers.values;
 				} catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
 				update_machines_view(data);
 			} else if (jqXHR.status != 304){
@@ -264,7 +264,7 @@ function update_vms(interval) {
 // get and show a list of available standard and custom images
 function update_images() { 
     $.ajax({
-        url: '/api/v1.0/images/detail',
+        url: API_URL + '/images/detail',
         type: "GET",
         //async: false,
         dataType: "json",
@@ -274,7 +274,7 @@ function update_images() {
                     },
         success: function(data, textStatus, jqXHR) {
             try {
-				images = data.images;
+				images = data.images.values;
 				update_wizard_images();
 			} catch(err){
 				ajax_error("NO_IMAGES");
@@ -290,16 +290,26 @@ function update_wizard_images() {
 			var img = $('#image-template').clone().attr("id","img-"+image.id).fadeIn("slow");
 			img.find("label").attr('for',"img-radio-" + image.id);
 			img.find(".image-title").text(image.name);
-			img.find(".description").text(image.metadata.meta.key.description);
-			img.find(".size").text(image.size);
+            if (image.metadata) {
+                if (image.metadata.values.description != undefined) {
+                    img.find(".description").text(image.metadata.values.description);
+                }
+                if (image.metadata.values.size != undefined) {
+    			    img.find(".size").text(image.metadata.values.size);
+                }
+            }
 			img.find("input.radio").attr('id',"img-radio-" + image.id);
 			if (i==0) img.find("input.radio").attr("checked","checked"); 
 			img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
-			if (image.serverId) {
-				img.appendTo("ul#custom-images");
-			} else {
-				img.appendTo("ul#standard-images");
-			}
+            if (image.metadata) {
+                if (image.metadata.values.serverId != undefined) {
+                    img.appendTo("ul#custom-images");
+                } else {
+                    img.appendTo("ul#standard-images");
+                }
+            } else {
+                img.appendTo("ul#standard-images");
+            }
 		});
 	}	
 }
@@ -460,11 +470,12 @@ function create_vm(machineName, imageRef, flavorRef){
             }
         }
     };
-
+	var uri = API_URL + '/servers';
 
     $.ajax({
-    url: "/api/v1.0/servers",
+    url: uri,
     type: "POST",
+	contentType: "application/json",
     dataType: "json",    
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
@@ -495,7 +506,8 @@ function reboot(serverIDs){
 	
 	$.ajax({
 		url: API_URL + '/servers/' + serverID + '/action',
-		type: "POST",        
+		type: "POST",
+		contentType: "application/json",
 		dataType: "json",
 		data: JSON.stringify(payload),
 		timeout: TIMEOUT,
@@ -535,6 +547,7 @@ function shutdown(serverIDs) {
     $.ajax({
 	    url: API_URL + '/servers/' + serverID + '/action',
 	    type: "POST",
+		contentType: "application/json",
 	    dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
@@ -572,6 +585,7 @@ function destroy(serverIDs) {
     $.ajax({
 	    url: API_URL + '/servers/' + serverID,
 	    type: "DELETE",
+		contentType: "application/json",
 	    dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
@@ -611,6 +625,7 @@ function start(serverIDs){
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/action',
         type: "POST",
+		contentType: "application/json",
         dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,

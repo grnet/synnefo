@@ -1,0 +1,13 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+<version xmlns="http://docs.openstack.org/common/api/v1.0" xmlns:atom="http://www.w3.org/2005/Atom" id="{{ version.id }}" status="{{ version.status }}" updated="{{ version.updated }}">
+  <media-types>
+    {% for media in version.media_types %}
+    <media-type base="{{ media.base }}" type="{{ media.type }}"/>
+    {% endfor %}
+  </media-types>
+  {% for link in version.links %}
+    <atom:link rel="{{ link.rel }}" href="{{ link.href }}"/>
+  {% endfor %}
+</version>
+{% endspaceless %}

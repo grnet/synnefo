@@ -1,0 +1,23 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title type="text">About This Version</title>
+  <updated>{{ now }}</updated>
+  <id>http://ocean.grnet.gr/</id>
+  <author>
+    <name>Synnefo</name>
+    <uri>http://ocean.grnet.gr/</uri>
+  </author>
+  <link rel="self" href="http://ocean.grnet.gr/"/>
+  
+  <entry>
+    <id>http://servers.api.openstack.org/{{ version.id }}/</id>
+    <title type="text">Version {{ version.id }}</title>
+    <updated>{{ version.updated }}</updated>
+    {% for link in version.links %}
+      <link rel="{{ link.rel }}" href="{{ link.href }}"/>
+    {% endfor %}
+    <content type="text">Version {{ version.id }} {{ version.status }} ({{ version.updated }})</content>   
+  </entry>
+</feed>
+{% endspaceless %}

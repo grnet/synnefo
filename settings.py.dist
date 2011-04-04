@@ -43,7 +43,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'UTC'   # Warning: API depends on the TIME_ZONE being UTC
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -150,4 +150,7 @@ POLL_LIMIT = 3600
 
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
 
+API_ROOT_URL = 'http://127.0.0.1:8000/api/'
+
 SIBBOLLETH_HOST = "http://wayf.grnet.gr/"
+

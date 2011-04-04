@@ -36,4 +36,8 @@ def create_auth_token(user):
     md5.update(user.name)
     return md5.hexdigest()
 
+
+
 #def login(username, password):
+
+

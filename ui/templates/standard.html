@@ -17,8 +17,8 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
-            <div class="spinner" style="display:none"></div>
-            <img class="wave" style="display:none" src="" />
+            <img class="spinner" style="display:none" src="/static/progress.gif" />
+            <img class="wave" style="display:none" src="/static/wave.gif" />
         </div>
         <img class="logo" src="" />
         <a href="#" class="name">
@@ -37,6 +37,7 @@
         </div>
         <div class="action_error" align="center">
             {% trans "<span class='orange'>Error</span> on" %} <span class="action">error action</span>
+            <span class="code"></span>            
             <span class="message"></span>
             <button class="details">Details</button>
         </div>
@@ -150,7 +151,7 @@ $("div.confirm_single .no").live('click', function(){
 
 $("div.action_error .details").live('click', function(){
     // remove the action from the pending list
-    ajax_error($(this).parent().children('.message').text());
+    ajax_error($(this).parent().children('.code').text(), undefined, $(this).parent().children('.action').text(), $(this).parent().children('.message').text());
     $(this).parent().hide();
 });
 
@@ -246,7 +247,7 @@ function update_machines_view(data){
     }
     
     // set confirm box position
-    if (window.innerHeight - 235 < $('#machinesview').height())
+    if (window.innerHeight - 220 < $('#machinesview').height())
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
@@ -258,10 +259,11 @@ function display_success(serverID) {
 }
 
 // indicate that the requested action was not completed
-function display_failure(serverID, status, action) {
+function display_failure(status, serverID, action, responseText) {
     $('#'+serverID+ ' .spinner').hide();
     $('#'+serverID+ ' .action_error .action').text(action);
-    $('#'+serverID+ ' .action_error .message').text(status);
+    $('#'+serverID+ ' .action_error .code').text(status);
+    $('#'+serverID+ ' .action_error .message').text(responseText);
     $('#'+serverID+ ' .action_error').show();
     
 }
@@ -277,6 +279,15 @@ if (flavors.length == 0) {
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm All');
 $('div.confirm_multiple button.no').text('Cancel All');
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - 220 < $('#machinesview').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+});
+
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 </script>

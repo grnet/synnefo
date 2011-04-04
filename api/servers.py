@@ -264,7 +264,7 @@ def server_action(request, server_id):
     
     try:
         assert isinstance(val, dict)
-        return server_actions[key](vm, req[key])
+        return server_actions[key](request, vm, req[key])
     except KeyError:
         raise BadRequest('Unknown action.')
     except AssertionError:

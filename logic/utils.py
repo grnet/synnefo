@@ -32,6 +32,9 @@ def get_rsapi_state(vm):
         r = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE[vm.operstate]
     except KeyError:
         return "UNKNOWN"
+    # A machine is DELETED if the deleted flag has been set
+    if vm.deleted:
+        return "DELETED"
     # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
     if r == 'ACTIVE' and vm.backendopcode == 'OP_INSTANCE_REBOOT' and \
         vm.backendjobstatus in ('queued', 'waiting', 'running'):

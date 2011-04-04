@@ -13,8 +13,9 @@ from django.test.client import Client
 from synnefo.db.models import VirtualMachine, VirtualMachineGroup
 from synnefo.db.models import Flavor, Image
 from synnefo.api.tests_redux import APIReduxTestCase
+from synnefo.api.tests_auth import AuthTestCase
 
-from logic import utils
+from synnefo.logic import utils
 
 class APITestCase(TestCase):
     fixtures = ['api_test_data', ]

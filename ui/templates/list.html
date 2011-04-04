@@ -61,6 +61,7 @@ $("table thead tr th#selection :checkbox").live('change', function() {
 $("ul.dropdown-selector li.select-all a").live('click', function() {
 	$(":checkbox").attr("checked", true);
     $(".dropdown-selector").slideToggle('medium');
+	updateActions();
 	return false;	
 });
 
@@ -68,6 +69,7 @@ $("ul.dropdown-selector li.select-all a").live('click', function() {
 $("ul.dropdown-selector li.select-none a").live('click', function() {
 	$(":checkbox").attr("checked", false);
     $(".dropdown-selector").slideToggle('medium');
+	updateActions();
 	return false;	
 });
 
@@ -75,6 +77,7 @@ $("ul.dropdown-selector li.select-none a").live('click', function() {
 $("ul.dropdown-selector li.select-group a").live('click', function() {
 	$(":checkbox").attr("checked", true);
     $(".dropdown-selector").slideToggle('medium');
+	updateActions();
 	return false;
 });
 
@@ -175,7 +178,7 @@ function update_machines_view(data){
         current = -1;
         // check server status to select the appropriate OS icon
         osTag = image_tags[server.imageRef]
-        var osIcon = osTag + ".png", imgStr;
+        var osIcon = osTag + ".png", imgStr, imgSrc;
 
 		// check if the server already exists in the datatable
 		tableData.forEach(function(row,index){
@@ -189,36 +192,33 @@ function update_machines_view(data){
 			try {
 				console.info(server.name + ' from ' 
 							+ tableData[current][5] + ' to ' + STATUS_MESSAGES[server.status]);
-			} catch(err) {}
+			} catch(err) {}		
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);	
-			} else {
-				// update status
-				tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+			} else { // server exists and should not be deleted		
                 // check server status to select the appropriate OS icon
                 if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
                     osIcon = osTag + "-off.png";
                 }
-				
-				if (tableData[current][5].indexOf(STATUS_MESSAGES[server.status]) > -1 ||
-					$('#'+server.id).parent().parent().find('.list-logo').attr('src').indexOf('wave')>-1){
-					imgStr = "<img class=list-logo src=static/os_logos/" + osIcon +
-                                        " title=" + osTag + " height=16 width=16 />";
-				} else {
-					imgStr = "<img class=list-logo src=static/wave.gif height=16 width=16 />";	
-				}
-                tableData[current][1] = "<span class=imagetag>" + osTag + 
-                                        "</span>" + imgStr;
-				tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
-				// TODO: update name & ip
-				vmTable.fnUpdate(tableData[current],current);
-				imgStr = "<img class=list-logo src=static/os_logos/" + osIcon +
-                                        " title=" + osTag + " height=16 width=16 />";
-                tableData[current][1] = "<span class=imagetag>" + osTag + 
-                                        "</span>" + imgStr;
-				//setTimeout($('#'+server.id).parent().parent().find('.list-logo').attr, 2000,'src',imgStr);
-				//setTimeout("vmTable.fnUpdate('"+tableData[current]+"','"+current+"')",2000);
+				// if the new state does not differ from the previous one
+				if (tableData[current][5].indexOf(STATUS_MESSAGES[server.status]) > -1){
+					// do nothing
+				} else { // state has changed
+					//$('#'+server.id).parent().parent().find('.list-logo').attr('src').indexOf('wave')>-1){
+					
+					imgSrc = "static/wave.gif";
+					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
+					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
+					tableData[current][2] = "<a class=name><span class=name>" + server.name + "</span></a>";
+					tableData[current][3] = "<a class=ip><span class=public>"+ server.addresses.public.ip.addr + "</span></a>";
+					//tableData[current][4] = "group"; //TODO
+					tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
+					vmTable.fnUpdate(tableData[current],current);
 
+					//try{console.info('vm ' + server.id + ' from ' + tableData[current][5] + ' to ' + STATUS_MESSAGES[server.status])} catch(err) {}						
+					setTimeout("$('#"+server.id+"').parent().parent().find('.list-logo').attr('src','static/os_logos/" + osIcon+"')", 2000);					
+				}
 			}
 			updateActions();
         } else if (server.status != "DELETED") { // does not exist, we should create it
@@ -249,7 +249,7 @@ function update_machines_view(data){
     }
 	
 	// set confirm box position
-    if (window.innerHeight - 235 < $('#machinesview').height())
+    if (window.innerHeight - 200 < $('#machinesview').height())
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
@@ -260,10 +260,10 @@ function display_success(serverID) {
 }
 
 // indicate that the requested action was not completed
-function display_failure(serverID, status, action) {
+function display_failure(status, serverID, action, responseText) {
 	osIcon = $('#'+serverID).parent().parent().find('.list-logo');
 	osIcon.attr('src',osIcon.attr('os'));
-    ajax_error(status);
+    ajax_error(status, serverID, action, responseText);
 }
 
 var vmTable = $("div.list table.list-machines").dataTable({
@@ -292,6 +292,15 @@ if (flavors.length == 0) {
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm');
 $('div.confirm_multiple button.no').text('Cancel');
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - 200 < $('#machinesview').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+});
+
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 

@@ -48,9 +48,9 @@
             '501' : '{% trans "This server has not been implemented yet." %}',
             // service unavailable
             '503' : '{% trans "This service is unavailable right now, please try again later." %}',
-            // no images unavailable
+            // no images found
             'NO_IMAGES' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
-            // no images unavailable
+            // no flavors found
             'NO_FLAVORS' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}'
         };
         
@@ -64,12 +64,27 @@
         };
         
         // ajax error checking  
-        function ajax_error(status) {
+        function ajax_error(status, serverID, action, responseText) {
+            var serverName = '';
+            
+            if (serverID != undefined) {
+                serverName = $("#"+serverID).parent().parent().find("span.name").text();
+            }
+            
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
-            
-            if (ERRORS[status] != undefined) {
-                $("#error-success p").text(ERRORS[status]);
+            if (responseText != undefined){
+                var errors = parse_error(responseText);
+                if (serverName){
+                    serverName="<p><strong>Server:</strong> " + serverName + "</p>";
+                }
+                $("#error-success div").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p><strong>Action:</strong> " + action + "</p><p><strong>Code</strong>: " + errors[0].code + "</p><p><strong>Details:</strong> " + errors[0].details +"</p>");
+            } else if (ERRORS[status] != undefined) {
+                if (serverID == undefined){
+                    $("#error-success p").text(ERRORS[status]);
+                } else {
+                    $("#error-success p").html("<b>" + serverName + "</b>" + ": " + ERRORS[status]);
+                }
             } else {
                 $("#error-success p").text(ERRORS['DEFAULT']);   
             }
@@ -105,14 +120,14 @@
                     var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_ONE"] + '<br />'
                         + SUCCESS["CREATE_VM_SUCCESS_TWO"] + '<br /><br />' + '<b>' + password + '</b>'
                         + '<br /><br />' + SUCCESS["CREATE_VM_SUCCESS_THREE"] ;
-                    $("#error-success p").html(CREATE_VM_SUCCESS_MSG);             
+                    $("#error-success div").html("<p>" + CREATE_VM_SUCCESS_MSG + "</p>");             
                 } else {
                     $("#error-success h3").text(SUCCESS['HEADER']);
-                    $("#error-success p").text(SUCCESS[status]);             
+                    $("#error-success div").text("<p>" + SUCCESS[status] + "</p>");             
                 }
             } else {
                 $("#error-success h3").text(SUCCESS['HEADER']);
-                $("#error-success p").text(SUCCESS['DEFAULT']);             
+                $("#error-success div").html("<p>" + SUCCESS['DEFAULT'] + "</p>");             
 
             }
 

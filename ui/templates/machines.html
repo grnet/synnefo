@@ -151,7 +151,7 @@
 
 <div class="modal" id="error-success">
     <h3>{% trans "Error!/Success!" %}</h3>
-    <p>{% trans "More details about the result"%}</p>
+    <div><p>{% trans "More details about the result"%}</p></div>
 </div>
 
 <!-- confirmation before executing an action -->
@@ -445,12 +445,5 @@ if (flavors.length > 0) {
 }
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
-
-$(window).resize(function(){
-    if (this.innerHeight - 240 < $('#machinesview').height())
-        $('.confirm_multiple').addClass('fixed');
-    else
-        $('.confirm_multiple').removeClass('fixed');
-});
 
 </script>

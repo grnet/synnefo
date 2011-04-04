@@ -8,6 +8,7 @@ import datetime
 
 class SynnefoUser(models.Model):
 
+    #TODO: Amend this when we have groups
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
         ('PROFESSOR', 'Professor')
@@ -21,21 +22,12 @@ class SynnefoUser(models.Model):
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-    
+
     class Meta:
         verbose_name = u'Synnefo User'
 
     def __unicode__(self):
         return self.name
-
-    def __init__(self, *args, **kw):
-        """Initialize state for just created VM instances."""
-        super(SynnefoUser, self).__init__(*args, **kw)
-        # This gets called BEFORE an instance gets save()d for
-        # the first time.
-        if not self.pk:
-            self.name = kw['name']
-            self.realname = kw['realname']
 
     def get_limit(self, limit_name):
         """Returns the limit value for the specified limit"""

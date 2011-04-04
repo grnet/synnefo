@@ -107,3 +107,5 @@ class AuthTestCase(TestCase):
     def test_register_student(self):
         users.register_student ("Jimmy Page", "jpage", "jpage@zoso.com")
         user = SynnefoUser.objects.get(name = "jpage")
+
+        self.assertNotEquals(user, None)

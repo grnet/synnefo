@@ -251,7 +251,7 @@ def server_action(request, server_id):
     if key not in server_actions:
         raise BadRequest
     
-    return server_actions[key](server, req[key])
+    return server_actions[key](request, server, req[key])
 
 @api_method('GET')
 def list_addresses(request, server_id):

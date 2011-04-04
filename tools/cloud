@@ -231,6 +231,21 @@ class StartServer(Command):
         self.http_post(path, body)
 
 
+@command_name('console')
+class ServerConsole(Command):
+    description = 'get VNC console'
+    syntax = '<server id>'
+    
+    def add_options(self, parser):
+    	pass
+    
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        body = json.dumps({'console':{'type':'VNC'}})
+        reply = self.http_post(path, body)
+        print_dict(reply)
+
+
 @command_name('lsaddr')
 class ListAddresses(Command):
     description = 'list server addresses'

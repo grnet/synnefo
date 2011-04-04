@@ -10,6 +10,7 @@ Synnefo depends on the following Python modules
 - simplejson
 - selenium
 - pyzmq-static
+- iso8601
 
 also, depending on the database engine of choice, on one of the following:
 - MySQL-python

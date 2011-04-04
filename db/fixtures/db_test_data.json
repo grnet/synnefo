@@ -98,6 +98,19 @@
         }
     },
     {
+        "model": "db.Image",
+        "pk": 30000,
+        "fields": {
+            "name": "Debian Squeeze",
+            "updated": "2011-02-06 00:00:00",
+            "created": "2011-02-06 00:00:00",
+            "size" : 2000,
+            "state": "ACTIVE",
+            "description": "Full Debian Squeeze Installation",
+            "owner" : 30000
+        }
+    },
+    {
         "model": "db.VirtualMachine",
         "pk": 30000,
         "fields": {
@@ -127,19 +140,6 @@
             "ipsix": "::1",
             "flavor": 30000,
             "operstate": "STOPPED"
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 30000,
-        "fields": {
-            "name": "Debian Squeeze",
-            "updated": "2011-02-06 00:00:00",
-            "created": "2011-02-06 00:00:00",
-            "size" : 2000,
-            "state": "ACTIVE",
-            "description": "Full Debian Squeeze Installation",
-            "owner" : 30000
         }
     },
     {

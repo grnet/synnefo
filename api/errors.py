@@ -25,5 +25,8 @@ class ResizeNotAllowed(Fault):
 class ItemNotFound(Fault):
     code = 404
 
+class NotImplemented(Fault):
+    code = 501
+
 class ServiceUnavailable(Fault):
     code = 503

@@ -27,7 +27,11 @@ def process_backend_msg(vm, jobid, opcode, status, logmsg):
     # Notifications of success change the operating state
     if status == 'success':
         utils.update_state(vm, VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
-    # Special cases OP_INSTANCE_CREATE fails --> ERROR
+        # Set the deleted flag explicitly, to cater for admin-initiated removals
+        if opcode == 'OP_INSTANCE_REMOVE':
+            vm.deleted = True
+
+    # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
         utils.update_state(vm, 'ERROR')
     # Any other notification of failure leaves the operating state unchanged

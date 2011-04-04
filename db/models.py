@@ -250,6 +250,10 @@ class VirtualMachine(models.Model):
     # that they need not be persistent in the DB, but rather
     # get generated at runtime by quering Ganeti and applying
     # updates received from Ganeti.
+    
+    # In the future they could be moved to a separate caching layer
+    # and removed from the database.
+    # [vkoukis] after discussion with [faidon].
     action = models.CharField(choices=ACTIONS, max_length=30, null=True)
     operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
     backendjobid = models.PositiveIntegerField(null=True)

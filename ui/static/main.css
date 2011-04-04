@@ -531,13 +531,13 @@ div.machine div.actions a.more {
     margin-top: 18px;
 }
 
-div.machine div.actions a:hover{
+div.actions a.enabled:hover{
     color: black !important;
     text-decoration: underline;
     display: block;
 }
 
-div.machine div.actions:hover a, .machine:hover .actions a {
+.machine:hover .actions a {
     color: #3d3d3d;
     display: block;
 }
@@ -545,6 +545,10 @@ div.machine div.actions:hover a, .machine:hover .actions a {
 div.machine div.display a{
     color: #3d3d3d;
     display: block;
+}
+
+div.machine div.actions a.selected:hover {
+    color: orange;
 }
 
 div.running div.machine a.action-start {
@@ -821,7 +825,7 @@ div.list div.actions a.enabled {
 
 div.list div.actions a.enabled:hover{
     cursor: pointer;
-    color: black !important;
+    color: black;
     text-decoration: underline;
 }
 
@@ -846,6 +850,12 @@ input.machine {
     color: #F49C1A;
 }
 
+#error-success div {
+    height: 142px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 #error-success .close {
 	background-image: url(/static/close.png);
 	position: absolute;
@@ -867,7 +877,7 @@ div.confirm_single, div.confirm_multiple {
 div.action_error {
     float: right;
     width: 80px;
-    height: 70px;
+    height: 60px;
     padding: 5px;
     margin: -65px -165px 0 0;
     display: none;
@@ -878,9 +888,8 @@ div.action_error {
 }
 
 div.action_error button.details {
-    margin: 15px 0 0 0px;
+    margin: 5px 0 0 0px;
     padding: 0 15px;
-    border-color: black;
 }
 
 .orange {
@@ -894,8 +903,12 @@ div.confirm_single button, div.confirm_multiple button, div.action_error button{
     color: #3D3D3D;
     cursor: pointer;
     padding: 0px;
+    height: 20px !important;
 }
 
+div.confirm_single button, .action_error button {
+    width: 80px !important;
+}
 div.confirm_single button.yes, div.confirm_multiple button.yes {
     border-color: orange;
     padding: 0 12px;
@@ -909,7 +922,7 @@ div.confirm_single button.no, div.confirm_multiple button.no {
     padding: 0px 16px;
 }
 
-div.confirm_single button.no:hover, div.confirm_multiple button.no:hover {
+div.confirm_single button.no:hover, div.confirm_multiple button.no:hover, div.action_error button.details:hover {
     background-color: #a5a5a5;
 }
 
@@ -925,7 +938,7 @@ div.confirm_single button.yes {
 }
 
 div.confirm_single button.no {
-    margin: 22px 0 0 5px;
+    margin: 20px 0 0 5px;
 }
 
 div.action_error {
@@ -933,20 +946,19 @@ div.action_error {
 }
 
 div.confirm_multiple {
-    bottom: 0;
-    width: 700px;
-    height: 30px;
-    margin: 0 0 0px -36px;
+    width: 692px;
+    height: 28px;
+    margin: 0 0 10px -32px;
 }
 
 div.confirm_multiple p {
     float: left;
-    margin: 9px 0 0 200px;
+    margin: 7px 0 0 200px;
 }
 
 div.confirm_multiple button {
     float: right;
-    margin: 6px 5px 0 0;
+    margin: 4px 5px 0 0;
 }
 
 div.confirm_multiple button.no {
@@ -1140,35 +1152,29 @@ div.list table thead #name {
     width: 200px !important;
 }
 
-.spinner {
-    clear: left;
-    background: url("../static/progress.gif") transparent;
-    height: 31px;
-    width: 31px;
-    margin: 20px 0 0 11px;
-    position:absolute;
-}
-
-.wave {
-    border: none;
-    margin: -5px 0px 0 0px !important;
+.spinner, .wave {
+    clear: right;
+    height: 20px;
     float:right !important;
-    clear: both;
+    width: 20px;
+    margin: 5px 16px 0 15px !important;   
 }
 
 .hidden {
     display:none;
 }
 
-.selected {
+div.actions a.selected, div.actions a.selected:hover {
     display:block !important;
     color: orange !important;
 }
 
-.message {
+.action_error .message, .action_error .code {
     display: none;
 }
 
 .fixed {
+    margin: 0 0 0 -32px !important;
+    bottom: 0;
     position: fixed;
 }

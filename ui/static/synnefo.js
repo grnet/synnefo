@@ -11,9 +11,40 @@ function ISODateString(d){
 			pad(d.getUTCMonth()+1) + '-' +
 			pad(d.getUTCDate()) + 'T' +
 			pad(d.getUTCHours()) + ':' +
-			pad(d.getUTCMinutes())+ ':' +
-			pad(d.getUTCSeconds())
+			pad(d.getUTCMinutes()) + ':' +
+			pad(d.getUTCSeconds()) +'Z'
 }
+
+function parse_error(responseText){
+	var errors = [];
+	responseObj = JSON.parse(responseText);
+	//console.info(inp);
+	for (var err in responseObj){
+		errors[errors.length] = responseObj[err];
+	}
+	return errors;
+}
+
+// indexOf prototype for IE
+if (!Array.prototype.indexOf) {
+  Array.prototype.indexOf = function(elt /*, from*/) {
+    var len = this.length;
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++) {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
 
 function update_confirmations(){
     // hide all confirm boxes to begin with
@@ -200,7 +231,7 @@ function update_vms(interval) {
 			}
 			// as for now, just show an error message
 			try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-			ajax_error(jqXHR.status);						
+			ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);						
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
@@ -218,11 +249,11 @@ function update_vms(interval) {
 			if (jqXHR.status == 200 || jqXHR.status == 203) {
 				try {
 					servers = data.servers;
-				} catch(err) { ajax_error('400');}
+				} catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
 				update_machines_view(data);
 			} else if (jqXHR.status != 304){
 				try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
-				//ajax_error();						
+				//ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);					
 			}
 			return false;
         }
@@ -239,7 +270,7 @@ function update_images() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    ajax_error(jqXHR.status);
+                    ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
                     },
         success: function(data, textStatus, jqXHR) {
             try {
@@ -344,7 +375,7 @@ function update_flavors() {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
             try {
-				ajax_error(jqXHR.status);
+				ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText);
 			} catch (err) {
 				ajax_error(err);
 			}
@@ -426,7 +457,7 @@ function create_vm(machineName, imageRef, flavorRef){
             "flavorRef" : flavorRef,
             "metadata" : {
                 "My Server Name" : machineName
-            },
+            }
         }
     };
 
@@ -438,13 +469,13 @@ function create_vm(machineName, imageRef, flavorRef){
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
     error: function(jqXHR, textStatus, errorThrown) { 
-                ajax_error(jqXHR.status);
+                ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
                     ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);                   
                 } else {
-                    ajax_error(jqXHR.status);
+                    ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                 }
             }
     });
@@ -469,7 +500,7 @@ function reboot(serverIDs){
 		data: JSON.stringify(payload),
 		timeout: TIMEOUT,
 		error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(serverID, jqXHR.status, 'Reboot')
+                    display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText)
 				},
 		success: function(data, textStatus, jqXHR) {
 					if ( jqXHR.status == '202') {
@@ -481,7 +512,7 @@ function reboot(serverIDs){
 						// continue with the rest of the servers
 						reboot(serverIDs);
 					} else {
-						ajax_error(jqXHR.status);
+						ajax_error(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
 					}
 				}
     });
@@ -508,7 +539,7 @@ function shutdown(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    display_failure(serverID, jqXHR.status, 'Shutdown')
+                    display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -520,7 +551,7 @@ function shutdown(serverIDs) {
 						// continue with the rest of the servers			
                         shutdown(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status);
+                        ajax_error(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
                     }
                 }             
     });
@@ -545,10 +576,10 @@ function destroy(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    display_failure(serverID, jqXHR.status, 'Destroy')
+                    display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
-                    if ( jqXHR.status == '202') {
+                    if ( jqXHR.status == '204') {
 						try {
                             console.info('destroyed ' + serverID);
                         } catch (err) {}
@@ -557,7 +588,7 @@ function destroy(serverIDs) {
 						// continue with the rest of the servers
                         destroy(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status);
+                        ajax_error(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
                     }
                 }             
     });
@@ -584,7 +615,7 @@ function start(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) { 
-                    display_failure(serverID, jqXHR.status, 'Start')
+                    display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -596,7 +627,7 @@ function start(serverIDs){
 						// continue with the rest of the servers						
                         start(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status);
+                        ajax_error(jqXHR.status, serverID, 'Start', jqXHR.responseText);
                     }
                 }
     });

@@ -17,10 +17,14 @@ function ISODateString(d){
 
 function parse_error(responseText){
 	var errors = [];
-	responseObj = JSON.parse(responseText);
-	//console.info(inp);
-	for (var err in responseObj){
-		errors[errors.length] = responseObj[err];
+	if (responseText.length == 0){
+		errors[0] = {'code': 503};
+	} else {
+		responseObj = JSON.parse(responseText);
+		//console.info(inp);
+		for (var err in responseObj){
+			errors[errors.length] = responseObj[err];
+		}
 	}
 	return errors;
 }

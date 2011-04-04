@@ -7,11 +7,12 @@
 #
 
 from synnefo.db.models import *
-
 from synnefo.logic import credits
 from synnefo.logic import users
-
 from django.test import TestCase
+from django.core.exceptions import ObjectDoesNotExist
+
+import hashlib
 
 class CostsTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
@@ -103,9 +104,34 @@ class DebitAccountTestCase(TestCase):
 
 class AuthTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
-    
-    def test_register_student(self):
+
+    def _register_user(self):
         users.register_student ("Jimmy Page", "jpage", "jpage@zoso.com")
         user = SynnefoUser.objects.get(name = "jpage")
 
+        return user
+
+    def test_register(self):
+        """ test user registration
+        """
+        user = self._register_user()
         self.assertNotEquals(user, None)
+        
+        #Check hash generation
+        md5 = hashlib.md5()
+        md5.update(user.uniq)
+        md5.update(user.name)
+
+        self.assertEquals(user.auth_token, md5.hexdigest())
+
+    def test_del_user(self):
+        """ test user deletion
+        """
+        user = self._register_user()
+        users.delete_user(user)
+        user1 = None
+
+        try:
+            user1 = SynnefoUser.objects.get(name = "jpage")
+        except ObjectDoesNotExist:
+            self.assertEquals(user1, None)

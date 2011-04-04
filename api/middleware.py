@@ -15,7 +15,7 @@ class SynnefoAuthMiddleware(object):
             #Retrieve user from DB or other caching mechanism
             user = SynnefoUser.objects.filter(auth_token = request.META[self.auth_token])
             if user is None :
-                return HttpResponseAuthenticationRequired(content='Athentication Required')
+                return HttpResponseRedirect(content='Athentication Required')
             request.user = user
             return
 
@@ -30,7 +30,7 @@ class SynnefoAuthMiddleware(object):
 
             return HttpResponseRedirect(content= settings.SIBBOLLETH_HOST)
 
-        return HttpResponseAuthenticationRequired(content='Athentication Required')
+        return HttpResponseRedirect(content='Athentication Required')
 
 #class HttpResponseAuthenticationRequired(HttpResponse):
 #    status_code = 401

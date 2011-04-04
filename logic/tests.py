@@ -6,9 +6,10 @@
 # Copyright 2010 Greek Research and Technology Network
 #
 
-from db.models import *
+from synnefo.db.models import *
 
-from logic import credits
+from synnefo.logic import credits
+from synnefo.logic import users
 
 from django.test import TestCase
 
@@ -99,3 +100,10 @@ class DebitAccountTestCase(TestCase):
         s_user = SynnefoUser.objects.get(pk=30000)
 
         self.assertEqual(0, s_user.credit, 'SynnefoUser (pk=30000) should have zero credits (%d)' % ( s_user.credit, ))
+
+class AuthTestCase(TestCase):
+    fixtures = [ 'db_test_data' ]
+    
+    def test_register_student(self):
+        users.register_student ("Jimmy Page", "jpage", "jpage@zoso.com")
+        user = SynnefoUser.objects.get(name = "jpage")

@@ -13,8 +13,20 @@ class AuthTestCase(TestCase):
     fixtures = ['auth_test_data']
     apibase = '/api/v1.0'
 
+    
+
     def setUp(self):
         self.client = Client()
+
+    def register_sibbolleth_user(self):
+        """ test registration of sibboleth user upon new incoming request
+        """
+        
+
+    def test_auth_sibbolleth(self):
+        """ test whether the authentication mechanism sets the correct headers
+        """
+
 
     def test_auth_headers(self):
         """ test whether the authentication mechanism sets the correct headers

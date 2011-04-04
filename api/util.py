@@ -121,7 +121,16 @@ def render_fault(request, fault):
         d = {fault.name: {'code': fault.code, 'message': fault.message, 'details': fault.details}}
         data = json.dumps(d)
     
-    return HttpResponse(data, status=fault.code)
+    resp = HttpResponse(data, status=fault.code)
+    
+    if request.serialization == 'xml':
+        resp['Content-Type'] = 'application/xml'
+    elif request.serialization == 'atom':
+        resp['Content-Type'] = 'application/atom+xml'
+    else:
+        resp['Content-Type'] = 'application/json'
+    
+    return resp
 
 def request_serialization(request, atom_allowed=False):
     """Return the serialization format requested.

@@ -1,6 +1,6 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
-var API_URL = "/api/v1.1redux";
+var API_URL = "/api/v1.1";
 
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC. 
@@ -213,7 +213,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
 // get and show a list of running and terminated machines
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
-	var uri='/api/v1.0/servers/detail';
+	var uri= API_URL + '/servers/detail';
 	
 	if (changes_since != 0)
 		uri+='?changes-since='+changes_since
@@ -473,7 +473,7 @@ function create_vm(machineName, imageRef, flavorRef){
 
 
     $.ajax({
-    url: "/api/v1.0/servers",
+    url: API_URL + '/servers',
     type: "POST",
     dataType: "json",    
     data: JSON.stringify(payload),

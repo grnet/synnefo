@@ -3,12 +3,12 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title type="text">Available API Versions</title>
   <updated>{{ now }}</updated>
-  <id>http://ocenan.grnet.com/</id>
+  <id>http://ocean.grnet.gr/</id>
   <author>
     <name>Synnefo</name>
-    <uri>http://ocenan.grnet.com/</uri>
+    <uri>http://ocean.grnet.gr/</uri>
   </author>
-  <link rel="self" href="http://ocenan.grnet.com/"/>
+  <link rel="self" href="http://ocean.grnet.gr/"/>
   
   {% for version in versions %}
   <entry>

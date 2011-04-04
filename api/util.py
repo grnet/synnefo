@@ -103,7 +103,7 @@ def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
     
     data = request.raw_post_data
-    if request.META.get('CONTENT_TYPE') == 'application/json':
+    if request.META.get('CONTENT_TYPE').startswith('application/json'):
         try:
             return json.loads(data)
         except ValueError:

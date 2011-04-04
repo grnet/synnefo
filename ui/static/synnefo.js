@@ -248,7 +248,7 @@ function update_vms(interval) {
 			
 			if (jqXHR.status == 200 || jqXHR.status == 203) {
 				try {
-					servers = data.servers;
+					servers = data.servers.values;
 				} catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
 				update_machines_view(data);
 			} else if (jqXHR.status != 304){
@@ -470,11 +470,12 @@ function create_vm(machineName, imageRef, flavorRef){
             }
         }
     };
-
+	var uri = API_URL + '/servers';
 
     $.ajax({
-    url: API_URL + '/servers',
+    url: uri,
     type: "POST",
+	contentType: "application/json",
     dataType: "json",    
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
@@ -505,7 +506,8 @@ function reboot(serverIDs){
 	
 	$.ajax({
 		url: API_URL + '/servers/' + serverID + '/action',
-		type: "POST",        
+		type: "POST",
+		contentType: "application/json",
 		dataType: "json",
 		data: JSON.stringify(payload),
 		timeout: TIMEOUT,
@@ -545,6 +547,7 @@ function shutdown(serverIDs) {
     $.ajax({
 	    url: API_URL + '/servers/' + serverID + '/action',
 	    type: "POST",
+		contentType: "application/json",
 	    dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
@@ -582,6 +585,7 @@ function destroy(serverIDs) {
     $.ajax({
 	    url: API_URL + '/servers/' + serverID,
 	    type: "DELETE",
+		contentType: "application/json",
 	    dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
@@ -621,6 +625,7 @@ function start(serverIDs){
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/action',
         type: "POST",
+		contentType: "application/json",
         dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,

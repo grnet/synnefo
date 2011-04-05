@@ -77,7 +77,7 @@ def get_console(request, vm, args):
     vnc = { 'host': '62.217.120.67', 'port': sport, 'password': passwd }
 
     # Format to be reviewed by [verigak], FIXME
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         mimetype = 'application/xml'
         data = render_to_string('vnc.xml', {'vnc': vnc})
     else:

@@ -45,14 +45,15 @@ def isoparse(s):
     
     try:
         since = dateutil.parser.parse(s)
+        utc_since = since.astimezone(UTC()).replace(tzinfo=None)
     except ValueError:
         raise BadRequest('Invalid changes-since parameter.')
     
-    now = datetime.datetime.now(UTC())
-    if since > now:
+    now = datetime.datetime.now()
+    if utc_since > now:
         raise BadRequest('changes-since value set in the future.')
     
-    if now - since > timedelta(seconds=settings.POLL_LIMIT):
+    if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
         raise BadRequest('Too old changes-since value.')
     
     return since

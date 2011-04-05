@@ -151,16 +151,18 @@ def create_server(request):
     try:
         server = req['server']
         name = server['name']
+        metadata = server.get('metadata', {})
+        assert isinstance(metadata, dict)
         sourceimage = Image.objects.get(id=server['imageRef'])
         flavor = Flavor.objects.get(id=server['flavorRef'])
-    except KeyError:
+    except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
     except Image.DoesNotExist:
         raise ItemNotFound
     except Flavor.DoesNotExist:
         raise ItemNotFound
     
-    vm = VirtualMachine.objects.create(
+    vm = VirtualMachine(
         name=name,
         owner=get_user(),
         sourceimage=sourceimage,
@@ -189,7 +191,10 @@ def create_server(request):
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
     
     vm.save()
-        
+    
+    for key, val in metadata.items():
+        VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
+    
     logging.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
     
     server = vm_to_dict(vm, detail=True)

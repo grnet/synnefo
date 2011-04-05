@@ -10,7 +10,6 @@ from synnefo.db.models import *
 from synnefo.logic import credits
 from synnefo.logic import users
 from django.test import TestCase
-from django.core.exceptions import ObjectDoesNotExist
 
 import hashlib
 
@@ -116,7 +115,7 @@ class AuthTestCase(TestCase):
         """
         user = self._register_user()
         self.assertNotEquals(user, None)
-        
+
         #Check hash generation
         md5 = hashlib.md5()
         md5.update(user.uniq)
@@ -129,9 +128,5 @@ class AuthTestCase(TestCase):
         """
         user = self._register_user()
         users.delete_user(user)
-        user1 = None
 
-        try:
-            user1 = SynnefoUser.objects.get(name = "jpage")
-        except ObjectDoesNotExist:
-            self.assertEquals(user1, None)
+        self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get, name = "jpage")

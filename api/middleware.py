@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
-from synnefo.api.errors import Unauthorized
 from synnefo.db.models import SynnefoUser
 
 class SynnefoAuthMiddleware(object):
@@ -15,7 +14,7 @@ class SynnefoAuthMiddleware(object):
             #Retrieve user from DB or other caching mechanism
             user = SynnefoUser.objects.filter(auth_token = request.META[self.auth_token])
             if user is None :
-                return HttpResponseRedirect(content='Athentication Required')
+                return HttpResponseRedirect(settings.SIBBOLLETH_HOST)
             request.user = user
             return
 
@@ -28,9 +27,13 @@ class SynnefoAuthMiddleware(object):
             # mechanism
             user = SynnefoUser.objects.filter(username = request.META[self.auth_user])
 
-            return HttpResponseRedirect(content= settings.SIBBOLLETH_HOST)
+            return HttpResponseRedirect(settings.SIBBOLLETH_HOST)
 
-        return HttpResponseRedirect(content='Athentication Required')
+        return HttpResponseRedirect(settings.SIBBOLLETH_HOST)
+
+    def process_response(self, request, response):
+        response['Vary'] = self.auth_key
+        return response
 
 #class HttpResponseAuthenticationRequired(HttpResponse):
 #    status_code = 401

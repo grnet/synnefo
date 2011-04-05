@@ -97,7 +97,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'synnefo.middleware.StripURLMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    #'django.contrib.auth.middleware.AuthenticationMiddleware',
+    #'synnefo.api.middleware.SynnefoAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
@@ -153,4 +154,3 @@ GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'
 
 SIBBOLLETH_HOST = "http://wayf.grnet.gr/"
-

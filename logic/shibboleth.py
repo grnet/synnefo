@@ -20,13 +20,12 @@ class Tokens:
 class NoUniqueToken(object):
     pass
 
-
-def register_sibbolleth_user(tokens):
+def register_shibboleth_user(tokens):
     """Registers a sibbolleth user using the input hash as a source for data.
        The token requirements are described in this document
        http://aai.grnet.gr/policy
     """
-    
+
     realname = tokens[Tokens.SIB_GIVEN_NAME] | tokens[Tokens.SIB_GIVEN_NAME]
     is_student = tokens[Tokens.SIB_SCHAC_PERSONAL_UNIQUE_CODE] | \
                  tokens[Tokens.SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH]

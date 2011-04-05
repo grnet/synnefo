@@ -1,2 +1,15 @@
 [
+    {
+        "model": "db.SynnefoUser",
+        "pk": 1,
+        "fields": {
+            "name": "testdbuser",
+            "realname" :"test db user",
+            "uniq" :"test@synnefo.gr",
+            "credit": 10,
+            "auth_token": "46e427d657b20defe352804f0eb6f8a2",
+            "type": "STUDENT",
+            "created": "2011-02-06"
+   	    }
+    }
 ] 

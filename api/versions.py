@@ -31,6 +31,18 @@ MEDIA_TYPES = [
     {'base': 'application/json', 'type': 'application/vnd.openstack.compute-v1.1+json'}
 ]
 
+DESCRIBED_BY = [
+    {
+        'rel' : 'describedby',
+        'type' : 'application/pdf',
+        'href' : 'http://docs.rackspacecloud.com/servers/api/v1.1/cs-devguide-20110125.pdf'
+    },
+    {
+        'rel' : 'describedby',
+        'type' : 'application/vnd.sun.wadl+xml',
+        'href' : 'http://docs.rackspacecloud.com/servers/api/v1.1/application.wadl'
+    }
+]
 
 @api_method('GET', atom_allowed=True)
 def versions_list(request):
@@ -58,6 +70,7 @@ def version_details(request, api_version):
 
     # We hardcode to v1.1 since it is the only one we support
     version = VERSION_1_1.copy()
+    version['links'] = version['links'] + DESCRIBED_BY
     
     if request.serialization == 'xml':
         version['media_types'] = MEDIA_TYPES

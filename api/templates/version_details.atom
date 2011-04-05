@@ -15,7 +15,7 @@
     <title type="text">Version {{ version.id }}</title>
     <updated>{{ version.updated }}</updated>
     {% for link in version.links %}
-      <link rel="{{ link.rel }}" href="{{ link.href }}"/>
+      <link rel="{{ link.rel }}" {% if link.type %}type="{{ link.type }}" {% endif %}href="{{ link.href }}"/>
     {% endfor %}
     <content type="text">Version {{ version.id }} {{ version.status }} ({{ version.updated }})</content>   
   </entry>

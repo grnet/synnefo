@@ -142,12 +142,18 @@ LANGUAGES = (
 #http://docs.djangoproject.com/en/dev/topics/auth/#auth-profiles
 AUTH_PROFILE_MODULE = 'synnefo.OceanUser'
 
-# after this time passes and the client gets no response,
-# it raises an alert that there are network problems
+# API requests from the GUI time out after that many seconds.
 TIMEOUT = 10 * 1000
 
+# The API will return HTTP Bad Request if the ?changes-since
+# parameter refers to a point in time more than POLL_LIMIT seconds ago.
 POLL_LIMIT = 3600
-#maximum number of seconds, needed for server and images polling
 
+# This should be set to the PUB endpoint maintained by ganeti-0mqd.
+# Normally, this is a TCP port on the Ganeti master IP.
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
+
+# The API implementation needs to accept and return absolute references
+# to its resources. Thus, it needs to know its public URL.
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'
+

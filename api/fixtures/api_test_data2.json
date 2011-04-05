@@ -1,0 +1,60 @@
+[
+    {
+        "model": "db.Image",
+        "pk": 1,
+        "fields": {
+            "name": "Debian Unstable",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 2,
+        "fields": {
+            "name": "Red Hat Enterprise Linux",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 3,
+        "fields": {
+            "name": "Ubuntu 10.10",
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE"
+        }
+    },
+    
+    {
+        "model": "db.Flavor",
+        "pk": 1,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 20 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 2,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 40 
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 3,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 80 
+        }
+    }
+]

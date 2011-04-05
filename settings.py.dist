@@ -27,12 +27,13 @@ DATABASES = {
         'HOST': '',
         # Set to empty string for default. Not used with sqlite3.
         'PORT': '',
-        # Uncomment for MySQL
-        #'OPTIONS': {
-        #   'init_command': 'SET storage_engine=INNODB',
-        #}
     }
 }
+
+if DATABASES['default']['ENGINE'].endswith('mysql'):
+    DATABASES['default']['OPTIONS'] = {
+        'init_command': 'SET storage_engine=INNODB',
+    }
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 

@@ -62,7 +62,6 @@ def image_to_dict(image, detail=True):
         d['created'] = isoformat(image.created)
         d['status'] = image.state
         d['progress'] = 100 if image.state == 'ACTIVE' else 0
-        d['description'] = image.description
         if image.sourcevm:
             d['serverRef'] = image.sourcevm.id
         

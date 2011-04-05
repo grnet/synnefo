@@ -184,22 +184,24 @@ def create_server(request):
     else:
         backend_name = vm.backend_id
         dry_run = False
-
-    jobId = rapi.CreateInstance(
-        mode='create',
-        name=backend_name,
-        disk_template='plain',
-        disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
-        nics=[{}],
-        os='debootstrap+default',       #TODO: select OS from imageRef
-        ip_check=False,
-        name_check=False,
-        pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
-        dry_run=dry_run,
-        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
     
-    vm.save()
-    
+    try:
+        jobId = rapi.CreateInstance(
+            mode='create',
+            name=backend_name,
+            disk_template='plain',
+            disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
+            nics=[{}],
+            os='debootstrap+default',       #TODO: select OS from imageRef
+            ip_check=False,
+            name_check=False,
+            pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
+            dry_run=dry_run,
+            beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
+    except Exception, e:
+        vm.delete()
+        raise e
+        
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
     

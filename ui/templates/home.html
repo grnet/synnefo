@@ -68,17 +68,24 @@
             var serverName = '';
             
             if (serverID != undefined) {
-                serverName = $("#"+serverID).parent().parent().find("span.name").text();
+                // standard view
+                serverName = $("#"+serverID).find("span.name").text();
+                if (serverName == "") { // list view
+                    serverName = $("#"+serverID).parent().parent().find("span.name").text();                    
+                }
             }
             
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
             if (responseText != undefined){
-                var errors = parse_error(responseText);
+                var errors = parse_error(responseText), details = '';
                 if (serverName){
                     serverName="<p><strong>Server:</strong> " + serverName + "</p>";
                 }
-                $("#error-success div").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p><strong>Action:</strong> " + action + "</p><p><strong>Code</strong>: " + errors[0].code + "</p><p><strong>Details:</strong> " + errors[0].details +"</p>");
+                if (errors[0].details != undefined) {
+                    details = "<p><strong>Details:</strong> " + errors[0].details +"</p>";
+                }
+                $("#error-success div").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p><strong>Action:</strong> " + action + "</p><p><strong>Code</strong>: " + errors[0].code + "</p>" + details);
             } else if (ERRORS[status] != undefined) {
                 if (serverID == undefined){
                     $("#error-success p").text(ERRORS[status]);

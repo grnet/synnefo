@@ -406,6 +406,54 @@ class DeleteServerMeta(Command):
         path = '/api/%s/servers/%d/meta/%s' % (self.api, int(server_id), key)
         reply = self.http_delete(path)
 
+@command_name('lsimgmeta')
+class ListImageMeta(Command):
+    description = 'list image meta'
+    syntax = '<image id> [key]'
+
+    def execute(self, image_id, key=None):
+        path = '/api/%s/images/%d/meta' % (self.api, int(image_id))
+        if key:
+            path += '/' + key
+        reply = self.http_get(path)
+        if key:
+            print_dict(reply['meta'])
+        else:
+            print_dict(reply['metadata']['values'])
+
+@command_name('setimgmeta')
+class UpdateImageMeta(Command):
+    description = 'update image meta'
+    syntax = '<image id> <key> <val>'
+
+    def execute(self, image_id, key, val):
+        path = '/api/%s/images/%d/meta' % (self.api, int(image_id))
+        metadata = {key: val}
+        body = json.dumps({'metadata': metadata})
+        reply = self.http_post(path, body, expected_status=201)
+        print_dict(reply['metadata'])
+
+@command_name('addimgmeta')
+class CreateImageMeta(Command):
+    description = 'add image meta'
+    syntax = '<image id> <key> <val>'
+
+    def execute(self, image_id, key, val):
+        path = '/api/%s/images/%d/meta/%s' % (self.api, int(image_id), key)
+        meta = {key: val}
+        body = json.dumps({'meta': meta})
+        reply = self.http_put(path, body, expected_status=201)
+        print_dict(reply['meta'])
+
+@command_name('delimgmeta')
+class DeleteImageMeta(Command):
+    description = 'delete image meta'
+    syntax = '<image id> <key>'
+
+    def execute(self, image_id, key):
+        path = '/api/%s/images/%d/meta/%s' % (self.api, int(image_id), key)
+        reply = self.http_delete(path)
+
 
 def main():
     try:

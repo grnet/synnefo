@@ -3,7 +3,7 @@
 #
 
 from synnefo.api.common import method_not_allowed
-from synnefo.api.util import isoformat, isoparse, get_user, get_image, get_request_dict, api_method
+from synnefo.api.util import *
 from synnefo.db.models import Image, ImageMetadata, VirtualMachine
 
 from django.conf.urls.defaults import patterns
@@ -16,6 +16,8 @@ urlpatterns = patterns('synnefo.api.images',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_images', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'image_demux'),
+    (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
 )
 
 def demux(request):
@@ -31,6 +33,24 @@ def image_demux(request, image_id):
         return get_image_details(request, image_id)
     elif request.method == 'DELETE':
         return delete_image(request, image_id)
+    else:
+        return method_not_allowed(request)
+
+def metadata_demux(request, image_id):
+    if request.method == 'GET':
+        return list_metadata(request, image_id)
+    elif request.method == 'POST':
+        return update_metadata(request, image_id)
+    else:
+        return method_not_allowed(request)
+
+def metadata_item_demux(request, image_id, key):
+    if request.method == 'GET':
+        return get_metadata_item(request, image_id, key)
+    elif request.method == 'PUT':
+        return create_metadata_item(request, image_id, key)
+    elif request.method == 'DELETE':
+        return delete_metadata_item(request, image_id, key)
     else:
         return method_not_allowed(request)
 
@@ -54,6 +74,10 @@ def image_to_dict(image, detail=True):
             d['metadata'] = {'values': metadata}
     
     return d
+
+def metadata_to_dict(image):
+    image_meta = image.imagemetadata_set.all()
+    return dict((meta.meta_key, meta.meta_value) for meta in image_meta)
 
 
 @api_method('GET')
@@ -99,20 +123,18 @@ def create_image(request):
     #                       overLimit (413)
     
     req = get_request_dict(request)
-    owner = get_user()
     
     try:
         d = req['image']
-        server_id = int(d['serverRef'])
-        vm = VirtualMachine.objects.get(id=server_id)
-        image = Image.objects.create(name=d['name'], size=0, owner=owner, sourcevm=vm)
-        image.save()
-    except KeyError:
-        raise BadRequest
-    except ValueError:
-        raise BadRequest
-    except VirtualMachine.DoesNotExist:
-        raise ItemNotFound
+        server_id = d['serverRef']
+        name = d['name']
+    except (KeyError, ValueError):
+        raise BadRequest('Malformed request.')
+    
+    owner = get_user()
+    vm = get_vm(server_id)
+    image = Image.objects.create(name=name, size=0, owner=owner, sourcevm=vm)
+    image.save()
     
     imagedict = image_to_dict(image)
     if request.serialization == 'xml':
@@ -155,4 +177,105 @@ def delete_image(request, image_id):
     if image.owner != get_user():
         raise Unauthorized()
     image.delete()
+    return HttpResponse(status=204)
+
+@api_method('GET')
+def list_metadata(request, image_id):
+    # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       overLimit (413)
+
+    image = get_image(image_id)
+    metadata = metadata_to_dict(image)
+    return render_metadata(request, metadata, use_values=True, status=200)
+
+@api_method('POST')
+def update_metadata(request, image_id):
+    # Normal Response Code: 201
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       overLimit (413)
+
+    image = get_image(image_id)
+    req = get_request_dict(request)
+    try:
+        metadata = req['metadata']
+        assert isinstance(metadata, dict)
+    except (KeyError, AssertionError):
+        raise BadRequest('Malformed request.')
+
+    updated = {}
+
+    for key, val in metadata.items():
+        try:
+            meta = ImageMetadata.objects.get(meta_key=key, image=image)
+            meta.meta_value = val
+            meta.save()
+            updated[key] = val
+        except ImageMetadata.DoesNotExist:
+            pass    # Ignore non-existent metadata
+
+    return render_metadata(request, metadata, status=201)
+
+@api_method('GET')
+def get_metadata_item(request, image_id, key):
+    # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    #                       overLimit (413)
+
+    meta = get_image_meta(image_id, key)
+    return render_meta(request, meta, status=200)
+
+@api_method('PUT')
+def create_metadata_item(request, image_id, key):
+    # Normal Response Code: 201
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       overLimit (413)
+
+    image = get_image(image_id)
+    req = get_request_dict(request)
+    try:
+        metadict = req['meta']
+        assert isinstance(metadict, dict)
+        assert len(metadict) == 1
+        assert key in metadict
+    except (KeyError, AssertionError):
+        raise BadRequest('Malformed request.')
+
+    meta, created = ImageMetadata.objects.get_or_create(meta_key=key, image=image)
+    meta.meta_value = metadict[key]
+    meta.save()
+    return render_meta(request, meta, status=201)
+
+@api_method('DELETE')
+def delete_metadata_item(request, image_id, key):
+    # Normal Response Code: 204
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       overLimit (413),
+
+    meta = get_image_meta(image_id, key)
+    meta.delete()
     return HttpResponse(status=204)

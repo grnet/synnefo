@@ -13,8 +13,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import *
-from synnefo.db.models import *
+from synnefo.api.faults import Fault, BadRequest, ItemNotFound, ServiceUnavailable
+from synnefo.db.models import SynnefoUser, Image, ImageMetadata, VirtualMachine, VirtualMachineMetadata
 
 import datetime
 import dateutil.parser
@@ -98,6 +98,15 @@ def get_image(image_id):
     except Image.DoesNotExist:
         raise ItemNotFound('Image not found.')
 
+def get_image_meta(image_id, key):
+    """Return a ImageMetadata instance or raise ItemNotFound."""
+
+    try:
+        image_id = int(image_id)
+        return ImageMetadata.objects.get(meta_key=key, image=image_id)
+    except ImageMetadata.DoesNotExist:
+        raise ItemNotFound('Metadata key not found.')
+
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
@@ -110,6 +119,22 @@ def get_request_dict(request):
             raise BadRequest('Invalid JSON data.')
     else:
         raise BadRequest('Unsupported Content-Type.')
+
+
+def render_metadata(request, metadata, use_values=False, status=200):
+    if request.serialization == 'xml':
+        data = render_to_string('metadata.xml', {'metadata': metadata})
+    else:
+        d = {'metadata': {'values': metadata}} if use_values else {'metadata': metadata}
+        data = json.dumps(d)
+    return HttpResponse(data, status=status)
+
+def render_meta(request, meta, status=200):
+    if request.serialization == 'xml':
+        data = render_to_string('meta.xml', {'meta': meta})
+    else:
+        data = json.dumps({'meta': {meta.meta_key: meta.meta_value}})
+    return HttpResponse(data, status=status)
 
 def render_fault(request, fault):
     if settings.DEBUG or request.META.get('SERVER_NAME') == 'testserver':
@@ -131,6 +156,7 @@ def render_fault(request, fault):
         resp['Content-Type'] = 'application/json'
     
     return resp
+
 
 def request_serialization(request, atom_allowed=False):
     """Return the serialization format requested.

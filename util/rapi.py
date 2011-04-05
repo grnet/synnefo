@@ -34,11 +34,15 @@
 # be standalone.
 
 import logging
-import simplejson
 import socket
 import urllib
 import threading
 import pycurl
+
+try:
+  import simplejson as json
+except ImportError:
+  import json
 
 try:
   from cStringIO import StringIO

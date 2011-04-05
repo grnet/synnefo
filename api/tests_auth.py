@@ -28,6 +28,15 @@ class AuthTestCase(TestCase):
     def test_register_shibboleth_user(self):
         """ test registration of sibboleth user upon new incoming request
         """
+        #TODO: Test request from wrong host
+        #self.client
+        #response = self.client.get(self.apibase + '/servers', {},
+        #                           **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
+        #                              Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
+        #                              Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
+
+
+        #Test correct request
         response = self.client.get(self.apibase + '/servers', {},
                                    **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
                                       Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',

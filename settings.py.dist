@@ -153,4 +153,11 @@ GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
 
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'
 
-SIBBOLLETH_HOST = "http://wayf.grnet.gr/"
+SHIBBOLETH_HOST = "http://wayf.grnet.gr/"
+
+SHIBBOLETH_WHITELIST = {
+    'localhost' : '127.0.0.1'
+}
+
+#Number of hours during which a user token is active
+AUTH_TOKEN_DURATION = 24

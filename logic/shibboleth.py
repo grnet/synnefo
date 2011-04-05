@@ -39,3 +39,5 @@ def register_shibboleth_user(tokens):
         users.register_student(realname, '' ,unq)
     else :
         users.register_professor(realname, '' ,unq)
+
+    return True

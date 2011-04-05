@@ -18,6 +18,7 @@ class SynnefoUser(models.Model):
     uniq = models.CharField('External Unique ID', max_length=255)
     credit = models.IntegerField('Credit Balance')
     auth_token = models.CharField('Authentication Token', max_length=32)
+    auth_token_created = models.DateTimeField('Time of auth token creation')
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)

@@ -106,20 +106,18 @@ class AuthTestCase(TestCase):
 
     def _register_user(self):
         users.register_student ("Jimmy Page", "jpage", "jpage@zoso.com")
-        user = SynnefoUser.objects.get(name = "jpage")
-
-        return user
+        self.user = SynnefoUser.objects.get(name = "jpage")
 
     def test_register(self):
         """ test user registration
         """
-        user = self._register_user()
-        self.assertNotEquals(user, None)
+        self._register_user()
+        self.assertNotEquals(self.user, None)
 
         #Check hash generation
         md5 = hashlib.md5()
-        md5.update(user.uniq)
-        md5.update(user.name)
+        md5.update(self.user.uniq)
+        md5.update(self.user.name)
 
         self.assertEquals(user.auth_token, md5.hexdigest())
 

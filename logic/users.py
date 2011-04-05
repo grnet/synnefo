@@ -7,6 +7,7 @@
 from synnefo.db.models import SynnefoUser
 from django.db import transaction
 import hashlib
+import time
 
 @transaction.commit_on_success
 def _register_user(f, u, unq, t):
@@ -15,9 +16,9 @@ def _register_user(f, u, unq, t):
     user.name = u
     user.uniq = unq
     user.type = t
-    user.auth_token = create_auth_token(user)
     user.credit = 10 #TODO: Fix this when we have a per group policy
     user.save()
+    create_auth_token(user)
 
 @transaction.commit_on_success
 def delete_user(user):
@@ -30,13 +31,17 @@ def register_student(fullname, username, uniqid):
 def register_professor(fullname, username, uniqid):
     _register_user(fullname, username, uniqid, 'PROFESSOR')
 
+@transaction.commit_on_success
 def create_auth_token(user):
     md5 = hashlib.md5()
     md5.update(user.uniq)
     md5.update(user.name)
-    return md5.hexdigest()
+    md5.update(time.localtime())
 
+    user.auth_token = md5.hexdigest()
+    user.auth_token_created = time.now()
 
+    user.save()
 
 #def login(username, password):
 

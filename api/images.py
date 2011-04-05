@@ -133,8 +133,7 @@ def create_image(request):
     
     owner = get_user()
     vm = get_vm(server_id)
-    image = Image.objects.create(name=name, size=0, owner=owner, sourcevm=vm)
-    image.save()
+    image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
     
     imagedict = image_to_dict(image)
     if request.serialization == 'xml':

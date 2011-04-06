@@ -54,6 +54,15 @@ class AuthTestCase(TestCase):
         #                              Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
         #                              Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
 
+    def test_shibboleth_expired_token(self):
+        """ test request from expired token
+        """
+
+        #response = self.client.get(self.apibase + '/servers', {},
+        #                           **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
+        #                              Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
+        #                              Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
+
     def test_auth_shibboleth(self):
         """ test redirect to shibboleth page
         """

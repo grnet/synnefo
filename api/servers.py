@@ -14,7 +14,7 @@ from synnefo.api.faults import BadRequest, ItemNotFound
 from synnefo.api.util import *
 from synnefo.db.models import Image, Flavor, VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.utils import get_rsapi_state
-from synnefo.util.rapi import GanetiRapiClient
+from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.logic import backend
 
 import logging
@@ -198,9 +198,9 @@ def create_server(request):
             pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
             dry_run=dry_run,
             beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
-    except Exception, e:
+    except GanetiApiError:
         vm.delete()
-        raise e
+        raise ServiceUnavailable('Could not create server.')
         
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)

@@ -2,6 +2,8 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
+from socket import getfqdn
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -74,10 +76,10 @@ def get_console(request, vm, args):
     passwd = random_password()
 
     request_vnc_forwarding(sport, daddr, dport, passwd)
-    vnc = { 'host': '62.217.120.67', 'port': sport, 'password': passwd }
+    vnc = { 'host': socket.getfqdn(), 'port': sport, 'password': passwd }
 
     # Format to be reviewed by [verigak], FIXME
-    if request.type == 'xml':
+    if request.serialization == 'xml':
         mimetype = 'application/xml'
         data = render_to_string('vnc.xml', {'vnc': vnc})
     else:

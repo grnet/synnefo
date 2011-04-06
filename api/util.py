@@ -56,7 +56,7 @@ def isoparse(s):
     if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
         raise BadRequest('Too old changes-since value.')
     
-    return since
+    return utc_since
     
 def random_password(length=8):
     pool = ascii_letters + digits

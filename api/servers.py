@@ -169,29 +169,39 @@ def create_server(request):
         ipfour='0.0.0.0',
         ipsix='::1',
         flavor=flavor)
+
+    # Pick a random password for the VM.
+    # FIXME: This must be passed to the Ganeti OS provider via CreateInstance()
+    passwd = random_password()
+
+    # We *must* save the VM instance now,
+    # so that it gets a vm.id and vm.backend_id is valid.
+    vm.save() 
                 
     if request.META.get('SERVER_NAME', None) == 'testserver':
-        name = 'test-server'
+        backend_name = 'test-server'
         dry_run = True
     else:
-        name = vm.backend_id
+        backend_name = vm.backend_id
         dry_run = False
     
-    jobId = rapi.CreateInstance(
-        mode='create',
-        name=name,
-        disk_template='plain',
-        disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
-        nics=[{}],
-        os='debootstrap+default',       #TODO: select OS from imageRef
-        ip_check=False,
-        name_check=False,
-        pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
-        dry_run=dry_run,
-        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
-    
-    vm.save()
-    
+    try:
+        jobId = rapi.CreateInstance(
+            mode='create',
+            name=backend_name,
+            disk_template='plain',
+            disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
+            nics=[{}],
+            os='debootstrap+default',       #TODO: select OS from imageRef
+            ip_check=False,
+            name_check=False,
+            pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
+            dry_run=dry_run,
+            beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
+    except Exception, e:
+        vm.delete()
+        raise e
+        
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
     
@@ -199,7 +209,7 @@ def create_server(request):
     
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
-    server['adminPass'] = random_password()
+    server['adminPass'] = passwd
     return render_server(request, server, status=202)
 
 @api_method('GET')

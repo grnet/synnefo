@@ -22,22 +22,28 @@ class NoUniqueToken(object):
 
 def register_shibboleth_user(tokens):
     """Registers a sibbolleth user using the input hash as a source for data.
-       The token requirements are described in this document
+       The token requirements are described in:
        http://aai.grnet.gr/policy
     """
+    realname = None
 
-    realname = tokens[Tokens.SIB_GIVEN_NAME] | tokens[Tokens.SIB_GIVEN_NAME]
-    is_student = tokens[Tokens.SIB_SCHAC_PERSONAL_UNIQUE_CODE] | \
-                 tokens[Tokens.SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH]
+    if Tokens.SIB_GIVEN_NAME in tokens:
+        realname = tokens[Tokens.SIB_GIVEN_NAME]
 
-    unq = tokens[Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME]
+    if Tokens.SIB_DISPLAY_NAME in tokens:
+        realname = tokens[Tokens.SIB_DISPLAY_NAME]
+
+    is_student = Tokens.SIB_SCHAC_PERSONAL_UNIQUE_CODE in tokens or \
+                 Tokens.SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH in tokens
+
+    unq = tokens.get(Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME)
 
     if unq is None:
         raise NoUniqueToken
 
     if is_student:
         users.register_student(realname, '' ,unq)
-    else :
+    else:
         users.register_professor(realname, '' ,unq)
 
     return True

@@ -9,7 +9,7 @@
 from django.test import TestCase
 from django.test.client import Client
 
-from synnefo.logic.shibboleth import Tokens
+from synnefo.logic.shibboleth import Tokens, NoUniqueToken
 from synnefo.db.models import SynnefoUser
 
 class AuthTestCase(TestCase):
@@ -19,14 +19,33 @@ class AuthTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_auth_shibboleth(self):
-        """ test redirect to shibboleth page
+    def test_shibboleth_correct_request(self):
+        """test request that should succeed and register a user
         """
-        response = self.client.get(self.apibase + '/servers')
-        self.assertEquals(response.status_code, 302)
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
+                                      Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
+                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
+        user = None
+        try:
+            user = SynnefoUser.objects.get(uniq = "jh@gmail.com")
+        except SynnefoUser.DoesNotExist:
+            self.assertNotEqual(user, None)
+        self.assertNotEqual(user, None)
 
-    def test_register_shibboleth_user(self):
-        """ test registration of sibboleth user upon new incoming request
+    def test_shibboleth_no_uniq_request(self):
+        """test a request with no unique field
+        """
+        try :
+            response = self.client.get(self.apibase + '/servers', {},
+                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
+                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
+            self.assertEqual(True, True)
+        except NoUniqueToken:
+            self.assertEqual(True, True)
+
+    def test_shibboleth_wrong_from_request(self):
+        """ test request from wrong host
         """
         #TODO: Test request from wrong host
         #self.client
@@ -35,30 +54,23 @@ class AuthTestCase(TestCase):
         #                              Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
         #                              Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
 
-
-        #Test correct request
-        response = self.client.get(self.apibase + '/servers', {},
-                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-                                      Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
-                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
-
-        user = None
-        try:
-            user = SynnefoUser.objects.get(uniq = "jh@gmail.com")
-        except SynnefoUser.DoesNotExist:
-            self.assertNotEqual(user, None)
-        self.assertNotEqual(user, None)
-
-    def test_auth_headers(self):
-        """ test whether the authentication mechanism sets the correct headers
+    def test_auth_shibboleth(self):
+        """ test redirect to shibboleth page
         """
-        #Check with non-existing user
+        response = self.client.get(self.apibase + '/servers')
+        self.assertEquals(response.status_code, 302)
+
+    def test_fail_oapi_auth(self):
+        """ test authentication from not registered user using OpenAPI
+        """
         response = self.client.get(self.apibase + '/servers', {},
                                    **{'X-Auth-User': 'notme',
                                       'X-Auth-Key': '0xdeadbabe'})
         self.assertEquals(response.status_code, 401)
 
-        #Check with existing user
+    def test_oapi_auth(self):
+        """authentication with user registration
+        """
         response = self.client.get(self.apibase + '/', {},
                                    **{'X-Auth-User': 'testuser',
                                       'X-Auth-Key': 'testuserpasswd'})

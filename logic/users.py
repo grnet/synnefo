@@ -8,6 +8,7 @@ from synnefo.db.models import SynnefoUser
 from django.db import transaction
 import hashlib
 import time
+from datetime import datetime
 
 @transaction.commit_on_success
 def _register_user(f, u, unq, t):
@@ -36,10 +37,10 @@ def create_auth_token(user):
     md5 = hashlib.md5()
     md5.update(user.uniq)
     md5.update(user.name)
-    md5.update(time.localtime())
+    md5.update(time.asctime())
 
     user.auth_token = md5.hexdigest()
-    user.auth_token_created = time.now()
+    user.auth_token_created = datetime.now()
 
     user.save()
 

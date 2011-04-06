@@ -25,11 +25,15 @@ class SynnefoAuthMiddleware(object):
             #TODO: We must somehow make sure that we only process
             #      SIB headers when coming from a URL whitelist,
             #      or a similar for of restriction
-            if request.get_host() not in settings.SHIBBOLETH_HOST:
+            if request.get_host() not in settings.SHIBBOLETH_WHITELIST.keys():
                 return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
 
-            user = SynnefoUser.objects.filter(
-                uniq = request.META[Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME])
+            user = None
+            try:
+                user = SynnefoUser.objects.get(
+                    uniq = request.META[Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME])
+            except SynnefoUser.DoesNotExist:
+                pass
 
             #No user with this id could be found in the database
             if user is None:

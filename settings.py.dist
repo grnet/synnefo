@@ -27,12 +27,13 @@ DATABASES = {
         'HOST': '',
         # Set to empty string for default. Not used with sqlite3.
         'PORT': '',
-        # Uncomment for MySQL
-        #'OPTIONS': {
-        #   'init_command': 'SET storage_engine=INNODB',
-        #}
     }
 }
+
+if DATABASES['default']['ENGINE'].endswith('mysql'):
+    DATABASES['default']['OPTIONS'] = {
+        'init_command': 'SET storage_engine=INNODB',
+    }
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
@@ -127,9 +128,12 @@ INSTALLED_APPS = (
     'synnefo.logic',
 )
 
+# The RAPI endpoint and associated credentials to use
+# for talking to the Ganeti backend.
 GANETI_CLUSTER_INFO = ("62.217.120.78", 5080, "synnefo", "ocean!")
 
-# ganeti requires each machine to have a unique name
+# This prefix gets used when determining the instance names
+# of Synnefo VMs at the Ganeti backend.
 BACKEND_PREFIX_ID = "snf-"
 
 LANGUAGES = (
@@ -142,15 +146,19 @@ LANGUAGES = (
 #http://docs.djangoproject.com/en/dev/topics/auth/#auth-profiles
 AUTH_PROFILE_MODULE = 'synnefo.OceanUser'
 
-# after this time passes and the client gets no response,
-# it raises an alert that there are network problems
+# API requests from the GUI time out after that many seconds.
 TIMEOUT = 10 * 1000
 
+# The API will return HTTP Bad Request if the ?changes-since
+# parameter refers to a point in time more than POLL_LIMIT seconds ago.
 POLL_LIMIT = 3600
-#maximum number of seconds, needed for server and images polling
 
+# This should be set to the PUB endpoint maintained by ganeti-0mqd.
+# Normally, this is a TCP port on the Ganeti master IP.
 GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
 
+# The API implementation needs to accept and return absolute references
+# to its resources. Thus, it needs to know its public URL.
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'
 
 SHIBBOLETH_HOST = "http://wayf.grnet.gr/"
@@ -161,3 +169,4 @@ SHIBBOLETH_WHITELIST = {
 
 #Number of hours during which a user token is active
 AUTH_TOKEN_DURATION = 24
+

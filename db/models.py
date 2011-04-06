@@ -66,8 +66,6 @@ class Image(models.Model):
 
     name = models.CharField('Image name', max_length=255)
     state = models.CharField('Current Image State', choices=IMAGE_STATES, max_length=30)
-    description = models.TextField('General description')
-    size = models.PositiveIntegerField('Image size in MBs')
     owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)

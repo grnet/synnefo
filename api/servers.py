@@ -323,14 +323,7 @@ def list_metadata(request, server_id):
 
     vm = get_vm(server_id)
     metadata = metadata_to_dict(vm)
-    
-    if request.serialization == 'xml':
-        data = render_to_string('metadata.xml', {'metadata': metadata})
-    else:
-        data = json.dumps({'metadata': {'values': metadata}})
-    
-    return HttpResponse(data, status=200)
-    
+    return render_metadata(request, metadata, use_values=True, status=200)
 
 @api_method('POST')
 def update_metadata(request, server_id):
@@ -362,11 +355,7 @@ def update_metadata(request, server_id):
         except VirtualMachineMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
     
-    if request.serialization == 'xml':
-        data = render_to_string('servers/metadata.xml', {'metadata': updated})
-    else:
-        data = json.dumps({'metadata': updated})
-    return HttpResponse(data, status=201)
+    return render_metadata(request, metadata, status=201)
 
 @api_method('GET')
 def get_metadata_item(request, server_id, key):
@@ -379,11 +368,7 @@ def get_metadata_item(request, server_id, key):
     #                       overLimit (413)
 
     meta = get_vm_meta(server_id, key)
-    if request.serialization == 'xml':
-        data = render_to_string('meta.xml', {'meta': meta})
-    else:
-        data = json.dumps({'meta': {key: meta.meta_value}})
-    return HttpResponse(data, status=200)
+    return render_meta(request, meta, status=200)
 
 @api_method('PUT')
 def create_metadata_item(request, server_id, key):
@@ -410,12 +395,7 @@ def create_metadata_item(request, server_id, key):
     meta, created = VirtualMachineMetadata.objects.get_or_create(meta_key=key, vm=vm)
     meta.meta_value = metadict[key]
     meta.save()
-    
-    if request.serialization == 'xml':
-        data = render_to_string('servers/meta.xml', {'meta': meta})
-    else:
-        data = json.dumps({'meta': {key: meta.meta_value}})
-    return HttpResponse(data, status=201)
+    return render_meta(request, meta, status=201)
 
 @api_method('DELETE')
 def delete_metadata_item(request, server_id, key):

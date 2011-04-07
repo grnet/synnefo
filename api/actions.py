@@ -76,7 +76,7 @@ def get_console(request, vm, args):
     passwd = random_password()
 
     request_vnc_forwarding(sport, daddr, dport, passwd)
-    vnc = { 'host': socket.getfqdn(), 'port': sport, 'password': passwd }
+    vnc = { 'host': getfqdn(), 'port': sport, 'password': passwd }
 
     # Format to be reviewed by [verigak], FIXME
     if request.serialization == 'xml':

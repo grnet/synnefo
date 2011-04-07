@@ -120,7 +120,7 @@ def list_servers(request, detail=False):
     since = isoparse(request.GET.get('changes-since'))
     
     if since:
-        user_vms = VirtualMachine.objects.filter(updated__gt=since)
+        user_vms = VirtualMachine.objects.filter(updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:

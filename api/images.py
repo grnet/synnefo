@@ -91,7 +91,7 @@ def list_images(request, detail=False):
     since = isoparse(request.GET.get('changes-since'))
     
     if since:
-        avail_images = Image.objects.filter(updated__gt=since)
+        avail_images = Image.objects.filter(updated__gte=since)
         if not avail_images:
             return HttpResponse(status=304)
     else:

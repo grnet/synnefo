@@ -250,7 +250,6 @@
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
-            "description": "Full Debian Squeeze Installation",
             "size": 5678
         }
     },
@@ -330,7 +329,6 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "state": "ACTIVE",
-            "description": "Full Slackware 13.1 Installation",
             "size": 1234,
             "owner" : 1,
             "sourcevm": 1001

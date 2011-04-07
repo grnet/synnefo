@@ -8,12 +8,15 @@
 
 from django.test import TestCase
 from django.test.client import Client
+from django.conf import settings
 
 from synnefo.logic.shibboleth import Tokens, NoUniqueToken
 from synnefo.db.models import SynnefoUser
 
+from datetime import datetime, timedelta
+
 class AuthTestCase(TestCase):
-    fixtures = ['api_test_data']
+    fixtures = ['api_test_data', 'auth_test_data']
     apibase = '/api/v1.1'
 
     def setUp(self):
@@ -32,42 +35,46 @@ class AuthTestCase(TestCase):
         except SynnefoUser.DoesNotExist:
             self.assertNotEqual(user, None)
         self.assertNotEqual(user, None)
+        self.assertTrue('X-Auth-Token' in response.META)
+        self.assertTrue(len(response['X-Auth-Token']))
 
     def test_shibboleth_no_uniq_request(self):
         """test a request with no unique field
         """
-        try :
-            response = self.client.get(self.apibase + '/servers', {},
-                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
-            self.assertEqual(True, True)
-        except NoUniqueToken:
-            self.assertEqual(True, True)
+        response = self.client.get(self.apibase + '/servers', {},
+                                    **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
+                                    Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
+        self._test_redirect(response)
 
     def test_shibboleth_wrong_from_request(self):
         """ test request from wrong host
         """
-        #TODO: Test request from wrong host
-        #self.client
-        #response = self.client.get(self.apibase + '/servers', {},
-        #                           **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-        #                              Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
-        #                              Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
+                                      Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
+                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix',
+                                      'REMOTE_ADDR': '1.2.3.4',
+                                      'SERVER_NAME': 'nohost.nodomain'})
+        self._test_redirect(response)
 
     def test_shibboleth_expired_token(self):
         """ test request from expired token
         """
+        user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
+        self.assertNotEqual(user.auth_token_created, None)
+        user.auth_token_created = (datetime.now() -
+                                   timedelta(hours = settings.AUTH_TOKEN_DURATION))
+        user.save()
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{'X-Auth-Token': user.auth_token})
+        self._test_redirect(response)
 
-        #response = self.client.get(self.apibase + '/servers', {},
-        #                           **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-        #                              Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
-        #                              Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix'})
-
-    def test_auth_shibboleth(self):
+    def test_shibboleth_auth(self):
         """ test redirect to shibboleth page
         """
         response = self.client.get(self.apibase + '/servers')
-        self.assertEquals(response.status_code, 302)
+        user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
+        self.assertTrue('X-Auth-Token' in response.META)
 
     def test_fail_oapi_auth(self):
         """ test authentication from not registered user using OpenAPI
@@ -94,3 +101,8 @@ class AuthTestCase(TestCase):
         response = self.client.get(self.apibase + '/servers/detail', {},
                                    **{'X-Auth-Token': token})
         self.assertEquals(response.status_code, 200)
+
+    def _test_redirect(self, response):
+        self.assertEquals(response.status_code, 302)
+        self.assertEquals('Location' in response.META)
+        self.assertEquals(response['Location'], settings.SHIBBOLETH_HOST)

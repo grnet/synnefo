@@ -18,6 +18,17 @@ class Tokens:
     SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
 
 class NoUniqueToken(object):
+
+    def __init__(self, msg):
+        self.msg = msg
+    
+    pass
+
+class NoRealName(object):
+
+    def __init__(self, msg):
+        self.msg = msg
+
     pass
 
 def register_shibboleth_user(tokens):
@@ -39,7 +50,10 @@ def register_shibboleth_user(tokens):
     unq = tokens.get(Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME)
 
     if unq is None:
-        raise NoUniqueToken
+        raise NoUniqueToken("Authentication does not return a unique token")
+
+    if realname is None:
+        raise NoRealName("Authentication does not return the user's name")
 
     if is_student:
         users.register_student(realname, '' ,unq)

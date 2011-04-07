@@ -160,6 +160,7 @@ class APITestCase(TestCase):
         self.assertEqual(response.status_code, 202)
 
         response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % since)
+        self.assertEqual(response.status_code, 200)
         vms_from_api_after = json.loads(response.content)['servers']['values']
         #make sure the newly created server is included on the updated list
         self.assertEqual(len(vms_from_api_after), 1)

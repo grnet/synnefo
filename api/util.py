@@ -6,7 +6,9 @@ from datetime import timedelta, tzinfo
 from functools import wraps
 from random import choice
 from string import ascii_letters, digits
+from time import time
 from traceback import format_exc
+from wsgiref.handlers import format_date_time
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -122,6 +124,16 @@ def get_request_dict(request):
         raise BadRequest('Unsupported Content-Type.')
 
 
+def update_response_headers(request, response):
+    if request.serialization == 'xml':
+        response['Content-Type'] = 'application/xml'
+    elif request.serialization == 'atom':
+        response['Content-Type'] = 'application/atom+xml'
+    else:
+        response['Content-Type'] = 'application/json'
+    
+    response['Date'] = format_date_time(time())
+
 def render_metadata(request, metadata, use_values=False, status=200):
     if request.serialization == 'xml':
         data = render_to_string('metadata.xml', {'metadata': metadata})
@@ -148,14 +160,7 @@ def render_fault(request, fault):
         data = json.dumps(d)
     
     resp = HttpResponse(data, status=fault.code)
-    
-    if request.serialization == 'xml':
-        resp['Content-Type'] = 'application/xml'
-    elif request.serialization == 'atom':
-        resp['Content-Type'] = 'application/atom+xml'
-    else:
-        resp['Content-Type'] = 'application/json'
-    
+    update_response_headers(request, resp)
     return resp
 
 
@@ -197,13 +202,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise BadRequest('Method not allowed.')
                 
                 resp = func(request, *args, **kwargs)
-                if request.serialization == 'xml':
-                    resp['Content-Type'] = 'application/xml'
-                elif request.serialization == 'atom':
-                    resp['Content-Type'] = 'application/atom+xml'
-                else:
-                    resp['Content-Type'] = 'application/json'
-                
+                update_response_headers(request, resp)
                 return resp
             
             except Fault, fault:

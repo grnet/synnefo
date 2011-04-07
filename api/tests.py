@@ -2,6 +2,9 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
+from email.utils import parsedate
+from time import mktime
+
 import datetime
 
 from django.utils import simplejson as json
@@ -134,12 +137,10 @@ class APITestCase(TestCase):
         
         response = self.client.get('/api/v1.1/servers/detail')
         vms_from_api_initial = json.loads(response.content)['servers']['values']
-        then = datetime.datetime.now().isoformat().split('.')[0] + 'Z'
-
-        #isoformat also gives miliseconds that are not needed
-        response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % then)
+        ts = mktime(parsedate(response['Date']))
+        since = datetime.datetime.fromtimestamp(ts).isoformat() + 'Z'
+        response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % since)
         self.assertEqual(len(response.content), 0)
-        #no changes were made
 
         #now create a machine. Then check if it is on the list
         request = {
@@ -158,7 +159,7 @@ class APITestCase(TestCase):
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 202)
 
-        response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % then)
+        response = self.client.get('/api/v1.1/servers/detail?changes-since=%s' % since)
         vms_from_api_after = json.loads(response.content)['servers']['values']
         #make sure the newly created server is included on the updated list
         self.assertEqual(len(vms_from_api_after), 1)

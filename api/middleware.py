@@ -33,9 +33,9 @@ class SynnefoAuthMiddleware(object):
 
         #A user authenticated by Shibboleth, must include a uniq id
         if Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME in request.META:
-            #TODO: We must somehow make sure that we only process
-            #      SIB headers when coming from a URL whitelist,
-            #      or a similar form of restriction
+            #We must somehow make sure that we only process
+            #SIB headers when coming from a URL whitelist,
+            #or a similar form of restriction
             if request.get_host() not in settings.SHIBBOLETH_WHITELIST.keys():
                 return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
 
@@ -48,12 +48,17 @@ class SynnefoAuthMiddleware(object):
 
             #No user with this id could be found in the database
             if user is None:
-                #Try to register incoming user
+                #Attempt to register the incoming user
                 if register_shibboleth_user(request.META):
-                    #Registration succeded, user allowed to proceed
-                    return
-                #Registration failed, redirect to Shibboleth
-                return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+                    user = SynnefoUser.objects.get(
+                        uniq = request.META[Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME])
+                    response = HttpResponse()
+                    response[self.auth_token] = user.auth_token
+                    response['Location'] = "/"
+                    response.status_code = 302
+                    return response
+                else:
+                    return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
 
             #User and authentication token valid, user allowed to proceed
             return
@@ -76,5 +81,5 @@ class SynnefoAuthMiddleware(object):
         #Tell proxies and other interested parties that the
         #request varies based on the auth token, to avoid
         #caching of results
-        response['Vary'] = self.auth_key
+        response['Vary'] = self.auth_token
         return response

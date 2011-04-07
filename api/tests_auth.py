@@ -35,8 +35,10 @@ class AuthTestCase(TestCase):
         except SynnefoUser.DoesNotExist:
             self.assertNotEqual(user, None)
         self.assertNotEqual(user, None)
-        self.assertTrue('X-Auth-Token' in response.META)
-        self.assertTrue(len(response['X-Auth-Token']))
+        self.assertEquals(response.status_code, 302)
+        self.assertEquals(response['Location'], "http://testserver/")
+        self.assertTrue('X-Auth-Token' in response)
+        self.assertEquals(response['X-Auth-Token'], user.auth_token)
 
     def test_shibboleth_no_uniq_request(self):
         """test a request with no unique field
@@ -69,12 +71,21 @@ class AuthTestCase(TestCase):
                                    **{'X-Auth-Token': user.auth_token})
         self._test_redirect(response)
 
-    def test_shibboleth_auth(self):
-        """ test redirect to shibboleth page
+    def test_shibboleth_redirect(self):
+        """ test redirect to Sibboleth page
         """
         response = self.client.get(self.apibase + '/servers')
+        self._test_redirect(response)
+
+    def test_shibboleth_auth(self):
+        """ test authentication with X-Auth-Token
+        """
         user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
-        self.assertTrue('X-Auth-Token' in response.META)
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{'X-Auth-Token': user.auth_token})
+        self.assertTrue(response.status_code, 200)
+        self.assertTrue('Vary' in response)
+        self.assertTrue('X-Auth-Token' in response['Vary'])
 
     def test_fail_oapi_auth(self):
         """ test authentication from not registered user using OpenAPI
@@ -104,5 +115,5 @@ class AuthTestCase(TestCase):
 
     def _test_redirect(self, response):
         self.assertEquals(response.status_code, 302)
-        self.assertEquals('Location' in response.META)
+        self.assertTrue('Location' in response)
         self.assertEquals(response['Location'], settings.SHIBBOLETH_HOST)

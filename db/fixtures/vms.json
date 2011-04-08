@@ -6,8 +6,7 @@
             "name": "Debian Squeeze",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "size": 5678
+            "state": "ACTIVE"
         }
     },
     {
@@ -96,7 +95,6 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "state": "ACTIVE",
-            "size": 1234,
             "owner": 1,
             "sourcevm": 1001
         }

@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from synnefo.api.faults import ItemNotFound
 from synnefo.api.util import get_user, get_request_dict, api_method
 from synnefo.db.models import Flavor
 

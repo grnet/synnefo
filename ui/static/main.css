@@ -56,7 +56,6 @@ table {
 	border-spacing: 0;
 }
 
-
 h5 {
     font-weight: normal;
     font-size: 9pt;
@@ -704,19 +703,19 @@ div#view-select a {
 }
 
 a#list:hover {
-background: #5f8dd3;
+    background: #5f8dd3;
 }
 
 a#standard:hover{
-background: #5f8dd3;
+    background: #5f8dd3;
 }
 
 a#standard:active, a#list:active {
-color:white;
+    color:white;
 }
 
 .activelink {
-color:white !important;
+    color:white !important;
 }
 
 div.machine-type {

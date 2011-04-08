@@ -68,16 +68,22 @@ class APITestCase(TestCase):
         self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200, 203])
 
-
     def test_servers_details(self):
         """Test if the servers details are returned."""
         
         response = self.client.get('/api/v1.1/servers/detail')
-        vms_from_db = VirtualMachine.objects.filter(deleted=False)
+
+        # Make sure both DB and API responses are sorted by id,
+        # to allow for 1-1 comparisons
+        vms_from_db = VirtualMachine.objects.filter(deleted=False).order_by('id')
+        vms_from_api = json.loads(response.content)['servers']['values']
+        vms_from_api = sorted(vms_from_api, key=lambda vm: vm['id'])
+        self.assertEqual(len(vms_from_db), len(vms_from_api))
+
         id_list = [vm.id for vm in vms_from_db]
         number = 0
         for vm_id in id_list:
-            vm_from_api = json.loads(response.content)['servers']['values'][number]
+            vm_from_api = vms_from_api[number]
             vm_from_db = VirtualMachine.objects.get(id=vm_id)
             self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
@@ -86,7 +92,6 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
             number += 1
-        vms_from_api = json.loads(response.content)['servers']['values']
         for vm_from_api in vms_from_api:
             vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
             self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
@@ -96,7 +101,6 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200,203])
-
 
     def test_wrong_server(self):
         """Test 404 response if server does not exist."""

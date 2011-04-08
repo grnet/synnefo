@@ -732,12 +732,67 @@ div.machine-type {
     margin-left: -20px;
 }
 
-#emptymachineslist {
-display:none; 
-color: #A0A0A0;
-margin-top:100px;
+#machinesview_wrapper.list {
+    margin-left: -20px;
 }
 
+#machinesview_wrapper {
+    min-height: 270px;
+}
+
+#emptymachineslist {
+    display:none; 
+    color: #A0A0A0;
+    background-image: url(/static/emptydegradebg.png);
+    width: 400px;
+    margin-top: 40px;
+    padding: 5px;
+    padding-left: 10px;
+    margin-left: -10px;
+}
+
+#welcomeheader {
+    color:white;
+}
+
+.welcomebody {
+    color:black;
+    font-size:80%;
+}
+
+.welcomebody a {
+    color:black;
+}
+
+.welcomefooter {
+    color:black;
+    font-size:60%;
+}
+
+.welcomefooter a {
+    color:black;
+}
+
+.emptycreatecontainer {
+    margin-left: 430px !important;
+    position: absolute;
+    margin-top: 40px;
+    width: 180px;
+    background-color: #CCCCCC;
+    padding: 5px;
+    padding-left: 10px;
+}
+
+.emptycreate {
+    margin-left: 0px !important;
+    margin-bottom: 5px !important;
+    margin-right: 10px !important;
+}
+
+#createbody {
+    display:none;
+    font-size: 80%;
+}
 
 div.list label img {
     margin: 5px 5px -3px 0;

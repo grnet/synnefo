@@ -1,6 +1,6 @@
 {% load i18n %}
 
-<div id="machinesview" class="list">
+<div id="machinesview_wrapper" class="list">
     <div id="spinner"></div>
     <div class="actions">
         <a id="action-start">Start</a>
@@ -247,6 +247,15 @@ function update_machines_view(data){
         $("div.list table.list-machines").show();
         $("div.list div.actions").show();
     }
+
+    // show message in case user has no servers!
+    if (servers.length == 0) {
+        showWelcome()
+        $("#machinesview_wrapper").fadeOut("fast")
+    } else {
+        hideWelcome()
+        $("#machinesview_wrapper").fadeIn("fast")
+    }      
 	
 	// set confirm box position
     if (window.innerHeight - 200 < $('#machinesview').height())

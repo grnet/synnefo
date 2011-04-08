@@ -653,3 +653,22 @@ function start(serverIDs){
 
     return false;
 }
+
+// show the welcome screen
+function showWelcome() {
+    $("#emptymachineslist").fadeIn("slow");
+    $("#createbody").fadeIn("slow");
+    $("#createcontainer").addClass('emptycreatecontainer')
+    $("#create").addClass('emptycreate')
+    $("#view-select").fadeOut("fast");
+}
+
+// hide the welcome screen
+function hideWelcome() {
+    $("#emptymachineslist").fadeOut("fast");
+    $("#createbody").fadeOut("fast");
+    $("#createcontainer").removeClass('emptycreatecontainer')
+    $("#create").removeClass('emptycreate')
+    $("#view-select").fadeIn("fast");
+}
+

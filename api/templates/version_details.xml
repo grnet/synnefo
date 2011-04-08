@@ -7,7 +7,7 @@
     {% endfor %}
   </media-types>
   {% for link in version.links %}
-    <atom:link rel="{{ link.rel }}" href="{{ link.href }}"/>
+    <atom:link rel="{{ link.rel }}" {% if link.type %}type="{{ link.type }}" {% endif %}href="{{ link.href }}"/>
   {% endfor %}
 </version>
 {% endspaceless %}

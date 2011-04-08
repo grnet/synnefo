@@ -91,7 +91,7 @@ def list_images(request, detail=False):
     since = isoparse(request.GET.get('changes-since'))
     
     if since:
-        avail_images = Image.objects.filter(updated__gt=since)
+        avail_images = Image.objects.filter(updated__gte=since)
         if not avail_images:
             return HttpResponse(status=304)
     else:
@@ -132,8 +132,7 @@ def create_image(request):
     
     owner = get_user()
     vm = get_vm(server_id)
-    image = Image.objects.create(name=name, size=0, owner=owner, sourcevm=vm)
-    image.save()
+    image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
     
     imagedict = image_to_dict(image)
     if request.serialization == 'xml':

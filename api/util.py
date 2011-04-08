@@ -6,7 +6,9 @@ from datetime import timedelta, tzinfo
 from functools import wraps
 from random import choice
 from string import ascii_letters, digits
+from time import time
 from traceback import format_exc
+from wsgiref.handlers import format_date_time
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -45,17 +47,18 @@ def isoparse(s):
     
     try:
         since = dateutil.parser.parse(s)
+        utc_since = since.astimezone(UTC()).replace(tzinfo=None)
     except ValueError:
         raise BadRequest('Invalid changes-since parameter.')
     
-    now = datetime.datetime.now(UTC())
-    if since > now:
+    now = datetime.datetime.now()
+    if utc_since > now:
         raise BadRequest('changes-since value set in the future.')
     
-    if now - since > timedelta(seconds=settings.POLL_LIMIT):
+    if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
         raise BadRequest('Too old changes-since value.')
     
-    return since
+    return utc_since
     
 def random_password(length=8):
     pool = ascii_letters + digits
@@ -121,6 +124,17 @@ def get_request_dict(request):
         raise BadRequest('Unsupported Content-Type.')
 
 
+def update_response_headers(request, response):
+    if request.serialization == 'xml':
+        response['Content-Type'] = 'application/xml'
+    elif request.serialization == 'atom':
+        response['Content-Type'] = 'application/atom+xml'
+    else:
+        response['Content-Type'] = 'application/json'
+    
+    if request.META.get('SERVER_NAME') == 'testserver':
+        response['Date'] = format_date_time(time())
+
 def render_metadata(request, metadata, use_values=False, status=200):
     if request.serialization == 'xml':
         data = render_to_string('metadata.xml', {'metadata': metadata})
@@ -147,14 +161,7 @@ def render_fault(request, fault):
         data = json.dumps(d)
     
     resp = HttpResponse(data, status=fault.code)
-    
-    if request.serialization == 'xml':
-        resp['Content-Type'] = 'application/xml'
-    elif request.serialization == 'atom':
-        resp['Content-Type'] = 'application/atom+xml'
-    else:
-        resp['Content-Type'] = 'application/json'
-    
+    update_response_headers(request, resp)
     return resp
 
 
@@ -196,13 +203,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise BadRequest('Method not allowed.')
                 
                 resp = func(request, *args, **kwargs)
-                if request.serialization == 'xml':
-                    resp['Content-Type'] = 'application/xml'
-                elif request.serialization == 'atom':
-                    resp['Content-Type'] = 'application/atom+xml'
-                else:
-                    resp['Content-Type'] = 'application/json'
-                
+                update_response_headers(request, resp)
                 return resp
             
             except Fault, fault:

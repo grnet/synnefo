@@ -3,22 +3,22 @@
 <div id="machinesview_wrapper" class="list">
     <div id="spinner"></div>
     <div class="actions">
-        <a id="action-start">Start</a>
-        <a id="action-reboot">Reboot</a>
-        <a id="action-shutdown">Shutdown</a>
+        <a id="action-start">{% trans "Start" %}</a>
+        <a id="action-reboot">{% trans "Reboot" %}</a>
+        <a id="action-shutdown">{% trans "Shutdown" %}</a>
         <br />
-        <a id="action-destroy">Destroy</a>
+        <a id="action-destroy">{% trans "Destroy" %}</a>
         <br />
-        <a id="action-details">Show Details</a>
-        <a id="action-group">Add to group</a>
+        <a id="action-details">{% trans "Show Details" %}</a>
+        <a id="action-group">{% trans "Add to group" %}</a>
         <br />
-        <a id="action-band">Out of band</a>
+        <a id="action-band">{% trans "Out of band" %}</a>
         <br />
-        <a id="action-attach">Attach disk</a>
-        <a id="action-detach">Detach disk</a>
+        <a id="action-attach">{% trans "Attach disk" %}</a>
+        <a id="action-detach">{% trans "Detach disk" %}</a>
         <br />
-        <a id="action-connect">Connect to network</a>
-        <a id="action-disconnect">Disconnect from net</a>
+        <a id="action-connect">{% trans "Connect to network" %}</a>
+        <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
     </div>
     <table class="list-machines" style="display: none">
         <thead> 
@@ -27,19 +27,19 @@
                     <input type="checkbox"/>
                     <div class="expand-icon"></div>          
                 </th>
-                <th id="os">OS</th> 
-                <th id="name">Name</th> 
-                <th id="ip">IP</th> 
-                <th id="group">Group</th>
-                <th id="status">Status</th> 
+                <th id="os">{% trans "OS" %}</th> 
+                <th id="name">{% trans "Name" %}</th> 
+                <th id="ip">{% trans "IP" %}</th> 
+                <th id="group">{% trans "Group" %}</th>
+                <th id="status">{% trans "Status" %}</th> 
             </tr>
         </thead> 
         <tbody class="machines"></tbody>
     </table>
 	<ul class="dropdown-selector" style="display: none">
-		<li class="select-all" ><a href="#">all</a></li>
-		<li class="select-none"><a href="#">none</a></li>
-		<li class="select-group"><a href="#">group</a></li>
+		<li class="select-all" ><a href="#">{% trans "all" %}</a></li>
+		<li class="select-none"><a href="#">{% trans "none" %}</a></li>
+		<li class="select-group"><a href="#">{% trans "group" %}</a></li>
 	</ul>  
 </div>
 

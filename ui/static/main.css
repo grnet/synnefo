@@ -526,7 +526,7 @@ div.machine div.actions a {
     margin: 0 0 5px 8px;
 }
 
-div.machine div.actions a.more {
+div.machine div.actions a.action-destroy {
     margin-top: 18px;
 }
 
@@ -558,7 +558,7 @@ div.terminated div.machine a.action-reboot, div.terminated div.machine a.action-
     display: none;
 }
 
-div.terminated div.machine div.actions a.more {
+div.terminated div.machine div.actions a.action-destroy {
     margin-top: 34px;
 }
 

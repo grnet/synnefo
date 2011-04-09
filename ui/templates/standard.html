@@ -26,10 +26,10 @@
         </div>
         <img class="logo" src="" />
         <a href="#" class="name">
-            <h5>Name: <span class="name">node.name</span><span class="rename"></span></h5>
+            <h5>{% trans "Name: " %}<span class="name">node.name</span><span class="rename"></span></h5>
         </a>
         <a href="#" class="ip">
-            <h5>IP: <span class="public">node.public_ip</span></h5>
+            <h5>{% trans "IP: " %}<span class="public">node.public_ip</span></h5>
         </a>
         <h5 class="settings">
             {% trans "Show:" %} <a href="#">{% trans "disks" %}</a> | <a href="#">{% trans "networks" %}</a> | <a href="#">{% trans "group" %}</a>
@@ -40,10 +40,10 @@
             <button class="no">{% trans "Cancel" %}</button>
         </div>
         <div class="action_error" align="center">
-            {% trans "<span class='orange'>Error</span> on" %} <span class="action">error action</span>
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
             <span class="code"></span>            
             <span class="message"></span>
-            <button class="details">Details</button>
+            <button class="details">{% trans "Details" %}</button>
         </div>
         <div class="separator"></div>
     </div>

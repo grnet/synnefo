@@ -423,6 +423,17 @@ function identify_flavor(cpu, disk, ram){
     return 0;
 }
 
+// return flavor entry from flavorRef
+function get_flavor(flavorRef) {
+    for (i=0;i<flavors.length;i++){
+        if (flavors[i]['id'] == flavorRef) {
+            return flavors[i];
+        }
+    }
+    return 0;
+}
+
+
 // update the actions in list view
 function updateActions() {
 	var states = [];

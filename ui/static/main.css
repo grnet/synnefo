@@ -56,7 +56,6 @@ table {
 	border-spacing: 0;
 }
 
-
 h5 {
     font-weight: normal;
     font-size: 9pt;
@@ -608,7 +607,7 @@ div.machine div.actions a {
     margin: 0 0 5px 8px;
 }
 
-div.machine div.actions a.more {
+div.machine div.actions a.action-destroy {
     margin-top: 18px;
 }
 
@@ -640,7 +639,7 @@ div.terminated div.machine a.action-reboot, div.terminated div.machine a.action-
     display: none;
 }
 
-div.terminated div.machine div.actions a.more {
+div.terminated div.machine div.actions a.action-destroy {
     margin-top: 34px;
 }
 
@@ -791,19 +790,19 @@ div#view-select a {
 }
 
 a#list:hover {
-background: #5f8dd3;
+    background: #5f8dd3;
 }
 
 a#standard:hover{
-background: #5f8dd3;
+    background: #5f8dd3;
 }
 
 a#standard:active, a#list:active {
-color:white;
+    color:white;
 }
 
 .activelink {
-color:white !important;
+    color:white !important;
 }
 
 #machinetype {
@@ -1283,7 +1282,7 @@ ul.dropdown-selector li a{
 }
 
 div.list table thead #os {
-    width: 32px !important;
+    width: 20px !important;
     vertical-align:middle;
 }
 
@@ -1292,25 +1291,25 @@ div.list table span.imagetag {
 }
 
 div.list table #selection {
-	width: 35px !important;
+	width: 20px !important;
 	text-align: left;
     background-image: none;
 }
 
-div.list table thead #ip {
+div.list table thead #flavor {
     width: 100px !important;
 }
 
 div.list table thead #group {
-    width: 60px !important;
+    width: 40px !important;
 }
 
 div.list table thead #status {
-    width: 70px !important;
+    width: 50px !important;
 }
 
 div.list table thead #name {
-    width: 200px !important;
+    width: 50px !important;
 }
 
 .spinner, .wave {

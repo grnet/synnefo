@@ -3,22 +3,22 @@
 <div id="machinesview_wrapper" class="list">
     <div id="spinner"></div>
     <div class="actions">
-        <a id="action-start">Start</a>
-        <a id="action-reboot">Reboot</a>
-        <a id="action-shutdown">Shutdown</a>
+        <a id="action-start">{% trans "Start" %}</a>
+        <a id="action-reboot">{% trans "Reboot" %}</a>
+        <a id="action-shutdown">{% trans "Shutdown" %}</a>
         <br />
-        <a id="action-destroy">Destroy</a>
+        <a id="action-destroy">{% trans "Destroy" %}</a>
         <br />
-        <a id="action-details">Show Details</a>
-        <a id="action-group">Add to group</a>
+        <a id="action-details">{% trans "Show Details" %}</a>
+        <a id="action-group">{% trans "Add to group" %}</a>
         <br />
-        <a id="action-band">Out of band</a>
+        <a id="action-band">{% trans "Out of band" %}</a>
         <br />
-        <a id="action-attach">Attach disk</a>
-        <a id="action-detach">Detach disk</a>
+        <a id="action-attach">{% trans "Attach disk" %}</a>
+        <a id="action-detach">{% trans "Detach disk" %}</a>
         <br />
-        <a id="action-connect">Connect to network</a>
-        <a id="action-disconnect">Disconnect from net</a>
+        <a id="action-connect">{% trans "Connect to network" %}</a>
+        <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
     </div>
     <table class="list-machines" style="display: none">
         <thead> 
@@ -27,19 +27,19 @@
                     <input type="checkbox"/>
                     <div class="expand-icon"></div>          
                 </th>
-                <th id="os">OS</th> 
-                <th id="name">Name</th> 
-                <th id="ip">IP</th> 
-                <th id="group">Group</th>
-                <th id="status">Status</th> 
+                <th id="os">{% trans "OS" %}</th> 
+                <th id="name">{% trans "Name" %}</th> 
+                <th id="flavor">{% trans "Flavor" %}</th> 
+                <th id="group">{% trans "Group" %}</th>
+                <th id="status">{% trans "Status" %}</th> 
             </tr>
         </thead> 
         <tbody class="machines"></tbody>
     </table>
 	<ul class="dropdown-selector" style="display: none">
-		<li class="select-all" ><a href="#">all</a></li>
-		<li class="select-none"><a href="#">none</a></li>
-		<li class="select-group"><a href="#">group</a></li>
+		<li class="select-all" ><a href="#">{% trans "all" %}</a></li>
+		<li class="select-none"><a href="#">{% trans "none" %}</a></li>
+		<li class="select-group"><a href="#">{% trans "group" %}</a></li>
 	</ul>  
 </div>
 
@@ -205,13 +205,11 @@ function update_machines_view(data){
 					// do nothing
 				} else { // state has changed
 					//$('#'+server.id).parent().parent().find('.list-logo').attr('src').indexOf('wave')>-1){
-					
 					imgSrc = "static/wave.gif";
 					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
 					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
 					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
 					tableData[current][2] = "<a class=name><span class=name>" + server.name + "</span></a>";
-					tableData[current][3] = "<a class=ip><span class=public>"+ server.addresses.values[0].values[0].addr + "</span></a>";
 					//tableData[current][4] = "group"; //TODO
 					tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
 					vmTable.fnUpdate(tableData[current],current);
@@ -226,13 +224,23 @@ function update_machines_view(data){
             if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
                 osIcon = osTag + "-off.png";
             }
+            // find the flavor parameters
+            flavorData = get_flavor(server.flavorRef);
+            flavorLabel = '';
+            if (flavorData['cpu'] == '1') {
+                flavorLabel = '1 CPU, ';
+            } else {
+                flavorLabel = flavorData['cpu'] + ' CPUs, ';
+            }
+            flavorLabel = flavorLabel + flavorData['ram'] + 'MB, ' + flavorData['disk'] + 'GB'; 
+
             // add new row to the table
             vmTable.fnAddData([
                 "<input class=" + server.status + " id=" + server.id + " type=checkbox>",
                 "<span class=imagetag>" + osTag + "</span><img class=list-logo src=static/os_logos/" + osIcon +
                     " title=" + osTag + " height=16 width=16>",
                 "<a class=name><span class=name>" + server.name + "</span></a>",
-                "<a class=ip><span class=public>"+ server.addresses.values[0].values[0].addr + "</span></a>",
+                "<a class=flavor><span>"+ flavorLabel + "</span></a>",
                 "group",
                 "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>"
             ]);

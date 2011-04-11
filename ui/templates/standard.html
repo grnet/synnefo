@@ -133,7 +133,7 @@ $("div.actions a.action-destroy").live('click', function(){
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
-            pending_actions[i][0] = start;
+            pending_actions[i][0] = destroy;
             found = true
         }
     }

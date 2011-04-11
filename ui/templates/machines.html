@@ -195,23 +195,19 @@
 <div id="machines" class="separator"></div>
 
 <script>
-// hardcoded image types
-// TODO: get this from the metadata
-var image_tags = {
-                1: 'archlinux',
-                2: 'centos',
-                3: 'debian',
-                4: 'freebsd',
-                5: 'gentoo',
-                6: 'netbsd',
-                7: 'openbsd',
-                8: 'redhat',
-                9: 'slackware',
-                10: 'suse',
-                11: 'ubuntu',
-                12: 'windows',
-                20: 'ubuntu',
-               };
+// return value from metadata key "OS", if it exists
+function os_icon(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+
+    if (metadata.values.OS == undefined || metadata.values.OS == '') {
+        return 'unknown';
+    } else {
+        return metadata.values.OS;
+    }
+} 
+
 
 // switch to list view
 $("a#list").click(function(){

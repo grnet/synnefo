@@ -304,7 +304,8 @@ function update_wizard_images() {
             }
 			img.find("input.radio").attr('id',"img-radio-" + image.id);
 			if (i==0) img.find("input.radio").attr("checked","checked"); 
-			img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
+            var image_logo = os_icon(image.metadata);
+			img.find("img.image-logo").attr('src','static/os_logos/'+image_logo+'.png');
             if (image.metadata) {
                 if (image.metadata.values.serverId != undefined) {
                     img.appendTo("ul#custom-images");

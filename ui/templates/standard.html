@@ -199,7 +199,10 @@ function update_machines_view(data){
         while (existing.length > 1){
             existing.remove();
         }
-        
+
+        var server_image = os_icon(server.metadata);
+
+
         // server already exists in DOM
         if (existing.length){
             $("div.machine:last-child").find("div.separator").show();                
@@ -221,7 +224,7 @@ function update_machines_view(data){
                     [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text())>=0){
                     // from stopped to running
                     moved = existing.clone().appendTo(".running");
-                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
+                    moved.find("img.logo").attr("src","static/machines/"+server_image+'.png');
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUS_MESSAGES[server.status]);          
@@ -229,19 +232,19 @@ function update_machines_view(data){
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
                     // from running to stopped
                     moved = existing.clone().appendTo(".terminated");
-                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                    moved.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUS_MESSAGES[server.status]);          
                 } else if (server.status == 'ACTIVE' && existing.find(".status").text() == 'Starting') {
                     moved = existing.clone().appendTo(".running");
-                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
+                    moved.find("img.logo").attr("src","static/machines/"+server_image+'.png');
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUS_MESSAGES['ACTIVE']);
                 } else if (server.status == 'STOPPED' && existing.find(".status").text() == 'Shutting down') {
                     moved = existing.clone().appendTo(".terminated");
-                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                    moved.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUS_MESSAGES['STOPPED']);
@@ -262,15 +265,15 @@ function update_machines_view(data){
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);
-            machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
-            machine.find("span.imagetag").text(image_tags[server.imageRef]);
+            machine.find("img.logo").attr("src","static/machines/"+server_image+'.png');
+            machine.find("span.imagetag").text(server_image);
             machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            
             machine.find(".status").text(STATUS_MESSAGES[server.status]);
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {
                 //show spinner while machine is building
-                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                machine.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
                 machine.appendTo(".terminated");
             }
             //show spinner while machine is building

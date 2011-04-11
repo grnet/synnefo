@@ -2,7 +2,7 @@ Continuous integration with Jenkins
 -----------------------------------
 
 The following instructions will setup Jenkins to run synnefo tests with
-the SQLite database. To run the tests on MySQL and/or Postgres, step 4
+the SQLite database. To run the tests on MySQL and/or Postgres, step 5
 must be replicated. Also, the correct configuration file must be copied
 (line 5 of the build script).
 
@@ -12,6 +12,12 @@ must be replicated. Also, the correct configuration file must be copied
    echo "deb http://pkg.jenkins-ci.org/debian binary/" >>/etc/apt/sources.list
    sudo apt-get update
    sudo apt-get install jenkins
+
+   Also install the following packages:
+
+   apt-get install python-virtualenv libcurl3-gnutls libcurl3-gnutls-dev
+                   uuid-dev libmysqlclient-dev libpq-dev libsqlite-dev
+                   python-dev
 
 2. After Jenkins starts, go to
 
@@ -25,10 +31,15 @@ must be replicated. Also, the correct configuration file must be copied
    -Jenkins SLOCCount Plug-in
    -Hudson/Jenkins Violations plugin
 
-3. Make sure that all system-level dependencies specified in README.develop
+3. Configure the Jenkins user's Git details:
+   su jenkins
+   git config --global user.email "buildbot@lists.grnet.gr"
+   git config --global user.name "Buildbot"
+
+4. Make sure that all system-level dependencies specified in README.develop
    are correctly installed
 
-4. Create a new "free-style software" job and set the following values:
+5. Create a new "free-style software" job and set the following values:
 
 -Project name: synnefo
 -Source Code Management: Git
@@ -43,7 +54,7 @@ must be replicated. Also, the correct configuration file must be copied
                      URL: https://code.grnet.gr/projects/synnefo/repository/
 -Build Triggers->Poll SCM: check
                  Schedule: # every ten minutes
-                           10 * * * *
+                           0,10,20,30,40,50 * * * *
 
 -Build -> Add build step-> Execute shell
 
@@ -51,6 +62,7 @@ Command:
 
 #!/bin/bash -ex
 cd synnefo
+mkdir -p reports
 /usr/bin/sloccount --duplicates --wide --details api util ui logic auth > reports/sloccount.sc
 cp conf/ci/manage.py .
 if [ ! -e requirements.pip ]; then cp conf/ci/pip-1.2.conf requirements.pip; fi

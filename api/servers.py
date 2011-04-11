@@ -370,7 +370,7 @@ def update_metadata(request, server_id):
         except VirtualMachineMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
     
-    return render_metadata(request, metadata, status=201)
+    return render_metadata(request, updated, status=201)
 
 @api_method('GET')
 def get_metadata_item(request, server_id, key):

@@ -53,6 +53,8 @@ go_to_ve()
 from django.core.management import execute_manager
 try:
     import settings # Assumed to be in the same directory.
+    path = os.path.normpath(os.path.join(os.getcwd(), '..'))
+    sys.path.append(path)
 except ImportError:
     import sys
     sys.stderr.write("Error: Can't find the file 'settings.py' in the directory")

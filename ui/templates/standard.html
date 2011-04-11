@@ -226,7 +226,7 @@ function update_machines_view(data){
                 existing.find('.spinner').hide();
                 existing.find(' .wave').attr('src','static/wave.gif').show();
                 setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
-                //keep spinner while rebooting 
+                //keep spinner while machine is rebooting 
                 if (server.status == 'REBOOT') {
                     existing.find(' .wave').hide();
                     existing.find('.spinner').show();
@@ -250,7 +250,7 @@ function update_machines_view(data){
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                 machine.appendTo(".terminated");
             }
-//show spinner while machine is building
+            //show spinner while machine is building
             if (server.status == 'BUILD') { 
                 machine.find('.spinner').show();
             }   

@@ -224,7 +224,7 @@ function update_machines_view(data){
             if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
                 osIcon = osTag + "-off.png";
             }
-            // find the flavor parameters
+            // find flavor parameters
             flavorData = get_flavor(server.flavorRef);
             flavorLabel = '';
             if (flavorData['cpu'] == '1') {

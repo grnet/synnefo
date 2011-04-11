@@ -1176,7 +1176,7 @@ ul.dropdown-selector li a{
 }
 
 div.list table thead #os {
-    width: 32px !important;
+    width: 20px !important;
     vertical-align:middle;
 }
 
@@ -1185,7 +1185,7 @@ div.list table span.imagetag {
 }
 
 div.list table #selection {
-	width: 35px !important;
+	width: 20px !important;
 	text-align: left;
     background-image: none;
 }
@@ -1195,15 +1195,15 @@ div.list table thead #flavor {
 }
 
 div.list table thead #group {
-    width: 60px !important;
+    width: 40px !important;
 }
 
 div.list table thead #status {
-    width: 70px !important;
+    width: 50px !important;
 }
 
 div.list table thead #name {
-    width: 200px !important;
+    width: 50px !important;
 }
 
 .spinner, .wave {

@@ -322,10 +322,8 @@ $("div.confirm_multiple .yes").live('click', function(){
             $('#' + serverID + ' .display').removeClass('display');
             if (action[0] == shutdown) {
                 $('#' + serverID + ' .status').text('Shutting down');
-                alert('shutting');
             } else if (action[0] == start) {
                 $('#' + serverID + ' .status').text('Starting');
-                alert('starting');
             }
             $('#' + serverID + ' .spinner').show();
         } else { // list view

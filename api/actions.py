@@ -75,7 +75,8 @@ def get_console(request, vm, args):
     dport = console_data['port']
     passwd = random_password()
 
-    request_vnc_forwarding(sport, daddr, dport, passwd)
+    if not request_vnc_forwarding(sport, daddr, dport, passwd):
+        raise ServiceUnavailable("Could not allocate VNC console port")
     vnc = { 'host': getfqdn(), 'port': sport, 'password': passwd }
 
     # Format to be reviewed by [verigak], FIXME

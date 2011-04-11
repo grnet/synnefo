@@ -35,10 +35,11 @@ def request_forwarding(sport, daddr, dport, password):
     ctrl.connect(CTRL_SOCKET)
     ctrl.send(request)
     response = ctrl.recv(1024)
-    if response == "OK":
+    if response == "OK\n":
         return True
     else:
         return False
 
 if __name__ == '__main__':
-    request_forwarding(*sys.argv[1:])
+    if not request_forwarding(*sys.argv[1:]):
+	sys.exit(1)

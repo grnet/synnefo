@@ -225,9 +225,13 @@ function update_machines_view(data){
                 } 
                 existing.find('.spinner').hide();
                 existing.find(' .wave').attr('src','static/wave.gif').show();
-                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);         
-                existing.find(".status").text(STATUS_MESSAGES[server.status]);
-                            
+                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
+                //keep spinner while rebooting 
+                if (server.status == 'REBOOT') {
+                    existing.find(' .wave').hide();
+                    existing.find('.spinner').show();
+                }          
+                existing.find(".status").text(STATUS_MESSAGES[server.status]);           
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
@@ -242,11 +246,14 @@ function update_machines_view(data){
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {
+                //show spinner while machine is building
                 machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                 machine.appendTo(".terminated");
             }
-            //machine.find(' .wave').attr('src','static/wave.gif').show();
-            //setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);  
+//show spinner while machine is building
+            if (server.status == 'BUILD') { 
+                machine.find('.spinner').show();
+            }   
         }
     });
 

@@ -143,14 +143,22 @@ $("div.confirm_single .yes").live('click', function(){
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
         if (pending_actions[i][1]==serverID){
             action = pending_actions.splice(i,1)[0]; // extract action
-            action[0]([action[1]]); // execute action            
+            // change the status text in cases where no api state exists
+            if (action[0] == start) {
+                $(this).parent().parent().find('.status').text('Starting');
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == shutdown) {
+                $(this).parent().parent().find('.status').text('Shutting down');
+                $(this).parent().parent().find('.spinner').show();
+            }                  
+            action[0]([action[1]]); // execute action
         }
     }
     $(this).parent().hide();
     $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
     $(this).parent().parent().children('.state').children('.spinner').show()
     $(this).parent().parent().children('div.actions').removeClass('display');
-    update_confirmations();    
+    update_confirmations(); 
     return false;
 });
 
@@ -203,35 +211,50 @@ function update_machines_view(data){
                     console.info(existing.find("a.name span.name").text() + ' removed');
                 } catch(err) {}            
             } else if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
-                
+
                 try { // firebug console logging
                     console.info(existing.find("a.name span.name").text() + ' from ' 
                                 + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
-                
+
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
-                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
+                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text())>=0){
                     // from stopped to running
                     moved = existing.clone().appendTo(".running");
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
                     existing.remove();
                     existing = moved;
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]);          
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
+                    // from running to stopped
                     moved = existing.clone().appendTo(".terminated");
                     moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
                     existing.remove();
                     existing = moved;
-                } 
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]);          
+                } else if (server.status == 'ACTIVE' && existing.find(".status").text() == 'Starting') {
+                    moved = existing.clone().appendTo(".running");
+                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
+                    existing.remove();
+                    existing = moved;
+                    existing.find(".status").text(STATUS_MESSAGES['ACTIVE']);
+                } else if (server.status == 'STOPPED' && existing.find(".status").text() == 'Shutting down') {
+                    moved = existing.clone().appendTo(".terminated");
+                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                    existing.remove();
+                    existing = moved;
+                    existing.find(".status").text(STATUS_MESSAGES['STOPPED']);
+                }
                 existing.find('.spinner').hide();
                 existing.find(' .wave').attr('src','static/wave.gif').show();
                 setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
-                //keep spinner while machine is rebooting 
-                if (server.status == 'REBOOT') {
+                // show spinner while machine is rebooting 
+                if (server.status == 'REBOOT' ||
+                    ['Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) {
                     existing.find(' .wave').hide();
                     existing.find('.spinner').show();
-                }          
-                existing.find(".status").text(STATUS_MESSAGES[server.status]);           
+                }                            
             }
             existing.find("a.name span.name").text(server.name);
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
@@ -251,7 +274,8 @@ function update_machines_view(data){
                 machine.appendTo(".terminated");
             }
             //show spinner while machine is building
-            if (server.status == 'BUILD') { 
+            if (server.status == 'BUILD' || 
+                ['Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) { 
                 machine.find('.spinner').show();
             }   
         }

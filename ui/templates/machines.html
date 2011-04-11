@@ -317,11 +317,17 @@ $("div.confirm_multiple .yes").live('click', function(){
     while(pending_actions.length > 0){ // if there is a pending action for this server execute it
         action = pending_actions.pop(); // extract action
         var serverID = action[1];
-        
         if ($.cookie("list") != '1') { // standard view
-            $('#'+serverID+' .spinner').show();
-            $('#'+serverID+' .selected').removeClass('selected');
-            $('#'+serverID+' .display').removeClass('display');
+            $('#' + serverID + ' .selected').removeClass('selected');
+            $('#' + serverID + ' .display').removeClass('display');
+            if (action[0] == shutdown) {
+                $('#' + serverID + ' .status').text('Shutting down');
+                alert('shutting');
+            } else if (action[0] == start) {
+                $('#' + serverID + ' .status').text('Starting');
+                alert('starting');
+            }
+            $('#' + serverID + ' .spinner').show();
         } else { // list view
             osIcon = $('#'+serverID).parent().parent().find('.list-logo');
             osIcon.attr('os',osIcon.attr('src'));

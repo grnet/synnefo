@@ -246,15 +246,13 @@ div#wrapper {
     height:20em;
     padding:1em;
     text-align:left;
-    opacity: 0.9;
 }
 	
 /* scrollable root element */
 #wizard {	
-	border:5px solid #87AADE;
 	font-size:9pt;
 	height:405px;
-	width:460px;
+	width:453px;
 	margin:0px auto;	
 	overflow:hidden;
 	position:relative;
@@ -289,8 +287,8 @@ div#wrapper {
 
 /* single item */
 #wizard .page {	
-	padding:20px 30px;
-	width:440px;
+    padding: 15px 40px 20px 15px;
+	width:447px;
 	float:left;	
     display:block;
     border:none;
@@ -299,9 +297,10 @@ div#wrapper {
 
 /* title */
 #wizard h2 {
-	font-weight: bold;
-    font-size: 12pt;
-    color: #666;
+    color: black;
+    font-size: 100%;
+    font-weight: normal;
+    padding-left: 20px;
 }
 
 #wizard li {
@@ -319,10 +318,10 @@ div#wrapper {
 }
 
 #wizard label strong {
-	color:#789;	
 	position:relative;
 	top:-1px;
-    font-size: 12pt;
+    font-size: 80%;
+    font-weight: normal;
 }
 
 #wizard label em {
@@ -332,7 +331,7 @@ div#wrapper {
 }
 
 #wizard .text {
-	width: 94%;
+	width: 270px;
 	padding: 5px;
     margin-top: 10px;
 	border: 1px solid #ccc;
@@ -369,6 +368,10 @@ div#wrapper {
 	border:1px solid red;		
 }
 
+#wizard a div.image {
+
+}
+
 #wizard a:hover div.image {
     background-color: #999;
 }
@@ -383,7 +386,7 @@ div#wrapper {
 }
 
 #wizard div.image .radio {
-    float: right;
+    float: left;
 }
 
 #wizard div.image span.image-id, #wizard div.image span.description {
@@ -399,60 +402,132 @@ div#wrapper {
 
 #wizard .cost {
     color: #666;
-    margin-top: 50px;
+    margin-top: 40px;
+    clear:both;
+    padding-left: 15px;
+    font-size: 95%;
 }
 
 #wizard #status {
-	height: 32px;
-	background: #999;
-    padding-left: 15px;
+	height: 50px;
+	background: #666;
+    width: 450px;
+}
+
+#wizard .headernumber {
+    font-size: 380%;
+    font-weight: normal;
+}
+
+#wizard .headerbody {
+    font-size: 110%;
+    font-weight: normal;
+    display: inline;
+    margin-top: 15px;
+    position: absolute;
+}
+
+#wizard .topruler {
+    background-color: #CCCCCC;
+    border: 0 none;
+    height: 4px;
+    margin-left: -1px;
+    width: 447px;
+}
+
+#wizard .bottomruler {
+    background-color: #CCCCCC;
+    border: 0 none;
+    height: 4px;
+    margin-left: -1px;
+    width: 447px;
+}
+
+#wizard #cancel {
+
 }
 
 .page ul {
     margin-top: 15px;
-    height: 280px;
+    height: 260px;
     overflow: auto;
 }
 
 .panes ul.pane {
-    height: 276px;
+    height: 220px;
+    margin-top: 25px;
 }
 
 .page ul.tabs {
     overflow: hidden;
     height: auto;
     margin-bottom: 0;
-    margin-top: -20px;
+    margin-top: -5px;
 }
 
 .page ul.tabs li {
     float: right;
-    margin: 0 1em;
+    margin: 0 0.2em;
 }
 
 #status li {
 	float:left;
-	color:#666;
-	padding:10px 40px;
+	color:#7D7D7D;
+    padding: 9px 70px 0 40px;
 }
 
-#status li.active {
-	background-color: #87AADE;
-    font-weight: bold;
-    color: white;
+#status li.active .headernumber {
+    color: #FFFFFF;
+}
+
+#status li.active .headerbody {
+    color: #5599FF;
+}
+
+div.image-container {
+    border-bottom: 1px solid #CCCCCC;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+#page2-container {
+    background-color: #ECECEC;
+    padding-top: 25px;
+    height: 180px;
+}
+
+#page3-container {
+    background-color: #ECECEC;
+    padding-left: 50px;
+    height: 234px;
+    margin-bottom: 32px;
 }
 
 /* slider root element */
 .slider {
     border: 1px solid #666;
-    clear: right;
     cursor: pointer;
-    display: block !important;
+    display: inline !important;
     float: left;
-    height: 5px;
-    margin: 20px 0 20px;
+    margin: 5px 0 20px 10px;
     position: relative;
-    width: 330px;
+    width: 250px;
+}
+
+.sliders {
+    float:left;
+    width: 40px;
+    margin-left: 10px;  
+    margin-top: 3px;
+}
+
+.units {
+    padding-left:10px;
+}
+
+.slider-container {
+    padding-bottom: 15px;
+    margin-left: 5px;
 }
 
 /* drag handle */
@@ -462,27 +537,33 @@ div#wrapper {
     border: 1px solid #000000;
     cursor: move;
     display: block;
-    height: 22px;
-    margin-top: -15px;
+    height: 10px;
+    margin-top: -8px;
     position: absolute;
-    width: 10px;
+    width: 8px;
 }
 
 /* progress bar (enabled with progress: true) */
 .progress {
-	height: 5px; 
-	background-color: #87AADE;
+	height: 3px; 
+	background-color: #676767;
 }
 
 /* the input field */
 .range {
 	border: 1px inset #ddd;
 	float: left;
-	font-size: 12pt;
-	margin: 10px 0 0 15px;
-	padding: 3px 0;
-	text-align: center;
-	width: 50px;		
+	font-size: 100%;
+	margin: -3px 0 0 15px;
+    padding: 2px 10px 2px 0;
+	text-align: right;
+	width: 40px;		
+}
+
+#credits-indicator {
+    background-color: #ECECEC;
+    float: none;
+    margin: 0 0 0 8px;
 }
 
 div.machine {
@@ -649,38 +730,44 @@ button {
     border: 1px solid #87AADE;
     color: #FFFFFF;
     cursor: pointer;
-    padding: 4px 25px;
+    height: 23px;
+    width: 120px;
 }
 
 button.next:hover {
-    background-color: #f4b400;
-    border-color: #f4b400;
+    background-color: #68A4FF;
+    border-color: #68A4FF;
 }
 
 button.prev:hover {
-    background-color: #a8c5f1;
-    border-color: #a8c5f1;
+    background-color: #888888;
+    border-color: #888888;
 }
 
 button.next {
-    background-color: #F49000;
-    border-color: #F49000;
-    font-weight: bold;
+    background-color: #5599FF;
+    border-color: #5599FF;
+    text-align: right;
 }
 
 button.prev {
-    margin-left: -19px;
+    background-color: #666666;
+    border:none;
+    margin-left: -1px;
 }
 
 .image-logo {
     float: left;
     margin-right: 1em;
+    margin-left: 1.5em;
 }
 
 div.image {
-    padding: 10px;
     clear: both;
     display: block;
+    margin-bottom: 3px;
+    margin-top: 3px;
+    padding: 5px;
 }
 
 div#view-select {
@@ -719,9 +806,19 @@ color:white;
 color:white !important;
 }
 
+#machinetype {
+    background-color: #CCCCCC;
+    height: 25px;
+    margin-bottom: 4px !important;
+}
+
 div.machine-type {
     float: left;
-    margin: 4px 10px 20px 0;
+    margin: 4px 18px 20px;
+}
+
+.machine-type .active {
+    color: #FFFFFF
 }
 
 #machinesview {
@@ -818,12 +915,14 @@ div.list .stopped {
 
 /* root element for tabs  */
 #wizard ul.tabs { 
-    margin-left: 260px; 		 	
+    margin-right: -1px;
+    float: right;		 	
 }
 
 #wizard div.panes {
-    height: 270px;
+    height: 250px;
     margin-bottom: 6px;
+    clear:both;
 }
 
 /* single tab */
@@ -836,12 +935,15 @@ div.list .stopped {
 /* link inside the tab. uses a background image */
 #wizard ul.tabs a { 
 	display:block;
-	padding: 0.5em;	
+    padding: 0.3em 0.5em 0.5em 0.4em;
 	text-decoration:none;
-	color: #999;
+	color: #FFFFFF;
 	position:relative;
 	top:1px;
 	outline:0;
+    background-color: #CCCCCC;
+    text-align: center;
+    width: 90px;
 }
 
 #wizard ul.tabs a:hover {
@@ -852,8 +954,12 @@ div.list .stopped {
 /* selected tab */
 #wizard ul.tabs a.current {
 	color: white;
-    background-color: #87AADE;	
+    background-color: #666666;	
 	cursor: default;
+}
+
+#wizard #standard-images {
+    background-color: #ECECEC;
 }
 
 div.list div.actions {

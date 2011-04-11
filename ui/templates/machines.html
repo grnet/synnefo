@@ -27,31 +27,34 @@
 	<div class="modal" id="wizard">
 		<!-- status bar -->
 		<ul id="status">
-			<li class="active"><strong>1.</strong> {% trans "Image" %}</li>
-			<li><strong>2.</strong> {% trans "Machine" %}</li>
-			<li><strong>3.</strong> {% trans "Review" %}</li>
+			<li class="active"><span class="headernumber">1</span><div class="headerbody">{% trans "Image" %}</div></li>
+			<li><span class="headernumber">2</span><div class="headerbody">{% trans "Flavor" %}</div></li>
+			<li><span class="headernumber">3</span><div class="headerbody">{% trans "Name" %}</div></li>
 		</ul>
 		<!-- scrollable items -->
 		<div class="items">
 			<!-- pages -->
 			<div class="page">
                 <h2>{% trans "Select an OS" %}</h2>
+                <hr class="topruler" />
                 <ul class="tabs">
-                    <li><a href="#">{% trans "standard" %}</a></li>
-                    <li><a href="#">{% trans "custom" %}</a></li>
+                    <li><a href="#">{% trans "system images" %}</a></li>
+                    <li><a href="#">{% trans "your images" %}</a></li>
                 </ul>
                 <div class="panes">
 		            <li id="image-template" style="display:none">
 			            <label for="image.id"> 
                             <a>
-                                <div class="image">
-                                    <img src="" class="image-logo"/>
-                                    <strong class="image-title">image.title</strong>
-                                    <input class="radio" type="radio" name="image-id" id="image-id" />
-                                    <br />
-                                    <span class="description">image.description</span> 
-                                    <span class="size">?? MB</span>                              
-                                </div>
+                                <div class="image-container">
+                                    <div class="image">
+                                        <input class="radio" type="radio" name="image-id" id="image-id" />
+                                        <img src="" class="image-logo"/>
+                                        <strong class="image-title">image.title</strong>
+                                        <br />
+                                        <span class="description">image.description</span> 
+                                        <span class="size">?? MB</span>                              
+                                    </div>
+                                </div>  
                             </a>
 			            </label>
 		            </li>
@@ -62,93 +65,101 @@
 					    <!-- custom images -->
                     </ul>
                 </div>
+                <hr class="bottomruler" />
 				<button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
-				<button type="button" class="next right">{% trans "Next" %} &raquo;</button>
+				<button type="button" class="next right">{% trans "Next" %}</button>
             </div>
 			<div class="page">
-				<h2>{% trans "Select CPU, RAM and storage" %}</h2>
+				<h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
+                <hr class="topruler" />
                 <ul>
-                    <li>
+                    <li id="machinetype">
                         <div class="machine-type">
-                            <label for="small">
+                            <label for="small" id="small">
                                 <input type="radio" id="small" name="machine-type" value="small" checked="true" />
                                 <strong>{% trans "small" %}</strong>
                             </label>
                         </div>
                         <div class="machine-type">      
-                            <label for="medium">
+                            <label for="medium" id="medium">
                                 <input type="radio" id="medium" name="machine-type" value="medium" />                  
                                 <strong>{% trans "medium" %}</strong>
                             </label>
                         </div>
                         <div class="machine-type">
-                            <label for="large">
+                            <label for="large" id="large">
                                 <input type="radio" id="large" name="machine-type" value="large" />
                                 <strong>{% trans "large" %}</strong>
                             </label>
                         </div>
                         <div class="machine-type">
-                            <label for="custom">
+                            <label for="custom" id="custom">
                                 <input type="radio" name="machine-type" id="custom" value="large" />
                                 <strong>{% trans "custom" %}</strong>
                             </label>
                         </div>
                     </li>
-                    <li>
-			            <label><strong class="sliders">CPU (cores)</strong></label>
-                        <input type="range" id="cpu" style="display:none" />
-                        <input type="text" class="range" id="cpu-indicator" />
-                    </li>
-                    <li>
-			            <label><strong class="sliders">RAM (MB)</strong></label>
-                        <input type="range" id="ram" style="display:none" />
-                        <input type="text" class="range" id="ram-indicator" />
-
-                    </li>
-                    <li>
-		                <label><strong class="sliders">Storage (GB)</strong></label>
-                        <input type="range" id="storage" style="display:none" />
-                        <input type="text" class="range" id="storage-indicator" />
-
-                    </li>
-                    <li>
-                        <div class="cost">
-                            {% trans "Cost per hour:" %} 20 {% trans "credits" %} | {% trans "Credits currently in account:" %} 10.000
-                        </div>
-                    </li>
+                    <div id="page2-container">
+                        <li class="slider-container">
+			                <label><strong class="sliders">CPUs</strong></label>
+                            <input type="range" id="cpu" style="display:none" />
+                            <input type="text" class="range" id="cpu-indicator" />
+			                <span class="units">cores</span>
+                        </li>
+                        <li class="slider-container">
+			                <label><strong class="sliders">RAM</strong></label>
+                            <input type="range" id="ram" style="display:none" />
+                            <input type="text" class="range" id="ram-indicator" />
+			                <span class="units">MB</span>
+                        </li>
+                        <li class="slider-container">
+		                    <label><strong class="sliders">Size</strong></label>
+                            <input type="range" id="storage" style="display:none" />
+                            <input type="text" class="range" id="storage-indicator" />
+			                <span class="units">GB</span>
+                        </li>
+                        <li>
+                            <div class="cost">
+                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" />{% trans "C/hour" %}</span>
+                            </div>
+                        </li>
+                    </div>
                 </ul>
-				<button type="button" class="prev">&laquo; {% trans "Back" %}</button>
-				<button type="button" class="next right">{% trans "Next" %} &raquo;</button>
+                <hr class="bottomruler" />
+				<button type="button" class="prev">{% trans "Back" %}</button>
+				<button type="button" class="next right">{% trans "Next" %}</button>
             </div>
 			<div class="page">
 				<h2>{% trans "Confirm your settings" %}</h2>
-                <ul>
+                <hr class="topruler" />
+                <ul id="page3-container">
                     <li class="required">
                         <label>
-                            <strong>Machine name</strong>
+                            <strong>Name:</strong>
                             <input type="text" class="text" name="machine_name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>
                     <li>
-                        <strong>{% trans "Image:" %}</strong> <span id="machine_image-label">Ubuntu 10.04 x86_64 server</span>
+                        <span>{% trans "Image:" %}</span> <span id="machine_image-label">Ubuntu 10.04 x86_64 server</span>
                     </li>
                     <li>
-                        <strong>{% trans "CPU:" %}</strong> <span id="machine_cpu-label">2</span> <span>{% trans "cores" %}</span>
+                        <span>{% trans "CPUs:" %}</span> <span id="machine_cpu-label">2</span> <span>{% trans "cores" %}</span>
                     </li>
                     <li>
-                        <strong>{% trans "RAM:" %}</strong> <span id="machine_ram-label">1024</span><span>MB</span>
+                        <span>{% trans "RAM:" %}</span> <span id="machine_ram-label">1024</span><span>MB</span>
                     </li>
                     <li>
-                        <strong>{% trans "Storage:" %}</strong> <span id="machine_storage-label">10</span><span>GB</span>
+                        <span>{% trans "System Disk:" %}</span> <span id="machine_storage-label">10</span><span>GB</span>
                     </li>
                     <li>
-                        <strong>{% trans "Cost per hour:" %}</strong> <span>20 {% trans "credits" %}</span>
+                        <span>{% trans "Cost per Hour:" %}</span> <span>40 {% trans "credits" %}</span>
                     </li>
                     <li>
-                        <strong>{% trans "Remaining credits:" %}</strong> <span>10.000</span>
+                        <span>{% trans "Credits in Wallet:" %}</span> <span>10.000</span>
                     </li>
                 </ul>
-				<button type="button" class="prev">&laquo; {% trans "Back" %}</button>
+                <hr class="bottomruler" />
+				<button type="button" class="prev">{% trans "Back" %}</button>
 				<button type="button" class="next right" id="start">{% trans "Create VM" %}</button>        
             </div>
 		</div>
@@ -392,6 +403,10 @@ $("#small").click(function(){
     $("#cpu-indicator")[0].value = cpus[0];
     $("#ram-indicator")[0].value = ram[0];
     $("#storage-indicator")[0].value = disks[0];
+    $("#small").addClass("active");
+    $("#medium").removeClass("active");    
+    $("#large").removeClass("active");    
+    $("#custom").removeClass("active");    
 });
 
 // selecting the medium size
@@ -401,7 +416,11 @@ $("#medium").click(function(){
     $("#storage").data('rangeinput').setValue(1);
     $("#cpu-indicator")[0].value = cpus[1];
     $("#ram-indicator")[0].value = ram[1];
-    $("#storage-indicator")[0].value = disks[1];    
+    $("#storage-indicator")[0].value = disks[1];  
+    $("#medium").addClass("active");  
+    $("#small").removeClass("active");    
+    $("#large").removeClass("active");    
+    $("#custom").removeClass("active");  
 });
 
 // selecting the large size
@@ -411,7 +430,11 @@ $("#large").click(function(){
     $("#storage").data('rangeinput').setValue(2);
     $("#cpu-indicator")[0].value = cpus[2];
     $("#ram-indicator")[0].value = ram[2];
-    $("#storage-indicator")[0].value = disks[2];    
+    $("#storage-indicator")[0].value = disks[2];   
+    $("#large").addClass("active"); 
+    $("#medium").removeClass("active");    
+    $("#small").removeClass("active");    
+    $("#custom").removeClass("active");  
 });
 
 // selecting the custom flavor enables the sliders
@@ -420,6 +443,10 @@ $("#custom").click(function(){
     $("#ram").attr('disabled',false);
     $("#storage").attr('disabled',false);
     $("strong.sliders").style = 'color: #778899;';
+    $("#custom").addClass("active"); 
+    $("#medium").removeClass("active");    
+    $("#large").removeClass("active");    
+    $("#small").removeClass("active");  
 });
 
 // exit the wizard

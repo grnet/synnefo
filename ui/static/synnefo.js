@@ -345,7 +345,8 @@ function update_wizard_flavors(){
 	});
 	$("#cpu:range").data().rangeinput.change(function(event,value){
 		$("#cpu-indicator")[0].value = cpus[Number(value)];				
-		$("#custom").click();				
+		$("#custom").click();
+        $("#custom input").attr('checked', 'checked');				
 	});			
 	$("#ram:range").data().rangeinput.onSlide(function(event,value){
 		$("#ram-indicator")[0].value = ram[Number(value)];
@@ -353,6 +354,7 @@ function update_wizard_flavors(){
 	$("#ram:range").data().rangeinput.change(function(event,value){
 		$("#ram-indicator")[0].value = ram[Number(value)];				
 		$("#custom").click();
+        $("#custom input").attr('checked', 'checked');
 	});			
 	$("#storage:range").data().rangeinput.onSlide(function(event,value){
 		$("#storage-indicator")[0].value = disks[Number(value)];
@@ -360,6 +362,7 @@ function update_wizard_flavors(){
 	$("#storage:range").data().rangeinput.change(function(event,value){
 		$("#storage-indicator")[0].value = disks[Number(value)];				
 		$("#custom").click();
+        $("#custom input").attr('checked', 'checked');
 	});				
 }
 

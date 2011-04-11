@@ -53,6 +53,7 @@ go_to_ve()
 from django.core.management import execute_manager
 try:
     import settings # Assumed to be in the same directory.
+    import os
     path = os.path.normpath(os.path.join(os.getcwd(), '..'))
     sys.path.append(path)
 except ImportError:

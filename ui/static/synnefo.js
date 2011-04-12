@@ -499,7 +499,6 @@ function create_vm(machineName, imageRef, flavorRef){
             "imageRef": imageRef,
             "flavorRef" : flavorRef,
             "metadata" : {
-                "My Server Name" : machineName,
                 "OS" : image_logo
             }
         }

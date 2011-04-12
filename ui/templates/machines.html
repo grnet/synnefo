@@ -47,7 +47,7 @@
                             <a>
                                 <div class="image-container">
                                     <div class="image">
-                                        <input class="radio" type="radio" name="imageGroup" id="image-id" />
+                                        <input class="radio" type="radio" name="image-id" id="image-id" />
                                         <img src="" class="image-logo"/>
                                         <strong class="image-title">image.title</strong>
                                         <br />
@@ -322,10 +322,6 @@ function disableSliders() {
     $("#cpu").attr('disabled',true);
     $("#ram").attr('disabled',true);
     $("#storage").attr('disabled',true);
-}
-
-if($('.radio:checked').val() == 'true')  {
-    $(this).parent().addClass('selecteddiv');
 }
 
 //update radio button when clicking on text

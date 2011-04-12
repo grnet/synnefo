@@ -68,16 +68,21 @@ def get_console(request, vm, args):
         raise ServiceUnavailable()
 
     # Let vncauthproxy decide on the source port.
-    # FIXME
-    # sport = 0
-    sport = console_data['port'] - 1000
+    # The alternative: static allocation, e.g.
+    # sport = console_data['port'] - 1000]
+    sport = 0
     daddr = console_data['host']
     dport = console_data['port']
     passwd = random_password()
 
-    if not request_vnc_forwarding(sport, daddr, dport, passwd):
-        raise ServiceUnavailable("Could not allocate VNC console port")
-    vnc = { 'host': getfqdn(), 'port': sport, 'password': passwd }
+    try:
+        fwd = request_vnc_forwarding(sport, daddr, dport, passwd)
+        if fwd['status'] != "OK":
+            raise ServiceUnavailable("Could not allocate VNC console port")
+        vnc = { 'host': getfqdn(), 'port': fwd['source_port'], 'password': passwd }
+    except Exception:
+        #raise ServiceUnavailable("Could not allocate VNC console port")
+        raise
 
     # Format to be reviewed by [verigak], FIXME
     if request.serialization == 'xml':

@@ -62,17 +62,28 @@ class SynnefoAuthMiddleware(object):
 
             #User and authentication token valid, user allowed to proceed
             return
-            
+
         #An API authentication request
-        if self.auth_user in request.META and 'X-Auth-Key' in request.META \
-           and '/v1.1' == request.path and 'GET' == request.method:
+        if self.auth_user in request.META and self.auth_key in request.META and 'GET' == request.method:
             # This is here merely for compatibility with the Openstack API.
             # All normal users should authenticate through Sibbolleth. Admin
             # users or other selected users could use this as a bypass
             # mechanism
-            user = SynnefoUser.objects.filter(username = request.META[self.auth_user])
-            
-            return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+            user = SynnefoUser.objects\
+                    .filter(name = request.META[self.auth_user]) \
+                    .filter(uniq = request.META[self.auth_key])
+
+            response = HttpResponse()
+            if user.count() <= 0:
+                response.status_code = 401
+            else:
+                response.status_code = 204
+                response['X-Auth-Token'] = user[0].auth_token
+                #TODO: set the following fields when we do have this info
+                response['X-Server-Management-Url'] = ""
+                response['X-Storage-Url'] = ""
+                response['X-CDN-Management-Url'] = ""
+            return response
 
         #No authentication info found in headers, redirect to Shibboleth
         return HttpResponseRedirect(settings.SHIBBOLETH_HOST)

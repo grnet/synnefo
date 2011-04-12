@@ -95,10 +95,10 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
+    #'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'synnefo.middleware.StripURLMiddleware',
-    #'django.contrib.auth.middleware.AuthenticationMiddleware',
     #'synnefo.api.middleware.SynnefoAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
@@ -120,7 +120,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.admin',
     # 'django.contrib.admindocs',
-    'synnefo.auth',
+    'synnefo.aai',
     'synnefo.api',
     'synnefo.ui',
     'synnefo.db',
@@ -164,9 +164,9 @@ API_ROOT_URL = 'http://127.0.0.1:8000/api/'
 SHIBBOLETH_HOST = "http://wayf.grnet.gr/"
 
 SHIBBOLETH_WHITELIST = {
-    'localhost' : '127.0.0.1'
+    'localhost' : '127.0.0.1',
+    'testserver' : '127.0.0.1'
 }
 
 #Number of hours during which a user token is active
 AUTH_TOKEN_DURATION = 24
-

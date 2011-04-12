@@ -13,7 +13,6 @@ from django.test.client import Client
 from synnefo.db.models import VirtualMachine, VirtualMachineGroup
 from synnefo.db.models import Flavor, Image
 from synnefo.api.tests_redux import APIReduxTestCase
-from synnefo.api.tests_auth import AuthTestCase
 
 from synnefo.logic import utils
 

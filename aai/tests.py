@@ -64,9 +64,7 @@ class AuthTestCase(TestCase):
         """
         user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
         self.assertNotEqual(user.auth_token_created, None)
-        user.auth_token_created = (datetime.now() -
-                                   timedelta(hours = settings.AUTH_TOKEN_DURATION))
-        user.save()
+        self._update_user_ts(user)
         response = self.client.get(self.apibase + '/servers', {},
                                    **{'X-Auth-Token': user.auth_token})
         self._test_redirect(response)
@@ -99,21 +97,20 @@ class AuthTestCase(TestCase):
         """authentication with user registration
         """
         response = self.client.get(self.apibase + '/', {},
-                                   **{'X-Auth-User': 'testuser',
-                                      'X-Auth-Key': 'testuserpasswd'})
+                                   **{'X-Auth-User': 'testdbuser',
+                                      'X-Auth-Key': 'test@synnefo.gr'})
         self.assertEquals(response.status_code, 204)
         self.assertNotEqual(response['X-Auth-Token'], None)
         self.assertEquals(response['X-Server-Management-Url'], '')
         self.assertEquals(response['X-Storage-Url'], '')
         self.assertEquals(response['X-CDN-Management-Url'], '')
 
-        #Check access now that we do have an auth token
-        token = response['X-Auth-Token']
-        response = self.client.get(self.apibase + '/servers/detail', {},
-                                   **{'X-Auth-Token': token})
-        self.assertEquals(response.status_code, 200)
-
     def _test_redirect(self, response):
         self.assertEquals(response.status_code, 302)
         self.assertTrue('Location' in response)
         self.assertEquals(response['Location'], settings.SHIBBOLETH_HOST)
+
+    def _update_user_ts(self, user):
+        user.auth_token_created = (datetime.now() -
+                                   timedelta(hours = settings.AUTH_TOKEN_DURATION))
+        user.save()

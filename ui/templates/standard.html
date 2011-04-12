@@ -221,40 +221,42 @@ function update_machines_view(data){
                 } catch(err) {}
 
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
-                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text())>=0){
-                    // from stopped to running
+                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
+                     'Starting'].indexOf(existing.find(".status").text()) >= 0) {
+                    // from stopped, on error or starting to building, active or rebooting
+                    // starting is not an api state, it means the vm is stopped or on error
                     moved = existing.clone().appendTo(".running");
-                    moved.find("img.logo").attr("src","static/machines/"+server_image+'.png');
+                    moved.find("img.logo").attr("src","static/machines/" + server_image + '.png');
                     existing.remove();
                     existing = moved;
-                    existing.find(".status").text(STATUS_MESSAGES[server.status]);          
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
-                           [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
-                    // from running to stopped
+                           [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT'],
+                            'Shutting down'].indexOf(existing.find(".status").text()) >= 0) {
+                    // from active, building, rebooting, or shutting down to stopped or on error
+                    // shutting down is not an api state, it means the vm is active
                     moved = existing.clone().appendTo(".terminated");
-                    moved.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
+                    moved.find("img.logo").attr("src","static/machines/" + server_image + '-off.png');
                     existing.remove();
                     existing = moved;
-                    existing.find(".status").text(STATUS_MESSAGES[server.status]);          
-                } else if (server.status == 'ACTIVE' && existing.find(".status").text() == 'Starting') {
-                    moved = existing.clone().appendTo(".running");
-                    moved.find("img.logo").attr("src","static/machines/"+server_image+'.png');
-                    existing.remove();
-                    existing = moved;
-                    existing.find(".status").text(STATUS_MESSAGES['ACTIVE']);
-                } else if (server.status == 'STOPPED' && existing.find(".status").text() == 'Shutting down') {
-                    moved = existing.clone().appendTo(".terminated");
-                    moved.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
-                    existing.remove();
-                    existing = moved;
-                    existing.find(".status").text(STATUS_MESSAGES['STOPPED']);
-                }
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
+                } else if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 && 
+                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'],
+                             STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
+                    // the vm changes status, but remains in running list
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
+                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
+                    [STATUS_MESSAGES['STOPPED'], 
+                     STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
+                    // the vm changes status, but remains in terminated list
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
+                }        
                 existing.find('.spinner').hide();
                 existing.find(' .wave').attr('src','static/wave.gif').show();
                 setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
-                // show spinner while machine is rebooting 
-                if (server.status == 'REBOOT' ||
-                    ['Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) {
+                // show spinner while machine is rebooting, starting or shutting down  
+                if ([STATUS_MESSAGES['REBOOT'], 
+                    'Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) {
                     existing.find(' .wave').hide();
                     existing.find('.spinner').show();
                 }                            
@@ -272,7 +274,6 @@ function update_machines_view(data){
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {
-                //show spinner while machine is building
                 machine.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
                 machine.appendTo(".terminated");
             }

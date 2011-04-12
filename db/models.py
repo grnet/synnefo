@@ -7,10 +7,9 @@ import datetime
 
 class SynnefoUser(models.Model):
     name = models.CharField('Synnefo Username', max_length=255)
-    wallet = models.IntegerField('Credit Balance')
+    credit = models.IntegerField('Credit Balance')
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-    new_south_test_field = models.IntegerField(default=1)
 
     class Meta:
         verbose_name = u'Synnefo User'

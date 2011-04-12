@@ -95,12 +95,10 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
-    #'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'synnefo.aai.middleware.SynnefoAuthMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'synnefo.middleware.StripURLMiddleware',
-    #'synnefo.api.middleware.SynnefoAuthMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware'
 )
 
 ROOT_URLCONF = 'synnefo.urls'
@@ -170,3 +168,8 @@ SHIBBOLETH_WHITELIST = {
 
 #Number of hours during which a user token is active
 AUTH_TOKEN_DURATION = 24
+
+#Controls whether the system is running tests
+#Set as reading the DEBUG variable is not reliable (Django changes its value
+# unpredictably)
+TESTING = True

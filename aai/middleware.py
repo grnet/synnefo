@@ -2,7 +2,7 @@ from time import time
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from synnefo.db.models import SynnefoUser
-from synnefo.logic.shibboleth import Tokens, register_shibboleth_user
+from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
 
 class SynnefoAuthMiddleware(object):
@@ -85,8 +85,12 @@ class SynnefoAuthMiddleware(object):
                 response['X-CDN-Management-Url'] = ""
             return response
 
-        #No authentication info found in headers, redirect to Shibboleth
-        return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+        if settings.TESTING:
+            if 'TEST-AAI' in request.META:
+                return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+        else:
+            #No authentication info found in headers, redirect to Shibboleth
+            return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
 
     def process_response(self, request, response):
         #Tell proxies and other interested parties that the

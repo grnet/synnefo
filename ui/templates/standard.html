@@ -227,7 +227,7 @@ function update_machines_view(data){
                     // from stopped, on error or starting to building, active or rebooting
                     // starting is not an api state, it means the vm is stopped or on error
                     moved = existing.clone().appendTo(".running");
-                    moved.find("img.logo").attr("src","static/machines/" + server_image + '.png');
+                    moved.find("img.logo").attr("src","static/machines/" + server_image + '-on.png');
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUS_MESSAGES[server.status]); 
@@ -268,7 +268,7 @@ function update_machines_view(data){
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find("a.name span.name").text(server.name);
-            machine.find("img.logo").attr("src","static/machines/"+server_image+'.png');
+            machine.find("img.logo").attr("src","static/machines/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
             machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            
             machine.find(".status").text(STATUS_MESSAGES[server.status]);

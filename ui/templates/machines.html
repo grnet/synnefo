@@ -136,7 +136,7 @@
                     <li class="required">
                         <label>
                             <strong>Name:</strong>
-                            <input type="text" class="text" name="machine_name" value="My Ubuntu 10.04 x86_64 server"/>
+                            <input type="text" class="text" name="machine_name" id="name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>
                     <li>
@@ -298,6 +298,14 @@ $(function() {
 		    api.next();
 		    e.preventDefault();
 	    }
+    });
+    $("#name").keypress(function (e) {
+		if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+			$('#start').click();
+			return false;
+		} else {
+			return true;
+		}
     });
 });
 

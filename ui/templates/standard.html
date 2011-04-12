@@ -241,7 +241,7 @@ function update_machines_view(data){
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT'],
                             'Shutting down'].indexOf(existing.find(".status").text()) >= 0) {
                     // from active, building, rebooting, or shutting down to stopped or on error
-                    // shutting down is not an api state, it means the vm is active
+                    // shutting down is not an api state, it means the server is active
                     moved = existing.clone().appendTo(".terminated");
                     moved.find("img.logo").attr("src","static/machines/" + server_image + '-off.png');
                     existing.remove();
@@ -250,18 +250,18 @@ function update_machines_view(data){
                 } else if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 && 
                             [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'],
                              STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
-                    // the vm changes status, but remains in running list
+                    // the server changes status, but remains in running list
                     existing.find(".status").text(STATUS_MESSAGES[server.status]); 
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
                     [STATUS_MESSAGES['STOPPED'], 
                      STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
-                    // the vm changes status, but remains in terminated list
+                    // the server changes status, but remains in terminated list
                     existing.find(".status").text(STATUS_MESSAGES[server.status]); 
                 }        
                 existing.find('.spinner').hide();
                 existing.find(' .wave').attr('src','static/wave.gif').show();
                 setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
-                // show spinner while machine is rebooting, starting or shutting down  
+                // show spinner while the server is rebooting, starting or shutting down  
                 if ([STATUS_MESSAGES['REBOOT'], 
                     'Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) {
                     existing.find(' .wave').hide();

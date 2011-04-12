@@ -188,39 +188,71 @@ function update_machines_view(data){
 			} 
 		});
         
-        if (current != -1){ // if it's there, simply update the values
-            var currentStatus = tableData[current][5].replace('<span class=status>', '').replace('</span>', '');
-			try {
-				console.info(server.name + ' from ' + currentStatus + ' to ' + STATUS_MESSAGES[server.status]);
-			} catch(err) {}		
+        if (current != -1) { // if it's there, update the values
+            // get current status description, including non api states
+            var server_row = $('#' + server.id).parent().parent();
+            var status_desc = server_row.find('span.status').text();
+            // firebug console logging
+			try { 
+				console.info(server.name + ' from ' + status_desc + ' to ' + STATUS_MESSAGES[server.status]);
+			} catch(err) {}
+		    // when server is in deleted status it must be removed from the list
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);	
-			} else { // server exists and should not be deleted		
-                // check server status to select the appropriate OS icon
-                if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
-                    osIcon = osTag + "-off.png";
-                }
-				// if the new state does not differ from the previous one
-				if (currentStatus.indexOf(STATUS_MESSAGES[server.status]) > -1){
-					// do nothing
-				} else { // state has changed
-					//$('#'+server.id).parent().parent().find('.list-logo').attr('src').indexOf('wave')>-1){
-					imgSrc = "static/wave.gif";
+			} else { // when server is not be deleted, it should be updated
+                if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
+                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
+                     'Starting'].indexOf(server_row.find('span.status').text()) >= 0) {	
+                    // from stopped, on error or starting to building, active or rebooting
+                    // starting is not an api state, it means the server is stopped or on error
 					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+                    imgSrc = "static/wave.gif";
 					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
 					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
 					tableData[current][2] = "<a class=name><span class=name>" + server.name + "</span></a>";
 					//tableData[current][4] = "group"; //TODO
 					tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
-					vmTable.fnUpdate(tableData[current],current);				
-					setTimeout("$('#"+server.id+"').parent().parent().find('.list-logo').attr('src','static/os_logos/" + osIcon+"')", 2000);					
-				}
+					vmTable.fnUpdate(tableData[current],current);
+                    setTimeout("$('#"+server.id+"').parent().parent().find('.list-logo').attr('src','static/os_logos/" 
+                                                                                               + osIcon + "')", 1600);
+                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
+                           [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT'],
+                            'Shutting down'].indexOf(server_row.find('span.status').text()) >= 0) {
+					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+                    imgSrc = "static/wave.gif";
+					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
+					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
+					tableData[current][2] = "<a class=name><span class=name>" + server.name + "</span></a>";
+					//tableData[current][4] = "group"; //TODO
+					tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
+					vmTable.fnUpdate(tableData[current],current);
+                    setTimeout("$('#"+server.id+"').parent().parent().find('.list-logo').attr('src','static/os_logos/" 
+                                                                                        + osTag + "-off.png')", 1600);	
+                } else if ( STATUS_MESSAGES[server.status] == server_row.find('span.status').text()) {
+
+                } else if (server.status == 'ACTIVE' && 
+                           [STATUS_MESSAGES['BUILD'], 'Rebooting'].indexOf(server_row.find('span.status').text()) >= 0) {
+					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+                    imgSrc = "static/wave.gif";
+					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
+					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
+					tableData[current][2] = "<a class=name><span class=name>" + server.name + "</span></a>";
+					//tableData[current][4] = "group"; //TODO
+					tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
+					vmTable.fnUpdate(tableData[current],current);
+                    setTimeout("$('#"+server.id+"').parent().parent().find('.list-logo').attr('src','static/os_logos/" 
+                                                                                               + osIcon + "')", 1600);
+                }
 			}
 			updateActions();
         } else if (server.status != "DELETED") { // does not exist, we should create it
             // check server status to select the appropriate OS icon
             if (['ERROR', 'STOPPED'].indexOf(server.status) >= 0) {
-                osIcon = osTag + "-off.png";
+                osIcon = "static/os_logos/" + osTag + "-off.png";
+            } else if ( server.status == 'BUILD') {
+                osIcon = "static/progress.gif"; 
+            } else {
+                osIcon = "static/os_logos/" + osTag + ".png";
             }
             // find flavor parameters
             flavorData = get_flavor(server.flavorRef);
@@ -235,7 +267,7 @@ function update_machines_view(data){
             // add new row to the table
             vmTable.fnAddData([
                 "<input class=" + server.status + " id=" + server.id + " type=checkbox>",
-                "<span class=imagetag>" + osTag + "</span><img class=list-logo src=static/os_logos/" + osIcon +
+                "<span class=imagetag>" + osTag + "</span><img class=list-logo src=" + osIcon +
                     " title=" + osTag + " height=16 width=16>",
                 "<a class=name><span class=name>" + server.name + "</span></a>",
                 "<a class=flavor><span>"+ flavorLabel + "</span></a>",

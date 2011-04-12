@@ -189,9 +189,10 @@ function update_machines_view(data){
 		});
         
         if (current != -1){ // if it's there, simply update the values
+            var currentStatus = tableData[current][5].replace('<span class=status>', '').replace('</span>', '');
 			try {
 				console.info(server.name + ' from ' 
-							+ tableData[current][5] + ' to ' + STATUS_MESSAGES[server.status]);
+							+ currentStatus + ' to ' + STATUS_MESSAGES[server.status]);
 			} catch(err) {}		
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);	
@@ -201,7 +202,7 @@ function update_machines_view(data){
                     osIcon = osTag + "-off.png";
                 }
 				// if the new state does not differ from the previous one
-				if (tableData[current][5].indexOf(STATUS_MESSAGES[server.status]) > -1){
+				if (currentStatus.indexOf(STATUS_MESSAGES[server.status]) > -1){
 					// do nothing
 				} else { // state has changed
 					//$('#'+server.id).parent().parent().find('.list-logo').attr('src').indexOf('wave')>-1){
@@ -212,9 +213,7 @@ function update_machines_view(data){
 					tableData[current][2] = "<a class=name><span class=name>" + server.name + "</span></a>";
 					//tableData[current][4] = "group"; //TODO
 					tableData[current][5] = "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>";
-					vmTable.fnUpdate(tableData[current],current);
-
-					//try{console.info('vm ' + server.id + ' from ' + tableData[current][5] + ' to ' + STATUS_MESSAGES[server.status])} catch(err) {}						
+					vmTable.fnUpdate(tableData[current],current);				
 					setTimeout("$('#"+server.id+"').parent().parent().find('.list-logo').attr('src','static/os_logos/" + osIcon+"')", 2000);					
 				}
 			}

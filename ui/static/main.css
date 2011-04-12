@@ -432,6 +432,8 @@ div#wrapper {
     height: 4px;
     margin-left: -1px;
     width: 447px;
+    margin-bottom: 6px;
+    margin-top: 6px;
 }
 
 #wizard .bottomruler {
@@ -447,20 +449,18 @@ div#wrapper {
 }
 
 .page ul {
-    margin-top: 15px;
-    height: 260px;
+    height: 270px;
     overflow: auto;
 }
 
 .panes ul.pane {
     height: 220px;
-    margin-top: 25px;
 }
 
 .page ul.tabs {
     overflow: hidden;
     height: auto;
-    margin-bottom: 0;
+    margin-bottom: 2px;
     margin-top: -5px;
 }
 
@@ -498,7 +498,7 @@ div.image-container {
 #page3-container {
     background-color: #ECECEC;
     padding-left: 50px;
-    height: 234px;
+    height: 244px;
     margin-bottom: 32px;
 }
 

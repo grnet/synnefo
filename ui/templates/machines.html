@@ -29,7 +29,7 @@
 		<ul id="status">
 			<li class="active"><span class="headernumber" class="first">1</span><div class="headerbody first">{% trans "Image" %}</div></li>
 			<li><span class="headernumber">2</span><div class="headerbody">{% trans "Flavor" %}</div></li>
-			<li><span class="headernumber">3</span><div class="headerbody">{% trans "Name" %}</div></li>
+			<li class="third"><span class="headernumber">3</span><div class="headerbody">{% trans "Name" %}</div></li>
 		</ul>
 		<!-- scrollable items -->
 		<div class="items">
@@ -39,7 +39,7 @@
                 <hr class="topruler" />
                 <ul class="tabs">
                     <li><a href="#">{% trans "system images" %}</a></li>
-                    <li><a href="#">{% trans "your images" %}</a></li>
+                    <li><a href="#">{% trans "custom images" %}</a></li>
                 </ul>
                 <div class="panes">
 		            <li id="image-template" style="display:none">
@@ -52,7 +52,7 @@
                                         <strong class="image-title">image.title</strong>
                                         <br />
                                         <span class="description">image.description</span> 
-                                        <span id="size" class="size">?? MB</span><span class="size">MB</span>                         
+                                        <span id="size" class="size">?? MB</span><span class="size"> MB</span>                         
                                     </div>
                                 </div>  
                             </a>
@@ -120,7 +120,7 @@
                         </li>
                         <li>
                             <div class="cost">
-                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" />{% trans "C/hour" %}</span>
+                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" /> {% trans "C/hour" %}</span>
                             </div>
                         </li>
                     </div>
@@ -197,10 +197,10 @@
 <script>
 //add hover to labels
 $('span.typebody').mouseover(function() {
-    $(this).addClass('typehover')
+    $(this).addClass('typehover');
 });
 $('span.typebody').mouseout(function() {
-    $(this).removeClass('typehover')
+    $(this).removeClass('typehover');
 });
 
 // return value from metadata key "OS", if it exists

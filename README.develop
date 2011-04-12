@@ -220,7 +220,7 @@ Consider this example (adding a field to the SynnefoUser model):
 
   You can now apply this migration with: ./manage.py migrate db
 
-    bkarak@nefarian:~/devel/synnefo$ ./manage.py migrate db
+    $ ./manage.py migrate db
      Running migrations for db:
      - Migrating forwards to 0002_auto__add_field_synnefouser_new_south_test_field.
      > db:0002_auto__add_field_synnefouser_new_south_test_field
@@ -231,7 +231,13 @@ Consider this example (adding a field to the SynnefoUser model):
 South needs some extra definitions to the model to preserve and migrate the existing data, for example, if we add a field
 in a model, we should declare its default value. If not, South will propably fail, after indicating the error.
 
-[don't understand the above, Example?]
+    $ ./bin/python manage.py schemamigration db --auto
+     ? The field 'SynnefoUser.new_south_field_2' does not have a default specified, yet is NOT NULL.
+     ? Since you are adding or removing this field, you MUST specify a default
+     ? value to use for existing rows. Would you like to:
+     ?  1. Quit now, and add a default to the field in models.py
+     ?  2. Specify a one-off value to use for existing columns now
+     ? Please select a choice: 1
 
 *Data migrations:
 
@@ -255,8 +261,8 @@ the following:
     For database operations (column additions, alter tables etc) we use the South database API
     (http://south.aeracode.org/docs/databaseapi.html).
 
-    To access the data, we use the database reference (orm) provided as parameter in forwards, backwards declarations. <--What does this mean?
-    For example:
+    To access the data, we use the database reference (orm) provided as parameter in forwards, backwards method declarations
+    in the migration script. For example:
 
     class Migration(DataMigration):
 

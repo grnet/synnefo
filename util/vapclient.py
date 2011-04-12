@@ -21,25 +21,33 @@
 import sys
 import socket
 
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 CTRL_SOCKET = "/tmp/vncproxy.sock"
 
 def request_forwarding(sport, daddr, dport, password):
-    sport = str(int(sport))
-    dport = str(int(dport))
     assert(len(password) > 0)
-
-    request = ":".join([sport, daddr, dport, password])
+    req = {
+        "source_port": int(sport),
+        "destination_address": daddr,
+        "destination_port": int(dport),
+        "password": password
+    }
 
     ctrl = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
     ctrl.connect(CTRL_SOCKET)
-    ctrl.send(request)
+    ctrl.send(json.dumps(req))
+
     response = ctrl.recv(1024)
-    if response == "OK\n":
-        return True
-    else:
-        return False
+    res = json.loads(response)
+    return res
 
 if __name__ == '__main__':
-    if not request_forwarding(*sys.argv[1:]):
-	sys.exit(1)
+    res = request_forwarding(*sys.argv[1:])
+    if res['status'] == "OK":
+        sys.exit(0)
+    else:
+        sys.exit(1)

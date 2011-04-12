@@ -217,9 +217,9 @@ div.css-panes {
     background-color: #87aade;
     color: #000;
     cursor: pointer;
-    display: block;
+    display: none;
     padding: 6px 24px;
-    margin: 12px 0 20px -36px;
+    margin: -8px 0 20px -36px;
     width: 125px;
     text-decoration: none;
 }
@@ -246,7 +246,7 @@ div#wrapper {
     padding:1em;
     text-align:left;
 }
-	
+
 /* scrollable root element */
 #wizard {	
 	font-size:9pt;
@@ -773,11 +773,12 @@ div#view-select {
     float: right;
     clear: both;
     color: white;
-    margin-top: -80px;
+    margin-top: -42px;
     margin-right: -36px;
     font-size: 9pt;
     background-color: #87aade;
     padding: 5px 10px;
+    display:none;
 }
 
 a#standard, a#list {
@@ -822,10 +823,12 @@ div.machine-type {
 
 #machinesview {
     min-height: 270px;
+    margin-top: 30px;
 }
 
 .list#machinesview {
     margin-left: -20px;
+    display:none;
 }
 
 #machinesview_wrapper.list {
@@ -834,6 +837,11 @@ div.machine-type {
 
 #machinesview_wrapper {
     min-height: 270px;
+    display:none;
+}
+
+.list-machines {
+    min-width: 515px;
 }
 
 #emptymachineslist {
@@ -880,9 +888,7 @@ div.machine-type {
 }
 
 .emptycreate {
-    margin-left: 0px !important;
-    margin-bottom: 5px !important;
-    margin-right: 10px !important;
+    margin: 20px 10px 5px 0 !important;
 }
 
 #createbody {

@@ -218,7 +218,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
 	var uri= API_URL + '/servers/detail';
-	
+
 	if (changes_since != 0)
 		uri+='?changes-since='+changes_since
 		
@@ -671,11 +671,12 @@ function start(serverIDs){
 
 // show the welcome screen
 function showWelcome() {
-    $("#emptymachineslist").fadeIn("slow");
-    $("#createbody").fadeIn("slow");
+    $("#emptymachineslist").fadeIn("fast");
+    $("#createbody").fadeIn("fast");
     $("#createcontainer").addClass('emptycreatecontainer')
     $("#create").addClass('emptycreate')
     $("#view-select").fadeOut("fast");
+    $("#create").css("display", "block");
 }
 
 // hide the welcome screen
@@ -685,5 +686,7 @@ function hideWelcome() {
     $("#createcontainer").removeClass('emptycreatecontainer')
     $("#create").removeClass('emptycreate')
     $("#view-select").fadeIn("fast");
+    $("div#view-select").show();
+    $("#create").css("display", "inline");
 }
 

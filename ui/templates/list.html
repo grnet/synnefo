@@ -259,7 +259,6 @@ function update_machines_view(data){
     // show message in case user has no servers!
     if (servers.length == 0) {
         showWelcome()
-        $("#machinesview_wrapper").fadeOut("fast")
     } else {
         hideWelcome()
         $("#machinesview_wrapper").fadeIn("fast")

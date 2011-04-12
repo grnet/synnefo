@@ -105,10 +105,26 @@
             "name": "Debian Squeeze",
             "updated": "2011-02-06 00:00:00",
             "created": "2011-02-06 00:00:00",
-            "size" : 2000,
             "state": "ACTIVE",
-            "description": "Full Debian Squeeze Installation",
             "owner" : 30000
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 1,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Debian Squeeze, full installation",
+            "image": 30000
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 2,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2048",
+            "image": 30000
         }
     },
     {

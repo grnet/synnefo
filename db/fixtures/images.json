@@ -6,7 +6,7 @@
             "name": "Debian Unstable",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
+            "state": "ACTIVE"
         }
     },
     {
@@ -16,7 +16,7 @@
             "name": "Red Hat Enterprise Linux",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
+            "state": "ACTIVE"
         }
     },
     {
@@ -26,7 +26,7 @@
             "name": "Ubuntu 10.10",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
+            "state": "ACTIVE"
         }
     },
     {

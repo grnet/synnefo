@@ -14,7 +14,7 @@ from synnefo.api.faults import BadRequest, ItemNotFound
 from synnefo.api.util import *
 from synnefo.db.models import Image, Flavor, VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.utils import get_rsapi_state
-from synnefo.util.rapi import GanetiRapiClient
+from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
 from synnefo.logic import backend
 
 import logging
@@ -120,7 +120,7 @@ def list_servers(request, detail=False):
     since = isoparse(request.GET.get('changes-since'))
     
     if since:
-        user_vms = VirtualMachine.objects.filter(updated__gt=since)
+        user_vms = VirtualMachine.objects.filter(updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:
@@ -151,50 +151,65 @@ def create_server(request):
     try:
         server = req['server']
         name = server['name']
+        metadata = server.get('metadata', {})
+        assert isinstance(metadata, dict)
         sourceimage = Image.objects.get(id=server['imageRef'])
         flavor = Flavor.objects.get(id=server['flavorRef'])
-    except KeyError:
+    except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
     except Image.DoesNotExist:
         raise ItemNotFound
     except Flavor.DoesNotExist:
         raise ItemNotFound
     
-    vm = VirtualMachine.objects.create(
+    vm = VirtualMachine(
         name=name,
         owner=get_user(),
         sourceimage=sourceimage,
         ipfour='0.0.0.0',
         ipsix='::1',
         flavor=flavor)
+
+    # Pick a random password for the VM.
+    # FIXME: This must be passed to the Ganeti OS provider via CreateInstance()
+    passwd = random_password()
+
+    # We *must* save the VM instance now,
+    # so that it gets a vm.id and vm.backend_id is valid.
+    vm.save() 
                 
     if request.META.get('SERVER_NAME', None) == 'testserver':
-        name = 'test-server'
+        backend_name = 'test-server'
         dry_run = True
     else:
-        name = vm.backend_id
+        backend_name = vm.backend_id
         dry_run = False
     
-    jobId = rapi.CreateInstance(
-        mode='create',
-        name=name,
-        disk_template='plain',
-        disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
-        nics=[{}],
-        os='debootstrap+default',       #TODO: select OS from imageRef
-        ip_check=False,
-        name_check=False,
-        pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
-        dry_run=dry_run,
-        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
-    
-    vm.save()
+    try:
+        jobId = rapi.CreateInstance(
+            mode='create',
+            name=backend_name,
+            disk_template='plain',
+            disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
+            nics=[{}],
+            os='debootstrap+default',       #TODO: select OS from imageRef
+            ip_check=False,
+            name_check=False,
+            pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
+            dry_run=dry_run,
+            beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
+    except GanetiApiError:
+        vm.delete()
+        raise ServiceUnavailable('Could not create server.')
         
+    for key, val in metadata.items():
+        VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
+    
     logging.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
     
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
-    server['adminPass'] = random_password()
+    server['adminPass'] = passwd
     return render_server(request, server, status=202)
 
 @api_method('GET')

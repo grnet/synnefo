@@ -1,0 +1,90 @@
+Continuous integration with Jenkins
+-----------------------------------
+
+The following instructions will setup Jenkins to run synnefo tests with
+the SQLite database. To run the tests on MySQL and/or Postgres, step 5
+must be replicated. Also, the correct configuration file must be copied
+(line 5 of the build script).
+
+1. Install and start Jenkins. On Debian:
+
+   wget -q -O - http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key | sudo apt-key add -
+   echo "deb http://pkg.jenkins-ci.org/debian binary/" >>/etc/apt/sources.list
+   sudo apt-get update
+   sudo apt-get install jenkins
+
+   Also install the following packages:
+
+   apt-get install python-virtualenv libcurl3-gnutls libcurl3-gnutls-dev
+                   uuid-dev libmysqlclient-dev libpq-dev libsqlite-dev
+                   python-dev
+
+2. After Jenkins starts, go to
+
+   http://$HOST:8080/pluginManager/
+
+   and install the following plug-ins at
+
+   -Jenkins Cobertura Plugin
+   -Jenkins Email Extension Plugin
+   -Jenkins GIT plugin
+   -Jenkins SLOCCount Plug-in
+   -Hudson/Jenkins Violations plugin
+
+3. Configure the Jenkins user's Git details:
+   su jenkins
+   git config --global user.email "buildbot@lists.grnet.gr"
+   git config --global user.name "Buildbot"
+
+4. Make sure that all system-level dependencies specified in README.develop
+   are correctly installed
+
+5. Create a new "free-style software" job and set the following values:
+
+-Project name: synnefo
+-Source Code Management: Git
+-URL of repository: Jenkins Git does not support HTTPS for checking out
+                   directly from the repository. The temporary solution
+                   is to checkout with a cron script in a directory and
+                   set the checkout path in this field
+-Branches to build: master and perhaps others
+-Git->Advanced->Local subdirectory for repo (optional): synnefo
+-Git->Advanced->Prune remote branches before build: check
+-Repository browser: redmineweb,
+                     URL: https://code.grnet.gr/projects/synnefo/repository/
+-Build Triggers->Poll SCM: check
+                 Schedule: # every ten minutes
+                           0,10,20,30,40,50 * * * *
+
+-Build -> Add build step-> Execute shell
+
+Command:
+
+#!/bin/bash -ex
+cd synnefo
+mkdir -p reports
+/usr/bin/sloccount --duplicates --wide --details api util ui logic auth > reports/sloccount.sc
+cp conf/ci/manage.py .
+if [ ! -e requirements.pip ]; then cp conf/ci/pip-1.2.conf requirements.pip; fi
+cp conf/ci/settings.py.sqlite settings.py
+python manage.py update_ve
+python manage.py hudson api db logic
+
+-Post-build Actions->Publish JUnit test result report: check
+                     Test report XMLs: synnefo/reports/TEST-*.xml
+
+-Post-build Actions->Publish Cobertura Coverage Report: check
+                     Cobertura xml report pattern: synnefo/reports/coverage.xml
+
+-Post-build Actions->Report Violations: check
+                     pylint[XML filename pattern]: synnefo/reports/pylint.report
+
+-Post-build Actions->Publish SLOCCount analysis results
+                     SLOCCount reports: synnefo/reports/sloccount.sc
+                     (also, remember to install sloccount at /usr/bin)
+
+
+---------------
+See also:
+
+http://sites.google.com/site/kmmbvnr/home/django-hudson-tutorial

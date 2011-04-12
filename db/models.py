@@ -286,6 +286,8 @@ class VirtualMachine(models.Model):
 
     def _get_backend_id(self):
         """Returns the backend id for this VM by prepending backend-prefix."""
+        if not self.id:
+            raise VirtualMachine.InvalidBackendIdError("self.id is None")
         return '%s%s' % (settings.BACKEND_PREFIX_ID, str(self.id))
 
     backend_id = property(_get_backend_id)

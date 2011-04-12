@@ -299,7 +299,7 @@ function update_wizard_images() {
                     img.find(".description").text(image.metadata.values.description);
                 }
                 if (image.metadata.values.size != undefined) {
-    			    img.find(".size").text(image.metadata.values.size);
+    			    img.find("#size").text(image.metadata.values.size);
                 }
             }
 			img.find("input.radio").attr('id',"img-radio-" + image.id);
@@ -339,31 +339,37 @@ function update_wizard_flavors(){
 							   progress: true,
 							   max:ram.length-1});
 	$("#small").click();
-	
+
 	// update the indicators when sliding
 	$("#cpu:range").data().rangeinput.onSlide(function(event,value){
 		$("#cpu-indicator")[0].value = cpus[Number(value)];
+        $("#cpu-indicator").addClass('selectedrange');
 	});
 	$("#cpu:range").data().rangeinput.change(function(event,value){
 		$("#cpu-indicator")[0].value = cpus[Number(value)];				
 		$("#custom").click();
-        $("#custom input").attr('checked', 'checked');				
+        $("#custom input").attr('checked', 'checked');		
+        $("#cpu-indicator").removeClass('selectedrange');		
 	});			
 	$("#ram:range").data().rangeinput.onSlide(function(event,value){
 		$("#ram-indicator")[0].value = ram[Number(value)];
+        $("#ram-indicator").addClass('selectedrange');
 	});
 	$("#ram:range").data().rangeinput.change(function(event,value){
 		$("#ram-indicator")[0].value = ram[Number(value)];				
 		$("#custom").click();
         $("#custom input").attr('checked', 'checked');
+        $("#ram-indicator").removeClass('selectedrange');		
 	});			
 	$("#storage:range").data().rangeinput.onSlide(function(event,value){
 		$("#storage-indicator")[0].value = disks[Number(value)];
+        $("#storage-indicator").addClass('selectedrange');
 	});
 	$("#storage:range").data().rangeinput.change(function(event,value){
 		$("#storage-indicator")[0].value = disks[Number(value)];				
 		$("#custom").click();
         $("#custom input").attr('checked', 'checked');
+        $("#storage-indicator").removeClass('selectedrange');		
 	});				
 }
 

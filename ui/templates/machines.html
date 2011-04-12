@@ -27,7 +27,7 @@
 	<div class="modal" id="wizard">
 		<!-- status bar -->
 		<ul id="status">
-			<li class="active"><span class="headernumber">1</span><div class="headerbody">{% trans "Image" %}</div></li>
+			<li class="active"><span class="headernumber" class="first">1</span><div class="headerbody first">{% trans "Image" %}</div></li>
 			<li><span class="headernumber">2</span><div class="headerbody">{% trans "Flavor" %}</div></li>
 			<li><span class="headernumber">3</span><div class="headerbody">{% trans "Name" %}</div></li>
 		</ul>
@@ -47,12 +47,12 @@
                             <a>
                                 <div class="image-container">
                                     <div class="image">
-                                        <input class="radio" type="radio" name="image-id" id="image-id" />
+                                        <input class="radio" type="radio" name="imageGroup" id="image-id" />
                                         <img src="" class="image-logo"/>
                                         <strong class="image-title">image.title</strong>
                                         <br />
                                         <span class="description">image.description</span> 
-                                        <span class="size">?? MB</span>                              
+                                        <span id="size" class="size">?? MB</span><span class="size">MB</span>                         
                                     </div>
                                 </div>  
                             </a>
@@ -77,25 +77,25 @@
                         <div class="machine-type">
                             <label for="small" id="small">
                                 <input type="radio" id="small" name="machine-type" value="small" checked="true" />
-                                <strong>{% trans "small" %}</strong>
+                                <span class="typebody" id="small-body">{% trans "small" %}</span>
                             </label>
                         </div>
                         <div class="machine-type">      
                             <label for="medium" id="medium">
                                 <input type="radio" id="medium" name="machine-type" value="medium" />                  
-                                <strong>{% trans "medium" %}</strong>
+                                <span class="typebody" id="medium-body">{% trans "medium" %}</span>
                             </label>
                         </div>
                         <div class="machine-type">
                             <label for="large" id="large">
                                 <input type="radio" id="large" name="machine-type" value="large" />
-                                <strong>{% trans "large" %}</strong>
+                                <span class="typebody" id="large-body">{% trans "large" %}</span>
                             </label>
                         </div>
                         <div class="machine-type">
                             <label for="custom" id="custom">
                                 <input type="radio" name="machine-type" id="custom" value="large" />
-                                <strong>{% trans "custom" %}</strong>
+                                <span class="typebody" id="custom-body">{% trans "custom" %}</span>
                             </label>
                         </div>
                     </li>
@@ -133,7 +133,7 @@
 				<h2>{% trans "Confirm your settings" %}</h2>
                 <hr class="topruler" />
                 <ul id="page3-container">
-                    <li class="required">
+                    <li class="required" id="label-name">
                         <label>
                             <strong>Name:</strong>
                             <input type="text" class="text" name="machine_name" id="name" value="My Ubuntu 10.04 x86_64 server"/>
@@ -195,6 +195,14 @@
 <div id="machines" class="separator"></div>
 
 <script>
+//add hover to labels
+$('span.typebody').mouseover(function() {
+    $(this).addClass('typehover')
+});
+$('span.typebody').mouseout(function() {
+    $(this).removeClass('typehover')
+});
+
 // return value from metadata key "OS", if it exists
 function os_icon(metadata) {
     if (!metadata) {
@@ -208,12 +216,12 @@ function os_icon(metadata) {
     }
 } 
 
-
 // switch to list view
 $("a#list").click(function(){
     list_view(); 
     return false;
 });
+
 
 // switch to standard view
 $("a#standard").click(function(){
@@ -315,6 +323,32 @@ function disableSliders() {
     $("#ram").attr('disabled',true);
     $("#storage").attr('disabled',true);
 }
+
+if($('.radio:checked').val() == 'true')  {
+    $(this).parent().addClass('selecteddiv');
+}
+
+//update radio button when clicking on text
+$("#small-body").live('click' ,function() { 
+    $(this).parent().find("#small").click();
+});
+$("#medium-body").live('click' ,function() { 
+    $(this).parent().find("#medium").click();
+});
+$("#large-body").live('click' ,function() { 
+    $(this).parent().find("#large").click();
+});
+$("#custom-body").live('click' ,function() { 
+    $(this).parent().find("#custom").click();
+});
+
+//select image div on radio button select
+$('.radio').live('click' ,function() {           
+    $(this).parents("div").find(".image").removeClass('selecteddiv');
+    if($(this).is(':checked'))  {
+        $(this).parent().addClass('selecteddiv');
+    }
+});
 
 // confirm all actions
 $("div.confirm_multiple .yes").live('click', function(){

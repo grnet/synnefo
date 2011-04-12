@@ -45,5 +45,3 @@ def create_auth_token(user):
     user.save()
 
 #def login(username, password):
-
-

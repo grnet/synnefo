@@ -10,6 +10,7 @@ from synnefo.db.models import *
 from synnefo.logic import credits
 from synnefo.logic import users
 from django.test import TestCase
+import time
 
 import hashlib
 
@@ -118,13 +119,16 @@ class AuthTestCase(TestCase):
         md5 = hashlib.md5()
         md5.update(self.user.uniq)
         md5.update(self.user.name)
+        md5.update(time.asctime())
 
-        self.assertEquals(user.auth_token, md5.hexdigest())
+        self.assertEquals(self.user.auth_token, md5.hexdigest())
 
     def test_del_user(self):
         """ test user deletion
         """
-        user = self._register_user()
-        users.delete_user(user)
+        self._register_user()
+        self.assertNotEquals(self.user, None)
+        
+        users.delete_user(self.user)
 
         self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get, name = "jpage")

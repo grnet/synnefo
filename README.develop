@@ -12,7 +12,8 @@ Synnefo is written in Python 2.6 and depends on the following Python modules
 - pyzmq-static [pyzmq==2.0.10.1]
 - pycurl [pycurl==7.19.0]
 - python-dateutil  [python-dateutil==1.4.1]
-  WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work with Python 2.6
+  WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work
+           with Python 2.6
 - south [south==0.7.1]
 
 also, depending on the database engine of choice, on one of the following:
@@ -28,8 +29,8 @@ The easiest method is to setup a working environment through virtualenv.
 Alternatively, you can use your system's package manager to install
 the dependencies (e.g. Macports has them all).
 
-*On Snow Leopard and linux (64-bit), you have to set the following environment variable for
-pip to compile the dependencies correctly. 
+*On Snow Leopard and linux (64-bit), you have to set the following environment
+variable for pip to compile the dependencies correctly.
 
 	$export ARCHFLAGS="-arch x86_64"
 
@@ -186,17 +187,18 @@ username
 
 9. (Hopefully) Done
 
-South Database Migration
+South Database Migrations
 ------------------------
+
+*Schema migrations:
 
 First, remember to add the south app to settings.py (it is already included in the
 settings.py.dist).
 
-In addition, do not use the syncdb management command. Only the first time and if you
-drop the database and must create it from the start.
+In addition, do not use the syncdb management command. It can only be used
+the first time and/or if you drop the database and must recreate it from scratch.
 
-The first time (is not required, since when you read this documentation the migration
-is already active) the migration of the schema will initialised with the following
+The first schema support for migrations is initialized with the following
 command:
 
     $ ./bin/python schemamigration db --initial
@@ -214,7 +216,10 @@ Consider this example (adding a field to the SynnefoUser model):
 
     bkarak@nefarian:~/devel/synnefo$ ./bin/python manage.py schemamigration db --auto
      + Added field new_south_test_field on db.SynnefoUser
-     Created 0002_auto__add_field_synnefouser_new_south_test_field.py. You can now apply this migration with: ./manage.py migrate db
+     Created 0002_auto__add_field_synnefouser_new_south_test_field.py.
+
+  You can now apply this migration with: ./manage.py migrate db
+
     bkarak@nefarian:~/devel/synnefo$ ./manage.py migrate db
      Running migrations for db:
      - Migrating forwards to 0002_auto__add_field_synnefouser_new_south_test_field.
@@ -224,7 +229,11 @@ Consider this example (adding a field to the SynnefoUser model):
     Installed 1 object(s) from 1 fixture(s)
 
 South needs some extra definitions to the model to preserve and migrate the existing data, for example, if we add a field
-in a model, we should declare its default value. If not, south management will propably fail, after indicating the error.
+in a model, we should declare its default value. If not, South will propably fail, after indicating the error.
+
+[don't understand the above, Example?]
+
+*Data migrations:
 
 If we need to do data migration as well, for example rename a field, we use tha 'datamigration' management command.
 
@@ -246,7 +255,7 @@ the following:
     For database operations (column additions, alter tables etc) we use the South database API
     (http://south.aeracode.org/docs/databaseapi.html).
 
-    To access the data, we use the database reference (orm) provided as parameter in the forwards, backwards declarations.
+    To access the data, we use the database reference (orm) provided as parameter in forwards, backwards declarations. <--What does this mean?
     For example:
 
     class Migration(DataMigration):

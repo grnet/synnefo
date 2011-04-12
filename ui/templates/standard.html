@@ -150,7 +150,13 @@ $("div.confirm_single .yes").live('click', function(){
             } else if (action[0] == shutdown) {
                 $(this).parent().parent().find('.status').text('Shutting down');
                 $(this).parent().parent().find('.spinner').show();
-            }                  
+            } else if (action[0] == reboot) {
+                $(this).parent().parent().find('.status').text('Rebooting');
+                $(this).parent().parent().find('.spinner').show();
+            }  else if (action[0] == destroy) {
+                $(this).parent().parent().find('.status').text('Destroying');
+                $(this).parent().parent().find('.spinner').show();
+            }                    
             action[0]([action[1]]); // execute action
         }
     }

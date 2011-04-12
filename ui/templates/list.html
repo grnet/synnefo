@@ -191,8 +191,7 @@ function update_machines_view(data){
         if (current != -1){ // if it's there, simply update the values
             var currentStatus = tableData[current][5].replace('<span class=status>', '').replace('</span>', '');
 			try {
-				console.info(server.name + ' from ' 
-							+ currentStatus + ' to ' + STATUS_MESSAGES[server.status]);
+				console.info(server.name + ' from ' + currentStatus + ' to ' + STATUS_MESSAGES[server.status]);
 			} catch(err) {}		
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);	

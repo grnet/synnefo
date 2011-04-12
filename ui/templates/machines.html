@@ -358,12 +358,25 @@ $("div.confirm_multiple .yes").live('click', function(){
                 $('#' + serverID + ' .status').text('Shutting down');
             } else if (action[0] == start) {
                 $('#' + serverID + ' .status').text('Starting');
+            } else if (action[0] == reboot) {
+                $('#' + serverID + ' .status').text('Rebooting');
+            } else if (action[0] == destroy) {
+                $('#' + serverID + ' .status').text('Destroying');
             }
             $('#' + serverID + ' .spinner').show();
         } else { // list view
             osIcon = $('#'+serverID).parent().parent().find('.list-logo');
             osIcon.attr('os',osIcon.attr('src'));
             osIcon.attr('src','static/progress.gif');
+            if (action[0] == shutdown) {
+                $('#' + serverID).parent().parent().find('span.status').text('Shutting down');
+            } else if (action[0] == start) {
+                $('#' + serverID).parent().parent().find('span.status').text('Starting');
+            } else if (action[0] == reboot) {
+                $('#' + serverID).parent().parent().find('span.status').text('Rebooting');
+            } else if (action[0] == destroy) {
+                $('#' + serverID).parent().parent().find('span.status').text('Destroying');
+            }
         }
         action[0]([serverID]); // execute action
     }

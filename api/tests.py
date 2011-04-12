@@ -3,6 +3,7 @@
 #
 
 from email.utils import parsedate
+from random import choice, randint
 from time import mktime
 
 import datetime
@@ -12,8 +13,7 @@ from django.test import TestCase
 from django.test.client import Client
 
 #from synnefo.api.tests_auth import AuthTestCase
-from synnefo.db.models import VirtualMachine, VirtualMachineGroup
-from synnefo.db.models import Flavor, Image
+from synnefo.db.models import *
 from synnefo.logic import utils
 
 
@@ -344,77 +344,212 @@ class APITestCase(TestCase):
         self.assertEqual(response.status_code, 201)
 
 
-class APITestCase2(TestCase):
-    """An attempt for a more thorough test scenario."""
-    
-    fixtures = [ 'api_test_data2' ]
+def create_users(n=1):
+    for i in range(n):
+        SynnefoUser.objects.create(
+            name='User %d' % i,
+            credit=0)
 
+def create_flavors(n=1):
+    for i in range(n):
+        Flavor.objects.create(
+            cpu=randint(1, 4),
+            ram=randint(1, 8) * 1024**3,
+            disk=randint(1, 20) * 1024**3)
+
+def create_images(n=1):
+    users = SynnefoUser.objects.all()
+    for i in range(n):
+        Image.objects.create(
+            name='Image %d' % (i + 1),
+            state='ACTIVE',
+            owner=choice(users))
+
+def create_servers(n=1):
+    users = SynnefoUser.objects.all()
+    flavors = Flavor.objects.all()
+    images = Image.objects.all()
+    for i in range(n):
+        VirtualMachine.objects.create(
+            name='Server %d' % (i + 1),
+            owner=choice(users),
+            sourceimage=choice(images),
+            hostid=str(i),
+            ipfour='0.0.0.0',
+            ipsix='::1',
+            flavor=choice(flavors))
+
+def create_server_metadata(n=1):
+    servers = VirtualMachine.objects.all()
+    for i in range(n):
+        VirtualMachineMetadata.objects.create(
+            meta_key='Key%d' % (i + 1),
+            meta_value='Value %d' % (i + 1),
+            vm = choice(servers))
+
+
+class BaseTestCase(TestCase):
+    USERS = 1
+    FLAVORS = 1
+    IMAGES = 1
+    SERVERS = 1
+    SERVER_METADATA = 0
+    
     def setUp(self):
         self.client = Client()
-        self.server_id = 0
+        create_users(self.USERS)
+        create_flavors(self.FLAVORS)
+        create_images(self.IMAGES)
+        create_servers(self.SERVERS)
+        create_server_metadata(self.SERVER_METADATA)
+    
+    def assertFault(self, response, status_code, name):
+        self.assertEqual(response.status_code, status_code)
+        fault = json.loads(response.content)
+        self.assertEqual(fault.keys(), [name])
+    
+    def assertBadRequest(self, response):
+        self.assertFault(response, 400, 'badRequest')
 
-    def create_server_name(self):
-        self.server_id += 1
-        return 'server%d' % self.server_id
+    def assertItemNotFound(self, response):
+        self.assertFault(response, 404, 'itemNotFound')
 
-    def test_create_server_json(self):
-        TEMPLATE = '''
-        {
-            "server" : {
-                "name" : "%(name)s",
-                "flavorRef" : "%(flavorRef)s",
-                "imageRef" : "%(imageRef)s"
-            }
-        }
-        '''
 
-        def new_server(imageRef=1, flavorRef=1):
-            name = self.create_server_name()
-            return name, TEMPLATE % dict(name=name, imageRef=imageRef, flavorRef=flavorRef)
+class ListServerMetadata(BaseTestCase):
+    SERVERS = 4
+    
+    def get_json_values(self, response):
+        self.assertTrue(response.status_code in (200, 203))
+        reply = json.loads(response.content)
+        self.assertTrue(isinstance(reply, dict))
+        self.assertEqual(reply.keys(), ['metadata'])
+        self.assertEqual(reply['metadata'].keys(), ['values'])
+        return reply['metadata']['values']
+    
+    def verify_servers_meta(self):
+        for vm in VirtualMachine.objects.all():
+            response = self.client.get('/api/v1.1/servers/%d/meta' % vm.id)
+            vm_meta = dict((m.meta_key, m.meta_value) for m in vm.virtualmachinemetadata_set.all())
+            reply_meta = self.get_json_values(response)
+            self.assertEqual(vm_meta, reply_meta)
+    
+    def test_list_metadata(self):
+        self.verify_servers_meta()
+        create_server_metadata(100)
+        self.verify_servers_meta()
 
-        def verify_response(response, name):
-            assert response.status_code == 202
-            reply =  json.loads(response.content)
-            server = reply['server']
-            assert server['name'] == name
-            assert server['imageRef'] == 1
-            assert server['flavorRef'] == 1
-            assert server['status'] == 'BUILD'
-            assert server['adminPass']
-            assert server['addresses']
 
-        def verify_error(response, code, name):
-            assert response.status_code == code
-            reply =  json.loads(response.content)
-            assert name in reply
-            assert reply[name]['code'] == code
+class UpdateServerMetadata(BaseTestCase):
+    def get_json_values(self, response):
+        self.assertEqual(response.status_code, 201)
+        reply = json.loads(response.content)
+        self.assertTrue(isinstance(reply, dict))
+        self.assertEqual(reply.keys(), ['metadata'])
+        return reply['metadata']
+    
+    def test_update_metadata(self):
+        metadata = {'Key1': 'New Value 1', 'Key2': 'New Value 2'}
+        path = '/api/v1.1/servers/1/meta'
+        data = json.dumps({'metadata': metadata})
+        
+        # Test update does not create
+        response = self.client.post(path, data, content_type='application/json')
+        resp_meta = self.get_json_values(response)
+        self.assertEqual(resp_meta, {})
+        
+        create_server_metadata(10)
+        
+        # Test update
+        response = self.client.post(path, data, content_type='application/json')
+        resp_meta = self.get_json_values(response)
+        self.assertEqual(resp_meta, metadata)
+        
+    def test_invalid_data(self):
+        path = '/api/v1.1/servers/1/meta'
+        response = self.client.post(path, 'metadata', content_type='application/json')
+        self.assertBadRequest(response)
 
-        name, data = new_server()
-        url = '/api/v1.1/servers'
-        response = self.client.post(url, content_type='application/json', data=data)
-        verify_response(response, name)
 
-        name, data = new_server()
-        url = '/api/v1.1/servers.json'
-        response = self.client.post(url, content_type='application/json', data=data)
-        verify_response(response, name)
+class GetServerMetadataItem(BaseTestCase):
+    def test_get_metadata_item(self):
+        vm = VirtualMachine.objects.get(id=1)
+        path = '/api/v1.1/servers/1/meta/Key1'
+        
+        self.assertItemNotFound(self.client.get(path))
+        
+        create_server_metadata(1)
+        response = self.client.get(path)
+        self.assertTrue(response.status_code in (200, 203))
+        reply = json.loads(response.content)
+        self.assertEqual(reply, {'meta': {'Key1': 'Value 1'}})
 
-        name, data = new_server()
-        url = '/api/v1.1/servers.json'
-        response = self.client.post(url, content_type='application/json', data=data,
-                                    HTTP_ACCEPT='application/xml')
-        verify_response(response, name)
 
-        name, data = new_server(imageRef=0)
-        url = '/api/v1.1/servers'
-        response = self.client.post(url, content_type='application/json', data=data)
-        verify_error(response, 404, 'itemNotFound')
+class CreateServerMetadataItem(BaseTestCase):
+    SERVER_METADATA = 1
+    
+    def get_json_values(self, response):
+        self.assertEqual(response.status_code, 201)
+        reply = json.loads(response.content)
+        self.assertTrue(isinstance(reply, dict))
+        self.assertEqual(reply.keys(), ['meta'])
+        return reply['meta']
+    
+    def create_meta(self, key, value):
+        path = '/api/v1.1/servers/1/meta/' + key
+        meta = {key: value}
+        data = json.dumps({'meta': meta})
+        response = self.client.put(path, data, content_type='application/json')
+        resp_meta = self.get_json_values(response)
+        self.assertEqual(resp_meta, meta)
+        return meta
+    
+    def verify_metadata(self, metadata):
+        vm = VirtualMachine.objects.get(id=1)
+        vm_meta = dict((m.meta_key, m.meta_value) for m in vm.virtualmachinemetadata_set.all())
+        self.assertEqual(vm_meta, metadata)
+    
+    def test_create_metadata(self):
+        metadata = {}
+        
+        # Test update
+        meta = self.create_meta('Key1', 'New Value 1')
+        metadata.update(meta)
+        self.verify_metadata(metadata)
 
-        name, data = new_server(flavorRef=0)
-        url = '/api/v1.1/servers'
-        response = self.client.post(url, content_type='application/json', data=data)
-        verify_error(response, 404, 'itemNotFound')
+        # Test create
+        meta = self.create_meta('Key2', 'New Value 2')
+        metadata.update(meta)
+        self.verify_metadata(metadata)
+    
+    def test_invalid_server(self):
+        path = '/api/v1.1/servers/2/meta/foo'
+        data = json.dumps({'meta': {'foo': 'bar'}})
+        response = self.client.put(path, data, content_type='application/json')
+        self.assertItemNotFound(response)
+    
+    def test_invalid_key(self):
+        path = '/api/v1.1/servers/1/meta/baz'
+        data = json.dumps({'meta': {'foo': 'bar'}})
+        response = self.client.put(path, data, content_type='application/json')
+        self.assertBadRequest(response)
+    
+    def test_invalid_data(self):
+        path = '/api/v1.1/servers/1/meta/foo'
+        response = self.client.put(path, 'meta', content_type='application/json')
+        self.assertBadRequest(response)
 
-        url = '/api/v1.1/servers'
-        response = self.client.post(url, content_type='application/json', data='INVALID')
-        verify_error(response, 400, 'badRequest')
+
+class DeleteServerMetadataItem(BaseTestCase):
+    SERVER_METADATA = 1
+    
+    def test_delete_metadata(self):
+        response = self.client.delete('/api/v1.1/servers/1/meta/Key1')
+        self.assertEqual(response.status_code, 204)
+    
+    def test_invalid_server(self):
+        response = self.client.delete('/api/v1.1/servers/2/meta/Key1')
+        self.assertItemNotFound(response)
+    
+    def test_invalid_key(self):
+        response = self.client.delete('/api/v1.1/servers/1/meta/foo')
+        self.assertItemNotFound(response)

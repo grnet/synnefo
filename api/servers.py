@@ -178,19 +178,6 @@ def create_server(request):
     # so that it gets a vm.id and vm.backend_id is valid.
     vm.save() 
 
-    #create metadata key "OS" with value of VM's Image metadata key "OS", if it exists
-    try:      
-        image_metadata_os = ImageMetadata.objects.filter(meta_key="OS", image=vm.sourceimage)
-        if image_metadata_os:
-            image_metadata_os = image_metadata_os[0].meta_value
-            #in case more than one image metadata with key "OS" exist for that image
-        else:
-            image_metadata_os = ''
-        vm_metadata = VirtualMachineMetadata.objects.create(vm=vm, meta_key="OS", meta_value=image_metadata_os)
-    except:   
-        pass #don't fail with the server creation because of this
-
-
     if request.META.get('SERVER_NAME', None) == 'testserver':
         backend_name = 'test-server'
         dry_run = True

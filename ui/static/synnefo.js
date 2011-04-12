@@ -435,6 +435,17 @@ function get_flavor(flavorRef) {
 }
 
 
+// return image entry from imageRef
+function get_image(imageRef) {
+    for (i=0;i<images.length;i++){
+        if (images[i]['id'] == imageRef) {
+            return images[i];
+        }
+    }
+    return 0;
+}
+
+
 // update the actions in list view
 function updateActions() {
 	var states = [];
@@ -479,13 +490,17 @@ function updateActions() {
 
 //create server action
 function create_vm(machineName, imageRef, flavorRef){
+
+    var image_logo = os_icon(get_image(imageRef).metadata);
+
     var payload = {
         "server": {
             "name": machineName,
             "imageRef": imageRef,
             "flavorRef" : flavorRef,
             "metadata" : {
-                "My Server Name" : machineName
+                "My Server Name" : machineName,
+                "OS" : image_logo
             }
         }
     };

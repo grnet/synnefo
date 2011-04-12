@@ -368,6 +368,11 @@ $("div.confirm_multiple .yes").live('click', function(){
             osIcon = $('#'+serverID).parent().parent().find('.list-logo');
             osIcon.attr('os',osIcon.attr('src'));
             osIcon.attr('src','static/progress.gif');
+            if (action[0] == shutdown) {
+                $('#' + serverID).parent().parent().find('span.status').text('Shutting down');
+            } else if (action[0] == start) {
+                $('#' + serverID).parent().parent().find('span.status').text('Starting');
+            }
         }
         action[0]([serverID]); // execute action
     }

@@ -584,7 +584,7 @@ div.image-container {
 }
 
 .selectedrange {
-    border: 1px solid #5599FF;
+    border: 1px inset #5599FF;
 }
 
 #credits-indicator {
@@ -868,6 +868,9 @@ div.machine-type {
 
 #machinesview_wrapper {
     min-height: 270px;
+}
+
+#machinesview_content {
     display:none;
 }
 

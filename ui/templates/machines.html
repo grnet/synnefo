@@ -300,12 +300,13 @@ $(function() {
         }    
     });
     // if tab is pressed on the next button seek to next page
-    root.find("button.next").keydown(function(e) {
-	    if (e.keyCode == 9) {
-		    // seeks to next tab by executing our validation routine
-		    api.next();
-		    e.preventDefault();
-	    }
+    $(root).live('keydown', function (e) {
+       if ( e.keyCode == 9 ){
+           if(e.preventDefault) {
+               e.preventDefault();
+           }
+           api.next();
+        }
     });
     $("#name").keypress(function (e) {
 		if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {

@@ -2,45 +2,47 @@
 
 <div id="machinesview_wrapper" class="list">
     <div id="spinner"></div>
-    <div class="actions">
-        <a id="action-start">{% trans "Start" %}</a>
-        <a id="action-reboot">{% trans "Reboot" %}</a>
-        <a id="action-shutdown">{% trans "Shutdown" %}</a>
-        <br />
-        <a id="action-destroy">{% trans "Destroy" %}</a>
-        <br />
-        <a id="action-details">{% trans "Show Details" %}</a>
-        <a id="action-group">{% trans "Add to group" %}</a>
-        <br />
-        <a id="action-band">{% trans "Out of band" %}</a>
-        <br />
-        <a id="action-attach">{% trans "Attach disk" %}</a>
-        <a id="action-detach">{% trans "Detach disk" %}</a>
-        <br />
-        <a id="action-connect">{% trans "Connect to network" %}</a>
-        <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
+    <div id="machinesview_content">
+        <div class="actions">
+            <a id="action-start">{% trans "Start" %}</a>
+            <a id="action-reboot">{% trans "Reboot" %}</a>
+            <a id="action-shutdown">{% trans "Shutdown" %}</a>
+            <br />
+            <a id="action-destroy">{% trans "Destroy" %}</a>
+            <br />
+            <a id="action-details">{% trans "Show Details" %}</a>
+            <a id="action-group">{% trans "Add to group" %}</a>
+            <br />
+            <a id="action-band">{% trans "Out of band" %}</a>
+            <br />
+            <a id="action-attach">{% trans "Attach disk" %}</a>
+            <a id="action-detach">{% trans "Detach disk" %}</a>
+            <br />
+            <a id="action-connect">{% trans "Connect to network" %}</a>
+            <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
+        </div>
+        <table class="list-machines" style="display: none">
+            <thead> 
+                <tr> 
+                    <th id="selection" class="select-running">
+                        <input type="checkbox"/>
+                        <div class="expand-icon"></div>          
+                    </th>
+                    <th id="os">{% trans "OS" %}</th> 
+                    <th id="name">{% trans "Name" %}</th> 
+                    <th id="flavor">{% trans "Flavor" %}</th> 
+                    <th id="group">{% trans "Group" %}</th>
+                    <th id="status">{% trans "Status" %}</th> 
+                </tr>
+            </thead> 
+            <tbody class="machines"></tbody>
+        </table>
+	    <ul class="dropdown-selector" style="display: none">
+		    <li class="select-all" ><a href="#">{% trans "all" %}</a></li>
+		    <li class="select-none"><a href="#">{% trans "none" %}</a></li>
+		    <li class="select-group"><a href="#">{% trans "group" %}</a></li>
+	    </ul>  
     </div>
-    <table class="list-machines" style="display: none">
-        <thead> 
-            <tr> 
-                <th id="selection" class="select-running">
-                    <input type="checkbox"/>
-                    <div class="expand-icon"></div>          
-                </th>
-                <th id="os">{% trans "OS" %}</th> 
-                <th id="name">{% trans "Name" %}</th> 
-                <th id="flavor">{% trans "Flavor" %}</th> 
-                <th id="group">{% trans "Group" %}</th>
-                <th id="status">{% trans "Status" %}</th> 
-            </tr>
-        </thead> 
-        <tbody class="machines"></tbody>
-    </table>
-	<ul class="dropdown-selector" style="display: none">
-		<li class="select-all" ><a href="#">{% trans "all" %}</a></li>
-		<li class="select-none"><a href="#">{% trans "none" %}</a></li>
-		<li class="select-group"><a href="#">{% trans "group" %}</a></li>
-	</ul>  
 </div>
 
 <script>
@@ -291,7 +293,7 @@ function update_machines_view(data){
         showWelcome()
     } else {
         hideWelcome()
-        $("#machinesview_wrapper").fadeIn("fast")
+        $("#machinesview_content").fadeIn("fast")
     }      
 	
 	// set confirm box position

@@ -97,8 +97,8 @@ class Limit(models.Model):
 
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
-    ram = models.IntegerField('Size of RAM', default=0)
-    disk = models.IntegerField('Size of Disk space', default=0)
+    ram = models.IntegerField('Size of RAM', default=0)             # Size in MiB
+    disk = models.IntegerField('Size of Disk space', default=0)     # Size in GiB
     
     class Meta:
         verbose_name = u'Virtual machine flavor'

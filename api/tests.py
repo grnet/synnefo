@@ -354,8 +354,8 @@ def create_flavors(n=1):
     for i in range(n):
         Flavor.objects.create(
             cpu=randint(1, 4),
-            ram=randint(1, 8) * 1024**3,
-            disk=randint(1, 20) * 1024**3)
+            ram=randint(1, 8) * 512,
+            disk=randint(1, 40))
 
 def create_images(n=1):
     users = SynnefoUser.objects.all()

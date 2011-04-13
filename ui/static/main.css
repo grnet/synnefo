@@ -817,9 +817,12 @@ div#view-select {
     display:none;
 }
 
-a#standard, a#list {
+a#standard, a#list, a#single {
     text-decoration: none;
-    font-size: 11pt;
+    height: 27px;
+    width: 33px;
+    padding: 0px 9px;
+    font-size: 11px;
 }
 
 div#view-select a {
@@ -830,16 +833,44 @@ a#list:hover {
     background: #5f8dd3;
 }
 
-a#standard:hover{
-    background: #5f8dd3;
-}
-
 a#standard:active, a#list:active {
     color:white;
 }
 
-.activelink {
-    color:white !important;
+a#standard {
+    background: url(/static/icon-view.png) no-repeat -34px 0;
+}
+
+a#list {
+    background: url(/static/list-view.png) no-repeat -34px 0;
+}
+
+a#single {
+    background: url(/static/single-view.png) no-repeat -34px 0;
+}
+
+a#standard:hover {
+    background: url(/static/icon-view.png) no-repeat -17px 0;
+}
+
+a#list:hover {
+    background: url(/static/list-view.png) no-repeat -17px 0;
+}
+
+a#single:hover {
+    background: url(/static/single-view.png) no-repeat -17px 0;
+}
+
+a#standard.activelink {
+    background: url(/static/icon-view.png) no-repeat 0px 0;
+}
+
+a#list.activelink {
+    background: url(/static/list-view.png) no-repeat 0px 0;
+}
+
+a#single.activelink {
+    background: url(/static/single-view.png) no-repeat 0px 0;
 }
 
 #machinetype {

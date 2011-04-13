@@ -91,8 +91,8 @@ function list_view() {
 			return false;
 		},
         success: function(data, textStatus, jqXHR) {
-			$("a#standard")[0].className += ' activelink';
-			$("a#list")[0].className = '';
+			$("a#list")[0].className += ' activelink';
+			$("a#standard")[0].className = '';
 			$("div#machinesview").html(data);
 		}
 	});
@@ -121,8 +121,8 @@ function standard_view() {
 			return false;
 		},
         success: function(data, textStatus, jqXHR) {
-			$("a#list")[0].className += ' activelink';
-			$("a#standard")[0].className = '';
+			$("a#standard")[0].className += ' activelink';
+			$("a#list")[0].className = '';
 			$("div#machinesview").html(data);
 		}
 	});	

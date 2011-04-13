@@ -289,6 +289,12 @@ function update_machines_view(data){
                 ['Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) { 
                 machine.find('.spinner').show();
             }   
+            //allow destroy action only while machine is building
+            if (server.status == 'BUILD') {
+                $('div.#' + server.id + ' a.action-reboot').hide();
+                $('div.#' + server.id + ' a.action-shutdown').hide();        
+                $('div.#' + server.id + ' a.action-destroy').attr('style', 'margin-top:46px');            
+            }
         }
     });
 

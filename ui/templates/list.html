@@ -257,14 +257,19 @@ function update_machines_view(data){
                 osIcon = "static/os_logos/" + osTag + ".png";
             }
             // find flavor parameters
-            flavorData = get_flavor(server.flavorRef);
-            flavorLabel = '';
-            if (flavorData['cpu'] == '1') {
+            var current_flavor = '';
+            for (i=0; i<flavors.length; i++) {
+                if (flavors[i]['id'] == server.flavorRef) {
+                    current_flavor = flavors[i];
+                }
+            } 
+            var flavor_label = '';
+            if (current_flavor['cpu'] == '1') {
                 flavorLabel = '1 CPU, ';
             } else {
-                flavorLabel = flavorData['cpu'] + ' CPUs, ';
+                flavorLabel = current_flavor['cpu'] + ' CPUs, ';
             }
-            flavorLabel = flavorLabel + flavorData['ram'] + 'MB, ' + flavorData['disk'] + 'GB'; 
+            flavorLabel = flavorLabel + current_flavor['ram'] + 'MB, ' + current_flavor['disk'] + 'GB'; 
 
             // add new row to the table
             vmTable.fnAddData([

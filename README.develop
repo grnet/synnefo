@@ -137,7 +137,7 @@ and then copy/edit according to the database used:
 	    'default': {
 		'ENGINE': 'django.db.backends.mysql', 
 		'NAME': 'synnefo',
-		'USER': 'USERNAME'
+		'USER': 'USERNAME',
 		'PASSWORD': 'PASSWORD',
 		'HOST': 'HOST',
 		'PORT': 'PORT',

@@ -334,6 +334,7 @@ var vmTable = $("div.list table.list-machines").dataTable({
     ]
 });
 
+// basic functions executed on page load
 if (images.length == 0) {
     // populate image list
     update_images();
@@ -345,7 +346,6 @@ if (flavors.length == 0) {
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm');
 $('div.confirm_multiple button.no').text('Cancel');
-
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){
     if (this.innerHeight - 200 < $('#machinesview').height())
@@ -353,7 +353,6 @@ $(window).resize(function(){
     else
         $('.confirm_multiple').removeClass('fixed');
 });
-
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 

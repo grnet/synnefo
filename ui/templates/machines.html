@@ -166,7 +166,7 @@
 	</div>
 </form>
 
-<!-- notification after wizard completion -->
+<!-- base notification for error/success reporting -->
 <a id="notification" rel="#error-success" href="#"></a>
 
 <div class="modal" id="error-success">
@@ -174,14 +174,47 @@
     <div><p>{% trans "More details about the result"%}</p></div>
 </div>
 
-<!-- confirmation before executing an action -->
-<a id="confirmation" rel="#yes-no" href="#"></a>
 
-<div class="modal" id="yes-no">
-    <h3>{% trans "You are about to xxx machine yyy" %}</h3>
-    <p>{% trans "Are you sure you want to proceed?" %}</p>
-    <button>{% trans "Yes" %}</button>
-	<button>{% trans "No" %}</button>
+<a id="meta-editor-1" rel="#editor-1" href="#"></a>
+
+<div class="modal" id="editor-1">
+    <h3>
+        <label>{% trans "Metadata for machine:" %}<label>
+        <span></span>
+    </h3>
+    <hr class="topruler" />
+    <div class="meta-list">
+        <ul>
+            <li class="meta-template">
+                <label>{% trans "Metadata key" %}</label>
+                <button type="button" class="remove">{% trans "remove x" %}</button>
+                <hr class="meta-separator">
+                <p>{% trans "Metadata value" %}</p>
+                <button type="button" class="edit">{% trans "edit" %}</button>
+            </li>
+        </ul>
+    </div>
+    <button type="button" class="create">{% trans "Create New+" %}</button>
+    <hr class="bottomruler" /> 
+</div>
+
+<a id="meta-editor-2" rel="#editor-2" href="#"></a>
+
+<div class="modal" id="editor-2">
+    <h3>
+        <label>{% trans "Metadata for machine:" %}<label>
+        <span></span>
+    </h3>
+    <hr class="topruler" />
+    <hr class="fatruler" />
+    <label class="meta-key">{% trans "Key:" %}</label>
+    <input type="text" maxlength="15" class="key" value="max 15 characters"/>
+    <hr class="meta-separator">
+    <label class="meta-value">{% trans "Value:" %}</label>
+    <input type="text" maxlength="150" class="value" value="max 150 characters"/>
+    <button type="button" class="cancel">{% trans "Cancel" %}</button>
+    <button type="button" class="save">{% trans "Save" %}</button>
+    <hr class="bottomruler" /> 
 </div>
 
 <div id="machinesview"></div>
@@ -221,7 +254,6 @@ $("a#list").click(function(){
     list_view(); 
     return false;
 });
-
 
 // switch to standard view
 $("a#standard").click(function(){

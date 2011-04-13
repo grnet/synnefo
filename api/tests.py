@@ -604,15 +604,17 @@ class CreateServerMetadataItem(BaseTestCase):
             self.assertItemNotFound(response)
     
     def test_invalid_key(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            path = '/api/v1.1/servers/1/meta/baz'
+        with AssertInvariant(self.get_all_server_metadata) as metadata:
+            server_id = choice(metadata.keys())
+            path = '/api/v1.1/servers/%d/meta/baz' % server_id
             data = json.dumps({'meta': {'foo': 'bar'}})
             response = self.client.put(path, data, content_type='application/json')
             self.assertBadRequest(response)
     
     def test_invalid_data(self):
-        with AssertInvariant(self.get_all_server_metadata):
-            path = '/api/v1.1/servers/1/meta/foo'
+        with AssertInvariant(self.get_all_server_metadata) as metadata:
+            server_id = choice(metadata.keys())
+            path = '/api/v1.1/servers/%d/meta/foo' % server_id
             response = self.client.put(path, 'meta', content_type='application/json')
             self.assertBadRequest(response)
 

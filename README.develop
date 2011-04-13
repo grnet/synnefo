@@ -192,18 +192,35 @@ South Database Migrations
 
 *Initial Migration
 
-*Schema migrations:
-
 First, remember to add the south app to settings.py (it is already included in the
 settings.py.dist).
 
-In addition, do not use the syncdb management command. It can only be used
+To initialise south migrations in your database the following commands must be executed:
+
+    $ ./bin/python manage.py syncdb       # Create / update the database with the south tables
+    $ ./bin/python manage.py migrate db   # Perform migration in the database
+
+Note that syncdb will create the latest models that exist in the db app, so some migrations may fail.
+If you are sure a migration has already taken place you must use the "--fake" option, to apply it.
+
+For example:
+
+    $ ./bin/python manage.py migrate db 0001 --fake
+
+To be sure that all migrations are applied type:
+
+    $ ./bin/python manage.py migrate db --list
+
+All starred migrations are applied.
+
+Remember, the migration is performed mainly for the data, not for the database schema. If you do not want to migrate the
+data, a syncdb and fake migrations for all the migration versions will suffice.
+
+*Schema migrations:
+
+Do not use the syncdb management command. It can only be used
 the first time and/or if you drop the database and must recreate it from scratch.
-
-The first schema support for migrations is initialized with the following
-command:
-
-    $ ./bin/python schemamigration db --initial
+See "Initial Migration" section.
 
 Each time you make changes to the database and data migration is not required (WARNING: always
 perform this with extreme care):

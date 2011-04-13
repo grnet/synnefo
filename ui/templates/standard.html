@@ -226,7 +226,12 @@ function update_machines_view(data){
                     console.info(existing.find("a.name span.name").text() + ' from ' 
                                 + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
-
+                //show reboot and shutdown actions
+                if (server.status == 'ACTIVE' || server.status == 'REBOOT') {
+                    $('div.#' + server.id + ' a.action-reboot').show();
+                    $('div.#' + server.id + ' a.action-shutdown').show();        
+                    $('div.#' + server.id + ' a.action-destroy').removeClass('destroy-padding');        
+                }
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
                     [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
                      'Starting'].indexOf(existing.find(".status").text()) >= 0) {
@@ -293,7 +298,7 @@ function update_machines_view(data){
             if (server.status == 'BUILD') {
                 $('div.#' + server.id + ' a.action-reboot').hide();
                 $('div.#' + server.id + ' a.action-shutdown').hide();        
-                $('div.#' + server.id + ' a.action-destroy').attr('style', 'margin-top:46px');            
+                $('div.#' + server.id + ' a.action-destroy').addClass('destroy-padding');        
             }
         }
     });

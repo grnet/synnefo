@@ -634,10 +634,15 @@ div.machine div.actions {
 div.machine div.actions a {
     color: transparent;
     margin: 0 0 5px 8px;
+    display: block;
 }
 
-div.machine div.actions a.action-destroy {
-    margin-top: 18px;
+div.machine div.actions a.action-shutdown {
+    margin-bottom: 18px;
+}
+
+div.machine div.actions a.destroy-padding {
+    margin-top: 46px;
 }
 
 div.actions a.enabled:hover{

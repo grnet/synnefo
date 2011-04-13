@@ -190,6 +190,8 @@ username
 South Database Migrations
 ------------------------
 
+*Initial Migration
+
 *Schema migrations:
 
 First, remember to add the south app to settings.py (it is already included in the

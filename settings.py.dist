@@ -8,6 +8,13 @@ PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+# A quick-n-dirty way to know if we're running unit tests
+import sys
+if len(sys.argv) >= 2:
+    TEST = ('manage.py', 'test') == (os.path.basename(sys.argv[0]), sys.argv[1])
+else:
+    TEST = False
+
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )

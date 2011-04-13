@@ -694,3 +694,33 @@ class UpdateImageMetadata(BaseTestCase):
             data = json.dumps({'metadata': {'Key1': 'A Value'}})
             response = self.client.post(path, data, content_type='application/json')
             self.assertItemNotFound(response)
+
+
+class ServerVNCConsole(BaseTestCase):
+    SERVERS = 1
+
+    def test_not_active_server(self):
+        """Test console req for server not in ACTIVE state returns badRequest"""
+        server_id = choice(VirtualMachine.objects.all()).id
+        path = '/api/v1.1/servers/%d/action' % server_id
+        data = json.dumps({'console': {'type': 'vnc'}})
+        response = self.client.post(path, data, content_type='application/json')
+        self.assertBadRequest(response)
+
+    def test_active_server(self):
+        """Test console req for ACTIVE server"""
+        server_id = choice(VirtualMachine.objects.all()).id
+        # FIXME: Start the server properly, instead of tampering with the DB
+        vm = choice(VirtualMachine.objects.all())
+        vm.operstate = 'STARTED'
+        vm.save()
+        server_id = vm.id
+	
+        path = '/api/v1.1/servers/%d/action' % server_id
+        data = json.dumps({'console': {'type': 'vnc'}})
+        response = self.client.post(path, data, content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        reply = json.loads(response.content)
+        self.assertEqual(reply.keys(), ['vnc'])
+        self.assertEqual(set(reply['vnc'].keys()), set(['host', 'port', 'password']))
+

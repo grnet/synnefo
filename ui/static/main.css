@@ -1153,8 +1153,8 @@ input.machine {
 
 .meta-modal button {
     font-size: 80%;
-    width: 70px;
-    height: 15px;
+    width: 87px;
+
     float: right;
     background-color: #5599FF;
     border: 0px solid #5599FF;
@@ -1163,20 +1163,24 @@ input.machine {
 }
 
 .meta-modal button.remove {
+    height: 15px;
+    width: 70px;
     background-color: #d35f5f;
     border-color: #d35f5f;
     margin-top: 1px;
 }
 
 .meta-modal button.edit {
+    height: 15px;
+    width: 70px;
     background-color: #666;
     border-color: #666;
     margin-top: -14px;
 }
 
 .meta-modal button.create {
-    width: 85px;
-    margin: 33px 44px 0 0;
+    height: 23px;
+    margin: 28px 44px 0 0;
 }
 
 .meta-modal input {
@@ -1202,12 +1206,12 @@ input.machine {
 }
 
 .meta-modal button.save {
-    margin-top: 32px;
+    margin-top: 29px;
 }
 
 .meta-modal button.cancel {
     float: left;
-    margin: 32px 0 0 25px;
+    margin: 29px 0 0 25px;
     background-color: #d35f5f;
     border-color: #d35f5f;
 }

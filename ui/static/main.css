@@ -584,7 +584,7 @@ div.image-container {
 }
 
 .selectedrange {
-    border: 1px inset #5599FF;
+    border-color: #5599FF;
 }
 
 #credits-indicator {

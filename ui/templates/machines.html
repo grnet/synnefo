@@ -340,7 +340,12 @@ $(function() {
            if(e.preventDefault) {
                e.preventDefault();
            }
-           api.next();
+           console.info(api.getIndex());
+           if (api.getIndex() < 2) {
+               api.next();
+            } else {
+                return false;
+            }
         }
     });
     $("#name").keypress(function (e) {

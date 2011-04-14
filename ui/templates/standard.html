@@ -58,7 +58,7 @@ $("a.show-metadata").live('click', function() {
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     // set server name in box's title
-    $("a#meta-editor-1 h3").text(serverName);
+    $("#editor-1 h3 span").text(serverName);
     var triggers = $("a#meta-editor-1").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#000',
@@ -78,7 +78,7 @@ $("a.show-group").live('click', function() {
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     // set server name in box's title
-    $("a#meta-editor-2 h3").text(serverName);
+    $("#editor-2 h3 span").text(serverName);
     var triggers = $("a#meta-editor-2").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#000',

@@ -1109,7 +1109,7 @@ input.machine {
 	width: 32px;
 }
 
-.meta-modal h3 label {
+.meta-modal h3 {
     font-weight: normal;
 }
 
@@ -1167,7 +1167,7 @@ input.machine {
     width: 70px;
     background-color: #d35f5f;
     border-color: #d35f5f;
-    margin-top: 1px;
+    margin-top: 2px;
 }
 
 .meta-modal button.edit {

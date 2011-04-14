@@ -1099,6 +1099,16 @@ input.machine {
     font-size: 80%;
 }
 
+.meta-modal .close {
+	background-image: url(/static/close-grey.png);
+	position: absolute;
+	right: -15px;
+	top: -17px;
+	cursor: pointer;
+	height: 32px;
+	width: 32px;
+}
+
 .meta-modal h3 label {
     font-weight: normal;
 }

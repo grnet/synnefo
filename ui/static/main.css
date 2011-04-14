@@ -639,6 +639,7 @@ div.machine div.actions a {
 
 div.machine div.actions a.action-shutdown {
     margin-bottom: 18px;
+    display: block;
 }
 
 div.machine div.actions a.destroy-padding {
@@ -821,7 +822,7 @@ a#standard, a#list, a#single {
     text-decoration: none;
     height: 15px;
     width: 17px;
-    padding: 0px 8px 0 9px;
+    padding: 0px 8px 1px 9px;
     font-size: 11px;
 }
 

@@ -270,8 +270,8 @@ function update_machines_view(data){
                 } catch(err) {}
                 //show reboot and shutdown actions
                 if (server.status == 'ACTIVE' || server.status == 'REBOOT') {
-                    $('div.#' + server.id + ' a.action-reboot').show();
-                    $('div.#' + server.id + ' a.action-shutdown').show();        
+                    $('div.#' + server.id + ' a.action-reboot').attr('style','');
+                    $('div.#' + server.id + ' a.action-shutdown').attr('style','');
                     $('div.#' + server.id + ' a.action-destroy').removeClass('destroy-padding');        
                 }
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&

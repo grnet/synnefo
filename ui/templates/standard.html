@@ -58,13 +58,11 @@ $("a.show-metadata").live('click', function() {
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
     // set server name in box's title
-    $("a#meta-editor-1 span").text(serverName);
+    $("a#meta-editor-1 h3").text(serverName);
     var triggers = $("a#meta-editor-1").overlay({
         // some mask tweaks suitable for modal dialogs
-        mask: {
-            color: '#ebecff',
-            opacity: '0.9'
-        },
+        mask: '#000',
+        effect: 'default',
         top: 'center',
         closeOnClick: false,
         oneInstance: false,

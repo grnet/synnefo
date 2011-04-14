@@ -784,7 +784,7 @@ button.next {
 }
 
 button.prev {
-    background-color: #666666;
+    background-color: #666;
     border:none;
     margin-left: -1px;
     text-align: left;
@@ -1045,7 +1045,7 @@ div.list .stopped {
 /* selected tab */
 #wizard ul.tabs a.current {
 	color: white;
-    background-color: #666666;	
+    background-color: #666;	
 	cursor: default;
 }
 
@@ -1088,6 +1088,87 @@ input.machine {
     overflow: hidden;
 }
 
+/* metadata editing boxes */
+.meta-modal {
+    background-color:#fff;
+    display:none;
+    padding:1em;
+    text-align:left;
+    width:380px;
+    height:360px;
+    font-size: 80%;
+}
+
+.meta-modal h3 label {
+    font-weight: normal;
+}
+
+.meta-modal hr {
+    background-color: #666;
+    border: 0 none;
+    height: 5px;
+    margin: 0; 
+}
+
+.meta-modal hr.topruler {
+    margin-top: 5px; 
+}
+
+.meta-modal hr.fatruler {
+    height: 20px;
+    margin-top: 2px;
+    margin-bottom: 20px;
+}
+
+.meta-modal hr.bottomruler {
+    height: 20px;
+    margin-top: 40px;
+}
+
+.meta-modal hr.meta-separator {
+    width: 320px;
+    margin: 5px 0 2px 0;
+}
+
+.meta-modal div.content {
+    height: 248px;
+    width: 345px;
+    margin-left: 15px;
+}
+
+.meta-modal p {
+    margin-left: 7px;
+}
+
+.meta-modal button {
+    font-size: 80%;
+    width: 70px;
+    height: 15px;
+    float: right;
+    background-color: #5599FF;
+    border: 0px solid #5599FF;
+    padding: 0;
+    margin-right: 25px;
+}
+
+.meta-modal button.remove {
+    background-color: #d35f5f;
+    border-color: #d35f5f;
+    margin-top: 2px;
+}
+
+.meta-modal button.edit {
+    background-color: #666;
+    border-color: #666;
+    margin-top: -14px;
+}
+
+.meta-modal button.create {
+    width: 85px;
+    margin: 33px 44px 0 0;
+}
+
+/* notification box */
 #error-success, #yes-no {
     height: 150px;
     border: 5px solid #87AADE;

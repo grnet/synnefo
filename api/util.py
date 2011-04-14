@@ -132,7 +132,7 @@ def update_response_headers(request, response):
     else:
         response['Content-Type'] = 'application/json'
     
-    if request.META.get('SERVER_NAME') == 'testserver':
+    if settings.TEST:
         response['Date'] = format_date_time(time())
 
 def render_metadata(request, metadata, use_values=False, status=200):
@@ -151,7 +151,7 @@ def render_meta(request, meta, status=200):
     return HttpResponse(data, status=status)
 
 def render_fault(request, fault):
-    if settings.DEBUG or request.META.get('SERVER_NAME') == 'testserver':
+    if settings.DEBUG or settings.TEST:
         fault.details = format_exc(fault)
     
     if request.serialization == 'xml':

@@ -178,17 +178,10 @@ def create_server(request):
     # so that it gets a vm.id and vm.backend_id is valid.
     vm.save() 
 
-    if request.META.get('SERVER_NAME', None) == 'testserver':
-        backend_name = 'test-server'
-        dry_run = True
-    else:
-        backend_name = vm.backend_id
-        dry_run = False
-    
     try:
         jobId = rapi.CreateInstance(
             mode='create',
-            name=backend_name,
+            name=vm.backend_id,
             disk_template='plain',
             disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
             nics=[{}],
@@ -196,7 +189,7 @@ def create_server(request):
             ip_check=False,
             name_check=False,
             pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
-            dry_run=dry_run,
+            dry_run=settings.TEST,
             beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
     except GanetiApiError:
         vm.delete()
@@ -370,7 +363,7 @@ def update_metadata(request, server_id):
         except VirtualMachineMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
     
-    return render_metadata(request, metadata, status=201)
+    return render_metadata(request, updated, status=201)
 
 @api_method('GET')
 def get_metadata_item(request, server_id, key):

@@ -819,9 +819,9 @@ div#view-select {
 
 a#standard, a#list, a#single {
     text-decoration: none;
-    height: 27px;
-    width: 33px;
-    padding: 0px 9px;
+    height: 15px;
+    width: 17px;
+    padding: 0px 8px 0 9px;
     font-size: 11px;
 }
 
@@ -838,27 +838,27 @@ a#standard:active, a#list:active {
 }
 
 a#standard {
-    background: url(/static/icon-view.png) no-repeat -34px 0;
+    background: url(/static/icon-view.png) no-repeat -36px 0;
 }
 
 a#list {
-    background: url(/static/list-view.png) no-repeat -34px 0;
+    background: url(/static/list-view.png) no-repeat -36px 0;
 }
 
 a#single {
-    background: url(/static/single-view.png) no-repeat -34px 0;
+    background: url(/static/single-view.png) no-repeat -36px 0;
 }
 
 a#standard:hover {
-    background: url(/static/icon-view.png) no-repeat -17px 0;
+    background: url(/static/icon-view.png) no-repeat -18px 0;
 }
 
 a#list:hover {
-    background: url(/static/list-view.png) no-repeat -17px 0;
+    background: url(/static/list-view.png) no-repeat -18px 0;
 }
 
 a#single:hover {
-    background: url(/static/single-view.png) no-repeat -17px 0;
+    background: url(/static/single-view.png) no-repeat -18px 0;
 }
 
 a#standard.activelink {

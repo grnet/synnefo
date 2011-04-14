@@ -1120,14 +1120,15 @@ input.machine {
     margin-bottom: 20px;
 }
 
-.meta-modal hr.bottomruler {
-    height: 20px;
-    margin-top: 40px;
-}
-
 .meta-modal hr.meta-separator {
     width: 320px;
     margin: 5px 0 2px 0;
+}
+
+.meta-modal div.bottomruler {
+    background-color: #666;
+    height: 20px;
+    margin-top: 40px;
 }
 
 .meta-modal div.content {

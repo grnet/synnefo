@@ -177,7 +177,7 @@ def create_server(request):
     # We *must* save the VM instance now,
     # so that it gets a vm.id and vm.backend_id is valid.
     vm.save() 
-
+                
     try:
         jobId = rapi.CreateInstance(
             mode='create',

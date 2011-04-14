@@ -819,9 +819,9 @@ div#view-select {
 
 a#standard, a#list, a#single {
     text-decoration: none;
-    height: 27px;
-    width: 33px;
-    padding: 0px 9px;
+    height: 15px;
+    width: 17px;
+    padding: 0px 8px 0 9px;
     font-size: 11px;
 }
 
@@ -838,27 +838,27 @@ a#standard:active, a#list:active {
 }
 
 a#standard {
-    background: url(/static/icon-view.png) no-repeat -34px 0;
+    background: url(/static/icon-view.png) no-repeat -36px 0;
 }
 
 a#list {
-    background: url(/static/list-view.png) no-repeat -34px 0;
+    background: url(/static/list-view.png) no-repeat -36px 0;
 }
 
 a#single {
-    background: url(/static/single-view.png) no-repeat -34px 0;
+    background: url(/static/single-view.png) no-repeat -36px 0;
 }
 
 a#standard:hover {
-    background: url(/static/icon-view.png) no-repeat -17px 0;
+    background: url(/static/icon-view.png) no-repeat -18px 0;
 }
 
 a#list:hover {
-    background: url(/static/list-view.png) no-repeat -17px 0;
+    background: url(/static/list-view.png) no-repeat -18px 0;
 }
 
 a#single:hover {
-    background: url(/static/single-view.png) no-repeat -17px 0;
+    background: url(/static/single-view.png) no-repeat -18px 0;
 }
 
 a#standard.activelink {
@@ -1099,7 +1099,17 @@ input.machine {
     font-size: 80%;
 }
 
-.meta-modal h3 label {
+.meta-modal .close {
+	background-image: url(/static/close-grey.png);
+	position: absolute;
+	right: -15px;
+	top: -17px;
+	cursor: pointer;
+	height: 32px;
+	width: 32px;
+}
+
+.meta-modal h3 {
     font-weight: normal;
 }
 
@@ -1120,14 +1130,15 @@ input.machine {
     margin-bottom: 20px;
 }
 
-.meta-modal hr.bottomruler {
-    height: 20px;
-    margin-top: 40px;
-}
-
 .meta-modal hr.meta-separator {
     width: 320px;
     margin: 5px 0 2px 0;
+}
+
+.meta-modal div.bottomruler {
+    background-color: #666;
+    height: 20px;
+    margin-top: 40px;
 }
 
 .meta-modal div.content {
@@ -1142,8 +1153,8 @@ input.machine {
 
 .meta-modal button {
     font-size: 80%;
-    width: 70px;
-    height: 15px;
+    width: 87px;
+
     float: right;
     background-color: #5599FF;
     border: 0px solid #5599FF;
@@ -1152,21 +1163,59 @@ input.machine {
 }
 
 .meta-modal button.remove {
+    height: 15px;
+    width: 70px;
     background-color: #d35f5f;
     border-color: #d35f5f;
     margin-top: 2px;
 }
 
 .meta-modal button.edit {
+    height: 15px;
+    width: 70px;
     background-color: #666;
     border-color: #666;
     margin-top: -14px;
 }
 
 .meta-modal button.create {
-    width: 85px;
-    margin: 33px 44px 0 0;
+    height: 23px;
+    margin: 28px 44px 0 0;
 }
+
+.meta-modal input {
+    font-size: 80%;
+    font-style: italic;
+    text-align: right;
+    color: #ccc;
+}
+
+.meta-modal input.key {
+    width: 279px;
+    margin-bottom: -3px;
+}
+
+.meta-modal input.value {
+    width: 267px;
+    height: 170px;
+    overflow: auto;
+}
+
+.meta-modal label.meta-value {
+    vertical-align: top;
+}
+
+.meta-modal button.save {
+    margin-top: 29px;
+}
+
+.meta-modal button.cancel {
+    float: left;
+    margin: 29px 0 0 25px;
+    background-color: #d35f5f;
+    border-color: #d35f5f;
+}
+
 
 /* notification box */
 #error-success, #yes-no {

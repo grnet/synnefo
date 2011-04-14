@@ -1155,7 +1155,7 @@ input.machine {
 .meta-modal button.remove {
     background-color: #d35f5f;
     border-color: #d35f5f;
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 .meta-modal button.edit {
@@ -1168,6 +1168,40 @@ input.machine {
     width: 85px;
     margin: 33px 44px 0 0;
 }
+
+.meta-modal input {
+    font-size: 80%;
+    font-style: italic;
+    text-align: right;
+    color: #ccc;
+}
+
+.meta-modal input.key {
+    width: 279px;
+    margin-bottom: -3px;
+}
+
+.meta-modal input.value {
+    width: 267px;
+    height: 170px;
+    overflow: auto;
+}
+
+.meta-modal label.meta-value {
+    vertical-align: top;
+}
+
+.meta-modal button.save {
+    margin-top: 32px;
+}
+
+.meta-modal button.cancel {
+    float: left;
+    margin: 32px 0 0 25px;
+    background-color: #d35f5f;
+    border-color: #d35f5f;
+}
+
 
 /* notification box */
 #error-success, #yes-no {

@@ -28,9 +28,9 @@
         </a>
         <h5 class="settings">
             {% trans "Show:" %} 
-            <a href="#">{% trans "disks" %}</a> | 
-            <a href="#">{% trans "networks" %}</a> | 
-            <a href="#">{% trans "group" %}</a> | 
+            <a class="show-disks"href="#">{% trans "disks" %}</a> | 
+            <a class="show-networks"href="#">{% trans "networks" %}</a> | 
+            <a class="show-group"href="#">{% trans "group" %}</a> | 
             <a class="show-metadata" href="#">{% trans "metadata" %}</a>
         </h5>
         <div class="confirm_single">
@@ -66,14 +66,29 @@ $("a.show-metadata").live('click', function() {
         top: 'center',
         closeOnClick: false,
         oneInstance: false,
-        load: false,
-        onClose: function(){
-            // With partial refresh working properly,
-            // it is no longer necessary to refresh the whole page
-            // choose_view();
-        }
+        load: false
     });
     $("a#meta-editor-1").data('overlay').load();
+    return false; 
+});
+
+// intercept create new metadata entry click
+$("a.show-group").live('click', function() {
+    // get server name and server ID
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    // set server name in box's title
+    $("a#meta-editor-2 h3").text(serverName);
+    var triggers = $("a#meta-editor-2").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#000',
+        effect: 'default',
+        top: 'center',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false
+    });
+    $("a#meta-editor-2").data('overlay').load();
     return false; 
 });
 

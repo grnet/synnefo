@@ -592,6 +592,7 @@ div.image-container {
     float: none;
     margin: 0 0 0 10px;
     border: 1px solid #999;
+    color: #222222;
 }
 
 div.machine {

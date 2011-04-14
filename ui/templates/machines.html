@@ -120,7 +120,7 @@
                         </li>
                         <li>
                             <div class="cost">
-                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" /> {% trans "C/hour" %}</span>
+                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" disabled="disabled" /> {% trans "C/hour" %}</span>
                             </div>
                         </li>
                     </div>
@@ -539,6 +539,28 @@ $("#custom").click(function(){
     $("#medium").removeClass("active");    
     $("#large").removeClass("active");    
     $("#small").removeClass("active");  
+});
+
+//when textbox gains focus, add selection in css
+$('#cpu-indicator').focus(function() {
+    $(this).addClass('selectedrange');
+});
+$('#ram-indicator').focus(function() {
+    $(this).addClass('selectedrange');
+});
+$('#storage-indicator').focus(function() {
+    $(this).addClass('selectedrange');
+});
+
+//when textbox loses focus, clear selection in css
+$('#cpu-indicator').blur(function() {
+    $(this).removeClass('selectedrange');
+});
+$('#ram-indicator').blur(function() {
+    $(this).removeClass('selectedrange');
+});
+$('#storage-indicator').blur(function() {
+    $(this).removeClass('selectedrange');
 });
 
 // exit the wizard

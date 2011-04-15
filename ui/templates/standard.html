@@ -229,7 +229,7 @@ function update_machines_view(data){
             if (server.status == 'DELETED') {
                 existing.remove();
                 // Reload the page to check if server list is empty
-                location.reload(true);            
+                //location.reload(true);            
                 try {
                     console.info(existing.find("a.name span.name").text() + ' removed');
                 } catch(err) {}            

@@ -576,7 +576,6 @@ $("#start").click(function(){
     create_vm(machineName, imageRef, flavorRef);
 
     $('a#create').data('overlay').close();
-    $("#emptymachineslist").hide();
 
     try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
 

@@ -61,14 +61,6 @@ $("a.show-metadata").live('click', function() {
 
 });
 
-// intercept create new metadata entry click
-$("a.show-group").live('click', function() {
-    // get server name and server ID
-    var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    addMetadata(serverID, serverName);
-});
-
 // intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");

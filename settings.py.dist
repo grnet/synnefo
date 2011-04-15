@@ -131,8 +131,7 @@ INSTALLED_APPS = (
     'synnefo.ui',
     'synnefo.db',
     'synnefo.ganeti',
-    'synnefo.logic',
-    'south'
+    'synnefo.logic'
 )
 
 # The RAPI endpoint and associated credentials to use

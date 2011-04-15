@@ -299,6 +299,7 @@ function update_machines_view(data){
     if (servers.length == 0) {
         showWelcome();
         $("#machinesview_content").fadeOut("fast")
+        standard_view();
     } else {
         hideWelcome();
         $("#machinesview_content").fadeIn("fast")

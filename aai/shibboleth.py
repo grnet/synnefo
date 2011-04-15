@@ -7,13 +7,12 @@
 from synnefo.logic import users
 
 class Tokens:
-    SIB_GIVEN_NAME = "givenName"
-    SIB_SN = "sn"
+    SIB_GIVEN_NAME = "shib_inetorgperson_givenname"
+    SIB_SN = "shib_person_surname"
     SIB_CN = "cn"
     SIB_DISPLAY_NAME = "displayName"
-    SIB_EDU_PERSON_PRINCIPAL_NAME = "eduPersonPrincipalName"
-    SIB_EDU_PERSON_AFFILIATION = "eduPersonAffiliation"
-    SIB_SCHAC_HOME_ORGANISATION = "schacHomeOrganization"
+    SIB_EDU_PERSON_PRINCIPAL_NAME = "eppn"
+    SIB_EDU_PERSON_AFFILIATION = "shib_ep_primaryaffiliation"
     SIB_SCHAC_PERSONAL_UNIQUE_CODE = "schacPersonalUniqueCode"
     SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
 

@@ -124,7 +124,7 @@ $("a.enabled#action-destroy").live('click', function() {
 		serverName = $('#'+serverID+' span.name').text();
 		pending_actions.push([destroy, serverID]);
 	});
-	update_confirmations();
+	update_confirmations();  
 	return false;
 });
 
@@ -189,7 +189,7 @@ function update_machines_view(data){
 				current = index;
 			} 
 		});
-        
+
         if (current != -1) { // if it's there, update the values
             // get current status description, including non api states
             var server_row = $('#' + server.id).parent().parent();
@@ -200,7 +200,9 @@ function update_machines_view(data){
 			} catch(err) {}
 		    // when server is in deleted status it must be removed from the list
 			if (server.status == "DELETED") {
-				vmTable.fnDeleteRow(current);	
+				vmTable.fnDeleteRow(current);
+                // Reload the page to check if server list is empty
+                location.reload(true);
 			} else { // when server is not be deleted, it should be updated
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
                     [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
@@ -295,11 +297,13 @@ function update_machines_view(data){
 
     // show message in case user has no servers!
     if (servers.length == 0) {
-        showWelcome()
+        showWelcome();
+        $("#machinesview_content").fadeOut("fast")
     } else {
-        hideWelcome()
+        hideWelcome();
         $("#machinesview_content").fadeIn("fast")
     }      
+ 
 	
 	// set confirm box position
     if (window.innerHeight - 200 < $('#machinesview').height())

@@ -57,8 +57,13 @@ $("a.show-metadata").live('click', function() {
     // get server name and server ID
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    editMetadata(serverID, serverName);
-
+    // set server name to all related metadata dialogs
+    $("#editor-1 h3 span").text(serverName);
+    $("#editor-2 h3 span").text(serverName);
+    // set server id to all related metadata dialogs
+    $("#editor-1 h3").attr('id', serverID);
+    $("#editor-2 h3").attr('id', serverID);
+    editMetadata();
 });
 
 // intercept reboot click 

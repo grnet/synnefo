@@ -583,9 +583,7 @@ $("div.confirm_multiple .no").live('click', function(){
 });
 
 // bring up edit metadata overlay
-function editMetadata(serverID, serverName) {
-    // set server name in box's title
-    $("#editor-1 h3 span").text(serverName);
+function editMetadata() {
     var triggers = $("a#meta-editor-1").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#000',
@@ -596,15 +594,13 @@ function editMetadata(serverID, serverName) {
         load: false
     });
     // get metadata for current server
-    // TODO
+    //get_metadata(serverID);
     $("a#meta-editor-1").data('overlay').load();
     return false; 
 }
 
 // bring up add metadata overlay
-function addMetadata(serverID, serverName) {
-    // set server name in box's title
-    $("#editor-2 h3 span").text(serverName);
+function addMetadata() {
     var triggers = $("a#meta-editor-2").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#000',
@@ -622,7 +618,7 @@ function addMetadata(serverID, serverName) {
 $('#editor-1.meta-modal button.create').click( function(){
     // go from edit metadata to add metadata
     $('a#meta-editor-1').data('overlay').close();
-    addMetadata('1', 'name');
+    addMetadata();
 });
 
 // intercept click on remove button in metadata edit dialog
@@ -644,7 +640,7 @@ $('#editor-1.meta-modal button.create').click( function(){
 $('#editor-2.meta-modal button.cancel').click( function(){
     // go from add meatata to edit metadata
     $('a#meta-editor-2').data('overlay').close();
-    editMetadata('1', 'name');
+    editMetadata();
 });
 
 // intercept click on save button in metadata add dialog
@@ -653,7 +649,7 @@ $('#editor-2.meta-modal button.save').click( function(){
     //TODO
     // go from add meatata to edit metadata
     $('a#meta-editor-2').data('overlay').close();
-    editMetadata('1', 'name');
+    editMetadata();
 });
 
 // basic functions executed on page load

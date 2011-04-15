@@ -6,9 +6,9 @@ def camelCase(s):
     return s[0].lower() + s[1:]
 
 
-class Fault(BaseException):
+class Fault(Exception):
     def __init__(self, message='', details='', name=''):
-        BaseException.__init__(self, message, details, name)
+        Exception.__init__(self, message, details, name)
         self.message = message
         self.details = details
         self.name = name or camelCase(self.__class__.__name__)

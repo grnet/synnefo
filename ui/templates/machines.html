@@ -185,14 +185,16 @@
     <hr class="topruler" />
     <hr class="fatruler" />
     <div class="content">
-        <ul>
-            <li class="meta-template">
+        <ul class="meta-template" style="display:none">
+            <li>
                 <label>{% trans "Metadata key" %}</label>
                 <button type="button" class="remove">{% trans "remove x" %}</button>
                 <hr class="meta-separator">
                 <p>{% trans "Metadata value" %}</p>
                 <button type="button" class="edit">{% trans "edit" %}</button>
             </li>
+        </ul>
+        <ul class="meta-list">
         </ul>
     </div>
     <button type="button" class="create">{% trans "Create New+" %}</button>
@@ -593,8 +595,9 @@ function editMetadata() {
         oneInstance: false,
         load: false
     });
-    // get metadata for current server
-    //get_metadata(serverID);
+    // get metadata for current server and fill the dialog
+    serverID = $("#editor-1 h3").attr('id');
+    get_metadata(serverID);
     $("a#meta-editor-1").data('overlay').load();
     return false; 
 }
@@ -651,6 +654,19 @@ $('#editor-2.meta-modal button.save').click( function(){
     $('a#meta-editor-2').data('overlay').close();
     editMetadata();
 });
+
+// update metadata in edit dialog
+function update_metadata(data) {
+
+    meta = data.metadata.values;
+
+    for (key in meta) {
+        pair = $("ul.meta-template li").clone();
+        pair.find("label").text(key);
+        pair.find("p").text(meta[key]);
+        pair.appendTo("#editor-1 div.content ul.meta-list");
+    }
+}
 
 // basic functions executed on page load
 if (images.length > 0) {

@@ -677,6 +677,28 @@ function start(serverIDs){
     return false;
 }
 
+// get server metadata
+function get_metadata(serverID) { 
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/meta',
+        type: "GET",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+            try {
+				ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
+			} catch (err) {
+				ajax_error(err);
+			}
+        },
+        success: function(data, textStatus, jqXHR) {
+            update_metadata(data);
+        }
+    });
+    return false;
+}
+
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");

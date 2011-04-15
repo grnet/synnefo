@@ -4,8 +4,14 @@
 # Copyright 2010 Greek Research and Technology Network
 #
 
+from django.conf import settings
 from synnefo.db.models import VirtualMachine
 from synnefo.logic import utils
+from synnefo.util.rapi import GanetiRapiClient
+
+
+rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
+
 
 def process_backend_msg(vm, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend.
@@ -61,3 +67,37 @@ def start_action(vm, action):
     elif action == "START":
         vm.suspended = False
     vm.save()
+
+def create_instance(vm, flavor, password):
+    # FIXME: `password` must be passed to the Ganeti OS provider via CreateInstance()
+    return rapi.CreateInstance(
+        mode='create',
+        name='verigak-8',
+        disk_template='plain',
+        disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
+        nics=[{}],
+        os='debootstrap+default',       #TODO: select OS from imageRef
+        ip_check=False,
+        name_check=False,
+        pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
+        dry_run=settings.TEST,
+        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
+
+def delete_instance(vm):
+    start_action(vm, 'DESTROY')
+    rapi.DeleteInstance(vm.backend_id)
+
+def reboot_instance(vm, reboot_type):
+    assert reboot_type in ('soft', 'hard')
+    rapi.RebootInstance(vm.backend_id, reboot_type)
+
+def startup_instance(vm):
+    start_action(vm, 'START')
+    rapi.StartupInstance(vm.backend_id)
+
+def shutdown_instance(vm):
+    start_action(vm, 'STOP')
+    rapi.ShutdownInstance(vm.backend_id)
+
+def get_instance_console(vm):
+    return rapi.GetInstanceConsole(vm.backend_id)

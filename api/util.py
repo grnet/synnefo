@@ -10,17 +10,18 @@ from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
 
+import datetime
+import dateutil.parser
+import logging
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import Fault, BadRequest, ItemNotFound, ServiceUnavailable
-from synnefo.db.models import SynnefoUser, Image, ImageMetadata, VirtualMachine, VirtualMachineMetadata
-
-import datetime
-import dateutil.parser
-import logging
+from synnefo.api.faults import Fault, BadRequest, ItemNotFound, ServiceUnavailable, Unauthorized
+from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
+                                VirtualMachine, VirtualMachineMetadata)
 
 
 class UTC(tzinfo):
@@ -35,7 +36,7 @@ class UTC(tzinfo):
 
 
 def isoformat(d):
-    """Return an ISO8601 date string that includes a timezon."""
+    """Return an ISO8601 date string that includes a timezone."""
     
     return d.replace(tzinfo=UTC()).isoformat()
 
@@ -70,7 +71,7 @@ def get_user():
     try:
         return SynnefoUser.objects.all()[0]
     except IndexError:
-        raise Unauthorized
+        raise Unauthorized('No users found.')
 
 def get_vm(server_id):
     """Return a VirtualMachine instance or raise ItemNotFound."""
@@ -110,6 +111,14 @@ def get_image_meta(image_id, key):
     except ImageMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
 
+def get_flavor(flavor_id):
+    """Return a Flavor instance or raise ItemNotFound."""
+    
+    try:
+        flavor_id = int(flavor_id)
+        return Flavor.objects.get(id=flavor_id)
+    except Flavor.DoesNotExist:
+        raise ItemNotFound('Flavor not found.')
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
@@ -168,7 +177,7 @@ def render_fault(request, fault):
 def request_serialization(request, atom_allowed=False):
     """Return the serialization format requested.
        
-       Valid formats are 'json', 'xml' and 'atom' if `atom_allowed` is True.
+    Valid formats are 'json', 'xml' and 'atom' if `atom_allowed` is True.
     """
     
     path = request.path
@@ -209,8 +218,8 @@ def api_method(http_method=None, atom_allowed=False):
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
-                logging.exception('Unexpected error: %s' % e)
-                fault = ServiceUnavailable('Unexpected error')
+                logging.exception('Unexpected error: %s', e)
+                fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
         return wrapper
     return decorator

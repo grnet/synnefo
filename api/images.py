@@ -3,8 +3,10 @@
 #
 
 from synnefo.api.common import method_not_allowed
-from synnefo.api.util import *
-from synnefo.db.models import Image, ImageMetadata, VirtualMachine
+from synnefo.api.faults import BadRequest, Unauthorized
+from synnefo.api.util import (isoformat, isoparse, get_user, get_vm, get_image, get_image_meta,
+                                get_request_dict, render_metadata, render_meta, api_method)
+from synnefo.db.models import Image, ImageMetadata
 
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
@@ -173,7 +175,7 @@ def delete_image(request, image_id):
     
     image = get_image(image_id)
     if image.owner != get_user():
-        raise Unauthorized()
+        raise Unauthorized('Image does not belong to user.')
     image.delete()
     return HttpResponse(status=204)
 

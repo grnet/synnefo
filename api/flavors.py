@@ -7,8 +7,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import ItemNotFound
-from synnefo.api.util import get_user, get_request_dict, api_method
+from synnefo.api.util import get_flavor, api_method
 from synnefo.db.models import Flavor
 
 
@@ -56,16 +55,13 @@ def get_flavor_details(request, flavor_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
-    try:
-        falvor_id = int(flavor_id)
-        flavor = flavor_to_dict(Flavor.objects.get(id=flavor_id))
-    except Flavor.DoesNotExist:
-        raise ItemNotFound
+    
+    flavor = get_flavor(flavor_id)
+    flavordict = flavor_to_dict(flavor, detail=True)
     
     if request.serialization == 'xml':
-        data = render_to_string('flavor.xml', {'flavor': flavor})
+        data = render_to_string('flavor.xml', {'flavor': flavordict})
     else:
-        data = json.dumps({'flavor': flavor})
+        data = json.dumps({'flavor': flavordict})
     
     return HttpResponse(data, status=200)

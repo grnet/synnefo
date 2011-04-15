@@ -178,7 +178,3 @@ SHIBBOLETH_WHITELIST = {
 #Number of hours during which a user token is active
 AUTH_TOKEN_DURATION = 24
 
-#Controls whether the system is running tests
-#Set as reading the DEBUG variable is not reliable (Django changes its value
-# unpredictably)
-TESTING = True

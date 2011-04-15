@@ -85,7 +85,7 @@ class SynnefoAuthMiddleware(object):
                 response['X-CDN-Management-Url'] = ""
             return response
 
-        if settings.TESTING:
+        if settings.TEST:
             if 'TEST-AAI' in request.META:
                 return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
         else:

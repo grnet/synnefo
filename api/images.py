@@ -220,7 +220,7 @@ def update_metadata(request, image_id):
         except ImageMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
 
-    return render_metadata(request, metadata, status=201)
+    return render_metadata(request, updated, status=201)
 
 @api_method('GET')
 def get_metadata_item(request, image_id, key):

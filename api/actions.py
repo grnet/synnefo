@@ -38,10 +38,25 @@ def get_console(request, vm, args):
     """Arrange for an OOB console of the specified type
 
     This method arranges for an OOB console of the specified type.
-    Only "vnc" type consoles are supported for now.
+    Only consoles of type "vnc" are supported for now.
+    
     It uses a running instance of vncauthproxy to setup proper
     VNC forwarding with a random password, then returns the necessary
     VNC connection info to the caller.
+
+    JSON Request: {
+        "console": {
+            "type": "vnc"
+        }
+    }
+
+    JSON Reply: {
+        "vnc": {
+            "host": "fqdn_here",
+            "port": a_port_here,
+            "password": "a_password_here"
+        }
+    }
 
     """
     # Normal Response Code: 200
@@ -55,28 +70,39 @@ def get_console(request, vm, args):
     #                       overLimit (413)
     try:
         console_type = args.get('type', '')
-        if console_type != 'VNC':
-            raise BadRequest(message="type can only be 'VNC'")
+        if console_type != 'vnc':
+            raise BadRequest(message="type can only be 'vnc'")
     except KeyError:
         raise BadRequest()
 
     # Use RAPI to get VNC console information for this instance
     if get_rsapi_state(vm) != 'ACTIVE':
         raise BadRequest(message="Server not in ACTIVE state")
-    console_data = rapi.GetInstanceConsole(vm.backend_id)
+    if settings.TEST:
+        console_data = { 'kind': 'vnc', 'host': 'ganeti_node', 'port': 1000 }
+    else:
+        console_data = rapi.GetInstanceConsole(vm.backend_id)
     if console_data['kind'] != 'vnc':
         raise ServiceUnavailable()
 
     # Let vncauthproxy decide on the source port.
-    # FIXME
-    # sport = 0
-    sport = console_data['port'] - 1000
+    # The alternative: static allocation, e.g.
+    # sport = console_data['port'] - 1000
+    sport = 0
     daddr = console_data['host']
     dport = console_data['port']
     passwd = random_password()
 
-    request_vnc_forwarding(sport, daddr, dport, passwd)
-    vnc = { 'host': getfqdn(), 'port': sport, 'password': passwd }
+    try:
+        if settings.TEST:
+            fwd = { 'source_port': 1234, 'status': 'OK' }
+        else:
+            fwd = request_vnc_forwarding(sport, daddr, dport, passwd)
+        if fwd['status'] != "OK":
+            raise ServiceUnavailable()
+        vnc = { 'host': getfqdn(), 'port': fwd['source_port'], 'password': passwd }
+    except Exception:
+        raise ServiceUnavailable("Could not allocate VNC console port")
 
     # Format to be reviewed by [verigak], FIXME
     if request.serialization == 'xml':
@@ -84,7 +110,7 @@ def get_console(request, vm, args):
         data = render_to_string('vnc.xml', {'vnc': vnc})
     else:
         mimetype = 'application/json'
-        data = json.dumps(vnc)
+        data = json.dumps({'vnc': vnc})
 
     return HttpResponse(data, mimetype=mimetype, status=200)
 

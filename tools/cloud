@@ -82,6 +82,9 @@ class Command(object):
         buf = resp.read() or '{}'
         reply = json.loads(buf)
 
+        # If the response status is not the expected one,
+        # assume an error has occured and treat the body
+        # as a cloudfault.
         if resp.status != expected_status:
             if len(reply) == 1:
                 key = reply.keys()[0]
@@ -241,9 +244,9 @@ class ServerConsole(Command):
     
     def execute(self, server_id):
         path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
-        body = json.dumps({'console':{'type':'VNC'}})
-        reply = self.http_post(path, body)
-        print_dict(reply)
+        body = json.dumps({'console':{'type':'vnc'}})
+        reply = self.http_cmd('POST', path, body, 200)
+        print_dict(reply['vnc'])
 
 
 @command_name('lsaddr')

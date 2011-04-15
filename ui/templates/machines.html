@@ -661,8 +661,6 @@ function update_metadata(data) {
     meta = data.metadata.values;
 
     for (key in meta) {
-        alert(key);
-        alert(meta[key]);
         pair = $("ul.meta-template li").clone();
         pair.find("label").text(key);
         pair.find("p").text(meta[key]);

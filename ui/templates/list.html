@@ -202,9 +202,8 @@ function update_machines_view(data){
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);
                 // Reload the page to check if server list is empty
-                console.info(tableData.length);
                 if (tableData.length == 1) {
-                    $("#machinesview_content").fadeOut("fast")
+                    hideWelcome()
                     standard_view();
                 }
 			} else { // when server is not be deleted, it should be updated

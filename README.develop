@@ -171,19 +171,18 @@ print out DDL statements. It should not fail.
 	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
 	$ ./bin/python manage.py loaddata db/fixtures/images.json
 
-The following fictures can be loaded optionally depending on
+The following fixtures can be loaded optionally depending on
 testing requirements:
 
 	$ ./bin/python manage.py loaddata db/fixtures/vms.json
-	$ ./bin/python manage.py loaddata db/fixtures/initial_data.json
 	$ ./bin/python manage.py loaddata db/fixtures/disks.json
 
 7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
 username 
 
 8. Start the system
-    $ ./bin/python db/db_controller.py  #DB synch daemon
-    $ ./bin/python manage.py runserver  #Django
+    $ ./bin/python db/db_controller.py  # DB synch daemon
+    $ ./bin/python manage.py runserver  # Django
 
 9. (Hopefully) Done
 

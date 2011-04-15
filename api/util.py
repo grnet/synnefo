@@ -19,7 +19,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import Fault, BadRequest, ItemNotFound, ServiceUnavailable, Unauthorized
+from synnefo.api.faults import (Fault, BadRequest, BuildInProgress, ItemNotFound,
+                                ServiceUnavailable, Unauthorized)
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata)
 
@@ -214,7 +215,12 @@ def api_method(http_method=None, atom_allowed=False):
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
-            
+            except VirtualMachine.DeletedError:
+                fault = BadRequest('Server has been deleted.')
+                return render_fault(request, fault)
+            except VirtualMachine.BuildingError:
+                fault = BuildInProgress('Server is being built.')
+                return render_fault(request, fault)
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:

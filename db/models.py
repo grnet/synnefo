@@ -258,7 +258,13 @@ class VirtualMachine(models.Model):
             self._action = action
          def __str__(self):
             return repr(str(self._action))
-
+    
+    class DeletedError(Exception):
+        pass
+    
+    class BuildingError(Exception):
+        pass
+    
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""
         super(VirtualMachine, self).__init__(*args, **kw)

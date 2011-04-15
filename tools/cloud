@@ -171,7 +171,6 @@ class CreateServer(Command):
         body = json.dumps({'server': server})
         reply = self.http_post(path, body)
         server = reply['server']
-        server.pop('id')
         print_dict(server)
 
 

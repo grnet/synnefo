@@ -51,8 +51,11 @@ def start_action(vm, action):
 
     # No actions to deleted and no actions beside destroy to suspended VMs
     if vm.deleted:
-        raise VirtualMachine.InvalidActionError(action)
-
+        raise VirtualMachine.DeletedError
+    
+    if vm.operstate == 'BUILD':
+        raise VirtualMachine.BuildingError
+    
     vm.action = action
     vm.backendjobid = None
     vm.backendopcode = None

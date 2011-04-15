@@ -52,24 +52,13 @@
 
 <script>
 
-// intercept metadata click
+// intercept edit metadata click
 $("a.show-metadata").live('click', function() {
     // get server name and server ID
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    // set server name in box's title
-    $("#editor-1 h3 span").text(serverName);
-    var triggers = $("a#meta-editor-1").overlay({
-        // some mask tweaks suitable for modal dialogs
-        mask: '#000',
-        effect: 'default',
-        top: '10%',
-        closeOnClick: false,
-        oneInstance: false,
-        load: false
-    });
-    $("a#meta-editor-1").data('overlay').load();
-    return false; 
+    editMetadata(serverID, serverName);
+
 });
 
 // intercept create new metadata entry click
@@ -77,19 +66,7 @@ $("a.show-group").live('click', function() {
     // get server name and server ID
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
-    // set server name in box's title
-    $("#editor-2 h3 span").text(serverName);
-    var triggers = $("a#meta-editor-2").overlay({
-        // some mask tweaks suitable for modal dialogs
-        mask: '#000',
-        effect: 'default',
-        top: '10%',
-        closeOnClick: false,
-        oneInstance: false,
-        load: false
-    });
-    $("a#meta-editor-2").data('overlay').load();
-    return false; 
+    addMetadata(serverID, serverName);
 });
 
 // intercept reboot click 

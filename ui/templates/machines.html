@@ -386,51 +386,6 @@ $('.radio').live('click' ,function() {
     }
 });
 
-// confirm all actions
-$("div.confirm_multiple .yes").live('click', function(){
-    while(pending_actions.length > 0){ // if there is a pending action for this server execute it
-        action = pending_actions.pop(); // extract action
-        var serverID = action[1];
-        if ($.cookie("list") != '1') { // standard view
-            $('#' + serverID + ' .selected').removeClass('selected');
-            $('#' + serverID + ' .display').removeClass('display');
-            if (action[0] == shutdown) {
-                $('#' + serverID + ' .status').text('Shutting down');
-            } else if (action[0] == start) {
-                $('#' + serverID + ' .status').text('Starting');
-            } else if (action[0] == reboot) {
-                $('#' + serverID + ' .status').text('Rebooting');
-            } else if (action[0] == destroy) {
-                $('#' + serverID + ' .status').text('Destroying');
-            }
-            $('#' + serverID + ' .spinner').show();
-        } else { // list view
-            osIcon = $('#'+serverID).parent().parent().find('.list-logo');
-            osIcon.attr('os',osIcon.attr('src'));
-            osIcon.attr('src','static/progress.gif');
-            if (action[0] == shutdown) {
-                $('#' + serverID).parent().parent().find('span.status').text('Shutting down');
-            } else if (action[0] == start) {
-                $('#' + serverID).parent().parent().find('span.status').text('Starting');
-            } else if (action[0] == reboot) {
-                $('#' + serverID).parent().parent().find('span.status').text('Rebooting');
-            } else if (action[0] == destroy) {
-                $('#' + serverID).parent().parent().find('span.status').text('Destroying');
-            }
-        }
-        action[0]([serverID]); // execute action
-    }
-    update_confirmations();    
-});
-
-// cancel all actions
-$("div.confirm_multiple .no").live('click', function(){
-    pending_actions = [];
-    $('.machine .selected').removeClass('selected');
-    $('.machine .display').removeClass('display');
-    update_confirmations();
-});
-
 // validate cpu input box
 $("#cpu-indicator").live('change',function(){
     var v = Number(this.value);
@@ -580,6 +535,125 @@ $("#start").click(function(){
     try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
 
     $("#wizard").hide();
+});
+
+// confirm all actions
+$("div.confirm_multiple .yes").live('click', function(){
+    while(pending_actions.length > 0){ // if there is a pending action for this server execute it
+        action = pending_actions.pop(); // extract action
+        var serverID = action[1];
+        if ($.cookie("list") != '1') { // standard view
+            $('#' + serverID + ' .selected').removeClass('selected');
+            $('#' + serverID + ' .display').removeClass('display');
+            if (action[0] == shutdown) {
+                $('#' + serverID + ' .status').text('Shutting down');
+            } else if (action[0] == start) {
+                $('#' + serverID + ' .status').text('Starting');
+            } else if (action[0] == reboot) {
+                $('#' + serverID + ' .status').text('Rebooting');
+            } else if (action[0] == destroy) {
+                $('#' + serverID + ' .status').text('Destroying');
+            }
+            $('#' + serverID + ' .spinner').show();
+        } else { // list view
+            osIcon = $('#'+serverID).parent().parent().find('.list-logo');
+            osIcon.attr('os',osIcon.attr('src'));
+            osIcon.attr('src','static/progress.gif');
+            if (action[0] == shutdown) {
+                $('#' + serverID).parent().parent().find('span.status').text('Shutting down');
+            } else if (action[0] == start) {
+                $('#' + serverID).parent().parent().find('span.status').text('Starting');
+            } else if (action[0] == reboot) {
+                $('#' + serverID).parent().parent().find('span.status').text('Rebooting');
+            } else if (action[0] == destroy) {
+                $('#' + serverID).parent().parent().find('span.status').text('Destroying');
+            }
+        }
+        action[0]([serverID]); // execute action
+    }
+    update_confirmations();    
+});
+
+// cancel all actions
+$("div.confirm_multiple .no").live('click', function(){
+    pending_actions = [];
+    $('.machine .selected').removeClass('selected');
+    $('.machine .display').removeClass('display');
+    update_confirmations();
+});
+
+// bring up edit metadata overlay
+function editMetadata(serverID, serverName) {
+    // set server name in box's title
+    $("#editor-1 h3 span").text(serverName);
+    var triggers = $("a#meta-editor-1").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false
+    });
+    // get metadata for current server
+    // TODO
+    $("a#meta-editor-1").data('overlay').load();
+    return false; 
+}
+
+// bring up add metadata overlay
+function addMetadata(serverID, serverName) {
+    // set server name in box's title
+    $("#editor-2 h3 span").text(serverName);
+    var triggers = $("a#meta-editor-2").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false
+    });
+    $("a#meta-editor-2").data('overlay').load();
+    return false; 
+}
+
+// intercept click on create button in metadata edit dialog
+$('#editor-1.meta-modal button.create').click( function(){
+    // go from edit metadata to add metadata
+    $('a#meta-editor-1').data('overlay').close();
+    addMetadata('1', 'name');
+});
+
+// intercept click on remove button in metadata edit dialog
+$('#editor-1.meta-modal button.create').click( function(){
+    // ajax call to delete selected metadata key-value pair
+    // if successful remove it from the overlay
+    // TODO
+});
+
+// intercept click on edit button in metadata edit dialog
+$('#editor-1.meta-modal button.create').click( function(){
+    // inline editing of selected key-value pair
+    // on submission ajax call from updating
+    // on success update the overlay
+    // TODO
+});
+
+// intercept click on cancel button in metadata add dialog
+$('#editor-2.meta-modal button.cancel').click( function(){
+    // go from add meatata to edit metadata
+    $('a#meta-editor-2').data('overlay').close();
+    editMetadata('1', 'name');
+});
+
+// intercept click on save button in metadata add dialog
+$('#editor-2.meta-modal button.save').click( function(){
+    // ajax call to save metadata
+    //TODO
+    // go from add meatata to edit metadata
+    $('a#meta-editor-2').data('overlay').close();
+    editMetadata('1', 'name');
 });
 
 // basic functions executed on page load

@@ -213,13 +213,6 @@ function update_machines_view(data){
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */     
-
-    // show message in case user has no servers!
-    if (data.servers.values.length == 0) {
-        showWelcome()
-    } else {
-        hideWelcome()
-    }  
 	   
     $.each(data.servers.values, function(i,server){
         existing = $('#' + server.id);
@@ -339,6 +332,13 @@ function update_machines_view(data){
     } else {
         $("#mini.separator").fadeOut("slow");
     }     
+
+    // show message in case user has no servers!
+    if (servers.length == 0) {
+        showWelcome()
+    } else {
+        hideWelcome()
+    }  
     
     // set confirm box position
     if (window.innerHeight - 220 < $('#machinesview').height())

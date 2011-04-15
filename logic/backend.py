@@ -72,7 +72,7 @@ def create_instance(vm, flavor, password):
     # FIXME: `password` must be passed to the Ganeti OS provider via CreateInstance()
     return rapi.CreateInstance(
         mode='create',
-        name='verigak-8',
+        name=vm.backend_id,
         disk_template='plain',
         disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
         nics=[{}],

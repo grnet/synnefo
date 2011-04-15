@@ -679,11 +679,11 @@ function start(serverIDs){
 
 // show the welcome screen
 function showWelcome() {
-    $("#emptymachineslist").fadeIn("fast");
-    $("#createbody").fadeIn("fast");
+    $("#view-select").fadeOut("fast");
     $("#createcontainer").addClass('emptycreatecontainer')
     $("#create").addClass('emptycreate')
-    $("#view-select").fadeOut("fast");
+    $("#emptymachineslist").fadeIn("fast");
+    $("#createbody").fadeIn("fast");
     $("#create").css("display", "block");
 }
 

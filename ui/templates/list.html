@@ -202,7 +202,11 @@ function update_machines_view(data){
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);
                 // Reload the page to check if server list is empty
-                //location.reload(true);
+                console.info(tableData.length);
+                if (tableData.length == 1) {
+                    $("#machinesview_content").fadeOut("fast")
+                    standard_view();
+                }
 			} else { // when server is not be deleted, it should be updated
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
                     [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
@@ -296,15 +300,10 @@ function update_machines_view(data){
     }
 
     // show message in case user has no servers!
-    if (servers.length == 0) {
-        showWelcome();
-        $("#machinesview_content").fadeOut("fast")
-        standard_view();
-    } else {
+    if (servers.length > 0) {
         hideWelcome();
         $("#machinesview_content").fadeIn("fast")
-    }      
- 
+    }
 	
 	// set confirm box position
     if (window.innerHeight - 200 < $('#machinesview').height())

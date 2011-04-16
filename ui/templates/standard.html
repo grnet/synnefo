@@ -141,7 +141,6 @@ $("div.actions a.action-destroy").live('click', function(){
     $(this).addClass('selected');
     $(this).parent().addClass('display')
     $(this).parent().parent().find('.action_error').hide();
-    serverlength -= 1;
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
@@ -214,7 +213,9 @@ function update_machines_view(data){
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */
+    
     $.each(data.servers.values, function(i,server){
+    
         existing = $('#' + server.id);
         
         // if multiple machines exist in the DOM, delete all but one
@@ -225,10 +226,8 @@ function update_machines_view(data){
 
         var server_image = os_icon(server.metadata);
 
-        serverlength += 1;
         // server already exists in DOM
         if (existing.length){
-            serverlength -= 1;
             $("div.machine:last-child").find("div.separator").show();                
             //  if the status is deleted, delete it from the DOM
             if (server.status == 'DELETED') {
@@ -317,7 +316,6 @@ function update_machines_view(data){
                 $('div.#' + server.id + ' a.action-destroy').addClass('destroy-padding');        
             }
         }  else if (server.status == 'DELETED') {
-                serverlength -= 1;
         }
     });
 
@@ -331,14 +329,21 @@ function update_machines_view(data){
         $("#mini.separator").fadeIn("slow");
     } else {
         $("#mini.separator").fadeOut("slow");
-    }     
-
+    }
+    
+    var server_states = [];
+    for (var i=0;i<data.servers.values.length;i++){
+        var server = data.servers.values[i];
+        if (server_states.indexOf(server.status) == -1){
+            server_states[server_states.length] = server.status;
+        }
+    }
     // show message in case user has no servers!
-    if (serverlength == 0) {
+    if (server_states.length == 0 || (server_states.length == 1 && server_states[0]=='DELETED')) {
         showWelcome();
     } else {
         hideWelcome();
-    }  
+    }
     
     // set confirm box position
     if (window.innerHeight - 220 < $('#machinesview').height())

@@ -193,7 +193,6 @@ function update_machines_view(data){
 				current = index;
 			} 
 		});
-        serverlength += 1;
         if (current != -1) { // if it's there, update the values
             // get current status description, including non api states
             var server_row = $('#' + server.id).parent().parent();
@@ -202,7 +201,6 @@ function update_machines_view(data){
 			try { 
 				console.info(server.name + ' from ' + status_desc + ' to ' + STATUS_MESSAGES[server.status]);
 			} catch(err) {}
-            serverlength -= 1;
 		    // when server is in deleted status it must be removed from the list
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);
@@ -287,7 +285,6 @@ function update_machines_view(data){
                 "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>"
             ]);
         }  else if (server.status == "DELETED") {
-            serverlength -= 1;
         }
     });
 	updateActions();
@@ -300,12 +297,19 @@ function update_machines_view(data){
         $("div.list div.actions").show();
     }
 
+    var server_states = [];
+    for (var i=0;i<data.servers.values.length;i++){
+        var server = data.servers.values[i];
+        if (server_states.indexOf(server.status) == -1){
+            server_states[server_states.length] = server.status;
+        }
+    }
     // show message in case user has no servers!
-    if (serverlength == 0) {
+    if (server_states.length == 0 || (server_states.length == 1 && server_states[0]=='DELETED')) {
         standard_view();
     } else {
         hideWelcome();
-        $("#machinesview_content").fadeIn("fast");
+		$("#machinesview_content").fadeIn("fast");
     }
 	
 	// set confirm box position

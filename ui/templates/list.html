@@ -296,16 +296,9 @@ function update_machines_view(data){
         $("div.list table.list-machines").show();
         $("div.list div.actions").show();
     }
-
-    var server_states = [];
-    for (var i=0;i<data.servers.values.length;i++){
-        var server = data.servers.values[i];
-        if (server_states.indexOf(server.status) == -1){
-            server_states[server_states.length] = server.status;
-        }
-    }
+	
     // show message in case user has no servers!
-    if (server_states.length == 0 || (server_states.length == 1 && server_states[0]=='DELETED')) {
+    if ($("tbody.machines .dataTables_empty").length > 0) {
         standard_view();
     } else {
         hideWelcome();

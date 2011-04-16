@@ -331,15 +331,8 @@ function update_machines_view(data){
         $("#mini.separator").fadeOut("slow");
     }
     
-    var server_states = [];
-    for (var i=0;i<data.servers.values.length;i++){
-        var server = data.servers.values[i];
-        if (server_states.indexOf(server.status) == -1){
-            server_states[server_states.length] = server.status;
-        }
-    }
     // show message in case user has no servers!
-    if (server_states.length == 0 || (server_states.length == 1 && server_states[0]=='DELETED')) {
+    if ($('.machine').length < 2) {
         showWelcome();
     } else {
         hideWelcome();

@@ -702,6 +702,7 @@ function get_metadata(serverID) {
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");
+    $("#machinesview.standard").fadeOut("fast");
     $("#createcontainer").addClass('emptycreatecontainer')
     $("#create").addClass('emptycreate')
     $("#emptymachineslist").fadeIn("fast");
@@ -716,6 +717,7 @@ function hideWelcome() {
     $("#createcontainer").removeClass('emptycreatecontainer')
     $("#create").removeClass('emptycreate')
     $("#view-select").fadeIn("fast");
+    $("#machinesview.standard").fadeIn("fast");
     $("div#view-select").show();
     $("#create").css("display", "inline");
 }

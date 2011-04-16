@@ -656,10 +656,12 @@ $('#editor-2.meta-modal button.save').click( function(){
 });
 
 // update metadata in edit dialog
-function update_metadata(data) {
-
+function list_metadata(data) {    
+    // empty the list if it already exists
+    $("#editor-1 div.content ul.meta-list").empty();
+    // get the values to show
     meta = data.metadata.values;
-
+    // show values
     for (key in meta) {
         pair = $("ul.meta-template li").clone();
         pair.find("label").text(key);

@@ -1149,6 +1149,11 @@ input.machine {
     height: 248px;
     width: 345px;
     margin-left: 15px;
+    overflow: auto;
+}
+
+.meta-modal div.content li {
+    margin-bottom: 20px;
 }
 
 .meta-modal p {

@@ -696,14 +696,15 @@ function get_metadata(serverID) {
 			}
         },
         success: function(data, textStatus, jqXHR) {
+            // to list the new results in the edit dialog
             list_metadata(data);
         }
     });
     return false;
 }
 
-// delete server metadata action
-function delete_server_metadata(serverID, meta_key) {
+// delete metadata key-value pair
+function delete_metadata(serverID, meta_key) {
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/meta/' + meta_key,
         type: "DELETE",
@@ -718,6 +719,7 @@ function delete_server_metadata(serverID, meta_key) {
 			}
         },
         success: function(data, textStatus, jqXHR) {
+            // to GET new results and list them in the edit dialog
             get_metadata(serverID);
         }
     });
@@ -725,8 +727,8 @@ function delete_server_metadata(serverID, meta_key) {
 }
 
 
-// add server metadata action
-function add_server_metadata(serverID, meta_key, meta_value) {
+// add metadata key-value pair
+function add_metadata(serverID, meta_key, meta_value) {
 
     var payload = {
         "meta": {
@@ -749,6 +751,7 @@ function add_server_metadata(serverID, meta_key, meta_value) {
 			}
         },
         success: function(data, textStatus, jqXHR) {
+            // to GET new results and list them in the edit dialog
             get_metadata(serverID);
         }
     });

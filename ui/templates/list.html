@@ -171,7 +171,7 @@ $("a.enabled#action-shutdown").live('click', function() {
 	return false;
 });
 
-var serverlength = 0;
+
 
 function update_machines_view(data){
     /* 
@@ -202,10 +202,10 @@ function update_machines_view(data){
 			try { 
 				console.info(server.name + ' from ' + status_desc + ' to ' + STATUS_MESSAGES[server.status]);
 			} catch(err) {}
+            serverlength -= 1;
 		    // when server is in deleted status it must be removed from the list
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);
-                serverlength -= 1;
 			} else { // when server is not be deleted, it should be updated
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
                     [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
@@ -286,6 +286,8 @@ function update_machines_view(data){
                 "group",
                 "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>"
             ]);
+        }  else if (server.status == "DELETED") {
+            serverlength -= 1;
         }
     });
 	updateActions();

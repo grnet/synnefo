@@ -725,6 +725,37 @@ function delete_server_metadata(serverID, meta_key) {
 }
 
 
+// add server metadata action
+function add_server_metadata(serverID, meta_key, meta_value) {
+
+    var payload = {
+        "meta": {
+        }
+    };
+    payload["meta"][meta_key] = meta_value;
+
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/meta/' + meta_key,
+        type: "PUT",
+    	contentType: "application/json",
+        dataType: "json",    
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+            try {
+				ajax_error(jqXHR.status, undefined, 'add metadata', jqXHR.responseText);
+			} catch (err) {
+				ajax_error(err);
+			}
+        },
+        success: function(data, textStatus, jqXHR) {
+            get_metadata(serverID);
+        }
+    });
+    return false;
+}
+
+
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");

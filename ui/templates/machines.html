@@ -648,12 +648,12 @@ $('#editor-2.meta-modal button.cancel').click( function(){
 });
 
 // intercept click on save button in metadata add dialog
-$('#editor-2.meta-modal button.save').click( function(){
-    // ajax call to save metadata
-    //TODO
-    // go from add meatata to edit metadata
-    $('a#meta-editor-2').data('overlay').close();
-    editMetadata();
+$('#editor-2.meta-modal button.save').live('click', function() {    
+    var serverID = $(this).parent().children("h3").attr('id');
+    var meta_key = $(this).parent().find(".content input.key").attr('value');
+    var meta_value = $(this).parent().find(".content input.value").attr('value');
+    add_server_metadata(serverID, meta_key, meta_value);
+    return false;
 });
 
 // update metadata in edit dialog

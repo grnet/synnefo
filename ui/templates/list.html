@@ -122,6 +122,7 @@ $("a.enabled#action-destroy").live('click', function() {
 	checked.each(function(i,c) {
 		serverID=c.id;
 		serverName = $('#'+serverID+' span.name').text();
+        serverlength -= 1;
 		pending_actions.push([destroy, serverID]);
 	});
 	update_confirmations();  
@@ -170,12 +171,15 @@ $("a.enabled#action-shutdown").live('click', function() {
 	return false;
 });
 
+
+
 function update_machines_view(data){
     /* 
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */
 	tableData = vmTable.fnGetData();
+
     $.each(data.servers.values, function(i,server){        
         current = -1;
         // check server status to select the appropriate OS icon
@@ -189,7 +193,7 @@ function update_machines_view(data){
 				current = index;
 			} 
 		});
-
+        serverlength += 1;
         if (current != -1) { // if it's there, update the values
             // get current status description, including non api states
             var server_row = $('#' + server.id).parent().parent();
@@ -198,14 +202,10 @@ function update_machines_view(data){
 			try { 
 				console.info(server.name + ' from ' + status_desc + ' to ' + STATUS_MESSAGES[server.status]);
 			} catch(err) {}
+            serverlength -= 1;
 		    // when server is in deleted status it must be removed from the list
 			if (server.status == "DELETED") {
 				vmTable.fnDeleteRow(current);
-                // Reload the page to check if server list is empty
-                if (tableData.length == 1) {
-                    hideWelcome()
-                    standard_view();
-                }
 			} else { // when server is not be deleted, it should be updated
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
                     [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
@@ -286,6 +286,8 @@ function update_machines_view(data){
                 "group",
                 "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>"
             ]);
+        }  else if (server.status == "DELETED") {
+            serverlength -= 1;
         }
     });
 	updateActions();
@@ -299,9 +301,11 @@ function update_machines_view(data){
     }
 
     // show message in case user has no servers!
-    if (servers.length > 0) {
+    if (serverlength == 0) {
+        standard_view();
+    } else {
         hideWelcome();
-        $("#machinesview_content").fadeIn("fast")
+        $("#machinesview_content").fadeIn("fast");
     }
 	
 	// set confirm box position

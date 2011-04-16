@@ -702,6 +702,29 @@ function get_metadata(serverID) {
     return false;
 }
 
+// delete server metadata action
+function delete_server_metadata(serverID, meta_key) {
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/meta/' + meta_key,
+        type: "DELETE",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+            try {
+				ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
+			} catch (err) {
+				ajax_error(err);
+			}
+        },
+        success: function(data, textStatus, jqXHR) {
+            get_metadata(serverID);
+        }
+    });
+    return false;
+}
+
+
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");

@@ -625,10 +625,11 @@ $('#editor-1.meta-modal button.create').click( function(){
 });
 
 // intercept click on remove button in metadata edit dialog
-$('#editor-1.meta-modal button.create').click( function(){
-    // ajax call to delete selected metadata key-value pair
-    // if successful remove it from the overlay
-    // TODO
+$('#editor-1.meta-modal button.remove').live('click', function() {    
+    var serverID = $(this).parent().parent().parent().parent().children("h3").attr('id');
+    var meta_key = $(this).parent().find("label").text();
+    delete_server_metadata(serverID, meta_key);
+    return false;
 });
 
 // intercept click on edit button in metadata edit dialog

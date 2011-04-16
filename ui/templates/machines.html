@@ -593,7 +593,15 @@ function editMetadata() {
         top: '10%',
         closeOnClick: false,
         oneInstance: false,
-        load: false
+        load: false,
+        onClose: function() {
+            // remove all entries so they won't be preloaded next time you open the dialog
+            $("#editor-1 div.content ul.meta-list").empty();
+        },
+        onLoad: function() {
+            // this is a work around for the mask not appearing problem
+            $("#editor-1").expose();
+        }
     });
     // get metadata for current server and fill the dialog
     serverID = $("#editor-1 h3").attr('id');
@@ -611,7 +619,11 @@ function addMetadata() {
         top: '10%',
         closeOnClick: false,
         oneInstance: false,
-        load: false
+        load: false,
+        onLoad: function() {
+            // this is a work around for the mask not appearing problem
+            $("#editor-2").expose();
+        }
     });
     $("a#meta-editor-2").data('overlay').load();
     return false; 

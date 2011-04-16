@@ -696,7 +696,7 @@ function get_metadata(serverID) {
 			}
         },
         success: function(data, textStatus, jqXHR) {
-            update_metadata(data);
+            list_metadata(data);
         }
     });
     return false;

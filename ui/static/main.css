@@ -824,7 +824,7 @@ a#standard, a#list, a#single {
     text-decoration: none;
     height: 15px;
     width: 17px;
-    padding: 0px 8px 1px 9px;
+    padding: 1px 8px 2px 9px;
     font-size: 11px;
 }
 
@@ -1501,7 +1501,7 @@ div.list table thead .sorting_desc {
 	background-image: url(desc.gif);
 }
 
-div.list table #selection div.expand-icon {
+div.list table .selection div.expand-icon {
 	background-image: url(asc.gif);
 	background-repeat: no-repeat;
     position: relative;
@@ -1535,34 +1535,34 @@ ul.dropdown-selector li a{
     text-decoration: none;
 }
 
-div.list table thead #os {
-    width: 20px !important;
-    vertical-align:middle;
-}
-
 div.list table span.imagetag { 
     display: none;
 }
 
-div.list table #selection {
+div.list table thead .vmos {
+    width: 20px !important;
+    vertical-align:middle;
+}
+
+div.list table .selection {
 	width: 20px !important;
 	text-align: left;
     background-image: none;
 }
 
-div.list table thead #flavor {
+div.list table thead .vmflavor {
     width: 100px !important;
 }
 
-div.list table thead #group {
+div.list table thead .vmgroup {
     width: 40px !important;
 }
 
-div.list table thead #status {
+div.list table thead .vmstatus {
     width: 50px !important;
 }
 
-div.list table thead #name {
+div.list table thead .vmname {
     width: 70px !important;
 }
 

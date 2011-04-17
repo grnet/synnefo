@@ -24,15 +24,15 @@
         <table class="list-machines" style="display: none">
             <thead> 
                 <tr> 
-                    <th id="selection" class="select-running">
+                    <th class="selection select-running">
                         <input type="checkbox"/>
                         <div class="expand-icon"></div>          
                     </th>
-                    <th id="os">{% trans "OS" %}</th> 
-                    <th id="name">{% trans "Name" %}</th> 
-                    <th id="flavor">{% trans "Flavor" %}</th> 
-                    <th id="group">{% trans "Group" %}</th>
-                    <th id="status">{% trans "Status" %}</th> 
+                    <th class="vmos">{% trans "OS" %}</th> 
+                    <th class="vmname">{% trans "Name" %}</th> 
+                    <th class="vmflavor">{% trans "Flavor" %}</th> 
+                    <th class="vmgroup">{% trans "Group" %}</th>
+                    <th class="vmstatus">{% trans "Status" %}</th> 
                 </tr>
             </thead> 
             <tbody class="machines"></tbody>
@@ -48,7 +48,7 @@
 <script>
 
 // select/deselect all from checkbox widget of table headers
-$("table thead tr th#selection :checkbox").live('change', function() {
+$("table thead tr th.selection :checkbox").live('change', function() {
     if ( $(this).is(":checked") ) {
         $(":checkbox").attr("checked", true);
     }
@@ -84,7 +84,7 @@ $("ul.dropdown-selector li.select-group a").live('click', function() {
 });
 
 // menu toggle, running menu
-$("table.list-machines thead tr th#selection .expand-icon").click( function (obj) {
+$("table.list-machines thead tr th.selection .expand-icon").click( function (obj) {
 	$(".dropdown-selector").slideToggle('medium');
     return false;
 });
@@ -342,17 +342,19 @@ var vmTable = $("div.list table.list-machines").dataTable({
 });
 
 // basic functions executed on page load
-if (images.length == 0) {
-    // populate image list
-    update_images();
-}
 if (flavors.length == 0) {
     // configure flavors
     update_flavors(); 
 }
+if (images.length == 0) {
+    // populate image list
+    update_images();
+}
+
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm');
 $('div.confirm_multiple button.no').text('Cancel');
+
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){
     if (this.innerHeight - 200 < $('#machinesview').height())
@@ -360,6 +362,7 @@ $(window).resize(function(){
     else
         $('.confirm_multiple').removeClass('fixed');
 });
+
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 

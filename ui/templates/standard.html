@@ -299,7 +299,7 @@ function update_machines_view(data){
                     existing.find(".status").text(STATUS_MESSAGES[server.status]); 
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT'],
-                            'Shutting down'].indexOf(existing.find(".status").text()) >= 0) {
+                            'Shutting down', 'Starting'].indexOf(existing.find(".status").text()) >= 0) {
                     // from active, building, rebooting, or shutting down to stopped or on error
                     // shutting down is not an api state, it means the server is active
                     moved = existing.clone().appendTo(".terminated");
@@ -328,6 +328,7 @@ function update_machines_view(data){
                     existing.find('.spinner').show();
                 }                            
             }
+            //existing.find(".status").text(STATUS_MESSAGES[server.status]);
             existing.find("a.name span.name").text(server.name.substring(0,100));
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
         } else if (server.status != 'DELETED') {
@@ -355,8 +356,7 @@ function update_machines_view(data){
                 $('div.#' + server.id + ' a.action-shutdown').hide();        
                 $('div.#' + server.id + ' a.action-destroy').addClass('destroy-padding');        
             }
-        }  else if (server.status == 'DELETED') {
-        }
+        } 
     });
 
     $("#spinner").hide();
@@ -408,9 +408,11 @@ if (flavors.length == 0) {
     // configure flavors
     update_flavors(); 
 }
+
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm All');
 $('div.confirm_multiple button.no').text('Cancel All');
+
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){
     if (this.innerHeight - 220 < $('#machinesview').height())
@@ -418,6 +420,7 @@ $(window).resize(function(){
     else
         $('.confirm_multiple').removeClass('fixed');
 });
+
 // start updating vm list
 update_vms(UPDATE_INTERVAL);
 </script>

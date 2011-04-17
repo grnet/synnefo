@@ -342,13 +342,10 @@ $(function() {
            if(e.preventDefault) {
                e.preventDefault();
            }
-           if (api.getIndex() < 2) {
-               api.next();
-            } else {
-                return false;
-            }
+           return false;
         }
     });
+    //submit wizard by pressing enter on the name textbox
     $("#name").keypress(function (e) {
 		if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
 			$('#start').click();

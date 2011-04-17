@@ -178,24 +178,26 @@
 <a id="meta-editor-1" rel="#editor-1" href="#"></a>
 
 <div class="meta-modal" id="editor-1">
-    <h3>
-        <label>{% trans "Metadata for machine:" %}</label>
-        <span></span>
-    </h3>
-    <hr class="topruler" />
-    <hr class="fatruler" />
-    <div class="content">
-        <ul class="meta-template" style="display:none">
-            <li>
-                <label>{% trans "Metadata key" %}</label>
-                <button type="button" class="remove">{% trans "remove x" %}</button>
-                <hr class="meta-separator">
-                <p>{% trans "Metadata value" %}</p>
-                <button type="button" class="edit">{% trans "edit" %}</button>
-            </li>
-        </ul>
-        <ul class="meta-list">
-        </ul>
+    <div class='container'>
+        <h3>
+            <label>{% trans "Metadata for machine:" %}</label>
+            <span></span>
+        </h3>
+        <hr class="topruler" />
+        <hr class="fatruler" />
+        <div class="content">
+            <ul class="meta-template" style="display:none">
+                <li>
+                    <label>{% trans "Metadata key" %}</label>
+                    <button type="button" class="remove">{% trans "remove x" %}</button>
+                    <hr class="meta-separator">
+                    <p>{% trans "Metadata value" %}</p>
+                    <button type="button" class="edit">{% trans "edit" %}</button>
+                </li>
+            </ul>
+            <ul class="meta-list">
+            </ul>
+        </div>
     </div>
     <button type="button" class="create">{% trans "Create New+" %}</button>
     <div class="bottomruler" /> 
@@ -204,18 +206,20 @@
 <a id="meta-editor-2" rel="#editor-2" href="#"></a>
 
 <div class="meta-modal" id="editor-2">
-    <h3>
-        <label>{% trans "Metadata for machine:" %}</label>
-        <span></span>
-    </h3>
-    <hr class="topruler" />
-    <hr class="fatruler" />
-    <div class="content">
-        <label class="meta-key">{% trans "Key:" %}</label>
-        <input type="text" maxlength="15" class="key" value="max 15 characters"/>
-        <hr class="meta-separator">
-        <label class="meta-value">{% trans "Value:" %}</label>
-        <input type="text" maxlength="150" class="value" value="max 150 characters"/>
+    <div class='container'>
+        <h3>
+            <label>{% trans "Metadata for machine:" %}</label>
+            <span></span>
+        </h3>
+        <hr class="topruler" />
+        <hr class="fatruler" />
+        <div class="content">
+            <label class="meta-key">{% trans "Key:" %}</label>
+            <input type="text" maxlength="15" class="key" value="max 15 characters"/>
+            <hr class="meta-separator">
+            <label class="meta-value">{% trans "Value:" %}</label>
+            <input type="text" maxlength="150" class="value" value="max 150 characters"/>
+        </div>
     </div>
     <button type="button" class="cancel">{% trans "Cancel" %}</button>
     <button type="button" class="save">{% trans "Save" %}</button>
@@ -601,7 +605,7 @@ function editMetadata() {
             $("#editor-1 div.content ul.meta-list").empty();
         },
         onLoad: function() {
-            // this is a work around for the mask not appearing problem
+            // this is a workaround for the mask not appearing problem
             $("#editor-1").expose();
         }
     });
@@ -623,7 +627,7 @@ function addMetadata() {
         oneInstance: false,
         load: false,
         onLoad: function() {
-            // this is a work around for the mask not appearing problem
+            // this is a workaround for the mask not appearing problem
             $("#editor-2").expose();
         }
     });

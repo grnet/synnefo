@@ -1112,6 +1112,10 @@ input.machine {
 	width: 32px;
 }
 
+.meta-modal div.container {
+    height:330px;
+}
+
 .meta-modal h3 {
     font-weight: normal;
 }
@@ -1141,7 +1145,7 @@ input.machine {
 .meta-modal div.bottomruler {
     background-color: #666;
     height: 20px;
-    margin-top: 40px;
+    margin-top: 23px;
 }
 
 .meta-modal div.content {
@@ -1187,7 +1191,7 @@ input.machine {
 
 .meta-modal button.create {
     height: 23px;
-    margin: 28px 44px 0 0;
+    margin: 10px 44px 0 0;
 }
 
 .meta-modal input {
@@ -1213,12 +1217,12 @@ input.machine {
 }
 
 .meta-modal button.save {
-    margin-top: 29px;
+    margin-top: 11px;
 }
 
 .meta-modal button.cancel {
     float: left;
-    margin: 29px 0 0 25px;
+    margin: 11px 0 0 25px;
     background-color: #d35f5f;
     border-color: #d35f5f;
 }

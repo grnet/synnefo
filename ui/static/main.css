@@ -254,7 +254,7 @@ div#wrapper {
 	width:453px;
 	margin:0px auto;	
 	overflow:hidden;
-	position:relative;
+	position:absolute !important;
 }  
 
 /* scrollable items */

@@ -674,7 +674,7 @@ function start(serverIDs){
     return false;
 }
 
-// rename action
+// rename server name action
 function rename(serverID, serverName){
 	if (!serverID.length){
 		//ajax_success('DEFAULT');
@@ -696,7 +696,7 @@ function rename(serverID, serverName){
                     display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
-                    if ( jqXHR.status == '202') {
+                    if ( jqXHR.status == '204') {
 					    try {
                             console.info('renamed ' + serverID);
                         } catch(err) {}

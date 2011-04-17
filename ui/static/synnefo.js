@@ -682,7 +682,7 @@ function rename(serverID, serverName){
 	}	
     // ajax post rename call
     var payload = {
-        "server": {"name" : serverName}
+        "server": {"name": serverName}
     };   
 
     $.ajax({

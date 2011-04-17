@@ -632,6 +632,14 @@ function show_metadata_add_dialog() {
         onLoad: function() {
             // this is a workaround for the mask not appearing problem
             $("#add-dialog").expose();
+        },
+        onClose: function(){
+            // reset input areas
+            $(".meta-modal input.key").removeClass("input-enabled");
+            $(".meta-modal input.key")[0].value = 'max 15 characters';
+            $(".meta-modal textarea.value").removeClass("input-enabled");
+            $(".meta-modal textarea.value")[0].value = 'max 150 characters';
+            show_metadata_edit_dialog();        
         }
     });
     $("a#metadata-add-dialog").data('overlay').load();
@@ -667,12 +675,6 @@ $('#edit-dialog.meta-modal button.edit').click( function(){
 $('#add-dialog.meta-modal button.cancel').click( function(){
     // close add metadata and open edit metadata dialog
     $('a#metadata-add-dialog').data('overlay').close();
-    // reset input areas
-    $(".meta-modal input.key").removeClass("input-enabled");
-    $(".meta-modal input.key").text('max 15 characters');
-    $(".meta-modal textarea.value").removeClass("input-enabled");
-    $(".meta-modal textarea.value").text('max 150 characters');
-    show_metadata_edit_dialog();
 });
 
 // intercept create metadata key focus
@@ -722,7 +724,7 @@ $('#add-dialog.meta-modal button.save').live('click', function() {
         // get the server id, meta key and meta value needed for the ajax call     
         var serverID = $(this).parent().find('h3 p').text();
         var meta_key = $(this).parent().find('input.key').attr('value');
-        var meta_value = $(this).parent().find('input.value').attr('value');
+        var meta_value = $(this).parent().find('textarea.value')[0].value;
         // make the ajax call and list the new GET results
         add_metadata(serverID, meta_key, meta_value);
         // close add metadata and open edit metadata dialog
@@ -732,15 +734,12 @@ $('#add-dialog.meta-modal button.save').live('click', function() {
         // find which field is not filled in and focus there
         if (!$('input.key').hasClass("input-enabled")) {
             $('input.key').focus();
+            $('input.key').focusin();
         } else {
-             $('textarea.value').focus();  
+            $('textarea.value').focus();
+            $('textarea.value').focusin();
         }
     }
-    // reset input areas
-    $(".meta-modal input.key").removeClass("input-enabled");
-    $(".meta-modal input.key").text('max 15 characters');
-    $(".meta-modal textarea.value").removeClass("input-enabled");
-    $(".meta-modal textarea.value").text('max 150 characters');
     return false;
 });
 

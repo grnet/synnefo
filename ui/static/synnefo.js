@@ -686,7 +686,7 @@ function rename(serverID, serverName){
     };   
 
     $.ajax({
-        url: API_URL + '/servers/' + serverID + '/action',
+        url: API_URL + '/servers/' + serverID,
         type: "PUT",
 		contentType: "application/json",
         dataType: "json",

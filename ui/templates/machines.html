@@ -752,8 +752,13 @@ function list_metadata(data) {
     // show values
     for (key in meta) {
         pair = $("ul.meta-template li").clone();
+        //truncate metadata
         pair.find("label").text(key.substring(0,15));
-        pair.find("p").text(meta[key].substring(0,30));
+        if (meta[key].length > 32) {
+            pair.find("p").text(meta[key].substring(0,30) + "...");
+        } else {
+            pair.find("p").text(meta[key]);            
+        }
         pair.appendTo("#edit-dialog div.content ul.meta-list").fadeIn();
     }
 }

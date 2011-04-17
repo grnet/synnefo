@@ -175,13 +175,14 @@
 </div>
 
 
-<a id="meta-editor-1" rel="#editor-1" href="#"></a>
+<a id="metadata-edit-dialog" rel="#edit-dialog" href="#"></a>
 
-<div class="meta-modal" id="editor-1">
+<div class="meta-modal" id="edit-dialog">
     <div class='container'>
         <h3>
             <label>{% trans "Metadata for machine:" %}</label>
-            <span></span>
+            <span>Server name</span>
+            <p style='display:none;'>hidden server id</p>
         </h3>
         <hr class="topruler" />
         <hr class="fatruler" />
@@ -203,13 +204,14 @@
     <div class="bottomruler" /> 
 </div>
 
-<a id="meta-editor-2" rel="#editor-2" href="#"></a>
+<a id="metadata-add-dialog" rel="#add-dialog" href="#"></a>
 
-<div class="meta-modal" id="editor-2">
+<div class="meta-modal" id="add-dialog">
     <div class='container'>
         <h3>
             <label>{% trans "Metadata for machine:" %}</label>
-            <span></span>
+            <span>Server name</span>
+            <p style='display:none;'>hidden server id</p>
         </h3>
         <hr class="topruler" />
         <hr class="fatruler" />
@@ -592,8 +594,8 @@ $("div.confirm_multiple .no").live('click', function(){
 });
 
 // bring up edit metadata overlay
-function editMetadata() {
-    var triggers = $("a#meta-editor-1").overlay({
+function show_metadata_edit_dialog() {
+    var triggers = $("a#metadata-edit-dialog").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#000',
         effect: 'default',
@@ -603,23 +605,23 @@ function editMetadata() {
         load: false,
         onClose: function() {
             // remove all entries so they won't be preloaded next time you open the dialog
-            $("#editor-1 div.content ul.meta-list").empty();
+            $("#edit-dialog div.content ul.meta-list").empty();
         },
         onLoad: function() {
             // this is a workaround for the mask not appearing problem
-            $("#editor-1").expose();
+            $("#edit-dialog").expose();
         }
     });
     // get metadata for current server and fill the dialog
-    serverID = $("#editor-1 h3").attr('id');
+    serverID = $("#edit-dialog h3 p").text();
     get_metadata(serverID);
-    $("a#meta-editor-1").data('overlay').load();
+    $("a#metadata-edit-dialog").data('overlay').load();
     return false; 
 }
 
 // bring up add metadata overlay
-function addMetadata() {
-    var triggers = $("a#meta-editor-2").overlay({
+function show_metadata_add_dialog() {
+    var triggers = $("a#metadata-add-dialog").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#000',
         effect: 'default',
@@ -629,24 +631,24 @@ function addMetadata() {
         load: false,
         onLoad: function() {
             // this is a workaround for the mask not appearing problem
-            $("#editor-2").expose();
+            $("#add-dialog").expose();
         }
     });
-    $("a#meta-editor-2").data('overlay').load();
+    $("a#metadata-add-dialog").data('overlay').load();
     return false; 
 }
 
 // intercept click on create button in metadata edit dialog
-$('#editor-1.meta-modal button.create').click( function(){
+$('#edit-dialog.meta-modal button.create').click( function(){
     // close edit metadata and open add metadata dialog
-    $('a#meta-editor-1').data('overlay').close();
-    addMetadata();
+    $('a#metadata-edit-dialog').data('overlay').close();
+    show_metadata_add_dialog();
 });
 
 // intercept click on remove button in metadata edit dialog
-$('#editor-1.meta-modal button.remove').live('click', function() { 
+$('#edit-dialog.meta-modal button.remove').live('click', function() { 
     // get the server id and meta key needed for the ajax call   
-    var serverID = $(this).closest('div.container').children('h3').attr('id');
+    var serverID = $(this).closest('div.container').find('h3 p').text();
     var meta_key = $(this).parent().find('label').text();
     // make the ajax call and list the new GET results
     delete_metadata(serverID, meta_key);
@@ -654,7 +656,7 @@ $('#editor-1.meta-modal button.remove').live('click', function() {
 });
 
 // intercept click on edit button in metadata edit dialog
-$('#editor-1.meta-modal button.edit').click( function(){
+$('#edit-dialog.meta-modal button.edit').click( function(){
     // inline editing of selected key-value pair
     // on submission ajax call from updating
     // on success update the overlay
@@ -662,30 +664,30 @@ $('#editor-1.meta-modal button.edit').click( function(){
 });
 
 // intercept click on cancel button in metadata add dialog
-$('#editor-2.meta-modal button.cancel').click( function(){
+$('#add-dialog.meta-modal button.cancel').click( function(){
     // close add metadata and open edit metadata dialog
-    $('a#meta-editor-2').data('overlay').close();
-    editMetadata();
+    $('a#metadata-add-dialog').data('overlay').close();
+    show_metadata_edit_dialog();
 });
 
 // intercept click on save button in metadata add dialog
-$('#editor-2.meta-modal button.save').live('click', function() {
+$('#add-dialog.meta-modal button.save').live('click', function() {
     // get the server id, meta key and meta value needed for the ajax call       
-    var serverID = $(this).parent().find('h3').attr('id');
+    var serverID = $(this).parent().find('h3 p').text();
     var meta_key = $(this).parent().find('input.key').attr('value');
     var meta_value = $(this).parent().find('input.value').attr('value');
     // make the ajax call and list the new GET results
     add_metadata(serverID, meta_key, meta_value);
     // close add metadata and open edit metadata dialog
-    $('a#meta-editor-2').data('overlay').close();
-    editMetadata();
+    $('a#metadata-add-dialog').data('overlay').close();
+    show_metadata_edit_dialog();
     return false;
 });
 
 // update metadata in edit dialog
 function list_metadata(data) {    
     // empty the list if it already exists
-    $("#editor-1 div.content ul.meta-list").empty();
+    $("#edit-dialog div.content ul.meta-list").empty();
     // get the values to show
     meta = data.metadata.values;
     // show values
@@ -693,7 +695,7 @@ function list_metadata(data) {
         pair = $("ul.meta-template li").clone();
         pair.find("label").text(key.substring(0,15));
         pair.find("p").text(meta[key].substring(0,30));
-        pair.appendTo("#editor-1 div.content ul.meta-list").fadeIn();
+        pair.appendTo("#edit-dialog div.content ul.meta-list").fadeIn();
     }
 }
 

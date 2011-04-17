@@ -288,12 +288,12 @@ function update_machines_view(data){
                     existing.find('.spinner').show();
                 }                            
             }
-            existing.find("a.name span.name").text(server.name);
+            existing.find("a.name span.name").text(server.name.substring(0,100));
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
-            machine.find("a.name span.name").text(server.name);
+            machine.find("a.name span.name").text(server.name.substring(0,100));
             machine.find("img.logo").attr("src","static/machines/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
             machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            

@@ -691,8 +691,8 @@ function list_metadata(data) {
     // show values
     for (key in meta) {
         pair = $("ul.meta-template li").clone();
-        pair.find("label").text(key);
-        pair.find("p").text(meta[key].substring(0,25));
+        pair.find("label").text(key.substring(0,15));
+        pair.find("p").text(meta[key].substring(0,30));
         pair.appendTo("#editor-1 div.content ul.meta-list").fadeIn();
     }
 }

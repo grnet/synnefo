@@ -64,6 +64,7 @@ $("a.show-metadata").live('click', function() {
     $("#editor-1 h3").attr('id', serverID);
     $("#editor-2 h3").attr('id', serverID);
     editMetadata();
+    return false;
 });
 
 // intercept reboot click 

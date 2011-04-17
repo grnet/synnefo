@@ -122,7 +122,6 @@ $("a.enabled#action-destroy").live('click', function() {
 	checked.each(function(i,c) {
 		serverID=c.id;
 		serverName = $('#'+serverID+' span.name').text();
-        serverlength -= 1;
 		pending_actions.push([destroy, serverID]);
 	});
 	update_confirmations();  
@@ -310,6 +309,10 @@ function update_machines_view(data){
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
+
+	$('.dataTables_scrollHeadInner table').attr('style','');
+	$('.dataTables_scrollHeadInner th').attr('style','');
+
 }
 
 function display_success(serverID) {

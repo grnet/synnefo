@@ -1459,9 +1459,10 @@ div.list table thead tr th {
 	background-color: #E6EEEE;
 	background-image: url(bg.gif);
 	background-repeat: no-repeat;
-	background-position: center right;
+	background-position: right 11px;
     font-weight: normal; 
 	border: 1px solid #FFF;
+    border-bottom: none;
 	padding: 4px;
     text-align: left;
     vertical-align: middle;
@@ -1542,7 +1543,7 @@ div.list table thead #status {
 }
 
 div.list table thead #name {
-    width: 50px !important;
+    width: 70px !important;
 }
 
 .spinner, .wave {

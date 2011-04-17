@@ -1,7 +1,6 @@
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
 var API_URL = "/api/v1.1";
-var serverlength = 0;
 
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC. 
@@ -58,7 +57,7 @@ function update_confirmations(){
    
 	// standard view only
 	if ($.cookie("list") != '1') { 
-		for (i=0;i<pending_actions.length;i++){
+		for (var i=0;i<pending_actions.length;i++){
             // show single confirms
 			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
 		}		
@@ -72,7 +71,6 @@ function update_confirmations(){
 }
 
 function list_view() {
-    serverlength = 0;  // reset server length
 	changes_since = 0; // to reload full list
 	pending_actions = []; // clear pending actions
 	update_confirmations();
@@ -103,7 +101,6 @@ function list_view() {
 }
 
 function standard_view() {
-    serverlength = 0; // reset server length
 	changes_since = 0; // to reload full list
 	pending_actions = []; // clear pending actions
 	update_confirmations();

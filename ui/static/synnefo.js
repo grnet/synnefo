@@ -674,6 +674,46 @@ function start(serverIDs){
     return false;
 }
 
+// rename action
+function rename(serverIDs){
+	if (!serverIDs.length){
+		//ajax_success('DEFAULT');
+		return false;
+	}	
+    // ajax post rename call
+    var payload = {
+        "rename": {"type" : "PUT"}
+    };   
+
+	var serverID = serverIDs.pop()
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/action',
+        type: "POST",
+		contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
+                    },
+        success: function(data, textStatus, jqXHR) {
+                    if ( jqXHR.status == '202') {
+					    try {
+                            console.info('renamed ' + serverID);
+                        } catch(err) {}
+						// indicate that the action succeeded
+						display_success(serverID);
+						// continue with the rest of the servers						
+                        start(serverIDs);
+                    } else {
+                        ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
+                    }
+                }
+    });
+
+    return false;
+}
+
 // get server metadata
 function get_metadata(serverID) { 
     $.ajax({

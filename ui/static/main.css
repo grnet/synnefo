@@ -1427,7 +1427,21 @@ div#user a.current_lang {
 }
 
 .machine .settings {
-    margin-top: 22px;
+    margin-top: 13px;
+}
+
+.editbuttons {
+    float:none !important;
+    margin: 0px !important;
+}
+
+.namecontainer {
+    line-height: 22px;
+}
+
+.nametextbox {
+    height: 13px;
+    font-size: 95%;
 }
 
 #spinner {

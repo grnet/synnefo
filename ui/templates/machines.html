@@ -529,7 +529,9 @@ $("#start").click(function(){
     var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
     var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
-
+    if (jQuery.trim(machineName) == ''){
+        return false;
+    }
     create_vm(machineName, imageRef, flavorRef);
 
     $('a#create').data('overlay').close();

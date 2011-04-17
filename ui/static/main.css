@@ -455,6 +455,8 @@ div#wrapper {
     height: 4px;
     margin-left: -1px;
     width: 447px;
+    margin-bottom:6px;
+    margin-top:6px;
 }
 
 #wizard #cancel {

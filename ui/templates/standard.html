@@ -23,8 +23,10 @@
         <a href="#" class="name">
             <h5 class="namecontainer">
                 {% trans "Name: " %}<span class="name">node.name</span><span class="rename"></span>
-                <img class="editbuttons save" style="display:none" src="/static/save.png" />
-                <img class="editbuttons cancel" style="display:none" src="/static/cancel.png" />
+                <div class="editbuttons" style="display:none">
+                    <img class="save"  src="/static/save.png" />
+                    <img class="cancel" src="/static/cancel.png" />
+                </div>
             </h5>
         </a>
         <a href="#" class="ip">
@@ -72,18 +74,18 @@ $("a.show-metadata").live('click', function() {
 });
 
 //rename machine
-$(".rename").live('click', function() {
+$(".rename, h5.namecontainer span.name").live('click', function() {
     $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" + $(this).parent().find('.name').text() + "\" / ><span class=\"oldValue\" style=\"display:none;\" >" + $(this).parent().find('.name').text() + "</span>");
-    $(this).fadeOut("fast");
-    $(this).parent().find(".editbuttons").fadeIn("slow");
+    $(this).parent().find('.rename').hide();
+    $(this).parent().find(".editbuttons").fadeIn();
 });
 
 //cancel renaming
-$(".editbuttons.cancel").live('click', function() {
+$(".editbuttons .cancel").live('click', function() {
     console.info($(this).parent().parent().find('.name').find('.oldValue').text());
     $(this).parent().parent().find('.name').html($(this).parent().parent().find('.name').find('.oldValue').text());
-    $(this).parent().parent().find(".editbuttons").fadeOut("fast");
-    $(this).parent().parent().find(".rename").fadeIn("slow");
+    $(this).parent().parent().find(".editbuttons").hide();
+    $(this).parent().parent().find(".rename").fadeIn();
 });
 
 // intercept reboot click 

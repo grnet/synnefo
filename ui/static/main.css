@@ -754,6 +754,7 @@ a.name:hover span.rename {
     color: #3D3D3D;
     margin-top: 0.4em;
     background-image: url(/static/pencil.png);
+    background-position: 0 3px;
 }
 
 
@@ -1431,6 +1432,14 @@ div#user a.current_lang {
 }
 
 .editbuttons {
+    display: block;
+    clear: none;
+    width: 40px;
+    margin-right:34%;
+    margin-top:3px;
+    float:right;
+}
+.editbuttons img {
     float:none !important;
     margin: 0px !important;
 }

@@ -155,6 +155,26 @@ $("div.actions a.action-destroy").live('click', function(){
     return false;
 });
 
+// intercept create metadata focus
+$(".meta-modal input.key").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $(".meta-modal input.key").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata focus
+$(".meta-modal input.key").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 15 characters';
+    }
+    return false;
+});
+
 $("div.confirm_single .yes").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it

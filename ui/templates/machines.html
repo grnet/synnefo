@@ -217,10 +217,10 @@
         <hr class="fatruler" />
         <div class="content">
             <label class="meta-key">{% trans "Key:" %}</label>
-            <input type="text" maxlength="15" class="key" value="max 15 characters"/>
+            <input type="text" maxlength="15" class="key" value="{% trans 'max 15 characters' %}"/>
             <hr class="meta-separator">
             <label class="meta-value">{% trans "Value:" %}</label>
-            <input type="text" maxlength="150" class="value" value="max 150 characters"/>
+            <input type="text" maxlength="150" class="value" value="{% trans 'max 150 characters' %}"/>
         </div>
     </div>
     <button type="button" class="cancel">{% trans "Cancel" %}</button>
@@ -672,15 +672,19 @@ $('#add-dialog.meta-modal button.cancel').click( function(){
 
 // intercept click on save button in metadata add dialog
 $('#add-dialog.meta-modal button.save').live('click', function() {
-    // get the server id, meta key and meta value needed for the ajax call       
-    var serverID = $(this).parent().find('h3 p').text();
-    var meta_key = $(this).parent().find('input.key').attr('value');
-    var meta_value = $(this).parent().find('input.value').attr('value');
-    // make the ajax call and list the new GET results
-    add_metadata(serverID, meta_key, meta_value);
-    // close add metadata and open edit metadata dialog
-    $('a#metadata-add-dialog').data('overlay').close();
-    show_metadata_edit_dialog();
+    // get the server id, meta key and meta value needed for the ajax call   
+    if ($('input.key').hasClass("input-enabled")) {    
+        var serverID = $(this).parent().find('h3 p').text();
+        var meta_key = $(this).parent().find('input.key').attr('value');
+        var meta_value = $(this).parent().find('input.value').attr('value');
+        // make the ajax call and list the new GET results
+        add_metadata(serverID, meta_key, meta_value);
+        // close add metadata and open edit metadata dialog
+        $('a#metadata-add-dialog').data('overlay').close();
+        show_metadata_edit_dialog();
+    } else {
+        $('input.key').focus();
+    }
     return false;
 });
 

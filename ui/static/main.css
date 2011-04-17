@@ -1212,6 +1212,12 @@ input.machine {
     overflow: auto;
 }
 
+.meta-modal .input-enabled {
+    color: black;
+    text-align: left;
+    font-style: normal;
+}
+
 .meta-modal label.meta-value {
     vertical-align: top;
 }

@@ -73,7 +73,7 @@ $("a.show-metadata").live('click', function() {
     return false;
 });
 
-//rename machine
+//initiate machine renaming
 $(".rename, h5.editable span.name").live('click', function() {
     $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" + $(this).parent().find('.name').text() + "\" / ><span class=\"oldValue\" style=\"display:none;\" >" + $(this).parent().find('.name').text() + "</span>");
     $(this).parent().find('.rename').hide();
@@ -82,9 +82,27 @@ $(".rename, h5.editable span.name").live('click', function() {
     return false;
 });
 
+//rename machine
+$(".editbuttons .save").live('click', function() {
+    serverID = $(this).parent().parent().parent().attr("id");
+    serverName = $(this).parent().parent().find('.name').find('.nametextbox').val();
+    var found = false;
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
+    $(this).parent().parent().find(".editbuttons").fadeOut("fast");
+    $(this).parent().parent().find(".rename").fadeIn("slow");
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = rename;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([rename, serverID, serverName])
+    return false;
+});
+
 //cancel renaming
 $(".editbuttons .cancel").live('click', function() {
-    console.info($(this).parent().parent().find('.name').find('.oldValue').text());
     $(this).parent().parent().find('.name').html($(this).parent().parent().find('.name').find('.oldValue').text());
     $(this).parent().parent().find(".editbuttons").hide();
     $(this).parent().parent().find(".rename").fadeIn();

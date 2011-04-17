@@ -675,20 +675,19 @@ function start(serverIDs){
 }
 
 // rename action
-function rename(serverIDs){
-	if (!serverIDs.length){
+function rename(serverID, serverName){
+	if (!serverID.length){
 		//ajax_success('DEFAULT');
 		return false;
 	}	
     // ajax post rename call
     var payload = {
-        "rename": {"type" : "PUT"}
+        "server": {"name" : serverName}
     };   
 
-	var serverID = serverIDs.pop()
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/action',
-        type: "POST",
+        type: "PUT",
 		contentType: "application/json",
         dataType: "json",
         data: JSON.stringify(payload),
@@ -703,8 +702,6 @@ function rename(serverIDs){
                         } catch(err) {}
 						// indicate that the action succeeded
 						display_success(serverID);
-						// continue with the rest of the servers						
-                        start(serverIDs);
                     } else {
                         ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
                     }

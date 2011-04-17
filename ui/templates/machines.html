@@ -220,7 +220,7 @@
             <input type="text" maxlength="15" class="key" value="{% trans 'max 15 characters' %}"/>
             <hr class="meta-separator">
             <label class="meta-value">{% trans "Value:" %}</label>
-            <input type="text" maxlength="150" class="value" value="{% trans 'max 150 characters' %}"/>
+            <textarea class="value">{% trans "max 150 characters" %}</textarea>
         </div>
     </div>
     <button type="button" class="cancel">{% trans "Cancel" %}</button>
@@ -667,13 +667,59 @@ $('#edit-dialog.meta-modal button.edit').click( function(){
 $('#add-dialog.meta-modal button.cancel').click( function(){
     // close add metadata and open edit metadata dialog
     $('a#metadata-add-dialog').data('overlay').close();
+    // reset input areas
+    $(".meta-modal input.key").removeClass("input-enabled");
+    $(".meta-modal input.key").text('max 15 characters');
+    $(".meta-modal textarea.value").removeClass("input-enabled");
+    $(".meta-modal textarea.value").text('max 150 characters');
     show_metadata_edit_dialog();
+});
+
+// intercept create metadata key focus
+$(".meta-modal input.key").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $(".meta-modal input.key").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata key focus out
+$(".meta-modal input.key").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 15 characters';
+    }
+    return false;
+});
+
+// intercept create metadata key focus
+$(".meta-modal textarea.value").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $(".meta-modal textarea.value").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata key focus out
+$(".meta-modal textarea.value").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 150 characters';
+    }
+    return false;
 });
 
 // intercept click on save button in metadata add dialog
 $('#add-dialog.meta-modal button.save').live('click', function() {
-    // get the server id, meta key and meta value needed for the ajax call   
-    if ($('input.key').hasClass("input-enabled")) {    
+    // if both fields are filled in     
+    if ($('input.key').hasClass("input-enabled") && $('textarea.value').hasClass("input-enabled")) {
+        // get the server id, meta key and meta value needed for the ajax call     
         var serverID = $(this).parent().find('h3 p').text();
         var meta_key = $(this).parent().find('input.key').attr('value');
         var meta_value = $(this).parent().find('input.value').attr('value');
@@ -683,8 +729,18 @@ $('#add-dialog.meta-modal button.save').live('click', function() {
         $('a#metadata-add-dialog').data('overlay').close();
         show_metadata_edit_dialog();
     } else {
-        $('input.key').focus();
+        // find which field is not filled in and focus there
+        if (!$('input.key').hasClass("input-enabled")) {
+            $('input.key').focus();
+        } else {
+             $('textarea.value').focus();  
+        }
     }
+    // reset input areas
+    $(".meta-modal input.key").removeClass("input-enabled");
+    $(".meta-modal input.key").text('max 15 characters');
+    $(".meta-modal textarea.value").removeClass("input-enabled");
+    $(".meta-modal textarea.value").text('max 150 characters');
     return false;
 });
 

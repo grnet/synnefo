@@ -1195,11 +1195,14 @@ input.machine {
     margin: 10px 44px 0 0;
 }
 
-.meta-modal input {
-    font-size: 80%;
+.meta-modal input, .meta-modal textarea {
     font-style: italic;
     text-align: right;
     color: #ccc;
+}
+
+.meta-modal input {
+    font-size: 80%;
 }
 
 .meta-modal input.key {
@@ -1207,7 +1210,7 @@ input.machine {
     margin-bottom: -3px;
 }
 
-.meta-modal input.value {
+.meta-modal textarea.value {
     width: 267px;
     height: 170px;
     overflow: auto;

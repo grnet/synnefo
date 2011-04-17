@@ -318,7 +318,9 @@ $(function() {
 			    return false;
 		    // everything is good
 		    } 
-	    }
+	    } 
+    });
+    api.onSeek(function(event, i) {
 	    // update status bar
 	    $("#status li").removeClass("active").eq(i).addClass("active");
         // update confirm step
@@ -334,7 +336,7 @@ $(function() {
             $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
             $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
             $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
-        }    
+        }   
     });
     // if tab is pressed on the next button seek to next page
     $(root).live('keydown', function (e) {
@@ -342,7 +344,7 @@ $(function() {
            if(e.preventDefault) {
                e.preventDefault();
            }
-           return false;
+           api.next();
         }
     });
     //submit wizard by pressing enter on the name textbox

@@ -211,7 +211,7 @@ function update_machines_view(data){
                     // starting is not an api state, it means the server is stopped or on error
 					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/wave.gif";
-					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
+					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16></img>";
 					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
 					tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
 					//tableData[current][4] = "group"; //TODO
@@ -224,7 +224,7 @@ function update_machines_view(data){
                             'Shutting down'].indexOf(server_row.find('span.status').text()) >= 0) {
 					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/wave.gif";
-					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
+					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16></img>";
 					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
 					tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
 					//tableData[current][4] = "group"; //TODO
@@ -238,7 +238,7 @@ function update_machines_view(data){
                            [STATUS_MESSAGES['BUILD'], 'Rebooting'].indexOf(server_row.find('span.status').text()) >= 0) {
 					tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/wave.gif";
-					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16 />";
+					imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + " height=16 width=16></img>";
 					tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
 					tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
 					//tableData[current][4] = "group"; //TODO

@@ -74,7 +74,10 @@ $("a.show-metadata").live('click', function() {
 
 //initiate machine renaming
 $(".rename, h5.editable span.name").live('click', function() {
-    $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" + $(this).parent().find('.name').text() + "\" / ><span class=\"oldValue\" style=\"display:none;\" >" + $(this).parent().find('.name').text() + "</span>");
+    $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" +
+                                        $(this).parent().find('.name').text() + 
+                                        "\" / ><span class=\"oldValue\" style=\"display:none;\" >" + 
+                                        $(this).parent().find('.name').text() + "</span>");
     $(this).parent().find('.rename').hide();
     $(this).parent().find(".editbuttons").fadeIn();
     $(this).parent().removeClass('editable');

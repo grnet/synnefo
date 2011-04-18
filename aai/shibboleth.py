@@ -7,11 +7,11 @@
 from synnefo.logic import users
 
 class Tokens:
-    SIB_GIVEN_NAME = "shib_inetorgperson_givenname"
-    SIB_SN = "shib_person_surname"
-    SIB_CN = "cn"
+    SIB_NAME = "Shib-InetOrgPerson-givenName"
+    SIB_SURNAME = "Shib-Person-surname"
+    SIB_CN = "Shib-Person-commonName"
     SIB_DISPLAY_NAME = "displayName"
-    SIB_EDU_PERSON_PRINCIPAL_NAME = "eppn"
+    SIB_EPPN = "eppn"
     SIB_EDU_PERSON_AFFILIATION = "shib_ep_primaryaffiliation"
     SIB_SCHAC_PERSONAL_UNIQUE_CODE = "schacPersonalUniqueCode"
     SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
@@ -36,17 +36,21 @@ def register_shibboleth_user(tokens):
        http://aai.grnet.gr/policy
     """
     realname = None
+    print tokens
 
-    if Tokens.SIB_GIVEN_NAME in tokens:
-        realname = tokens[Tokens.SIB_GIVEN_NAME]
+    if Tokens.SIB_SURNAME in tokens:
+        realname = tokens[Tokens.SIB_SURNAME]
 
-    if Tokens.SIB_DISPLAY_NAME in tokens:
-        realname = tokens[Tokens.SIB_DISPLAY_NAME]
+    if Tokens.SIB_NAME in tokens:
+        realname = tokens[Tokens.SIB_NAME] + ' ' + realname
+
+    if Tokens.SIB_CN in tokens:
+        realname = tokens[Tokens.SIB_CN]
 
     is_student = Tokens.SIB_SCHAC_PERSONAL_UNIQUE_CODE in tokens or \
                  Tokens.SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH in tokens
 
-    unq = tokens.get(Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME)
+    unq = tokens.get(Tokens.SIB_EPPN)
 
     if unq is None:
         raise NoUniqueToken("Authentication does not return a unique token")

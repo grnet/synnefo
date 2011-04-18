@@ -167,7 +167,9 @@ GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
 # to its resources. Thus, it needs to know its public URL.
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'
 
-LOGIN_PATH = "/okeanos/login"
+APP_INSTALL_URL = "https://login.okeanos.grnet.gr/okeanos"
+
+LOGIN_PATH = "/login"
 
 SHIBBOLETH_WHITELIST = {
     'localhost' : '127.0.0.1',

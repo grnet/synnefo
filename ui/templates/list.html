@@ -259,19 +259,24 @@ function update_machines_view(data){
                 osIcon = "static/os_logos/" + osTag + ".png";
             }
             // find flavor parameters
-            var current_flavor = '';
-            for (i=0; i<flavors.length; i++) {
-                if (flavors[i]['id'] == server.flavorRef) {
-                    current_flavor = flavors[i];
+            var flavorLabel;
+            if ( flavors.length > 0 ) {
+                var current_flavor = '';
+                for (i=0; i<flavors.length; i++) {
+                    if (flavors[i]['id'] == server.flavorRef) {
+                        current_flavor = flavors[i];
+                    }
+                } 
+                var flavor_label = '';
+                if (current_flavor['cpu'] == '1') {
+                    flavorLabel = '1 CPU, ';
+                } else {
+                    flavorLabel = current_flavor['cpu'] + ' CPUs, ';
                 }
-            } 
-            var flavor_label = '';
-            if (current_flavor['cpu'] == '1') {
-                flavorLabel = '1 CPU, ';
+                flavorLabel = flavorLabel + current_flavor['ram'] + 'MB, ' + current_flavor['disk'] + 'GB'; 
             } else {
-                flavorLabel = current_flavor['cpu'] + ' CPUs, ';
+                flavorLabel = 'No flavor data';
             }
-            flavorLabel = flavorLabel + current_flavor['ram'] + 'MB, ' + current_flavor['disk'] + 'GB'; 
 
             // add new row to the table
             vmTable.fnAddData([
@@ -283,7 +288,6 @@ function update_machines_view(data){
                 "group",
                 "<span class=status>" + STATUS_MESSAGES[server.status] + "</span>"
             ]);
-        }  else if (server.status == "DELETED") {
         }
     });
 	updateActions();
@@ -342,13 +346,19 @@ var vmTable = $("div.list table.list-machines").dataTable({
 });
 
 // basic functions executed on page load
-if (flavors.length == 0) {
-    // configure flavors
-    update_flavors(); 
-}
-if (images.length == 0) {
-    // populate image list
-    update_images();
+if ( flavors.length == 0 || images.length == 0 ) {
+    if ( flavors.length == 0 ) { 
+        // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+        update_flavors();
+    } else {
+        // populate image list
+        update_images(); 
+        // start updating vm list
+        update_vms(UPDATE_INTERVAL);
+    }
+} else {
+    // start updating vm list
+    update_vms(UPDATE_INTERVAL);
 }
 
 // set the label of the multiple buttons 
@@ -362,8 +372,4 @@ $(window).resize(function(){
     else
         $('.confirm_multiple').removeClass('fixed');
 });
-
-// start updating vm list
-update_vms(UPDATE_INTERVAL);
-
 </script>

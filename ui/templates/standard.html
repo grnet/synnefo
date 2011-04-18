@@ -397,13 +397,19 @@ function display_failure(status, serverID, action, responseText) {
 }
 
 // basic functions executed on page load
-if (images.length == 0) {
-    // populate image list
-    update_images();
-}
-if (flavors.length == 0) {
-    // configure flavors
-    update_flavors(); 
+if ( flavors.length == 0 || images.length == 0 ) {
+    if ( flavors.length == 0 ) { 
+        // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+        update_flavors();
+    } else {
+        // populate image list
+        update_images(); 
+        // start updating vm list
+        update_vms(UPDATE_INTERVAL);
+    }
+} else {
+    // start updating vm list
+    update_vms(UPDATE_INTERVAL);
 }
 
 // set the label of the multiple buttons 
@@ -417,7 +423,4 @@ $(window).resize(function(){
     else
         $('.confirm_multiple').removeClass('fixed');
 });
-
-// start updating vm list
-update_vms(UPDATE_INTERVAL);
 </script>

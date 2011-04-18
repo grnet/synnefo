@@ -400,6 +400,8 @@ function update_flavors() {
 			} catch (err) {
 				ajax_error(err);
 			}
+            // start updating vm list
+            update_vms(UPDATE_INTERVAL);
         },
         success: function(data, textStatus, jqXHR) {
             flavors = data.flavors.values;
@@ -412,6 +414,8 @@ function update_flavors() {
             disks = disks.unique();
             ram = ram.unique();
 			update_wizard_flavors();
+            // start updating vm list
+            update_vms(UPDATE_INTERVAL);
         }
     });
     return false;

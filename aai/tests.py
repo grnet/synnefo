@@ -90,6 +90,16 @@ class AuthTestCase(TestCase):
         self.assertTrue('Vary' in response)
         self.assertTrue('X-Auth-Token' in response['Vary'])
 
+
+    def test_shibboleth_redirect_loop(self):
+        """
+        """
+        response = self.client.get(self.apibase + '/servers', {},
+                                    **{'Referer' : settings.LOGIN_PATH,
+                                    'TEST-AAI' : 'true'})
+        self.assertEquals(response.status_code, 200)
+        
+
     def test_fail_oapi_auth(self):
         """ test authentication from not registered user using OpenAPI
         """
@@ -115,7 +125,7 @@ class AuthTestCase(TestCase):
     def _test_redirect(self, response):
         self.assertEquals(response.status_code, 302)
         self.assertTrue('Location' in response)
-        self.assertEquals(response['Location'], settings.SHIBBOLETH_HOST)
+        self.assertTrue(response['Location'].endswith(settings.LOGIN_PATH))
 
     def _update_user_ts(self, user):
         user.auth_token_created = (datetime.now() -

@@ -19,14 +19,14 @@ class SynnefoAuthMiddleware(object):
             try:
                 user = SynnefoUser.objects.get(auth_token = request.META[self.auth_token])
             except SynnefoUser.DoesNotExist:
-                return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+                return HttpResponseRedirect(settings.LOGIN_PATH)
 
             #Check user's auth token
             if (time.time() -
                 time.mktime(user.auth_token_created.timetuple()) +
                 settings.AUTH_TOKEN_DURATION * 3600) > 0:
                 #The user's token has expired, re-login
-                return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+                return HttpResponseRedirect(settings.LOGIN_PATH)
 
             request.user = user
             return
@@ -37,7 +37,7 @@ class SynnefoAuthMiddleware(object):
             #SIB headers when coming from a URL whitelist,
             #or a similar form of restriction
             if request.get_host() not in settings.SHIBBOLETH_WHITELIST.keys():
-                return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+                return HttpResponseRedirect(settings.LOGIN_PATH)
 
             user = None
             try:
@@ -58,7 +58,7 @@ class SynnefoAuthMiddleware(object):
                     response.status_code = 302
                     return response
                 else:
-                    return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+                    return HttpResponseRedirect(settings.LOGIN_PATH)
 
             #User and authentication token valid, user allowed to proceed
             return
@@ -87,10 +87,14 @@ class SynnefoAuthMiddleware(object):
 
         if settings.TEST:
             if 'TEST-AAI' in request.META:
-                return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+                return HttpResponseRedirect(settings.LOGIN_PATH)
         else:
-            #No authentication info found in headers, redirect to Shibboleth
-            return HttpResponseRedirect(settings.SHIBBOLETH_HOST)
+            #Avoid redirect loops
+            if 'Referer' in request.META and request.META['Referer'].endswith(settings.LOGIN_PATH):
+                return
+            else :
+                #No authentication info found in headers, redirect to Shibboleth
+                return HttpResponseRedirect(settings.LOGIN_PATH)
 
     def process_response(self, request, response):
         #Tell proxies and other interested parties that the

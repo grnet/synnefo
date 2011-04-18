@@ -346,16 +346,18 @@ var vmTable = $("div.list table.list-machines").dataTable({
 });
 
 // basic functions executed on page load
-if ( flavors.length == 0 || images.length == 0 ) {
-    if ( flavors.length == 0 ) { 
-        // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
-        update_flavors();
-    } else {
-        // populate image list
-        update_images(); 
-        // start updating vm list
-        update_vms(UPDATE_INTERVAL);
-    }
+if ( flavors.length == 0 && images.length == 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+    // populate image list
+    update_images(); 
+} else if ( flavors.length == 0 && images.length != 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+} else if ( flavors.length != 0 && images.length == 0 ) {
+    // populate image list
+    update_images(); 
+    update_vms(UPDATE_INTERVAL);
 } else {
     // start updating vm list
     update_vms(UPDATE_INTERVAL);

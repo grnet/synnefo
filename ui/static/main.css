@@ -1451,7 +1451,37 @@ div#user a.current_lang {
     margin-right:34%;
     margin-top:3px;
     float:right;
+    cursor: pointer;
 }
+
+.editbuttons .save:hover, .editbuttons .cancel:hover {
+    background-color: #CCCCCC;
+}
+
+.editbuttons .cancel:hover {
+    background-image: url("../static/cancel-onhover.png");
+}
+
+.editbuttons .cancel {
+    background-image: url("../static/cancel.png");
+    margin-left: 3px;
+    padding-left: 18px;
+    padding-top: 3px;
+    background-repeat: no-repeat;
+    color: transparent;
+    font-size: 9pt;
+}
+
+.editbuttons .save {
+    background-image: url("../static/save.png");
+    margin-left: 1px;
+    padding-left: 18px;
+    padding-top: 3px;
+    background-repeat: no-repeat;
+    color: transparent;
+    font-size: 9pt;
+}
+
 .editbuttons img {
     float:none !important;
     margin: 0px !important;

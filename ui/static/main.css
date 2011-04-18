@@ -756,7 +756,11 @@ span.rename, span.configure {
     text-align: left;
 }
 
-a.name:hover span.rename {
+span.rename {
+    cursor: pointer;
+}
+
+div.name:hover span.rename {
     color: #3D3D3D;
     margin-top: 0.4em;
     background-image: url(/static/pencil.png);

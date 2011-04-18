@@ -20,7 +20,7 @@
             <img class="wave" style="display:none" src="/static/wave.gif" />
         </div>
         <img class="logo" src="" />
-        <a href="#" class="name">
+        <div href="#" class="name">
             <h5 class="namecontainer editable">
                 {% trans "Name: " %}<span class="name">node.name</span><span class="rename"></span>
                 <div class="editbuttons" style="display:none">
@@ -28,7 +28,7 @@
                     <img class="cancel" src="/static/cancel.png" />
                 </div>
             </h5>
-        </a>
+        </div>
         <a href="#" class="ip">
             <h5>{% trans "IP: " %}<span class="public">node.public_ip</span></h5>
         </a>
@@ -106,7 +106,7 @@ $(".editbuttons .cancel").live('click', function() {
 // intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     
     $(this).parent().children('a').removeClass('selected');
@@ -128,7 +128,7 @@ $("div.actions a.action-reboot").live('click', function(){
 // intercept shutdown click
 $("div.actions a.action-shutdown").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
@@ -150,7 +150,7 @@ $("div.actions a.action-shutdown").live('click', function(){
 // intercept start click
 $("div.actions a.action-start").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
@@ -172,7 +172,7 @@ $("div.actions a.action-start").live('click', function(){
 // intercept destroy click
 $("div.actions a.action-destroy").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
@@ -270,11 +270,11 @@ function update_machines_view(data){
             if (server.status == 'DELETED') {
                 existing.remove();
                 try {
-                    console.info(existing.find("a.name span.name").text() + ' removed');
+                    console.info(existing.find("div.name span.name").text() + ' removed');
                 } catch(err) {}            
             } else if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
                 try { // firebug console logging
-                    console.info(existing.find("a.name span.name").text() + ' from ' 
+                    console.info(existing.find("div.name span.name").text() + ' from ' 
                                 + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
                 //show reboot and shutdown actions
@@ -326,12 +326,12 @@ function update_machines_view(data){
                 }                            
             }
             //existing.find(".status").text(STATUS_MESSAGES[server.status]);
-            existing.find("a.name span.name").text(server.name.substring(0,100));
+            existing.find("div.name span.name").text(server.name.substring(0,100));
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
-            machine.find("a.name span.name").text(server.name.substring(0,100));
+            machine.find("div.name span.name").text(server.name.substring(0,100));
             machine.find("img.logo").attr("src","static/machines/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
             machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            
@@ -362,7 +362,7 @@ function update_machines_view(data){
     // hide the last one
     $("div.machine:last-child").find("div.separator").hide();
     // the separator shows only when running and terminated machines are available
-    if ($(".terminated a.name").length > 0 && $(".running a.name").length > 0) {
+    if ($(".terminated div.name").length > 0 && $(".running div.name").length > 0) {
         $("#mini.separator").fadeIn("slow");
     } else {
         $("#mini.separator").fadeOut("slow");

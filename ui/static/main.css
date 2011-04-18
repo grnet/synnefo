@@ -1448,8 +1448,8 @@ div#user a.current_lang {
     display: block;
     clear: none;
     width: 40px;
-    margin-right:34%;
-    margin-top:3px;
+    margin-right:33%;
+    margin-top:1px;
     float:right;
     cursor: pointer;
 }
@@ -1462,24 +1462,22 @@ div#user a.current_lang {
     background-image: url("../static/cancel-onhover.png");
 }
 
-.editbuttons .cancel {
-    background-image: url("../static/cancel.png");
-    margin-left: 3px;
-    padding-left: 18px;
-    padding-top: 3px;
+.editbuttons .cancel, .editbuttons .save {
+    padding-left: 16px;
+    padding-top: 2px;
     background-repeat: no-repeat;
     color: transparent;
     font-size: 9pt;
+}
+.editbuttons .cancel {
+    background-image: url("../static/cancel.png");
+    margin-left: 3px;
+
 }
 
 .editbuttons .save {
     background-image: url("../static/save.png");
     margin-left: 1px;
-    padding-left: 18px;
-    padding-top: 3px;
-    background-repeat: no-repeat;
-    color: transparent;
-    font-size: 9pt;
 }
 
 .editbuttons img {
@@ -1488,7 +1486,7 @@ div#user a.current_lang {
 }
 
 .namecontainer {
-    line-height: 22px;
+    line-height: 23px;
 }
 
 .nametextbox {

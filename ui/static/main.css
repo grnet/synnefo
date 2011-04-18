@@ -619,6 +619,10 @@ div.machine {
     text-decoration: underline;
 }
 
+.machine .name, .machine .ip {
+    text-decoration: none !important;
+}
+
 .state {
     float: right;
 }

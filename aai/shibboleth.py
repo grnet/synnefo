@@ -15,6 +15,7 @@ class Tokens:
     SIB_EDU_PERSON_AFFILIATION = "shib_ep_primaryaffiliation"
     SIB_SCHAC_PERSONAL_UNIQUE_CODE = "schacPersonalUniqueCode"
     SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
+    SIB_SESSION_ID = "Shib-Session-ID"
 
 class NoUniqueToken(object):
 
@@ -36,10 +37,11 @@ def register_shibboleth_user(tokens):
        http://aai.grnet.gr/policy
     """
     realname = None
-    print tokens
 
     if Tokens.SIB_SURNAME in tokens:
         realname = tokens[Tokens.SIB_SURNAME]
+    else:
+        realname = ''
 
     if Tokens.SIB_NAME in tokens:
         realname = tokens[Tokens.SIB_NAME] + ' ' + realname

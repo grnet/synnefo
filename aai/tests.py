@@ -26,9 +26,10 @@ class AuthTestCase(TestCase):
         """test request that should succeed and register a user
         """
         response = self.client.get(self.apibase + '/servers', {},
-                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-                                      Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
-                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix',
+                                   **{Tokens.SIB_NAME: 'Jimmy',
+                                      Tokens.SIB_EPPN: 'jh@gmail.com',
+                                      Tokens.SIB_CN: 'Jimmy Hendrix',
+                                      Tokens.SIB_SESSION_ID: '123321',
                                       'TEST-AAI' : 'true'})
         user = None
         try:
@@ -37,29 +38,33 @@ class AuthTestCase(TestCase):
             self.assertNotEqual(user, None)
         self.assertNotEqual(user, None)
         self.assertEquals(response.status_code, 302)
-        self.assertEquals(response['Location'], "http://testserver/")
+        self.assertEquals(response['Location'], settings.APP_INSTALL_URL)
         self.assertTrue('X-Auth-Token' in response)
         self.assertEquals(response['X-Auth-Token'], user.auth_token)
+
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{Tokens.SIB_NAME: 'Jimmy',
+                                      Tokens.SIB_EPPN: 'jh@gmail.com',
+                                      Tokens.SIB_CN: 'Jimmy Hendrix',
+                                      Tokens.SIB_SESSION_ID: '123321',
+                                      'TEST-AAI' : 'true'})
+
+        user1 = None
+        try:
+            user1 = SynnefoUser.objects.get(uniq = "jh@gmail.com")
+        except SynnefoUser.DoesNotExist:
+            self.assertNotEqual(user1, None)
+
+        self.assertEquals(user1.auth_token , user.auth_token)
+        self.assertTrue(response['Location'].endswith, '/servers')
 
     def test_shibboleth_no_uniq_request(self):
         """test a request with no unique field
         """
         response = self.client.get(self.apibase + '/servers', {},
-                                    **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-                                    Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix',
+                                    **{Tokens.SIB_NAME: 'Jimmy',
+                                    Tokens.SIB_CN: 'Jimmy Hendrix',
                                     'TEST-AAI' : 'true'})
-        self._test_redirect(response)
-
-    def test_shibboleth_wrong_from_request(self):
-        """ test request from wrong host
-        """
-        response = self.client.get(self.apibase + '/servers', {},
-                                   **{Tokens.SIB_GIVEN_NAME: 'Jimmy',
-                                      Tokens.SIB_EDU_PERSON_PRINCIPAL_NAME: 'jh@gmail.com',
-                                      Tokens.SIB_DISPLAY_NAME: 'Jimmy Hendrix',
-                                      'REMOTE_ADDR': '1.2.3.4',
-                                      'SERVER_NAME': 'nohost.nodomain',
-                                      'TEST-AAI' : 'true'})
         self._test_redirect(response)
 
     def test_shibboleth_expired_token(self):
@@ -89,16 +94,6 @@ class AuthTestCase(TestCase):
         self.assertTrue(response.status_code, 200)
         self.assertTrue('Vary' in response)
         self.assertTrue('X-Auth-Token' in response['Vary'])
-
-
-    def test_shibboleth_redirect_loop(self):
-        """
-        """
-        response = self.client.get(self.apibase + '/servers', {},
-                                    **{'Referer' : settings.LOGIN_PATH,
-                                    'TEST-AAI' : 'true'})
-        self.assertEquals(response.status_code, 200)
-        
 
     def test_fail_oapi_auth(self):
         """ test authentication from not registered user using OpenAPI

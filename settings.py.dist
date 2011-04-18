@@ -119,7 +119,6 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
@@ -170,11 +169,6 @@ API_ROOT_URL = 'http://127.0.0.1:8000/api/'
 APP_INSTALL_URL = "https://login.okeanos.grnet.gr/okeanos"
 
 LOGIN_PATH = "/login"
-
-SHIBBOLETH_WHITELIST = {
-    'localhost' : '127.0.0.1',
-    'testserver' : '127.0.0.1'
-}
 
 #Number of hours during which a user token is active
 AUTH_TOKEN_DURATION = 24

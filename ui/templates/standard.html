@@ -85,6 +85,9 @@ $(".rename, h5.editable span.name").live('click', function() {
 $(".editbuttons .save").live('click', function() {
     serverID = $(this).closest('.machine').attr("id");
     serverName = $(this).parent().parent().find('.name').find('.nametextbox').val();
+    if (serverName.trim() == ''){
+        return false;
+    }
     $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
     $(this).parent().parent().find(".editbuttons").fadeOut("fast");
     $(this).parent().parent().find(".rename").fadeIn("slow");

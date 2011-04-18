@@ -769,8 +769,8 @@ function list_metadata(data) {
         pair = $("ul.meta-template li").clone();
         //truncate metadata
         pair.find("label").text(key.substring(0,15));
-        if (meta[key].length > 32) {
-            pair.find("p").text(meta[key].substring(0,30) + "...");
+        if (meta[key].length > 25) {
+            pair.find("p").text(meta[key].substring(0,25) + "...");
         } else {
             pair.find("p").text(meta[key]);            
         }

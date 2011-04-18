@@ -133,12 +133,12 @@ INSTALLED_APPS = (
     'synnefo.db',
     'synnefo.ganeti',
     'synnefo.logic',
-    'south'
 )
 
 # The RAPI endpoint and associated credentials to use
 # for talking to the Ganeti backend.
-GANETI_CLUSTER_INFO = ("62.217.120.78", 5080, "synnefo", "ocean!")
+GANETI_MASTER_IP = "62.217.120.78"
+GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "synnefo", "ocean!")
 
 # This prefix gets used when determining the instance names
 # of Synnefo VMs at the Ganeti backend.
@@ -161,9 +161,20 @@ TIMEOUT = 10 * 1000
 # parameter refers to a point in time more than POLL_LIMIT seconds ago.
 POLL_LIMIT = 3600
 
-# This should be set to the PUB endpoint maintained by ganeti-0mqd.
-# Normally, this is a TCP port on the Ganeti master IP.
-GANETI_ZMQ_PUBLISHER = "tcp://62.217.120.67:5801"
+# Configuration for ganeti-0mqd, the Ganeti notification daemon
+#
+# ganeti-0mqd uses two 0mqd endpoints:
+#   *  A PULL endpoint for receiving job updates from code running inside
+#      Ganeti hooks, running on TCP port GANETI_0MQD_PULL_PORT on the
+#      Ganeti master IP,
+#   *  A PUB endpoint for publishing notifications to the rest of the
+#      infrastructure, running on TCP port GANETI_0MQD_PUB_PORT on the
+#      Ganeti master IP.
+#
+GANETI_0MQD_PUB_PORT = "5801"
+GANETI_0MQD_PULL_PORT = "5802"
+GANETI_0MQD_LOG_FILE = "/var/log/synnefo/ganeti-0mqd.log"
+GANETI_0MQD_PID_FILE = "/var/run/synnefo/ganeti-0mqd.pid"
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.

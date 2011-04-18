@@ -256,9 +256,24 @@ function os_icon(metadata) {
     if (metadata.values.OS == undefined || metadata.values.OS == '') {
         return 'unknown';
     } else {
-        return metadata.values.OS;
+        if (UrlExists("static/machines/" + metadata.values.OS + '-on.png')) {
+            return metadata.values.OS;
+        } else {
+            return 'unknown';
+        }
     }
+
 } 
+
+//helper function to check file existance
+function UrlExists(url)
+{
+    var http = new XMLHttpRequest();
+    http.open('HEAD', url, false);
+    http.send();
+    return http.status!=404;
+}
+
 
 // switch to list view
 $("a#list").click(function(){

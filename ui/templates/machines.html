@@ -661,6 +661,19 @@ function show_metadata_add_dialog() {
     return false; 
 }
 
+// trapping keydown event
+jQuery.expr[':'].focus = function( elem ) {
+  return elem === document.activeElement && ( elem.type || elem.href );
+};
+
+$('*').keydown(function (){
+    if ($('#add-dialog').is(":visible") && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
+        $('input.key').focus();
+        $('input.key').focusin();         
+    }
+    return true;
+});
+
 // intercept click on create button in metadata edit dialog
 $('#edit-dialog.meta-modal button.create').click( function(){
     // close edit metadata and open add metadata dialog

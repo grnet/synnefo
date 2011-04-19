@@ -13,9 +13,9 @@ class SynnefoUser(models.Model):
         ('PROFESSOR', 'Professor')
     )
 
-    name = models.CharField('Synnefo Username', max_length=255)
-    realname = models.CharField('Real Name', max_length=255)
-    uniq = models.CharField('External Unique ID', max_length=255)
+    name = models.CharField('Synnefo Username', max_length=255, default='')
+    realname = models.CharField('Real Name', max_length=255, default='')
+    uniq = models.CharField('External Unique ID', max_length=255,null=True)
     credit = models.IntegerField('Credit Balance')
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
     auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True)

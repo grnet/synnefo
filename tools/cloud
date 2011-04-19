@@ -171,7 +171,6 @@ class CreateServer(Command):
         body = json.dumps({'server': server})
         reply = self.http_post(path, body)
         server = reply['server']
-        server.pop('id')
         print_dict(server)
 
 
@@ -244,9 +243,9 @@ class ServerConsole(Command):
     
     def execute(self, server_id):
         path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
-        body = json.dumps({'console':{'type':'vnc'}})
+        body = json.dumps({'console': {'type': 'vnc'}})
         reply = self.http_cmd('POST', path, body, 200)
-        print_dict(reply['vnc'])
+        print_dict(reply['console'])
 
 
 @command_name('lsaddr')

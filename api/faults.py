@@ -25,5 +25,8 @@ class ResizeNotAllowed(Fault):
 class ItemNotFound(Fault):
     code = 404
 
+class BuildInProgress(Fault):
+    code = 409
+
 class ServiceUnavailable(Fault):
     code = 503

@@ -2,7 +2,8 @@
 # Copyright (c) 2010 Greek Research and Technology Network
 #
 
-from django.conf import settings
+import logging
+
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -10,17 +11,15 @@ from django.utils import simplejson as json
 
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, ItemNotFound
-from synnefo.api.util import *
-from synnefo.db.models import Image, Flavor, VirtualMachine, VirtualMachineMetadata
+from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
+from synnefo.api.util import (isoformat, isoparse, random_password,
+                                get_user, get_vm, get_vm_meta, get_image, get_flavor,
+                                get_request_dict, render_metadata, render_meta, api_method)
+from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
+from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
-from synnefo.util.rapi import GanetiRapiClient, GanetiApiError
-from synnefo.logic import backend
+from synnefo.util.rapi import GanetiApiError
 
-import logging
-
-
-rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
 urlpatterns = patterns('synnefo.api.servers',
     (r'^(?:/|.json|.xml)?$', 'demux'),
@@ -153,44 +152,27 @@ def create_server(request):
         name = server['name']
         metadata = server.get('metadata', {})
         assert isinstance(metadata, dict)
-        sourceimage = Image.objects.get(id=server['imageRef'])
-        flavor = Flavor.objects.get(id=server['flavorRef'])
+        image_id = server['imageRef']
+        flavor_id = server['flavorRef']
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-    except Image.DoesNotExist:
-        raise ItemNotFound
-    except Flavor.DoesNotExist:
-        raise ItemNotFound
     
-    vm = VirtualMachine(
+    image = get_image(image_id)
+    flavor = get_flavor(flavor_id)
+    
+    # We must save the VM instance now, so that it gets a valid vm.backend_id.
+    vm = VirtualMachine.objects.create(
         name=name,
         owner=get_user(),
-        sourceimage=sourceimage,
+        sourceimage=image,
         ipfour='0.0.0.0',
         ipsix='::1',
         flavor=flavor)
-
-    # Pick a random password for the VM.
-    # FIXME: This must be passed to the Ganeti OS provider via CreateInstance()
-    passwd = random_password()
-
-    # We *must* save the VM instance now,
-    # so that it gets a vm.id and vm.backend_id is valid.
-    vm.save() 
+    
+    password = random_password()
                 
     try:
-        jobId = rapi.CreateInstance(
-            mode='create',
-            name=vm.backend_id,
-            disk_template='plain',
-            disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
-            nics=[{}],
-            os='debootstrap+default',       #TODO: select OS from imageRef
-            ip_check=False,
-            name_check=False,
-            pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
-            dry_run=settings.TEST,
-            beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
+        create_instance(vm, flavor, password)
     except GanetiApiError:
         vm.delete()
         raise ServiceUnavailable('Could not create server.')
@@ -198,11 +180,12 @@ def create_server(request):
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
     
-    logging.info('created vm with %s cpus, %s ram and %s storage' % (flavor.cpu, flavor.ram, flavor.disk))
+    logging.info('created vm with %s cpus, %s ram and %s storage',
+                    flavor.cpu, flavor.ram, flavor.disk)
     
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
-    server['adminPass'] = passwd
+    server['adminPass'] = password
     return render_server(request, server, status=202)
 
 @api_method('GET')
@@ -235,7 +218,7 @@ def update_server_name(request, server_id):
     
     try:
         name = req['server']['name']
-    except KeyError:
+    except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
     
     vm = get_vm(server_id)
@@ -256,8 +239,7 @@ def delete_server(request, server_id):
     #                       overLimit (413)
     
     vm = get_vm(server_id)
-    backend.start_action(vm, 'DESTROY')
-    rapi.DeleteInstance(vm.backend_id)
+    delete_instance(vm)
     return HttpResponse(status=204)
 
 @api_method('POST')

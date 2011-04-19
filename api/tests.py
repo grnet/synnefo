@@ -721,6 +721,7 @@ class ServerVNCConsole(BaseTestCase):
         response = self.client.post(path, data, content_type='application/json')
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
-        self.assertEqual(reply.keys(), ['vnc'])
-        self.assertEqual(set(reply['vnc'].keys()), set(['host', 'port', 'password']))
-
+        self.assertEqual(reply.keys(), ['console'])
+        console = reply['console']
+        self.assertEqual(console['type'], 'vnc')
+        self.assertEqual(set(console.keys()), set(['type', 'host', 'port', 'password']))

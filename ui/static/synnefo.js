@@ -646,7 +646,7 @@ function start(serverIDs){
 	}	
     // ajax post start call
     var payload = {
-        "start": {"type" : "NORMAL"}
+        "start": {}
     };   
 
 	var serverID = serverIDs.pop()

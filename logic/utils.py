@@ -38,7 +38,7 @@ def get_rsapi_state(vm):
       successful completion of an operation. If Ganeti says an OP_INSTANCE_STARTUP
       operation succeeded, vm.operstate is set to "STARTED".
 
-    * To support any transitive states defined by the API (only REBOOT for the time
+    * To support any transitional states defined by the API (only REBOOT for the time
       being) this mapping is amended with information reported by Ganeti regarding
       any outstanding operation. If an OP_INSTANCE_STARTUP had succeeded previously
       and an OP_INSTANCE_REBOOT has been reported as in progress, the API state is

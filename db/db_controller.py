@@ -29,7 +29,7 @@ import traceback
 
 from threading import Thread, Event, currentThread
 from synnefo.db.models import VirtualMachine
-from synnefo.settings import GANETI_ZMQ_PUBLISHER
+from synnefo.settings import GANETI_MASTER_IP, GANETI_0MQD_PUB_PORT
 from synnefo.logic import utils, backend
 
 class StoppableThread(Thread):
@@ -41,7 +41,7 @@ class StoppableThread(Thread):
     """
 
     def __init__(self, *args, **kwargs):
-        super(StoppableThread, self).__init__(*args, **kwargs)
+        Thread.__init__(self, *args, **kwargs)
         self._stop = Event()
 
     def stop(self):
@@ -52,6 +52,7 @@ class StoppableThread(Thread):
 
 
 def zmq_sub_thread(subscriber):
+    logging.error("Entering 0mq to wait for message on SUB socket.")
     while True:
         logging.debug("Entering 0mq to wait for message on SUB socket.")
         data = subscriber.recv()
@@ -99,6 +100,7 @@ def main():
     # a hopefully unique identity for this 0mq peer.
     # Reusing zmq.IDENTITY for two distinct peers triggers this 0mq bug:
     # https://github.com/zeromq/zeromq2/issues/30
+    GANETI_ZMQ_PUBLISHER = "tcp://%s:%d" % (GANETI_MASTER_IP, int(GANETI_0MQD_PUB_PORT))
     subscriber.setsockopt(zmq.IDENTITY, platform.node() + getpass.getuser() + "snf-db-controller")
     subscriber.setsockopt(zmq.SUBSCRIBE, "")
     subscriber.connect(GANETI_ZMQ_PUBLISHER)

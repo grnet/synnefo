@@ -6,11 +6,13 @@
 # Copyright 2010 Greek Research and Technology Network
 #
 
-from db.models import *
-
-from logic import credits
-
+from synnefo.db.models import *
+from synnefo.logic import credits
+from synnefo.logic import users
 from django.test import TestCase
+import time
+
+import hashlib
 
 class CostsTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
@@ -99,3 +101,34 @@ class DebitAccountTestCase(TestCase):
         s_user = SynnefoUser.objects.get(pk=30000)
 
         self.assertEqual(0, s_user.credit, 'SynnefoUser (pk=30000) should have zero credits (%d)' % ( s_user.credit, ))
+
+class AuthTestCase(TestCase):
+    fixtures = [ 'db_test_data' ]
+
+    def _register_user(self):
+        users.register_student ("Jimmy Page", "jpage", "jpage@zoso.com")
+        self.user = SynnefoUser.objects.get(name = "jpage")
+
+    def test_register(self):
+        """ test user registration
+        """
+        self._register_user()
+        self.assertNotEquals(self.user, None)
+
+        #Check hash generation
+        md5 = hashlib.md5()
+        md5.update(self.user.uniq)
+        md5.update(self.user.name)
+        md5.update(time.asctime())
+
+        self.assertEquals(self.user.auth_token, md5.hexdigest())
+
+    def test_del_user(self):
+        """ test user deletion
+        """
+        self._register_user()
+        self.assertNotEquals(self.user, None)
+        
+        users.delete_user(self.user)
+
+        self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get, name = "jpage")

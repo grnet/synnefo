@@ -10,7 +10,7 @@ DEPLOYMENT notes
       Edit all relevant settings in settings.py, GANETI_0MQD_* variables.
       Then start the server on the Ganeti master.
 
-      # ./ganeti/ganeti-0mqd
+      # ./ganeti/ganeti-0mqd.py
 
       FIXME: The server must be started from the project root directory.
       TBD: how to handle master migration.
@@ -18,8 +18,12 @@ DEPLOYMENT notes
 
     * db_controller
 
-      FIXME. Complete this part.
+      db_controller receives notifications from 0mq and updates the DB.
+      
+      For now, db_controller must be run by hand:
+      $ ./db/db_controller.py
 
+      FIXME. Complete this part.
 
     * vncauthproxy
 
@@ -30,7 +34,10 @@ DEPLOYMENT notes
       at https://code.grnet.gr/git/vncauthproxy (known good commit: 48b1400e).
 
       Edit default settings on top of vncauthproxy.py.
-      Set VNCAUTHPROXY_CTRL_SOCKET in settings.py to point to its control socket.
+      Set CTRL_SOCKET in util/vapclient.py to point to its control socket.
+
+      FIXME: The CTRL_SOCKET setting will be moved to settings.py as
+      VNCAUTHPROXY_CTRL_SOCKET.
 
 
 - OS Specific instructions

@@ -52,8 +52,9 @@ def start_action(vm, action):
     # No actions to deleted and no actions beside destroy to suspended VMs
     if vm.deleted:
         raise VirtualMachine.DeletedError
-    
-    if vm.operstate == 'BUILD':
+   
+    # No actions to machines being built. They may be destroyed, however.
+    if vm.operstate == 'BUILD' and action != 'DESTROY':
         raise VirtualMachine.BuildingError
     
     vm.action = action

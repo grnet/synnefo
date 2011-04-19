@@ -57,7 +57,7 @@ function update_confirmations(){
    
 	// standard view only
 	if ($.cookie("list") != '1') { 
-		for (i=0;i<pending_actions.length;i++){
+		for (var i=0;i<pending_actions.length;i++){
             // show single confirms
 			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
 		}		
@@ -91,8 +91,8 @@ function list_view() {
 			return false;
 		},
         success: function(data, textStatus, jqXHR) {
-			$("a#standard")[0].className += ' activelink';
-			$("a#list")[0].className = '';
+			$("a#list")[0].className += ' activelink';
+			$("a#standard")[0].className = '';
 			$("div#machinesview").html(data);
 		}
 	});
@@ -121,8 +121,8 @@ function standard_view() {
 			return false;
 		},
         success: function(data, textStatus, jqXHR) {
-			$("a#list")[0].className += ' activelink';
-			$("a#standard")[0].className = '';
+			$("a#standard")[0].className += ' activelink';
+			$("a#list")[0].className = '';
 			$("div#machinesview").html(data);
 		}
 	});	
@@ -218,7 +218,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
 	var uri= API_URL + '/servers/detail';
-	
+
 	if (changes_since != 0)
 		uri+='?changes-since='+changes_since
 		
@@ -299,12 +299,13 @@ function update_wizard_images() {
                     img.find(".description").text(image.metadata.values.description);
                 }
                 if (image.metadata.values.size != undefined) {
-    			    img.find(".size").text(image.metadata.values.size);
+    			    img.find("#size").text(image.metadata.values.size);
                 }
             }
 			img.find("input.radio").attr('id',"img-radio-" + image.id);
 			if (i==0) img.find("input.radio").attr("checked","checked"); 
-			img.find("img.image-logo").attr('src','static/os_logos/'+image_tags[image.id]+'.png');
+            var image_logo = os_icon(image.metadata);
+			img.find("img.image-logo").attr('src','static/os_logos/'+image_logo+'.png');
             if (image.metadata) {
                 if (image.metadata.values.serverId != undefined) {
                     img.appendTo("ul#custom-images");
@@ -338,28 +339,34 @@ function update_wizard_flavors(){
 							   progress: true,
 							   max:ram.length-1});
 	$("#small").click();
-	
+
 	// update the indicators when sliding
 	$("#cpu:range").data().rangeinput.onSlide(function(event,value){
 		$("#cpu-indicator")[0].value = cpus[Number(value)];
+        $("#cpu-indicator").addClass('selectedrange');
 	});
 	$("#cpu:range").data().rangeinput.change(function(event,value){
 		$("#cpu-indicator")[0].value = cpus[Number(value)];				
-		$("#custom").click();				
+		$("#custom").click();
+        $("#cpu-indicator").removeClass('selectedrange');		
 	});			
 	$("#ram:range").data().rangeinput.onSlide(function(event,value){
 		$("#ram-indicator")[0].value = ram[Number(value)];
+        $("#ram-indicator").addClass('selectedrange');
 	});
 	$("#ram:range").data().rangeinput.change(function(event,value){
 		$("#ram-indicator")[0].value = ram[Number(value)];				
 		$("#custom").click();
+        $("#ram-indicator").removeClass('selectedrange');		
 	});			
 	$("#storage:range").data().rangeinput.onSlide(function(event,value){
 		$("#storage-indicator")[0].value = disks[Number(value)];
+        $("#storage-indicator").addClass('selectedrange');
 	});
 	$("#storage:range").data().rangeinput.change(function(event,value){
 		$("#storage-indicator")[0].value = disks[Number(value)];				
 		$("#custom").click();
+        $("#storage-indicator").removeClass('selectedrange');		
 	});				
 }
 
@@ -393,6 +400,8 @@ function update_flavors() {
 			} catch (err) {
 				ajax_error(err);
 			}
+            // start updating vm list
+            update_vms(UPDATE_INTERVAL);
         },
         success: function(data, textStatus, jqXHR) {
             flavors = data.flavors.values;
@@ -405,6 +414,8 @@ function update_flavors() {
             disks = disks.unique();
             ram = ram.unique();
 			update_wizard_flavors();
+            // start updating vm list
+            update_vms(UPDATE_INTERVAL);
         }
     });
     return false;
@@ -415,6 +426,16 @@ function identify_flavor(cpu, disk, ram){
     for (i=0;i<flavors.length;i++){
         if (flavors[i]['cpu'] == cpu && flavors[i]['disk']==disk && flavors[i]['ram']==ram) {
             return flavors[i]['id']
+        }
+    }
+    return 0;
+}
+
+// return image entry from imageRef
+function get_image(imageRef) {
+    for (i=0;i<images.length;i++){
+        if (images[i]['id'] == imageRef) {
+            return images[i];
         }
     }
     return 0;
@@ -464,13 +485,16 @@ function updateActions() {
 
 //create server action
 function create_vm(machineName, imageRef, flavorRef){
+
+    var image_logo = os_icon(get_image(imageRef).metadata);
+
     var payload = {
         "server": {
             "name": machineName,
             "imageRef": imageRef,
             "flavorRef" : flavorRef,
             "metadata" : {
-                "My Server Name" : machineName
+                "OS" : image_logo
             }
         }
     };
@@ -653,3 +677,143 @@ function start(serverIDs){
 
     return false;
 }
+
+// rename server name action
+function rename(serverID, serverName){
+	if (!serverID.length){
+		//ajax_success('DEFAULT');
+		return false;
+	}	
+    // ajax post rename call
+    var payload = {
+        "server": {"name": serverName}
+    };   
+
+    $.ajax({
+        url: API_URL + '/servers/' + serverID,
+        type: "PUT",
+		contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+                    display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
+                    },
+        success: function(data, textStatus, jqXHR) {
+                    if ( jqXHR.status == '204') {
+					    try {
+                            console.info('renamed ' + serverID);
+                        } catch(err) {}
+						// indicate that the action succeeded
+						display_success(serverID);
+                    } else {
+                        ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
+                    }
+                }
+    });
+
+    return false;
+}
+
+// get server metadata
+function get_metadata(serverID) { 
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/meta',
+        type: "GET",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+            try {
+				ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
+			} catch (err) {
+				ajax_error(err);
+			}
+        },
+        success: function(data, textStatus, jqXHR) {
+            // to list the new results in the edit dialog
+            list_metadata(data);
+        }
+    });
+    return false;
+}
+
+// delete metadata key-value pair
+function delete_metadata(serverID, meta_key) {
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/meta/' + meta_key,
+        type: "DELETE",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+            try {
+				ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
+			} catch (err) {
+				ajax_error(err);
+			}
+        },
+        success: function(data, textStatus, jqXHR) {
+            // to GET new results and list them in the edit dialog
+            get_metadata(serverID);
+        }
+    });
+    return false;
+}
+
+
+// add metadata key-value pair
+function add_metadata(serverID, meta_key, meta_value) {
+
+    var payload = {
+        "meta": {
+        }
+    };
+    payload["meta"][meta_key] = meta_value;
+
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/meta/' + meta_key,
+        type: "PUT",
+    	contentType: "application/json",
+        dataType: "json",    
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) { 
+            try {
+				ajax_error(jqXHR.status, undefined, 'add metadata', jqXHR.responseText);
+			} catch (err) {
+				ajax_error(err);
+			}
+        },
+        success: function(data, textStatus, jqXHR) {
+            // to GET new results and list them in the edit dialog
+            get_metadata(serverID);
+        }
+    });
+    return false;
+}
+
+
+// show the welcome screen
+function showWelcome() {
+    $("#view-select").fadeOut("fast");
+    $("#machinesview.standard").fadeOut("fast");
+    $("#createcontainer").addClass('emptycreatecontainer')
+    $("#create").addClass('emptycreate')
+    $("#emptymachineslist").fadeIn("fast");
+    $("#createbody").fadeIn("fast");
+    $("#create").css("display", "block");
+}
+
+// hide the welcome screen
+function hideWelcome() {
+    $("#emptymachineslist").fadeOut("fast");
+    $("#createbody").fadeOut("fast");
+    $("#createcontainer").removeClass('emptycreatecontainer')
+    $("#create").removeClass('emptycreate')
+    $("#view-select").fadeIn("fast");
+    $("#machinesview.standard").fadeIn("fast");
+    $("div#view-select").show();
+    $("#create").css("display", "inline");
+}
+

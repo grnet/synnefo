@@ -51,8 +51,8 @@
         "model": "db.ImageMetadata",
         "pk": 3,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "Red Hat Enterprise Linux, full installation",
+            "meta_key": "OS",
+            "meta_value": "redhat",
             "image": 4
         }
     },
@@ -60,8 +60,8 @@
         "model": "db.ImageMetadata",
         "pk": 4,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "2048",
+            "meta_key": "kernel",
+            "meta_value": "2.6.32",
             "image": 4
         }
     },
@@ -70,13 +70,49 @@
         "pk": 5,
         "fields": {
             "meta_key": "description",
+            "meta_value": "Red Hat Enterprise Linux, full installation",
+            "image": 4
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 6,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2048",
+            "image": 4
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 7,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "ubuntu",
+            "image": 5
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 8,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.35",
+            "image": 5
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 9,
+        "fields": {
+            "meta_key": "description",
             "meta_value": "Ubuntu 10.10, full installation",
             "image": 5
         }
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 6,
+        "pk": 10,
         "fields": {
             "meta_key": "size",
             "meta_value": "8192",
@@ -85,7 +121,7 @@
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 7,
+        "pk": 11,
         "fields": {
             "meta_key": "description",
             "meta_value": "Debian Sid, full installation",
@@ -94,7 +130,7 @@
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 8,
+        "pk": 12,
         "fields": {
             "meta_key": "size",
             "meta_value": "8192",

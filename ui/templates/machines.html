@@ -3,13 +3,22 @@
 <div id="machines" class="separator"></div>
 
 <!-- the create button -->
-<a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
+<div id="createcontainer">
+    <span id="createbody">{% trans "Start by creating a new Virtual Machine:" %}</span><br />
+    <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
+</div>
 
 <!-- changing between standard/list view -->
 <div id="view-select">
-    <a id="standard" href="/machines/standard">#</a>
-    <span class="view-separator">|</span>
-    <a id="list" href="/machines/list">=</a>
+    <a id="standard" href="/machines/standard"></a>
+    <a id="list" href="/machines/list"></a>
+    <a id="single" href="#"></a>
+</div>
+
+<div id="emptymachineslist"><h1 id="welcomeheader">{% trans "Welcome to the ocean!" %}</h1><br />
+    <span class="welcomebody">{% trans "From this panel you will be able to manage your Virtual Machines (VMs). If you don't know what a VM is: take the " %}<a href="#">{% trans "tour" %}</a>.</span><br /><br />
+    <span class="welcomebody">{% trans "The panel is currently empty, because you don't have any VMs yet. You can start by creating your new VM by clicking the blue button on the right. The wizard will guide you through the hole process." %}</span><br /><br />
+    <span class="welcomefooter">{% trans "For more information or help, click " %}<a href="#">{% trans "here" %}</a>.</span>
 </div>
 
 <!-- the form -->
@@ -18,31 +27,34 @@
 	<div class="modal" id="wizard">
 		<!-- status bar -->
 		<ul id="status">
-			<li class="active"><strong>1.</strong> {% trans "Image" %}</li>
-			<li><strong>2.</strong> {% trans "Machine" %}</li>
-			<li><strong>3.</strong> {% trans "Review" %}</li>
+			<li class="active"><span class="headernumber" class="first">1</span><div class="headerbody first">{% trans "Image" %}</div></li>
+			<li><span class="headernumber">2</span><div class="headerbody">{% trans "Flavor" %}</div></li>
+			<li class="third"><span class="headernumber">3</span><div class="headerbody">{% trans "Name" %}</div></li>
 		</ul>
 		<!-- scrollable items -->
 		<div class="items">
 			<!-- pages -->
 			<div class="page">
                 <h2>{% trans "Select an OS" %}</h2>
+                <hr class="topruler" />
                 <ul class="tabs">
-                    <li><a href="#">{% trans "standard" %}</a></li>
-                    <li><a href="#">{% trans "custom" %}</a></li>
+                    <li><a href="#">{% trans "system images" %}</a></li>
+                    <li><a href="#">{% trans "custom images" %}</a></li>
                 </ul>
                 <div class="panes">
 		            <li id="image-template" style="display:none">
 			            <label for="image.id"> 
                             <a>
-                                <div class="image">
-                                    <img src="" class="image-logo"/>
-                                    <strong class="image-title">image.title</strong>
-                                    <input class="radio" type="radio" name="image-id" id="image-id" />
-                                    <br />
-                                    <span class="description">image.description</span> 
-                                    <span class="size">?? MB</span>                              
-                                </div>
+                                <div class="image-container">
+                                    <div class="image">
+                                        <input class="radio" type="radio" name="image-id" id="image-id" />
+                                        <img src="" class="image-logo"/>
+                                        <strong class="image-title">image.title</strong>
+                                        <br />
+                                        <span class="description">image.description</span> 
+                                        <span id="size" class="size">?? MB</span><span class="size"> MB</span>                         
+                                    </div>
+                                </div>  
                             </a>
 			            </label>
 		            </li>
@@ -53,100 +65,108 @@
 					    <!-- custom images -->
                     </ul>
                 </div>
+                <hr class="bottomruler" />
 				<button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
-				<button type="button" class="next right">{% trans "Next" %} &raquo;</button>
+				<button type="button" class="next right">{% trans "Next" %}</button>
             </div>
 			<div class="page">
-				<h2>{% trans "Select CPU, RAM and storage" %}</h2>
+				<h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
+                <hr class="topruler" />
                 <ul>
-                    <li>
+                    <li id="machinetype">
                         <div class="machine-type">
-                            <label for="small">
+                            <label for="small" id="small">
                                 <input type="radio" id="small" name="machine-type" value="small" checked="true" />
-                                <strong>{% trans "small" %}</strong>
+                                <span class="typebody" id="small-body">{% trans "small" %}</span>
                             </label>
                         </div>
                         <div class="machine-type">      
-                            <label for="medium">
+                            <label for="medium" id="medium">
                                 <input type="radio" id="medium" name="machine-type" value="medium" />                  
-                                <strong>{% trans "medium" %}</strong>
+                                <span class="typebody" id="medium-body">{% trans "medium" %}</span>
                             </label>
                         </div>
                         <div class="machine-type">
-                            <label for="large">
+                            <label for="large" id="large">
                                 <input type="radio" id="large" name="machine-type" value="large" />
-                                <strong>{% trans "large" %}</strong>
+                                <span class="typebody" id="large-body">{% trans "large" %}</span>
                             </label>
                         </div>
                         <div class="machine-type">
-                            <label for="custom">
+                            <label for="custom" id="custom">
                                 <input type="radio" name="machine-type" id="custom" value="large" />
-                                <strong>{% trans "custom" %}</strong>
+                                <span class="typebody" id="custom-body">{% trans "custom" %}</span>
                             </label>
                         </div>
                     </li>
-                    <li>
-			            <label><strong class="sliders">CPU (cores)</strong></label>
-                        <input type="range" id="cpu" style="display:none" />
-                        <input type="text" class="range" id="cpu-indicator" />
-                    </li>
-                    <li>
-			            <label><strong class="sliders">RAM (MB)</strong></label>
-                        <input type="range" id="ram" style="display:none" />
-                        <input type="text" class="range" id="ram-indicator" />
-
-                    </li>
-                    <li>
-		                <label><strong class="sliders">Storage (GB)</strong></label>
-                        <input type="range" id="storage" style="display:none" />
-                        <input type="text" class="range" id="storage-indicator" />
-
-                    </li>
-                    <li>
-                        <div class="cost">
-                            {% trans "Cost per hour:" %} 20 {% trans "credits" %} | {% trans "Credits currently in account:" %} 10.000
-                        </div>
-                    </li>
+                    <div id="page2-container">
+                        <li class="slider-container">
+			                <label><strong class="sliders">CPUs</strong></label>
+                            <input type="range" id="cpu" style="display:none" />
+                            <input type="text" class="range" id="cpu-indicator" />
+			                <span class="units">cores</span>
+                        </li>
+                        <li class="slider-container">
+			                <label><strong class="sliders">RAM</strong></label>
+                            <input type="range" id="ram" style="display:none" />
+                            <input type="text" class="range" id="ram-indicator" />
+			                <span class="units">MB</span>
+                        </li>
+                        <li class="slider-container">
+		                    <label><strong class="sliders">Size</strong></label>
+                            <input type="range" id="storage" style="display:none" />
+                            <input type="text" class="range" id="storage-indicator" />
+			                <span class="units">GB</span>
+                        </li>
+                        <li>
+                            <div class="cost">
+                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" disabled="disabled" /> {% trans "C/hour" %}</span>
+                            </div>
+                        </li>
+                    </div>
                 </ul>
-				<button type="button" class="prev">&laquo; {% trans "Back" %}</button>
-				<button type="button" class="next right">{% trans "Next" %} &raquo;</button>
+                <hr class="bottomruler" />
+				<button type="button" class="prev">{% trans "Back" %}</button>
+				<button type="button" class="next right">{% trans "Next" %}</button>
             </div>
 			<div class="page">
 				<h2>{% trans "Confirm your settings" %}</h2>
-                <ul>
-                    <li class="required">
+                <hr class="topruler" />
+                <ul id="page3-container">
+                    <li class="required" id="label-name">
                         <label>
-                            <strong>Machine name</strong>
-                            <input type="text" class="text" name="machine_name" value="My Ubuntu 10.04 x86_64 server"/>
+                            <strong>Name:</strong>
+                            <input type="text" class="text" name="machine_name" id="name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>
                     <li>
-                        <strong>{% trans "Image:" %}</strong> <span id="machine_image-label">Ubuntu 10.04 x86_64 server</span>
+                        <span>{% trans "Image:" %}</span> <span id="machine_image-label">Ubuntu 10.04 x86_64 server</span>
                     </li>
                     <li>
-                        <strong>{% trans "CPU:" %}</strong> <span id="machine_cpu-label">2</span> <span>{% trans "cores" %}</span>
+                        <span>{% trans "CPUs:" %}</span> <span id="machine_cpu-label">2</span> <span>{% trans "cores" %}</span>
                     </li>
                     <li>
-                        <strong>{% trans "RAM:" %}</strong> <span id="machine_ram-label">1024</span><span>MB</span>
+                        <span>{% trans "RAM:" %}</span> <span id="machine_ram-label">1024</span><span>MB</span>
                     </li>
                     <li>
-                        <strong>{% trans "Storage:" %}</strong> <span id="machine_storage-label">10</span><span>GB</span>
+                        <span>{% trans "System Disk:" %}</span> <span id="machine_storage-label">10</span><span>GB</span>
                     </li>
                     <li>
-                        <strong>{% trans "Cost per hour:" %}</strong> <span>20 {% trans "credits" %}</span>
+                        <span>{% trans "Cost per Hour:" %}</span> <span>40 {% trans "credits" %}</span>
                     </li>
                     <li>
-                        <strong>{% trans "Remaining credits:" %}</strong> <span>10.000</span>
+                        <span>{% trans "Credits in Wallet:" %}</span> <span>10.000</span>
                     </li>
                 </ul>
-				<button type="button" class="prev">&laquo; {% trans "Back" %}</button>
+                <hr class="bottomruler" />
+				<button type="button" class="prev">{% trans "Back" %}</button>
 				<button type="button" class="next right" id="start">{% trans "Create VM" %}</button>        
             </div>
 		</div>
 	</div>
 </form>
 
-<!-- notification after wizard completion -->
+<!-- base notification for error/success reporting -->
 <a id="notification" rel="#error-success" href="#"></a>
 
 <div class="modal" id="error-success">
@@ -154,14 +174,58 @@
     <div><p>{% trans "More details about the result"%}</p></div>
 </div>
 
-<!-- confirmation before executing an action -->
-<a id="confirmation" rel="#yes-no" href="#"></a>
 
-<div class="modal" id="yes-no">
-    <h3>{% trans "You are about to xxx machine yyy" %}</h3>
-    <p>{% trans "Are you sure you want to proceed?" %}</p>
-    <button>{% trans "Yes" %}</button>
-	<button>{% trans "No" %}</button>
+<a id="metadata-edit-dialog" rel="#edit-dialog" href="#"></a>
+
+<div class="meta-modal" id="edit-dialog">
+    <div class='container'>
+        <h3>
+            <label>{% trans "Metadata for machine:" %}</label>
+            <span>Server name</span>
+            <p style='display:none;'>hidden server id</p>
+        </h3>
+        <hr class="topruler" />
+        <hr class="fatruler" />
+        <div class="content">
+            <ul class="meta-template" style="display:none">
+                <li>
+                    <label>{% trans "Metadata key" %}</label>
+                    <button type="button" class="remove">{% trans "remove x" %}</button>
+                    <hr class="meta-separator">
+                    <p>{% trans "Metadata value" %}</p>
+                    <button type="button" class="edit">{% trans "edit" %}</button>
+                </li>
+            </ul>
+            <ul class="meta-list">
+            </ul>
+        </div>
+    </div>
+    <button type="button" class="create">{% trans "Create New+" %}</button>
+    <div class="bottomruler" /> 
+</div>
+
+<a id="metadata-add-dialog" rel="#add-dialog" href="#"></a>
+
+<div class="meta-modal" id="add-dialog">
+    <div class='container'>
+        <h3>
+            <label>{% trans "Metadata for machine:" %}</label>
+            <span>Server name</span>
+            <p style='display:none;'>hidden server id</p>
+        </h3>
+        <hr class="topruler" />
+        <hr class="fatruler" />
+        <div class="content">
+            <label class="meta-key">{% trans "Key:" %}</label>
+            <input type="text" maxlength="15" class="key" value="{% trans 'max 15 characters' %}"/>
+            <hr class="meta-separator">
+            <label class="meta-value">{% trans "Value:" %}</label>
+            <textarea class="value">{% trans "max 150 characters" %}</textarea>
+        </div>
+    </div>
+    <button type="button" class="cancel">{% trans "Cancel" %}</button>
+    <button type="button" class="save">{% trans "Save" %}</button>
+    <div class="bottomruler" /> 
 </div>
 
 <div id="machinesview"></div>
@@ -175,23 +239,41 @@
 <div id="machines" class="separator"></div>
 
 <script>
-// hardcoded image types
-// TODO: get this from the metadata
-var image_tags = {
-                1: 'archlinux',
-                2: 'centos',
-                3: 'debian',
-                4: 'freebsd',
-                5: 'gentoo',
-                6: 'netbsd',
-                7: 'openbsd',
-                8: 'redhat',
-                9: 'slackware',
-                10: 'suse',
-                11: 'ubuntu',
-                12: 'windows',
-                20: 'ubuntu',
-               };
+//add hover to labels
+$('span.typebody').mouseover(function() {
+    $(this).addClass('typehover');
+});
+$('span.typebody').mouseout(function() {
+    $(this).removeClass('typehover');
+});
+
+// return value from metadata key "OS", if it exists
+function os_icon(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+
+    if (metadata.values.OS == undefined || metadata.values.OS == '') {
+        return 'unknown';
+    } else {
+        if (UrlExists("static/machines/" + metadata.values.OS + '-on.png')) {
+            return metadata.values.OS;
+        } else {
+            return 'unknown';
+        }
+    }
+
+} 
+
+//helper function to check file existance
+function UrlExists(url)
+{
+    var http = new XMLHttpRequest();
+    http.open('HEAD', url, false);
+    http.send();
+    return http.status!=404;
+}
+
 
 // switch to list view
 $("a#list").click(function(){
@@ -257,9 +339,7 @@ $(function() {
 			    return false;
 		    // everything is good
 		    } 
-	    }
-	    // update status bar
-	    $("#status li").removeClass("active").eq(i).addClass("active");
+	    } 
         // update confirm step
         if (api.getIndex()==0) {
             var image = $("input[type=radio][name=image-id]:checked");
@@ -273,15 +353,29 @@ $(function() {
             $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
             $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
             $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
-        }    
+        }   
+    });
+    api.onSeek(function(event, i) {
+	    // update status bar
+	    $("#status li").removeClass("active").eq(i).addClass("active");
     });
     // if tab is pressed on the next button seek to next page
-    root.find("button.next").keydown(function(e) {
-	    if (e.keyCode == 9) {
-		    // seeks to next tab by executing our validation routine
-		    api.next();
-		    e.preventDefault();
-	    }
+    $(root).live('keydown', function (e) {
+       if ( e.keyCode == 9 ){
+           if(e.preventDefault) {
+               e.preventDefault();
+           }
+           api.next();
+        }
+    });
+    //submit wizard by pressing enter on the name textbox
+    $("#name").keypress(function (e) {
+		if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+			$('#start').click();
+			return false;
+		} else {
+			return true;
+		}
     });
 });
 
@@ -292,32 +386,27 @@ function disableSliders() {
     $("#storage").attr('disabled',true);
 }
 
-// confirm all actions
-$("div.confirm_multiple .yes").live('click', function(){
-    while(pending_actions.length > 0){ // if there is a pending action for this server execute it
-        action = pending_actions.pop(); // extract action
-        var serverID = action[1];
-        
-        if ($.cookie("list") != '1') { // standard view
-            $('#'+serverID+' .spinner').show();
-            $('#'+serverID+' .selected').removeClass('selected');
-            $('#'+serverID+' .display').removeClass('display');
-        } else { // list view
-            osIcon = $('#'+serverID).parent().parent().find('.list-logo');
-            osIcon.attr('os',osIcon.attr('src'));
-            osIcon.attr('src','static/progress.gif');
-        }
-        action[0]([serverID]); // execute action
-    }
-    update_confirmations();    
+//update radio button when clicking on text
+$("#small-body").live('click' ,function() { 
+    $(this).parent().find("#small").click();
+});
+$("#medium-body").live('click' ,function() { 
+    $(this).parent().find("#medium").click();
+});
+$("#large-body").live('click' ,function() { 
+    $(this).parent().find("#large").click();
+});
+$("#custom-body").live('click' ,function() { 
+    $(this).parent().find("#custom").click();
 });
 
-// cancel all actions
-$("div.confirm_multiple .no").live('click', function(){
-    pending_actions = [];
-    $('.machine .selected').removeClass('selected');
-    $('.machine .display').removeClass('display');
-    update_confirmations();
+//select image div on radio button select
+$('.radio').live('click' ,function() {           
+    $(this).parents("div").find(".image").removeClass('selecteddiv');
+    if($(this).is(':checked'))  {
+        $(this).parent().addClass('selecteddiv');
+    }
+    
 });
 
 // validate cpu input box
@@ -383,6 +472,10 @@ $("#small").click(function(){
     $("#cpu-indicator")[0].value = cpus[0];
     $("#ram-indicator")[0].value = ram[0];
     $("#storage-indicator")[0].value = disks[0];
+    $("#small").addClass("active");
+    $("#medium").removeClass("active");    
+    $("#large").removeClass("active");    
+    $("#custom").removeClass("active");    
 });
 
 // selecting the medium size
@@ -392,7 +485,11 @@ $("#medium").click(function(){
     $("#storage").data('rangeinput').setValue(1);
     $("#cpu-indicator")[0].value = cpus[1];
     $("#ram-indicator")[0].value = ram[1];
-    $("#storage-indicator")[0].value = disks[1];    
+    $("#storage-indicator")[0].value = disks[1];  
+    $("#medium").addClass("active");  
+    $("#small").removeClass("active");    
+    $("#large").removeClass("active");    
+    $("#custom").removeClass("active");  
 });
 
 // selecting the large size
@@ -402,7 +499,11 @@ $("#large").click(function(){
     $("#storage").data('rangeinput').setValue(2);
     $("#cpu-indicator")[0].value = cpus[2];
     $("#ram-indicator")[0].value = ram[2];
-    $("#storage-indicator")[0].value = disks[2];    
+    $("#storage-indicator")[0].value = disks[2];   
+    $("#large").addClass("active"); 
+    $("#medium").removeClass("active");    
+    $("#small").removeClass("active");    
+    $("#custom").removeClass("active");  
 });
 
 // selecting the custom flavor enables the sliders
@@ -411,6 +512,33 @@ $("#custom").click(function(){
     $("#ram").attr('disabled',false);
     $("#storage").attr('disabled',false);
     $("strong.sliders").style = 'color: #778899;';
+    $("#custom input").attr('checked', 'checked');		
+    $("#custom").addClass("active"); 
+    $("#medium").removeClass("active");    
+    $("#large").removeClass("active");    
+    $("#small").removeClass("active");  
+});
+
+//when textbox gains focus, add selection in css
+$('#cpu-indicator').focus(function() {
+    $(this).addClass('selectedrange');
+});
+$('#ram-indicator').focus(function() {
+    $(this).addClass('selectedrange');
+});
+$('#storage-indicator').focus(function() {
+    $(this).addClass('selectedrange');
+});
+
+//when textbox loses focus, clear selection in css
+$('#cpu-indicator').blur(function() {
+    $(this).removeClass('selectedrange');
+});
+$('#ram-indicator').blur(function() {
+    $(this).removeClass('selectedrange');
+});
+$('#storage-indicator').blur(function() {
+    $(this).removeClass('selectedrange');
 });
 
 // exit the wizard
@@ -423,16 +551,245 @@ $("#start").click(function(){
     var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
     var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
-
+    if (jQuery.trim(machineName) == ''){
+        return false;
+    }
     create_vm(machineName, imageRef, flavorRef);
 
     $('a#create').data('overlay').close();
-    $("#emptymachineslist").hide();
 
     try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
 
     $("#wizard").hide();
 });
+
+// confirm all actions
+$("div.confirm_multiple .yes").live('click', function(){
+    while(pending_actions.length > 0){ // if there is a pending action for this server execute it
+        action = pending_actions.pop(); // extract action
+        var serverID = action[1];
+        if ($.cookie("list") != '1') { // standard view
+            $('#' + serverID + ' .selected').removeClass('selected');
+            $('#' + serverID + ' .display').removeClass('display');
+            if (action[0] == shutdown) {
+                $('#' + serverID + ' .status').text('Shutting down');
+            } else if (action[0] == start) {
+                $('#' + serverID + ' .status').text('Starting');
+            } else if (action[0] == reboot) {
+                $('#' + serverID + ' .status').text('Rebooting');
+            } else if (action[0] == destroy) {
+                $('#' + serverID + ' .status').text('Destroying');
+            }
+            $('#' + serverID + ' .spinner').show();
+        } else { // list view
+            osIcon = $('#'+serverID).parent().parent().find('.list-logo');
+            osIcon.attr('os',osIcon.attr('src'));
+            osIcon.attr('src','static/progress.gif');
+            if (action[0] == shutdown) {
+                $('#' + serverID).parent().parent().find('span.status').text('Shutting down');
+            } else if (action[0] == start) {
+                $('#' + serverID).parent().parent().find('span.status').text('Starting');
+            } else if (action[0] == reboot) {
+                $('#' + serverID).parent().parent().find('span.status').text('Rebooting');
+            } else if (action[0] == destroy) {
+                $('#' + serverID).parent().parent().find('span.status').text('Destroying');
+            }
+        }
+        action[0]([serverID]); // execute action
+    }
+    update_confirmations();    
+});
+
+// cancel all actions
+$("div.confirm_multiple .no").live('click', function(){
+    pending_actions = [];
+    $('.machine .selected').removeClass('selected');
+    $('.machine .display').removeClass('display');
+    update_confirmations();
+});
+
+// bring up edit metadata overlay
+function show_metadata_edit_dialog() {
+    var triggers = $("a#metadata-edit-dialog").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false,
+        onClose: function() {
+            // remove all entries so they won't be preloaded next time you open the dialog
+            $("#edit-dialog div.content ul.meta-list").empty();
+        },
+        onLoad: function() {
+            // this is a workaround for the mask not appearing problem
+            $("#edit-dialog").expose();
+        }
+    });
+    // get metadata for current server and fill the dialog
+    serverID = $("#edit-dialog h3 p").text();
+    get_metadata(serverID);
+    $("a#metadata-edit-dialog").data('overlay').load();
+    return false; 
+}
+
+// bring up add metadata overlay
+function show_metadata_add_dialog() {
+    var triggers = $("a#metadata-add-dialog").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false,
+        onLoad: function() {
+            // this is a workaround for the mask not appearing problem
+            $("#add-dialog").expose();
+        },
+        onClose: function(){
+            // reset input areas
+            $(".meta-modal input.key").removeClass("input-enabled");
+            $(".meta-modal input.key")[0].value = 'max 15 characters';
+            $(".meta-modal textarea.value").removeClass("input-enabled");
+            $(".meta-modal textarea.value")[0].value = 'max 150 characters';
+            show_metadata_edit_dialog();        
+        }
+    });
+    $("a#metadata-add-dialog").data('overlay').load();
+    return false; 
+}
+
+// trapping keydown event
+jQuery.expr[':'].focus = function( elem ) {
+  return elem === document.activeElement && ( elem.type || elem.href );
+};
+
+$('*').keydown(function (){
+    if ($('#add-dialog').is(":visible") && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
+        $('input.key').focus();
+        $('input.key').focusin();         
+    }
+    return true;
+});
+
+// intercept click on create button in metadata edit dialog
+$('#edit-dialog.meta-modal button.create').click( function(){
+    // close edit metadata and open add metadata dialog
+    $('a#metadata-edit-dialog').data('overlay').close();
+    show_metadata_add_dialog();
+});
+
+// intercept click on remove button in metadata edit dialog
+$('#edit-dialog.meta-modal button.remove').live('click', function() { 
+    // get the server id and meta key needed for the ajax call   
+    var serverID = $(this).closest('div.container').find('h3 p').text();
+    var meta_key = $(this).parent().find('label').text();
+    // make the ajax call and list the new GET results
+    delete_metadata(serverID, meta_key);
+    return false;
+});
+
+// intercept click on edit button in metadata edit dialog
+$('#edit-dialog.meta-modal button.edit').click( function(){
+    // inline editing of selected key-value pair
+    // on submission ajax call from updating
+    // on success update the overlay
+    // TODO
+});
+
+// intercept click on cancel button in metadata add dialog
+$('#add-dialog.meta-modal button.cancel').click( function(){
+    // close add metadata and open edit metadata dialog
+    $('a#metadata-add-dialog').data('overlay').close();
+});
+
+// intercept create metadata key focus
+$(".meta-modal input.key").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $(".meta-modal input.key").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata key focus out
+$(".meta-modal input.key").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 15 characters';
+    }
+    return false;
+});
+
+// intercept create metadata key focus
+$(".meta-modal textarea.value").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $(".meta-modal textarea.value").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata key focus out
+$(".meta-modal textarea.value").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 150 characters';
+    }
+    return false;
+});
+
+// intercept click on save button in metadata add dialog
+$('#add-dialog.meta-modal button.save').live('click', function() {
+    // if both fields are filled in     
+    if ($('input.key').hasClass("input-enabled") && $('textarea.value').hasClass("input-enabled")) {
+        // get the server id, meta key and meta value needed for the ajax call     
+        var serverID = $(this).parent().find('h3 p').text();
+        var meta_key = $(this).parent().find('input.key').attr('value');
+        var meta_value = $(this).parent().find('textarea.value')[0].value;
+        // make the ajax call and list the new GET results
+        add_metadata(serverID, meta_key, meta_value);
+        // close add metadata and open edit metadata dialog
+        $('a#metadata-add-dialog').data('overlay').close();
+        show_metadata_edit_dialog();
+    } else {
+        // find which field is not filled in and focus there
+        if (!$('input.key').hasClass("input-enabled")) {
+            $('input.key').focus();
+            $('input.key').focusin();
+        } else {
+            $('textarea.value').focus();
+            $('textarea.value').focusin();
+        }
+    }
+    return false;
+});
+
+// update metadata in edit dialog
+function list_metadata(data) {    
+    // empty the list if it already exists
+    $("#edit-dialog div.content ul.meta-list").empty();
+    // get the values to show
+    meta = data.metadata.values;
+    // show values
+    for (key in meta) {
+        pair = $("ul.meta-template li").clone();
+        //truncate metadata
+        pair.find("label").text(key.substring(0,15));
+        if (meta[key].length > 25) {
+            pair.find("p").text(meta[key].substring(0,25) + "...");
+        } else {
+            pair.find("p").text(meta[key]);            
+        }
+        pair.appendTo("#edit-dialog div.content ul.meta-list").fadeIn();
+    }
+}
 
 // basic functions executed on page load
 if (images.length > 0) {

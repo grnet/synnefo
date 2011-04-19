@@ -1,7 +1,48 @@
 DEPLOYMENT notes   
 =================
 
-Debian
-------
+- Service dependencies
 
- 
+    * ganeti-0mqd
+
+      The Ganeti notification daemon must run on the Ganeti master node.
+
+      Edit all relevant settings in settings.py, GANETI_0MQD_* variables.
+      Then start the server on the Ganeti master.
+
+      # ./ganeti/ganeti-0mqd.py
+
+      FIXME: The server must be started from the project root directory.
+      TBD: how to handle master migration.
+
+
+    * db_controller
+
+      db_controller receives notifications from 0mq and updates the DB.
+      
+      For now, db_controller must be run by hand:
+      $ ./db/db_controller.py
+
+      FIXME. Complete this part.
+
+    * vncauthproxy
+
+      To support OOB console access to the VMs over VNC, the vncauthproxy
+      daemon must be running on every Django node.
+
+      Download and install vncauthproxy from its own repository,
+      at https://code.grnet.gr/git/vncauthproxy (known good commit: 48b1400e).
+
+      Edit default settings on top of vncauthproxy.py.
+      Set CTRL_SOCKET in util/vapclient.py to point to its control socket.
+
+      FIXME: The CTRL_SOCKET setting will be moved to settings.py as
+      VNCAUTHPROXY_CTRL_SOCKET.
+
+
+- OS Specific instructions
+
+    * Debian Squeeze
+
+      TBD.
+

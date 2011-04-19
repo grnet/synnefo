@@ -2,14 +2,13 @@
 
 <!-- the standard view -->
 <div id="machinesview" class="standard">
-    <div id="emptymachineslist">{% trans "You have no virtual machines! Press Create New to create some!" %}</div>
     <div id="spinner"></div>
     <div class="machine" id="machine-template" style="display:none">
         <div class="actions">
             <a href="#" class="action-start">{% trans "Start" %}</a>
             <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
             <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
-            <a href="#" class="more">{% trans "more &hellip;" %}</a>
+            <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
         </div>        
         <div class="state">
             <div class="status">{% trans "Running" %}</div>
@@ -21,40 +20,97 @@
             <img class="wave" style="display:none" src="/static/wave.gif" />
         </div>
         <img class="logo" src="" />
-        <a href="#" class="name">
-            <h5>Name: <span class="name">node.name</span><span class="rename"></span></h5>
-        </a>
+        <div href="#" class="name">
+            <h5 class="namecontainer editable">
+                {% trans "Name: " %}<span class="name">node.name</span><span class="rename"></span>
+                <div class="editbuttons" style="display:none">
+                    <span class="save" />
+                    <span class="cancel" />
+                </div>
+            </h5>
+        </div>
         <a href="#" class="ip">
-            <h5>IP: <span class="public">node.public_ip</span></h5>
+            <h5>{% trans "IP: " %}<span class="public">node.public_ip</span></h5>
         </a>
         <h5 class="settings">
-            {% trans "Show:" %} <a href="#">{% trans "disks" %}</a> | <a href="#">{% trans "networks" %}</a> | <a href="#">{% trans "group" %}</a>
+            {% trans "Show:" %} 
+            <a class="show-disks"href="#">{% trans "disks" %}</a> | 
+            <a class="show-networks"href="#">{% trans "networks" %}</a> | 
+            <a class="show-metadata" href="#">{% trans "metadata" %}</a>
         </h5>
-
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
         </div>
         <div class="action_error" align="center">
-            {% trans "<span class='orange'>Error</span> on" %} <span class="action">error action</span>
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
             <span class="code"></span>            
             <span class="message"></span>
-            <button class="details">Details</button>
+            <button class="details">{% trans "Details" %}</button>
         </div>
         <div class="separator"></div>
     </div>
-
     <div class="running"></div>
     <div id="mini" class="separator"></div>
     <div class="terminated"></div>
 </div>
 
 <script>
-    
+
+// intercept edit metadata click
+$("a.show-metadata").live('click', function() {
+    // get server name and server ID
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().parent().find("span.name").text();
+    // set server name to all related metadata dialogs
+    $("#edit-dialog h3 span").text(serverName);
+    $("#add-dialog h3 span").text(serverName);
+    // set server id to all related metadata dialogs
+    $("#edit-dialog h3 p").text(serverID);
+    $("#add-dialog h3 p").text(serverID);
+    show_metadata_edit_dialog();
+    return false;
+});
+
+//initiate machine renaming
+$(".rename, h5.editable span.name").live('click', function() {
+    $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" +
+                                        $(this).parent().find('.name').text() + 
+                                        "\" / ><span class=\"oldValue\" style=\"display:none;\" >" + 
+                                        $(this).parent().find('.name').text() + "</span>");
+    $(this).parent().find('.rename').hide();
+    $(this).parent().find(".editbuttons").fadeIn();
+    $(this).parent().find(".nametextbox").focus();
+    $(this).parent().removeClass('editable');
+    return false;
+});
+
+//rename machine
+$(".editbuttons .save").live('click', function() {
+    serverID = $(this).closest('.machine').attr("id");
+    serverName = $(this).parent().parent().find('.name').find('.nametextbox').val();
+    if (serverName.trim() == ''){
+        return false;
+    }
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
+    $(this).parent().parent().find(".editbuttons").fadeOut("fast");
+    $(this).parent().parent().find(".rename").fadeIn("slow");
+    rename(serverID, serverName);
+    return false;
+});
+
+//cancel renaming
+$(".editbuttons .cancel").live('click', function() {
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.name').find('.oldValue').text());
+    $(this).parent().parent().find(".editbuttons").hide();
+    $(this).parent().parent().find(".rename").fadeIn();
+    $(this).parent().parent().addClass('editable');
+});
+
 // intercept reboot click 
 $("div.actions a.action-reboot").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     
     $(this).parent().children('a').removeClass('selected');
@@ -76,7 +132,7 @@ $("div.actions a.action-reboot").live('click', function(){
 // intercept shutdown click
 $("div.actions a.action-shutdown").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
@@ -98,7 +154,7 @@ $("div.actions a.action-shutdown").live('click', function(){
 // intercept start click
 $("div.actions a.action-start").live('click', function(){ 
     var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("a.name").find("span.name").text();
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
@@ -117,19 +173,55 @@ $("div.actions a.action-start").live('click', function(){
     return false;
 });
 
+// intercept destroy click
+$("div.actions a.action-destroy").live('click', function(){ 
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = destroy;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([destroy, serverID, serverName])
+    update_confirmations();    
+    return false;
+});
+
 $("div.confirm_single .yes").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
         if (pending_actions[i][1]==serverID){
             action = pending_actions.splice(i,1)[0]; // extract action
-            action[0]([action[1]]); // execute action            
+            // change the status text in cases where no api state exists
+            if (action[0] == start) {
+                $(this).parent().parent().find('.status').text('Starting');
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == shutdown) {
+                $(this).parent().parent().find('.status').text('Shutting down');
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == reboot) {
+                $(this).parent().parent().find('.status').text('Rebooting');
+                $(this).parent().parent().find('.spinner').show();
+            }  else if (action[0] == destroy) {
+                $(this).parent().parent().find('.status').text('Destroying');
+                $(this).parent().parent().find('.spinner').show();
+            }                    
+            action[0]([action[1]]); // execute action
         }
     }
     $(this).parent().hide();
     $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
     $(this).parent().parent().children('.state').children('.spinner').show()
     $(this).parent().parent().children('div.actions').removeClass('display');
-    update_confirmations();    
+    update_confirmations(); 
     return false;
 });
 
@@ -161,8 +253,10 @@ function update_machines_view(data){
     /* 
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
-    */    
+    */
+    
     $.each(data.servers.values, function(i,server){
+    
         existing = $('#' + server.id);
         
         // if multiple machines exist in the DOM, delete all but one
@@ -170,63 +264,100 @@ function update_machines_view(data){
         while (existing.length > 1){
             existing.remove();
         }
-        
+
+        var server_image = os_icon(server.metadata);
+
         // server already exists in DOM
         if (existing.length){
             $("div.machine:last-child").find("div.separator").show();                
-
             //  if the status is deleted, delete it from the DOM
             if (server.status == 'DELETED') {
-                existing.remove();            
+                existing.remove();
                 try {
-                    console.info(existing.find("a.name span.name").text() + ' removed');
+                    console.info(existing.find("div.name span.name").text() + ' removed');
                 } catch(err) {}            
             } else if (existing.find(".status").text() != STATUS_MESSAGES[server.status]) {
-                
                 try { // firebug console logging
-                    console.info(existing.find("a.name span.name").text() + ' from ' 
+                    console.info(existing.find("div.name span.name").text() + ' from ' 
                                 + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
-                
+                //show reboot and shutdown actions
+                if (server.status == 'ACTIVE' || server.status == 'REBOOT') {
+                    
+                    $('div.#' + server.id + ' a.action-reboot').attr('style','');
+                    $('div.#' + server.id + ' a.action-shutdown').attr('style','');
+                    $('div.#' + server.id + ' a.action-destroy').removeClass('destroy-padding');        
+                }
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
-                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
-                    // from stopped to running
+                    [STATUS_MESSAGES['STOPPED'], STATUS_MESSAGES['ERROR'],
+                     'Starting'].indexOf(existing.find(".status").text()) >= 0) {
+                    // from stopped, on error or starting to building, active or rebooting
+                    // starting is not an api state, it means the vm is stopped or on error
                     moved = existing.clone().appendTo(".running");
-                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
+                    moved.find("img.logo").attr("src","static/machines/" + server_image + '-on.png');
                     existing.remove();
                     existing = moved;
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
                 } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
-                           [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
+                           [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'], STATUS_MESSAGES['REBOOT'],
+                            'Shutting down', 'Starting'].indexOf(existing.find(".status").text()) >= 0) {
+                    // from active, building, rebooting, or shutting down to stopped or on error
+                    // shutting down is not an api state, it means the server is active
                     moved = existing.clone().appendTo(".terminated");
-                    moved.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                    moved.find("img.logo").attr("src","static/machines/" + server_image + '-off.png');
                     existing.remove();
                     existing = moved;
-                } 
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
+                } else if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 && 
+                            [STATUS_MESSAGES['ACTIVE'], STATUS_MESSAGES['BUILD'],
+                             STATUS_MESSAGES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
+                    // the server changes status, but remains in running list
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
+                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
+                    [STATUS_MESSAGES['STOPPED'], 
+                     STATUS_MESSAGES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
+                    // the server changes status, but remains in terminated list
+                    existing.find(".status").text(STATUS_MESSAGES[server.status]); 
+                }        
                 existing.find('.spinner').hide();
                 existing.find(' .wave').attr('src','static/wave.gif').show();
-                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);         
-                existing.find(".status").text(STATUS_MESSAGES[server.status]);
-                            
+                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
+                // show spinner while the server is rebooting, starting or shutting down  
+                if ([STATUS_MESSAGES['REBOOT'], 
+                    'Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) {
+                    existing.find(' .wave').hide();
+                    existing.find('.spinner').show();
+                }                            
             }
-            existing.find("a.name span.name").text(server.name);
+            //existing.find(".status").text(STATUS_MESSAGES[server.status]);
+            existing.find("div.name span.name").text(server.name.substring(0,100));
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-template").clone().attr("id", server.id).fadeIn("slow");
-            machine.find("a.name span.name").text(server.name);
-            machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'.png');
-            machine.find("span.imagetag").text(image_tags[server.imageRef]);
+            machine.find("div.name span.name").text(server.name.substring(0,100));
+            machine.find("img.logo").attr("src","static/machines/"+server_image+'-on.png');
+            machine.find("span.imagetag").text(server_image);
             machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            
             machine.find(".status").text(STATUS_MESSAGES[server.status]);
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {
-                machine.find("img.logo").attr("src","static/machines/"+image_tags[server.imageRef]+'-off.png');
+                machine.find("img.logo").attr("src","static/machines/"+server_image+'-off.png');
                 machine.appendTo(".terminated");
             }
-            //machine.find(' .wave').attr('src','static/wave.gif').show();
-            //setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);  
-        }
+            //show spinner while machine is building
+            if (server.status == 'BUILD' || 
+                ['Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) { 
+                machine.find('.spinner').show();
+            }   
+            //allow destroy action only while machine is building
+            if (server.status == 'BUILD') {
+                $('div.#' + server.id + ' a.action-reboot').hide();
+                $('div.#' + server.id + ' a.action-shutdown').hide();        
+                $('div.#' + server.id + ' a.action-destroy').addClass('destroy-padding');        
+            }
+        } 
     });
 
     $("#spinner").hide();
@@ -235,14 +366,17 @@ function update_machines_view(data){
     // hide the last one
     $("div.machine:last-child").find("div.separator").hide();
     // the separator shows only when running and terminated machines are available
-    if ($(".terminated a.name").length > 0 && $(".running a.name").length > 0) {
+    if ($(".terminated div.name").length > 0 && $(".running div.name").length > 0) {
         $("#mini.separator").fadeIn("slow");
     } else {
         $("#mini.separator").fadeOut("slow");
     }
+    
     // show message in case user has no servers!
-    if (servers.length == 0) {
-        $("#emptymachineslist").fadeIn("slow");
+    if ($('.machine').length < 2) {
+        showWelcome();
+    } else {
+        hideWelcome();
     }
     
     // set confirm box position
@@ -263,18 +397,27 @@ function display_failure(status, serverID, action, responseText) {
     $('#'+serverID+ ' .action_error .action').text(action);
     $('#'+serverID+ ' .action_error .code').text(status);
     $('#'+serverID+ ' .action_error .message').text(responseText);
-    $('#'+serverID+ ' .action_error').show();
-    
+    $('#'+serverID+ ' .action_error').show();    
 }
 
-if (images.length == 0) {
+// basic functions executed on page load
+if ( flavors.length == 0 && images.length == 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
     // populate image list
-    update_images();
+    update_images(); 
+} else if ( flavors.length == 0 && images.length != 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+} else if ( flavors.length != 0 && images.length == 0 ) {
+    // populate image list
+    update_images(); 
+    update_vms(UPDATE_INTERVAL);
+} else {
+    // start updating vm list
+    update_vms(UPDATE_INTERVAL);
 }
-if (flavors.length == 0) {
-    // configure flavors
-    update_flavors(); 
-}
+
 // set the label of the multiple buttons 
 $('div.confirm_multiple button.yes').text('Confirm All');
 $('div.confirm_multiple button.no').text('Cancel All');
@@ -286,7 +429,4 @@ $(window).resize(function(){
     else
         $('.confirm_multiple').removeClass('fixed');
 });
-
-// start updating vm list
-update_vms(UPDATE_INTERVAL);
 </script>

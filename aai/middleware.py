@@ -12,17 +12,18 @@ class SynnefoAuthMiddleware(object):
     auth_key   = "X-Auth-Key"
 
     def process_request(self, request):
-        if self.auth_token in request.META:
+        token = request.META.get('HTTP_X_AUTH_TOKEN', None)
+        if token:
             user = None
             #Retrieve user from DB or other caching mechanism
             try:
-                user = SynnefoUser.objects.get(auth_token = request.META[self.auth_token])
+                user = SynnefoUser.objects.get(auth_token=token)
             except SynnefoUser.DoesNotExist:
                 return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
 
             #Check user's auth token
             if (time.time() -
-                time.mktime(user.auth_token_created.timetuple()) +
+                time.mktime(user.auth_token_created.timetuple()) -
                 settings.AUTH_TOKEN_DURATION * 3600) > 0:
                 #The user's token has expired, re-login
                 return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)

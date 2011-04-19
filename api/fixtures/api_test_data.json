@@ -247,6 +247,7 @@
         "pk": 1,
         "fields": {
             "name": "Debian Squeeze",
+            "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE"

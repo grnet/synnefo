@@ -13,7 +13,7 @@ from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
 from synnefo.api.util import (isoformat, isoparse, random_password,
-                                get_user, get_vm, get_vm_meta, get_image, get_flavor,
+                                get_vm, get_vm_meta, get_image, get_flavor,
                                 get_request_dict, render_metadata, render_meta, api_method)
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
@@ -115,15 +115,14 @@ def list_servers(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    owner = get_user()
     since = isoparse(request.GET.get('changes-since'))
     
     if since:
-        user_vms = VirtualMachine.objects.filter(updated__gte=since)
+        user_vms = VirtualMachine.objects.filter(owner=request.user, updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:
-        user_vms = VirtualMachine.objects.filter(owner=owner, deleted=False)
+        user_vms = VirtualMachine.objects.filter(owner=request.user, deleted=False)
     servers = [vm_to_dict(server, detail) for server in user_vms]
     
     if request.serialization == 'xml':
@@ -157,13 +156,13 @@ def create_server(request):
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
     
-    image = get_image(image_id)
+    image = get_image(image_id, request.user)
     flavor = get_flavor(flavor_id)
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
-        owner=get_user(),
+        owner=request.user,
         sourceimage=image,
         ipfour='0.0.0.0',
         ipsix='::1',
@@ -198,7 +197,7 @@ def get_server_details(request, server_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 
@@ -221,7 +220,7 @@ def update_server_name(request, server_id):
     except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
     
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     vm.name = name
     vm.save()
     
@@ -238,13 +237,13 @@ def delete_server(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
     
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     delete_instance(vm)
     return HttpResponse(status=204)
 
 @api_method('POST')
 def server_action(request, server_id):
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     req = get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
@@ -269,7 +268,7 @@ def list_addresses(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
     
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
     
     if request.serialization == 'xml':
@@ -289,7 +288,7 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     if network_id != 'public':
         raise ItemNotFound('Unknown network.')
     
@@ -311,7 +310,7 @@ def list_metadata(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     metadata = metadata_to_dict(vm)
     return render_metadata(request, metadata, use_values=True, status=200)
 
@@ -326,7 +325,7 @@ def update_metadata(request, server_id):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     req = get_request_dict(request)
     try:
         metadata = req['metadata']
@@ -356,8 +355,9 @@ def get_metadata_item(request, server_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-
-    meta = get_vm_meta(server_id, key)
+    
+    vm = get_vm(server_id, request.user)
+    meta = get_vm_meta(vm, key)
     return render_meta(request, meta, status=200)
 
 @api_method('PUT')
@@ -372,7 +372,7 @@ def create_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    vm = get_vm(server_id)
+    vm = get_vm(server_id, request.user)
     req = get_request_dict(request)
     try:
         metadict = req['meta']
@@ -398,7 +398,8 @@ def delete_metadata_item(request, server_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413),
-
-    meta = get_vm_meta(server_id, key)
+    
+    vm = get_vm(server_id, request.user)
+    meta = get_vm_meta(vm, key)
     meta.delete()
     return HttpResponse(status=204)

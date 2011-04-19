@@ -4,7 +4,7 @@
 
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, Unauthorized
-from synnefo.api.util import (isoformat, isoparse, get_user, get_vm, get_image, get_image_meta,
+from synnefo.api.util import (isoformat, isoparse, get_vm, get_image, get_image_meta,
                                 get_request_dict, render_metadata, render_meta, api_method)
 from synnefo.db.models import Image, ImageMetadata
 
@@ -93,11 +93,11 @@ def list_images(request, detail=False):
     since = isoparse(request.GET.get('changes-since'))
     
     if since:
-        avail_images = Image.objects.filter(updated__gte=since)
+        avail_images = Image.objects.filter(owner=request.user, updated__gte=since)
         if not avail_images:
             return HttpResponse(status=304)
     else:
-        avail_images = Image.objects.all()
+        avail_images = Image.objects.filter(owner=request.user)
     
     images = [image_to_dict(image, detail) for image in avail_images]
     
@@ -132,8 +132,8 @@ def create_image(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
     
-    owner = get_user()
-    vm = get_vm(server_id)
+    owner = request.user
+    vm = get_vm(server_id, owner)
     image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
     
     imagedict = image_to_dict(image)
@@ -154,7 +154,7 @@ def get_image_details(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    image = get_image(image_id)
+    image = get_image(image_id, request.user)
     imagedict = image_to_dict(image)
     
     if request.serialization == 'xml':
@@ -173,9 +173,7 @@ def delete_image(request, image_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    image = get_image(image_id)
-    if image.owner != get_user():
-        raise Unauthorized('Image does not belong to user.')
+    image = get_image(image_id, request.user)
     image.delete()
     return HttpResponse(status=204)
 
@@ -188,7 +186,7 @@ def list_metadata(request, image_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    image = get_image(image_id)
+    image = get_image(image_id, request.user)
     metadata = metadata_to_dict(image)
     return render_metadata(request, metadata, use_values=True, status=200)
 
@@ -203,7 +201,7 @@ def update_metadata(request, image_id):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    image = get_image(image_id)
+    image = get_image(image_id, request.user)
     req = get_request_dict(request)
     try:
         metadata = req['metadata']
@@ -233,8 +231,9 @@ def get_metadata_item(request, image_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-
-    meta = get_image_meta(image_id, key)
+    
+    image = get_image(image_id, request.user)
+    meta = get_image_meta(image, key)
     return render_meta(request, meta, status=200)
 
 @api_method('PUT')
@@ -249,7 +248,7 @@ def create_metadata_item(request, image_id, key):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    image = get_image(image_id)
+    image = get_image(image_id, request.user)
     req = get_request_dict(request)
     try:
         metadict = req['meta']
@@ -275,7 +274,8 @@ def delete_metadata_item(request, image_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413),
-
-    meta = get_image_meta(image_id, key)
+    
+    image = get_image(image_id, request.user)
+    meta = get_image_meta(image, key)
     meta.delete()
     return HttpResponse(status=204)

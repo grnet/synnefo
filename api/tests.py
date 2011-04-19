@@ -15,9 +15,14 @@ from django.utils import simplejson as json
 from django.test import TestCase
 from django.test.client import Client
 
-#from synnefo.api.tests_auth import AuthTestCase
 from synnefo.db.models import *
-from synnefo.logic import utils
+from synnefo.logic.utils import get_rsapi_state
+
+
+class AaiClient(Client):
+    def request(self, **request):
+        request['HTTP_X_AUTH_TOKEN'] = '46e427d657b20defe352804f0eb6f8a2'
+        return super(AaiClient, self).request(**request)
 
 
 class APITestCase(TestCase):
@@ -33,7 +38,7 @@ class APITestCase(TestCase):
     #make the testing with these id's
 
     def setUp(self):
-        self.client = Client()
+        self.client = AaiClient()
 
     def test_api_version(self):
         """Check API version."""
@@ -68,7 +73,7 @@ class APITestCase(TestCase):
         self.assertEqual(vm_from_api['id'], vm_from_db.id)
         self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
         self.assertEqual(vm_from_api['name'], vm_from_db.name)
-        self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
+        self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200, 203])
 
     def test_servers_details(self):
@@ -93,7 +98,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
             self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
-            self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
+            self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
             number += 1
         for vm_from_api in vms_from_api:
             vm_from_db = VirtualMachine.objects.get(id=vm_from_api['id'])
@@ -102,7 +107,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
             self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
-            self.assertEqual(vm_from_api['status'], utils.get_rsapi_state(vm_from_db))
+            self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200,203])
 
     def test_wrong_server(self):
@@ -125,6 +130,7 @@ class APITestCase(TestCase):
         request = {
                     "server": {
                         "name": "new-server-test",
+                        "owner": 1,
                         "imageRef": 1,
                         "flavorRef": 1,
                         "metadata": {
@@ -414,7 +420,7 @@ class AssertInvariant(object):
 
 
 class BaseTestCase(TestCase):
-    USERS = 1
+    USERS = 0
     FLAVORS = 1
     IMAGES = 1
     SERVERS = 1
@@ -422,7 +428,7 @@ class BaseTestCase(TestCase):
     IMAGE_METADATA = 0
     
     def setUp(self):
-        self.client = Client()
+        self.client = AaiClient()
         create_users(self.USERS)
         create_flavors(self.FLAVORS)
         create_images(self.IMAGES)

@@ -11,6 +11,8 @@ import json
 DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1.1'
 
+TOKEN = '46e427d657b20defe352804f0eb6f8a2'
+
 
 commands = {}
 
@@ -67,8 +69,9 @@ class Command(object):
         conn = HTTPConnection(self.host)
 
         kwargs = {}
+        kwargs['headers'] = {'X-Auth-Token': TOKEN}
         if body:
-            kwargs['headers'] = {'Content-Type': 'application/json'}
+            kwargs['headers']['Content-Type'] = 'application/json'
             kwargs['body'] = body
         conn.request(method, path, **kwargs)
 

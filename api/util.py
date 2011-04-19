@@ -67,48 +67,41 @@ def random_password(length=8):
     return ''.join(choice(pool) for i in range(length))
 
 
-def get_user():
-    # XXX Placeholder function, everything belongs to a single SynnefoUser for now
-    try:
-        return SynnefoUser.objects.all()[0]
-    except IndexError:
-        raise Unauthorized('No users found.')
-
-def get_vm(server_id):
+def get_vm(server_id, owner):
     """Return a VirtualMachine instance or raise ItemNotFound."""
     
     try:
         server_id = int(server_id)
-        return VirtualMachine.objects.get(id=server_id)
+        return VirtualMachine.objects.get(id=server_id, owner=owner)
     except ValueError:
         raise BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound('Server not found.')
 
-def get_vm_meta(server_id, key):
+def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""
     
     try:
-        server_id = int(server_id)
-        return VirtualMachineMetadata.objects.get(meta_key=key, vm=server_id)
+        return VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
     except VirtualMachineMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
 
-def get_image(image_id):
+def get_image(image_id, owner):
     """Return an Image instance or raise ItemNotFound."""
     
     try:
         image_id = int(image_id)
-        return Image.objects.get(id=image_id)
+        return Image.objects.get(id=image_id, owner=owner)
+    except ValueError:
+        raise BadRequest('Invalid image ID.')
     except Image.DoesNotExist:
         raise ItemNotFound('Image not found.')
 
-def get_image_meta(image_id, key):
+def get_image_meta(image, key):
     """Return a ImageMetadata instance or raise ItemNotFound."""
 
     try:
-        image_id = int(image_id)
-        return ImageMetadata.objects.get(meta_key=key, image=image_id)
+        return ImageMetadata.objects.get(meta_key=key, image=image)
     except ImageMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
 
@@ -118,6 +111,8 @@ def get_flavor(flavor_id):
     try:
         flavor_id = int(flavor_id)
         return Flavor.objects.get(id=flavor_id)
+    except ValueError:
+        raise BadRequest('Invalid flavor ID.')
     except Flavor.DoesNotExist:
         raise ItemNotFound('Flavor not found.')
 
@@ -208,6 +203,8 @@ def api_method(http_method=None, atom_allowed=False):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
+                if not request.user:
+                    raise Unauthorized('No user found.')
                 request.serialization = request_serialization(request, atom_allowed)
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')

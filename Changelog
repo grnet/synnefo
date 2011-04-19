@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2011-04-19, v0.2.2
+
+Bug fix release:
+    GUI:
+        * Fix start operation breakage due to extra argument in API call (#433)
+
+
 2011-04-19, v0.2.1
 
 Bug fix release:

@@ -1,0 +1,38 @@
+Changelog
+=========
+
+2011-04-19, v0.2
+
+FIXES/NEW FEATURES:
+
+    GUI:
+        * Show transitional state when command is in progress ("Starting", etc) (#401)
+        * Allow only "destroy" for machines being built (#399)
+        * Show nice icons for the icon, list and single view (#389)
+        * Show the VM configuration (flavor) in list view (#387)
+        * Add Destroy action in icon view (#381)
+        * Show spinner when action is in progress (#379)
+        * Handle OS icons properly for Images and machines, user-controlled (#257)
+        * Support modification of VM metadata (currently: only addition, removal) (#375)
+        * Support machine rename (#307)
+        * Show welcome screen when no VMs defined (#279)
+        * Revamped "Create New" wizard (#83)
+    API:
+        * Return buildInProgress properly (#351)
+        * Loads of new unit tests (#417)
+        * Support OOB console access over VNC using vncauthproxy
+            - Run as daemon, support automatic port selection (#419)
+        * Refactor ganeti-0mqd
+            - Run as daemon, receive messages from Ganeti hooks, publish over 0mq
+    Deployment:
+        * Add initial version of README.deploy, detailing service dependencies
+        * Add support for database migrations, using Django South (#371)
+        * Install continuous integration platform (Jenkins), run tests automatically (#383)
+
+KNOWN DEFECTS:
+
+    GUI:
+        * Minor visual problems with Firefox 3.5 (#403)
+        * Major cross-browser compatibility problems (no IE support) (#431, #341)
+        * Requires installation under /, does not work with relative URLs (#421)
+        * Incorrect 503 return code when server is unreachable (#427)

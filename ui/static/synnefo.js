@@ -568,7 +568,7 @@ function shutdown(serverIDs) {
 	}
     // ajax post shutdown call
     var payload = {
-        "shutdown": {"timeout" : "5"}
+        "shutdown": {}
     };   
 
 	var serverID = serverIDs.pop()

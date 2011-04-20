@@ -125,15 +125,13 @@ import logging
 #         raise BadRequest('Unsupported Content-Type.')
 
 def update_response_headers(request, response):
-#     if request.serialization == 'xml':
-#         response['Content-Type'] = 'application/xml'
-#     elif request.serialization == 'atom':
-#         response['Content-Type'] = 'application/atom+xml'
-#     else:
-#         response['Content-Type'] = 'application/json'
-#     
-    response['Content-Type'] = 'text/plain; charset=UTF-8'
-    response['Server'] = 'GRNET Pithos v.0.1'
+    if request.serialization == 'xml':
+        response['Content-Type'] = 'application/xml; charset=UTF-8'
+    elif request.serialization == 'json':
+        response['Content-Type'] = 'application/json; charset=UTF-8'
+    else:
+        response['Content-Type'] = 'text/plain; charset=UTF-8'
+
     if settings.TEST:
         response['Date'] = format_date_time(time())
 
@@ -167,40 +165,38 @@ def render_fault(request, fault):
     update_response_headers(request, resp)
     return resp
 
-# def request_serialization(request, atom_allowed=False):
-#     """Return the serialization format requested.
-#        
-#        Valid formats are 'json', 'xml' and 'atom' if `atom_allowed` is True.
-#     """
-#     
-#     path = request.path
-#     
-#     if path.endswith('.json'):
-#         return 'json'
-#     elif path.endswith('.xml'):
-#         return 'xml'
-#     elif atom_allowed and path.endswith('.atom'):
-#         return 'atom'
-#     
+def request_serialization(request, format_allowed=False):
+    """Return the serialization format requested.
+       
+       Valid formats are 'text' and 'json', 'xml' if `format_allowed` is True.
+    """
+    
+    if not format_allowed:
+        return 'text'
+    
+    format = request.GET.get('format')
+    if format == 'json':
+        return 'json'
+    elif format == 'xml':
+        return 'xml'
+    
 #     for item in request.META.get('HTTP_ACCEPT', '').split(','):
 #         accept, sep, rest = item.strip().partition(';')
 #         if accept == 'application/json':
 #             return 'json'
 #         elif accept == 'application/xml':
 #             return 'xml'
-#         elif atom_allowed and accept == 'application/atom+xml':
-#             return 'atom'
-#     
-#     return 'json'
+    
+    return 'text'
 
-def api_method(http_method=None, atom_allowed=False):
+def api_method(http_method = None, format_allowed = False):
     """Decorator function for views that implement an API method."""
     
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
-                #request.serialization = request_serialization(request, atom_allowed)
+                request.serialization = request_serialization(request, format_allowed)
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
                 

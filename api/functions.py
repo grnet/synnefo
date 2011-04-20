@@ -31,8 +31,6 @@ def authenticate(request):
 	#	raise Unauthorized()
 	
 	response = HttpResponse(status = 204)
-	# TODO: Automate the Content-Type reply.
-	response['Content-Type'] = 'text/plain; charset=UTF-8'
 	response['X-Auth-Token'] = 'eaaafd18-0fed-4b3a-81b4-663c99ec1cbb'
 	# TODO: Do we support redirections?
 	#response['X-Storage-Url'] = 'https://storage.grnet.gr/pithos/v1.0/<some reference>'
@@ -66,6 +64,8 @@ def object_demux(request, v_account, v_container, v_object):
 		return object_read(request, v_account, v_container, v_object)
 	elif request.method == 'PUT':
 		return object_write(request, v_account, v_container, v_object)
+	elif request.method == 'POST':
+		return object_update(request, v_account, v_container, v_object)
 	elif request.method == 'DELETE':
 		return object_delete(request, v_account, v_container, v_object)
 	else:
@@ -75,7 +75,7 @@ def object_demux(request, v_account, v_container, v_object):
 def account_meta(request, v_account):
 	return HttpResponse("account_meta: %s" % v_account)
 
-@api_method('GET')
+@api_method('GET', format_allowed = True)
 def container_list(request, v_account):
 	return HttpResponse("container_list: %s" % v_account)
 
@@ -106,6 +106,10 @@ def object_read(request, v_account, v_container, v_object):
 @api_method('PUT')
 def object_write(request, v_account, v_container, v_object):
 	return HttpResponse("object_write: %s %s %s" % (v_account, v_container, v_object))
+
+@api_method('POST')
+def object_update(request, v_account, v_container, v_object):
+	return HttpResponse("object_update: %s %s %s" % (v_account, v_container, v_object))
 
 @api_method('DELETE')
 def object_delete(request, v_account, v_container, v_object):

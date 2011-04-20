@@ -30,3 +30,5 @@ class Metadata(models.Model):
     object = models.ForeignKey(Object)
     name = models.CharField(max_length = 256)
     value = models.CharField(max_length = 1024)
+    date_created = models.DateTimeField(auto_now_add = True)
+    date_modified = models.DateTimeField(auto_now = True)

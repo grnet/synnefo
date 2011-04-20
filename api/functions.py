@@ -3,9 +3,11 @@
 #
 
 from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.utils import simplejson as json
 
 from pithos.api.faults import Fault, BadRequest, Unauthorized
-from pithos.api.util import api_method
+from pithos.api.util import api_method, binary_search_name
 
 import logging
 
@@ -17,8 +19,6 @@ def authenticate(request):
     # Error Response Codes: serviceUnavailable (503),
     #                       unauthorized (401),
     #                       badRequest (400)
-    
-    logging.debug('request.META: %s' % request.META)
     
     x_auth_user = request.META.get('HTTP_X_AUTH_USER')
     x_auth_key = request.META.get('HTTP_X_AUTH_KEY')
@@ -76,7 +76,49 @@ def account_meta(request, v_account):
 
 @api_method('GET', format_allowed = True)
 def container_list(request, v_account):
-    return HttpResponse("container_list: %s" % v_account)
+    # Normal Response Codes: 200, 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    containers = [
+            {'name': '1', 'count': 2, 'bytes': 123},
+            {'name': '2', 'count': 22, 'bytes': 245},
+            {'name': '3', 'count': 222, 'bytes': 83745},
+            {'name': 'four', 'count': 2222, 'bytes': 274365}
+        ]
+    
+    if len(containers) == 0:
+        return HttpResponse(status = 204)
+    
+    limit = request.GET.get('limit')
+    marker = request.GET.get('marker')
+    
+    start = 0
+    if marker:
+        try:
+            start = binary_search_name(containers, marker) + 1
+        except ValueError:
+            pass
+    if limit:
+        try:
+            limit = int(limit)
+        except ValueError:
+            limit = None
+    if not limit or limit > 10000:
+        limit = 10000
+    
+    containers = containers[start:start + limit]
+    if request.serialization == 'xml':
+        # TODO: The xml must include the account name as well.
+        data = render_to_string('containers.xml', {'containers': containers})
+    elif request.serialization  == 'json':
+        data = json.dumps(containers)
+    else:
+        data = '\n'.join(x['name'] for x in containers)
+    
+    # TODO: Return 404 when the account is not found.
+    return HttpResponse(data, status = 200)
 
 @api_method('HEAD')
 def container_meta(request, v_account, v_container):

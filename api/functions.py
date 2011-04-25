@@ -7,11 +7,13 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from pithos.api.faults import Fault, BadRequest, Unauthorized
-from pithos.api.util import api_method, binary_search_name
+from pithos.api.util import api_method
+
+from pithos.backends.dummy_debug import *
 
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 @api_method('GET')
 def authenticate(request):
@@ -25,9 +27,6 @@ def authenticate(request):
     
     if not x_auth_user or not x_auth_key:
         raise BadRequest('Missing auth user or key.')
-    # TODO: Authenticate.
-    #if x_auth_user == "test":
-    #   raise Unauthorized()
     
     response = HttpResponse(status = 204)
     response['X-Auth-Token'] = 'eaaafd18-0fed-4b3a-81b4-663c99ec1cbb'
@@ -56,7 +55,6 @@ def container_demux(request, v_account, v_container):
         return method_not_allowed(request)
 
 def object_demux(request, v_account, v_container, v_object):
-    # TODO: Check parameter sizes.
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)
     elif request.method == 'GET':
@@ -72,7 +70,18 @@ def object_demux(request, v_account, v_container, v_object):
 
 @api_method('HEAD')
 def account_meta(request, v_account):
-    return HttpResponse("account_meta: %s" % v_account)
+    # Normal Response Codes: 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    container_count, bytes_count = get_account_meta(request.user)
+    
+    response = HttpResponse(status = 204)
+    response['X-Account-Container-Count'] = container_count
+    response['X-Account-Total-Bytes-Used'] = bytes_count
+    return response
 
 @api_method('GET', format_allowed = True)
 def container_list(request, v_account):
@@ -81,60 +90,111 @@ def container_list(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    containers = [
-            {'name': '1', 'count': 2, 'bytes': 123},
-            {'name': '2', 'count': 22, 'bytes': 245},
-            {'name': '3', 'count': 222, 'bytes': 83745},
-            {'name': 'four', 'count': 2222, 'bytes': 274365}
-        ]
-    
-    if len(containers) == 0:
-        return HttpResponse(status = 204)
-    
-    limit = request.GET.get('limit')
     marker = request.GET.get('marker')
-    
-    start = 0
-    if marker:
-        try:
-            start = binary_search_name(containers, marker) + 1
-        except ValueError:
-            pass
+    limit = request.GET.get('limit')
     if limit:
         try:
             limit = int(limit)
         except ValueError:
             limit = None
-    if not limit or limit > 10000:
-        limit = 10000
     
-    containers = containers[start:start + limit]
+    containers = list_containers(request.user, marker, limit)
+    if len(containers) == 0:
+        return HttpResponse(status = 204)
+    
     if request.serialization == 'xml':
-        # TODO: The xml must include the account name as well.
-        data = render_to_string('containers.xml', {'containers': containers})
+        data = render_to_string('containers.xml', {'account': request.user, 'containers': containers})
     elif request.serialization  == 'json':
         data = json.dumps(containers)
     else:
         data = '\n'.join(x['name'] for x in containers)
     
-    # TODO: Return 404 when the account is not found.
     return HttpResponse(data, status = 200)
 
 @api_method('HEAD')
 def container_meta(request, v_account, v_container):
-    return HttpResponse("container_meta: %s %s" % (v_account, v_container))
+    # Normal Response Codes: 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    object_count, bytes_count = get_container_meta(request.user, v_container)
+    
+    response = HttpResponse(status = 204)
+    response['X-Container-Object-Count'] = object_count
+    response['X-Container-Bytes-Used'] = bytes_count
+    return response
 
 @api_method('PUT')
 def container_create(request, v_account, v_container):
-    return HttpResponse("container_create: %s %s" % (v_account, v_container))
+    # Normal Response Codes: 201, 202
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+
+    if create_container(request.user, v_container):
+        return HttpResponse(status = 201)
+    else:
+        return HttpResponse(status = 202)
 
 @api_method('DELETE')
 def container_delete(request, v_account, v_container):
-    return HttpResponse("container_delete: %s %s" % (v_account, v_container))
+    # Normal Response Codes: 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    object_count, bytes_count = get_container_meta(request.user, v_container)
+    if object_count > 0:
+        return HttpResponse(status = 409)
+    
+    delete_container(request.user, v_container)
+    return HttpResponse(status = 204)
 
-@api_method('GET')
+@api_method('GET', format_allowed = True)
 def object_list(request, v_account, v_container):
-    return HttpResponse("object_list: %s %s" % (v_account, v_container))
+    # Normal Response Codes: 200, 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    path = request.GET.get('path')
+    prefix = request.GET.get('prefix')
+    delimiter = request.GET.get('delimiter')
+    logging.debug("path: %s", path)
+    
+    # Path overrides prefix and delimiter.
+    if path:
+        prefix = path
+        delimiter = '/'
+    # Naming policy.
+    if prefix and delimiter:
+        prefix = prefix + delimiter
+    
+    marker = request.GET.get('marker')
+    limit = request.GET.get('limit')
+    if limit:
+        try:
+            limit = int(limit)
+        except ValueError:
+            limit = None
+    
+    objects = list_objects(request.user, v_container, prefix, delimiter, marker, limit)
+    if len(objects) == 0:
+        return HttpResponse(status = 204)
+    
+    if request.serialization == 'xml':
+        data = render_to_string('objects.xml', {'container': v_container, 'objects': objects})
+    elif request.serialization  == 'json':
+        data = json.dumps(objects)
+    else:
+        data = '\n'.join(x['name'] for x in objects)
+    
+    return HttpResponse(data, status = 200)
 
 @api_method('HEAD')
 def object_meta(request, v_account, v_container, v_object):

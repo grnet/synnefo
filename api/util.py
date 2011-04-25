@@ -22,20 +22,6 @@ import datetime
 import dateutil.parser
 import logging
 
-def binary_search_name(a, x, lo = 0, hi = None):
-    if hi is None:
-        hi = len(a)
-    while lo < hi:
-        mid = (lo + hi) // 2
-        midval = a[mid]['name']
-        if midval < x:
-            lo = mid + 1
-        elif midval > x: 
-            hi = mid
-        else:
-            return mid
-    raise ValueError()
-
 # class UTC(tzinfo):
 #     def utcoffset(self, dt):
 #         return timedelta(0)
@@ -173,7 +159,7 @@ def render_fault(request, fault):
 #         data = json.dumps(d)
     
 #     resp = HttpResponse(data, status=fault.code)
-    resp = HttpResponse(status=fault.code)
+    resp = HttpResponse(status = fault.code)
     update_response_headers(request, resp)
     return resp
 
@@ -209,6 +195,10 @@ def api_method(http_method = None, format_allowed = False):
         def wrapper(request, *args, **kwargs):
             try:
                 request.serialization = request_serialization(request, format_allowed)
+                # TODO: Authenticate.
+                # TODO: Return 401/404 when the account is not found.
+                request.user = "test"
+                # TODO: Check parameter sizes.
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
                 

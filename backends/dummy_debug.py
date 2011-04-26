@@ -106,20 +106,26 @@ def list_objects(account, container, prefix = None, delimiter = None, marker = N
     
     return objects[start:start + limit]
 
-def get_object_meta(container, name):
-    return {'name': name, 'hash': '', 'bytes': 0}
+def get_object_meta(account, container, name):
+    logging.debug("get_object_meta: %s %s %s", account, container, name)
+    meta = {'meat': 'bacon', 'fruit': 'apple'}
+    return {'hash': 'asdfasd', 'bytes': 34243, 'content_type': 'text/plain', 'last_modified': 45345345, 'meta': meta}
 
-def get_object_data(container, name, offset=0, length=0):
+def update_object_meta(account, container, name, meta):
+    logging.debug("update_object_meta: %s %s %s %s", account, container, name, meta)
+    for k, v in meta.iteritems():
+        pass
+    return
+
+def get_object_data(account, container, name, offset=0, length=0):
     return ''
 
-def update_object_data(container, name, meta, data):
+def update_object_data(account, container, name, meta, data):
     return
 
-def update_object_meta(container, name, meta):
+def copy_object(account, container, name, new_name):
     return
 
-def copy_object(container, name, new_name):
-    return
-
-def delete_object(container, name):
+def delete_object(account, container, name):
+    logging.debug("delete_object: %s %s %s", account, container, name)
     return

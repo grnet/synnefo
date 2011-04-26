@@ -198,7 +198,24 @@ def object_list(request, v_account, v_container):
 
 @api_method('HEAD')
 def object_meta(request, v_account, v_container, v_object):
-    return HttpResponse("object_meta: %s %s %s" % (v_account, v_container, v_object))
+    # Normal Response Codes: 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+
+    info = get_object_meta(request.user, v_container, v_object)
+    
+    response = HttpResponse(status = 204)
+    response['ETag'] = info['hash']
+    response['Content-Length'] = info['bytes']
+    response['Content-Type'] = info['content_type']
+    # TODO: Format time.
+    response['Last-Modified'] = info['last_modified']
+    for k, v in info['meta'].iteritems():
+        response['X-Object-Meta-%s' % k.capitalize()] = v
+    
+    return response
 
 @api_method('GET')
 def object_read(request, v_account, v_container, v_object):
@@ -210,11 +227,28 @@ def object_write(request, v_account, v_container, v_object):
 
 @api_method('POST')
 def object_update(request, v_account, v_container, v_object):
-    return HttpResponse("object_update: %s %s %s" % (v_account, v_container, v_object))
+    # Normal Response Codes: 202
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    prefix = 'X-Object-Meta-'
+    meta = dict([(k[len(prefix):].lower(), v) for k, v in request.POST.iteritems() if k.startswith(prefix)])
+    
+    update_object_meta(request.user, v_container, v_object, meta)
+    return HttpResponse(status = 202)
 
 @api_method('DELETE')
 def object_delete(request, v_account, v_container, v_object):
-    return HttpResponse("object_delete: %s %s %s" % (v_account, v_container, v_object))
+    # Normal Response Codes: 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    delete_object(request.user, v_container, v_object)
+    return HttpResponse(status = 204)
 
 @api_method()
 def method_not_allowed(request):

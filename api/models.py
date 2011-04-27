@@ -1,4 +1,3 @@
-# vim: ts=4 sts=4 et ai sw=4 fileencoding=utf-8
 #
 # Copyright (c) 2011 Greek Research and Technology Network
 #
@@ -30,3 +29,5 @@ class Metadata(models.Model):
     object = models.ForeignKey(Object)
     name = models.CharField(max_length = 256)
     value = models.CharField(max_length = 1024)
+    date_created = models.DateTimeField(auto_now_add = True)
+    date_modified = models.DateTimeField(auto_now = True)

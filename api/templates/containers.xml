@@ -1,0 +1,13 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+
+<account name="{{ account }}">
+  {% for container in containers %}
+  <container>
+    <name>{{ container.name }}</name>
+    <count>{{ container.count }}</count>
+    <bytes>{{ container.bytes }}</bytes>
+  </container>
+  {% endfor %}
+</account>
+{% endspaceless %}

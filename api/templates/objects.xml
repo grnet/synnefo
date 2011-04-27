@@ -1,0 +1,15 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+
+<container name="{{ container }}">
+  {% for object in objects %}
+  <object>
+    <name>{{ object.name }}</name>
+    <hash>{{ object.hash }}</hash>
+    <bytes>{{ object.bytes }}</bytes>
+    <content_type>{{ object.content_type }}</content_type>
+    <last_modified>{{ object.last_modified }}</last_modified>
+  </object>
+  {% endfor %}
+</container>
+{% endspaceless %}

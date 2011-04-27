@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2010 Greek Research and Technology Network
 #
-"""Ganeti notification daemon with ampq
+"""Ganeti notification daemon with amqp 
 
 A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications over a 0mq PUB endpoint.
@@ -27,8 +27,7 @@ import daemon
 import daemon.pidlockfile
 from signal import signal, SIGINT, SIGTERM
 
-from carrot.connection import BrokerConnection
-from carrot.messaging import Publisher
+from amqplib import client_0_8 as amqp
 
 from threading import Thread, Event, currentThread
 
@@ -38,10 +37,10 @@ from ganeti import constants
 from ganeti import serializer
 
 class JobFileHandler(pyinotify.ProcessEvent):
-    def __init__(self, logger, amqpd):
+    def __init__(self, logger, chan):
             pyinotify.ProcessEvent.__init__(self)
             self.logger = logger
-            self.amqpd = amqpd
+            self.chan = chan
 
     def process_IN_CLOSE_WRITE(self, event):
         jobfile = os.path.join(event.path, event.name)
@@ -92,8 +91,9 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 msg["message"] = logmsg
             
             self.logger.debug("PUSHing msg: %s", json.dumps(msg))
-            amqpd.send(json.dumps(msg))
-
+            msg = amqp.Message(json.dumps(msg))
+            msg.properties["delivery_mode"] = 2 #Persistent
+            self.chan.basic_publish(msg,exchange="ganeti",routing_key="eventd")
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):
@@ -159,19 +159,16 @@ def main():
 #    signal(SIGTERM, fatal_signal_handler)
 
     #Init connection to RabbitMQ
-    conn = BrokerConnection(hostname=settings.RABBIT_HOST,
-                            port=settings.RABBIT_PORT,
+    conn = amqp.Connection( host=settings.RABBIT_HOST,
                             userid=settings.RABBIT_USERNAME,
                             password=settings.RABBIT_PASSWORD,
                             virtual_host=settings.RABBIT_VHOST)
-    publisher = Publisher(connection=conn, exchange="ganeti",
-                          routing_key="importer")
-
-
+    chan = conn.channel()
+    
     # Monitor the Ganeti job queue, create and push notifications
     wm = pyinotify.WatchManager()
     mask = pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
-    handler = JobFileHandler(logger, publisher)
+    handler = JobFileHandler(logger, chan)
     notifier = pyinotify.Notifier(wm, handler)
 
     try:
@@ -195,7 +192,9 @@ def main():
     finally:
         # destroy the inotify's instance on this interrupt (stop monitoring)
         notifier.stop()
-        # mark the 0mq thread as stopped, wake it up so that it notices
+        #Close the amqp connection
+        chan.close()
+        conn.close()
         raise
 
 if __name__ == "__main__":

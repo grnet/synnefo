@@ -162,20 +162,16 @@ TIMEOUT = 10 * 1000
 # parameter refers to a point in time more than POLL_LIMIT seconds ago.
 POLL_LIMIT = 3600
 
-# Configuration for ganeti-0mqd, the Ganeti notification daemon
-#
-# ganeti-0mqd uses two 0mqd endpoints:
-#   *  A PULL endpoint for receiving job updates from code running inside
-#      Ganeti hooks, running on TCP port GANETI_0MQD_PULL_PORT on the
-#      Ganeti master IP,
-#   *  A PUB endpoint for publishing notifications to the rest of the
-#      infrastructure, running on TCP port GANETI_0MQD_PUB_PORT on the
-#      Ganeti master IP.
-#
-GANETI_0MQD_PUB_PORT = "5801"
-GANETI_0MQD_PULL_PORT = "5802"
-GANETI_0MQD_LOG_FILE = "/var/log/synnefo/ganeti-0mqd.log"
-GANETI_0MQD_PID_FILE = "/var/run/synnefo/ganeti-0mqd.pid"
+# Configuration for ganeti-eventd, the Ganeti notification daemon
+GANETI_EVENTD_LOG_FILE = "/var/log/synnefo/ganeti-eventd.log"
+GANETI_EVENTD_PID_FILE = "/var/run/synnefo/ganeti-eventd.pid"
+
+#Rabbit work queue end point
+RABBIT_HOST=""
+RABBIT_PORT="5672"
+RABBIT_USERNAME="guest"
+RABBIT_PASSWORD="guest"
+RABBIT_QUEUE="/"
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.

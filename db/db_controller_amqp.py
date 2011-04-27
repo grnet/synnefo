@@ -19,6 +19,8 @@ import synnefo.settings as settings
 
 setup_environ(settings)
 
+from amqplib import client_0_8 as amqp
+
 import json
 import logging
 import traceback
@@ -26,13 +28,10 @@ import traceback
 from synnefo.db.models import VirtualMachine
 from synnefo.logic import utils, backend
 
-from carrot.connection import BrokerConnection
-from carrot.messaging import Consumer
-
-def update_db(message_data, message):
+def update_db(message):
     logging.debug("Received message from RabbitMQ")
     try:
-        msg = json.loads(message)
+        msg = json.loads(message.body)
 
         if msg["type"] != "ganeti-op-status":
             logging.debug("Ignoring message of uknown type %s." % (msg["type"],))
@@ -54,19 +53,29 @@ def update_db(message_data, message):
     except Exception as e:
         logging.error("Unexpected error:\n" + "".join(traceback.format_exception(*sys.exc_info())))
         return
+    finally:
+        message.channel.basic_ack(message.delivery_tag)
 
 def main():
 
-    conn = BrokerConnection(hostname=settings.RABBIT_HOST,
-                            port=settings.RABBIT_PORT,
+    conn = amqp.Connection( host=settings.RABBIT_HOST,
                             userid=settings.RABBIT_USERNAME,
                             password=settings.RABBIT_PASSWORD,
                             virtual_host=settings.RABBIT_VHOST)
-    consumer = Consumer(connection=conn, queue="feed",
-                        exchange="ganeti", routing_key="importer")
+    chan = conn.channel()
+    chan.queue_declare(queue="events", durable=True, exclusive=False, auto_delete=False)
+    chan.exchange_declare(exchange="ganeti", type="direct", durable=True,
+            auto_delete=False)
+    chan.queue_bind(queue="events", exchange="ganeti", routing_key="eventd")
+    chan.basic_consume(queue="events", callback=update_db, consumer_tag="dbupdater")
 
-    consumer.register_callback(update_db)
-    consumer.wait() # Go into the consumer loop
+    while True:
+        chan.wait()
+
+    chan.basic_cancel("dbupdater")
+    chan.close()
+    conn.close()
+#TODO: Implement proper shutdown of channel
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

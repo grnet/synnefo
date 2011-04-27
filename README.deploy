@@ -15,7 +15,6 @@ DEPLOYMENT notes
       FIXME: The server must be started from the project root directory.
       TBD: how to handle master migration.
 
-
     * db_controller
 
       db_controller receives notifications from 0mq and updates the DB.
@@ -39,6 +38,20 @@ DEPLOYMENT notes
       FIXME: The CTRL_SOCKET setting will be moved to settings.py as
       VNCAUTHPROXY_CTRL_SOCKET.
 
+    *rabbitmq
+      RabbitMQ is used as a generic message broker for the system. It should
+      be installed on two seperate physical machines (at the moment,
+      performance is not an issue) in a high availability configuration as
+      described here:
+
+        http://www.rabbitmq.com/pacemaker.html
+
+      After installation, create a user and set its permissions
+
+        rabbitmqctl add_user okeanos 0k3@n0s
+        rabbitmqctl set_permissions -p / okeanos  "^okeanos-.*" ".*" ".*"
+        
+      (more TBD)
 
 - OS Specific instructions
 

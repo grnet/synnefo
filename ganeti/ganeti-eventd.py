@@ -159,8 +159,11 @@ def main():
 #    signal(SIGTERM, fatal_signal_handler)
 
     #Init connection to RabbitMQ
-    conn = BrokerConnection(hostname="localhost", port=5672,userid="guest",
-                            password="guest",virtual_host="/")
+    conn = BrokerConnection(hostname=settings.RABBIT_HOST,
+                            port=settings.RABBIT_PORT,
+                            userid=settings.RABBIT_USERNAME,
+                            password=settings.RABBIT_PASSWORD,
+                            virtual_host=settings.RABBIT_VHOST)
     publisher = Publisher(connection=conn, exchange="ganeti",
                           routing_key="importer")
 

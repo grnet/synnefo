@@ -167,10 +167,10 @@ GANETI_EVENTD_LOG_FILE = "/var/log/synnefo/ganeti-eventd.log"
 GANETI_EVENTD_PID_FILE = "/var/run/synnefo/ganeti-eventd.pid"
 
 #Rabbit work queue end point
-RABBIT_HOST=""
+RABBIT_HOST="62.217.120.67"
 RABBIT_PORT="5672"
-RABBIT_USERNAME="guest"
-RABBIT_PASSWORD="guest"
+RABBIT_USERNAME="okeanos"
+RABBIT_PASSWORD="0k3@n0s"
 RABBIT_VHOST="/"
 
 # The API implementation needs to accept and return absolute references

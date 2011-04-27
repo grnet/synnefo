@@ -15,6 +15,7 @@ Synnefo is written in Python 2.6 and depends on the following Python modules
   WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work
            with Python 2.6
 - south [south==0.7.1]
+- carrot [carrot==0.10.5]
 
 also, depending on the database engine of choice, on one of the following:
 - MySQL-python [MySQL-python==1.2.3]

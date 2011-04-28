@@ -10,11 +10,11 @@ class BackEnd:
         if not os.path.exists(basepath):
             os.makedirs(basepath)
         db = '/'.join([basepath, 'db'])
-        con = sqlite3.connect(db)
+        self.con = sqlite3.connect(db)
         # Create tables
         sql = '''create table if not exists objects(name text)'''
-        con.execute(sql)
-        con.commit()
+        self.con.execute(sql)
+        self.con.commit()
 
     def get_account_meta(self, account):
         """ returns a dictionary with the container metadata """
@@ -42,15 +42,14 @@ class BackEnd:
         """ deletes the container with the given name
         if it exists under the basepath
         and it's empty"""
-        logging.debug("delete_container: %s %s", params.items()[1:])
+        logging.debug("delete_container: %s %s", account, name)
         fullname = '/'.join([self.basepath, account, name])    
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
-        if not list_objects(name):
-            raise Error('Container is not empty')
+        if os.listdir(fullname):
+            raise Exception('Container is not empty')
         else:
-            os.chdir(self.basepath)
-            os.rmdir(name)
+            os.rmdir(fullname)
         return
     
     def get_container_meta(self, account, name):
@@ -67,62 +66,62 @@ class BackEnd:
         return os.listdir(self.basepath)[:limit]
     
     def list_objects(self, account, container, prefix='', delimiter=None, marker = None, limit = 10000):
-        #dir = '/'.join([self.basepath, account, container])
-        #if not os.path.exists(dir):
-        #    raise NameError('Container does not exist')
-        #search_str = ''
-        #if prefix:
-        #    search_str = '/'.join([search_str, prefix])
-        ##if delimiter:
-        #if None:
-        #    search_str = ''.join(['%', search_str, '%', delimiter])
-        #    print search_str
-        #    c = con.execute('select * from objects where name like ''?'' order by name', (search_str,))
-        #else:
-        #    search_str = ''.join(['%', search_str, '%'])
-        #    print search_str
-        #    c = con.execute('select * from objects where name like ''?'' order by name', (search_str,))
-        #l = []
-        #for row in c.fetchall():
-        #    s = ''
-        #    print row[0]
-        #    rest = str(row[0]).split(prefix)[1]
-        #    print rest
-        #    #if delimiter:
-        #    #    rest = rest.partition(delimiter)[0]
-        #    #print rest
-        #    folders = rest.split('/')[:-1]
-        #    for folder in folders:
-        #        path = ''.join([s, folder, '/'])
-        #        if path not in l:
-        #            l.append(path)
-        #        s = ''.join([s, folder, '/'])
-        #    l.append(rest)
-        logging.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
-        if prefix or delimiter:
-            if prefix:
-                objects = [x for x in objects if x['name'].startswith(prefix)]
-            if delimiter:
-                pseudo_objects = {}
-                for x in objects:
-                    pseudo_name = x['name'][len(prefix):]
-                    i = pseudo_name.find(delimiter)
-                    if i != -1:
-                        pseudo_name = pseudo_name[:i]
-                    # TODO: Virtual directories.
-                    if pseudo_name not in pseudo_objects:
-                        pseudo_objects[pseudo_name] = x
-                objects = sorted(pseudo_objects.values(), key=lambda o: o['name'])
-            
-        start = 0
-        if marker:
-            try:
-                start = binary_search_name(objects, marker) + 1
-            except ValueError:
-                pass
-        if not limit or limit > 10000:
-            limit = 10000
-        return objects[start:start + limit]
+        dir = '/'.join([self.basepath, account, container])
+        if not os.path.exists(dir):
+            raise NameError('Container does not exist')
+        search_str = ''
+        if prefix:
+            search_str = '/'.join([search_str, prefix])
+        #if delimiter:
+        if None:
+            search_str = ''.join(['%', search_str, '%', delimiter])
+            print search_str
+            c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
+        else:
+            search_str = ''.join(['%', search_str, '%'])
+            print search_str
+            c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
+        l = []
+        for row in c.fetchall():
+            s = ''
+            print row[0]
+            rest = str(row[0]).split(prefix)[1]
+            print rest
+            #if delimiter:
+            #    rest = rest.partition(delimiter)[0]
+            #print rest
+            folders = rest.split('/')[:-1]
+            for folder in folders:
+                path = ''.join([s, folder, '/'])
+                if path not in l:
+                    l.append(path)
+                s = ''.join([s, folder, '/'])
+            l.append(rest)
+        #logging.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
+        #if prefix or delimiter:
+        #    if prefix:
+        #        objects = [x for x in objects if x['name'].startswith(prefix)]
+        #    if delimiter:
+        #        pseudo_objects = {}
+        #        for x in objects:
+        #            pseudo_name = x['name'][len(prefix):]
+        #            i = pseudo_name.find(delimiter)
+        #            if i != -1:
+        #                pseudo_name = pseudo_name[:i]
+        #             TODO: Virtual directories.
+        #            if pseudo_name not in pseudo_objects:
+        #                pseudo_objects[pseudo_name] = x
+        #        objects = sorted(pseudo_objects.values(), key=lambda o: o['name'])
+        #    
+        #start = 0
+        #if marker:
+        #    try:
+        #        start = binary_search_name(objects, marker) + 1
+        #    except ValueError:
+        #        pass
+        #if not limit or limit > 10000:
+        #    limit = 10000
+        #return objects[start:start + limit]
     
     def get_object_meta(self, account, container, name, keys):
         dir = '/'.join([self.basepath, account, container])
@@ -244,11 +243,11 @@ class BackEnd:
             raise NameError('Object not found')
     
     def __save_linkinfo(self, name):
-        id = con.execute('insert into objects(name) values(?)', (name,)).lastrowid
-        con.commit()
+        id = self.con.execute('insert into objects(name) values(?)', (name,)).lastrowid
+        self.con.commit()
         return id
     
     def __delete_linkinfo(self, name):
-        con.execute('delete from objects where name = ?', (name,))
-        cont.commit()
+        self.con.execute('delete from objects where name = ?', (name,))
+        self.cont.commit()
         return

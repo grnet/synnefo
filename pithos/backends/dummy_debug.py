@@ -28,7 +28,7 @@ def binary_search_name(a, x, lo = 0, hi = None):
     raise ValueError()
 
 def get_account_meta(account):
-    logging.debug("get_account_meta: %s %s", account, name)
+    logging.debug("get_account_meta: %s", account)
     return {'count': 13, 'bytes': 3148237468}
 
 def create_container(account, name):

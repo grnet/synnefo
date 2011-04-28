@@ -80,7 +80,7 @@ $(".rename, h5.editable span.name").live('click', function() {
                                         $(this).parent().find('.name').text() + "</span>");
     $(this).parent().find('.rename').hide();
     $(this).parent().find(".editbuttons").fadeIn();
-    $(this).parent().find(".nametextbox").focus();
+    $(this).parent().find(".nametextbox").focus().select();
     $(this).parent().removeClass('editable');
     return false;
 });

@@ -47,11 +47,14 @@ class JobFileHandler(pyinotify.ProcessEvent):
         conn = None
         while conn == None:
             handler_logger.info("Attempting to connect to %s", settings.RABBIT_HOST)
-            conn = amqp.Connection( host=settings.RABBIT_HOST,
+            try:
+                conn = amqp.Connection( host=settings.RABBIT_HOST,
                      userid=settings.RABBIT_USERNAME,
                      password=settings.RABBIT_PASSWORD,
                      virtual_host=settings.RABBIT_VHOST)
-            time.sleep(1)
+            except socket.error:
+                time.sleep(1)
+                pass
         
         handler_logger.info("Connection succesful, opening channel")
         return conn.channel()

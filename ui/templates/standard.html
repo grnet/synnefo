@@ -374,7 +374,12 @@ function update_machines_view(data){
                     $('div.#' + server.id + ' a.action-shutdown').addClass('shutdown-padding');
             }
             //existing.find(".status").text(STATUS_MESSAGES[server.status]);
-            existing.find("div.name span.name").text(server.name.substring(0,100));
+            if (existing.find(".editbuttons").css('display') == 'none') { 
+                existing.find("div.name span.name").text(server.name.substring(0,100));
+            } else {
+                existing.find(".editbuttons .cancel").click();
+                existing.find("div.name span.name").text(server.name.substring(0,100));
+            }
             existing.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it

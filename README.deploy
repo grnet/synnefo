@@ -3,22 +3,37 @@ DEPLOYMENT notes
 
 - Service dependencies
 
+    *rabbitmq
+      RabbitMQ is used as a generic message broker for the system. It should
+      be installed on two seperate machines (VMs will do for the moment)
+      in a high availability configuration as described here:
+
+        http://www.rabbitmq.com/pacemaker.html
+
+      After installation, create a user and set its permissions
+
+        rabbitmqctl add_user okeanos 0k3@n0s
+        rabbitmqctl set_permissions -p / okeanos  "^.*" ".*" ".*"
+
+    The values set for the user and password must be mirrored in the
+    RABBIT_* variables in settings.py
+
     * ganeti-eventd
 
       The Ganeti monitoring daemon must run on the Ganeti master node.
 
-      Edit all relevant settings in settings.py, GANETI_0MQD_* variables.
-      Then start the server on the Ganeti master as root or 
+      Edit all relevant settings in settings.py, GANETI_* variables.
+      Then start the server on the Ganeti master as root
 
-      # python 
+      # cd synnefo && python ./ganeti/ganeti-eventd
 
       FIXME: The server must be started from the project root directory.
       TBD: how to handle master migration.
 
     * db_controller
 
-      db_controller receives notifications from 0mq and updates the DB.
-      
+      db_controller receives notifications from the queue and updates the DB.
+
       For now, db_controller must be run by hand:
       $ ./db/db_controller.py
 
@@ -37,19 +52,6 @@ DEPLOYMENT notes
 
       FIXME: The CTRL_SOCKET setting will be moved to settings.py as
       VNCAUTHPROXY_CTRL_SOCKET.
-
-    *rabbitmq
-      RabbitMQ is used as a generic message broker for the system. It should
-      be installed on two seperate physical machines (at the moment,
-      performance is not an issue) in a high availability configuration as
-      described here:
-
-        http://www.rabbitmq.com/pacemaker.html
-
-      After installation, create a user and set its permissions
-
-        rabbitmqctl add_user okeanos 0k3@n0s
-        rabbitmqctl set_permissions -p / okeanos  "^.*" ".*" ".*"
 
 - OS Specific instructions
 

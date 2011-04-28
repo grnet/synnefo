@@ -25,6 +25,7 @@ import logging
 import pyinotify
 import daemon
 import daemon.pidlockfile
+import socket
 from signal import signal, SIGINT, SIGTERM
 
 from amqplib import client_0_8 as amqp
@@ -37,12 +38,28 @@ from ganeti import constants
 from ganeti import serializer
 
 class JobFileHandler(pyinotify.ProcessEvent):
-    def __init__(self, logger, chan):
-            pyinotify.ProcessEvent.__init__(self)
-            self.logger = logger
-            self.chan = chan
+    def __init__(self, logger):
+        pyinotify.ProcessEvent.__init__(self)
+        self.logger = logger
+        self.chan = None 
+
+    def open_channel(self):
+        conn = None
+        while conn == None:
+            handler_logger.info("Attempting to connect to %s", settings.RABBIT_HOST)
+            conn = amqp.Connection( host=settings.RABBIT_HOST,
+                     userid=settings.RABBIT_USERNAME,
+                     password=settings.RABBIT_PASSWORD,
+                     virtual_host=settings.RABBIT_VHOST)
+            time.sleep(1)
+        
+        handler_logger.info("Connection succesful, opening channel")
+        return conn.channel()
 
     def process_IN_CLOSE_WRITE(self, event):
+        if self.chan == None:
+            self.chan = self.open_channel()
+
         jobfile = os.path.join(event.path, event.name)
         if not event.name.startswith("job-"):
             self.logger.debug("Not a job file: %s" % event.path)
@@ -51,7 +68,6 @@ class JobFileHandler(pyinotify.ProcessEvent):
         try:
             data = utils.ReadFile(jobfile)
         except IOError:
-
             return
 
         data = serializer.LoadJson(data)
@@ -74,33 +90,41 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 logmsg = op.log[-1][-1]
             except IndexError:
                 logmsg = None
-            
+
             self.logger.debug("%d: %s(%s) %s %s",
-                int(job.id), op.input.OP_ID, instances, op.status, logmsg)
+                    int(job.id), op.input.OP_ID, instances, op.status, logmsg)
 
             # Construct message
             msg = {
-                "type": "ganeti-op-status",
-                "instance": instances,
-                "operation": op.input.OP_ID,
-                "jobId": int(job.id),
-                "status": op.status,
-                "logmsg": logmsg
-            }
+                    "type": "ganeti-op-status",
+                    "instance": instances,
+                    "operation": op.input.OP_ID,
+                    "jobId": int(job.id),
+                    "status": op.status,
+                    "logmsg": logmsg
+                    }
             if logmsg:
                 msg["message"] = logmsg
-            
+
             self.logger.debug("PUSHing msg: %s", json.dumps(msg))
             msg = amqp.Message(json.dumps(msg))
             msg.properties["delivery_mode"] = 2 #Persistent
-            self.chan.basic_publish(msg,exchange="ganeti",routing_key="eventd")
+            try:    
+                self.chan.basic_publish(msg,exchange="ganeti",routing_key="eventd")
+            except socket.error:
+                self.logger.error("Server went away, reconnecting...")
+                self.chan = self.open_channel()
+                self.chan.basic_publish(msg,exchange="ganeti",routing_key="eventd")
+            except Exception:
+                self.logger.error("Uknown error (msg: %s)", msg)
+                raise
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):
     global handler_logger
 
     handler_logger.info("Caught fatal signal %d, will raise SystemExit",
-        signum)
+            signum)
     raise SystemExit
 
 def parse_arguments(args):
@@ -108,17 +132,17 @@ def parse_arguments(args):
 
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", dest="debug",
-                      help="Enable debugging information")
+            help="Enable debugging information")
     parser.add_option("-l", "--log", dest="log_file",
-                      default=settings.GANETI_EVENTD_LOG_FILE,
-                      metavar="FILE",
-                      help="Write log to FILE instead of %s" %
-                      settings.GANETI_EVENTD_LOG_FILE),
+            default=settings.GANETI_EVENTD_LOG_FILE,
+            metavar="FILE",
+            help="Write log to FILE instead of %s" %
+            settings.GANETI_EVENTD_LOG_FILE),
     parser.add_option('--pid-file', dest="pid_file",
-                      default=settings.GANETI_EVENTD_PID_FILE,
-                      metavar='PIDFILE',
-                      help="Save PID to file (default: %s)" %
-                      settings.GANETI_EVENTD_PID_FILE)
+            default=settings.GANETI_EVENTD_PID_FILE,
+            metavar='PIDFILE',
+            help="Save PID to file (default: %s)" %
+            settings.GANETI_EVENTD_PID_FILE)
 
     return parser.parse_args(args)
 
@@ -135,40 +159,34 @@ def main():
     logger = logging.getLogger("ganeti-amqpd")
     logger.setLevel(lvl)
     formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
-        "%Y-%m-%d %H:%M:%S")
+            "%Y-%m-%d %H:%M:%S")
     handler = logging.FileHandler(opts.log_file)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     handler_logger = logger
 
-#    # Become a daemon:
-#    # Redirect stdout and stderr to handler.stream to catch
-#    # early errors in the daemonization process [e.g., pidfile creation]
-#    # which will otherwise go to /dev/null.
-#    daemon_context = daemon.DaemonContext(
-#        pidfile=pidf,
-#        umask=022,
-#        stdout=handler.stream,
-#        stderr=handler.stream,
-#        files_preserve=[handler.stream])
-#    daemon_context.open()
-#    logger.info("Became a daemon")
-#
-#    # Catch signals to ensure graceful shutdown
-#    signal(SIGINT, fatal_signal_handler)
-#    signal(SIGTERM, fatal_signal_handler)
+    # Become a daemon:
+    # Redirect stdout and stderr to handler.stream to catch
+    # early errors in the daemonization process [e.g., pidfile creation]
+    # which will otherwise go to /dev/null.
+    daemon_context = daemon.DaemonContext(
+            pidfile=pidf,
+            umask=022,
+            stdout=handler.stream,
+            stderr=handler.stream,
+            files_preserve=[handler.stream])
+    daemon_context.open()
+    logger.info("Became a daemon")
 
-    #Init connection to RabbitMQ
-    conn = amqp.Connection( host=settings.RABBIT_HOST,
-                            userid=settings.RABBIT_USERNAME,
-                            password=settings.RABBIT_PASSWORD,
-                            virtual_host=settings.RABBIT_VHOST)
-    chan = conn.channel()
-    
+    # Catch signals to ensure graceful shutdown
+    signal(SIGINT, fatal_signal_handler)
+    signal(SIGTERM, fatal_signal_handler)
+
+
     # Monitor the Ganeti job queue, create and push notifications
     wm = pyinotify.WatchManager()
     mask = pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
-    handler = JobFileHandler(logger, chan)
+    handler = JobFileHandler(logger)
     notifier = pyinotify.Notifier(wm, handler)
 
     try:
@@ -176,11 +194,11 @@ def main():
         res = wm.add_watch(constants.QUEUE_DIR, mask)
         if res[constants.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative watch descriptor")
-        
+
         logger.info("Now watching %s" % constants.QUEUE_DIR)
 
         while True:    # loop forever
-        # process the queue of events as explained above
+            # process the queue of events as explained above
             notifier.process_events()
             if notifier.check_events():
                 # read notified events and enqeue them
@@ -192,12 +210,9 @@ def main():
     finally:
         # destroy the inotify's instance on this interrupt (stop monitoring)
         notifier.stop()
-        #Close the amqp connection
-        chan.close()
-        conn.close()
         raise
 
 if __name__ == "__main__":
     sys.exit(main())
 
-# vim: set ts=4 sts=4 sw=4 et ai :
+# vim: set sta sts=4 shiftwidth=4 sw=4 et ai :

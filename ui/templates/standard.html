@@ -36,7 +36,7 @@
             {% trans "Show:" %} 
             <a class="show-disks"href="#">{% trans "disks" %}</a> | 
             <a class="show-networks"href="#">{% trans "networks" %}</a> | 
-            <a class="show-metadata" href="#">{% trans "metadata" %}</a>
+            <a class="show-info" href="#">{% trans "more info" %}</a>
         </h5>
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
@@ -58,7 +58,7 @@
 <script>
 
 // intercept edit metadata click
-$("a.show-metadata").live('click', function() {
+$("a.show-info").live('click', function() {
     // get server name and server ID
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().parent().find("span.name").text();

@@ -159,7 +159,7 @@ def main():
 
     # Initialize logger
     lvl = logging.DEBUG if opts.debug else logging.INFO
-    logger = logging.getLogger("ganeti-amqpd")
+    logger = logging.getLogger("ganeti.eventd")
     logger.setLevel(lvl)
     formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
             "%Y-%m-%d %H:%M:%S")

@@ -22,55 +22,115 @@ import datetime
 import dateutil.parser
 import logging
 
-# class UTC(tzinfo):
-#     def utcoffset(self, dt):
-#         return timedelta(0)
-#     
-#     def tzname(self, dt):
-#         return 'UTC'
-#     
-#     def dst(self, dt):
-#         return timedelta(0)
-# 
-# 
-# def isoformat(d):
-#     """Return an ISO8601 date string that includes a timezon."""
-#     
-#     return d.replace(tzinfo=UTC()).isoformat()
-# 
-# def isoparse(s):
-#     """Parse an ISO8601 date string into a datetime object."""
-#     
-#     if not s:
-#         return None
-#     
-#     try:
-#         since = dateutil.parser.parse(s)
-#         utc_since = since.astimezone(UTC()).replace(tzinfo=None)
-#     except ValueError:
-#         raise BadRequest('Invalid changes-since parameter.')
-#     
-#     now = datetime.datetime.now()
-#     if utc_since > now:
-#         raise BadRequest('changes-since value set in the future.')
-#     
-#     if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
-#         raise BadRequest('Too old changes-since value.')
-#     
-#     return utc_since
-#     
-# def random_password(length=8):
-#     pool = ascii_letters + digits
-#     return ''.join(choice(pool) for i in range(length))
-# 
-# 
-# def get_user():
-#     # XXX Placeholder function, everything belongs to a single SynnefoUser for now
-#     try:
-#         return SynnefoUser.objects.all()[0]
-#     except IndexError:
-#         raise Unauthorized
-# 
+import re
+import calendar
+
+# Part of newer Django versions.
+
+__D = r'(?P<day>\d{2})'
+__D2 = r'(?P<day>[ \d]\d)'
+__M = r'(?P<mon>\w{3})'
+__Y = r'(?P<year>\d{4})'
+__Y2 = r'(?P<year>\d{2})'
+__T = r'(?P<hour>\d{2}):(?P<min>\d{2}):(?P<sec>\d{2})'
+RFC1123_DATE = re.compile(r'^\w{3}, %s %s %s %s GMT$' % (__D, __M, __Y, __T))
+RFC850_DATE = re.compile(r'^\w{6,9}, %s-%s-%s %s GMT$' % (__D, __M, __Y2, __T))
+ASCTIME_DATE = re.compile(r'^\w{3} %s %s %s %s$' % (__M, __D2, __T, __Y))
+
+def parse_http_date(date):
+    """
+    Parses a date format as specified by HTTP RFC2616 section 3.3.1.
+
+    The three formats allowed by the RFC are accepted, even if only the first
+    one is still in widespread use.
+
+    Returns an floating point number expressed in seconds since the epoch, in
+    UTC.
+    """
+    # emails.Util.parsedate does the job for RFC1123 dates; unfortunately
+    # RFC2616 makes it mandatory to support RFC850 dates too. So we roll
+    # our own RFC-compliant parsing.
+    for regex in RFC1123_DATE, RFC850_DATE, ASCTIME_DATE:
+        m = regex.match(date)
+        if m is not None:
+            break
+    else:
+        raise ValueError("%r is not in a valid HTTP date format" % date)
+    try:
+        year = int(m.group('year'))
+        if year < 100:
+            if year < 70:
+                year += 2000
+            else:
+                year += 1900
+        month = MONTHS.index(m.group('mon').lower()) + 1
+        day = int(m.group('day'))
+        hour = int(m.group('hour'))
+        min = int(m.group('min'))
+        sec = int(m.group('sec'))
+        result = datetime.datetime(year, month, day, hour, min, sec)
+        return calendar.timegm(result.utctimetuple())
+    except Exception:
+        raise ValueError("%r is not a valid date" % date)
+
+def parse_http_date_safe(date):
+    """
+    Same as parse_http_date, but returns None if the input is invalid.
+    """
+    try:
+        return parse_http_date(date)
+    except Exception:
+        pass
+
+def get_object_meta(request):
+    """
+    Get all X-Object-Meta-* headers in a dict.
+    """
+    prefix = 'HTTP_X_OBJECT_META_'
+    return dict([(k[len(prefix):].lower(), v) for k, v in request.META.iteritems() if k.startswith(prefix)])
+    
+def get_range(request):
+    """
+    Parse a Range header from the request.
+    Either returns None, or an (offset, length) tuple.
+    If no offset is defined offset equals 0.
+    If no length is defined length is None.
+    """
+    
+    range = request.GET.get('range')
+    if not range:
+        return None
+    
+    range = range.replace(' ', '')
+    if not range.startswith('bytes='):
+        return None
+    
+    parts = range.split('-')
+    if len(parts) != 2:
+        return None
+    
+    offset, length = parts
+    if offset == '' and length == '':
+        return None
+    
+    if offset != '':
+        try:
+            offset = int(offset)
+        except ValueError:
+            return None
+    else:
+        offset = 0
+    
+    if length != '':
+        try:
+            length = int(length)
+        except ValueError:
+            return None
+    else:
+        length = None
+    
+    return (offset, length)
+
 # def get_vm(server_id):
 #     """Return a VirtualMachine instance or raise ItemNotFound."""
 #     
@@ -133,21 +193,6 @@ def update_response_headers(request, response):
     if settings.TEST:
         response['Date'] = format_date_time(time())
 
-# def render_metadata(request, metadata, use_values=False, status=200):
-#     if request.serialization == 'xml':
-#         data = render_to_string('metadata.xml', {'metadata': metadata})
-#     else:
-#         d = {'metadata': {'values': metadata}} if use_values else {'metadata': metadata}
-#         data = json.dumps(d)
-#     return HttpResponse(data, status=status)
-# 
-# def render_meta(request, meta, status=200):
-#     if request.serialization == 'xml':
-#         data = render_to_string('meta.xml', {'meta': meta})
-#     else:
-#         data = json.dumps({'meta': {meta.meta_key: meta.meta_value}})
-#     return HttpResponse(data, status=status)
-
 def render_fault(request, fault):
     if settings.DEBUG or settings.TEST:
         fault.details = format_exc(fault)
@@ -164,9 +209,10 @@ def render_fault(request, fault):
     return resp
 
 def request_serialization(request, format_allowed=False):
-    """Return the serialization format requested.
+    """
+    Return the serialization format requested.
        
-       Valid formats are 'text' and 'json', 'xml' if `format_allowed` is True.
+    Valid formats are 'text' and 'json', 'xml' if `format_allowed` is True.
     """
     
     if not format_allowed:
@@ -178,6 +224,7 @@ def request_serialization(request, format_allowed=False):
     elif format == 'xml':
         return 'xml'
     
+    # TODO: Do we care of Accept headers?
 #     for item in request.META.get('HTTP_ACCEPT', '').split(','):
 #         accept, sep, rest = item.strip().partition(';')
 #         if accept == 'application/json':
@@ -188,7 +235,9 @@ def request_serialization(request, format_allowed=False):
     return 'text'
 
 def api_method(http_method = None, format_allowed = False):
-    """Decorator function for views that implement an API method."""
+    """
+    Decorator function for views that implement an API method.
+    """
     
     def decorator(func):
         @wraps(func)

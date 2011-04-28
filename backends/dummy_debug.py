@@ -118,12 +118,15 @@ def update_object_meta(account, container, name, meta):
     return
 
 def get_object_data(account, container, name, offset=0, length=0):
+    logging.debug("get_object_data: %s %s %s %s %s", account, container, name, offset, length)
     return ''
 
 def update_object_data(account, container, name, meta, data):
+    logging.debug("update_object_data: %s %s %s %s %s", account, container, name, meta, data)
     return
 
-def copy_object(account, container, name, new_name):
+def copy_object(account, container, name, new_container, new_name):
+    logging.debug("copy_object: %s %s %s %s %s", account, container, name, new_container, new_name)
     return
 
 def delete_object(account, container, name):

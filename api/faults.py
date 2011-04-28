@@ -13,6 +13,9 @@ class Fault(Exception):
         self.details = details
         self.name = name or camelCase(self.__class__.__name__)
 
+class NotModified(Fault):
+    code = 304
+
 class BadRequest(Fault):
     code = 400
 
@@ -24,6 +27,18 @@ class ResizeNotAllowed(Fault):
 
 class ItemNotFound(Fault):
     code = 404
+
+class LengthRequired(Fault):
+    code = 411
+
+class PreconditionFailed(Fault):
+    code = 412
+
+class RangeNotSatisfiable(Fault):
+    code = 416
+
+class UnprocessableEntity(Fault):
+    code = 422
 
 class ServiceUnavailable(Fault):
     code = 503

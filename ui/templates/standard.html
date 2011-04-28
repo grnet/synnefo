@@ -8,6 +8,7 @@
             <a href="#" class="action-start">{% trans "Start" %}</a>
             <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
             <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
+            <a href="#" class="action-console">{% trans "Console" %}</a>
             <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
         </div>        
         <div class="state">
@@ -172,6 +173,29 @@ $("div.actions a.action-start").live('click', function(){
     update_confirmations();    
     return false;
 });
+
+// intercept console click
+$("div.actions a.action-console").live('click', function(){
+    var serverID = $(this).parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = console;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([console, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
 
 // intercept destroy click
 $("div.actions a.action-destroy").live('click', function(){ 

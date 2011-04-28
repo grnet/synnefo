@@ -3,9 +3,9 @@ var changes_since = 0, deferred = 0, update_request = false, load_request = fals
 var API_URL = "/api/v1.1";
 
 function ISODateString(d){
-    //return a date in an ISO 8601 format using UTC. 
+    //return a date in an ISO 8601 format using UTC.
     //do not include time zone info (Z) at the end
-    //taken from the Mozilla Developer Center 
+    //taken from the Mozilla Developer Center
     function pad(n){ return n<10 ? '0'+n : n }
     return  d.getUTCFullYear()+ '-' +
 			pad(d.getUTCMonth()+1) + '-' +
@@ -54,17 +54,17 @@ function update_confirmations(){
     // hide all confirm boxes to begin with
     $('div.confirm_single').hide();
     $('div.confirm_multiple').hide();
-   
+
 	// standard view only
-	if ($.cookie("list") != '1') { 
+	if ($.cookie("list") != '1') {
 		for (var i=0;i<pending_actions.length;i++){
             // show single confirms
-			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();        
+			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();
 		}		
 	}
 
 	// if more than one pending action show multiple confirm box
-	if (pending_actions.length>1 || $.cookie("list") == '1' && pending_actions.length == 1){ 
+	if (pending_actions.length>1 || $.cookie("list") == '1' && pending_actions.length == 1){
 		$('div.confirm_multiple span.actionLen').text(pending_actions.length);
 		$('div.confirm_multiple').show();
 	}
@@ -96,7 +96,7 @@ function list_view() {
 			$("div#machinesview").html(data);
 		}
 	});
-    
+
     return false;
 }
 
@@ -143,17 +143,17 @@ function toggleMenu() {
     var secondary = $("ul.css-tabs li a.secondary");
     var all = $("ul.css-tabs li a");			
     var toggled = $('ul.css-tabs li a.current').hasClass('secondary');
-    
+
     // if anything is still moving, do nothing
     if ($(":animated").length) {
         return;
-    } 
-    
+    }
+
     // nothing is current to begin with
     $('ul.css-tabs li a.current').removeClass('current');
-    
+
     // move stuff around
-    all.animate({top:'30px'}, {complete: function() { 
+    all.animate({top:'30px'}, {complete: function() {
         $(this).hide();
         if (toggled) {
             primary.show();
@@ -167,9 +167,9 @@ function toggleMenu() {
                 $('ul.css-tabs li a.secondary#files').addClass('current');
                 $('a#files').click();                           			                	
             }});
-        }            	                          
+        }
     }});
-    
+
     // rotate arrow icon
     if (toggled) {
         $("#arrow").rotate({animateAngle: (0), bind:[{"click":function(){toggleMenu()}}]});
@@ -177,7 +177,7 @@ function toggleMenu() {
     } else {
         $("#arrow").rotate({animateAngle: (-180), bind:[{"click":function(){toggleMenu()}}]});
         $("#arrow").rotateAnimation(-180);
-    }            
+    }
 }
 
 // confirmation overlay generation
@@ -204,7 +204,7 @@ function confirm_action(action_string, action_function, serverIDs, serverNames) 
 	    // get user input
 	    var yes = buttons.index(this) === 0;
         //close the confirmation window
-        $("a#confirmation").overlay().close(); 
+        $("a#confirmation").overlay().close();
         // return true=yes or false=no
         if (yes) {
             action_function(serverIDs);
@@ -266,14 +266,14 @@ function update_vms(interval) {
 }
 
 // get and show a list of available standard and custom images
-function update_images() { 
+function update_images() {
     $.ajax({
         url: API_URL + '/images/detail',
         type: "GET",
         //async: false,
         dataType: "json",
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
                     ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
                     },
         success: function(data, textStatus, jqXHR) {
@@ -303,7 +303,7 @@ function update_wizard_images() {
                 }
             }
 			img.find("input.radio").attr('id',"img-radio-" + image.id);
-			if (i==0) img.find("input.radio").attr("checked","checked"); 
+			if (i==0) img.find("input.radio").attr("checked","checked");
             var image_logo = os_icon(image.metadata);
 			img.find("img.image-logo").attr('src','static/os_logos/'+image_logo+'.png');
             if (image.metadata) {
@@ -387,14 +387,14 @@ Array.prototype.unique = function () {
 }
 
 // get and configure flavor selection
-function update_flavors() { 
+function update_flavors() {
     $.ajax({
         url: API_URL + '/flavors/detail',
         type: "GET",
         //async: false,
         dataType: "json",
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
             try {
 				ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText);
 			} catch (err) {
@@ -504,15 +504,15 @@ function create_vm(machineName, imageRef, flavorRef){
     url: uri,
     type: "POST",
 	contentType: "application/json",
-    dataType: "json",    
+    dataType: "json",
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
-    error: function(jqXHR, textStatus, errorThrown) { 
+    error: function(jqXHR, textStatus, errorThrown) {
                 ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
-                    ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);                   
+                    ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);
                 } else {
                     ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                 }
@@ -569,7 +569,7 @@ function shutdown(serverIDs) {
     // ajax post shutdown call
     var payload = {
         "shutdown": {}
-    };   
+    };
 
 	var serverID = serverIDs.pop()
     $.ajax({
@@ -579,7 +579,7 @@ function shutdown(serverIDs) {
 	    dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
                     display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
@@ -589,15 +589,15 @@ function shutdown(serverIDs) {
                         } catch(err) {}
 						// indicate that the action succeeded
 						display_success(serverID);
-						// continue with the rest of the servers			
+						// continue with the rest of the servers
                         shutdown(serverIDs);
                     } else {
                         ajax_error(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
                     }
-                }             
+                }
     });
 
-    return false;    
+    return false;
 }
 
 // destroy action
@@ -607,7 +607,7 @@ function destroy(serverIDs) {
 		return false;
 	}
     // ajax post destroy call can have an empty request body
-    var payload = {};   
+    var payload = {};
 
 	serverID = serverIDs.pop()
     $.ajax({
@@ -617,7 +617,7 @@ function destroy(serverIDs) {
 	    dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
                     display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
@@ -632,10 +632,10 @@ function destroy(serverIDs) {
                     } else {
                         ajax_error(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
                     }
-                }             
+                }
     });
 
-    return false;    
+    return false;
 }
 
 // start action
@@ -647,7 +647,7 @@ function start(serverIDs){
     // ajax post start call
     var payload = {
         "start": {}
-    };   
+    };
 
 	var serverID = serverIDs.pop()
     $.ajax({
@@ -657,7 +657,7 @@ function start(serverIDs){
         dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
                     display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
@@ -678,6 +678,87 @@ function start(serverIDs){
     return false;
 }
 
+// Show VNC console
+function vnc_attachment(host, port, password) {
+    // FIXME: Must be made into parameters, in settings.py
+    //vnc = open("", "displayWindow",
+    //    "status=yes,toolbar=yes,menubar=yes");
+    vd = document.open("application/x-vnc");
+
+    vd.writeln("[connection]");
+    vd.writeln("host=" + host);
+    vd.writeln("port=" + port);
+    vd.writeln("password=" + password);
+
+    vd.close();
+}
+
+
+// Show VNC console
+function show_vnc_console(host, port, password) {
+    // FIXME: Must be made into parameters, in settings.py
+    width = 800
+    height = 600
+    win_width = 850
+    win_height= 650
+    vnc = open("", "displayWindow",
+        "width="+win_width+",height="+win_height+",status=yes,toolbar=yes,menubar=yes");
+
+    vnc.document.open();
+    html="<html><head><title>Console";
+    html += "</title></head><body>";
+    html += "<APPLET CODE=VncViewer.class ARCHIVE=static/vncviewer/VncViewer.jar WIDTH=" + width + " HEIGHT=" + height + ">";
+
+    // Set VNC connection parameters based on API reply
+    html += "<PARAM NAME=\"HOST\" VALUE=\"" + host + "\">"
+    html += "<PARAM NAME=\"PORT\" VALUE=\"" + port + "\">"
+    html += "<PARAM NAME=\"PASSWORD\" VALUE=\"" + password + "\">"
+    vnc.document.write(html);
+    vnc.document.close()
+}
+
+// console action
+function console(serverIDs){
+	if (!serverIDs.length){
+		//ajax_success('DEFAULT');
+		return false;
+	}
+    // ajax post start call
+    var payload = {
+        "console": {"type": "vnc"}
+    };
+
+	var serverID = serverIDs.pop()
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/action',
+        type: "POST",
+		contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) {
+                    display_failure(jqXHR.status, serverID, 'Console', jqXHR.responseText)
+                    },
+        success: function(data, textStatus, jqXHR) {
+                    if ( jqXHR.status == '200') {
+					    try {
+                            console.info('got_console ' + serverID);
+                        } catch(err) {}
+						// indicate that the action succeeded
+                        show_vnc_console(data.console.host,data.console.port,data.console.password);
+						display_success(serverID);
+						// continue with the rest of the servers
+                        console(serverIDs);
+                    } else {
+                        ajax_error(jqXHR.status, serverID, 'Console', jqXHR.responseText);
+                    }
+                }
+    });
+
+    return false;
+}
+
+
 // rename server name action
 function rename(serverID, serverName){
 	if (!serverID.length){
@@ -687,7 +768,7 @@ function rename(serverID, serverName){
     // ajax post rename call
     var payload = {
         "server": {"name": serverName}
-    };   
+    };
 
     $.ajax({
         url: API_URL + '/servers/' + serverID,
@@ -696,7 +777,7 @@ function rename(serverID, serverName){
         dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
                     display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
@@ -716,14 +797,14 @@ function rename(serverID, serverName){
 }
 
 // get server metadata
-function get_metadata(serverID) { 
+function get_metadata(serverID) {
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/meta',
         type: "GET",
         //async: false,
         dataType: "json",
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
             try {
 				ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
 			} catch (err) {
@@ -746,7 +827,7 @@ function delete_metadata(serverID, meta_key) {
         //async: false,
         dataType: "json",
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
             try {
 				ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
 			} catch (err) {
@@ -775,10 +856,10 @@ function add_metadata(serverID, meta_key, meta_value) {
         url: API_URL + '/servers/' + serverID + '/meta/' + meta_key,
         type: "PUT",
     	contentType: "application/json",
-        dataType: "json",    
+        dataType: "json",
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
-        error: function(jqXHR, textStatus, errorThrown) { 
+        error: function(jqXHR, textStatus, errorThrown) {
             try {
 				ajax_error(jqXHR.status, undefined, 'add metadata', jqXHR.responseText);
 			} catch (err) {

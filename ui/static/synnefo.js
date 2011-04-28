@@ -18,7 +18,7 @@ function ISODateString(d){
 function parse_error(responseText){
 	var errors = [];
 	if (responseText.length == 0){
-		errors[0] = {'code': 503};
+		errors[0] = {'code': 0};
 	} else {
 		responseObj = JSON.parse(responseText);
 		//console.info(inp);

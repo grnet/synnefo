@@ -1683,6 +1683,10 @@ div.network {
     width: 500px;
 }
 
+#network-template {
+    margin: 2px 0 0 -30px;
+}
+
 .network a {
     color: #3d3d3d;
     font-weight: normal;
@@ -1748,12 +1752,12 @@ div.network div.actions a.selected:hover {
     background-color:#dcdcdc;
 }
 
-.network .mini-separator {
+#internet-separator {
     width: 510px;
     height: 5px;
     background-color: #6C535D;
-    margin-left: -10px;
-    margin-top: 30px;
+    margin-left: -36px;
+    margin-top: 20px;
 }
 
 .network-logos {
@@ -1792,7 +1796,7 @@ div.indicator {
 }
 
 .private-network {
-    margin-top: 50px;
+    margin-top: 20px;
 }
 
 span.rename-network, span.configure {

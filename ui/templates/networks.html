@@ -28,8 +28,11 @@
             {% trans "Show:" %}  
             <a class="show-machines" href="#">{% trans "machines" %} (3)</a>
         </h5>
-        <div class="mini-separator"></div>
     </div>
+    <div class="network-contents">
+        content
+    </div>
+    <div id="internet-separator"></div>
     <div class="private-network">
         <div class="network" id="network-template">
             <div class="actions">
@@ -55,7 +58,76 @@
                 <a class="show-machines" href="#">{% trans "machines" %} (3)</a>
             </h5>
         </div>
+        <div class="network-contents">
+            content
+        </div>
         <div class="separator"></div>
+        <div class="network" id="network-template">
+            <div class="actions">
+                <a href="#" class="action-add">{% trans "Add Machine" %}</a>
+                <a href="#" class="action-network-edit">{% trans "Edit" %}</a>
+                <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
+            </div>    
+            <div class="state">
+                <div class="status">{% trans "Private Network" %}</div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+            </div>    
+            <img class="network-logos" src="/static/network.png" />
+            <div href="#" class="name">
+                <h5 class="namecontainer">
+                    <span class="name">{% trans "My Network 2" %}</span><span class="rename-network"></span>
+                </h5>
+            </div>
+            <h5 class="network-machines">
+                {% trans "Show:" %}  
+                <a class="show-machines" href="#">{% trans "machines" %} (1)</a>
+            </h5>
+        </div>
+        <div class="network-contents">
+            content
+        </div>
+        <div class="separator"></div>
+        <div class="network" id="network-template">
+            <div class="actions">
+                <a href="#" class="action-add">{% trans "Add Machine" %}</a>
+                <a href="#" class="action-network-edit">{% trans "Edit" %}</a>
+                <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
+            </div>    
+            <div class="state">
+                <div class="status">{% trans "Private Network" %}</div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+            </div>    
+            <img class="network-logos" src="/static/network.png" />
+            <div href="#" class="name">
+                <h5 class="namecontainer">
+                    <span class="name">{% trans "My Network 3" %}</span><span class="rename-network"></span>
+                </h5>
+            </div>
+            <h5 class="network-machines">
+                {% trans "Show:" %}  
+                <a class="show-machines" href="#">{% trans "machines" %} (2)</a>
+            </h5>
+        </div>
+        <div class="network-contents">
+            content
+        </div>
     </div>
 </div>
 <div id="networks" class="separator"></div>
+
+
+<script>
+  //hide the all of the networks contents
+  $(".network-contents").hide();
+  //toggle the componenet with class network-contents
+  $(".show-machines").click(function()
+  {
+    $(this).parent().parent().next(".network-contents").slideToggle(600);
+  });
+</script>

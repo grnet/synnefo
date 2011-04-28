@@ -172,6 +172,19 @@ RABBIT_USERNAME="okeanos"
 RABBIT_PASSWORD="0k3@n0s"
 RABBIT_VHOST="/"
 
+#Queue and exchange names
+EXCHANGE_GANETI="ganeti"
+EXCHANGE_CRON="cron"
+EXCHANGE_API="api"
+
+QUEUE_GANETI_EVENTS="events"
+QUEUE_CRON_CREDITS="credits"
+QUEUE_API_EMAIL="email"
+QUEUE_CRON_EMAIL="email"
+
+#Logic dispatcher settings
+DISPATCHER_LOG_FILE = "/var/log/okeanos.log"
+
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'

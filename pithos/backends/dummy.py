@@ -2,6 +2,7 @@ import os
 import sqlite3
 import json
 import logging
+import types
 
 class BackEnd:
     def __init__(self, basepath, log_file='backend.out', log_level=logging.DEBUG):
@@ -123,7 +124,7 @@ class BackEnd:
         #    limit = 10000
         #return objects[start:start + limit]
     
-    def get_object_meta(self, account, container, name, keys):
+    def get_object_meta(self, account, container, name, keys=None):
         dir = '/'.join([self.basepath, account, container])
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
@@ -160,7 +161,7 @@ class BackEnd:
             # new object
             location = str(self.__save_linkinfo('/'.join([account, container, name])))
             print ':'.join(['Creating new location', location])
-        self.__store_data(location, container, data)
+        self.__store_data(location, account, container, data)
         return
     
     def update_object_meta(self, account, container, name, meta):
@@ -173,14 +174,15 @@ class BackEnd:
             # new object
             location = str(self.__save_linkinfo('/'.join([account, container, name])))
             print ':'.join(['Creating new location', location])
-        self.__store_metadata(location, container, meta)
+        self.__store_metadata(location, account, container, meta)
         return
     
     def copy_object(self, account, src_container, src_name, dest_container, dest_name, meta):
         fullname = '/'.join([self.basepath, account, dest_container])    
         if not os.path.exists(fullname):
             raise NameError('Destination container does not exist')
-        self.update_object(account, dest_container, dest_name, get_object_data(account, src_container, src_name))
+        data = self.get_object_data(account, src_container, src_name)
+        self.update_object(account, dest_container, dest_name, data)
         src_object_meta = self.get_object_meta(account, src_container, src_name)
         if (type(src_object_meta) == types.DictType):
             distinct_keys = [k for k in src_object_meta.keys() if k not in meta.keys()]
@@ -235,7 +237,7 @@ class BackEnd:
             os.remove(file)
         
     def __get_object_linkinfo(self, name):
-        c = con.execute('select rowid from objects where name=''?''', (name,))
+        c = self.con.execute('select rowid from objects where name=''?''', (name,))
         row = c.fetchone()
         if row:
             return str(row[0])

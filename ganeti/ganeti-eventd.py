@@ -185,7 +185,6 @@ def main():
     signal(SIGINT, fatal_signal_handler)
     signal(SIGTERM, fatal_signal_handler)
 
-
     # Monitor the Ganeti job queue, create and push notifications
     wm = pyinotify.WatchManager()
     mask = pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]

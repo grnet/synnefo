@@ -83,6 +83,17 @@ $(".rename, h5.editable span.name").live('click', function() {
     $(this).parent().find(".editbuttons").fadeIn();
     $(this).parent().find(".nametextbox").focus().select();
     $(this).parent().removeClass('editable');
+
+    //submit wizard by pressing enter on the name textbox
+    $("#txtEdit").keypress(function (e) {
+		if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('div.editbuttons span.save').click();
+			return false;
+		} else if ((e.which && e.which == 27) || (e.keyCode && e.keyCode == 27)) {
+            $(this).parent().parent().find('div.editbuttons span.cancel').click();
+			return true;
+		}
+    });
     return false;
 });
 

@@ -600,7 +600,7 @@ div.image-container {
 
 div.machine {
     clear: both;
-    margin: 5px 0 0 -32px;
+    margin: 9px 0 0 -32px;
     padding: 3px 4px 0;
     width: 523px;
     color: #666;
@@ -646,12 +646,16 @@ div.machine div.actions a {
 }
 
 div.machine div.actions a.action-shutdown {
-    margin-bottom: 18px;
+    margin-bottom: 5px;
     display: block;
 }
 
+div.machine div.actions a.shutdown-padding {
+    margin-bottom: 22px;
+}
+
 div.machine div.actions a.destroy-padding {
-    margin-top: 46px;
+    margin-top: 52px;
 }
 
 div.actions a.enabled:hover{
@@ -683,7 +687,7 @@ div.terminated div.machine a.action-reboot, div.terminated div.machine a.action-
 }
 
 div.terminated div.machine div.actions a.action-destroy {
-    margin-top: 34px;
+    margin-top: 38px;
 }
 
 .machine:hover {

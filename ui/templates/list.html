@@ -13,7 +13,7 @@
             <a id="action-details">{% trans "Show Details" %}</a>
             <a id="action-group">{% trans "Add to group" %}</a>
             <br />
-            <a id="action-band">{% trans "Out of band" %}</a>
+            <a id="action-console">{% trans "Console" %}</a>
             <br />
             <a id="action-attach">{% trans "Attach disk" %}</a>
             <a id="action-detach">{% trans "Detach disk" %}</a>
@@ -94,7 +94,7 @@ var actions = { 'reboot':		['ACTIVE', 'REBOOT', 'multiple'],
 				'shutdown':		['ACTIVE', 'REBOOT', 'multiple'],
 				'connect':		['ACTIVE', ],
 				'disconnect':	['ACTIVE', 'network'],
-				'band':			['ACTIVE', 'REBOOT'],
+				'console':		['ACTIVE', 'multiple'],
 				'details':		['ACTIVE', 'REBOOT', 'STOPPED'],
 				'start': 		['STOPPED', 'multiple'],
 				'destroy':		['ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'multiple', 'BUILD'],
@@ -170,7 +170,19 @@ $("a.enabled#action-shutdown").live('click', function() {
 	return false;
 });
 
-
+$("a.enabled#action-console").live('click', function() {
+	var checked = $("table.list-machines tbody input[type='checkbox']:checked");
+    $(".selected").removeClass('selected');
+    $(this).addClass('selected');
+	pending_actions = []; // reset pending actions
+	checked.each(function(i,c) {
+		serverID=c.id;
+		serverName = $('#'+serverID+' span.name').text();
+		pending_actions.push([console, serverID]);
+	});
+	update_confirmations();
+	return false;
+});
 
 function update_machines_view(data){
     /* 

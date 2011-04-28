@@ -305,9 +305,15 @@ function update_machines_view(data){
                     console.info(existing.find("div.name span.name").text() + ' from ' 
                                 + existing.find(".status").text() + ' to ' + STATUS_MESSAGES[server.status]);
                 } catch(err) {}
-                //show reboot and shutdown actions
-                if (server.status == 'ACTIVE' || server.status == 'REBOOT') {
-                    
+                // show console action only on active servers, else hide it
+                if (server.status == 'ACTIVE') {
+                    $('div.#' + server.id + ' a.action-console').attr('style','');
+                    $('div.#' + server.id + ' a.action-shutdown').removeClass('shutdown-padding');        
+                } else {
+                    $('div.#' + server.id + ' a.action-console').hide();
+                }
+                // show reboot and shutdown actions on active of rebooting servers
+                if (server.status == 'ACTIVE' || server.status == 'REBOOT') {                   
                     $('div.#' + server.id + ' a.action-reboot').attr('style','');
                     $('div.#' + server.id + ' a.action-shutdown').attr('style','');
                     $('div.#' + server.id + ' a.action-destroy').removeClass('destroy-padding');        
@@ -352,6 +358,9 @@ function update_machines_view(data){
                     existing.find(' .wave').hide();
                     existing.find('.spinner').show();
                 }                            
+            } else if (existing.find(".status").text() == STATUS_MESSAGES['REBOOT'] && server.status == 'REBOOT') {
+                    $('div.#' + server.id + ' a.action-console').hide();
+                    $('div.#' + server.id + ' a.action-shutdown').addClass('shutdown-padding');
             }
             //existing.find(".status").text(STATUS_MESSAGES[server.status]);
             existing.find("div.name span.name").text(server.name.substring(0,100));
@@ -375,11 +384,20 @@ function update_machines_view(data){
                 ['Starting', 'Shutting down'].indexOf(existing.find(".status").text()) >= 0 ) { 
                 machine.find('.spinner').show();
             }   
-            //allow destroy action only while machine is building
+            //disable reboot and shutdown actions while machine is building
             if (server.status == 'BUILD') {
                 $('div.#' + server.id + ' a.action-reboot').hide();
-                $('div.#' + server.id + ' a.action-shutdown').hide();        
+                $('div.#' + server.id + ' a.action-shutdown').hide();
                 $('div.#' + server.id + ' a.action-destroy').addClass('destroy-padding');        
+            }
+            // show console action only on active servers
+            if (server.status == 'ACTIVE') {
+                $('div.#' + server.id + ' a.action-console').attr('style','');
+            } else if (server.status == 'REBOOT'){
+                $('div.#' + server.id + ' a.action-console').hide();
+                $('div.#' + server.id + ' a.action-shutdown').addClass('shutdown-padding');
+            } else {
+                $('div.#' + server.id + ' a.action-console').hide();
             }
         } 
     });

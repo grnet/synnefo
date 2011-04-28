@@ -37,7 +37,7 @@ def authenticate(request):
     response = HttpResponse(status = 204)
     response['X-Auth-Token'] = 'eaaafd18-0fed-4b3a-81b4-663c99ec1cbb'
     # TODO: Do we support redirections?
-    #response['X-Storage-Url'] = 'https://storage.grnet.gr/pithos/v1.0/<some reference>'
+    response['X-Storage-Url'] = 'http://127.0.0.1:8000/v1/asdf'
     return response
 
 def account_demux(request, v_account):
@@ -84,11 +84,11 @@ def account_meta(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    container_count, bytes_count = get_account_meta(request.user)
+    info = get_account_meta(request.user)
     
     response = HttpResponse(status = 204)
-    response['X-Account-Container-Count'] = container_count
-    response['X-Account-Total-Bytes-Used'] = bytes_count
+    response['X-Account-Container-Count'] = info['count']
+    response['X-Account-Bytes-Used'] = info['bytes']
     return response
 
 @api_method('GET', format_allowed = True)
@@ -127,11 +127,11 @@ def container_meta(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    object_count, bytes_count = get_container_meta(request.user, v_container)
+    info = get_container_meta(request.user, v_container)
     
     response = HttpResponse(status = 204)
-    response['X-Container-Object-Count'] = object_count
-    response['X-Container-Bytes-Used'] = bytes_count
+    response['X-Container-Object-Count'] = info['count']
+    response['X-Container-Bytes-Used'] = info['bytes']
     return response
 
 @api_method('PUT')

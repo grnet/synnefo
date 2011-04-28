@@ -18,23 +18,22 @@ class BackEnd:
 
     def get_account_meta(self, account):
         """ returns a dictionary with the container metadata """
-        logging.info("get_account_meta: %s %s", account)
+        logging.info("get_account_meta: %s", account)
         fullname = '/'.join([self.basepath, account])
         if not os.path.exists(fullname):
             raise NameError('Account does not exist')
         contents = os.listdir(fullname) 
         count = len(contents)
         size = sum(os.path.getsize('/'.join([self.basepath, account, objectname])) for objectname in contents)
-        return {'name': name, 'count': count, 'bytes': size}
+        return {'name': account, 'count': count, 'bytes': size}
         
     def create_container(self, account, name):
         """ creates a new container with the given name
         if it doesn't exists under the basepath """
-        logging.debug("create_container: %s %s", account, name)
+        logging.info("create_container: %s %s", account, name)
         fullname = '/'.join([self.basepath, account, name])    
         if not os.path.exists(fullname):
-            os.chdir(self.basepath)
-            os.mkdir(name)
+            os.makedirs(fullname)
         else:
             raise NameError('Container already exists')
         return

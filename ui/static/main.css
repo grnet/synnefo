@@ -1418,7 +1418,7 @@ div#user a.current_lang {
 }
 
 #networks.separator {
-    background-color: #9d6d6a;
+    background-color: #6c535d;
 }
 
 #desktops.separator {
@@ -1641,4 +1641,192 @@ div.actions a.selected, div.actions a.selected:hover {
     margin: 0 0 0 -32px !important;
     bottom: 0;
     position: fixed;
+}
+
+/* Networks */
+#networkscreate {
+    background-color: #6C535D;
+    color: #FFFFFF;
+    cursor: pointer;
+    padding: 6px 24px;
+    text-decoration: none;
+    width: 125px;
+}
+
+#networks-container {
+    height: 500px;
+}
+
+#networks-createcontainer {
+    margin-left: -36px;
+    margin-top: 17px;  
+}
+
+div.network a.action-network-add {
+    display: none;
+}
+
+div.network a.action-netowrk-edit {
+    display: none;
+}
+
+div.network a.action-network-destroy {
+    display: none;
+}
+
+div.network {
+    clear: both;
+    color: #666666;
+    height: 65px;
+    margin: 30px 0 0 -30px;
+    padding: 3px 20px 0 4px;
+    width: 500px;
+}
+
+.network a {
+    color: #3d3d3d;
+    font-weight: normal;
+    text-decoration: none;
+    font-size: 9pt;
+}
+
+.network a:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+#networks-container .name {
+    text-decoration: none !important;
+    margin-bottom: 25px;
+    color: #000000;
+    margin-top: -4px;
+}
+
+.state {
+    float: right;
+}
+
+.state div {
+    text-align: right;
+    margin-right: 3px;
+}
+
+div.network div.actions {
+    float: right;
+    width: 100px;
+    margin:0px -120px 0 0;
+    font-weight: normal;
+}
+
+div.network div.actions a {
+    color: transparent;
+    margin: 0 0 5px 8px;
+    display: block;
+}
+
+div.actions a.enabled:hover{
+    color: black !important;
+    text-decoration: underline;
+    display: block;
+}
+
+.network:hover .actions a {
+    color: #3d3d3d;
+    display: block;
+}
+
+div.network div.display a{
+    color: #3d3d3d;
+    display: block;
+}
+
+div.network div.actions a.selected:hover {
+    color: orange;
+}
+
+.network:hover {
+    background-color:#dcdcdc;
+}
+
+.network .mini-separator {
+    width: 510px;
+    height: 5px;
+    background-color: #6C535D;
+    margin-left: -10px;
+    margin-top: 30px;
+}
+
+.network-logos {
+    float:left;
+    padding-right: 10px;
+}
+
+#networks-container .settings {
+    color: #000000;
+}
+
+#networks-container .network-type {
+    float: right;
+    margin-top: -4px;
+    margin-right: 15px;
+}
+
+#networks-container .indicator {
+    background-color: #87AADE;
+    border-color: white;
+    border-style: solid;
+    border-width: 2px 3px 2px 2px;
+}
+
+.state div {
+    margin-right: 3px;
+    text-align: right;
+}
+
+div.indicator {
+    clear: none;
+    float: right;
+    height: 11px;
+    margin: 3px -1px;
+    width: 10px;
+}
+
+.private-network {
+    margin-top: 50px;
+}
+
+span.rename-network, span.configure {
+    background-repeat: no-repeat;
+    color: transparent;
+    font-size: 9pt;
+    font-weight: normal;
+    margin-left: 10px;
+    padding-left: 10px;
+    text-align: left;
+}
+
+span.rename-network {
+    cursor: pointer;
+}
+
+div.name:hover span.rename-network {
+    color: #3D3D3D;
+    margin-top: 0.4em;
+    background-image: url(/static/pencil.png);
+    background-position: 0 3px;
+}
+
+.network:hover a.rename {
+    color: #3d3d3d;
+}
+
+.action-network-destroy {
+    margin-top: 17px !important;
+}
+
+.private-network .separator {
+    background-color: #DCDCDC;
+    height: 1px;
+    margin: 2px 0 0 -5px;
+    width: 480px;
 }

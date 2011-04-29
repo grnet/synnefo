@@ -697,11 +697,27 @@ function vnc_attachment(host, port, password) {
 // Show VNC console
 function show_vnc_console(host, port, password) {
     // FIXME: Must be made into parameters, in settings.py
-    vnc = open('/machines/console', 'console', 'width=800, height=600, status=yes,toolbar=yes,menubar=yes');
-    content = vnc.window.open();
-    content.body.children[0].children[0].value = 'onomahost'
-//    content.body.children[0].children[0].value = 'change_change_change';
-    content.close();
+//    vnc = open('/machines/console', 'console', 'width=800, height=600, status=yes,toolbar=yes,menubar=yes');
+    var form = document.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("action", "/machines/console");
+    form.setAttribute('target', '_blank'); 
+
+
+    var params = {'host': host, 'port': port, 'password': password};
+
+    for(var key in params) {
+        var hiddenField = document.createElement("input");
+        hiddenField.setAttribute("type", "hidden");
+        hiddenField.setAttribute("name", key);
+        hiddenField.setAttribute("value", params[key]);
+
+        form.appendChild(hiddenField);
+    }
+
+    document.body.appendChild(form);  
+    form.submit();
+
     return false;
 }
 

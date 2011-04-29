@@ -29,7 +29,12 @@ def machines(request):
     return template('machines', context)
 
 def machine_console(request):
-    context = {}
+    host, port, password = ('','','')
+    if request.POST:
+            host = request.POST.get('host','')
+            port = request.POST.get('port','')
+            password = request.POST.get('password','')
+    context = {'host': host, 'port': port, 'password': password}
     return template('machine_console', context)
 
 def machines_standard(request):

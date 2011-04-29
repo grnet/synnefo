@@ -18,7 +18,9 @@ class BackEnd:
         self.con.commit()
 
     def get_account_meta(self, account):
-        """ returns a dictionary with the container metadata """
+        """
+        returns a dictionary with the container metadata
+        """
         logging.info("get_account_meta: %s", account)
         fullname = '/'.join([self.basepath, account])
         if not os.path.exists(fullname):
@@ -29,8 +31,10 @@ class BackEnd:
         return {'name': account, 'count': count, 'bytes': size}
         
     def create_container(self, account, name):
-        """ creates a new container with the given name
-        if it doesn't exists under the basepath """
+        """
+        creates a new container with the given name
+        if it doesn't exists under the basepath
+        """
         logging.info("create_container: %s %s", account, name)
         fullname = '/'.join([self.basepath, account, name])    
         if not os.path.exists(fullname):
@@ -40,9 +44,11 @@ class BackEnd:
         return
 
     def delete_container(self, account, name):
-        """ deletes the container with the given name
+        """
+        deletes the container with the given name
         if it exists under the basepath
-        and it's empty"""
+        and it's empty
+        """
         logging.debug("delete_container: %s %s", account, name)
         fullname = '/'.join([self.basepath, account, name])    
         if not os.path.exists(fullname):
@@ -54,7 +60,9 @@ class BackEnd:
         return
     
     def get_container_meta(self, account, name):
-        """ returns a dictionary with the container metadata """
+        """
+        returns a dictionary with the container metadata
+        """
         fullname = '/'.join([self.basepath, account, name])
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
@@ -67,62 +75,34 @@ class BackEnd:
         return os.listdir(self.basepath)[:limit]
     
     def list_objects(self, account, container, prefix='', delimiter=None, marker = None, limit = 10000):
+        logging.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
         dir = '/'.join([self.basepath, account, container])
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
-        search_str = ''
-        if prefix:
-            search_str = '/'.join([search_str, prefix])
-        #if delimiter:
-        if None:
-            search_str = ''.join(['%', search_str, '%', delimiter])
-            print search_str
-            c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
-        else:
-            search_str = ''.join(['%', search_str, '%'])
-            print search_str
-            c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
-        l = []
-        for row in c.fetchall():
-            s = ''
-            print row[0]
-            rest = str(row[0]).split(prefix)[1]
-            print rest
-            #if delimiter:
-            #    rest = rest.partition(delimiter)[0]
-            #print rest
-            folders = rest.split('/')[:-1]
-            for folder in folders:
-                path = ''.join([s, folder, '/'])
-                if path not in l:
-                    l.append(path)
-                s = ''.join([s, folder, '/'])
-            l.append(rest)
-        #logging.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
-        #if prefix or delimiter:
-        #    if prefix:
-        #        objects = [x for x in objects if x['name'].startswith(prefix)]
-        #    if delimiter:
-        #        pseudo_objects = {}
-        #        for x in objects:
-        #            pseudo_name = x['name'][len(prefix):]
-        #            i = pseudo_name.find(delimiter)
-        #            if i != -1:
-        #                pseudo_name = pseudo_name[:i]
-        #             TODO: Virtual directories.
-        #            if pseudo_name not in pseudo_objects:
-        #                pseudo_objects[pseudo_name] = x
-        #        objects = sorted(pseudo_objects.values(), key=lambda o: o['name'])
-        #    
-        #start = 0
-        #if marker:
-        #    try:
-        #        start = binary_search_name(objects, marker) + 1
-        #    except ValueError:
-        #        pass
-        #if not limit or limit > 10000:
-        #    limit = 10000
-        #return objects[start:start + limit]
+        p1 = '/'.join(['%', prefix, '%'])
+        p2 = '/'.join([account, container, '%'])
+        search_str = (prefix and [p1] or [p2])[0]
+        c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
+        objects = c.fetchall()
+        if delimiter:
+            pseudo_objects = {}
+            for x in objects:
+                pseudo_name = x[0][len(prefix):]
+                i = pseudo_name.find(delimiter)
+                if i != -1:
+                    pseudo_name = pseudo_name[:i]
+                #TODO: Virtual directories.
+                pseudo_objects[pseudo_name] = x
+            objects = pseudo_objects.keys()
+        start = 0
+        if marker:
+            try:
+                start = objects.index(marker)
+            except ValueError:
+                pass
+        if not limit or limit > 10000:
+            limit = 10000
+        return objects[start:start + limit]
     
     def get_object_meta(self, account, container, name, keys=None):
         dir = '/'.join([self.basepath, account, container])
@@ -160,7 +140,6 @@ class BackEnd:
         except NameError:
             # new object
             location = str(self.__save_linkinfo('/'.join([account, container, name])))
-            print ':'.join(['Creating new location', location])
         self.__store_data(location, account, container, data)
         return
     
@@ -173,7 +152,6 @@ class BackEnd:
         except NameError:
             # new object
             location = str(self.__save_linkinfo('/'.join([account, container, name])))
-            print ':'.join(['Creating new location', location])
         self.__store_metadata(location, account, container, meta)
         return
     
@@ -253,3 +231,23 @@ class BackEnd:
         self.con.execute('delete from objects where name = ?', (name,))
         self.cont.commit()
         return
+    
+#def binary_search_name(a, x, lo = 0, hi = None):
+#    """
+#    Search a sorted array of dicts for the value of the key 'name'.
+#    Raises ValueError if the value is not found.
+#    a -- the array
+#    x -- the value to search for
+#    """
+#    if hi is None:
+#            hi = len(a)
+#    while lo < hi:
+#        mid = (lo + hi) // 2
+#        midval = a[mid][0]
+#        if midval < x:
+#            lo = mid + 1
+#        elif midval > x: 
+#            hi = mid
+#        else:
+#            return mid
+#    raise ValueError()

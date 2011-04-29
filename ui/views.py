@@ -7,7 +7,8 @@ from django.utils.translation import get_language
 from django.utils import simplejson as json
 
 TIMEOUT = settings.TIMEOUT
-
+CONSOLE_WIDTH = 800 #settings.CONSOLE_WIDTH
+CONSOLE_HEIGHT = 600 #settings.CONSOLE_HEIGHT
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -34,7 +35,8 @@ def machine_console(request):
             host = request.POST.get('host','')
             port = request.POST.get('port','')
             password = request.POST.get('password','')
-    context = {'host': host, 'port': port, 'password': password}
+    context = {'host': host, 'port': port, 'password': password,
+    'console_height': CONSOLE_HEIGHT, 'console_width': CONSOLE_WIDTH}
     return template('machine_console', context)
 
 def machines_standard(request):

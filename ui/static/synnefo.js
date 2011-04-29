@@ -697,25 +697,14 @@ function vnc_attachment(host, port, password) {
 // Show VNC console
 function show_vnc_console(host, port, password) {
     // FIXME: Must be made into parameters, in settings.py
-    width = 800
-    height = 600
-    win_width = 850
-    win_height= 650
-    vnc = open("", "displayWindow",
-        "width="+win_width+",height="+win_height+",status=yes,toolbar=yes,menubar=yes");
-
-    vnc.document.open();
-    html="<html><head><title>Console";
-    html += "</title></head><body>";
-    html += "<APPLET CODE=VncViewer.class ARCHIVE=static/vncviewer/VncViewer.jar WIDTH=" + width + " HEIGHT=" + height + ">";
-
-    // Set VNC connection parameters based on API reply
-    html += "<PARAM NAME=\"HOST\" VALUE=\"" + host + "\">"
-    html += "<PARAM NAME=\"PORT\" VALUE=\"" + port + "\">"
-    html += "<PARAM NAME=\"PASSWORD\" VALUE=\"" + password + "\">"
-    vnc.document.write(html);
-    vnc.document.close()
+    vnc = open('/machines/console', 'console', 'width=800, height=600, status=yes,toolbar=yes,menubar=yes');
+    content = vnc.window.open();
+    content.body.children[0].children[0].value = 'onomahost'
+//    content.body.children[0].children[0].value = 'change_change_change';
+    content.close();
+    return false;
 }
+
 
 // console action
 function console(serverIDs){

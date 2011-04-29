@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.template import Context, loader
 from django.http import HttpResponse
 from django.utils.translation import get_language
+from django.utils import simplejson as json
 
 TIMEOUT = settings.TIMEOUT
 
@@ -27,6 +28,9 @@ def machines(request):
     context = {}
     return template('machines', context)
 
+def machine_console(request):
+    context = {}
+    return template('machine_console', context)
 
 def machines_standard(request):
     context = {}

@@ -197,12 +197,12 @@ $("div.actions a.action-console").live('click', function(){
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
-            pending_actions[i][0] = console;
+            pending_actions[i][0] = open_console;
             found = true
         }
     }
     if (!found) // no pending action for this server was found, so let's just add it to the list
-        pending_actions.push([console, serverID, serverName])
+        pending_actions.push([open_console, serverID, serverName])
     update_confirmations();
     return false;
 });

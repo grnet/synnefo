@@ -698,6 +698,7 @@ function vnc_attachment(host, port, password) {
 function show_vnc_console(host, port, password) {
     // FIXME: Must be made into parameters, in settings.py
     var form = document.createElement("form");
+
     form.setAttribute("method", "post");
     form.setAttribute("action", "/machines/console");
     form.setAttribute('target', '_blank'); 
@@ -721,7 +722,7 @@ function show_vnc_console(host, port, password) {
 
 
 // console action
-function console(serverIDs){
+function open_console(serverIDs){
 	if (!serverIDs.length){
 		//ajax_success('DEFAULT');
 		return false;
@@ -757,7 +758,6 @@ function console(serverIDs){
                     }
                 }
     });
-
     return false;
 }
 

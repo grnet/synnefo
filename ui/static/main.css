@@ -259,21 +259,6 @@ div#wrapper {
 
 /* scrollable items */
 #wizard .items {
-	width:20000em;
-	clear:both;
-	position:absolute;
-}
-
-/* validation error message bar. positioned on the top edge */
-#drawer {
-	overflow:visible;
-	position:fixed;
-	left:0;
-	top:0;
-}
-
-/* scrollable items */
-#wizard .items {
 	width:20000em;	
 	clear:both;	
 	position:absolute;	
@@ -1106,79 +1091,90 @@ input.machine {
     overflow: hidden;
 }
 
-/* metadata editing boxes */
-.meta-modal {
-    background-color:#fff;
-    display:none;
-    padding:1em;
-    text-align:left;
+/* metadata editing scrollable */
+#metadata-wizard {
+	position:relative;
+	overflow:hidden;
     width:380px;
     height:360px;
+    display:none;
+    background-color:#fff;
+    text-align:left;
     font-size: 80%;
 }
 
-.meta-modal .close {
-	background-image: url(/static/close-grey.png);
-	position: absolute;
-	right: -15px;
-	top: -17px;
-	cursor: pointer;
-	height: 32px;
-	width: 32px;
+#metadata-wizard .items {
+	width:20000em;
+	position:absolute;
+	clear:both;
+    padding: 0;
+    margin: 0;
 }
 
-.meta-modal div.container {
-    height:330px;
+#metadata-wizard .page {	
+	width:360px;
+    padding: 15px 10px 15px 10px;
+	float:left;	
+    display:block;
+    border:none;
 }
 
-.meta-modal h3 {
-    font-weight: normal;
+#metadata-wizard div.container {
+    height:308px;
 }
 
-.meta-modal hr {
+#metadata-wizard h3 {
+    font-weight:normal;
+}
+
+#metadata-wizard hr {
     background-color: #666;
     border: 0 none;
     height: 5px;
     margin: 0; 
 }
 
-.meta-modal hr.topruler {
+#metadata-wizard hr.topruler {
     margin-top: 5px; 
 }
 
-.meta-modal hr.fatruler {
+#metadata-wizard hr.fatruler {
     height: 20px;
     margin-top: 2px;
     margin-bottom: 20px;
 }
 
-.meta-modal hr.meta-separator {
+#metadata-wizard hr.meta-separator {
     width: 320px;
     margin: 5px 0 2px 0;
 }
 
-.meta-modal div.bottomruler {
-    background-color: #666;
-    height: 20px;
-    margin-top: 22px;
-}
-
-.meta-modal div.content {
+#metadata-wizard div.content {
     height: 248px;
     width: 345px;
     margin-left: 15px;
     overflow: auto;
 }
 
-.meta-modal div.content li {
+#metadata-wizard div.content ul {
+    height: 230px;
+}
+
+#metadata-wizard div.content li {
     margin-bottom: 20px;
 }
 
-.meta-modal p {
+#metadata-wizard p {
     margin-left: 7px;
 }
 
-.meta-modal button {
+#metadata-wizard div.bottomruler {
+    background-color: #666;
+    height: 20px;
+    margin-top: 17px;
+}
+
+#metadata-wizard button {
     font-size: 80%;
     width: 87px;
     float: right;
@@ -1186,9 +1182,10 @@ input.machine {
     border: 0px solid #5599FF;
     padding: 0;
     margin-right: 25px;
+    text-align: center;
 }
 
-.meta-modal button.remove {
+#metadata-wizard button.remove {
     height: 15px;
     width: 70px;
     background-color: #d35f5f;
@@ -1196,7 +1193,7 @@ input.machine {
     margin-top: 2px;
 }
 
-.meta-modal button.edit {
+#metadata-wizard button.edit {
     height: 15px;
     width: 70px;
     background-color: #666;
@@ -1204,49 +1201,49 @@ input.machine {
     margin-top: -14px;
 }
 
-.meta-modal button.create {
+#metadata-wizard button.create {
     height: 23px;
-    margin: 10px 44px 0 0;
+    margin: 4px 44px 0 0;
 }
 
-.meta-modal input, .meta-modal textarea {
+#metadata-wizard input, #metadata-wizard textarea {
     font-style: italic;
     text-align: right;
     color: #ccc;
 }
 
-.meta-modal input {
+#metadata-wizard input {
     font-size: 80%;
 }
 
-.meta-modal input.key {
+#metadata-wizard input.key {
     width: 279px;
     margin-bottom: -3px;
 }
 
-.meta-modal textarea.value {
+#metadata-wizard textarea.value {
     width: 267px;
     height: 170px;
     overflow: auto;
 }
 
-.meta-modal .input-enabled {
+#metadata-wizard .input-enabled {
     color: black;
     text-align: left;
     font-style: normal;
 }
 
-.meta-modal label.meta-value {
+#metadata-wizard label.meta-value {
     vertical-align: top;
 }
 
-.meta-modal button.save {
-    margin-top: 11px;
+#metadata-wizard button.save {
+    margin-top: 4px;
 }
 
-.meta-modal button.cancel {
+#metadata-wizard button.cancel {
     float: left;
-    margin: 11px 0 0 25px;
+    margin: 4px 0 0 25px;
     background-color: #d35f5f;
     border-color: #d35f5f;
 }

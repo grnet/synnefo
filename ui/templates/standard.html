@@ -35,8 +35,8 @@
         </a>
         <h5 class="settings">
             {% trans "Show:" %} 
-            <a class="show-disks"href="#">{% trans "disks" %}</a> | 
-            <a class="show-networks"href="#">{% trans "networks" %}</a> | 
+            <a class="show-disks" href="#">{% trans "disks" %}</a> | 
+            <a class="show-networks" href="#">{% trans "networks" %}</a> | 
             <a class="show-info" href="#">{% trans "more info" %}</a>
         </h5>
         <div class="confirm_single">
@@ -58,8 +58,9 @@
 
 <script>
 
-// intercept edit metadata click
-$("a.show-info").live('click', function() {
+// intercept show disks click
+// FIXME: this is temporarily used for metadata scrollable
+$("a.show-disks").live('click', function() {
     // get server name and server ID
     var serverID = $(this).parent().parent().attr("id");
     var serverName = $(this).parent().parent().find("span.name").text();
@@ -69,8 +70,13 @@ $("a.show-info").live('click', function() {
     // set server id to all related metadata dialogs
     $("#edit-dialog h3 p").text(serverID);
     $("#add-dialog h3 p").text(serverID);
-    show_metadata_edit_dialog();
+    show_metadata_wizard();
     return false;
+});
+
+// intercept show info click
+$("a.show-info").live('click', function() {
+
 });
 
 //initiate machine renaming

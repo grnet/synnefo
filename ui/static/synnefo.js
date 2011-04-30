@@ -751,8 +751,10 @@ function open_console(serverIDs){
 						// indicate that the action succeeded
                         show_vnc_console(data.console.host,data.console.port,data.console.password);
 						display_success(serverID);
+                        // hide spinner
+                        $('#' + serverID + ' .spinner').hide();
 						// continue with the rest of the servers
-                        console(serverIDs);
+                        open_console(serverIDs);
                     } else {
                         ajax_error(jqXHR.status, serverID, 'Console', jqXHR.responseText);
                     }

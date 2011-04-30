@@ -103,11 +103,10 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'synnefo.aai.middleware.SynnefoAuthMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'synnefo.middleware.StripURLMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware'
 )
 
 ROOT_URLCONF = 'synnefo.urls'
@@ -120,14 +119,13 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.admin',
     # 'django.contrib.admindocs',
-    'synnefo.auth',
+    'synnefo.aai',
     'synnefo.api',
     'synnefo.ui',
     'synnefo.db',
@@ -180,4 +178,11 @@ GANETI_0MQD_PID_FILE = "/var/run/synnefo/ganeti-0mqd.pid"
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.
 API_ROOT_URL = 'http://127.0.0.1:8000/api/'
+
+APP_INSTALL_URL = "https://login.okeanos.grnet.gr/okeanos"
+
+LOGIN_PATH = "/login"
+
+#Number of hours during which a user token is active
+AUTH_TOKEN_DURATION = 24
 

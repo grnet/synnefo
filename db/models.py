@@ -6,16 +6,28 @@ from django.db import models
 import datetime
 
 class SynnefoUser(models.Model):
-    name = models.CharField('Synnefo Username', max_length=255)
+
+    #TODO: Amend this when we have groups
+    ACCOUNT_TYPE = (
+        ('STUDENT', 'Student'),
+        ('PROFESSOR', 'Professor')
+    )
+
+    name = models.CharField('Synnefo Username', max_length=255, default='')
+    realname = models.CharField('Real Name', max_length=255, default='')
+    uniq = models.CharField('External Unique ID', max_length=255,null=True)
     credit = models.IntegerField('Credit Balance')
+    auth_token = models.CharField('Authentication Token', max_length=32, null=True)
+    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True)
+    type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
 
     class Meta:
         verbose_name = u'Synnefo User'
-    
+
     def __unicode__(self):
-        return self.name 
+        return self.name
 
     def get_limit(self, limit_name):
         """Returns the limit value for the specified limit"""

@@ -39,6 +39,35 @@
             <a class="show-networks" href="#">{% trans "networks" %}</a> | 
             <a class="show-info" href="#">{% trans "more info" %}</a>
         </h5>
+        <div class="info-content">
+            <div class="metadata-separator"></div>
+            <div class="metadata-container">
+                <div class="vm-details metadata-column">
+                    CPUs: 1<br />
+                    RAM: 2048 (MB)<br />
+                    System Disk: 20 (GB) <br /><br />
+                    Image: Debian blah<br />
+                    Image Size: 2.3 (GB)
+                </div>
+                <div class="vm-stats metadata-column">
+                    CPU<br />
+                    RAM<br />
+                    S.Disk<br />
+                    Net<br /><br />
+                    details
+                </div>
+                <div class="vm-labels metadata-column">
+                    Labels<br />
+                    (4)<br />
+                </div>
+                <div class="vm-metadata metadata-column">
+                    Metadata: OS<br />
+                    (7)<br />
+                    <a href="#" class="manage-metadata">Manage Metadata</a>
+                </div>
+            </div>
+            <div class="metadata-separator"></div>
+        </div>
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
@@ -58,12 +87,20 @@
 
 <script>
 
-// intercept show disks click
-// FIXME: this is temporarily used for metadata scrollable
-$("a.show-disks").live('click', function() {
+//hide the all of the info contents
+$(".info-content").hide();
+//toggle the component with class info-content
+$("a.show-info").live('click', function() {
+    console.info('test');
+    $(this).parent().parent().find(".info-content").slideToggle(600);
+});
+
+
+// intercept manage metadata click
+$("a.manage-metadata").live('click', function() {
     // get server name and server ID
-    var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().parent().find("span.name").text();
+    var serverID = $(this).parent().parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().parent().find("span.name").text();
     // set server name to all related metadata dialogs
     $("#edit-dialog h3 span").text(serverName);
     $("#add-dialog h3 span").text(serverName);
@@ -72,11 +109,6 @@ $("a.show-disks").live('click', function() {
     $("#add-dialog h3 p").text(serverID);
     show_metadata_wizard();
     return false;
-});
-
-// intercept show info click
-$("a.show-info").live('click', function() {
-
 });
 
 //initiate machine renaming

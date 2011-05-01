@@ -589,7 +589,7 @@ div.machine {
     padding: 3px 4px 0;
     width: 523px;
     color: #666;
-    height: 65px;
+    min-height: 65px;
 }
 
 .machine a {
@@ -1991,4 +1991,44 @@ div.network-machine div.machine-actions a:hover {
     margin-right: 20px;
     margin-top: 3px;
     width: 75px;
+}
+
+/* Metadata */
+.metadata-separator {
+    background-color: #808080;
+    height: 3px;
+    margin: 5px 0 0 14px;
+    width: 509px;
+}
+
+.metadata-container {
+    line-height: 12px;
+    margin-left: 14px;
+    margin-top: 2px;
+    min-height: 80px;
+}
+
+.metadata-column {
+    border-right: 1px solid #CECECE;
+    color: black;
+    float: left;
+    font-size: 60%;
+    margin-top: 3px;
+    min-height: 70px;
+    padding-bottom: 5px;
+}
+
+.vm-stats, .vm-labels {
+    width: 109px;
+    padding-left: 10px;
+}
+
+.vm-details {
+    width: 129px;
+}
+
+.vm-metadata {
+    padding-left: 10px;
+    width: 129px;
+    border: none;
 }

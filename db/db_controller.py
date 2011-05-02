@@ -38,7 +38,7 @@ class Dispatcher:
     logger = None
     chan = None
 
-    def __init__(self, debug, logger):
+    def __init__(self, debug = False, logger = None):
         self.logger = logger
         self._init_queues(debug)
 
@@ -89,14 +89,12 @@ class Dispatcher:
         self.chan.connection.close()
 
     def _declare_queues(self):
-        self.chan.exchange_declare(exchange=settings.EXCHANGE_GANETI, type="direct", durable=True, auto_delete=False)
-        self.chan.exchange_declare(exchange=settings.EXCHANGE_CRON, type="topic", durable=True, auto_delete=False)
-        self.chan.exchange_declare(exchange=settings.EXCHANGE_API, type="topic", durable=True, auto_delete=False)
 
-        self.chan.queue_declare(queue=settings.QUEUE_GANETI_EVENTS, durable=True, exclusive=False, auto_delete=False)
-        self.chan.queue_declare(queue=settings.QUEUE_CRON_CREDITS, durable=True, exclusive=False, auto_delete=False)
-        self.chan.queue_declare(queue=settings.QUEUE_API_EMAIL, durable=True, exclusive=False, auto_delete=False)
-        self.chan.queue_declare(queue=settings.QUEUE_CRON_EMAIL, durable=True, exclusive=False, auto_delete=False)
+        for exchange in settings.EXCHANGES:
+            self.chan.exchange_declare(exchange=exchange, type="direct", durable=True, auto_delete=False)
+
+        for queue in settings.QUEUES:
+            self.chan.queue_declare(queue=queue, durable=True, exclusive=False, auto_delete=False)
 
     def _init_queues(self,debug):
         self._open_channel()
@@ -166,12 +164,47 @@ def parse_arguments(args):
             metavar="FILE",
             help="Write log to FILE instead of %s" %
             settings.DISPATCHER_LOG_FILE)
-
+    parser.add_option("-c", "--cleanup-queues", action="store_true", default=False, dest="cleanup_queues",
+            help="Remove from RabbitMQ all queues declared in settings.py (DANGEROUS!)")
+    
     return parser.parse_args(args)
+
+def cleanup_queues() :
+
+    conn = amqp.Connection( host=settings.RABBIT_HOST,
+                            userid=settings.RABBIT_USERNAME,
+                            password=settings.RABBIT_PASSWORD,
+                            virtual_host=settings.RABBIT_VHOST)
+    chan = conn.channel()
+
+    print "Queues to be deleted: ",  settings.QUEUES
+    print "Exchnages to be deleted: ", settings.EXCHANGES
+    ans = raw_input("Are you sure (N/y):")
+
+    if not ans:
+        return
+    if ans not in ['Y', 'y']:
+        return
+
+    for exchange in settings.EXCHANGES:
+        try:
+            chan.exchange_delete(exchange=exchange)
+        except amqp.exceptions.AMQPChannelException as e:
+            print e.amqp_reply_code, " ", e.amqp_reply_text
+
+    for queue in settings.QUEUES:
+        try:
+            chan.queue_delete(queue=queue)
+        except amqp.exceptions.AMQPChannelException as e:
+            print e.amqp_reply_code, " ", e.amqp_reply_text
 
 def main():
     global logger
     (opts, args) = parse_arguments(sys.argv[1:])
+
+    if opts.cleanup_queues:
+        cleanup_queues()
+        return
 
     #newpid = os.fork()
     #if newpid == 0:

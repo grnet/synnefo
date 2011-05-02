@@ -82,13 +82,21 @@ def parse_http_date_safe(date):
     except Exception:
         pass
 
-def get_object_meta(request):
+# Metadata handling.
+
+def format_meta_key(k):
+    return '-'.join([x.capitalize() for x in k.replace('_', '-').split('-')])
+
+def get_meta(request, prefix):
     """
-    Get all X-Object-Meta-* headers in a dict.
+    Get all prefix-* request headers in a dict.
+    All underscores are converted to dashes.
     """
-    prefix = 'HTTP_X_OBJECT_META_'
-    return dict([(k[len(prefix):].lower(), v) for k, v in request.META.iteritems() if k.startswith(prefix)])
-    
+    prefix = 'HTTP_' + prefix.upper().replace('-', '_')
+    return dict([(format_meta_key(k[5:]), v) for k, v in request.META.iteritems() if k.startswith(prefix)])
+
+# Range parsing.
+
 def get_range(request):
     """
     Parse a Range header from the request.

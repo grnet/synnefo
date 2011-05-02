@@ -13,7 +13,7 @@ except:
     from pithos.api.util import parse_http_date_safe
 
 from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
-from pithos.api.util import get_object_meta, get_range, api_method
+from pithos.api.util import get_meta, get_range, api_method
 
 from settings import PROJECT_PATH
 from os import path
@@ -50,6 +50,8 @@ def account_demux(request, v_account):
         return account_meta(request, v_account)
     elif request.method == 'GET':
         return container_list(request, v_account)
+    elif request.method == 'POST':
+        return account_update(request, v_account)
     else:
         return method_not_allowed(request)
 
@@ -60,6 +62,8 @@ def container_demux(request, v_account, v_container):
         return object_list(request, v_account, v_container)
     elif request.method == 'PUT':
         return container_create(request, v_account, v_container)
+    elif request.method == 'POST':
+        return container_update(request, v_account, v_container)
     elif request.method == 'DELETE':
         return container_delete(request, v_account, v_container)
     else:
@@ -93,11 +97,29 @@ def account_meta(request, v_account):
         info = be.get_account_meta(request.user)
     except NameError:
         info = {'count': 0, 'bytes': 0}
-        
+    
     response = HttpResponse(status = 204)
     response['X-Account-Container-Count'] = info['count']
     response['X-Account-Bytes-Used'] = info['bytes']
+    for k in [x for x in info.keys() if x.startswith('X-Account-Meta-')]:
+        response[k] = info[k]
+    
     return response
+
+@api_method('POST')
+def account_update(request, v_account):
+    # Normal Response Codes: 202
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    meta = get_meta(request, 'X-Account-Meta-')
+    
+    be = BackEnd(STORAGE_PATH)
+    be.update_account_meta(request.user, meta)
+    
+    return HttpResponse(status = 202)
 
 @api_method('GET', format_allowed = True)
 def container_list(request, v_account):
@@ -120,6 +142,7 @@ def container_list(request, v_account):
         containers = be.list_containers(request.user, marker, limit)
     except NameError:
         containers = []
+    # TODO: The cloudfiles python bindings expect 200 if json/xml.
     if len(containers) == 0:
         return HttpResponse(status = 204)
     
@@ -134,7 +157,7 @@ def container_list(request, v_account):
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': request.user, 'containers': containers})
     elif request.serialization  == 'json':
-        data = json.dumps(containers)    
+        data = json.dumps(containers)
     return HttpResponse(data, status = 200)
 
 @api_method('HEAD')
@@ -154,6 +177,9 @@ def container_meta(request, v_account, v_container):
     response = HttpResponse(status = 204)
     response['X-Container-Object-Count'] = info['count']
     response['X-Container-Bytes-Used'] = info['bytes']
+    for k in [x for x in info.keys() if x.startswith('X-Container-Meta-')]:
+        response[k] = info[k]
+    
     return response
 
 @api_method('PUT')
@@ -163,13 +189,38 @@ def container_create(request, v_account, v_container):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
-
+    
+    meta = get_meta(request, 'X-Container-Meta-')
+    
     be = BackEnd(STORAGE_PATH)
     try:
         be.create_container(request.user, v_container)
-        return HttpResponse(status = 201)
+        ret = 201
     except NameError:
-        return HttpResponse(status = 202)
+        ret = 202
+    
+    if len(meta) > 0:
+        be.update_container_meta(request.user, v_container, meta)
+    
+    return HttpResponse(status = ret)
+
+@api_method('POST')
+def container_update(request, v_account, v_container):
+    # Normal Response Codes: 202
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    meta = get_meta(request, 'X-Container-Meta-')
+    
+    be = BackEnd(STORAGE_PATH)
+    try:
+        be.update_container_meta(request.user, v_container, meta)
+    except NameError:
+        raise ItemNotFound()
+    
+    return HttpResponse(status = 202)
 
 @api_method('DELETE')
 def container_delete(request, v_account, v_container):
@@ -195,7 +246,7 @@ def container_delete(request, v_account, v_container):
         raise ItemNotFound()
     return HttpResponse(status = 204)
 
-# --- UP TO HERE ---
+# --- MERGED UP TO HERE ---
 
 @api_method('GET', format_allowed = True)
 def object_list(request, v_account, v_container):
@@ -362,7 +413,7 @@ def object_write(request, v_account, v_container, v_object):
         if not content_length or not content_type:
             raise LengthRequired()
     
-        meta = get_object_meta(request)
+        meta = get_meta(request, 'X-Object-Meta-')
         info = {'bytes': content_length, 'content_type': content_type, 'meta': meta}
     
         etag = request.META.get('HTTP_ETAG')
@@ -400,14 +451,14 @@ def object_copy(request, v_account, v_container, v_object):
         raise BadRequest('Bad Destination path.')
     dest_container = parts[1]
     dest_name = '/'.join(parts[2:])
-        
+    
     info = get_object_meta(request.user, v_container, v_object)
-        
+    
     content_type = request.META.get('CONTENT_TYPE')
     if content_type:
         info['content_type'] = content_type
         
-    meta = get_object_meta(request)
+    meta = get_meta(request, 'X-Object-Meta-')
     for k, v in meta.iteritems():
         info['meta'][k] = v
     
@@ -424,7 +475,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_object_meta(request)
+    meta = get_meta(request, 'X-Object-Meta-')
     
     update_object_meta(request.user, v_container, v_object, meta)
     return HttpResponse(status = 202)

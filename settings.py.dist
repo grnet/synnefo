@@ -172,17 +172,32 @@ RABBIT_USERNAME="okeanos"
 RABBIT_PASSWORD="0k3@n0s"
 RABBIT_VHOST="/"
 
-#Queue and exchange names
+#Queues, exchanges and bindings
 EXCHANGE_GANETI="ganeti"
 EXCHANGE_CRON="cron"
 EXCHANGE_API="api"
 EXCHANGES = (EXCHANGE_GANETI, EXCHANGE_CRON, EXCHANGE_API)
 
-QUEUE_GANETI_EVENTS="ganeti.events"
-QUEUE_CRON_CREDITS="cron.credits"
-QUEUE_API_EMAIL="api.email"
-QUEUE_CRON_EMAIL="cron.email"
-QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_API_EMAIL, QUEUE_CRON_EMAIL)
+QUEUE_GANETI_EVENTS="events"
+QUEUE_CRON_CREDITS="credits"
+QUEUE_EMAIL="email"
+QUEUE_DEBUG="debug"
+QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL)
+
+BINDINGS_DEBUG = (
+    #Queue          #Exchange           #RouteKey   #Handler
+    (QUEUE_DEBUG,   EXCHANGE_GANETI,    '#',        'Dispatcher.dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_CRON,      '#',        'Dispatcher.dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'Dispatcher.dummy_proc'),
+)
+
+BINDINGS = (
+    #Queue                  #Exchange           #RouteKey       #Handler
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.#',     'Dispatcher.update_db'),
+    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',  'Dispatcher.update_credits'),
+    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',    'Dispatcher.send_email'),
+    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',    'Dispatcher.send_email'),
+)
 
 #Logic dispatcher settings
 DISPATCHER_LOG_FILE = "/var/log/okeanos.log"

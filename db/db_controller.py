@@ -37,10 +37,13 @@ class Dispatcher:
 
     logger = None
     chan = None
+    debug = False
+    clienttags = []
 
     def __init__(self, debug = False, logger = None):
         self.logger = logger
-        self._init_queues(debug)
+        self.debug = debug
+        self._init()
 
     def update_db(self, message):
         try:
@@ -77,41 +80,51 @@ class Dispatcher:
         self.logger.debug("Request to update credits")
         message.channel.basic_ack(message.delivery_tag)
 
+    def dummy_proc(self, message):
+        try:
+            msg = json.loads(message.body)
+            self.logger.debug("Msg to %s (%s) " % message.channel, msg)
+        finally:
+            message.channel.basic_ack(message.delivery_tag)
+
     def wait(self):
         while True:
             try:
                 self.chan.wait()
             except SystemExit:
                 break
+            except socket.error:
+                self.logger.error("Server went away, reconnecting...")
+                self._init()
+                pass
 
-        self.chan.basic_cancel("dbupdater")
+        [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
         self.chan.close()
         self.chan.connection.close()
 
-    def _declare_queues(self):
+    def _init(self):
+        self._open_channel()
 
         for exchange in settings.EXCHANGES:
-            self.chan.exchange_declare(exchange=exchange, type="direct", durable=True, auto_delete=False)
+            self.chan.exchange_declare(exchange=exchange, type="topic", durable=True, auto_delete=False)
 
         for queue in settings.QUEUES:
             self.chan.queue_declare(queue=queue, durable=True, exclusive=False, auto_delete=False)
 
-    def _init_queues(self,debug):
-        self._open_channel()
-        if debug:
-            self._init_devel()
+        bindings = None
+
+        if self.debug:
+            #Special queue handling, should not appear in production
+            self.chan.queue_declare(queue=settings.QUEUE_DEBUG, durable=True, exclusive=False, auto_delete=False)
+            bindings = settings.BINDINGS_DEBUG
         else:
-            self._init()
+            bindings = settings.BINDINGS
 
-    def _init_devel(self):
-        self._declare_queues()
-        self.chan.queue_bind(queue=settings.QUEUE_GANETI_EVENTS, exchange=settings.EXCHANGE_GANETI, routing_key="event.*")
-        self.chan.basic_consume(queue="events", callback=self.update_db, consumer_tag="dbupdater")
-
-    def _init(self):
-        self._declare_queues()
-        self.chan.queue_bind(queue=settings.QUEUE_GANETI_EVENTS, exchange=settings.EXCHANGE_GANETI, routing_key="event.*")
-        self.chan.basic_consume(queue="events", callback=self.update_db, consumer_tag="dbupdater")
+        for binding in bindings:
+            self.chan.queue_bind(queue=binding[0], exchange=binding[1], routing_key=binding[2])
+            tag = self.chan.basic_consume(queue=binding[0], callback=binding[3])
+            self.logger.debug("Binding %s on queue %s to %s" % (binding[2], binding[0], binding[3]))
+            self.clienttags.append(tag)
 
     def _open_channel(self):
         conn = None
@@ -149,7 +162,7 @@ def child(cmdline):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    d = Dispatcher(debug = True, logger = logger)
+    d = Dispatcher(debug = opts.debug, logger = logger)
 
     d.wait()
 
@@ -157,7 +170,7 @@ def parse_arguments(args):
     from optparse import OptionParser
 
     parser = OptionParser()
-    parser.add_option("-d", "--debug", action="store_true", dest="debug",
+    parser.add_option("-d", "--debug", action="store_false", default=False, dest="debug",
             help="Enable debug mode")
     parser.add_option("-l", "--log", dest="log_file",
             default=settings.DISPATCHER_LOG_FILE,

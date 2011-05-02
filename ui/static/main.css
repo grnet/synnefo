@@ -1149,7 +1149,6 @@ input.machine {
 }
 
 #metadata-wizard hr.meta-separator {
-    width: 320px;
     margin: 5px 0 2px 0;
 }
 
@@ -1185,7 +1184,6 @@ input.machine {
     background-color: #5599FF;
     border: 0px solid #5599FF;
     padding: 0;
-    margin-right: 25px;
     text-align: center;
 }
 
@@ -1197,6 +1195,10 @@ input.machine {
     margin-top: 2px;
 }
 
+#metadata-wizard button.more-margin {
+    margin-top: 6px;
+}
+
 #metadata-wizard button.edit {
     height: 15px;
     width: 70px;
@@ -1205,9 +1207,26 @@ input.machine {
     margin-top: -14px;
 }
 
+#metadata-wizard #edit-dialog button.cancel {
+    display: none;
+    height: 15px;
+    width: 70px;
+    float: right;
+    background-color: #666;
+    border-color: #666;
+    margin-top: -55px;
+}
+
+#metadata-wizard #edit-dialog button.save {
+    display: none;
+    height: 15px;
+    width: 70px;
+    margin: -18px 0 0 0;
+}
+
 #metadata-wizard button.create {
     height: 23px;
-    margin: 4px 44px 0 0;
+    margin: 4px 25px 0 0;
 }
 
 #metadata-wizard input, #metadata-wizard textarea {
@@ -1216,6 +1235,22 @@ input.machine {
     color: #ccc;
 }
 
+#metadata-wizard input.edit-meta-key, #metadata-wizard textarea.edit-meta-value {
+    font-style: normal;
+    text-align: left;
+    color: black;
+
+}
+
+#metadata-wizard input.edit-meta-key {
+    margin-bottom: -4px;
+
+}
+
+#metadata-wizard textarea.edit-meta-value {
+    margin-top: -1px;
+}
+ 
 #metadata-wizard input {
     font-size: 80%;
 }
@@ -1242,7 +1277,7 @@ input.machine {
 }
 
 #metadata-wizard button.save {
-    margin-top: 4px;
+    margin: 4px 25px 0 0;
 }
 
 #metadata-wizard button.cancel {
@@ -1251,7 +1286,6 @@ input.machine {
     background-color: #d35f5f;
     border-color: #d35f5f;
 }
-
 
 /* notification box */
 #error-success, #yes-no {

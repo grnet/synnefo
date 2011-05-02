@@ -7,7 +7,14 @@ import types
 class BackEnd:
     def __init__(self, basepath, log_file='backend.out', log_level=logging.DEBUG):
         self.basepath = basepath
-        logging.basicConfig(filename=log_file,level=log_level,)
+        
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
+        formatter = logging.Formatter('[%(levelname)s] %(message)s')
+        handler = logging.FileHandler(log_file)
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        
         if not os.path.exists(basepath):
             os.makedirs(basepath)
         db = os.path.join(basepath, 'db')
@@ -23,9 +30,8 @@ class BackEnd:
         """
         returns a dictionary with the container metadata
         """
-        logging.info("get_account_meta: %s", account)
+        self.logger.debug("get_account_meta: %s", account)
         fullname = os.path.join(self.basepath, account)
-        print fullname
         if not os.path.exists(fullname):
             raise NameError('Account does not exist')
         contents = os.listdir(fullname) 
@@ -36,10 +42,10 @@ class BackEnd:
     def create_container(self, account, name):
         """
         creates a new container with the given name
-        if it doesn't exists under the basepath
+        if it doesn't exist under the basepath
         """
-        logging.info("create_container: %s %s", account, name)
-        fullname = os.path.join(self.basepath, account, name)    
+        self.logger.debug("create_container: %s %s", account, name)
+        fullname = os.path.join(self.basepath, account, name)
         if not os.path.exists(fullname):
             os.makedirs(fullname)
         else:
@@ -49,11 +55,10 @@ class BackEnd:
     def delete_container(self, account, name):
         """
         deletes the container with the given name
-        if it exists under the basepath
-        and it's empty
+        if it exists under the basepath and is empty
         """
-        logging.debug("delete_container: %s %s", account, name)
-        fullname = os.path.join(self.basepath, account, name)    
+        self.logger.debug("delete_container: %s %s", account, name)
+        fullname = os.path.join(self.basepath, account, name)
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
         if os.listdir(fullname):
@@ -66,6 +71,7 @@ class BackEnd:
         """
         returns a dictionary with the container metadata
         """
+        self.logger.debug("get_container_meta: %s %s", account, name)
         fullname = os.path.join(self.basepath, account, name)
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
@@ -76,12 +82,14 @@ class BackEnd:
     
     def list_containers(self, account, marker = None, limit = 10000):
         """
-        returns a list of at most limit (default = 10000) account containers 
-        starting from the next item after marker
-        if optinal parameter marker is provided
-        or the 1st item otherwise
+        returns a list of at most limit (default = 10000) containers 
+        starting from the next item after the optional marker
         """
-        containers = os.listdir(os.path.join(self.basepath, account))
+        self.logger.debug("list_containers: %s %s %s", account, marker, limit)
+        fullname = os.path.join(self.basepath, account)
+        if not os.path.exists(fullname):
+            raise NameError('Account does not exist')
+        containers = os.listdir(fullname)         
         start = 0
         if marker:
             try:
@@ -90,11 +98,13 @@ class BackEnd:
                 pass
         return containers[start:limit]
     
+    # --- UP TO HERE ---
+    
     def list_objects(self, account, container, prefix='', delimiter=None, marker = None, limit = 10000):
         """
         returns a list of the objects existing under a specific account container
         """
-        logging.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
+        self.logger.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
         dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')

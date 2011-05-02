@@ -4,6 +4,9 @@ conn = cloudfiles.get_connection('jsmith', '1234567890', authurl = 'http://127.0
 print 'Authenticated. Token: %s' % conn.token
 print 'Container count: %d Total bytes: %d' % conn.get_info()
 
+container = 'asdf'
+conn.create_container(container)
+
 containers = conn.get_all_containers()
 print 'Found: %d containers' % len(containers)
 for container in containers:

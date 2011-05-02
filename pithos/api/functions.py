@@ -12,9 +12,14 @@ try:
 except:
     from pithos.api.util import parse_http_date_safe
 
-from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
+from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
 from pithos.api.util import get_object_meta, get_range, api_method
 
+from settings import PROJECT_PATH
+from os import path
+STORAGE_PATH = path.join(PROJECT_PATH, 'data')
+
+from pithos.backends.dummy import BackEnd
 from pithos.backends.dummy_debug import *
 
 import logging
@@ -36,7 +41,7 @@ def authenticate(request):
     
     response = HttpResponse(status = 204)
     response['X-Auth-Token'] = 'eaaafd18-0fed-4b3a-81b4-663c99ec1cbb'
-    # TODO: Do we support redirections?
+    # TODO: Must support X-Storage-Url to be compatible.
     response['X-Storage-Url'] = 'http://127.0.0.1:8000/v1/asdf'
     return response
 
@@ -80,12 +85,15 @@ def object_demux(request, v_account, v_container, v_object):
 def account_meta(request, v_account):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
-    #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    info = get_account_meta(request.user)
-    
+    be = BackEnd(STORAGE_PATH)
+    try:
+        info = be.get_account_meta(request.user)
+    except NameError:
+        info = {'count': 0, 'bytes': 0}
+        
     response = HttpResponse(status = 204)
     response['X-Account-Container-Count'] = info['count']
     response['X-Account-Bytes-Used'] = info['bytes']
@@ -95,6 +103,7 @@ def account_meta(request, v_account):
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
     
@@ -104,19 +113,28 @@ def container_list(request, v_account):
         try:
             limit = int(limit)
         except ValueError:
-            limit = None
+            limit = 10000
     
-    containers = list_containers(request.user, marker, limit)
+    be = BackEnd(STORAGE_PATH)
+    try:
+        containers = be.list_containers(request.user, marker, limit)
+    except NameError:
+        containers = []
     if len(containers) == 0:
         return HttpResponse(status = 204)
     
+    if request.serialization == 'text':
+        return HttpResponse('\n'.join(containers), status = 200)
+    
+    # TODO: Do this with a backend parameter?
+    try:
+        containers = [be.get_container_meta(request.user, x) for x in containers]
+    except NameError:
+        raise ItemNotFound()
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': request.user, 'containers': containers})
     elif request.serialization  == 'json':
-        data = json.dumps(containers)
-    else:
-        data = '\n'.join(x['name'] for x in containers)
-    
+        data = json.dumps(containers)    
     return HttpResponse(data, status = 200)
 
 @api_method('HEAD')
@@ -127,7 +145,11 @@ def container_meta(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    info = get_container_meta(request.user, v_container)
+    be = BackEnd(STORAGE_PATH)
+    try:
+        info = be.get_container_meta(request.user, v_container)
+    except NameError:
+        raise ItemNotFound()
     
     response = HttpResponse(status = 204)
     response['X-Container-Object-Count'] = info['count']
@@ -142,9 +164,11 @@ def container_create(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
 
-    if create_container(request.user, v_container):
+    be = BackEnd(STORAGE_PATH)
+    try:
+        be.create_container(request.user, v_container)
         return HttpResponse(status = 201)
-    else:
+    except NameError:
         return HttpResponse(status = 202)
 
 @api_method('DELETE')
@@ -155,12 +179,23 @@ def container_delete(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    object_count, bytes_count = get_container_meta(request.user, v_container)
-    if object_count > 0:
+    be = BackEnd(STORAGE_PATH)
+    try:
+        info = be.get_container_meta(request.user, v_container)
+    except NameError:
+        raise ItemNotFound()
+    
+    if info['count'] > 0:
         return HttpResponse(status = 409)
     
-    delete_container(request.user, v_container)
+    # TODO: Handle both exceptions.
+    try:
+        be.delete_container(request.user, v_container)
+    except:
+        raise ItemNotFound()
     return HttpResponse(status = 204)
+
+# --- UP TO HERE ---
 
 @api_method('GET', format_allowed = True)
 def object_list(request, v_account, v_container):

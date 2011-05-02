@@ -1097,7 +1097,7 @@ input.machine {
 
 /* metadata editing scrollable */
 #metadata-wizard {
-	position:relative;
+	position:fixed;
 	overflow:hidden;
     width:380px;
     height:360px;

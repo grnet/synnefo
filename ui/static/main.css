@@ -608,6 +608,10 @@ div.machine {
     text-decoration: none !important;
 }
 
+.oldValue {
+    display:none;
+}
+
 .state {
     float: right;
 }

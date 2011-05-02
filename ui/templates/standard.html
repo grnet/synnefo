@@ -63,7 +63,7 @@
                 <div class="vm-metadata metadata-column">
                     <div class="metadata-left">
                         Metadata:<br />
-                        (7)
+                        (<span class="metadata-count">0</span>)
                     </div>
                     <div class="metadata-keys-container">
                         <div class="scrollable vertical">
@@ -548,6 +548,7 @@ function list_metadata_keys(serverID, data) {
     if (i <= 3) {
         $("div.#" +serverID).find(".metadata-actions").hide();
     }
+    $("div.#" +serverID).find(".metadata-count").text(i);   
 }
 
 // indicate that the requested action was succesfully completed

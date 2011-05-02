@@ -72,7 +72,13 @@ def update_credits(message):
 
 def declare_queues(chan):
     chan.exchange_declare(exchange=settings.EXCHANGE_GANETI, type="topic", durable=True, auto_delete=False)
+    chan.exchange_declare(exchange=settings.EXCHANGE_CRON, type="topic", durable=True, auto_delete=False)
+    chan.exchange_declare(exchange=settings.EXCHANGE_API, type="topic", durable=True, auto_delete=False)
+
     chan.queue_declare(queue=settings.QUEUE_GANETI_EVENTS, durable=True, exclusive=False, auto_delete=False)
+    chan.queue_declare(queue=settings.QUEUE_CRON_CREDITS, durable=True, exclusive=False, auto_delete=False)
+    chan.queue_declare(queue=settings.QUEUE_API_EMAIL, durable=True, exclusive=False, auto_delete=False)
+    chan.queue_declare(queue=settings.QUEUE_CRON_EMAIL, durable=True, exclusive=False, auto_delete=False)
 
 def init_devel():
     chan = open_channel()

@@ -68,20 +68,7 @@
                     <div class="metadata-keys-container">
                         <div class="scrollable vertical">
                             <div class="items">
-                                <div>
-                                    <div class="item">OS</div>
-                                    <div class="item">Description</div>
-                                    <div class="item">Key3</div>
-                                </div>
-                                <div>
-                                    <div class="item">Descripition</div>
-                                    <div class="item">dsffa</div>
-                                    <div class="item">dsfdas</div>
-                                </div>
-                                <div>
-                                    <div class="item">dsfdas</div>
-                                    <div class="item">sdfdsfsd</div>
-                                </div>
+                                
                             </div>
                         </div>
                         <div class="metadata-actions">
@@ -112,8 +99,6 @@
 </div>
 
 <script>
-
-$(".scrollable").scrollable({ vertical: true});	
 
 //hide the all of the info contents
 $(".info-content").hide();
@@ -490,6 +475,8 @@ function update_machines_view(data){
             machine.find(".disk-data").text(disk);
             machine.find(".image-data").text(image_name.substring(0,15));
             machine.find(".image-size-data").text(image_size);
+            get_metadata(server.id);
+            //populate metadata
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {
@@ -545,6 +532,24 @@ function update_machines_view(data){
         $('.confirm_multiple').removeClass('fixed');
 }
 
+// update metadata list
+function list_metadata_keys(serverID, data) {    
+    // empty the list if it already exists
+    // get the values to show
+    meta = data.metadata.values;
+    //start counter
+    var i=0;
+    // show values
+    for (key in meta) {
+        $("div.#" +serverID).find(".items").append("<div class='item'>" + key + "</div>");
+        i++
+    }
+    //hide the metadata controls if we have less than 3 metadata
+    if (i <= 3) {
+        $("div.#" +serverID).find(".metadata-actions").hide();
+    }
+}
+
 // indicate that the requested action was succesfully completed
 function display_success(serverID) {
 
@@ -587,5 +592,9 @@ $(window).resize(function(){
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
+});
+
+$(function() {
+    $(".scrollable").scrollable({ vertical: true});	
 });
 </script>

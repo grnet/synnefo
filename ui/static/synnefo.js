@@ -819,6 +819,7 @@ function get_metadata(serverID) {
         success: function(data, textStatus, jqXHR) {
             // to list the new results in the edit dialog
             list_metadata(data);
+            list_metadata_keys(serverID, data);
         }
     });
     return false;

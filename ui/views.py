@@ -31,10 +31,9 @@ def machines(request):
 
 def machine_console(request):
     host, port, password = ('','','')
-    if request.POST:
-            host = request.POST.get('host','')
-            port = request.POST.get('port','')
-            password = request.POST.get('password','')
+    host = request.GET.get('host','')
+    port = request.GET.get('port','')
+    password = request.GET.get('password','')
     context = {'host': host, 'port': port, 'password': password,
     'console_height': CONSOLE_HEIGHT, 'console_width': CONSOLE_WIDTH}
     return template('machine_console', context)

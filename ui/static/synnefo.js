@@ -697,25 +697,10 @@ function vnc_attachment(host, port, password) {
 // Show VNC console
 function show_vnc_console(host, port, password) {
     // FIXME: Must be made into parameters, in settings.py
-    var form = document.createElement("form");
 
-    form.setAttribute("method", "post");
-    form.setAttribute("action", "/machines/console");
-    form.setAttribute('target', '_blank'); 
+    var params_url = '?host=' + host + '&port=' + port + '&password=' + password ;
 
-    var params = {'host': host, 'port': port, 'password': password};
-
-    for(var key in params) {
-        var hiddenField = document.createElement("input");
-        hiddenField.setAttribute("type", "hidden");
-        hiddenField.setAttribute("name", key);
-        hiddenField.setAttribute("value", params[key]);
-
-        form.appendChild(hiddenField);
-    }
-
-    document.body.appendChild(form);  
-    form.submit();
+    window.open('/machines/console' + params_url, 'formresult', 'scrollbars=no,menubar=no,height=600,width=800,resizable=yes,toolbar=no,status=no');
 
     return false;
 }

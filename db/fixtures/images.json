@@ -4,6 +4,7 @@
         "pk": 3,
         "fields": {
             "name": "Debian Unstable",
+            "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE"
@@ -14,6 +15,7 @@
         "pk": 4,
         "fields": {
             "name": "Red Hat Enterprise Linux",
+            "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE"
@@ -24,6 +26,7 @@
         "pk": 5,
         "fields": {
             "name": "Ubuntu 10.10",
+            "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE"

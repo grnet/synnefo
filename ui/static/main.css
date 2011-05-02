@@ -1487,7 +1487,7 @@ div#user a.current_lang {
 }
 
 .namecontainer {
-    line-height: 23px;
+    line-height: 13px;
 }
 
 .nametextbox {
@@ -1996,6 +1996,11 @@ div.network-machine div.machine-actions a:hover {
 .name-div {
     margin-left: 70px;
     margin-bottom: 20px;
+}
+
+.machine-name-div {
+    margin-bottom: 22px;
+    margin-left: 60px;
 }
 
 /* Metadata */

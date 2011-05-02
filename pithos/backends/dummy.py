@@ -10,10 +10,12 @@ class BackEnd:
         logging.basicConfig(filename=log_file,level=log_level,)
         if not os.path.exists(basepath):
             os.makedirs(basepath)
-        db = '/'.join([basepath, 'db'])
+        db = os.path.join(basepath, 'db')
         self.con = sqlite3.connect(db)
         # Create tables
         sql = '''create table if not exists objects(name text)'''
+        self.con.execute(sql)
+        sql = '''create table if not exists metadata(object_id int, name text, value text)'''
         self.con.execute(sql)
         self.con.commit()
 
@@ -22,12 +24,13 @@ class BackEnd:
         returns a dictionary with the container metadata
         """
         logging.info("get_account_meta: %s", account)
-        fullname = '/'.join([self.basepath, account])
+        fullname = os.path.join(self.basepath, account)
+        print fullname
         if not os.path.exists(fullname):
             raise NameError('Account does not exist')
         contents = os.listdir(fullname) 
         count = len(contents)
-        size = sum(os.path.getsize('/'.join([self.basepath, account, objectname])) for objectname in contents)
+        size = sum(os.path.getsize(os.path.join(self.basepath, account, objectname)) for objectname in contents)
         return {'name': account, 'count': count, 'bytes': size}
         
     def create_container(self, account, name):
@@ -36,7 +39,7 @@ class BackEnd:
         if it doesn't exists under the basepath
         """
         logging.info("create_container: %s %s", account, name)
-        fullname = '/'.join([self.basepath, account, name])    
+        fullname = os.path.join(self.basepath, account, name)    
         if not os.path.exists(fullname):
             os.makedirs(fullname)
         else:
@@ -50,7 +53,7 @@ class BackEnd:
         and it's empty
         """
         logging.debug("delete_container: %s %s", account, name)
-        fullname = '/'.join([self.basepath, account, name])    
+        fullname = os.path.join(self.basepath, account, name)    
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
         if os.listdir(fullname):
@@ -63,23 +66,39 @@ class BackEnd:
         """
         returns a dictionary with the container metadata
         """
-        fullname = '/'.join([self.basepath, account, name])
+        fullname = os.path.join(self.basepath, account, name)
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
         contents = os.listdir(fullname) 
         count = len(contents)
-        size = sum(os.path.getsize('/'.join([self.basepath, account, name, objectname])) for objectname in contents)
+        size = sum(os.path.getsize(os.path.join(self.basepath, account, name, objectname)) for objectname in contents)
         return {'name': name, 'count': count, 'bytes': size}
     
-    def list_containers(self, marker = None, limit = 10000):
-        return os.listdir(self.basepath)[:limit]
+    def list_containers(self, account, marker = None, limit = 10000):
+        """
+        returns a list of at most limit (default = 10000) account containers 
+        starting from the next item after marker
+        if optinal parameter marker is provided
+        or the 1st item otherwise
+        """
+        containers = os.listdir(os.path.join(self.basepath, account))
+        start = 0
+        if marker:
+            try:
+                start = containers.index(marker)
+            except ValueError:
+                pass
+        return containers[start:limit]
     
     def list_objects(self, account, container, prefix='', delimiter=None, marker = None, limit = 10000):
+        """
+        returns a list of the objects existing under a specific account container
+        """
         logging.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
-        p1 = '/'.join(['%', prefix, '%'])
+        p1 = ''.join(['%', prefix, '%'])
         p2 = '/'.join([account, container, '%'])
         search_str = (prefix and [p1] or [p2])[0]
         c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
@@ -104,8 +123,8 @@ class BackEnd:
             limit = 10000
         return objects[start:start + limit]
     
-    def get_object_meta(self, account, container, name, keys=None):
-        dir = '/'.join([self.basepath, account, container])
+    def get_object_meta(self, account, container, name, keys='*'):
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         else:
@@ -118,12 +137,12 @@ class BackEnd:
         return data
     
     def get_object_data(self, account, container, name, offset=0, length=-1):
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         else:
             os.chdir(dir)
-        location = self.__get_object_linkinfo('/'.join([account, container, name]))
+        location = self.__get_object_linkinfo(os.path.join(account, container, name))
         f = open(location, 'r')
         if offset:
             f.seek(offset)
@@ -132,31 +151,31 @@ class BackEnd:
         return data
     
     def update_object(self, account, container, name, data):
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         try:
-            location = self.__get_object_linkinfo('/'.join([account, container, name]))
+            location = self.__get_object_linkinfo(os.path.join(account, container, name))
         except NameError:
             # new object
-            location = str(self.__save_linkinfo('/'.join([account, container, name])))
+            location = str(self.__save_linkinfo(os.path.join(account, container, name)))
         self.__store_data(location, account, container, data)
         return
     
     def update_object_meta(self, account, container, name, meta):
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         try:
-            location = self.__get_object_linkinfo('/'.join([account, container, name]))
+            location = self.__get_object_linkinfo(os.path.join(account, container, name))
         except NameError:
             # new object
-            location = str(self.__save_linkinfo('/'.join([account, container, name])))
+            location = str(self.__save_linkinfo(os.path.join(account, container, name)))
         self.__store_metadata(location, account, container, meta)
         return
     
     def copy_object(self, account, src_container, src_name, dest_container, dest_name, meta):
-        fullname = '/'.join([self.basepath, account, dest_container])    
+        fullname = os.path.join(self.basepath, account, dest_container)    
         if not os.path.exists(fullname):
             raise NameError('Destination container does not exist')
         data = self.get_object_data(account, src_container, src_name)
@@ -172,12 +191,12 @@ class BackEnd:
         return
     
     def delete_object(self, account, container, name):
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         else:
             os.chdir(dir)
-        location = self.__get_object_linkinfo('/'.join([account, container, name]))
+        location = self.__get_object_linkinfo(os.path.join(account, container, name))
         # delete object data
         self.__delete_data(location, account, container)
         # delete object metadata
@@ -186,7 +205,7 @@ class BackEnd:
         return
     
     def __store_metadata(self, location, account, container, meta):
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         else:
@@ -198,7 +217,7 @@ class BackEnd:
         f.close()
     
     def __store_data(self, location, account, container, data):
-        dir = '/'.join([self.basepath, account, container])
+        dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         else:
@@ -208,7 +227,7 @@ class BackEnd:
         f.close()
         
     def __delete_data(self, location, account, container):
-        file = '/'.join([self.basepath, account, container, location])
+        file = os.path.join(self.basepath, account, container, location)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
         else:
@@ -231,23 +250,3 @@ class BackEnd:
         self.con.execute('delete from objects where name = ?', (name,))
         self.cont.commit()
         return
-    
-#def binary_search_name(a, x, lo = 0, hi = None):
-#    """
-#    Search a sorted array of dicts for the value of the key 'name'.
-#    Raises ValueError if the value is not found.
-#    a -- the array
-#    x -- the value to search for
-#    """
-#    if hi is None:
-#            hi = len(a)
-#    while lo < hi:
-#        mid = (lo + hi) // 2
-#        midval = a[mid][0]
-#        if midval < x:
-#            lo = mid + 1
-#        elif midval > x: 
-#            hi = mid
-#        else:
-#            return mid
-#    raise ValueError()

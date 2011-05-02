@@ -596,10 +596,7 @@ $(function() {
         load: false,
         onClose: function(){
             // reset input areas
-            $("#metadata-wizard input.key").removeClass("input-enabled");
-            $("#metadata-wizard input.key")[0].value = 'max 15 characters';
-            $("#metadata-wizard textarea.value").removeClass("input-enabled");
-            $("#metadata-wizard textarea.value")[0].value = 'max 150 characters';
+            reset_metadata_input();
         }
     });
 });
@@ -613,6 +610,14 @@ function show_metadata_wizard() {
     $("#metadata-wizard").show();
     $("a#metadata-scrollable").data('overlay').load();
     return false; 
+}
+
+function reset_metadata_input() {
+    // reset input areas
+    $("#metadata-wizard input.key").removeClass("input-enabled");
+    $("#metadata-wizard input.key")[0].value = 'max 15 characters';
+    $("#metadata-wizard textarea.value").removeClass("input-enabled");
+    $("#metadata-wizard textarea.value")[0].value = 'max 150 characters';
 }
 
 // update metadata list
@@ -706,6 +711,13 @@ $("#metadata-wizard textarea.value").live('focusout', function() {
     return false;
 });
 
+
+
+// intercept click on cancel button in metadata add dialog
+$('#add-dialog button.cancel').live('click', function() {
+    reset_metadata_input();
+});
+
 // intercept click on save button in metadata add dialog
 $('#add-dialog button.save').live('click', function() {
     // if both fields are filled in     
@@ -716,6 +728,8 @@ $('#add-dialog button.save').live('click', function() {
         var meta_value = $(this).parent().find('textarea.value')[0].value;
         // make the ajax call and list the new GET results
         add_metadata(serverID, meta_key, meta_value);
+        // reset input areas
+        reset_metadata_input();
         // go to previous step
         $('#add-dialog button.prev').click();
     } else {

@@ -133,18 +133,19 @@ class BackEnd:
             limit = 10000
         return objects[start:start + limit]
     
-    def get_object_meta(self, account, container, name, keys='*'):
+    def get_object_meta(self, account, container, name, keys=None):
         dir = os.path.join(self.basepath, account, container)
         if not os.path.exists(dir):
             raise NameError('Container does not exist')
-        else:
-            os.chdir(dir)
-        location = self.__get_object_linkinfo('/'.join([account, container, name]))
-        location = '.'.join([location, 'meta'])
-        f = open(location, 'r')
-        data = json.load(f)
-        f.close()
-        return data
+        link = self.__get_object_linkinfo(os.path.join(account, container, name))
+        c = self.con.execute('select name, value from metadata where object_id = ''?''', (link,))
+        l = c.fetchall()
+        if keys:
+            l = [elem for elem in l if elem[0] in keys]
+        meta = {}
+        for e in l:
+            meta[e[0]] = e[1]
+        return meta
     
     def get_object_data(self, account, container, name, offset=0, length=-1):
         dir = os.path.join(self.basepath, account, container)
@@ -214,17 +215,11 @@ class BackEnd:
         self.__delete_data(location, account, container)
         return
     
-    def __store_metadata(self, location, account, container, meta):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        else:
-            os.chdir(dir)
-        location = '.'.join([location, 'meta'])
-        f = open(location, 'w')
-        data = json.dumps(meta)
-        f.write(data)
-        f.close()
+    def __store_metadata(self, ref, account, container, meta):
+        for k in meta.keys():
+            self.con.execute('insert or replace into metadata(object_id, name, value) values (?, ?, ?)', (ref, k, meta[k],))
+        self.con.commit()
+        return
     
     def __store_data(self, location, account, container, data):
         dir = os.path.join(self.basepath, account, container)

@@ -2008,6 +2008,12 @@ div.network-machine div.machine-actions a:hover {
 }
 
 /* Metadata */
+
+.info-content {
+    min-height: 90px;
+    width: 540px;
+}
+
 .metadata-separator {
     background-color: #808080;
     height: 3px;

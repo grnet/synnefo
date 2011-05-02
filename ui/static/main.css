@@ -2010,7 +2010,7 @@ div.network-machine div.machine-actions a:hover {
 /* Metadata */
 
 .info-content {
-    min-height: 90px;
+    height: 90px;
     width: 540px;
 }
 
@@ -2025,7 +2025,7 @@ div.network-machine div.machine-actions a:hover {
     line-height: 12px;
     margin-left: 14px;
     margin-top: 2px;
-    min-height: 80px;
+    height: 80px;
 }
 
 .metadata-column {
@@ -2034,7 +2034,7 @@ div.network-machine div.machine-actions a:hover {
     float: left;
     font-size: 60%;
     margin-top: 3px;
-    min-height: 70px;
+    height: 70px;
     padding-bottom: 5px;
 }
 
@@ -2080,12 +2080,6 @@ div.network-machine div.machine-actions a:hover {
 
 .metadata-actions, .scrollable {
     padding-left: 5px;
-}
-
-.metadata-down {
-    width: 30px;
-    height: 15px;
-    margin-top: 10px;
 }
 
 /* root element for scrollable */

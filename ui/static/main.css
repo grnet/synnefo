@@ -2058,7 +2058,13 @@ div.network-machine div.machine-actions a:hover {
 	height:20000em;
 }
 
-.metadata-labels {
+.metadata-keys-container {
+    height: 65px;
+    float: left;
+}
+
+.metadata-actions, .scrollable {
+    padding-left: 5px;
 }
 
 .metadata-down {

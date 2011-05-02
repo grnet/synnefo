@@ -33,66 +33,127 @@ from signal import signal, SIGINT, SIGTERM, SIGKILL
 from synnefo.db.models import VirtualMachine
 from synnefo.logic import utils, backend
 
-logger = None
+class Dispatcher:
 
-def update_db(message):
-    try:
-        msg = json.loads(message.body)
+    logger = None
+    chan = None
 
-        if msg["type"] != "ganeti-op-status":
-            logging.error("Message is of uknown type %s." % (msg["type"],))
+    def __init__(self, debug, logger):
+        self.logger = logger
+        self._init_queues(debug)
+
+    def update_db(self, message):
+        try:
+            msg = json.loads(message.body)
+
+            if msg["type"] != "ganeti-op-status":
+                self.logger.error("Message is of uknown type %s." % (msg["type"],))
+                return
+
+            vmid = utils.id_from_instance_name(msg["instance"])
+            vm = VirtualMachine.objects.get(id=vmid)
+
+            self.logger.debug("Processing msg: %s" % (msg,))
+            backend.process_backend_msg(vm, msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
+            self.logger.debug("Done processing msg for vm %s." % (msg["instance"]))
+
+        except KeyError:
+            self.logger.error("Malformed incoming JSON, missing attributes: " + message.body)
+        except VirtualMachine.InvalidBackendIdError:
+            self.logger.debug("Ignoring msg for unknown instance %s." % (msg["instance"],))
+        except VirtualMachine.DoesNotExist:
+            self.logger.error("VM for instance %s with id %d not found in DB." % (msg["instance"], vmid))
+        except Exception as e:
+            self.logger.error("Unexpected error:\n" + "".join(traceback.format_exception(*sys.exc_info())))
             return
+        finally:
+            message.channel.basic_ack(message.delivery_tag)
 
-        vmid = utils.id_from_instance_name(msg["instance"])
-        vm = VirtualMachine.objects.get(id=vmid)
-
-        logging.debug("Processing msg: %s" % (msg,))
-        backend.process_backend_msg(vm, msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
-        logging.debug("Done processing msg for vm %s." % (msg["instance"]))
-
-    except KeyError:
-        logging.error("Malformed incoming JSON, missing attributes: " + message.body)
-    except VirtualMachine.InvalidBackendIdError:
-        logging.debug("Ignoring msg for unknown instance %s." % (msg["instance"],))
-    except VirtualMachine.DoesNotExist:
-        logging.error("VM for instance %s with id %d not found in DB." % (msg["instance"], vmid))
-    except Exception as e:
-        logging.error("Unexpected error:\n" + "".join(traceback.format_exception(*sys.exc_info())))
-        return
-    finally:
+    def send_email(self, message):
+        self.logger.debug("Request to send email message")
         message.channel.basic_ack(message.delivery_tag)
 
-def send_email(message):
-    logger.debug("Request to send email message")
-    message.channel.basic_ack(message.delivery_tag)
+    def update_credits(self, message):
+        self.logger.debug("Request to update credits")
+        message.channel.basic_ack(message.delivery_tag)
 
-def update_credits(message):
-    logger.debug("Request to update credits")
-    message.channel.basic_ack(message.delivery_tag)
+    def wait(self):
+        while True:
+            try:
+                self.chan.wait()
+            except SystemExit:
+                break
 
-def declare_queues(chan):
-    chan.exchange_declare(exchange=settings.EXCHANGE_GANETI, type="topic", durable=True, auto_delete=False)
-    chan.exchange_declare(exchange=settings.EXCHANGE_CRON, type="topic", durable=True, auto_delete=False)
-    chan.exchange_declare(exchange=settings.EXCHANGE_API, type="topic", durable=True, auto_delete=False)
+        self.chan.basic_cancel("dbupdater")
+        self.chan.close()
+        self.chan.connection.close()
 
-    chan.queue_declare(queue=settings.QUEUE_GANETI_EVENTS, durable=True, exclusive=False, auto_delete=False)
-    chan.queue_declare(queue=settings.QUEUE_CRON_CREDITS, durable=True, exclusive=False, auto_delete=False)
-    chan.queue_declare(queue=settings.QUEUE_API_EMAIL, durable=True, exclusive=False, auto_delete=False)
-    chan.queue_declare(queue=settings.QUEUE_CRON_EMAIL, durable=True, exclusive=False, auto_delete=False)
+    def _declare_queues(self):
+        self.chan.exchange_declare(exchange=settings.EXCHANGE_GANETI, type="direct", durable=True, auto_delete=False)
+        self.chan.exchange_declare(exchange=settings.EXCHANGE_CRON, type="topic", durable=True, auto_delete=False)
+        self.chan.exchange_declare(exchange=settings.EXCHANGE_API, type="topic", durable=True, auto_delete=False)
 
-def init_devel():
-    chan = open_channel()
-    declare_queues(chan)
-    chan.queue_bind(queue=settings.QUEUE_GANETI_EVENTS, exchange=settings.EXCHANGE_GANETI, routing_key="event.*")
-    chan.basic_consume(queue="events", callback=update_db, consumer_tag="dbupdater")
-    return chan
+        self.chan.queue_declare(queue=settings.QUEUE_GANETI_EVENTS, durable=True, exclusive=False, auto_delete=False)
+        self.chan.queue_declare(queue=settings.QUEUE_CRON_CREDITS, durable=True, exclusive=False, auto_delete=False)
+        self.chan.queue_declare(queue=settings.QUEUE_API_EMAIL, durable=True, exclusive=False, auto_delete=False)
+        self.chan.queue_declare(queue=settings.QUEUE_CRON_EMAIL, durable=True, exclusive=False, auto_delete=False)
 
-def init():
-    chan = open_channel()
-    declare_queues(chan)
-    chan.queue_bind(queue=settings.QUEUE_GANETI_EVENTS, exchange=settings.EXCHANGE_GANETI, routing_key="event.*")
-    chan.basic_consume(queue="events", callback=update_db, consumer_tag="dbupdater")
-    return chan
+    def _init_queues(self,debug):
+        self._open_channel()
+        if debug:
+            self._init_devel()
+        else:
+            self._init()
+
+    def _init_devel(self):
+        self._declare_queues()
+        self.chan.queue_bind(queue=settings.QUEUE_GANETI_EVENTS, exchange=settings.EXCHANGE_GANETI, routing_key="event.*")
+        self.chan.basic_consume(queue="events", callback=self.update_db, consumer_tag="dbupdater")
+
+    def _init(self):
+        self._declare_queues()
+        self.chan.queue_bind(queue=settings.QUEUE_GANETI_EVENTS, exchange=settings.EXCHANGE_GANETI, routing_key="event.*")
+        self.chan.basic_consume(queue="events", callback=self.update_db, consumer_tag="dbupdater")
+
+    def _open_channel(self):
+        conn = None
+        while conn == None:
+            self.logger.info("Attempting to connect to %s", settings.RABBIT_HOST)
+            try:
+                conn = amqp.Connection( host=settings.RABBIT_HOST,
+                                    userid=settings.RABBIT_USERNAME,
+                                    password=settings.RABBIT_PASSWORD,
+                                    virtual_host=settings.RABBIT_VHOST)
+            except socket.error:
+                time.sleep(1)
+                pass
+
+        self.logger.info("Connection succesful, opening channel")
+        self.chan = conn.channel()
+
+def exit_handler(signum, frame):
+    global handler_logger
+
+    handler_logger.info("Caught fatal signal %d, will raise SystemExit", signum)
+    raise SystemExit
+
+def child(cmdline):
+    #Cmd line argument parsing
+    (opts, args) = parse_arguments(cmdline)
+
+    # Initialize logger
+    lvl = logging.DEBUG if opts.debug else logging.INFO
+    logger = logging.getLogger("okeanos.dispatcher")
+    logger.setLevel(lvl)
+    formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
+            "%Y-%m-%d %H:%M:%S")
+    handler = logging.FileHandler(opts.log_file)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    d = Dispatcher(debug = True, logger = logger)
+
+    d.wait()
 
 def parse_arguments(args):
     from optparse import OptionParser
@@ -108,79 +169,33 @@ def parse_arguments(args):
 
     return parser.parse_args(args)
 
-def exit_handler(signum, frame):
-    global handler_logger
-
-    handler_logger.info("Caught fatal signal %d, will raise SystemExit", signum)
-    raise SystemExit
-
-def init_queues(debug):
-    chan = None
-    if debug:
-        chan = init_devel()
-    else:
-        chan = init()
-    return chan
-
-def open_channel():
-    conn = None
-    while conn == None:
-        logger.info("Attempting to connect to %s", settings.RABBIT_HOST)
-        try:
-            conn = amqp.Connection( host=settings.RABBIT_HOST,
-                                    userid=settings.RABBIT_USERNAME,
-                                    password=settings.RABBIT_PASSWORD,
-                                    virtual_host=settings.RABBIT_VHOST)
-        except socket.error:
-            time.sleep(1)
-            pass
-
-    logger.info("Connection succesful, opening channel")
-    return conn.channel()
-
 def main():
     global logger
     (opts, args) = parse_arguments(sys.argv[1:])
 
-    # Initialize logger
-    lvl = logging.DEBUG if opts.debug else logging.INFO
-    logger = logging.getLogger("okeanos.dispatcher")
-    logger.setLevel(lvl)
-    formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
-            "%Y-%m-%d %H:%M:%S")
-    handler = logging.FileHandler(opts.log_file)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    #Init the queues
-    chan = init_queues(opts.debug)
+    #newpid = os.fork()
+    #if newpid == 0:
+    child(sys.argv[1:])
+    #else:
+    #    pids = (os.getpid(), newpid)
+    #    print "parent: %d, child: %d" % pids
 
     # Become a daemon:
     # Redirect stdout and stderr to handler.stream to catch
     # early errors in the daemonization process [e.g., pidfile creation]
     # which will otherwise go to /dev/null.
-    daemon_context = daemon.DaemonContext(
-            umask=022,
-            stdout=handler.stream,
-            stderr=handler.stream,
-            files_preserve=[handler.stream])
-    daemon_context.open()
-    logger.info("Became a daemon")
+    #daemon_context = daemon.DaemonContext(
+    #        umask=022,
+    #        stdout=handler.stream,
+    #        stderr=handler.stream,
+    #        files_preserve=[handler.stream])
+    #daemon_context.open()
+    #logger.info("Became a daemon")
     
     # Catch signals to ensure graceful shutdown
-    signal(SIGINT, exit_handler)
-    signal(SIGTERM, exit_handler)
-    signal(SIGKILL, exit_handler)
-
-    while True:
-        try:
-            chan.wait()
-        except SystemExit:
-            break
-
-    chan.basic_cancel("dbupdater")
-    chan.close()
-    chan.connection.close()
+    #signal(SIGINT, exit_handler)
+    #signal(SIGTERM, exit_handler)
+    #signal(SIGKILL, exit_handler)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

@@ -213,6 +213,8 @@
                                 <hr class="meta-separator">
                                 <p>{% trans "Value" %}</p>
                                 <button type="button" class="edit">{% trans "edit" %}</button>
+                                <button type="button" class="cancel">{% trans "cancel" %}</button>
+                                <button type="button" class="save">{% trans "save" %}</button>
                             </li>
                         </ul>
                         <ul class="meta-list">
@@ -646,9 +648,9 @@ jQuery.expr[':'].focus = function( elem ) {
 };
 
 $('*').keydown(function (){
-    if ($('#add-dialog').is(":visible") && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
+    if ($('#add-dialog').is(":visible") && !$('#edit-dialog input').length && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
         $('input.key').focus();
-        $('input.key').focusin();         
+        $('input.key').focusin(); 
     }
     return true;
 });
@@ -664,11 +666,54 @@ $('#edit-dialog button.remove').live('click', function() {
 });
 
 // intercept click on edit button in metadata edit dialog
-$('#edit-dialog.meta-modal button.edit').click( function(){
-    // inline editing of selected key-value pair
-    // on submission ajax call from updating
-    // on success update the overlay
+$('#edit-dialog button.edit').live('click', function(){
     // TODO
+    // show input form for tag name
+    $(this).parent().find('label').html("<input type=\"text\" maxlength=\"15\" class=\"edit-meta-key\" value=\"" +
+                                        $(this).parent().find('label').text() + 
+                                        "\" / ><label class=\"oldValue\">" + 
+                                        $(this).parent().find('label').text() + "</label>");
+    // show input form for tag value
+    $(this).parent().find('p').html("<textarea class=\"edit-meta-value\" l=\"3\">" +
+                                        $(this).parent().find('p').text() + 
+                                        "</textarea><p class=\"oldValue\">" + 
+                                        $(this).parent().find('p').text() + "</p>");
+    // show/hide the appropriate buttons
+    $(this).hide(); // this button (edit)
+    $(this).siblings().show(); // save and cancel buttons
+    $(this).siblings('button.remove').addClass('more-margin');
+
+    return false;
+});
+
+// intercept click on cancel button in metadata edit dialog
+$('#edit-dialog button.cancel').live('click', function(){
+    // put the old values and close the forms
+    $(this).parent().find('label').html($(this).parent().find('label.oldValue').text());
+    $(this).parent().find('p').html($(this).parent().find('p.oldValue').text());
+    // show/hide the appropriate buttons
+    $(this).hide(); // this button (cancel)
+    $(this).next().hide(); // the save button
+    $(this).prev().show(); // the edit button
+    $(this).siblings('button.remove').removeClass('more-margin');
+
+    return false;
+});
+
+// intercept click on save button in metadata edit dialog
+$('#edit-dialog button.save').live('click', function(){
+    // put the new values and close the forms
+    $(this).parent().find('label').html($(this).parent().find('input.edit-meta-key').text());
+    $(this).parent().find('p').html($(this).parent().find('textarea.edit-meta-value').text());
+    // make the call
+    // TODO
+    // show/hide the appropriate buttons
+    $(this).hide(); // this button (save)
+    $(this).prev().hide(); // the cancel button
+    $(this).prev().prev().show(); // the edit button
+    $(this).siblings('button.remove').removeClass('more-margin');
+
+    return false;
 });
 
 // intercept create metadata key focus
@@ -710,8 +755,6 @@ $("#metadata-wizard textarea.value").live('focusout', function() {
     }
     return false;
 });
-
-
 
 // intercept click on cancel button in metadata add dialog
 $('#add-dialog button.cancel').live('click', function() {

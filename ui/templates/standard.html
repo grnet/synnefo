@@ -35,10 +35,65 @@
         </a>
         <h5 class="settings">
             {% trans "Show:" %} 
-            <a class="show-disks"href="#">{% trans "disks" %}</a> | 
-            <a class="show-networks"href="#">{% trans "networks" %}</a> | 
+            <a class="show-disks" href="#">{% trans "disks" %}</a> | 
+            <a class="show-networks" href="#">{% trans "networks" %}</a> | 
             <a class="show-info" href="#">{% trans "more info" %}</a>
         </h5>
+        <div class="info-content">
+            <div class="metadata-separator"></div>
+            <div class="metadata-container">
+                <div class="vm-details metadata-column">
+                    CPUs: <span class="cpu-data">1</span><br />
+                    RAM: <span class="ram-data">2048</span> (MB)<br />
+                    System Disk: <span class="disk-data">20</span> (GB) <br /><br />
+                    Image: <span class="image-data">Debian</span><br />
+                    Image Size: <span class="image-size-data">2.3</span> (GB)
+                </div>
+                <div class="vm-stats metadata-column">
+                    CPU<br />
+                    RAM<br />
+                    S.Disk<br />
+                    Net<br /><br />
+                    details
+                </div>
+                <div class="vm-labels metadata-column">
+                    Labels<br />
+                    (4)<br />
+                </div>
+                <div class="vm-metadata metadata-column">
+                    <div class="metadata-left">
+                        Metadata:<br />
+                        (7)
+                    </div>
+                    <div class="metadata-keys-container">
+                        <div class="scrollable vertical">
+                            <div class="items">
+                                <div>
+                                    <div class="item">OS</div>
+                                    <div class="item">Description</div>
+                                    <div class="item">Key3</div>
+                                </div>
+                                <div>
+                                    <div class="item">Descripition</div>
+                                    <div class="item">dsffa</div>
+                                    <div class="item">dsfdas</div>
+                                </div>
+                                <div>
+                                    <div class="item">dsfdas</div>
+                                    <div class="item">sdfdsfsd</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="metadata-actions">
+                            <a class="prev" href="#">&lt;</a>
+                            <a class="next" href="#">&gt;</a>
+                        </div>
+                    </div>
+                    <a href="#" class="manage-metadata">Manage Metadata</a>
+                </div>
+            </div>
+            <div class="metadata-separator"></div>
+        </div>
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">{% trans "Cancel" %}</button>
@@ -58,18 +113,29 @@
 
 <script>
 
-// intercept edit metadata click
+$(".scrollable").scrollable({ vertical: true});	
+
+//hide the all of the info contents
+$(".info-content").hide();
+//toggle the component with class info-content
 $("a.show-info").live('click', function() {
+    $(this).parent().parent().find(".info-content").slideToggle(600);
+    return false;
+});
+
+
+// intercept manage metadata click
+$("a.manage-metadata").live('click', function() {
     // get server name and server ID
-    var serverID = $(this).parent().parent().attr("id");
-    var serverName = $(this).parent().parent().find("span.name").text();
+    var serverID = $(this).parent().parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().parent().find("span.name").text();
     // set server name to all related metadata dialogs
     $("#edit-dialog h3 span").text(serverName);
     $("#add-dialog h3 span").text(serverName);
     // set server id to all related metadata dialogs
     $("#edit-dialog h3 p").text(serverID);
     $("#add-dialog h3 p").text(serverID);
-    show_metadata_edit_dialog();
+    show_metadata_wizard();
     return false;
 });
 
@@ -389,6 +455,41 @@ function update_machines_view(data){
             machine.find("span.imagetag").text(server_image);
             machine.find("a.ip span.public").text(String(server.addresses.values[0].values[0].addr).replace(',',' '));            
             machine.find(".status").text(STATUS_MESSAGES[server.status]);
+            // find and display flavor parameters
+            var CPUs, RAM, disk, image_name, image_size;
+            if ( flavors.length > 0 ) {
+                var current_flavor = '';
+                for (i=0; i<flavors.length; i++) {
+                    if (flavors[i]['id'] == server.flavorRef) {
+                        current_flavor = flavors[i];
+                    }
+                } 
+                CPUs = current_flavor['cpu'];
+                RAM = current_flavor['ram']; 
+                disk = current_flavor['disk']; 
+            } else {
+                CPUs = 0;
+                RAM = 0;        
+                disk = 0;     
+            }
+            if ( images.length > 0 ) {
+                var current_image = '';
+                for (i=0; i<images.length; i++) {
+                    if (images[i]['id'] == server.imageRef) {
+                        current_image = images[i];
+                    }
+                }       
+                image_name = current_image['name'];
+                image_size = current_image['metadata']['values']['size'];
+            } else {
+                image_name = ''
+                image_size = ''
+            }
+            machine.find(".cpu-data").text(CPUs);
+            machine.find(".ram-data").text(RAM);
+            machine.find(".disk-data").text(disk);
+            machine.find(".image-data").text(image_name.substring(0,15));
+            machine.find(".image-size-data").text(image_size);
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) >= 0){
                 machine.appendTo(".running");
             } else {

@@ -189,59 +189,65 @@
     <div><p>{% trans "More details about the result"%}</p></div>
 </div>
 
+<!-- metadata scrollable -->
+<div>
+    <!-- root element for scrollable -->
+    <div id="metadata-wizard">
 
-<a id="metadata-edit-dialog" rel="#edit-dialog" href="#"></a>
-
-<div class="meta-modal" id="edit-dialog">
-    <div class='container'>
-        <h3>
-            <label>{% trans "Tags for machine:" %}</label>
-            <span>Server name</span>
-            <p style='display:none;'>hidden server id</p>
-        </h3>
-        <hr class="topruler" />
-        <hr class="fatruler" />
-        <div class="content">
-            <ul class="meta-template" style="display:none">
-                <li>
-                    <label>{% trans "Key" %}</label>
-                    <button type="button" class="remove">{% trans "remove x" %}</button>
-                    <hr class="meta-separator">
-                    <p>{% trans "Value" %}</p>
-                    <button type="button" class="edit">{% trans "edit" %}</button>
-                </li>
-            </ul>
-            <ul class="meta-list">
-            </ul>
+        <!-- root element for the items -->
+        <div class="items">
+            <div class="page" id="edit-dialog">
+                <div class='container'>
+                    <h3>
+                        <label>{% trans "Tags for machine:" %}</label>
+                        <span>Server name</span>
+                        <p style='display:none;'>hidden server id</p>
+                    </h3>
+                    <hr class="topruler" />
+                    <hr class="fatruler" />
+                    <div class="content">
+                        <ul class="meta-template" style="display:none">
+                            <li>
+                                <label>{% trans "Key" %}</label>
+                                <button type="button" class="remove">{% trans "remove x" %}</button>
+                                <hr class="meta-separator">
+                                <p>{% trans "Value" %}</p>
+                                <button type="button" class="edit">{% trans "edit" %}</button>
+                            </li>
+                        </ul>
+                        <ul class="meta-list">
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="create next browse right">{% trans "Create New+" %}</button>
+                <div class="bottomruler"></div>
+            </div>
+            <div class="page" id="add-dialog">
+                <div class='container'>
+                    <h3>
+                        <label>{% trans "Tags for machine:" %}</label>
+                        <span>Server name</span>
+                        <p style='display:none;'>hidden server id</p>
+                    </h3>
+                    <hr class="topruler" />
+                    <hr class="fatruler" />
+                    <div class="content">
+                        <label class="meta-key">{% trans "Key:" %}</label>
+                        <input type="text" maxlength="15" class="key" value="{% trans 'max 15 characters' %}"/>
+                        <hr class="meta-separator">
+                        <label class="meta-value">{% trans "Value:" %}</label>
+                        <textarea class="value">{% trans "max 150 characters" %}</textarea>
+                    </div>
+                </div>
+                <button type="button" class="cancel prev browse left">{% trans "Cancel" %}</button>
+                <button type="button" class="save">{% trans "Save" %}</button>
+                <div class="bottomruler"></div>
+            </div>
         </div>
     </div>
-    <button type="button" class="create">{% trans "Create New+" %}</button>
-    <div class="bottomruler"></div>
 </div>
 
-<a id="metadata-add-dialog" rel="#add-dialog" href="#"></a>
-
-<div class="meta-modal" id="add-dialog">
-    <div class='container'>
-        <h3>
-            <label>{% trans "Tags for machine:" %}</label>
-            <span>Server name</span>
-            <p style='display:none;'>hidden server id</p>
-        </h3>
-        <hr class="topruler" />
-        <hr class="fatruler" />
-        <div class="content">
-            <label class="meta-key">{% trans "Key:" %}</label>
-            <input type="text" maxlength="15" class="key" value="{% trans 'max 15 characters' %}"/>
-            <hr class="meta-separator">
-            <label class="meta-value">{% trans "Value:" %}</label>
-            <textarea class="value">{% trans "max 150 characters" %}</textarea>
-        </div>
-    </div>
-    <button type="button" class="cancel">{% trans "Cancel" %}</button>
-    <button type="button" class="save">{% trans "Save" %}</button>
-    <div class="bottomruler"></div>
-</div>
+<a id="metadata-scrollable" href="#" rel="#metadata-wizard"></a>
 
 <div id="machinesview"></div>
 
@@ -329,7 +335,7 @@ $(function() {
 });
 
 // wizard
-$(function() {
+$(function() {    
     var root = $("#wizard").scrollable();
     var api = root.scrollable();
     // rangeinput with default configuration
@@ -576,6 +582,169 @@ $("#start").click(function(){
     $("#wizard").hide();
 });
 
+// metadata wizard
+$(function() {
+	// initialize scrollable
+    $("#metadata-wizard").scrollable();
+    // create wizard overlay
+    $("a#metadata-scrollable").overlay({
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false,
+        onClose: function(){
+            // reset input areas
+            reset_metadata_input();
+        }
+    });
+});
+
+// bring up metadata scrollable
+function show_metadata_wizard() {
+    // get metadata for current server and fill the dialog
+    serverID = $("#edit-dialog h3 p").text();
+    get_metadata(serverID);
+    $("#metadata-wizard").scrollable().begin();
+    $("#metadata-wizard").show();
+    $("a#metadata-scrollable").data('overlay').load();
+    return false; 
+}
+
+function reset_metadata_input() {
+    // reset input areas
+    $("#metadata-wizard input.key").removeClass("input-enabled");
+    $("#metadata-wizard input.key")[0].value = 'max 15 characters';
+    $("#metadata-wizard textarea.value").removeClass("input-enabled");
+    $("#metadata-wizard textarea.value")[0].value = 'max 150 characters';
+}
+
+// update metadata list
+function list_metadata(data) {    
+    // empty the list if it already exists
+    $("#edit-dialog div.content ul.meta-list").empty();
+    // get the values to show
+    meta = data.metadata.values;
+    // show values
+    for (key in meta) {
+        pair = $("ul.meta-template li").clone();
+        //truncate metadata
+        pair.find("label").text(key.substring(0,15));
+        if (meta[key].length > 25) {
+            pair.find("p").text(meta[key].substring(0,25) + "...");
+        } else {
+            pair.find("p").text(meta[key]);            
+        }
+        pair.appendTo("#edit-dialog div.content ul.meta-list").fadeIn();
+    }
+}
+
+// trapping keydown event
+jQuery.expr[':'].focus = function( elem ) {
+  return elem === document.activeElement && ( elem.type || elem.href );
+};
+
+$('*').keydown(function (){
+    if ($('#add-dialog').is(":visible") && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
+        $('input.key').focus();
+        $('input.key').focusin();         
+    }
+    return true;
+});
+
+// intercept click on remove button in metadata edit dialog
+$('#edit-dialog button.remove').live('click', function() { 
+    // get the server id and meta key needed for the ajax call   
+    var serverID = $(this).closest('div.container').find('h3 p').text();
+    var meta_key = $(this).parent().find('label').text();
+    // make the ajax call and list the new GET results
+    delete_metadata(serverID, meta_key);
+    return false;
+});
+
+// intercept click on edit button in metadata edit dialog
+$('#edit-dialog.meta-modal button.edit').click( function(){
+    // inline editing of selected key-value pair
+    // on submission ajax call from updating
+    // on success update the overlay
+    // TODO
+});
+
+// intercept create metadata key focus
+$("#metadata-wizard input.key").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $("#metadata-wizard input.key").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata key focus out
+$("#metadata-wizard input.key").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 15 characters';
+    }
+    return false;
+});
+
+// intercept create metadata key focus
+$("#metadata-wizard textarea.value").live('focusin', function() {
+    if ($(this).hasClass("input-enabled")) {
+    } else {
+        $("#metadata-wizard textarea.value").addClass("input-enabled"); 
+        $(this).addClass("input-enabled"); 
+        this.value = '';
+    }
+    return false;
+});
+
+// intercept create metadata key focus out
+$("#metadata-wizard textarea.value").live('focusout', function() {
+    if (this.value == "") {
+        $(this).removeClass("input-enabled"); 
+        this.value = 'max 150 characters';
+    }
+    return false;
+});
+
+
+
+// intercept click on cancel button in metadata add dialog
+$('#add-dialog button.cancel').live('click', function() {
+    reset_metadata_input();
+});
+
+// intercept click on save button in metadata add dialog
+$('#add-dialog button.save').live('click', function() {
+    // if both fields are filled in     
+    if ($('input.key').hasClass("input-enabled") && $('textarea.value').hasClass("input-enabled")) {
+        // get the server id, meta key and meta value needed for the ajax call     
+        var serverID = $(this).parent().find('h3 p').text();
+        var meta_key = $(this).parent().find('input.key').attr('value');
+        var meta_value = $(this).parent().find('textarea.value')[0].value;
+        // make the ajax call and list the new GET results
+        add_metadata(serverID, meta_key, meta_value);
+        // reset input areas
+        reset_metadata_input();
+        // go to previous step
+        $('#add-dialog button.prev').click();
+    } else {
+        // find which field is not filled in and focus there
+        if (!$('input.key').hasClass("input-enabled")) {
+            $('input.key').focus();
+            $('input.key').focusin();
+        } else {
+            $('textarea.value').focus();
+            $('textarea.value').focusin();
+        }
+    }
+    return false;
+});
+
 // confirm all actions
 $("div.confirm_multiple .yes").live('click', function(){
     while(pending_actions.length > 0){ // if there is a pending action for this server execute it
@@ -620,189 +789,6 @@ $("div.confirm_multiple .no").live('click', function(){
     $('.machine .display').removeClass('display');
     update_confirmations();
 });
-
-// bring up edit metadata overlay
-function show_metadata_edit_dialog() {
-    var triggers = $("a#metadata-edit-dialog").overlay({
-        // some mask tweaks suitable for modal dialogs
-        mask: '#000',
-        effect: 'default',
-        top: '10%',
-        closeOnClick: false,
-        oneInstance: false,
-        load: false,
-        onClose: function() {
-            // remove all entries so they won't be preloaded next time you open the dialog
-            $("#edit-dialog div.content ul.meta-list").empty();
-        },
-        onLoad: function() {
-            // this is a workaround for the mask not appearing problem
-            $("#edit-dialog").expose();
-        }
-    });
-    // get metadata for current server and fill the dialog
-    serverID = $("#edit-dialog h3 p").text();
-    get_metadata(serverID);
-    $("a#metadata-edit-dialog").data('overlay').load();
-    return false; 
-}
-
-// bring up add metadata overlay
-function show_metadata_add_dialog() {
-    var triggers = $("a#metadata-add-dialog").overlay({
-        // some mask tweaks suitable for modal dialogs
-        mask: '#000',
-        effect: 'default',
-        top: '10%',
-        closeOnClick: false,
-        oneInstance: false,
-        load: false,
-        onLoad: function() {
-            // this is a workaround for the mask not appearing problem
-            $("#add-dialog").expose();
-        },
-        onClose: function(){
-            // reset input areas
-            $(".meta-modal input.key").removeClass("input-enabled");
-            $(".meta-modal input.key")[0].value = 'max 15 characters';
-            $(".meta-modal textarea.value").removeClass("input-enabled");
-            $(".meta-modal textarea.value")[0].value = 'max 150 characters';
-            show_metadata_edit_dialog();        
-        }
-    });
-    $("a#metadata-add-dialog").data('overlay').load();
-    return false; 
-}
-
-// trapping keydown event
-jQuery.expr[':'].focus = function( elem ) {
-  return elem === document.activeElement && ( elem.type || elem.href );
-};
-
-$('*').keydown(function (){
-    if ($('#add-dialog').is(":visible") && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
-        $('input.key').focus();
-        $('input.key').focusin();         
-    }
-    return true;
-});
-
-// intercept click on create button in metadata edit dialog
-$('#edit-dialog.meta-modal button.create').click( function(){
-    // close edit metadata and open add metadata dialog
-    $('a#metadata-edit-dialog').data('overlay').close();
-    show_metadata_add_dialog();
-});
-
-// intercept click on remove button in metadata edit dialog
-$('#edit-dialog.meta-modal button.remove').live('click', function() { 
-    // get the server id and meta key needed for the ajax call   
-    var serverID = $(this).closest('div.container').find('h3 p').text();
-    var meta_key = $(this).parent().find('label').text();
-    // make the ajax call and list the new GET results
-    delete_metadata(serverID, meta_key);
-    return false;
-});
-
-// intercept click on edit button in metadata edit dialog
-$('#edit-dialog.meta-modal button.edit').click( function(){
-    // inline editing of selected key-value pair
-    // on submission ajax call from updating
-    // on success update the overlay
-    // TODO
-});
-
-// intercept click on cancel button in metadata add dialog
-$('#add-dialog.meta-modal button.cancel').click( function(){
-    // close add metadata and open edit metadata dialog
-    $('a#metadata-add-dialog').data('overlay').close();
-});
-
-// intercept create metadata key focus
-$(".meta-modal input.key").live('focusin', function() {
-    if ($(this).hasClass("input-enabled")) {
-    } else {
-        $(".meta-modal input.key").addClass("input-enabled"); 
-        $(this).addClass("input-enabled"); 
-        this.value = '';
-    }
-    return false;
-});
-
-// intercept create metadata key focus out
-$(".meta-modal input.key").live('focusout', function() {
-    if (this.value == "") {
-        $(this).removeClass("input-enabled"); 
-        this.value = 'max 15 characters';
-    }
-    return false;
-});
-
-// intercept create metadata key focus
-$(".meta-modal textarea.value").live('focusin', function() {
-    if ($(this).hasClass("input-enabled")) {
-    } else {
-        $(".meta-modal textarea.value").addClass("input-enabled"); 
-        $(this).addClass("input-enabled"); 
-        this.value = '';
-    }
-    return false;
-});
-
-// intercept create metadata key focus out
-$(".meta-modal textarea.value").live('focusout', function() {
-    if (this.value == "") {
-        $(this).removeClass("input-enabled"); 
-        this.value = 'max 150 characters';
-    }
-    return false;
-});
-
-// intercept click on save button in metadata add dialog
-$('#add-dialog.meta-modal button.save').live('click', function() {
-    // if both fields are filled in     
-    if ($('input.key').hasClass("input-enabled") && $('textarea.value').hasClass("input-enabled")) {
-        // get the server id, meta key and meta value needed for the ajax call     
-        var serverID = $(this).parent().find('h3 p').text();
-        var meta_key = $(this).parent().find('input.key').attr('value');
-        var meta_value = $(this).parent().find('textarea.value')[0].value;
-        // make the ajax call and list the new GET results
-        add_metadata(serverID, meta_key, meta_value);
-        // close add metadata and open edit metadata dialog
-        $('a#metadata-add-dialog').data('overlay').close();
-        show_metadata_edit_dialog();
-    } else {
-        // find which field is not filled in and focus there
-        if (!$('input.key').hasClass("input-enabled")) {
-            $('input.key').focus();
-            $('input.key').focusin();
-        } else {
-            $('textarea.value').focus();
-            $('textarea.value').focusin();
-        }
-    }
-    return false;
-});
-
-// update metadata in edit dialog
-function list_metadata(data) {    
-    // empty the list if it already exists
-    $("#edit-dialog div.content ul.meta-list").empty();
-    // get the values to show
-    meta = data.metadata.values;
-    // show values
-    for (key in meta) {
-        pair = $("ul.meta-template li").clone();
-        //truncate metadata
-        pair.find("label").text(key.substring(0,15));
-        if (meta[key].length > 25) {
-            pair.find("p").text(meta[key].substring(0,25) + "...");
-        } else {
-            pair.find("p").text(meta[key]);            
-        }
-        pair.appendTo("#edit-dialog div.content ul.meta-list").fadeIn();
-    }
-}
 
 // basic functions executed on page load
 if (images.length > 0) {

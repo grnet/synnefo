@@ -61,8 +61,32 @@
                     (4)<br />
                 </div>
                 <div class="vm-metadata metadata-column">
-                    Metadata: OS<br />
-                    (7)<br />
+                    <div class="metadata-left">
+                        Metadata:<br />
+                        (7)
+                    </div>
+                    <div>
+                        <div class="scrollable vertical">
+                            <div class="items">
+                                <div>
+                                    <div class="item">OS</div>
+                                    <div class="item">Description</div>
+                                    <div class="item">Key3</div>
+                                </div>
+                                <div>
+                                    <div class="item">Descripition</div>
+                                    <div class="item">dsffa</div>
+                                    <div class="item">dsfdas</div>
+                                </div>
+                                <div>
+                                    <div class="item">dsfdas</div>
+                                    <div class="item">sdfdsfsd</div>
+                                </div>
+                            </div>
+                        </div>
+                        <a class="prev" href="#">Less</a>
+                        <a class="next" href="#">More</a>
+                    </div>
                     <a href="#" class="manage-metadata">Manage Metadata</a>
                 </div>
             </div>
@@ -87,12 +111,14 @@
 
 <script>
 
+$(".scrollable").scrollable({ vertical: true});	
+
 //hide the all of the info contents
 $(".info-content").hide();
 //toggle the component with class info-content
 $("a.show-info").live('click', function() {
-    console.info('test');
     $(this).parent().parent().find(".info-content").slideToggle(600);
+    return false;
 });
 
 

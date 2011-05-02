@@ -1993,6 +1993,11 @@ div.network-machine div.machine-actions a:hover {
     width: 75px;
 }
 
+.name-div {
+    margin-left: 70px;
+    margin-bottom: 20px;
+}
+
 /* Metadata */
 .metadata-separator {
     background-color: #808080;
@@ -2032,3 +2037,55 @@ div.network-machine div.machine-actions a:hover {
     width: 129px;
     border: none;
 }
+
+.metadata-left {
+    float:left;
+    width: 50px;
+    height: 65px;
+}
+
+.metadata-right {
+    width: 73px;
+    float:left;
+    height: 35px;
+    padding-left: 5px;
+	position:relative;
+	overflow:hidden;
+}
+
+.metadata-right .items {
+	position:absolute;
+	height:20000em;
+}
+
+.metadata-labels {
+}
+
+.metadata-down {
+    width: 30px;
+    height: 15px;
+    margin-top: 10px;
+}
+
+/* root element for scrollable */
+.scrollable {
+
+	/* required settings */
+	position:relative;
+	overflow:hidden;
+
+	/* vertical scrollables have typically larger height than width but not now */
+	height: 35px;
+	width: 73px;
+}
+
+/* root element for scrollable items */
+.scrollable .items {
+	position:absolute;
+
+	/* this time we have very large space for the height */
+	height:20000em;
+}
+
+
+

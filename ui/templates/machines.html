@@ -702,11 +702,21 @@ $('#edit-dialog button.cancel').live('click', function(){
 
 // intercept click on save button in metadata edit dialog
 $('#edit-dialog button.save').live('click', function(){
+    // get the updated values and the old key
+    var oldKey = $(this).parent().find('label.oldValue').text();
+    var newKey = $(this).parent().find('input.edit-meta-key').val();
+    var newValue = $(this).parent().find('textarea.edit-meta-value').val();
     // put the new values and close the forms
-    $(this).parent().find('label').html($(this).parent().find('input.edit-meta-key').text());
-    $(this).parent().find('p').html($(this).parent().find('textarea.edit-meta-value').text());
-    // make the call
-    // TODO
+    $(this).parent().find('label').html(newKey);
+    $(this).parent().find('p').html(newValue);
+    // check if the new metadata key is the same with the old one
+    if ( oldKey != newKey ) {
+        // if the key has changed, delete old pair
+        delete_metadata(serverID, oldKey)
+    }
+    // add or update meatadata pair
+    add_metadata(serverID, newKey, newValue);
+
     // show/hide the appropriate buttons
     $(this).hide(); // this button (save)
     $(this).prev().hide(); // the cancel button

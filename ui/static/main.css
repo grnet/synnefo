@@ -1437,7 +1437,7 @@ div#user a.current_lang {
 .machine .separator {
     width: 508px;
     height: 1px;
-    margin: 8px 0 0 15px;
+    margin: 15px 0 0 15px;
     background-color: #DCDCDC;
 }
 

@@ -6,7 +6,7 @@ import sys
 from synnefo.db.models import VirtualMachine
 from synnefo.logic import utils, backend
 
-_logger = logging.getLogger("okeanos.dispatcher")
+_logger = logging.getLogger("synnefo.dispatcher")
 
 def update_db(message):
     _logger.debug("Processing msg: %s" % message.body)

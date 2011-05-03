@@ -599,6 +599,7 @@ div.machine {
     color: #666;
     min-height: 65px;
     padding-right: 15px;
+    padding-top: 2px;
 }
 
 .machine a {
@@ -615,6 +616,7 @@ div.machine {
 
 .machine .name, .machine .ip {
     text-decoration: none !important;
+    padding-top: 4px;
 }
 
 .oldValue {
@@ -2110,7 +2112,7 @@ div.network-machine div.machine-actions a:hover {
     background-color: #808080;
     height: 3px;
     margin: 0 0 0 14px;
-    width: 509px;
+    width: 492px;
 }
 
 .metadata-container {
@@ -2190,4 +2192,3 @@ div.network-machine div.machine-actions a:hover {
     float: right !important;
     margin: 1px 7px 0 !important;
 }
-

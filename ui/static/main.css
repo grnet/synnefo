@@ -1966,7 +1966,11 @@ div.network div.machine-actions {
     background-color: #B3B3B3;
 }
 
-div.add-remove-machine {
+div.empty-network-slot {
+    height: 54px;
+}
+
+div.network-remove-machine, div.network-add-machine {
     background-color: #FB822F;
     color: #fff; 
     width:90px;
@@ -1979,8 +1983,16 @@ span.remove-icon {
     margin-left: 15px;
 }
 
-span.remove-icon:hover {
+span.add-icon {
+    margin-left: 15px;
+}
+
+span.remove-icon:hover, span.add-icon:hover {
     cursor:pointer;
+}
+
+div.network-add-machine {
+    margin:38px 0 0 0;
 }
 
 .firewall-on {

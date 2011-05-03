@@ -42,7 +42,7 @@
                         <img class="wave" style="display:none" src="/static/wave.gif" />
                     </div>
                     <img class="logo" src="/static/machines/debian-on.png" />
-                    <div class='add-remove-machine'><span class="remove-icon">X</span></div>     
+                    <div class='network-remove-machine'><span class="remove-icon">X</span></div>     
                     <div href="#" class="machine-name-div">
                         <h5 class="namecontainer editable">
                             <span class="name">my desktop1</span><span class="rename"></span>
@@ -87,7 +87,7 @@
                         <img class="wave" style="display:none" src="/static/wave.gif" />
                     </div>
                     <img class="logo" src="/static/machines/windows-off.png" />
-                    <div class='add-remove-machine'><span class="remove-icon">X</span></div>
+                    <div class='network-remove-machine'><span class="remove-icon">X</span></div>
                     <div href="#" class="machine-name-div">
                         <h5 class="namecontainer editable">
                             <span class="name">my desktop1</span><span class="rename"></span>
@@ -118,6 +118,10 @@
                         <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
                         <div class="firewall-contents-end-separator"></div>
                     </div>
+                </div>
+                <div class="network-separator machines"></div>
+                <div class="empty-network-slot" id="machine-template">
+                    <div class='network-add-machine'><span class="add-icon">+</span></div>
                 </div>
             </div>
             <div class="network-contents-end-separator"></div>
@@ -162,7 +166,7 @@
                             <img class="wave" style="display:none" src="/static/wave.gif" />
                         </div>
                         <img class="logo" src="/static/machines/debian-on.png" />
-                        <div class='add-remove-machine'><span class="remove-icon">X</span></div>     
+                        <div class='network-remove-machine'><span class="remove-icon">X</span></div>     
                         <div href="#" class="machine-name-div">
                             <h5 class="namecontainer editable">
                                 <span class="name">my desktop1</span><span class="rename"></span>
@@ -192,7 +196,7 @@
                             <img class="wave" style="display:none" src="/static/wave.gif" />
                         </div>
                         <img class="logo" src="/static/machines/ubuntu-on.png" />
-                        <div class='add-remove-machine'><span class="remove-icon">X</span></div>     
+                        <div class='network-remove-machine'><span class="remove-icon">X</span></div>     
                         <div href="#" class="machine-name-div">
                             <h5 class="namecontainer editable">
                                 <span class="name">my desktop1</span><span class="rename"></span>
@@ -205,6 +209,10 @@
                         <h5>
                             <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
                         </h5>
+                    </div>
+                    <div class="network-separator machines"></div>
+                    <div class="empty-network-slot" id="machine-template">
+                        <div class='network-add-machine'><span class="add-icon">+</span></div>
                     </div>
                 </div>
                 <div class="network-contents-end-separator"></div>
@@ -234,6 +242,13 @@
                 {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (0)</span>
             </h5>
             <div class="network-contents">
+                <div class="network-placeholder">
+                    <div class="network-contents-start-separator"></div>
+                    <div class="empty-network-slot" id="machine-template">
+                        <div class='network-add-machine'><span class="add-icon">+</span></div>
+                    </div>
+                </div>
+                <div class="network-contents-end-separator"></div>
             </div>
         </div>
         <div class="network-separator"></div>
@@ -260,6 +275,13 @@
                 {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (0)</span>
             </h5>
             <div class="network-contents">
+                <div class="network-placeholder">
+                    <div class="network-contents-start-separator"></div>
+                    <div class="empty-network-slot" id="machine-template">
+                        <div class='network-add-machine'><span class="add-icon">+</span></div>
+                    </div>
+                </div>
+                <div class="network-contents-end-separator"></div>
             </div>
         </div>
     </div>

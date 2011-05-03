@@ -267,17 +267,21 @@
 <div id="networks" class="separator"></div>
 
 <script>
-//hide the all of the networks contents
+// hide the all of the networks contents
 $(".network-contents").hide();
-//toggle the component with class network-contents
+// toggle the component with class network-contents
 $(".show-machines").click(function() {
     $(this).parent().next(".network-contents").slideToggle(600);
 });
 
+// intercept remove machine from network click
+$(".remove-icon").click(function() {
+    $(this).parent().parent().fadeOut();
+});
 
-//hide the all of the firewall contents
+// hide the all of the firewall contents
 $(".firewall-content").hide();
-//toggle the component with class firewall-contents
+// toggle the component with class firewall-contents
 $(".show-firewall").click(function() {
     $(this).parent().next(".firewall-content").slideToggle(600);
 });

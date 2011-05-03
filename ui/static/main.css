@@ -1726,6 +1726,11 @@ div.network {
     margin: 2px 0 0 -30px;
 }
 
+div.network-placeholder {
+    border-left: 3px solid #FB822F;
+    margin-left: 33px;
+}
+
 .network a, .show-machines, span.ip, .show-firewall {
     color: #3d3d3d;
     font-weight: normal;
@@ -1887,7 +1892,7 @@ div.name:hover span.rename-network {
 }
 
 .network-machine {
-    margin-left: 73px;
+    margin-left: 34px;
     padding-bottom: 5px;
     padding-left: 5px;
     padding-top: 10px;
@@ -1921,16 +1926,16 @@ div.network div.machine-actions {
     height: 3px;
     background-color: #87AADE;
     margin-bottom: 15px;
-    margin-left: 78px;
-    width: 425px;
+    margin-left: 39px;
+    width: 428px;
 }
 
 .network-contents-end-separator {
     height: 3px;
     background-color: #87AADE;
     margin-top: 7px;
-    margin-left: 15px;
-    width: 488px;
+    margin-left: 5px;
+    width: 498px;
 }
 
 .network-machine .state {
@@ -1955,7 +1960,7 @@ div.network div.machine-actions {
 }
 
 .machines {
-    margin: 2px 0 0 73px;
+    margin: 2px 0 0 39px;
     width: 430px;
     background-color: #B3B3B3;
 }

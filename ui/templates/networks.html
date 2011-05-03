@@ -28,78 +28,94 @@
             {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (2)</span>
         </h5>
         <div class="network-contents">
-            <div class="network-contents-start-separator"></div>
-            <div class="network-machine" id="machine-template">
-                <div class="machine-actions">
-                    <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                    <a href="#" class="action-details">{% trans "Details" %}</a>
-                </div>        
-                <div class="state">
-                    <div class="status"><span class="discreet">IPv4:</span> 192.94.73.15</div>
-                    <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                    <img class="spinner" style="display:none" src="/static/progress.gif" />
-                    <img class="wave" style="display:none" src="/static/wave.gif" />
+            <div class="network-placeholder">
+                <div class="network-contents-start-separator"></div>
+                <div class="network-machine" id="machine-template">
+                    <div class="machine-actions">
+                        <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
+                        <a href="#" class="action-details">{% trans "Details" %}</a>
+                    </div>        
+                    <div class="state">
+                        <div class="status"><span class="discreet">IPv4:</span> 192.94.73.15</div>
+                        <div class="status"><span class="discreet">IPv6:</span> vv</div>
+                        <img class="spinner" style="display:none" src="/static/progress.gif" />
+                        <img class="wave" style="display:none" src="/static/wave.gif" />
+                    </div>
+                    <img class="logo" src="/static/machines/debian-on.png" />
+                    <div href="#" class="machine-name-div">
+                        <h5 class="namecontainer editable">
+                            <span class="name">my desktop1</span><span class="rename"></span>
+                            <div class="editbuttons" style="display:none">
+                                <span class="save" />
+                                <span class="cancel" />
+                            </div>
+                        </h5>
+                    </div>
+                    <h5>
+                        <span class="ip">{% trans "IPs" %}</span> | 
+                        <span class="show-firewall">{% trans "Firewall" %}</span> 
+                        (<span class="firewall-on">{% trans "On" %}</span>)   
+                    </h5>     
+                    <div class="firewall-content">
+                        <div class="firewall-contents-start-separator"></div>
+                        <input type="radio" class="checkboxes" name="image-id1" /> 
+                        <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
+                        <br />
+                        <input type="radio" class="checkboxes" name="image-id1" /> 
+                        <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
+                        <br />
+                        <input type="radio" class="checkboxes" name="image-id1" /> 
+                        <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
+                        <br />
+                        <input type="radio" class="checkboxes" name="image-id1" /> 
+                        <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
+                        <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
+                        <div class="firewall-contents-end-separator"></div>
+                    </div>
                 </div>
-                <img class="logo" src="/static/machines/debian-on.png" />
-                <div href="#" class="machine-name-div">
-                    <h5 class="namecontainer editable">
-                        <span class="name">my desktop1</span><span class="rename"></span>
-                        <div class="editbuttons" style="display:none">
-                            <span class="save" />
-                            <span class="cancel" />
-                        </div>
-                    </h5>
-                </div>
-                <h5>
-                    <span class="ip">{% trans "IPs" %}</span> | 
-                    <span class="show-firewall">{% trans "Firewall" %}</span> 
-                    (<span class="firewall-on">{% trans "On" %}</span>)   
-                </h5>     
-                <div class="firewall-content">
-                    <div class="firewall-contents-start-separator"></div>
-                    <input type="radio" class="checkboxes" name="image-id1" /> <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span><br />
-                    <input type="radio" class="checkboxes" name="image-id1" /> <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span><br />
-                    <input type="radio" class="checkboxes" name="image-id1" /> <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span><br />
-                    <input type="radio" class="checkboxes" name="image-id1" /> <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
-                    <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
-                    <div class="firewall-contents-end-separator"></div>
-                </div>
-            </div>
-            <div class="network-separator machines"></div>
-            <div class="network-machine" id="machine-template">
-                <div class="machine-actions">
-                    <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                    <a href="#" class="action-details">{% trans "Details" %}</a>
-                </div>        
-                <div class="state">
-                    <div class="status"><span class="discreet">IPv4:</span> 192.94.73.18</div>
-                    <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                    <img class="spinner" style="display:none" src="/static/progress.gif" />
-                    <img class="wave" style="display:none" src="/static/wave.gif" />
-                </div>
-                <img class="logo" src="/static/machines/windows-off.png" />
-                <div href="#" class="machine-name-div">
-                    <h5 class="namecontainer editable">
-                        <span class="name">my desktop1</span><span class="rename"></span>
-                        <div class="editbuttons" style="display:none">
-                            <span class="save" />
-                            <span class="cancel" />
-                        </div>
-                    </h5>
-                </div>
-                <h5>
-                    <span class="ip">{% trans "IPs" %}</span> | 
-                    <span class="show-firewall" href="#">{% trans "Firewall" %}</span> 
-                    (<span class="firewall-off">{% trans "Off" %}</span>)   
-                </h5>  
-                <div class="firewall-content">
-                    <div class="firewall-contents-start-separator"></div>
-                    <input type="radio" class="checkboxes" name="image-id2" /> <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span><br />
-                    <input type="radio" class="checkboxes" name="image-id2" /> <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span><br />
-                    <input type="radio" class="checkboxes" name="image-id2" /> <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span><br />
-                    <input type="radio" class="checkboxes" name="image-id2" /> <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
-                    <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
-                    <div class="firewall-contents-end-separator"></div>
+                <div class="network-separator machines"></div>
+                <div class="network-machine" id="machine-template">
+                    <div class="machine-actions">
+                        <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
+                        <a href="#" class="action-details">{% trans "Details" %}</a>
+                    </div>        
+                    <div class="state">
+                        <div class="status"><span class="discreet">IPv4:</span> 192.94.73.18</div>
+                        <div class="status"><span class="discreet">IPv6:</span> vv</div>
+                        <img class="spinner" style="display:none" src="/static/progress.gif" />
+                        <img class="wave" style="display:none" src="/static/wave.gif" />
+                    </div>
+                    <img class="logo" src="/static/machines/windows-off.png" />
+                    <div href="#" class="machine-name-div">
+                        <h5 class="namecontainer editable">
+                            <span class="name">my desktop1</span><span class="rename"></span>
+                            <div class="editbuttons" style="display:none">
+                                <span class="save" />
+                                <span class="cancel" />
+                            </div>
+                        </h5>
+                    </div>
+                    <h5>
+                        <span class="ip">{% trans "IPs" %}</span> | 
+                        <span class="show-firewall" href="#">{% trans "Firewall" %}</span> 
+                        (<span class="firewall-off">{% trans "Off" %}</span>)   
+                    </h5>  
+                    <div class="firewall-content">
+                        <div class="firewall-contents-start-separator"></div>
+                        <input type="radio" class="checkboxes" name="image-id2" /> 
+                        <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
+                        <br />
+                        <input type="radio" class="checkboxes" name="image-id2" /> 
+                        <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
+                        <br />
+                        <input type="radio" class="checkboxes" name="image-id2" /> 
+                        <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
+                        <br />
+                        <input type="radio" class="checkboxes" name="image-id2" /> 
+                        <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
+                        <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
+                        <div class="firewall-contents-end-separator"></div>
+                    </div>
                 </div>
             </div>
             <div class="network-contents-end-separator"></div>
@@ -130,60 +146,62 @@
                 {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (2)</span>
             </h5>
             <div class="network-contents">
-                <div class="network-contents-start-separator"></div>
-                <div class="network-machine" id="machine-template">
-                    <div class="machine-actions">
-                        <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                        <a href="#" class="action-details">{% trans "Details" %}</a>
-                    </div>        
-                    <div class="state">
-                        <div class="status"><span class="discreet">IPv4:</span> 192.94.73.15</div>
-                        <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                        <img class="spinner" style="display:none" src="/static/progress.gif" />
-                        <img class="wave" style="display:none" src="/static/wave.gif" />
+                <div class="network-placeholder">
+                    <div class="network-contents-start-separator"></div>
+                    <div class="network-machine" id="machine-template">
+                        <div class="machine-actions">
+                            <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
+                            <a href="#" class="action-details">{% trans "Details" %}</a>
+                        </div>        
+                        <div class="state">
+                            <div class="status"><span class="discreet">IPv4:</span> 192.94.73.15</div>
+                            <div class="status"><span class="discreet">IPv6:</span> vv</div>
+                            <img class="spinner" style="display:none" src="/static/progress.gif" />
+                            <img class="wave" style="display:none" src="/static/wave.gif" />
+                        </div>
+                        <img class="logo" src="/static/machines/debian-on.png" />
+                        <div href="#" class="machine-name-div">
+                            <h5 class="namecontainer editable">
+                                <span class="name">my desktop1</span><span class="rename"></span>
+                                <div class="editbuttons" style="display:none">
+                                    <span class="save" />
+                                    <span class="cancel" />
+                                </div>
+                            </h5>
+                        </div>
+                        <h5>
+                            <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
+                        </h5>
+                        <div class="firewall-content">
+                            firewall content
+                        </div>
                     </div>
-                    <img class="logo" src="/static/machines/debian-on.png" />
-                    <div href="#" class="machine-name-div">
-                        <h5 class="namecontainer editable">
-                            <span class="name">my desktop1</span><span class="rename"></span>
-                            <div class="editbuttons" style="display:none">
-                                <span class="save" />
-                                <span class="cancel" />
-                            </div>
+                    <div class="network-separator machines"></div>
+                    <div class="network-machine" id="machine-template">
+                        <div class="machine-actions">
+                            <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
+                            <a href="#" class="action-details">{% trans "Details" %}</a>
+                        </div>        
+                        <div class="state">
+                            <div class="status"><span class="discreet">IPv4:</span> 192.94.73.18</div>
+                            <div class="status"><span class="discreet">IPv6:</span> vv</div>
+                            <img class="spinner" style="display:none" src="/static/progress.gif" />
+                            <img class="wave" style="display:none" src="/static/wave.gif" />
+                        </div>
+                        <img class="logo" src="/static/machines/ubuntu-on.png" />
+                        <div href="#" class="machine-name-div">
+                            <h5 class="namecontainer editable">
+                                <span class="name">my desktop1</span><span class="rename"></span>
+                                <div class="editbuttons" style="display:none">
+                                    <span class="save" />
+                                    <span class="cancel" />
+                                </div>
+                            </h5>
+                        </div>
+                        <h5>
+                            <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
                         </h5>
                     </div>
-                    <h5>
-                        <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
-                    </h5>
-                    <div class="firewall-content">
-                        firewall content
-                    </div>
-                </div>
-                <div class="network-separator machines"></div>
-                <div class="network-machine" id="machine-template">
-                    <div class="machine-actions">
-                        <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                        <a href="#" class="action-details">{% trans "Details" %}</a>
-                    </div>        
-                    <div class="state">
-                        <div class="status"><span class="discreet">IPv4:</span> 192.94.73.18</div>
-                        <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                        <img class="spinner" style="display:none" src="/static/progress.gif" />
-                        <img class="wave" style="display:none" src="/static/wave.gif" />
-                    </div>
-                    <img class="logo" src="/static/machines/ubuntu-on.png" />
-                    <div href="#" class="machine-name-div">
-                        <h5 class="namecontainer editable">
-                            <span class="name">my desktop1</span><span class="rename"></span>
-                            <div class="editbuttons" style="display:none">
-                                <span class="save" />
-                                <span class="cancel" />
-                            </div>
-                        </h5>
-                    </div>
-                    <h5>
-                        <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
-                    </h5>
                 </div>
                 <div class="network-contents-end-separator"></div>
             </div>

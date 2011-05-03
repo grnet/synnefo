@@ -296,46 +296,6 @@ class APITestCase(TestCase):
             self.assertEqual(image_from_api['id'], image_from_db.id)
             self.assertEqual(image_from_api['name'], image_from_db.name)
 
-    def test_image_details(self):
-        """Test if the expected image is returned."""
-        
-        response = self.client.get('/api/v1.1/images/%d' % self.test_image_id)
-        image_from_api = json.loads(response.content)['image']
-        image_from_db = Image.objects.get(id=self.test_image_id)
-        self.assertEqual(image_from_api['name'], image_from_db.name)
-        self.assertEqual(image_from_api['id'], image_from_db.id)
-        self.assertEqual(image_from_api.get('serverRef', ''),
-                        image_from_db.sourcevm and image_from_db.sourcevm.id or '')
-        self.assertEqual(image_from_api['status'], image_from_db.state)
-        self.assertTrue(response.status_code in [200, 203])
-
-    def test_images_details(self):
-        """Test if the images details are returned."""
-        
-        response = self.client.get('/api/v1.1/images/detail')
-        images_from_api = json.loads(response.content)['images']['values']
-        images_from_db = Image.objects.all()
-        for i in range(0, len(images_from_db)):
-            image_from_db = Image.objects.get(id=images_from_db[i].id)
-            image_from_api = images_from_api[i]
-            self.assertEqual(image_from_api['name'], image_from_db.name)
-            self.assertEqual(image_from_api['id'], image_from_db.id)
-            self.assertEqual(image_from_api.get('serverRef', ''),
-                             image_from_db.sourcevm and
-                             image_from_db.sourcevm.id or "")
-            self.assertEqual(image_from_api['status'], image_from_db.state)
-
-        for image_from_api in images_from_api:
-            image_from_db = Image.objects.get(id=image_from_api['id'])
-            self.assertEqual(image_from_api['name'], image_from_db.name)
-            self.assertEqual(image_from_api['id'], image_from_db.id)
-            self.assertEqual(image_from_api.get('serverRef', ''),
-                             image_from_db.sourcevm and
-                             image_from_db.sourcevm.id or "")
-            self.assertEqual(image_from_api['status'], image_from_db.state)
-
-        self.assertTrue(response.status_code in [200, 203])
-
     def test_wrong_image(self):
         """Test 404 result if a non existent image is requested."""
         
@@ -448,6 +408,17 @@ class BaseTestCase(TestCase):
         self.assertFault(response, 404, 'itemNotFound')
     
     
+    def list_images(self, detail=False):
+        path = '/api/v1.1/images'
+        if detail:
+            path += '/detail'
+        response = self.client.get(path)
+        self.assertTrue(response.status_code in (200, 203))
+        reply = json.loads(response.content)
+        self.assertEqual(reply.keys(), ['images'])
+        self.assertEqual(reply['images'].keys(), ['values'])
+        return reply['images']['values']
+    
     def list_metadata(self, path):
         response = self.client.get(path)
         self.assertTrue(response.status_code in (200, 203))
@@ -502,6 +473,42 @@ class BaseTestCase(TestCase):
         for m in ImageMetadata.objects.all():
             metadata[m.image.id][m.meta_key] = m.meta_value
         return metadata
+
+
+class ListImages(BaseTestCase):
+    IMAGES = 10
+    
+    def _pop_image(self, images, image_id):
+        for i in range(len(images)):
+            image = images[i]
+            if image['id'] == image_id:
+                del images[i]
+                return image
+        return None
+    
+    def test_list_images(self):
+        images = self.list_images()
+        keys = set(['id', 'name'])
+        for img in Image.objects.all():
+            image = self._pop_image(images, img.id)
+            self.assertTrue(image is not None)
+            self.assertEqual(set(image.keys()), keys)
+            self.assertEqual(image['id'], img.id)
+            self.assertEqual(image['name'], img.name)
+        self.assertEqual(images, [])
+    
+    def test_list_images_detail(self):
+        images = self.list_images(detail=True)
+        keys = set(['id', 'name', 'updated', 'created', 'status', 'progress'])
+        for img in Image.objects.all():
+            image = self._pop_image(images, img.id)
+            self.assertTrue(image is not None)
+            self.assertEqual(set(image.keys()), keys)
+            self.assertEqual(image['id'], img.id)
+            self.assertEqual(image['name'], img.name)
+            self.assertEqual(image['status'], img.state)
+            self.assertEqual(image['progress'], 100 if img.state == 'ACTIVE' else 0)
+        self.assertEqual(images, [])
 
 
 class ListServerMetadata(BaseTestCase):

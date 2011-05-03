@@ -296,9 +296,15 @@ $(".show-machines").click(function() {
     $(this).parent().next(".network-contents").slideToggle(600);
 });
 
-// intercept remove machine from network click
+// intercept click to remove machine from network 
 $(".remove-icon").click(function() {
     $(this).parent().parent().fadeOut();
+});
+
+// intercept click to add machine to network
+$(".add-icon").click(function() {
+    //var newEntry = $(".network-machine")[0].clone();
+    //$(this).parent().parent().append(newEntry);
 });
 
 // hide the all of the firewall contents

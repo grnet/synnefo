@@ -1502,8 +1502,8 @@ div#user a.current_lang {
     display: block;
     clear: none;
     width: 40px;
-    margin-right:33%;
-    margin-top:1px;
+    margin-right:32%;
+    margin-top:7px;
     float:right;
     cursor: pointer;
 }
@@ -1523,10 +1523,10 @@ div#user a.current_lang {
     color: transparent;
     font-size: 9pt;
 }
+
 .editbuttons .cancel {
     background-image: url("../static/cancel.png");
     margin-left: 3px;
-
 }
 
 .editbuttons .save {

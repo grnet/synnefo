@@ -10,7 +10,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.faults import BadRequest, ServiceUnavailable
-from synnefo.api.util import random_password
+from synnefo.api.util import random_password, get_vm
 from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
 from synnefo.logic.backend import (reboot_instance, startup_instance, shutdown_instance,
                                     get_instance_console)
@@ -18,16 +18,26 @@ from synnefo.logic.utils import get_rsapi_state
 
 
 server_actions = {}
+network_actions = {}
 
 
 def server_action(name):
     '''Decorator for functions implementing server actions.
-    
     `name` is the key in the dict passed by the client.
     '''
     
     def decorator(func):
         server_actions[name] = func
+        return func
+    return decorator
+
+def network_action(name):
+    '''Decorator for functions implementing network actions.
+    `name` is the key in the dict passed by the client.
+    '''
+
+    def decorator(func):
+        network_actions[name] = func
         return func
     return decorator
 
@@ -224,3 +234,24 @@ def get_console(request, vm, args):
         data = json.dumps({'console': console})
     
     return HttpResponse(data, mimetype=mimetype, status=200)
+
+
+@network_action('add')
+def add(request, net, args):
+    server_id = args.get('server', None)
+    if not server_id:
+        raise BadRequest('Malformed Request.')
+    vm = get_vm(server_id, request.user)
+    net.machines.add(vm)
+    net.save()
+    return HttpResponse(status=202)
+
+@network_action('remove')
+def remove(request, net, args):
+    server_id = args.get('server', None)
+    if not server_id:
+        raise BadRequest('Malformed Request.')
+    vm = get_vm(server_id, request.user)
+    net.machines.remove(vm)
+    net.save()
+    return HttpResponse(status=202)

@@ -32,8 +32,10 @@ def print_dict(d, show_empty=True):
     for key, val in sorted(d.items()):
         if key == 'metadata':
             val = ', '.join('%s="%s"' % x for x in val['values'].items())
-        if key == 'addresses':
+        elif key == 'addresses':
             val = ', '.join(address_to_string(address) for address in val['values'])
+        elif key == 'servers':
+            val = ', '.join(str(server_id) for server_id in val['values'])
         if val or show_empty:
             print '%s: %s' % (key.rjust(12), val)
 
@@ -83,7 +85,13 @@ class Command(object):
             print
 
         buf = resp.read() or '{}'
-        reply = json.loads(buf)
+        try:
+            reply = json.loads(buf)
+        except ValueError:
+            print 'Invalid response from the server.'
+            if self.verbose:
+                print buf
+            exit(1)
 
         # If the response status is not the expected one,
         # assume an error has occured and treat the body
@@ -95,7 +103,9 @@ class Command(object):
                 print '%s: %s' % (key, val.get('message', ''))
                 if self.verbose:
                     print val.get('details', '')
-                exit(1)
+            else:
+                print 'Invalid response from the server.'
+            exit(1)
 
         return reply
 
@@ -458,6 +468,98 @@ class DeleteImageMeta(Command):
     def execute(self, image_id, key):
         path = '/api/%s/images/%d/meta/%s' % (self.api, int(image_id), key)
         reply = self.http_delete(path)
+
+
+@command_name('lsnet')
+class ListNetworks(Command):
+    description = 'list networks'
+
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail', default=False,
+                            help='show detailed output')
+
+    def execute(self):
+        path = '/api/%s/networks' % self.api
+        if self.detail:
+            path += '/detail'
+        reply = self.http_get(path)
+
+        for network in reply['networks']['values']:
+            name = network.pop('name')
+            if self.detail:
+                servers = network['servers']['values']
+                print '%s: %s' % (name, ', '.join(str(server_id) for server_id in servers))
+            else:
+                print name
+
+
+@command_name('createnet')
+class CreateNetwork(Command):
+    description = 'create network'
+    syntax = '<network name>'
+
+    def execute(self, name):
+        path = '/api/%s/networks' % self.api
+        network = {'name': name}
+        body = json.dumps({'network': network})
+        reply = self.http_post(path, body)
+        print_dict(reply['network'])
+
+
+@command_name('netinfo')
+class GetNetworkDetails(Command):
+    description = 'get network details'
+    syntax = '<network>'
+
+    def execute(self, network):
+        path = '/api/%s/networks/%s' % (self.api, network)
+        reply = self.http_get(path)
+        net = reply['network']
+        name = net.pop('name')
+        print_dict(net)
+
+
+@command_name('renamenet')
+class UpdateNetworkName(Command):
+    description = 'update network name'
+    syntax = '<network> <new name>'
+
+    def execute(self, network, name):
+        path = '/api/%s/networks/%s' % (self.api, network)
+        body = json.dumps({'network': {'name': name}})
+        self.http_put(path, body)
+
+
+@command_name('deletenet')
+class DeleteNetwork(Command):
+    description = 'delete network'
+    syntax = '<network>'
+
+    def execute(self, network):
+        path = '/api/%s/networks/%s' % (self.api, network)
+        self.http_delete(path)
+
+
+@command_name('addnet')
+class AddNetwork(Command):
+    description = 'add server to a network'
+    syntax = '<server id> <network>'
+
+    def execute(self, server_id, network):
+        path = '/api/%s/networks/%s/action' % (self.api, network)
+        body = json.dumps({'add': {'server': server_id}})
+        self.http_post(path, body, expected_status=202)
+
+
+@command_name('removenet')
+class RemoveNetwork(Command):
+    description = 'remove server from a network'
+    syntax = '<server id> <network>'
+
+    def execute(self, server_id, network):
+        path = '/api/%s/networks/%s/action' % (self.api, network)
+        body = json.dumps({'remove': {'server': server_id}})
+        self.http_post(path, body, expected_status=202)
 
 
 def main():

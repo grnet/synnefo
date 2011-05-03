@@ -361,3 +361,14 @@ class Disk(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class Network(models.Model):
+    name = models.CharField(max_length=255)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    owner = models.ForeignKey(SynnefoUser)
+    machines = models.ManyToManyField(VirtualMachine)
+    
+    def __unicode__(self):
+        return self.name

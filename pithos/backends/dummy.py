@@ -46,7 +46,7 @@ class BackEnd:
             raise NameError('Account does not exist')
         contents = os.listdir(fullname)
         count = len(contents)
-        size = sum(os.path.getsize(os.path.join(self.basepath, account, objectname)) for objectname in contents)
+        size = os.stat(fullname).st_size
         meta = self.__get_metadata(account)
         meta.update({'name': account, 'count': count, 'bytes': size})
         return meta
@@ -315,6 +315,8 @@ class BackEnd:
         else:
             link = self.con.execute('insert into objects (name) values (?)', (path,)).lastrowid      
         for k, v in meta.iteritems():
+            if type(v) != types.StringType:
+                v = json.dumps(v)
             self.con.execute('insert or replace into metadata (object_id, name, value) values (?, ?, ?)', (link, k, v))
         self.con.commit()
         return

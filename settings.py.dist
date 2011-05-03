@@ -186,17 +186,17 @@ QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL)
 
 BINDINGS_DEBUG = (
     #Queue          #Exchange           #RouteKey   #Handler
-    (QUEUE_DEBUG,   EXCHANGE_GANETI,    '#',        'Dispatcher.dummy_proc'),
-    (QUEUE_DEBUG,   EXCHANGE_CRON,      '#',        'Dispatcher.dummy_proc'),
-    (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'Dispatcher.dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_GANETI,    '#',        'dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_CRON,      '#',        'dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'dummy_proc'),
 )
 
 BINDINGS = (
     #Queue                  #Exchange           #RouteKey       #Handler
-    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.#',     'Dispatcher.update_db'),
-    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',  'Dispatcher.update_credits'),
-    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',    'Dispatcher.send_email'),
-    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',    'Dispatcher.send_email'),
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*',     'update_db'),
+    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',  'update_credits'),
+    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',    'send_email'),
+    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',    'send_email'),
 )
 
 #Logic dispatcher settings

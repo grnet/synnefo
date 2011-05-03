@@ -21,17 +21,14 @@ setup_environ(settings)
 
 from amqplib import client_0_8 as amqp
 
-import json
-import logging
-import traceback
-import time
-import socket
-
 import daemon
 from signal import signal, SIGINT, SIGTERM, SIGKILL
 
-from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend
+import logging
+import time
+import socket
+
+from synnefo.logic import dispatcher_callbacks
 
 class Dispatcher:
 
@@ -44,48 +41,6 @@ class Dispatcher:
         self.logger = logger
         self.debug = debug
         self._init()
-
-    def update_db(self, message):
-        try:
-            msg = json.loads(message.body)
-
-            if msg["type"] != "ganeti-op-status":
-                self.logger.error("Message is of uknown type %s." % (msg["type"],))
-                return
-
-            vmid = utils.id_from_instance_name(msg["instance"])
-            vm = VirtualMachine.objects.get(id=vmid)
-
-            self.logger.debug("Processing msg: %s" % (msg,))
-            backend.process_backend_msg(vm, msg["jobId"], msg["operation"], msg["status"], msg["logmsg"])
-            self.logger.debug("Done processing msg for vm %s." % (msg["instance"]))
-
-        except KeyError:
-            self.logger.error("Malformed incoming JSON, missing attributes: " + message.body)
-        except VirtualMachine.InvalidBackendIdError:
-            self.logger.debug("Ignoring msg for unknown instance %s." % (msg["instance"],))
-        except VirtualMachine.DoesNotExist:
-            self.logger.error("VM for instance %s with id %d not found in DB." % (msg["instance"], vmid))
-        except Exception as e:
-            self.logger.error("Unexpected error:\n" + "".join(traceback.format_exception(*sys.exc_info())))
-            return
-        finally:
-            message.channel.basic_ack(message.delivery_tag)
-
-    def send_email(self, message):
-        self.logger.debug("Request to send email message")
-        message.channel.basic_ack(message.delivery_tag)
-
-    def update_credits(self, message):
-        self.logger.debug("Request to update credits")
-        message.channel.basic_ack(message.delivery_tag)
-
-    def dummy_proc(self, message):
-        try:
-            msg = json.loads(message.body)
-            self.logger.debug("Msg to %s (%s) " % message.channel, msg)
-        finally:
-            message.channel.basic_ack(message.delivery_tag)
 
     def wait(self):
         while True:
@@ -103,30 +58,6 @@ class Dispatcher:
         self.chan.connection.close()
 
     def _init(self):
-        self._open_channel()
-
-        for exchange in settings.EXCHANGES:
-            self.chan.exchange_declare(exchange=exchange, type="topic", durable=True, auto_delete=False)
-
-        for queue in settings.QUEUES:
-            self.chan.queue_declare(queue=queue, durable=True, exclusive=False, auto_delete=False)
-
-        bindings = None
-
-        if self.debug:
-            #Special queue handling, should not appear in production
-            self.chan.queue_declare(queue=settings.QUEUE_DEBUG, durable=True, exclusive=False, auto_delete=False)
-            bindings = settings.BINDINGS_DEBUG
-        else:
-            bindings = settings.BINDINGS
-
-        for binding in bindings:
-            self.chan.queue_bind(queue=binding[0], exchange=binding[1], routing_key=binding[2])
-            tag = self.chan.basic_consume(queue=binding[0], callback=binding[3])
-            self.logger.debug("Binding %s on queue %s to %s" % (binding[2], binding[0], binding[3]))
-            self.clienttags.append(tag)
-
-    def _open_channel(self):
         conn = None
         while conn == None:
             self.logger.info("Attempting to connect to %s", settings.RABBIT_HOST)
@@ -142,6 +73,33 @@ class Dispatcher:
         self.logger.info("Connection succesful, opening channel")
         self.chan = conn.channel()
 
+        #Declare queues and exchanges
+        for exchange in settings.EXCHANGES:
+            self.chan.exchange_declare(exchange=exchange, type="topic", durable=True, auto_delete=False)
+
+        for queue in settings.QUEUES:
+            self.chan.queue_declare(queue=queue, durable=True, exclusive=False, auto_delete=False)
+
+        bindings = settings.BINDINGS
+
+        if self.debug:
+            #Special queue handling, should not appear in production
+            self.chan.queue_declare(queue=settings.QUEUE_DEBUG, durable=True, exclusive=False, auto_delete=False)
+            bindings += settings.BINDINGS_DEBUG
+
+        #Bind queues to handler methods
+        for binding in bindings:
+            try:
+                cb = getattr(dispatcher_callbacks, binding[3])
+            except AttributeError:
+                self.logger.error("Cannot find callback %s" % binding[3])
+
+            self.chan.queue_bind(queue=binding[0], exchange=binding[1], routing_key=binding[2])
+            tag = self.chan.basic_consume(queue=binding[0], callback=cb)
+            self.logger.debug("Binding %s(%s) to queue %s with handler %s" %
+                              (binding[1], binding[2], binding[0], binding[3]))
+            self.clienttags.append(tag)
+
 def exit_handler(signum, frame):
     global handler_logger
 
@@ -149,6 +107,7 @@ def exit_handler(signum, frame):
     raise SystemExit
 
 def child(cmdline):
+    global logger
     #Cmd line argument parsing
     (opts, args) = parse_arguments(cmdline)
 
@@ -170,7 +129,7 @@ def parse_arguments(args):
     from optparse import OptionParser
 
     parser = OptionParser()
-    parser.add_option("-d", "--debug", action="store_false", default=False, dest="debug",
+    parser.add_option("-d", "--debug", action="store_true", default=False, dest="debug",
             help="Enable debug mode")
     parser.add_option("-l", "--log", dest="log_file",
             default=settings.DISPATCHER_LOG_FILE,
@@ -212,7 +171,6 @@ def cleanup_queues() :
             print e.amqp_reply_code, " ", e.amqp_reply_text
 
 def main():
-    global logger
     (opts, args) = parse_arguments(sys.argv[1:])
 
     if opts.cleanup_queues:

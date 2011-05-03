@@ -1160,7 +1160,7 @@ input.machine {
 }
 
 #metadata-wizard hr.meta-separator {
-    margin: 5px 0 2px 0;
+    margin: 5px 8px 2px 0;
 }
 
 #metadata-wizard div.content {
@@ -1196,6 +1196,7 @@ input.machine {
     border: 0px solid #5599FF;
     padding: 0;
     text-align: center;
+    margin-right: 8px;
 }
 
 #metadata-wizard button.remove {

@@ -59,7 +59,7 @@ function update_confirmations(){
 	if ($.cookie("list") != '1') {
 		for (var i=0;i<pending_actions.length;i++){
             // show single confirms
-			$("div.machine#"+pending_actions[i][1]+' .confirm_single').show();
+			$("div.machine-container#"+pending_actions[i][1]+' .confirm_single').show();
 		}		
 	}
 

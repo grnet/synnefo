@@ -583,13 +583,22 @@ div.image-container {
     color: #222222;
 }
 
-div.machine {
+.machine-container {
+    min-height: 65px;
+    margin: 2px 0 0 -32px;
+    padding: 0 4px 0;
     clear: both;
-    margin: 9px 0 0 -32px;
-    padding: 3px 4px 0;
     width: 523px;
+}
+
+.machine-container:hover {
+
+}
+
+div.machine {
     color: #666;
     min-height: 65px;
+    padding-right: 15px;
 }
 
 .machine a {
@@ -624,7 +633,7 @@ div.machine {
 div.machine div.actions {
     float: right;
     width: 70px;
-    margin:0px -70px 0 0;
+    margin: 0 -80px 0 0;
     font-weight: normal;
 }
 
@@ -1382,7 +1391,7 @@ div.confirm_single{
     float: right;
     width: 90px;
     height: 70px;
-    margin: -65px -165px 0 0;
+    margin: 0 -175px 0 0;
 }
 
 div.confirm_single button.yes {
@@ -1441,6 +1450,13 @@ div#user a.current_lang {
     margin: 0 0 0 -36px;
 }
 
+.machine-separator {
+    width: 508px;
+    height: 1px;
+    margin: 15px 0 0 15px;
+    background-color: #DCDCDC;
+}
+
 #mini.separator {
     width: 535px;
     height: 5px;
@@ -1468,11 +1484,12 @@ div#user a.current_lang {
     background-color: #87a06d;
 }
 
-.machine .separator {
+.machine-container .separator {
     width: 508px;
     height: 1px;
-    margin: 15px 0 0 15px;
+    margin-top: 2px;
     background-color: #DCDCDC;
+    margin-left: 13px;
 }
 
 .machine h5 {
@@ -2084,8 +2101,9 @@ div.network-machine div.machine-actions a:hover {
 /* Metadata */
 
 .info-content {
-    height: 90px;
+    height: 95px;
     width: 540px;
+    margin-top: 10px;
 }
 
 .metadata-separator {
@@ -2156,25 +2174,20 @@ div.network-machine div.machine-actions a:hover {
     padding-left: 5px;
 }
 
-/* root element for scrollable */
 .scrollable {
-
-	/* required settings */
 	position:relative;
 	overflow:hidden;
-
-	/* vertical scrollables have typically larger height than width but not now */
 	height: 35px;
 	width: 73px;
 }
 
-/* root element for scrollable items */
 .scrollable .items {
 	position:absolute;
-
-	/* this time we have very large space for the height */
 	height:20000em;
 }
 
-
+.metadata-bar {
+    float: right !important;
+    margin: 1px 7px 0 !important;
+}
 

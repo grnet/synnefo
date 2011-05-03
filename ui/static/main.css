@@ -2109,7 +2109,7 @@ div.network-machine div.machine-actions a:hover {
 .metadata-separator {
     background-color: #808080;
     height: 3px;
-    margin: 5px 0 0 14px;
+    margin: 0 0 0 14px;
     width: 509px;
 }
 
@@ -2117,7 +2117,7 @@ div.network-machine div.machine-actions a:hover {
     line-height: 12px;
     margin-left: 14px;
     margin-top: 2px;
-    height: 80px;
+    height: 85px;
 }
 
 .metadata-column {

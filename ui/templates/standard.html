@@ -545,6 +545,7 @@ function update_machines_view(data){
 // update metadata list
 function list_metadata_keys(serverID, data) {    
     // empty the list if it already exists
+    $("div.#" +serverID).find("div.items").empty();
     // get the values to show
     meta = data.metadata.values;
     //start counter

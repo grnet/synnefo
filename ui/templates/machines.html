@@ -599,6 +599,8 @@ $(function() {
         onClose: function(){
             // reset input areas
             reset_metadata_input();
+            serverID = $("#edit-dialog h3 p").text();
+            get_metadata(serverID);
         }
     });
 });

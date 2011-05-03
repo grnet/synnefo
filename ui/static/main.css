@@ -1203,7 +1203,6 @@ input.machine {
     width: 70px;
     background-color: #d35f5f;
     border-color: #d35f5f;
-    margin-top: 2px;
 }
 
 #metadata-wizard button.edit {
@@ -1211,7 +1210,7 @@ input.machine {
     width: 70px;
     background-color: #666;
     border-color: #666;
-    margin-top: -14px;
+    margin-top: -12px;
 }
 
 #metadata-wizard #edit-dialog button.cancel {
@@ -1221,7 +1220,7 @@ input.machine {
     float: right;
     background-color: #666;
     border-color: #666;
-    margin-top: -55px;
+    margin-top: -53px;
 }
 
 #metadata-wizard #edit-dialog button.save {

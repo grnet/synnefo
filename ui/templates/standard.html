@@ -444,6 +444,7 @@ function update_machines_view(data){
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var machine = $("#machine-container-template").clone().attr("id", server.id).fadeIn("slow");
+            machine.find(".scrollable").scrollable({ vertical: true});	
             machine.find("div.name span.name").text(server.name.substring(0,100));
             machine.find("img.logo").attr("src","static/machines/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
@@ -604,7 +605,5 @@ $(window).resize(function(){
         $('.confirm_multiple').removeClass('fixed');
 });
 
-$(function() {
-    $(".scrollable").scrollable({ vertical: true});	
-});
+
 </script>

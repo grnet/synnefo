@@ -1726,16 +1726,17 @@ div.network {
     margin: 2px 0 0 -30px;
 }
 
-.network a {
+.network a, .show-machines, span.ip, .show-firewall {
     color: #3d3d3d;
     font-weight: normal;
     text-decoration: none;
     font-size: 9pt;
 }
 
-.network a:hover {
+.network a:hover, .show-machines:hover, span.ip:hover, .show-firewall:hover {
     color: #000;
     text-decoration: underline;
+    cursor: pointer;
 }
 
 #networks-container .name {
@@ -2003,6 +2004,10 @@ div.network-machine div.machine-actions a:hover {
 .machine-connect {
     color:black !important;
     text-decoration: underline !important;
+}
+
+.machine-connect:hover {
+    cursor: pointer;
 }
 
 .firewall-contents-start-separator {

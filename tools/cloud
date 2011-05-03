@@ -547,7 +547,7 @@ class AddNetwork(Command):
 
     def execute(self, server_id, network):
         path = '/api/%s/networks/%s/action' % (self.api, network)
-        body = json.dumps({'add': {'server': server_id}})
+        body = json.dumps({'add': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 
 
@@ -558,7 +558,7 @@ class RemoveNetwork(Command):
 
     def execute(self, server_id, network):
         path = '/api/%s/networks/%s/action' % (self.api, network)
-        body = json.dumps({'remove': {'server': server_id}})
+        body = json.dumps({'remove': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 
 

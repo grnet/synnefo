@@ -238,7 +238,7 @@ def get_console(request, vm, args):
 
 @network_action('add')
 def add(request, net, args):
-    server_id = args.get('server', None)
+    server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user)
@@ -248,7 +248,7 @@ def add(request, net, args):
 
 @network_action('remove')
 def remove(request, net, args):
-    server_id = args.get('server', None)
+    server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user)

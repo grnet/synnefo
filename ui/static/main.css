@@ -1902,6 +1902,7 @@ div.name:hover span.rename-network {
 .network-machine .logo {
     float:left;
     padding-right: 10px;
+    position:relative;
 }
 
 #networks-container .machine-name {
@@ -1963,6 +1964,23 @@ div.network div.machine-actions {
     margin: 2px 0 0 39px;
     width: 430px;
     background-color: #B3B3B3;
+}
+
+div.add-remove-machine {
+    background-color: #FB822F;
+    color: #fff; 
+    width:90px;
+    float:left;
+    margin:34px 0 0 -100px;
+}
+
+span.remove-icon {
+    font-size: 80%;
+    margin-left: 15px;
+}
+
+span.remove-icon:hover {
+    cursor:pointer;
 }
 
 .firewall-on {

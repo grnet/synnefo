@@ -15,6 +15,7 @@ function ISODateString(d){
 			pad(d.getUTCSeconds()) +'Z'
 }
 
+
 function parse_error(responseText){
 	var errors = [];
 	if (responseText.length == 0){
@@ -239,12 +240,13 @@ function update_vms(interval) {
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
-			// create changes_since string if necessary
-			if (jqXHR.getResponseHeader('Date') != null){
-				changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
-				changes_since = ISODateString(changes_since_date);
-			}
-			
+            var contentText = $.ajax({
+                url: "/datetime",
+                async: false
+            }).responseText;
+			changes_since_date = new Date(contentText.replace(/(<([^>]+)>)/ig,""));
+			changes_since = ISODateString(changes_since_date);
+
 			if (interval) {
 				clearTimeout(deferred);	// clear old deferred calls
 				deferred = setTimeout(update_vms,interval,interval);

@@ -5,6 +5,7 @@ from django.template import Context, loader
 from django.http import HttpResponse
 from django.utils.translation import get_language
 from django.utils import simplejson as json
+import time
 
 TIMEOUT = settings.TIMEOUT
 CONSOLE_WIDTH = 800 #settings.CONSOLE_WIDTH
@@ -76,3 +77,8 @@ def desktops(request):
 def apps(request):
     context = {}
     return template('apps', context)
+
+def current_datetime(request):
+    now = time.strftime("%a, %d %b %Y %H:%M:%S %Z", time.localtime())
+    html = "<html><body>%s</body></html>" % now
+    return HttpResponse(html)

@@ -670,12 +670,6 @@ $('#edit-dialog button.remove').live('click', function() {
 
 // intercept click on edit button in metadata edit dialog
 $('#edit-dialog button.edit').live('click', function(){
-    // TODO
-    // show input form for tag name
-    $(this).parent().find('label').html("<input type=\"text\" maxlength=\"15\" class=\"edit-meta-key\" value=\"" +
-                                        $(this).parent().find('label').text() + 
-                                        "\" / ><label class=\"oldValue\">" + 
-                                        $(this).parent().find('label').text() + "</label>");
     // show input form for tag value
     $(this).parent().find('p').html("<textarea class=\"edit-meta-value\" l=\"3\">" +
                                         $(this).parent().find('p').text() + 
@@ -684,21 +678,18 @@ $('#edit-dialog button.edit').live('click', function(){
     // show/hide the appropriate buttons
     $(this).hide(); // this button (edit)
     $(this).siblings().show(); // save and cancel buttons
-    $(this).siblings('button.remove').addClass('more-margin');
 
     return false;
 });
 
 // intercept click on cancel button in metadata edit dialog
 $('#edit-dialog button.cancel').live('click', function(){
-    // put the old values and close the forms
-    $(this).parent().find('label').html($(this).parent().find('label.oldValue').text());
+    // put the old value and close the forms
     $(this).parent().find('p').html($(this).parent().find('p.oldValue').text());
     // show/hide the appropriate buttons
     $(this).hide(); // this button (cancel)
     $(this).next().hide(); // the save button
     $(this).prev().show(); // the edit button
-    $(this).siblings('button.remove').removeClass('more-margin');
 
     return false;
 });
@@ -706,25 +697,17 @@ $('#edit-dialog button.cancel').live('click', function(){
 // intercept click on save button in metadata edit dialog
 $('#edit-dialog button.save').live('click', function(){
     // get the updated values and the old key
-    var oldKey = $(this).parent().find('label.oldValue').text();
-    var newKey = $(this).parent().find('input.edit-meta-key').val();
-    var newValue = $(this).parent().find('textarea.edit-meta-value').val();
-    // put the new values and close the forms
-    $(this).parent().find('label').html(newKey);
+    var oldKey = $(this).parent().find('label').text();
+    var newValue = $(this).parent().find('textarea.edit-meta-value').val().substring(0,150);
+    // put the new value and close the forms
     $(this).parent().find('p').html(newValue);
-    // check if the new metadata key is the same with the old one
-    if ( oldKey != newKey ) {
-        // if the key has changed, delete old pair
-        delete_metadata(serverID, oldKey)
-    }
-    // add or update meatadata pair
+    // update meatadata pair
     add_metadata(serverID, newKey, newValue);
 
     // show/hide the appropriate buttons
     $(this).hide(); // this button (save)
     $(this).prev().hide(); // the cancel button
     $(this).prev().prev().show(); // the edit button
-    $(this).siblings('button.remove').removeClass('more-margin');
 
     return false;
 });

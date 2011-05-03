@@ -4,6 +4,7 @@ import json
 import logging
 import types
 import hashlib
+import shutil
 
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter('[%(levelname)s] %(message)s')
@@ -33,6 +34,7 @@ class BackEnd:
         self.con.commit()
     
     # TODO: Create/delete account?
+    # TODO: Catch OSError exceptions.
     
     def get_account_meta(self, account):
         """
@@ -125,36 +127,181 @@ class BackEnd:
         if not os.path.exists(fullname):
             raise NameError('Account does not exist')
         containers = os.listdir(fullname)
+        
         start = 0
         if marker:
             try:
                 start = containers.index(marker)
             except ValueError:
                 pass
-        return containers[start:limit]
+        if not limit or limit > 10000:
+            limit = 10000
+        
+        return containers[start:start + limit]
     
+    def list_objects(self, account, container, prefix = '', delimiter = None, marker = None, limit = 10000):
+        """
+        returns a list of objects existing under a container
+        """
+        logger.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
+        fullname = os.path.join(self.basepath, account, container)
+        if not os.path.exists(fullname):
+            raise NameError('Container does not exist')
+        
+        while prefix.startswith('/'):
+            prefix = prefix[1:]
+        # TODO: Test this with various prefixes. Does '//' bother it?
+        prefix = os.path.join(account, container, prefix)
+        c = self.con.execute('select * from objects where name like ''?'' order by name', (os.path.join(prefix, '%'),))
+        objects = [x[0][len(prefix):] for x in c.fetchall()]
+        if delimiter:
+            pseudo_objects = {}
+            for x in objects:
+                pseudo_name = x
+                i = pseudo_name.find(delimiter)
+                if i != -1:
+                    pseudo_name = pseudo_name[:i]
+                # TODO: Virtual directories.
+                pseudo_objects[pseudo_name] = x
+            objects = pseudo_objects.keys()
+        
+        start = 0
+        if marker:
+            try:
+                start = objects.index(marker)
+            except ValueError:
+                pass
+        if not limit or limit > 10000:
+            limit = 10000
+        
+        return objects[start:start + limit]
     
+    def get_object_meta(self, account, container, name, keys = None):
+        """
+        returns a dictionary with the object metadata
+        """
+        logger.info("get_object_meta: %s %s %s %s", account, container, name, keys)
+        fullname = os.path.join(self.basepath, account, container)
+        if not os.path.exists(fullname):
+            raise NameError('Container does not exist')
+        
+        link = self.__get_linkinfo(os.path.join(account, container, name))
+        location = os.path.join(self.basepath, account, container, link)
+        size = os.path.getsize(location)
+        mtime = os.path.getmtime(location)
+        meta = self.__get_metadata(os.path.join(account, container, name))
+        meta.update({'name': name, 'bytes': size, 'last_modified': mtime})
+        if 'hash' not in meta:
+            meta['hash'] = self.__object_hash(location)
+        if 'content_type' not in meta:
+            meta['content_type'] = 'application/octet-stream'
+        return meta
     
-#     def __get_linkinfo(self, path):
-#         c = self.con.execute('select rowid from objects where name=''?''', (path,))
-#         row = c.fetchone()
-#         if row:
-#             return str(row[0])
-#         else:
-#             raise NameError('Requested path not found')
-#     
-#     def __put_linkinfo(self, path):
-#         id = self.con.execute('insert into objects (name) values (?)', (path,)).lastrowid
-#         self.con.commit()
-#         return id
-    
-    
-    
-    def __del_dbpath(self, path):
-        self.con.execute('delete from metadata where object_id in (select rowid from objects where name = ''?'')', (path,))
-        self.con.execute('delete from objects where name = ''?''', (path,))
-        self.con.commit()
+    def update_object_meta(self, account, container, name, meta):
+        """
+        updates the metadata associated with the object
+        """
+        logger.info("update_object_meta: %s %s %s %s", account, container, name, meta)
+        fullname = os.path.join(self.basepath, account, container)
+        if not os.path.exists(fullname):
+            raise NameError('Container does not exist')
+        self.__put_metadata(os.path.join(account, container, name), meta)
         return
+    
+    def get_object(self, account, container, name, offset = 0, length = -1):
+        """
+        returns the object data
+        """
+        logger.info("get_object: %s %s %s %s %s", account, container, name, offset, length)
+        fullname = os.path.join(self.basepath, account, container)
+        if not os.path.exists(fullname):
+            raise NameError('Container does not exist')
+        
+        link = self.__get_linkinfo(os.path.join(account, container, name))
+        location = os.path.join(self.basepath, account, container, link)
+        f = open(location, 'r')
+        if offset:
+            f.seek(offset)
+        data = f.read(length)
+        f.close()
+        return data
+
+    def update_object(self, account, container, name, data, offset = 0):
+        """
+        creates/updates an object with the specified data
+        """
+        logger.info("put_object: %s %s %s %s %s", account, container, name, data, offset)
+        fullname = os.path.join(self.basepath, account, container)
+        if not os.path.exists(fullname):
+            raise NameError('Container does not exist')
+
+        try:
+            link = self.__get_linkinfo(os.path.join(account, container, name))
+        except NameError:
+            # new object
+            link = self.__put_linkinfo(os.path.join(account, container, name))
+        location = os.path.join(self.basepath, account, container, link)
+        f = open(location, 'w')
+        if offset:
+            f.seek(offset)
+        f.write(data)
+        f.close()
+        self.__put_metadata(os.path.join(account, container, name), {'hash': self.__object_hash(location)})
+        return
+    
+    def copy_object(self, account, src_container, src_name, dest_container, dest_name):
+        """
+        copies an object
+        """
+        logger.info("copy_object: %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name)
+        link = self.__get_linkinfo(os.path.join(account, src_container, src_name))
+        src_location = os.path.join(self.basepath, account, src_container, link)
+        
+        dest_fullname = os.path.join(self.basepath, account, dest_container)
+        if not os.path.exists(dest_fullname):
+            raise NameError('Destination container does not exist')        
+        try:
+            link = self.__get_linkinfo(os.path.join(account, dest_container, dest_name))
+        except NameError:
+            # new object
+            link = self.__put_linkinfo(os.path.join(account, dest_container, dest_name))
+        dest_location = os.path.join(self.basepath, account, dest_container, link)
+        
+        shutil.copyfile(src_location, dest_location)
+        return
+    
+    def delete_object(self, account, container, name):
+        """
+        deletes an object
+        """
+        logger.info("delete_object: %s %s %s", account, container, name)
+        fullname = os.path.join(self.basepath, account, container)
+        if not os.path.exists(fullname):
+            raise NameError('Container does not exist')
+        
+        # delete object data
+        link = self.__get_linkinfo(os.path.join(account, container, name))
+        location = os.path.join(self.basepath, account, container, link)
+        try:
+            os.remove(location)
+        except:
+            pass
+        # delete object metadata
+        self.__del_dbpath(os.path.join(account, container, name))
+        return
+
+    def __get_linkinfo(self, path):
+        c = self.con.execute('select rowid from objects where name=''?''', (path,))
+        row = c.fetchone()
+        if row:
+            return str(row[0])
+        else:
+            raise NameError('Requested path not found')
+    
+    def __put_linkinfo(self, path):
+        id = self.con.execute('insert into objects (name) values (?)', (path,)).lastrowid
+        self.con.commit()
+        return str(id)
     
     def __get_metadata(self, path):
         c = self.con.execute('select m.name, m.value from metadata m, objects o where o.rowid = m.object_id and o.name = ''?''', (path,))
@@ -171,6 +318,12 @@ class BackEnd:
             self.con.execute('insert or replace into metadata (object_id, name, value) values (?, ?, ?)', (link, k, v))
         self.con.commit()
         return
+
+    def __del_dbpath(self, path):
+        self.con.execute('delete from metadata where object_id in (select rowid from objects where name = ''?'')', (path,))
+        self.con.execute('delete from objects where name = ''?''', (path,))
+        self.con.commit()
+        return
     
     def __object_hash(self, location, block_size = 8192):
         md5 = hashlib.md5()
@@ -182,161 +335,3 @@ class BackEnd:
             md5.update(data)
         f.close()
         return md5.hexdigest()
-    
-    # --- MERGED UP TO HERE ---
-    
-    def list_objects(self, account, container, prefix='', delimiter=None, marker = None, limit = 10000):
-        """
-        returns a list of the objects existing under a specific account container
-        """
-        logger.info("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        p1 = ''.join(['%', prefix, '%'])
-        p2 = '/'.join([account, container, '%'])
-        search_str = (prefix and [p1] or [p2])[0]
-        c = self.con.execute('select * from objects where name like ''?'' order by name', (search_str,))
-        objects = c.fetchall()
-        if delimiter:
-            pseudo_objects = {}
-            for x in objects:
-                pseudo_name = x[0][len(prefix):]
-                i = pseudo_name.find(delimiter)
-                if i != -1:
-                    pseudo_name = pseudo_name[:i]
-                #TODO: Virtual directories.
-                pseudo_objects[pseudo_name] = x
-            objects = pseudo_objects.keys()
-        start = 0
-        if marker:
-            try:
-                start = objects.index(marker)
-            except ValueError:
-                pass
-        if not limit or limit > 10000:
-            limit = 10000
-        return objects[start:start + limit]
-    
-    def get_object_meta(self, account, container, name, keys=None):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        link = self.__get_object_linkinfo(os.path.join(account, container, name))
-        c = self.con.execute('select name, value from metadata where object_id = ''?''', (link,))
-        l = c.fetchall()
-        if keys:
-            l = [elem for elem in l if elem[0] in keys]
-        meta = {}
-        for e in l:
-            meta[e[0]] = e[1]
-        return meta
-    
-    def get_object_data(self, account, container, name, offset=0, length=-1):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        else:
-            os.chdir(dir)
-        location = self.__get_object_linkinfo(os.path.join(account, container, name))
-        f = open(location, 'r')
-        if offset:
-            f.seek(offset)
-        data = f.read(length)
-        f.close()
-        return data
-    
-    def update_object(self, account, container, name, data):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        try:
-            location = self.__get_object_linkinfo(os.path.join(account, container, name))
-        except NameError:
-            # new object
-            location = str(self.__save_linkinfo(os.path.join(account, container, name)))
-        self.__store_data(location, account, container, data)
-        return
-    
-    def update_object_meta(self, account, container, name, meta):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        try:
-            location = self.__get_object_linkinfo(os.path.join(account, container, name))
-        except NameError:
-            # new object
-            location = str(self.__save_linkinfo(os.path.join(account, container, name)))
-        self.__store_metadata(location, account, container, meta)
-        return
-    
-    def copy_object(self, account, src_container, src_name, dest_container, dest_name, meta):
-        fullname = os.path.join(self.basepath, account, dest_container)    
-        if not os.path.exists(fullname):
-            raise NameError('Destination container does not exist')
-        data = self.get_object_data(account, src_container, src_name)
-        self.update_object(account, dest_container, dest_name, data)
-        src_object_meta = self.get_object_meta(account, src_container, src_name)
-        if (type(src_object_meta) == types.DictType):
-            distinct_keys = [k for k in src_object_meta.keys() if k not in meta.keys()]
-            for k in distinct_keys:
-                meta[k] = src_object_meta[k]
-                self.update_object_meta(account, dest_container, dest_name, meta)
-        else:
-            self.update_object_meta(account, dest_container, dest_name, meta)
-        return
-    
-    def delete_object(self, account, container, name):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        else:
-            os.chdir(dir)
-        location = self.__get_object_linkinfo(os.path.join(account, container, name))
-        # delete object data
-        self.__delete_data(location, account, container)
-        # delete object metadata
-        location = '.'.join([location, 'meta'])
-        self.__delete_data(location, account, container)
-        return
-    
-    def __store_metadata(self, ref, account, container, meta):
-        for k in meta.keys():
-            self.con.execute('insert or replace into metadata(object_id, name, value) values (?, ?, ?)', (ref, k, meta[k],))
-        self.con.commit()
-        return
-    
-    def __store_data(self, location, account, container, data):
-        dir = os.path.join(self.basepath, account, container)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        else:
-            os.chdir(dir)
-        f = open(location, 'w')
-        f.write(data)
-        f.close()
-    
-    def __delete_data(self, location, account, container):
-        file = os.path.join(self.basepath, account, container, location)
-        if not os.path.exists(dir):
-            raise NameError('Container does not exist')
-        else:
-            os.remove(file)
-        
-    def __get_object_linkinfo(self, name):
-        c = self.con.execute('select rowid from objects where name=''?''', (name,))
-        row = c.fetchone()
-        if row:
-            return str(row[0])
-        else:
-            raise NameError('Object not found')
-    
-    def __save_linkinfo(self, name):
-        id = self.con.execute('insert into objects(name) values(?)', (name,)).lastrowid
-        self.con.commit()
-        return id
-    
-    def __delete_linkinfo(self, name):
-        self.con.execute('delete from objects where name = ?', (name,))
-        self.cont.commit()
-        return

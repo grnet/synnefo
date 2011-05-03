@@ -20,7 +20,6 @@ from os import path
 STORAGE_PATH = path.join(PROJECT_PATH, 'data')
 
 from pithos.backends.dummy import BackEnd
-from pithos.backends.dummy_debug import *
 
 import logging
 
@@ -154,6 +153,7 @@ def container_list(request, v_account):
         containers = [be.get_container_meta(request.user, x) for x in containers]
     except NameError:
         raise ItemNotFound()
+    # TODO: Format dates.
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': request.user, 'containers': containers})
     elif request.serialization  == 'json':
@@ -246,8 +246,6 @@ def container_delete(request, v_account, v_container):
         raise ItemNotFound()
     return HttpResponse(status = 204)
 
-# --- MERGED UP TO HERE ---
-
 @api_method('GET', format_allowed = True)
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
@@ -259,7 +257,6 @@ def object_list(request, v_account, v_container):
     path = request.GET.get('path')
     prefix = request.GET.get('prefix')
     delimiter = request.GET.get('delimiter')
-    logging.debug("path: %s", path)
     
     # Path overrides prefix and delimiter.
     if path:
@@ -268,6 +265,8 @@ def object_list(request, v_account, v_container):
     # Naming policy.
     if prefix and delimiter:
         prefix = prefix + delimiter
+    if not prefix:
+        prefix = ''
     
     marker = request.GET.get('marker')
     limit = request.GET.get('limit')
@@ -275,19 +274,30 @@ def object_list(request, v_account, v_container):
         try:
             limit = int(limit)
         except ValueError:
-            limit = None
+            limit = 10000
     
-    objects = list_objects(request.user, v_container, prefix, delimiter, marker, limit)
+    be = BackEnd(STORAGE_PATH)
+    try:
+        objects = be.list_objects(request.user, v_container, prefix, delimiter, marker, limit)
+    except NameError:
+        raise ItemNotFound()
+    # TODO: The cloudfiles python bindings expect 200 if json/xml.
     if len(objects) == 0:
         return HttpResponse(status = 204)
     
+    if request.serialization == 'text':
+        return HttpResponse('\n'.join(objects), status = 200)
+    
+    # TODO: Do this with a backend parameter?
+    try:
+        objects = [be.get_object_meta(request.user, v_container, x) for x in objects]
+    except NameError:
+        raise ItemNotFound()
+    # TODO: Format dates.
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': objects})
     elif request.serialization  == 'json':
         data = json.dumps(objects)
-    else:
-        data = '\n'.join(x['name'] for x in objects)
-    
     return HttpResponse(data, status = 200)
 
 @api_method('HEAD')
@@ -297,16 +307,20 @@ def object_meta(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
-
-    info = get_object_meta(request.user, v_container, v_object)
+    
+    be = BackEnd(STORAGE_PATH)
+    try:
+        info = be.get_object_meta(request.user, v_container, v_object)
+    except NameError:
+        raise ItemNotFound()
     
     response = HttpResponse(status = 204)
     response['ETag'] = info['hash']
     response['Content-Length'] = info['bytes']
     response['Content-Type'] = info['content_type']
     response['Last-Modified'] = http_date(info['last_modified'])
-    for k, v in info['meta'].iteritems():
-        response['X-Object-Meta-%s' % k.capitalize()] = v
+    for k in [x for x in info.keys() if x.startswith('X-Object-Meta-')]:
+        response[k] = info[k]
     
     return response
 
@@ -321,8 +335,13 @@ def object_read(request, v_account, v_container, v_object):
     #                       badRequest (400),
     #                       notModified (304)
     
-    info = get_object_meta(request.user, v_container, v_object)
+    be = BackEnd(STORAGE_PATH)
+    try:
+        info = be.get_object_meta(request.user, v_container, v_object)
+    except NameError:
+        raise ItemNotFound()
     
+    # TODO: Check if the cloudfiles python bindings expect hash/content_type/last_modified on range requests.
     response = HttpResponse()
     response['ETag'] = info['hash']
     response['Content-Type'] = info['content_type']
@@ -332,30 +351,35 @@ def object_read(request, v_account, v_container, v_object):
     range = get_range(request)
     if range is not None:
         offset, length = range
+        if length:
+            if offset + length > info['bytes']:
+                raise RangeNotSatisfiable()
+        else:
+            if offset > info['bytes']:
+                raise RangeNotSatisfiable()
         if not length:
-            length = 0
-        if offset + length > info['bytes']:
-            raise RangeNotSatisfiable()
+            length = -1
         
         response['Content-Length'] = length        
         response.status_code = 206
     else:
         offset = 0
-        length = 0
+        length = -1
         
         response['Content-Length'] = info['bytes']
         response.status_code = 200
     
     # Conditions (according to RFC2616 must be evaluated at the end).
+    # TODO: Check etag/date conditions.
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None and if_match != '*':
         if info['hash'] not in parse_etags(if_match):
             raise PreconditionFailed()
     
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
-#     if if_none_match is not None:
-#         if if_none_match = '*' or info['hash'] in parse_etags(if_none_match):
-#             raise NotModified()
+    if if_none_match is not None:
+        if if_none_match == '*' or info['hash'] in parse_etags(if_none_match):
+            raise NotModified()
     
     if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE')
     if if_modified_since is not None:
@@ -369,7 +393,11 @@ def object_read(request, v_account, v_container, v_object):
     if if_unmodified_since is not None and info['last_modified'] > if_unmodified_since:
         raise PreconditionFailed()
     
-    response.content = get_object_data(request.user, v_container, v_object, offset, length)
+    try:
+        response.content = be.get_object(request.user, v_container, v_object, offset, length)
+    except NameError:
+        raise ItemNotFound()
+    
     return response
 
 @api_method('PUT')
@@ -382,6 +410,8 @@ def object_write(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    be = BackEnd(STORAGE_PATH)
+    
     copy_from = request.META.get('HTTP_X_COPY_FROM')
     if copy_from:
         parts = copy_from.split('/')
@@ -390,21 +420,27 @@ def object_write(request, v_account, v_container, v_object):
         copy_container = parts[1]
         copy_name = '/'.join(parts[2:])
         
-        info = get_object_meta(request.user, copy_container, copy_name)
+        try:
+            info = be.get_object_meta(request.user, copy_container, copy_name)
+        except NameError:
+            raise ItemNotFound()
         
         content_length = request.META.get('CONTENT_LENGTH')
         content_type = request.META.get('CONTENT_TYPE')
+        # TODO: Why is this required? Copy this ammount?
         if not content_length:
             raise LengthRequired()
         if content_type:
             info['content_type'] = content_type
         
-        meta = get_object_meta(request)
-        for k, v in meta.iteritems():
-            info['meta'][k] = v
+        meta = get_meta(request, 'X-Object-Meta-')
+        info.update(meta)
         
-        copy_object(request.user, copy_container, copy_name, v_container, v_object)
-        update_object_meta(request.user, v_container, v_object, info)
+        try:
+            be.copy_object(request.user, copy_container, copy_name, v_container, v_object)
+            be.update_object_meta(request.user, v_container, v_object, info)
+        except NameError:
+            raise ItemNotFound()
         
         response = HttpResponse(status = 201)
     else:
@@ -412,25 +448,29 @@ def object_write(request, v_account, v_container, v_object):
         content_type = request.META.get('CONTENT_TYPE')
         if not content_length or not content_type:
             raise LengthRequired()
-    
+        
+        info = {'content_type': content_type}
         meta = get_meta(request, 'X-Object-Meta-')
-        info = {'bytes': content_length, 'content_type': content_type, 'meta': meta}
-    
+        info.update(meta)
+        
+        data = request.raw_post_data
+        try:
+            be.update_object(request.user, v_container, v_object, data)
+            be.update_object_meta(request.user, v_container, v_object, info)
+        except NameError:
+            raise ItemNotFound()
+        
+        # TODO: Check before update?
+        info = be.get_object_meta(request.user, v_container, v_object)
         etag = request.META.get('HTTP_ETAG')
         if etag:
             etag = parse_etags(etag)[0] # TODO: Unescape properly.
-            info['hash'] = etag
-    
-        data = request.read()
-        # TODO: Hash function.
-        # etag = hash(data)
-        # if info.get('hash') and info['hash'] != etag:
-        #     raise UnprocessableEntity()
-    
-        update_object_data(request.user, v_container, v_name, info, data)
-    
+            if etag != info['hash']:
+                be.delete_object(request.user, v_container, v_object)
+                raise UnprocessableEntity()
+        
         response = HttpResponse(status = 201)
-        # response['ETag'] = etag
+        response['ETag'] = info['hash']
     
     return response
 
@@ -452,18 +492,23 @@ def object_copy(request, v_account, v_container, v_object):
     dest_container = parts[1]
     dest_name = '/'.join(parts[2:])
     
-    info = get_object_meta(request.user, v_container, v_object)
+    be = BackEnd(STORAGE_PATH)
+    try:
+        info = be.get_object_meta(request.user, v_container, v_object)
+    except NameError:
+        raise ItemNotFound()
     
     content_type = request.META.get('CONTENT_TYPE')
     if content_type:
         info['content_type'] = content_type
-        
     meta = get_meta(request, 'X-Object-Meta-')
-    for k, v in meta.iteritems():
-        info['meta'][k] = v
+    info.update(meta)
     
-    copy_object(request.user, v_container, v_object, dest_container, dest_name)
-    update_object_meta(request.user, dest_container, dest_name, info)
+    try:
+        be.copy_object(request.user, v_container, v_object, dest_container, dest_name)
+        be.update_object_meta(request.user, dest_container, dest_name, info)
+    except NameError:
+        raise ItemNotFound()
     
     response = HttpResponse(status = 201)
 
@@ -475,9 +520,6 @@ def object_update(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_meta(request, 'X-Object-Meta-')
-    
-    update_object_meta(request.user, v_container, v_object, meta)
     return HttpResponse(status = 202)
 
 @api_method('DELETE')
@@ -488,7 +530,11 @@ def object_delete(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    delete_object(request.user, v_container, v_object)
+    be = BackEnd(STORAGE_PATH)
+    try:
+        be.delete_object(request.user, v_container, v_object)
+    except NameError:
+        raise ItemNotFound()
     return HttpResponse(status = 204)
 
 @api_method()

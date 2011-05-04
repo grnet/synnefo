@@ -1388,8 +1388,8 @@ div.confirm_single button.no:hover, div.confirm_multiple button.no:hover, div.ac
 div.confirm_single{
     float: right;
     width: 90px;
-    height: 70px;
-    margin: 0 -175px 0 0;
+    height: 66px;
+    margin: -2px -175px 0 0;
 }
 
 div.confirm_single button.yes {
@@ -1397,7 +1397,7 @@ div.confirm_single button.yes {
 }
 
 div.confirm_single button.no {
-    margin: 20px 0 0 5px;
+    margin: 16px 0 0 5px;
 }
 
 div.action_error {

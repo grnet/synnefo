@@ -651,7 +651,7 @@ jQuery.expr[':'].focus = function( elem ) {
 };
 
 $('*').keydown(function (){
-    if ($('#add-dialog').is(":visible") && !$('#edit-dialog input').length && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
+    if ($('#add-dialog').is(":visible") && !$('#edit-dialog textarea').length && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
         $('input.key').focus();
         $('input.key').focusin(); 
     }
@@ -702,7 +702,7 @@ $('#edit-dialog button.save').live('click', function(){
     // put the new value and close the forms
     $(this).parent().find('p').html(newValue);
     // update meatadata pair
-    add_metadata(serverID, newKey, newValue);
+    add_metadata(serverID, oldKey, newValue);
 
     // show/hide the appropriate buttons
     $(this).hide(); // this button (save)

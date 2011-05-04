@@ -1180,6 +1180,7 @@ input.machine {
 
 #metadata-wizard p {
     margin-left: 7px;
+    width: 200px;
 }
 
 #metadata-wizard div.bottomruler {
@@ -1242,20 +1243,13 @@ input.machine {
     color: #ccc;
 }
 
-#metadata-wizard input.edit-meta-key, #metadata-wizard textarea.edit-meta-value {
+#metadata-wizard textarea.edit-meta-value {
     font-style: normal;
     text-align: left;
     color: black;
-
-}
-
-#metadata-wizard input.edit-meta-key {
-    margin-bottom: -4px;
-
-}
-
-#metadata-wizard textarea.edit-meta-value {
     margin-top: 2px;
+    width:200px;
+    height: 49px;
 }
  
 #metadata-wizard input {

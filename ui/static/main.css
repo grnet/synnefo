@@ -2140,7 +2140,7 @@ div.network-machine div.machine-actions a:hover {
 .metadata-left {
     float:left;
     width: 50px;
-    height: 65px;
+    height: 60px;
 }
 
 .metadata-right {
@@ -2158,7 +2158,7 @@ div.network-machine div.machine-actions a:hover {
 }
 
 .metadata-keys-container {
-    height: 65px;
+    height: 60px;
     float: left;
 }
 
@@ -2173,11 +2173,27 @@ a.manage-metadata {
     padding-left: 5px;
 }
 
+.metadata-actions .prev,  .metadata-actions .next{
+    float:left;
+    width:29px;
+    height:6px;
+    cursor: pointer; 
+}
+
+.metadata-actions .prev {
+    background: url("/static/roll-up.png") no-repeat scroll 0 0 transparent;
+}
+
+.metadata-actions .next {
+    background: url("/static/roll-down.png") no-repeat scroll 0 0 transparent;
+}
+
 .scrollable {
 	position:relative;
 	overflow:hidden;
 	height: 35px;
-	width: 73px;
+	width: 60px;
+    margin-bottom:2px;
 }
 
 .scrollable .items {

@@ -559,6 +559,10 @@ function list_metadata_keys(serverID, data) {
     if (i <= 3) {
         $("div.#" +serverID).find(".metadata-actions").hide();
     }
+    //show the metadata controls if we have more than 3 metadata
+    if (i > 3) {
+        $("div.#" +serverID).find(".metadata-actions").show();
+    }
     $("div.#" +serverID).find(".metadata-count").text(i);   
 }
 

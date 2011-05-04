@@ -240,10 +240,6 @@ function update_vms(interval) {
 			return false;
 			},
         success: function(data, textStatus, jqXHR) {
-            var contentText = $.ajax({
-                url: "/datetime",
-                async: false
-            }).responseText;
             // create changes_since string if necessary
             if (jqXHR.getResponseHeader('Date') != null){
 			    changes_since_date = new Date(jqXHR.getResponseHeader('Date'));

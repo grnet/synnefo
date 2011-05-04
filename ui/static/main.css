@@ -1981,7 +1981,7 @@ div.empty-network-slot {
 
 div.network-remove-machine, div.network-add-machine {
     background-color: #FB822F;
-    color: #fff; 
+    color: #bc4b00; 
     width:90px;
     float:left;
     margin:34px 0 0 -100px;
@@ -1998,6 +1998,7 @@ span.add-icon {
 
 span.remove-icon:hover, span.add-icon:hover {
     cursor:pointer;
+    color: #fff;
 }
 
 div.network-add-machine {

@@ -1221,14 +1221,14 @@ input.machine {
     float: right;
     background-color: #666;
     border-color: #666;
-    margin-top: -53px;
+    margin: -56px 8px 0 0;
 }
 
 #metadata-wizard #edit-dialog button.save {
     display: none;
     height: 15px;
     width: 70px;
-    margin: -18px 0 0 0;
+    margin: -18px 8px 0 0;
 }
 
 #metadata-wizard button.create {
@@ -1255,7 +1255,7 @@ input.machine {
 }
 
 #metadata-wizard textarea.edit-meta-value {
-    margin-top: -1px;
+    margin-top: 2px;
 }
  
 #metadata-wizard input {

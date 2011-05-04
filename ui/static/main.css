@@ -616,7 +616,7 @@ div.machine {
 
 .machine .name, .machine .ip {
     text-decoration: none !important;
-    padding-top: 4px;
+    padding-top: 1px;
 }
 
 .oldValue {
@@ -1491,11 +1491,11 @@ div#user a.current_lang {
 }
 
 .machine h5 {
-    margin: 0px 60px 1px 84px;
+    margin: -1px 60px 1px 84px;
 }
 
 .machine .settings {
-    margin-top: 13px;
+    margin-top: 9px;
 }
 
 .editbuttons {
@@ -1503,7 +1503,7 @@ div#user a.current_lang {
     clear: none;
     width: 40px;
     margin-right:32%;
-    margin-top:7px;
+    margin-top:3px;
     float:right;
     cursor: pointer;
 }
@@ -1540,7 +1540,7 @@ div#user a.current_lang {
 }
 
 .namecontainer {
-    line-height: 13px;
+    line-height: 22px;
 }
 
 .nametextbox {

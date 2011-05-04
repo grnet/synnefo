@@ -588,7 +588,9 @@ $("#start").click(function(){
 // metadata wizard
 $(function() {
 	// initialize scrollable
-    $("#metadata-wizard").scrollable();
+    $("#metadata-wizard").scrollable({
+        keyboard: false
+    });
     // create wizard overlay
     $("a#metadata-scrollable").overlay({
         mask: '#000',
@@ -596,6 +598,7 @@ $(function() {
         top: '10%',
         closeOnClick: false,
         oneInstance: false,
+        closeOnEsc: true,
         load: false,
         onClose: function(){
             // reset input areas
@@ -647,7 +650,10 @@ function list_metadata(data) {
 
 // trapping keydown event
 jQuery.expr[':'].focus = function( elem ) {
-  return elem === document.activeElement && ( elem.type || elem.href );
+    var api = $("#metadata-wizard").data("scrollable");
+    if (api.getIndex() == 1) {
+      return elem === document.activeElement && ( elem.type || elem.href );
+    }
 };
 
 $('*').keydown(function (){

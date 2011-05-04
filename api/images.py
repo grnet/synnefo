@@ -3,7 +3,7 @@
 #
 
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, Unauthorized
+from synnefo.api.faults import BadRequest
 from synnefo.api.util import (isoformat, isoparse, get_vm, get_image, get_image_meta,
                                 get_request_dict, render_metadata, render_meta, api_method)
 from synnefo.db.models import Image, ImageMetadata

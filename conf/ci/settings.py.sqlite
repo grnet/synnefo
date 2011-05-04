@@ -8,3 +8,6 @@ DATABASES = {
 
 BACKEND_PREFIX_ID = "jenkins-"
 INSTALLED_APPS += ('django_hudson',)
+
+#One year
+AUTH_TOKEN_DURATION = 24 * 365

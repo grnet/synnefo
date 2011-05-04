@@ -4,7 +4,7 @@
 
 from django.conf.urls.defaults import include, patterns
 
-from synnefo.api import servers, flavors, images
+from synnefo.api import servers, flavors, images, networks
 from synnefo.api.common import not_found
 from synnefo.api.versions import versions_list, version_details
 
@@ -16,6 +16,7 @@ api11_patterns = patterns('',
     (r'^servers', include(servers)),
     (r'^flavors', include(flavors)),
     (r'^images', include(images)),
+    (r'^networks', include(networks)),
 )
 
 

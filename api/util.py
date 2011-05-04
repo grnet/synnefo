@@ -22,7 +22,7 @@ from django.utils import simplejson as json
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress, ItemNotFound,
                                 ServiceUnavailable, Unauthorized)
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
-                                VirtualMachine, VirtualMachineMetadata)
+                                VirtualMachine, VirtualMachineMetadata, Network)
 
 
 class UTC(tzinfo):
@@ -116,6 +116,17 @@ def get_flavor(flavor_id):
     except Flavor.DoesNotExist:
         raise ItemNotFound('Flavor not found.')
 
+def get_network(network, owner):
+    """Return a Network instance or raise ItemNotFound."""
+    
+    try:
+        return Network.objects.get(name=network, owner=owner)
+    except ValueError:
+        raise BadRequest('Invalid network name.')
+    except Image.DoesNotExist:
+        raise ItemNotFound('Network not found.')
+
+
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
     
@@ -127,7 +138,6 @@ def get_request_dict(request):
             raise BadRequest('Invalid JSON data.')
     else:
         raise BadRequest('Unsupported Content-Type.')
-
 
 def update_response_headers(request, response):
     if request.serialization == 'xml':

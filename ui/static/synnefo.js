@@ -224,6 +224,7 @@ function update_vms(interval) {
 		uri+='?changes-since='+changes_since
 		
     update_request = $.ajax({
+        cache: false,
         url: uri,
         type: "GET",
         timeout: TIMEOUT,

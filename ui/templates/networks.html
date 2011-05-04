@@ -298,6 +298,7 @@ $(".show-machines").click(function() {
 
 // intercept click to remove machine from network 
 $(".remove-icon").click(function() {
+    $(this).parent().parent().next('div.network-separator').fadeOut();
     $(this).parent().parent().fadeOut();
 });
 

@@ -28,6 +28,9 @@ class ResizeNotAllowed(Fault):
 class ItemNotFound(Fault):
     code = 404
 
+class Conflict(Fault):
+    code = 409
+
 class LengthRequired(Fault):
     code = 411
 

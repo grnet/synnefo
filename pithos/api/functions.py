@@ -12,7 +12,7 @@ try:
 except:
     from pithos.api.util import parse_http_date_safe
 
-from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
+from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
 from pithos.api.util import get_meta, get_range, api_method
 
 from settings import PROJECT_PATH
@@ -23,7 +23,7 @@ from pithos.backends.dummy import BackEnd
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 @api_method('GET')
 def authenticate(request):
@@ -101,7 +101,7 @@ def account_meta(request, v_account):
     response['X-Account-Container-Count'] = info['count']
     response['X-Account-Bytes-Used'] = info['bytes']
     for k in [x for x in info.keys() if x.startswith('X-Account-Meta-')]:
-        response[k] = info[k]
+        response[k.encode('utf-8')] = info[k].encode('utf-8')
     
     return response
 
@@ -178,7 +178,7 @@ def container_meta(request, v_account, v_container):
     response['X-Container-Object-Count'] = info['count']
     response['X-Container-Bytes-Used'] = info['bytes']
     for k in [x for x in info.keys() if x.startswith('X-Container-Meta-')]:
-        response[k] = info[k]
+        response[k.encode('utf-8')] = info[k].encode('utf-8')
     
     return response
 
@@ -226,6 +226,7 @@ def container_update(request, v_account, v_container):
 def container_delete(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
+    #                       conflict (409),
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
@@ -237,7 +238,7 @@ def container_delete(request, v_account, v_container):
         raise ItemNotFound()
     
     if info['count'] > 0:
-        return HttpResponse(status = 409)
+        raise Conflict()
     
     # TODO: Handle both exceptions.
     try:
@@ -319,8 +320,9 @@ def object_meta(request, v_account, v_container, v_object):
     response['Content-Length'] = info['bytes']
     response['Content-Type'] = info['content_type']
     response['Last-Modified'] = http_date(info['last_modified'])
+    # TODO: How should these be encoded for non-ascii?
     for k in [x for x in info.keys() if x.startswith('X-Object-Meta-')]:
-        response[k] = info[k]
+        response[k.encode('utf-8')] = info[k].encode('utf-8')
     
     return response
 
@@ -519,6 +521,14 @@ def object_update(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
+    
+    meta = get_meta(request, 'X-Object-Meta-')
+    
+    be = BackEnd(STORAGE_PATH)
+    try:
+        be.update_object_meta(request.user, v_container, v_object, meta)
+    except NameError:
+        raise ItemNotFound()
     
     return HttpResponse(status = 202)
 

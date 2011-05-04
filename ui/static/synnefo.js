@@ -244,8 +244,11 @@ function update_vms(interval) {
                 url: "/datetime",
                 async: false
             }).responseText;
-			changes_since_date = new Date(contentText.replace(/(<([^>]+)>)/ig,""));
-			changes_since = ISODateString(changes_since_date);
+            // create changes_since string if necessary
+            if (jqXHR.getResponseHeader('Date') != null){
+			    changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
+			    changes_since = ISODateString(changes_since_date);
+            }
 
 			if (interval) {
 				clearTimeout(deferred);	// clear old deferred calls

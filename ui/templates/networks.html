@@ -297,8 +297,7 @@ $(".show-machines").click(function() {
 });
 // toggle the component with class network-contents
 $(".network-logos").click(function() {
-    alert($(this).next(".network-contents"));
-    $(this).next(".network-contents").slideToggle(600);
+    $(this).siblings(".network-contents").slideToggle(600);
 });
 
 // intercept click to remove machine from network 

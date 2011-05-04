@@ -1819,6 +1819,10 @@ div.network div.actions a.selected:hover {
     padding-right: 10px;
 }
 
+.network-logos:hover {
+    cursor: pointer;
+}
+
 #networks-container .settings {
     color: #000000;
 }

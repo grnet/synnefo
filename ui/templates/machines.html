@@ -656,7 +656,11 @@ jQuery.expr[':'].focus = function( elem ) {
     }
 };
 
-$('*').keydown(function (){
+$('*').keydown(function (event){
+    if (event.keyCode == '9') {
+        event.preventDefault();
+        return false;
+    }
     if ($('#add-dialog').is(":visible") && !$('#edit-dialog textarea').length && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
         $('input.key').focus();
         $('input.key').focusin(); 

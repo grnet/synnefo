@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2010 Greek Research and Technology Network
+# Copyright (c) 201! Greek Research and Technology Network
 #
-"""Receive Ganeti events over RabbitMQ, update VM state in DB.
+"""Connect to a queue 
 
 This daemon receives job notifications from ganeti-amqpd
 and updates VM state in the DB accordingly.
@@ -21,14 +21,16 @@ setup_environ(settings)
 
 from amqplib import client_0_8 as amqp
 
-import daemon
-from signal import signal, SIGINT, SIGTERM, SIGKILL
+from signal import signal, SIGINT, SIGTERM
 
 import logging
 import time
 import socket
 
 from synnefo.logic import dispatcher_callbacks
+
+#List of worker ids
+global children
 
 class Dispatcher:
 
@@ -56,6 +58,7 @@ class Dispatcher:
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
         self.chan.close()
         self.chan.connection.close()
+        sys.exit()
 
     def _init(self):
         conn = None
@@ -101,26 +104,17 @@ class Dispatcher:
             self.clienttags.append(tag)
 
 def exit_handler(signum, frame):
-    global handler_logger
-
-    handler_logger.info("Caught fatal signal %d, will raise SystemExit", signum)
+    print "%d: Caught signal %d, will raise SystemExit" % (os.getpid(),signum)
     raise SystemExit
 
-def child(cmdline):
-    global logger
+def parent_handler(signum, frame):
+    global children
+    print "Caught signal %d, sending kill signal to children" % signum
+    [os.kill(pid, SIGTERM) for pid in children]
+
+def child(cmdline, logger):
     #Cmd line argument parsing
     (opts, args) = parse_arguments(cmdline)
-
-    # Initialize logger
-    lvl = logging.DEBUG if opts.debug else logging.INFO
-    logger = logging.getLogger("synnefo.dispatcher")
-    logger.setLevel(lvl)
-    formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
-            "%Y-%m-%d %H:%M:%S")
-    handler = logging.FileHandler(opts.log_file)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
     d = Dispatcher(debug = opts.debug, logger = logger)
 
     d.wait()
@@ -138,6 +132,8 @@ def parse_arguments(args):
             settings.DISPATCHER_LOG_FILE)
     parser.add_option("-c", "--cleanup-queues", action="store_true", default=False, dest="cleanup_queues",
             help="Remove from RabbitMQ all queues declared in settings.py (DANGEROUS!)")
+    parser.add_option("-w", "--workers", default=1, dest="workers",
+            help="Number of workers to spawn")
     
     return parser.parse_args(args)
 
@@ -169,37 +165,55 @@ def cleanup_queues() :
             chan.queue_delete(queue=queue)
         except amqp.exceptions.AMQPChannelException as e:
             print e.amqp_reply_code, " ", e.amqp_reply_text
+    chan.close()
+    chan.connection.close()
 
 def main():
+    global children, logger
     (opts, args) = parse_arguments(sys.argv[1:])
 
+    # Initialize logger
+    lvl = logging.DEBUG if opts.debug else logging.INFO
+    logger = logging.getLogger("synnefo.dispatcher")
+    logger.setLevel(lvl)
+    formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
+            "%Y-%m-%d %H:%M:%S")
+    handler = logging.FileHandler(opts.log_file)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    #Special case for the clean up queues action
     if opts.cleanup_queues:
         cleanup_queues()
         return
 
-    #newpid = os.fork()
-    #if newpid == 0:
-    child(sys.argv[1:])
-    #else:
-    #    pids = (os.getpid(), newpid)
-    #    print "parent: %d, child: %d" % pids
+    #Fork workers
+    children = []
 
-    # Become a daemon:
-    # Redirect stdout and stderr to handler.stream to catch
-    # early errors in the daemonization process [e.g., pidfile creation]
-    # which will otherwise go to /dev/null.
-    #daemon_context = daemon.DaemonContext(
-    #        umask=022,
-    #        stdout=handler.stream,
-    #        stderr=handler.stream,
-    #        files_preserve=[handler.stream])
-    #daemon_context.open()
-    #logger.info("Became a daemon")
-    
+    i = 0
+    while i < opts.workers:
+        newpid = os.fork()
+
+        if newpid == 0:
+            signal(SIGINT, exit_handler)
+            signal(SIGTERM, exit_handler)
+            #child(sys.argv[1:], logger)
+            time.sleep(5)
+            sys.exit(0)
+        else:
+            pids = (os.getpid(), newpid)
+            logger.debug("%d, forked child: %d" % pids)
+            children.append(pids[1])
+        i += 1
+
     # Catch signals to ensure graceful shutdown
-    #signal(SIGINT, exit_handler)
-    #signal(SIGTERM, exit_handler)
-    #signal(SIGKILL, exit_handler)
+    signal(SIGINT,  parent_handler)
+    signal(SIGTERM, parent_handler)
+
+    try:
+        os.wait()
+    except Exception :
+        pass
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

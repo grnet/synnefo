@@ -697,12 +697,12 @@ function vnc_attachment(host, port, password) {
 
 
 // Show VNC console
-function show_vnc_console(host, port, password) {
+function show_vnc_console(serverID, host, port, password) {
     // FIXME: Must be made into parameters, in settings.py
 
     var params_url = '?host=' + host + '&port=' + port + '&password=' + password ;
 
-    window.open('/machines/console' + params_url, 'formresult', 'scrollbars=no,menubar=no,height=600,width=800,resizable=yes,toolbar=no,status=no');
+    window.open('/machines/console' + params_url, 'formresult' + serverID, 'scrollbars=no,menubar=no,height=600,width=800,resizable=yes,toolbar=no,status=no');
 
     return false;
 }
@@ -736,7 +736,7 @@ function open_console(serverIDs){
                             console.info('got_console ' + serverID);
                         } catch(err) {}
 						// indicate that the action succeeded
-                        show_vnc_console(data.console.host,data.console.port,data.console.password);
+                        show_vnc_console(serverID, data.console.host,data.console.port,data.console.password);
 						display_success(serverID);
                         // hide spinner
                         $('#' + serverID + ' .spinner').hide();

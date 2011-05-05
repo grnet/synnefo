@@ -10,20 +10,20 @@ from django.utils.http import http_date, parse_etags
 try:
     from django.utils.http import parse_http_date_safe
 except:
-    from pithos.api.util import parse_http_date_safe
+    from pithos.api.compat import parse_http_date_safe
 
 from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
 from pithos.api.util import get_meta, get_range, api_method
-
-from settings import PROJECT_PATH
-from os import path
-STORAGE_PATH = path.join(PROJECT_PATH, 'data')
-
 from pithos.backends.dummy import BackEnd
 
+import os
+import datetime
 import logging
 
-logging.basicConfig(level=logging.INFO)
+from settings import PROJECT_PATH
+STORAGE_PATH = os.path.join(PROJECT_PATH, 'data')
+
+logger = logging.getLogger(__name__)
 
 @api_method('GET')
 def authenticate(request):
@@ -39,9 +39,8 @@ def authenticate(request):
         raise BadRequest('Missing auth user or key.')
     
     response = HttpResponse(status = 204)
-    response['X-Auth-Token'] = 'eaaafd18-0fed-4b3a-81b4-663c99ec1cbb'
-    # TODO: Must support X-Storage-Url to be compatible.
-    response['X-Storage-Url'] = 'http://127.0.0.1:8000/v1/asdf'
+    response['X-Auth-Token'] = '0000'
+    response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(), 'demo')
     return response
 
 def account_demux(request, v_account):
@@ -141,11 +140,11 @@ def container_list(request, v_account):
         containers = be.list_containers(request.user, marker, limit)
     except NameError:
         containers = []
-    # TODO: The cloudfiles python bindings expect 200 if json/xml.
-    if len(containers) == 0:
-        return HttpResponse(status = 204)
     
     if request.serialization == 'text':
+        if len(containers) == 0:
+            # The cloudfiles python bindings expect 200 if json/xml.
+            return HttpResponse(status = 204)
         return HttpResponse('\n'.join(containers), status = 200)
     
     # TODO: Do this with a backend parameter?
@@ -153,7 +152,6 @@ def container_list(request, v_account):
         containers = [be.get_container_meta(request.user, x) for x in containers]
     except NameError:
         raise ItemNotFound()
-    # TODO: Format dates.
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': request.user, 'containers': containers})
     elif request.serialization  == 'json':
@@ -233,18 +231,11 @@ def container_delete(request, v_account, v_container):
     
     be = BackEnd(STORAGE_PATH)
     try:
-        info = be.get_container_meta(request.user, v_container)
+        be.delete_container(request.user, v_container)
     except NameError:
         raise ItemNotFound()
-    
-    if info['count'] > 0:
+    except IndexError:
         raise Conflict()
-    
-    # TODO: Handle both exceptions.
-    try:
-        be.delete_container(request.user, v_container)
-    except:
-        raise ItemNotFound()
     return HttpResponse(status = 204)
 
 @api_method('GET', format_allowed = True)
@@ -259,6 +250,7 @@ def object_list(request, v_account, v_container):
     prefix = request.GET.get('prefix')
     delimiter = request.GET.get('delimiter')
     
+    # TODO: Check if the cloudfiles python bindings expect the results with the prefix.
     # Path overrides prefix and delimiter.
     if path:
         prefix = path
@@ -282,11 +274,11 @@ def object_list(request, v_account, v_container):
         objects = be.list_objects(request.user, v_container, prefix, delimiter, marker, limit)
     except NameError:
         raise ItemNotFound()
-    # TODO: The cloudfiles python bindings expect 200 if json/xml.
-    if len(objects) == 0:
-        return HttpResponse(status = 204)
     
     if request.serialization == 'text':
+        if len(objects) == 0:
+            # The cloudfiles python bindings expect 200 if json/xml.
+            return HttpResponse(status = 204)
         return HttpResponse('\n'.join(objects), status = 200)
     
     # TODO: Do this with a backend parameter?
@@ -294,7 +286,10 @@ def object_list(request, v_account, v_container):
         objects = [be.get_object_meta(request.user, v_container, x) for x in objects]
     except NameError:
         raise ItemNotFound()
-    # TODO: Format dates.
+    # Format dates.
+    for x in objects:
+        if x.has_key('last_modified'):
+            x['last_modified'] = datetime.datetime.fromtimestamp(x['last_modified']).isoformat()
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': objects})
     elif request.serialization  == 'json':
@@ -320,7 +315,6 @@ def object_meta(request, v_account, v_container, v_object):
     response['Content-Length'] = info['bytes']
     response['Content-Type'] = info['content_type']
     response['Last-Modified'] = http_date(info['last_modified'])
-    # TODO: How should these be encoded for non-ascii?
     for k in [x for x in info.keys() if x.startswith('X-Object-Meta-')]:
         response[k.encode('utf-8')] = info[k].encode('utf-8')
     

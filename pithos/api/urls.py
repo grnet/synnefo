@@ -5,7 +5,6 @@
 from django.conf.urls.defaults import *
 
 # TODO: This only works when in this order.
-# TODO: Define which characters can be used in each "path" component.
 urlpatterns = patterns('pithos.api.functions',
     (r'^$', 'authenticate'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$', 'object_demux'),

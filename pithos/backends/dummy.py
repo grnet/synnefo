@@ -7,20 +7,11 @@ import hashlib
 import shutil
 
 logger = logging.getLogger(__name__)
-formatter = logging.Formatter('[%(levelname)s] %(message)s')
-handler = logging.FileHandler('backend.out')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 class BackEnd:
 
-    logger = None
-    
-    def __init__(self, basepath, log_file='backend.out', log_level=logging.DEBUG):
+    def __init__(self, basepath):
         self.basepath = basepath
-        
-        # TODO: Manage log_file.
-        logger.setLevel(log_level)
         
         if not os.path.exists(basepath):
             os.makedirs(basepath)
@@ -85,7 +76,7 @@ class BackEnd:
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
         if os.listdir(fullname):
-            raise Exception('Container is not empty')
+            raise IndexError('Container is not empty')
         else:
             os.rmdir(fullname)
             self.__del_dbpath(os.path.join(account, name))
@@ -155,15 +146,16 @@ class BackEnd:
         c = self.con.execute('select * from objects where name like ''?'' order by name', (os.path.join(prefix, '%'),))
         objects = [x[0][len(prefix):] for x in c.fetchall()]
         if delimiter:
-            pseudo_objects = {}
+            pseudo_objects = []
             for x in objects:
                 pseudo_name = x
                 i = pseudo_name.find(delimiter)
                 if i != -1:
                     pseudo_name = pseudo_name[:i]
+                if pseudo_name not in pseudo_objects:
+                    pseudo_objects.append(pseudo_name)
                 # TODO: Virtual directories.
-                pseudo_objects[pseudo_name] = x
-            objects = pseudo_objects.keys()
+            objects = pseudo_objects
         
         start = 0
         if marker:

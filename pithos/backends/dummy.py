@@ -1,14 +1,14 @@
 import os
 import sqlite3
-import json
 import logging
 import types
 import hashlib
 import shutil
+import basebackend
 
 logger = logging.getLogger(__name__)
 
-class BackEnd:
+class BackEnd(basebackend.BaseBackEnd):
 
     def __init__(self, basepath):
         self.basepath = basepath
@@ -196,6 +196,10 @@ class BackEnd:
         fullname = os.path.join(self.basepath, account, container)
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
+        try:
+            link = self.__get_linkinfo(os.path.join(account, container, name))
+        except NameError:
+            raise NameError('Object does not exist')
         self.__put_metadata(os.path.join(account, container, name), meta)
         return
     
@@ -259,6 +263,8 @@ class BackEnd:
         dest_location = os.path.join(self.basepath, account, dest_container, link)
         
         shutil.copyfile(src_location, dest_location)
+        # TODO: accept metadata changes
+        self.__put_metadata(os.path.join(account, dest_container, dest_name), self.__get_metadata(os.path.join(account, src_container, src_name)))
         return
     
     def delete_object(self, account, container, name):
@@ -306,8 +312,6 @@ class BackEnd:
         else:
             link = self.con.execute('insert into objects (name) values (?)', (path,)).lastrowid      
         for k, v in meta.iteritems():
-            if type(v) != types.StringType:
-                v = json.dumps(v)
             self.con.execute('insert or replace into metadata (object_id, name, value) values (?, ?, ?)', (link, k, v))
         self.con.commit()
         return

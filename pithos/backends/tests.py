@@ -15,7 +15,7 @@ class TestAccount(unittest.TestCase):
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
-            except Exception: # container not empty
+            except IndexError: # container not empty
                 for obj in self.b.list_objects(self.account, container):
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
@@ -57,24 +57,13 @@ class TestAccount(unittest.TestCase):
         "groups": "http://hostname/gss/rest/aaitest@uth.gr/groups",
         "creationDate": 1223372769275,
         "modificationDate": 1223372769275,
-        "lastLogin": 1223372769275,
-        "quota": {"totalFiles": 7, "totalBytes": 429330,"bytesRemaining": 10736988910}
+        "lastLogin": 1223372769275
         }
         self.b.update_account_meta(self.account, meta)
         d = self.b.get_account_meta(self.account)
-        p = os.path.join(self.basepath, self.account)
-        self.assertEquals(d['count'], len(os.listdir(p)))
-        self.assertEquals(d['bytes'], os.stat(p).st_size)
-        self.assertEquals(d['name'], self.account)
-        exp_len = len(meta)+3
-        if meta.has_key('count'):
-            exp_len = exp_len - 1
-        if meta.has_key('bytes'):
-            exp_len = exp_len - 1
-        if meta.has_key('name'):
-            exp_len = exp_len - 1
-        self.assertEquals(len(d), exp_len)
-        
+        for k,v in meta.iteritems():
+            self.assertEquals(unicode(v), d[k])
+            
     def test_get_non_existing_account_meta(self):
         self.assertRaises(NameError, self.b.get_account_meta, 'account2')
     
@@ -91,8 +80,7 @@ class TestAccount(unittest.TestCase):
         "groups": "http://hostname/gss/rest/aaitest@uth.gr/groups",
         "creationDate": 1223372769275,
         "modificationDate": 1223372769275,
-        "lastLogin": 1223372769275,
-        "quota": {"totalFiles": 7, "totalBytes": 429330,"bytesRemaining": 10736988910}
+        "lastLogin": 1223372769275
         }
         self.b.update_account_meta(self.account, meta)
         p = os.path.join(self.basepath, self.account)
@@ -102,9 +90,7 @@ class TestAccount(unittest.TestCase):
         for k,v in meta.iteritems():
             self.assertTrue(k in db_meta)
             db_value = db_meta[k]
-            if type(v) != types.StringType:
-                db_value = json.loads(db_value)
-            self.assertEquals(v, db_value)
+            self.assertEquals(unicode(v), db_value)
 
 class TestContainer(unittest.TestCase):
     def setUp(self):
@@ -220,6 +206,153 @@ class TestContainer(unittest.TestCase):
             self.b.update_object(self.account, cname, item, item)
         meta = self.b.get_container_meta(self.account, cname)
         self.assertEquals(meta['count'], 4)
+
+class TestObject(unittest.TestCase):
+    def setUp(self):
+        self.basepath = './test/content'
+        self.b = BackEnd(self.basepath)
+        self.account = 'account1'
         
+    def tearDown(self):
+        containers = self.b.list_containers(self.account)
+        for container in containers:
+            try:
+                self.b.delete_container(self.account, container)
+            except Exception: # container not empty
+                for obj in self.b.list_objects(self.account, container):
+                    self.b.delete_object(self.account, container, obj)
+                self.b.delete_container(self.account, container)
+    
+    def test_get_non_existing_object(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        self.assertRaises(NameError, self.b.get_object, self.account, 'cname', 'testobj')
+        self.assertRaises(NameError, self.b.get_object, self.account, cname, 'testobj')
+    
+    def test_get_object(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        input = {'name':'kate_beckinsale.jpg'}
+        self.b.update_object(self.account, cname, input['name'], json.dumps(input))
+        out = self.b.get_object(self.account, cname, 'kate_beckinsale.jpg')
+        self.assertEquals(input, json.loads(out))
+    
+    def test_update_object(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        input = {'name':'kate_beckinsale.jpg'}
+        self.b.update_object(self.account, cname, input['name'], json.dumps(input))
+        meta = self.b.get_object_meta(self.account, cname, input['name'])
+        self.assertTrue('hash' in meta)
+        
+    def test_copy_object(self):
+        src_cname = 'container1'
+        src_obj = 'photos/me.jpg'
+        dest_cname = 'container2'
+        dest_obj = 'photos/personal/myself.jpg'
+        
+        # non existing source account
+        self.assertRaises(NameError,
+                          self.b.copy_object,
+                          'account',
+                          src_cname,
+                          src_obj,
+                          dest_cname,
+                          dest_obj)
+        # non existing source container
+        self.assertRaises(NameError,
+                          self.b.copy_object,
+                          self.account,
+                          src_cname,
+                          src_obj,
+                          dest_cname,
+                          dest_obj)
+        
+        self.b.create_container(self.account, src_cname)
+        # non existing source object
+        self.assertRaises(NameError,
+                          self.b.copy_object,
+                          self.account,
+                          src_cname,
+                          src_obj,
+                          dest_cname,
+                          dest_obj)
+        
+        self.b.update_object(self.account, src_cname, src_obj, src_obj)
+        # non existing destination container
+        self.assertRaises(NameError,
+                          self.b.copy_object,
+                          self.account,
+                          src_cname,
+                          src_obj,
+                          dest_cname,
+                          dest_obj)
+        
+        self.b.create_container(self.account, dest_cname)
+        self.b.update_object_meta(self.account, src_cname, src_obj, {'tag':'sfsfssf'})
+        self.b.copy_object(self.account, src_cname, src_obj, dest_cname, dest_obj)
+        self.assertTrue(dest_obj.split('/')[-1] in self.b.list_objects(self.account,
+                                                                       dest_cname,
+                                                                       prefix='photos/personal/',
+                                                                       delimiter='/'))
+        # TODO: test metadata changes
+        meta_tag = self.b.get_object_meta(self.account, dest_cname, dest_obj)['tag']
+        self.assertEquals(meta_tag, unicode('sfsfssf'))
+        
+    def test_delete_non_existing_object(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        name = 'kate_beckinsale.jpg'
+        self.assertRaises(NameError, self.b.delete_object, self.account, cname, name)
+        
+    def test_delete_object(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        name = 'kate_beckinsale.jpg'
+        self.b.update_object(self.account, cname, name, name)
+        self.assertTrue(name in self.b.list_objects(self.account, cname))
+        
+        self.b.delete_object(self.account, cname, name)
+        self.assertTrue(name not in self.b.list_objects(self.account, cname))
+        self.assertRaises(NameError, self.b.delete_object, self.account, cname, name)
+        
+    def test_get_non_existing_object_meta(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        name = 'kate_beckinsale.jpg'
+        self.assertRaises(NameError, self.b.get_object_meta, self.account, cname, name)
+        
+    def test_get_update_object_meta(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        name = 'kate_beckinsale.jpg'
+        self.b.update_object(self.account, cname, name, name)
+        
+        m1 = {'X-Object-Meta-Meat': 'Bacon',
+             'X-Object-Meta-Fruit': 'Bacon',
+             'X-Object-Meta-Dairy': 'Bacon'}
+        self.b.update_object_meta(self.account, cname, name, m1)
+        meta = self.b.get_object_meta(self.account, cname, name)
+        for k,v in m1.iteritems():
+            self.assertTrue(k in meta)
+            self.assertEquals(unicode(v), meta[k])
+
+        m2 = {'X-Object-Meta-Meat': 'Bacon',
+             'X-Object-Meta-Fruit': 'Bacon',
+             'X-Object-Meta-Veggie': 'Bacon',
+             'X-Object-Meta-Dairy': 'Chicken'}
+        self.b.update_object_meta(self.account, cname, name, m2)
+        meta = self.b.get_object_meta(self.account, cname, name)
+        m1.update(m2)
+        for k,v in m1.iteritems():
+            self.assertTrue(k in meta)
+            self.assertEquals(unicode(v), meta[k])
+
+    def test_update_non_existing_object_meta(self):
+        cname = 'container1'
+        self.b.create_container(self.account, cname)
+        name = 'kate_beckinsale.jpg'
+        self.assertRaises(NameError, self.b.update_object_meta, self.account, cname, name, {})
+    
 if __name__ == "__main__":
     unittest.main()        

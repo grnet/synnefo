@@ -2,6 +2,12 @@ var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
 var API_URL = "/api/v1.1";
 
+//FIXME: sends a fake HTTP_AUTH_TOKEN
+    $.ajaxSetup({
+        'beforeSend': function(xhr) {xhr.setRequestHeader("X_AUTH_TOKEN", "46e427d657b20defe352804f0eb6f8a2")}
+    });
+
+
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC.
     //do not include time zone info (Z) at the end

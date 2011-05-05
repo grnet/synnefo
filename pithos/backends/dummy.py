@@ -167,7 +167,7 @@ class BackEnd:
         start = 0
         if marker:
             try:
-                start = objects.index(marker)
+                start = objects.index(marker) + 1
             except ValueError:
                 pass
         if not limit or limit > 10000:

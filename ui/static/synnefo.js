@@ -568,7 +568,7 @@ function shutdown(serverIDs) {
 	}
     // ajax post shutdown call
     var payload = {
-        "shutdown": {"timeout" : "5"}
+        "shutdown": {}
     };   
 
 	var serverID = serverIDs.pop()
@@ -646,7 +646,7 @@ function start(serverIDs){
 	}	
     // ajax post start call
     var payload = {
-        "start": {"type" : "NORMAL"}
+        "start": {}
     };   
 
 	var serverID = serverIDs.pop()

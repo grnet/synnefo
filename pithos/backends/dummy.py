@@ -92,7 +92,7 @@ class BackEnd:
             raise NameError('Container does not exist')
         contents = os.listdir(fullname)
         count = len(contents)
-        size = sum(os.path.getsize(os.path.join(self.basepath, account, name, objectname)) for objectname in contents)
+        size = os.stat(fullname).st_size
         meta = self.__get_metadata(os.path.join(account, name))
         meta.update({'name': name, 'count': count, 'bytes': size})
         return meta
@@ -118,11 +118,10 @@ class BackEnd:
         if not os.path.exists(fullname):
             raise NameError('Account does not exist')
         containers = os.listdir(fullname)
-        
         start = 0
         if marker:
             try:
-                start = containers.index(marker)
+                start = containers.index(marker) + 1
             except ValueError:
                 pass
         if not limit or limit > 10000:
@@ -160,7 +159,7 @@ class BackEnd:
         start = 0
         if marker:
             try:
-                start = objects.index(marker)
+                start = objects.index(marker) + 1
             except ValueError:
                 pass
         if not limit or limit > 10000:

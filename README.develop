@@ -179,13 +179,21 @@ testing requirements:
 	$ ./bin/python manage.py loaddata db/fixtures/disks.json
 
 7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
-username 
+   username in settings.py. Several functional conventions within the system
+   require this variable to include a dash at its end (e.g. snf-)
 
-8. Start the system
-    $ ./bin/python db/db_controller.py  # DB synch daemon
+8. Specify a new queue to receive ganeti events, based on the specified
+   BACKEND_PREFIX_ID. Something like the following at the end of
+   settings.py should do the trick.
+
+   DB_HANDLER_KEY = 'ganeti.%s.#' % BACKEND_PREFIX_ID.split('-')[0]
+   BINDINGS[0] = ("events-%s" % BACKEND_PREFIX_ID.split('-')[0], EXCHANGE_GANETI,  DB_HANDLER_KEY, 'update_db')
+
+9. Start the system
+    $ ./bin/python logic/dispatcher.py  # DB synch daemon
     $ ./bin/python manage.py runserver  # Django
 
-9. (Hopefully) Done
+10. (Hopefully) Done
 
 South Database Migrations
 ------------------------

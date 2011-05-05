@@ -364,6 +364,13 @@ def create_server_metadata(n=1):
             meta_value='Value %d' % (i + 1),
             vm = choice(servers))
 
+def create_networks(n):
+    users = SynnefoUser.objects.all()
+    for i in range(n):
+        Network.objects.create(
+            name='Network%d' % (i + 1),
+            owner=choice(users))
+
 
 class AssertInvariant(object):
     def __init__(self, callable, *args, **kwargs):
@@ -386,6 +393,7 @@ class BaseTestCase(TestCase):
     SERVERS = 1
     SERVER_METADATA = 0
     IMAGE_METADATA = 0
+    NETWORKS = 0
     
     def setUp(self):
         self.client = AaiClient()
@@ -395,6 +403,7 @@ class BaseTestCase(TestCase):
         create_image_metadata(self.IMAGE_METADATA)
         create_servers(self.SERVERS)
         create_server_metadata(self.SERVER_METADATA)
+        create_networks(self.NETWORKS)
     
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
@@ -473,24 +482,83 @@ class BaseTestCase(TestCase):
         for m in ImageMetadata.objects.all():
             metadata[m.image.id][m.meta_key] = m.meta_value
         return metadata
+    
+    def list_networks(self, detail=False):
+        path = '/api/v1.1/networks'
+        if detail:
+            path += '/detail'
+        response = self.client.get(path)
+        self.assertTrue(response.status_code in (200, 203))
+        reply = json.loads(response.content)
+        self.assertEqual(reply.keys(), ['networks'])
+        self.assertEqual(reply['networks'].keys(), ['values'])
+        return reply['networks']['values']
+    
+    def create_network(self, name):
+        path = '/api/v1.1/networks'
+        data = json.dumps({'network': {'name': name}})
+        response = self.client.post(path, data, content_type='application/json')
+        self.assertEqual(response.status_code, 202)
+        reply = json.loads(response.content)
+        self.assertEqual(reply.keys(), ['network'])
+        return reply
+    
+    def get_network_details(self, name):
+        path = '/api/v1.1/networks/%s' % name
+        response = self.client.get(path)
+        self.assertEqual(response.status_code, 200)
+        reply = json.loads(response.content)
+        self.assertEqual(reply.keys(), ['network'])
+        return reply['network']
+    
+    def update_network_name(self, name, new_name):
+        path = '/api/v1.1/networks/%s' % name
+        data = json.dumps({'network': {'name': new_name}})
+        response = self.client.put(path, data, content_type='application/json')
+        self.assertEqual(response.status_code, 204)
+    
+    def delete_network(self, name):
+        path = '/api/v1.1/networks/%s' % name
+        response = self.client.delete(path)
+        self.assertEqual(response.status_code, 204)
+    
+    def add_to_network(self, network_name, server_id):
+        path = '/api/v1.1/networks/%s/action' % network_name
+        data = json.dumps({'add': {'serverRef': server_id}})
+        response = self.client.post(path, data, content_type='application/json')
+        self.assertEqual(response.status_code, 202)
+    
+    def remove_from_network(self, network_name, server_id):
+        path = '/api/v1.1/networks/%s/action' % network_name
+        data = json.dumps({'remove': {'serverRef': server_id}})
+        response = self.client.post(path, data, content_type='application/json')
+        self.assertEqual(response.status_code, 202)
+
+
+def popdict(l, **kwargs):
+    """Pops a dict from list `l` based on the predicates given as `kwargs`."""
+    
+    for i in range(len(l)):
+        item = l[i]
+        match = True
+        for key, val in kwargs.items():
+            if item[key] != val:
+                match = False
+                break
+        if match:
+            del l[i]
+            return item
+    return None
 
 
 class ListImages(BaseTestCase):
     IMAGES = 10
     
-    def _pop_image(self, images, image_id):
-        for i in range(len(images)):
-            image = images[i]
-            if image['id'] == image_id:
-                del images[i]
-                return image
-        return None
-    
     def test_list_images(self):
         images = self.list_images()
         keys = set(['id', 'name'])
         for img in Image.objects.all():
-            image = self._pop_image(images, img.id)
+            image = popdict(images, id=img.id)
             self.assertTrue(image is not None)
             self.assertEqual(set(image.keys()), keys)
             self.assertEqual(image['id'], img.id)
@@ -501,7 +569,7 @@ class ListImages(BaseTestCase):
         images = self.list_images(detail=True)
         keys = set(['id', 'name', 'updated', 'created', 'status', 'progress'])
         for img in Image.objects.all():
-            image = self._pop_image(images, img.id)
+            image = popdict(images, id=img.id)
             self.assertTrue(image is not None)
             self.assertEqual(set(image.keys()), keys)
             self.assertEqual(image['id'], img.id)
@@ -738,3 +806,119 @@ class ServerVNCConsole(BaseTestCase):
         console = reply['console']
         self.assertEqual(console['type'], 'vnc')
         self.assertEqual(set(console.keys()), set(['type', 'host', 'port', 'password']))
+
+
+class ListNetworks(BaseTestCase):
+    SERVERS = 5
+    NETWORKS = 5
+    
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        machines = VirtualMachine.objects.all()
+        for network in Network.objects.all():
+            n = randint(0, self.SERVERS)
+            network.machines.add(*sample(machines, n))
+            network.save()
+    
+    def test_list_networks(self):
+        networks = self.list_networks()
+        for net in Network.objects.all():
+            popdict(networks, name=net.name)
+        self.assertEqual(networks, [])
+    
+    def test_list_networks_detail(self):
+        networks = self.list_networks(detail=True)
+        for net in Network.objects.all():
+            network = popdict(networks, name=net.name)
+            machines = set(vm.id for vm in net.machines.all())
+            self.assertEqual(set(network['servers']['values']), machines)
+        self.assertEqual(networks, [])
+
+
+class CreateNetwork(BaseTestCase):
+    def test_create_network(self):
+        self.assertEqual(self.list_networks(), [])
+        self.create_network('net')
+        networks = self.list_networks()
+        self.assertEqual(len(networks), 1)
+        network = networks[0]
+        self.assertEqual(network['name'], 'net')
+
+
+class GetNetworkDetails(BaseTestCase):
+    SERVERS = 5
+    NETWORKS = 1
+    
+    def test_get_network_details(self):
+        servers = VirtualMachine.objects.all()
+        network = Network.objects.all()[0]
+        name = network.name
+        
+        net = self.get_network_details(name)
+        self.assertEqual(net['servers']['values'], [])
+        
+        server_id = choice(servers).id
+        self.add_to_network(name, server_id)
+        net = self.get_network_details(name)
+        self.assertEqual(net['servers']['values'], [server_id])
+
+
+class UpdateNetworkName(BaseTestCase):
+    NETWORKS = 5
+    
+    def test_update_network_name(self):
+        networks = self.list_networks(detail=True)
+        network = choice(networks)
+        name = network['name']
+        new_name = name + '_2'
+        self.update_network_name(name, new_name)
+        
+        network['name'] = new_name
+        self.assertEqual(self.get_network_details(new_name), network)
+        
+        response = self.client.get('/api/v1.1/networks/' + name)
+        self.assertItemNotFound(response)
+
+
+class DeleteNetwork(BaseTestCase):
+    NETWORKS = 5
+    
+    def test_delete_network(self):
+        networks = self.list_networks()
+        network = choice(networks)
+        name = network['name']
+        self.delete_network(name)
+        
+        response = self.client.get('/api/v1.1/networks/' + name)
+        self.assertItemNotFound(response)
+        
+        networks.remove(network)
+        self.assertEqual(self.list_networks(), networks)
+
+
+class NetworkActions(BaseTestCase):
+    SERVERS = 20
+    NETWORKS = 1
+    
+    def test_add_remove_server(self):
+        server_ids = [vm.id for vm in VirtualMachine.objects.all()]
+        network = self.list_networks(detail=True)[0]
+        name = network['name']
+        
+        to_add = set(sample(server_ids, 10))
+        for server_id in to_add:
+            self.add_to_network(name, server_id)
+            net = self.get_network_details(name)
+            self.assertTrue(server_id in net['servers']['values'])
+        
+        net = self.get_network_details(name)
+        self.assertEqual(set(net['servers']['values']), to_add)
+        
+        to_remove = set(sample(to_add, 5))
+        for server_id in to_remove:
+            self.remove_from_network(name, server_id)
+            net = self.get_network_details(name)
+            self.assertTrue(server_id not in net['servers']['values'])
+        
+        net = self.get_network_details(name)
+        self.assertEqual(set(net['servers']['values']), to_add - to_remove)

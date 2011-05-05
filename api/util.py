@@ -123,7 +123,7 @@ def get_network(network, owner):
         return Network.objects.get(name=network, owner=owner)
     except ValueError:
         raise BadRequest('Invalid network name.')
-    except Image.DoesNotExist:
+    except Network.DoesNotExist:
         raise ItemNotFound('Network not found.')
 
 

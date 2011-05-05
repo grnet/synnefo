@@ -238,6 +238,15 @@ def get_console(request, vm, args):
 
 @network_action('add')
 def add(request, net, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
@@ -248,6 +257,15 @@ def add(request, net, args):
 
 @network_action('remove')
 def remove(request, net, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')

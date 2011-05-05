@@ -84,6 +84,7 @@ def create_network(request):
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
+    #                       badMediaType(415),
     #                       badRequest (400),
     #                       overLimit (413)
     
@@ -104,6 +105,12 @@ def create_network(request):
 @api_method('GET')
 def get_network_details(request, network):
     # Normal Response Codes: 200, 203
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
     
     net = get_network(network, request.user)
     netdict = network_to_dict(net)
@@ -112,7 +119,14 @@ def get_network_details(request, network):
 @api_method('PUT')
 def update_network_name(request, network):
     # Normal Response Code: 204
-
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
     req = get_request_dict(request)
 
     try:
@@ -128,6 +142,12 @@ def update_network_name(request, network):
 @api_method('DELETE')
 def delete_network(request, network):
     # Normal Response Code: 204
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       overLimit (413)
     
     net = get_network(network, request.user)
     net.delete()
@@ -135,14 +155,6 @@ def delete_network(request, network):
 
 @api_method('POST')
 def network_action(request, network):
-    # Normal Response Code: 202
-    # Error Response Codes: computeFault (400, 500),
-    #                       serviceUnavailable (503),
-    #                       unauthorized (401),
-    #                       badRequest (400),
-    #                       itemNotFound (404),
-    #                       overLimit (413)
-    
     net = get_network(network, request.user)
     req = get_request_dict(request)
     if len(req) != 1:

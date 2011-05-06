@@ -15,6 +15,8 @@ from pithos.api.faults import Fault, BadRequest, ServiceUnavailable
 import datetime
 import logging
 
+logger = logging.getLogger(__name__)
+
 def format_meta_key(k):
     """
     Convert underscores to dashes and capitalize intra-dash strings.
@@ -142,7 +144,7 @@ def api_method(http_method = None, format_allowed = False):
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
-                logging.exception('Unexpected error: %s' % e)
+                logger.exception('Unexpected error: %s' % e)
                 fault = ServiceUnavailable('Unexpected error')
                 return render_fault(request, fault)
         return wrapper

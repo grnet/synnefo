@@ -7,10 +7,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
 
-try:
-    from django.utils.http import parse_http_date_safe
-except:
-    from pithos.api.compat import parse_http_date_safe
+from pithos.api.compat import parse_http_date_safe
 
 from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
 from pithos.api.util import get_meta, get_range, api_method

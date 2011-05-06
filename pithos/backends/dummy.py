@@ -138,10 +138,7 @@ class BackEnd(basebackend.BaseBackEnd):
         if not os.path.exists(fullname):
             raise NameError('Container does not exist')
         
-        while prefix.startswith('/'):
-            prefix = prefix[1:]
-        # TODO: Test this with various prefixes. Does '//' bother it?
-        prefix = os.path.join(account, container, prefix)
+        prefix = os.path.join(account, container, prefix.lstrip('/'))
         c = self.con.execute('select * from objects where name like ''?'' order by name', (os.path.join(prefix, '%'),))
         objects = [x[0][len(prefix):] for x in c.fetchall()]
         if delimiter:

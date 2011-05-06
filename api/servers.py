@@ -94,7 +94,7 @@ def vm_to_dict(vm, detail=False):
             d['metadata'] = {'values': metadata}
         
         addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
-        addresses.extend({'id': network.name, 'values': []} for network in vm.network_set.all())
+        addresses.extend({'id': str(network.id), 'values': []} for network in vm.network_set.all())
         d['addresses'] = {'values': addresses}
     return d
 

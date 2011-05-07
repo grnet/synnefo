@@ -5,6 +5,7 @@
 #
 # Copyright 2011 Greek Research and Technology Network
 #
+from Cookie import Cookie
 
 from django.test import TestCase
 from django.test.client import Client
@@ -41,6 +42,7 @@ class AuthTestCase(TestCase):
         self.assertEquals(response['Location'], settings.APP_INSTALL_URL)
         self.assertTrue('X-Auth-Token' in response)
         self.assertEquals(response['X-Auth-Token'], user.auth_token)
+        #self.assertNotEquals(response.cookies['X-Auth-Token'].find(user.auth_token), -1)
 
         response = self.client.get(self.apibase + '/servers', {},
                                    **{Tokens.SIB_NAME: 'Jimmy',
@@ -57,6 +59,16 @@ class AuthTestCase(TestCase):
 
         self.assertEquals(user1.auth_token , user.auth_token)
         self.assertTrue(response['Location'].endswith, '/servers')
+
+    def test_auth_cookie(self):
+        user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
+        self.client.cookies['X-Auth-Token'] = user.auth_token
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{'X-Auth-Token': user.auth_token,
+                                      'TEST-AAI' : 'true'})
+        self.assertTrue(response.status_code, 200)
+        self.assertTrue('Vary' in response)
+        self.assertTrue('X-Auth-Token' in response['Vary'])
 
     def test_shibboleth_no_uniq_request(self):
         """test a request with no unique field

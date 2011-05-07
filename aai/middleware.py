@@ -4,6 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
+import datetime
 
 class SynnefoAuthMiddleware(object):
 
@@ -16,7 +17,18 @@ class SynnefoAuthMiddleware(object):
             #print time.strftime("[%d/%b/%Y %H:%M:%S]"), " Path", \
             #  request.path , ": Not authenticated"
             return
-        token = request.META.get('HTTP_X_AUTH_TOKEN', None)        
+
+        token = None
+        #Try to find token in a cookie
+        try:
+            token = request.COOKIES['X-Auth-Token']
+        except Exception:
+            pass
+
+        #Try to find token in request header
+        if not token:
+            token = request.META.get('HTTP_X_AUTH_TOKEN', None)
+
         if token:
             user = None
             #Retrieve user from DB or other caching mechanism
@@ -97,9 +109,13 @@ class SynnefoAuthMiddleware(object):
         response['Vary'] = self.auth_token
         return response
 
-
     def _redirect_shib_auth_user(self, user):
+        expire = user.auth_token_created + datetime.timedelta(hours=settings.AUTH_TOKEN_DURATION)
+        expire_fmt = expire.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+
         response = HttpResponse()
+
+        response.set_cookie('X-Auth-Token', value=user.auth_token, expires = expire_fmt, path='/api')
         response[self.auth_token] = user.auth_token
         response['Location'] = settings.APP_INSTALL_URL
         response.status_code = 302

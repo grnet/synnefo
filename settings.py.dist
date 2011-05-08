@@ -168,25 +168,25 @@ GANETI_EVENTD_LOG_FILE = "/var/log/synnefo/ganeti-eventd.log"
 GANETI_EVENTD_PID_FILE = "/var/run/synnefo/ganeti-eventd.pid"
 
 #Rabbit work queue end point
-RABBIT_HOST="62.217.120.67:5672"
-RABBIT_USERNAME="okeanos"
-RABBIT_PASSWORD="0k3@n0s"
-RABBIT_VHOST="/"
+RABBIT_HOST = "62.217.120.67:5672"
+RABBIT_USERNAME = "okeanos"
+RABBIT_PASSWORD = "0k3@n0s"
+RABBIT_VHOST = "/"
 
-#Queues, exchanges and bindings
-EXCHANGE_GANETI="ganeti"  #Messages from Ganeti
-EXCHANGE_CRON="cron"      #Messages from periodically triggered tasks
-EXCHANGE_API="api"        #Messages from the Rest API
+# Queues, exchanges and bindings
+EXCHANGE_GANETI = "ganeti"  # Messages from Ganeti
+EXCHANGE_CRON = "cron"      # Messages from periodically triggered tasks
+EXCHANGE_API = "api"        # Messages from the Rest API
 EXCHANGES = (EXCHANGE_GANETI, EXCHANGE_CRON, EXCHANGE_API)
 
-QUEUE_GANETI_EVENTS="events"
-QUEUE_CRON_CREDITS="credits"
-QUEUE_EMAIL="email"
-QUEUE_DEBUG="debug" #Debug queue, retrieves all messages
+QUEUE_GANETI_EVENTS = "events"
+QUEUE_CRON_CREDITS = "credits"
+QUEUE_EMAIL = "email"
+QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
 QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL)
 
 BINDINGS_DEBUG = [
-    #Queue          #Exchange           #RouteKey   #Handler
+    # Queue         # Exchange          # RouteKey  # Handler
     (QUEUE_DEBUG,   EXCHANGE_GANETI,    '#',        'dummy_proc'),
     (QUEUE_DEBUG,   EXCHANGE_CRON,      '#',        'dummy_proc'),
     (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'dummy_proc'),
@@ -196,14 +196,14 @@ BINDINGS_DEBUG = [
 DB_HANDLER_KEY = 'ganeti.%s.#' % BACKEND_PREFIX_ID.split('-')[0]
 
 BINDINGS = [
-    #Queue                  #Exchange           #RouteKey       #Handler
-    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*' , 'update_db'),
+    # Queue                 # Exchange          # RouteKey      #Handler
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*',     'update_db'),
     (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',  'update_credits'),
     (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',    'send_email'),
     (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',    'send_email'),
 ]
 
-#Logic dispatcher settings
+# Logic dispatcher settings
 DISPATCHER_LOG_FILE = "/var/log/okeanos.log"
 
 # The API implementation needs to accept and return absolute references

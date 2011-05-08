@@ -3,7 +3,8 @@ DEPLOYMENT notes
 
 - Service dependencies
 
-    *rabbitmq
+    * RabbitMQ
+
       RabbitMQ is used as a generic message broker for the system. It should
       be installed on two seperate machines (VMs should be enough for the
       moment) in a high availability configuration as described here:
@@ -15,10 +16,10 @@ DEPLOYMENT notes
         rabbitmqctl add_user okeanos 0k3@n0s
         rabbitmqctl set_permissions -p / okeanos  "^.*" ".*" ".*"
 
-    The values set for the user and password must be mirrored in the
-    RABBIT_* variables in settings.py
+      The values set for the user and password must be mirrored in the
+      RABBIT_* variables in settings.py
 
-    * /ganeti/ganeti-eventd
+    * /ganeti/ganeti-eventd: the Ganeti monitoring daemon
 
       The Ganeti monitoring daemon must run on the Ganeti master node.
 
@@ -30,7 +31,7 @@ DEPLOYMENT notes
       FIXME: The server must be started from the project root directory.
       TBD: how to handle master migration.
 
-    * /logic/dispatcher.py
+    * /logic/dispatcher.py: the dispatcher
 
       The dispatcher retrieves messages from the queue and calls the
       appropriate handler function as defined in the queue configuration in
@@ -42,6 +43,23 @@ DEPLOYMENT notes
 
       The dispatcher should run in at least 2 instances to ensure high
       (actually, increased) availability.
+
+    * /ganeti/snf-ganeti-hook.py: Ganeti hook for synnefo
+
+      The script ganeti/snf-ganeti-hook.py is the generic launcher for Synnefo
+      hooks in Ganeti.  It resides in the ganeti/ directory of the Synnefo
+      project root.
+
+      The hook needs to be enabled as the FIXME: up, down hook, by *symlinking*
+      to the following locations:
+
+      root@machine:/etc/ganeti/hooks/instance-start-post.d# ls -l
+      lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook.sh -> /home/devel/synnefo/ganeti/snf-ganeti-hook.sh*
+
+      The script uses the location of the link target to determine the Synnefo
+      project root, before passing control to Python code.
+
+      FIXME: Perhaps require a SYNNEFO_PROJECT_ROOT environment variable?
 
     * vncauthproxy
 

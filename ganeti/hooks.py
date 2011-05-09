@@ -20,6 +20,7 @@ from amqplib import client_0_8 as amqp
 
 import synnefo.settings as settings
 
+
 def ganeti_net_status(logger, environ):
     """Produce notifications of type 'Ganeti-net-status'
     
@@ -152,9 +153,7 @@ class PostStartHook(GanetiHook):
             
             self.publish_msgs(notifs)
 
-            print >> sys.stderr, "post_start_hook: ", notifs
-
-        return 1
+        return 0
 
 
 class PostStopHook(GanetiHook):

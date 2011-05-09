@@ -110,7 +110,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 msg["message"] = logmsg
             
             instance = instances.split('-')[0]  
-            routekey = "ganeti.%s.event.%s" % (instance,op.status)
+            routekey = "ganeti.%s.event.op" % instance
             
             self.logger.debug("Delivering msg: %s (key=%s)",
                 json.dumps(msg), routekey)

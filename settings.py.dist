@@ -167,13 +167,15 @@ POLL_LIMIT = 3600
 GANETI_EVENTD_LOG_FILE = "/var/log/synnefo/ganeti-eventd.log"
 GANETI_EVENTD_PID_FILE = "/var/run/synnefo/ganeti-eventd.pid"
 
-#Rabbit work queue end point
+# Rabbit work queue endpoint
 RABBIT_HOST = "62.217.120.67:5672"
 RABBIT_USERNAME = "okeanos"
 RABBIT_PASSWORD = "0k3@n0s"
 RABBIT_VHOST = "/"
 
-# Queues, exchanges and bindings
+# 
+# Queues, exchanges and bindings for AMQP
+#
 EXCHANGE_GANETI = "ganeti"  # Messages from Ganeti
 EXCHANGE_CRON = "cron"      # Messages from periodically triggered tasks
 EXCHANGE_API = "api"        # Messages from the Rest API
@@ -192,16 +194,35 @@ BINDINGS_DEBUG = [
     (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'dummy_proc'),
 ]
 
-#Prefix-based naming for db routing key, only 
-DB_HANDLER_KEY = 'ganeti.%s.#' % BACKEND_PREFIX_ID.split('-')[0]
-
 BINDINGS = [
-    # Queue                 # Exchange          # RouteKey      #Handler
-    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*',     'update_db'),
-    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',  'update_credits'),
-    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',    'send_email'),
-    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',    'send_email'),
+    # Queue                 # Exchange          # RouteKey            #Handler
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*.event.op',  'update_db'),
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*.event.net', 'update_net'),
+    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',        'update_credits'),
+    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',          'send_email'),
+    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',          'send_email'),
 ]
+
+def fix_amqp_settings(backend_prefix):
+    """Configure AMQP-specific settings
+
+    Configure AMQP-specific settings based on backend_prefix.
+    This function *must* be called later in settings.py, with
+    BACKEND_PREFIX_ID as argument.
+
+    """
+    global DB_HANDLER_KEY_OP, DB_HANDLER_KEY_NET, BINDINGS, QUEUES
+
+    prefix = backend_prefix.split('-')[0]
+    DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix    # notifications of type "ganeti-op-status"
+    DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix  # notifications of type "ganeti-net-status"
+    BINDINGS[0] = ("events-%s-op" % prefix, EXCHANGE_GANETI, DB_HANDLER_KEY_OP, 'update_db')
+    BINDINGS[1] = ("events-%s-net" % prefix, EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net')
+    QUEUES += ("events-%s-op" % prefix, "events-%s-net" % prefix)
+
+# Fix up the AMQP-specific settings based on BACKEND_PREFIX_ID
+# Make sure to call it again, if you modify it at some later point
+fix_amqp_settings(BACKEND_PREFIX_ID)
 
 # Logic dispatcher settings
 DISPATCHER_LOG_FILE = "/var/log/synnefo/dispatcher.log"

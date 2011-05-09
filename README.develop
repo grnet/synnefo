@@ -182,13 +182,10 @@ testing requirements:
    username in settings.py. Several functional conventions within the system
    require this variable to include a dash at its end (e.g. snf-)
 
-8. Specify a new queue to receive ganeti events, based on the specified
-   BACKEND_PREFIX_ID. Something like the following at the end of
-   settings.py should do the trick.
-
-   DB_HANDLER_KEY = 'ganeti.%s.#' % BACKEND_PREFIX_ID.split('-')[0]
-   BINDINGS[0] = ("events-%s" % BACKEND_PREFIX_ID.split('-')[0], EXCHANGE_GANETI,  DB_HANDLER_KEY, 'update_db')
-   QUEUES += ("events-%s" % BACKEND_PREFIX_ID.split('-')[0], )
+8. Fix the AMQP-specific settings based on the selected BACKEND_PREFIX_ID.
+   The fix_amqp_settings() function is called once at the end of
+   settings.py.dist, you must call it again if you change BACKEND_PREFIX_ID
+   at some later point.
 
 9. Start the system
     $ ./bin/python logic/dispatcher.py  # DB synch daemon

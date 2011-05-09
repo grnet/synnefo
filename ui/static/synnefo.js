@@ -14,7 +14,6 @@ var API_URL = "/api/v1.1";
         }
     });
 
-
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC.
     //do not include time zone info (Z) at the end

@@ -91,7 +91,7 @@ class SynnefoAuthMiddleware(object):
 
         response = HttpResponse()
 
-        response.set_cookie('X-Auth-Token', value=user.auth_token, expires = expire_fmt, path='/api')
+        response.set_cookie('X-Auth-Token', value=user.auth_token, expires = expire_fmt, path='/')
         response[self.auth_token] = user.auth_token
         response['Location'] = settings.APP_INSTALL_URL
         response.status_code = 302

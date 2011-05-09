@@ -12,7 +12,6 @@ from django.test import TestCase
 from django.conf import settings
 
 from ganeti.hooks import ganeti_net_status
-from ganeti.hooks import post_start_hook
 
 class GanetiHookTestCase(TestCase):
     def setUp(self):

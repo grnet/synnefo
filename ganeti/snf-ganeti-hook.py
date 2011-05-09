@@ -60,14 +60,15 @@ setup_environ(settings)
 # Python function, based on the following dictionary.
 
 from synnefo.ganeti.hooks import \
-    post_start_hook, post_stop_hook
+    PostStartHook, PostStopHook
 
 hooks = {
-    ("instance-start", "post"): post_start_hook,
-    ("instance-stop", "post"): post_stop_hook
+    ("instance-start", "post"): PostStartHook,
+    ("instance-stop", "post"): PostStopHook
 }
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger("synnefo.ganeti")
 
     try:
@@ -77,20 +78,22 @@ def main():
     except KeyError:
         raise Exception("Environment missing one of: " \
             "GANETI_INSTANCE_NAME, GANETI_HOOKS_PATH, GANETI_HOOKS_PHASE")
+        
+    prefix = instance.split('-')[0]
   
     # FIXME: The hooks should only run for Synnefo instances.
     # Uncomment the following lines for a shared Ganeti deployment.
     # Currently, the following code is commented out because multiple
     # backend prefixes are used in the same Ganeti installation during development.
-    #if not intance.startswith("removeme"+settings.BACKEND_PREFIX_ID):
-    #    logging.warning("Ignoring non-Synnefo instance %s", instance)
+    #if not instance.startswith(settings.BACKEND_PREFIX_ID):
+    #    logger.warning("Ignoring non-Synnefo instance %s", instance)
     #    return 0
 
     try:
-        hook = hooks[(op, phase)]
+        hook = hooks[(op, phase)](logger, os.environ, instance, prefix)
     except KeyError:
         raise Exception("No hook found for operation = '%s', phase = '%s'" % (op, phase))
-    return hook(logger, os.environ)
+    return hook.run()
 
 
 if __name__ == "__main__":

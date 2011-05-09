@@ -204,7 +204,7 @@ BINDINGS = [
 ]
 
 # Logic dispatcher settings
-DISPATCHER_LOG_FILE = "/var/log/okeanos.log"
+DISPATCHER_LOG_FILE = "/var/log/synnefo/dispatcher.log"
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.

@@ -50,8 +50,8 @@ DEPLOYMENT notes
       hooks in Ganeti.  It resides in the ganeti/ directory of the Synnefo
       project root.
 
-      The hook needs to be enabled as the FIXME: up, down hook, by *symlinking*
-      to the following locations:
+      The hook needs to be enabled for the post-start face, by *symlinking*
+      to the following location: /etc/ganeti/hooks/instance-start-post.d
 
       root@machine:/etc/ganeti/hooks/instance-start-post.d# ls -l
       lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/ganeti/snf-ganeti-hook.py*

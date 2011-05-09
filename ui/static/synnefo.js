@@ -2,11 +2,15 @@ var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
 var API_URL = "/api/v1.1";
 
-//FIXME: sends a fake HTTP_AUTH_TOKEN
+//FIXME: authentication 
+//if cookie with value X-Auth-Token exists, set the value on the headers.
     $.ajaxSetup({
         'beforeSend': function(xhr) {
-            //xhr.setRequestHeader("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2")
-            $.cookie("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2"); // set X-Auth-Token cookie
+            if ($.cookie("X-Auth-Token") != null) {
+              xhr.setRequestHeader("X-Auth-Token", $.cookie("X-Auth-Token"));
+            } else {
+                $.cookie("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2"); // set X-Auth-Token cookie
+            }
         }
     });
 

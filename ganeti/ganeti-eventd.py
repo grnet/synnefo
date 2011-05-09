@@ -108,15 +108,20 @@ class JobFileHandler(pyinotify.ProcessEvent):
                     }
             if logmsg:
                 msg["message"] = logmsg
-
-            self.logger.debug("PUSHing msg: %s", json.dumps(msg))
+            
+            instance = instances.split('-')[0]  
+            routekey = "ganeti.%s.event.%s" % (instance,op.status)
+            
+            self.logger.debug("Delivering msg: %s (key=%s)" 
+                    % (json.dumps(msg), routekey))
             msg = amqp.Message(json.dumps(msg))
             msg.properties["delivery_mode"] = 2 # Persistent
 
             while True:
                 try:
-                    self.chan.basic_publish(msg,exchange=settings.EXCHANGE_GANETI,
-                                            routing_key="ganeti.event.%s" % op.status)
+                    self.chan.basic_publish(msg,
+                            exchange=settings.EXCHANGE_GANETI,
+                            routing_key = routekey)
                     return
                 except socket.error:
                     self.logger.error("Server went away, reconnecting...")

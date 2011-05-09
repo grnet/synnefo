@@ -13,8 +13,8 @@ from synnefo.util.rapi import GanetiRapiClient
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
 
-def process_backend_msg(vm, jobid, opcode, status, logmsg):
-    """Process a job progress notification from the backend.
+def process_op_status(vm, jobid, opcode, status, logmsg):
+    """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
     Job notifications with a terminating status (sucess, error, or canceled),
@@ -44,6 +44,23 @@ def process_backend_msg(vm, jobid, opcode, status, logmsg):
 
     vm.save()
 
+
+def process_net_status(vm, nics):
+    """Process a net status notification from the backend
+
+    Process an incoming message from the Ganeti backend,
+    detailing the NIC configuration of a VM instance.
+
+    Update the state of the VM in the DB accordingly.
+
+    """
+
+    # For the time being, we can only update the ipfour field,
+    # based on the IPv4 address of the first NIC
+    vm.ipfour = nics[0]['ip']
+    vm.save()
+
+
 def start_action(vm, action):
     """Update the state of a VM when a new action is initiated."""
     if not action in [x[0] for x in VirtualMachine.ACTIONS]:
@@ -72,6 +89,7 @@ def start_action(vm, action):
         vm.suspended = False
     vm.save()
 
+
 def create_instance(vm, flavor, password):
     # FIXME: `password` must be passed to the Ganeti OS provider via CreateInstance()
     return rapi.CreateInstance(
@@ -91,17 +109,21 @@ def delete_instance(vm):
     start_action(vm, 'DESTROY')
     rapi.DeleteInstance(vm.backend_id)
 
+
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
     rapi.RebootInstance(vm.backend_id, reboot_type)
+
 
 def startup_instance(vm):
     start_action(vm, 'START')
     rapi.StartupInstance(vm.backend_id)
 
+
 def shutdown_instance(vm):
     start_action(vm, 'STOP')
     rapi.ShutdownInstance(vm.backend_id)
+
 
 def get_instance_console(vm):
     return rapi.GetInstanceConsole(vm.backend_id)

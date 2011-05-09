@@ -4,7 +4,10 @@ var API_URL = "/api/v1.1";
 
 //FIXME: sends a fake HTTP_AUTH_TOKEN
     $.ajaxSetup({
-        'beforeSend': function(xhr) {xhr.setRequestHeader("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2")}
+        'beforeSend': function(xhr) {
+            //xhr.setRequestHeader("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2")
+            $.cookie("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2"); // set X-Auth-Token cookie
+        }
     });
 
 

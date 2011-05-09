@@ -741,6 +741,8 @@ class AaiTestCase(TestCase):
     fixtures = ['api_test_data', 'auth_test_data']
     apibase = '/api/v1.1'
 
+    def setUp(self):
+        self.client = Client()
 
     def test_auth_cookie(self):
         user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
@@ -773,3 +775,9 @@ class AaiTestCase(TestCase):
         self.assertEquals(response['X-Server-Management-Url'], '')
         self.assertEquals(response['X-Storage-Url'], '')
         self.assertEquals(response['X-CDN-Management-Url'], '')
+
+    def test_unauthorized_call(self):
+        request = {'reboot': {'type': 'HARD'}}
+        path = '/api/v1.1/servers/%d/action' % 1
+        response = self.client.post(path, json.dumps(request), content_type='application/json')
+        self.assertEquals(response.status_code, 401)

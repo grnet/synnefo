@@ -14,8 +14,6 @@ class SynnefoAuthMiddleware(object):
 
     def process_request(self, request):
         if request.path.startswith('/api/') :
-            #print time.strftime("[%d/%b/%Y %H:%M:%S]"), " Path", \
-            #  request.path , ": Not authenticated"
             return
 
         token = None

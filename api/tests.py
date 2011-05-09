@@ -9,8 +9,6 @@ from email.utils import parsedate
 from random import choice, randint, sample
 from time import mktime
 
-import datetime
-
 from django.utils import simplejson as json
 from django.test import TestCase
 from django.test.client import Client
@@ -738,3 +736,40 @@ class ServerVNCConsole(BaseTestCase):
         console = reply['console']
         self.assertEqual(console['type'], 'vnc')
         self.assertEqual(set(console.keys()), set(['type', 'host', 'port', 'password']))
+
+class AaiTestCase(TestCase):
+    fixtures = ['api_test_data', 'auth_test_data']
+    apibase = '/api/v1.1'
+
+
+    def test_auth_cookie(self):
+        user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
+        self.client.cookies['X-Auth-Token'] = user.auth_token
+        response = self.client.get('/index.html', {},
+                                   **{'X-Auth-Token': user.auth_token,
+                                      'TEST-AAI' : 'true'})
+        self.assertTrue(response.status_code, 200)
+        self.assertTrue('Vary' in response)
+        self.assertTrue('X-Auth-Token' in response['Vary'])
+
+    def test_fail_oapi_auth(self):
+        """ test authentication from not registered user using OpenAPI
+        """
+        response = self.client.get(self.apibase + '/servers', {},
+                                   **{'X-Auth-User': 'notme',
+                                      'X-Auth-Key': '0xdeadbabe',
+                                      'TEST-AAI' : 'true'})
+        self.assertEquals(response.status_code, 401)
+
+    def test_oapi_auth(self):
+        """authentication with user registration
+        """
+        response = self.client.get(self.apibase + '/index.html', {},
+                                   **{'X-Auth-User': 'testdbuser',
+                                      'X-Auth-Key': 'test@synnefo.gr',
+                                      'TEST-AAI' : 'true'})
+        self.assertEquals(response.status_code, 204)
+        self.assertNotEqual(response['X-Auth-Token'], None)
+        self.assertEquals(response['X-Server-Management-Url'], '')
+        self.assertEquals(response['X-Storage-Url'], '')
+        self.assertEquals(response['X-CDN-Management-Url'], '')

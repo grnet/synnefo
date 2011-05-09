@@ -9,6 +9,7 @@ from synnefo.logic import utils, backend
 _logger = logging.getLogger("synnefo.dispatcher")
 
 def update_db(message):
+    """Process the status of a VM based on a ganeti status message"""
     _logger.debug("Processing msg: %s" % message.body)
     try:
         msg = json.loads(message.body)
@@ -27,7 +28,6 @@ def update_db(message):
         _logger.error("Malformed incoming JSON, missing attributes: " + message.body)
     except VirtualMachine.InvalidBackendIdError:
         _logger.debug("Ignoring msg for unknown instance %s." % (msg["instance"],))
-        message.channel.basic_ack(message.delivery_tag)
     except VirtualMachine.DoesNotExist:
         _logger.error("VM for instance %s with id %d not found in DB." % (msg["instance"], vmid))
     except Exception as e:

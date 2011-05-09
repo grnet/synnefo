@@ -13,7 +13,7 @@ class SynnefoAuthMiddleware(object):
     auth_key   = "X-Auth-Key"
 
     def process_request(self, request):
-        if not request.path.startswith('/api/') :
+        if request.path.startswith('/api/') :
             #print time.strftime("[%d/%b/%Y %H:%M:%S]"), " Path", \
             #  request.path , ": Not authenticated"
             return
@@ -68,28 +68,6 @@ class SynnefoAuthMiddleware(object):
 
             #User and authentication token valid, user allowed to proceed
             return self._redirect_shib_auth_user(user)
-
-        #An API authentication request
-        if self.auth_user in request.META and self.auth_key in request.META and 'GET' == request.method:
-            # This is here merely for compatibility with the Openstack API.
-            # All normal users should authenticate through Sibbolleth. Admin
-            # users or other selected users could use this as a bypass
-            # mechanism
-            user = SynnefoUser.objects\
-                    .filter(name = request.META[self.auth_user]) \
-                    .filter(uniq = request.META[self.auth_key])
-
-            response = HttpResponse()
-            if user.count() <= 0:
-                response.status_code = 401
-            else:
-                response.status_code = 204
-                response['X-Auth-Token'] = user[0].auth_token
-                #TODO: set the following fields when we do have this info
-                response['X-Server-Management-Url'] = ""
-                response['X-Storage-Url'] = ""
-                response['X-CDN-Management-Url'] = ""
-            return response
 
         if settings.TEST:
             if 'TEST-AAI' in request.META:

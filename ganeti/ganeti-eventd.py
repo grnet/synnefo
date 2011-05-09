@@ -5,7 +5,7 @@
 """Ganeti notification daemon with amqp 
 
 A daemon to monitor the Ganeti job queue and publish job progress
-and Ganeti VM state notifications over a 0mq PUB endpoint.
+and Ganeti VM state notifications to the ganeti exchange
 
 """
 
@@ -111,16 +111,19 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
             self.logger.debug("PUSHing msg: %s", json.dumps(msg))
             msg = amqp.Message(json.dumps(msg))
-            msg.properties["delivery_mode"] = 2 #Persistent
-            try:    
-                self.chan.basic_publish(msg,exchange=settings.EXCHANGE_GANETI,routing_key="ganeti.event.%s" % op.status)
-            except socket.error:
-                self.logger.error("Server went away, reconnecting...")
-                self.chan = self.open_channel()
-                self.chan.basic_publish(msg,exchange="ganeti",routing_key="eventd")
-            except Exception:
-                self.logger.error("Uknown error (msg: %s)", msg)
-                raise
+            msg.properties["delivery_mode"] = 2 # Persistent
+
+            while True:
+                try:
+                    self.chan.basic_publish(msg,exchange=settings.EXCHANGE_GANETI,
+                                            routing_key="ganeti.event.%s" % op.status)
+                    return
+                except socket.error:
+                    self.logger.error("Server went away, reconnecting...")
+                    self.chan = self.open_channel()
+                except Exception:
+                    self.logger.error("Uknown error (msg: %s)", msg)
+                    raise
 
 handler_logger = None
 def fatal_signal_handler(signum, frame):

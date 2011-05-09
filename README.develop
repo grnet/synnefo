@@ -188,6 +188,7 @@ testing requirements:
 
    DB_HANDLER_KEY = 'ganeti.%s.#' % BACKEND_PREFIX_ID.split('-')[0]
    BINDINGS[0] = ("events-%s" % BACKEND_PREFIX_ID.split('-')[0], EXCHANGE_GANETI,  DB_HANDLER_KEY, 'update_db')
+   QUEUES += ("events-%s" % BACKEND_PREFIX_ID.split('-')[0], )
 
 9. Start the system
     $ ./bin/python logic/dispatcher.py  # DB synch daemon

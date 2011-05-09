@@ -67,10 +67,10 @@ class Dispatcher:
             self.logger.info("Attempting to connect to %s",
                              settings.RABBIT_HOST)
             try:
-                conn = amqp.Connection( host=settings.RABBIT_HOST,
-                                    userid=settings.RABBIT_USERNAME,
-                                    password=settings.RABBIT_PASSWORD,
-                                    virtual_host=settings.RABBIT_VHOST)
+                conn = amqp.Connection(host=settings.RABBIT_HOST,
+                                       userid=settings.RABBIT_USERNAME,
+                                       password=settings.RABBIT_PASSWORD,
+                                       virtual_host=settings.RABBIT_VHOST)
             except socket.error:
                 time.sleep(1)
                 pass
@@ -219,7 +219,6 @@ def main():
             signal(SIGINT, _exit_handler)
             signal(SIGTERM, _exit_handler)
             child(sys.argv[1:], logger)
-            time.sleep(5)
             sys.exit(0)
         else:
             pids = (os.getpid(), newpid)
@@ -231,11 +230,12 @@ def main():
     signal(SIGINT,  _parent_handler)
     signal(SIGTERM, _parent_handler)
 
-    # Wait for the last child process to exit
-    try:
-        os.wait()
-    except Exception :
-        pass
+    # Wait for all children process to die, one by one
+    for c in children:
+        try:
+            os.wait()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

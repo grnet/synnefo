@@ -142,6 +142,7 @@ GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "synnefo", "ocean!")
 
 # This prefix gets used when determining the instance names
 # of Synnefo VMs at the Ganeti backend.
+# The dash must always appear in the name!
 BACKEND_PREFIX_ID = "snf-"
 
 LANGUAGES = (
@@ -161,20 +162,69 @@ TIMEOUT = 10 * 1000
 # parameter refers to a point in time more than POLL_LIMIT seconds ago.
 POLL_LIMIT = 3600
 
-# Configuration for ganeti-0mqd, the Ganeti notification daemon
+# Configuration for ganeti-eventd, the Ganeti notification daemon
+GANETI_EVENTD_LOG_FILE = "/var/log/synnefo/ganeti-eventd.log"
+GANETI_EVENTD_PID_FILE = "/var/run/synnefo/ganeti-eventd.pid"
+
+# Rabbit work queue endpoint
+RABBIT_HOST = "62.217.120.67:5672"
+RABBIT_USERNAME = "okeanos"
+RABBIT_PASSWORD = "0k3@n0s"
+RABBIT_VHOST = "/"
+
+# 
+# Queues, exchanges and bindings for AMQP
 #
-# ganeti-0mqd uses two 0mqd endpoints:
-#   *  A PULL endpoint for receiving job updates from code running inside
-#      Ganeti hooks, running on TCP port GANETI_0MQD_PULL_PORT on the
-#      Ganeti master IP,
-#   *  A PUB endpoint for publishing notifications to the rest of the
-#      infrastructure, running on TCP port GANETI_0MQD_PUB_PORT on the
-#      Ganeti master IP.
-#
-GANETI_0MQD_PUB_PORT = "5801"
-GANETI_0MQD_PULL_PORT = "5802"
-GANETI_0MQD_LOG_FILE = "/var/log/synnefo/ganeti-0mqd.log"
-GANETI_0MQD_PID_FILE = "/var/run/synnefo/ganeti-0mqd.pid"
+EXCHANGE_GANETI = "ganeti"  # Messages from Ganeti
+EXCHANGE_CRON = "cron"      # Messages from periodically triggered tasks
+EXCHANGE_API = "api"        # Messages from the Rest API
+EXCHANGES = (EXCHANGE_GANETI, EXCHANGE_CRON, EXCHANGE_API)
+
+QUEUE_GANETI_EVENTS = "events"
+QUEUE_CRON_CREDITS = "credits"
+QUEUE_EMAIL = "email"
+QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
+QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL)
+
+BINDINGS_DEBUG = [
+    # Queue         # Exchange          # RouteKey  # Handler
+    (QUEUE_DEBUG,   EXCHANGE_GANETI,    '#',        'dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_CRON,      '#',        'dummy_proc'),
+    (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'dummy_proc'),
+]
+
+BINDINGS = [
+    # Queue                 # Exchange          # RouteKey            #Handler
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*.event.op',  'update_db'),
+    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*.event.net', 'update_net'),
+    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',        'update_credits'),
+    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',          'send_email'),
+    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',          'send_email'),
+]
+
+def fix_amqp_settings(backend_prefix):
+    """Configure AMQP-specific settings
+
+    Configure AMQP-specific settings based on backend_prefix.
+    This function *must* be called later in settings.py, with
+    BACKEND_PREFIX_ID as argument.
+
+    """
+    global DB_HANDLER_KEY_OP, DB_HANDLER_KEY_NET, BINDINGS, QUEUES
+
+    prefix = backend_prefix.split('-')[0]
+    DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix    # notifications of type "ganeti-op-status"
+    DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix  # notifications of type "ganeti-net-status"
+    BINDINGS[0] = ("events-%s-op" % prefix, EXCHANGE_GANETI, DB_HANDLER_KEY_OP, 'update_db')
+    BINDINGS[1] = ("events-%s-net" % prefix, EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net')
+    QUEUES += ("events-%s-op" % prefix, "events-%s-net" % prefix)
+
+# Fix up the AMQP-specific settings based on BACKEND_PREFIX_ID
+# Make sure to call it again, if you modify it at some later point
+fix_amqp_settings(BACKEND_PREFIX_ID)
+
+# Logic dispatcher settings
+DISPATCHER_LOG_FILE = "/var/log/synnefo/dispatcher.log"
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.

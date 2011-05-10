@@ -188,7 +188,12 @@ class VirtualMachine(models.Model):
         ('OP_INSTANCE_REMOVE', 'Remove Instance'),
         ('OP_INSTANCE_STARTUP', 'Startup Instance'),
         ('OP_INSTANCE_SHUTDOWN', 'Shutdown Instance'),
-        ('OP_INSTANCE_REBOOT', 'Reboot Instance')
+        ('OP_INSTANCE_REBOOT', 'Reboot Instance'),
+
+        # These are listed here for completeness,
+        # and are ignored for the time being
+        ('OP_INSTANCE_SET_PARAMS', 'Set Instance Parameters'),
+        ('OP_INSTANCE_QUERY_DATA', 'Query Instance Data'),
     )
     # A backend job may be in one of the following possible states
     BACKEND_STATUSES = (
@@ -208,7 +213,9 @@ class VirtualMachine(models.Model):
         'OP_INSTANCE_REMOVE': 'DESTROYED',
         'OP_INSTANCE_STARTUP': 'STARTED',
         'OP_INSTANCE_SHUTDOWN': 'STOPPED',
-        'OP_INSTANCE_REBOOT': 'STARTED'
+        'OP_INSTANCE_REBOOT': 'STARTED',
+        'OP_INSTANCE_SET_PARAMS': None,
+        'OP_INSTANCE_QUERY_DATA': None
     }
 
     # This dictionary contains the correspondence between

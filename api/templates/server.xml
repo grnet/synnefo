@@ -20,7 +20,7 @@
         {% for key, val in server.metadata.values.items %}<meta key="{{ key }}">{{ val }}</meta>{% endfor %}
     </metadata>
     {% endif %}
-    
+
     <addresses>
         {% for network in server.addresses.values %}
         <network id="{{ network.id }}">

@@ -9,7 +9,7 @@
     <uri>http://ocean.grnet.gr/</uri>
   </author>
   <link rel="self" href="http://ocean.grnet.gr/"/>
-  
+
   <entry>
     <id>http://servers.api.openstack.org/{{ version.id }}/</id>
     <title type="text">Version {{ version.id }}</title>
@@ -17,7 +17,7 @@
     {% for link in version.links %}
       <link rel="{{ link.rel }}" {% if link.type %}type="{{ link.type }}" {% endif %}href="{{ link.href }}"/>
     {% endfor %}
-    <content type="text">Version {{ version.id }} {{ version.status }} ({{ version.updated }})</content>   
+    <content type="text">Version {{ version.id }} {{ version.status }} ({{ version.updated }})</content>
   </entry>
 </feed>
 {% endspaceless %}

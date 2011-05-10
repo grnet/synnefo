@@ -25,7 +25,7 @@ def server_action(name):
     '''Decorator for functions implementing server actions.
     `name` is the key in the dict passed by the client.
     '''
-    
+
     def decorator(func):
         server_actions[name] = func
         return func
@@ -53,7 +53,7 @@ def change_password(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     try:
         password = args['adminPass']
     except KeyError:
@@ -72,7 +72,7 @@ def reboot(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     reboot_type = args.get('type', '')
     if reboot_type not in ('SOFT', 'HARD'):
         raise BadRequest('Malformed Request.')
@@ -84,7 +84,7 @@ def start(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
-    
+
     if args:
         raise BadRequest('Malformed Request.')
     startup_instance(vm)
@@ -95,7 +95,7 @@ def shutdown(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
-    
+
     if args:
         raise BadRequest('Malformed Request.')
     shutdown_instance(vm)
@@ -129,7 +129,7 @@ def resize(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
-    
+
     raise ServiceUnavailable('Resize not supported.')
 
 @server_action('confirmResize')
@@ -145,7 +145,7 @@ def confirm_resize(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
-    
+
     raise ServiceUnavailable('Resize not supported.')
 
 @server_action('revertResize')
@@ -184,7 +184,7 @@ def get_console(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     console_type = args.get('type', '')
     if console_type != 'vnc':
         raise BadRequest('Type can only be "vnc".')
@@ -192,15 +192,15 @@ def get_console(request, vm, args):
     # Use RAPI to get VNC console information for this instance
     if get_rsapi_state(vm) != 'ACTIVE':
         raise BadRequest('Server not in ACTIVE state.')
-    
+
     if settings.TEST:
         console_data = {'kind': 'vnc', 'host': 'ganeti_node', 'port': 1000}
     else:
         console_data = get_instance_console(vm)
-    
+
     if console_data['kind'] != 'vnc':
         raise ServiceUnavailable('Could not create a console of requested type.')
-    
+
     # Let vncauthproxy decide on the source port.
     # The alternative: static allocation, e.g.
     # sport = console_data['port'] - 1000
@@ -208,7 +208,7 @@ def get_console(request, vm, args):
     daddr = console_data['host']
     dport = console_data['port']
     password = random_password()
-    
+
     try:
         if settings.TEST:
             fwd = {'source_port': 1234, 'status': 'OK'}
@@ -219,20 +219,20 @@ def get_console(request, vm, args):
 
     if fwd['status'] != "OK":
         raise ServiceUnavailable('Could not allocate VNC console.')
-    
+
     console = {
         'type': 'vnc',
         'host': getfqdn(),
         'port': fwd['source_port'],
         'password': password}
-    
+
     if request.serialization == 'xml':
         mimetype = 'application/xml'
         data = render_to_string('console.xml', {'console': console})
     else:
         mimetype = 'application/json'
         data = json.dumps({'console': console})
-    
+
     return HttpResponse(data, mimetype=mimetype, status=200)
 
 
@@ -246,7 +246,7 @@ def add(request, net, args):
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')
@@ -265,7 +265,7 @@ def remove(request, net, args):
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     server_id = args.get('serverRef', None)
     if not server_id:
         raise BadRequest('Malformed Request.')

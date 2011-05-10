@@ -66,14 +66,14 @@ def image_to_dict(image, detail=True):
         d['progress'] = 100 if image.state == 'ACTIVE' else 0
         if image.sourcevm:
             d['serverRef'] = image.sourcevm.id
-        
+
         metadata = {}
         for meta in ImageMetadata.objects.filter(image=image):
             metadata[meta.meta_key] = meta.meta_value
-        
+
         if metadata:
             d['metadata'] = {'values': metadata}
-    
+
     return d
 
 def metadata_to_dict(image):
@@ -89,23 +89,23 @@ def list_images(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     since = isoparse(request.GET.get('changes-since'))
-    
+
     if since:
         avail_images = Image.objects.filter(owner=request.user, updated__gte=since)
         if not avail_images:
             return HttpResponse(status=304)
     else:
         avail_images = Image.objects.filter(owner=request.user)
-    
+
     images = [image_to_dict(image, detail) for image in avail_images]
-    
+
     if request.serialization == 'xml':
         data = render_to_string('list_images.xml', {'images': images, 'detail': detail})
     else:
         data = json.dumps({'images': {'values': images}})
-    
+
     return HttpResponse(data, status=200)
 
 @api_method('POST')
@@ -122,26 +122,26 @@ def create_image(request):
     #                       resizeNotAllowed (403),
     #                       backupOrResizeInProgress (409),
     #                       overLimit (413)
-    
+
     req = get_request_dict(request)
-    
+
     try:
         d = req['image']
         server_id = d['serverRef']
         name = d['name']
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
-    
+
     owner = request.user
     vm = get_vm(server_id, owner)
     image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
-    
+
     imagedict = image_to_dict(image)
     if request.serialization == 'xml':
         data = render_to_string('image.xml', {'image': imagedict})
     else:
         data = json.dumps({'image': imagedict})
-    
+
     return HttpResponse(data, status=202)
 
 @api_method('GET')
@@ -153,15 +153,15 @@ def get_image_details(request, image_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     image = get_image(image_id, request.user)
     imagedict = image_to_dict(image)
-    
+
     if request.serialization == 'xml':
         data = render_to_string('image.xml', {'image': imagedict})
     else:
         data = json.dumps({'image': imagedict})
-    
+
     return HttpResponse(data, status=200)
 
 @api_method('DELETE')
@@ -172,7 +172,7 @@ def delete_image(request, image_id):
     #                       unauthorized (401),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     image = get_image(image_id, request.user)
     image.delete()
     return HttpResponse(status=204)
@@ -231,7 +231,7 @@ def get_metadata_item(request, image_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     image = get_image(image_id, request.user)
     meta = get_image_meta(image, key)
     return render_meta(request, meta, status=200)
@@ -274,7 +274,7 @@ def delete_metadata_item(request, image_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413),
-    
+
     image = get_image(image_id, request.user)
     meta = get_image_meta(image, key)
     meta.delete()

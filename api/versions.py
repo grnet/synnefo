@@ -48,7 +48,7 @@ DESCRIBED_BY = [
 def versions_list(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: 400, 413, 500, 503
-    
+
     if request.serialization == 'xml':
         data = render_to_string('versions_list.xml', {'versions': VERSIONS})
     elif request.serialization == 'atom':
@@ -56,7 +56,7 @@ def versions_list(request):
         data = render_to_string('versions_list.atom', {'now': now,'versions': VERSIONS})
     else:
         data = json.dumps({'versions': {'values': VERSIONS}})
-        
+
     return HttpResponse(data)
 
 @api_method('GET', atom_allowed=True)
@@ -71,7 +71,7 @@ def version_details(request, api_version):
     # We hardcode to v1.1 since it is the only one we support
     version = VERSION_1_1.copy()
     version['links'] = version['links'] + DESCRIBED_BY
-    
+
     if request.serialization == 'xml':
         version['media_types'] = MEDIA_TYPES
         data = render_to_string('version_details.xml', {'version': version})

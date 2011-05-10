@@ -59,23 +59,23 @@ def list_networks(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     since = isoparse(request.GET.get('changes-since'))
-    
+
     if since:
         user_networks = Network.objects.filter(owner=request.user, updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
     else:
         user_networks = Network.objects.filter(owner=request.user)
-    
+
     networks = [network_to_dict(network, detail) for network in user_networks]
-    
+
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {'networks': networks, 'detail': detail})
     else:
         data = json.dumps({'networks': {'values': networks}})
-    
+
     return HttpResponse(data, status=200)
 
 @api_method('POST')
@@ -87,15 +87,15 @@ def create_network(request):
     #                       badMediaType(415),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     req = get_request_dict(request)
-    
+
     try:
         d = req['network']
         name = d['name']
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
-    
+
     network = Network.objects.create(name=name, owner=request.user)
     networkdict = network_to_dict(network)
     return render_network(request, networkdict, status=202)
@@ -109,7 +109,7 @@ def get_network_details(request, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     net = get_network(network_id, request.user)
     netdict = network_to_dict(net)
     return render_network(request, netdict)
@@ -124,7 +124,7 @@ def update_network_name(request, network_id):
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     req = get_request_dict(request)
 
     try:
@@ -146,7 +146,7 @@ def delete_network(request, network_id):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       overLimit (413)
-    
+
     net = get_network(network_id, request.user)
     net.delete()
     return HttpResponse(status=204)
@@ -157,10 +157,10 @@ def network_action(request, network_id):
     req = get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
-    
+
     key = req.keys()[0]
     val = req[key]
-    
+
     try:
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])

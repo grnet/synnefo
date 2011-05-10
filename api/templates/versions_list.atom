@@ -9,7 +9,7 @@
     <uri>http://ocean.grnet.gr/</uri>
   </author>
   <link rel="self" href="http://ocean.grnet.gr/"/>
-  
+
   {% for version in versions %}
   <entry>
     <id>http://servers.api.openstack.org/{{ version.id }}/</id>

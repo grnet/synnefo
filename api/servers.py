@@ -88,11 +88,11 @@ def vm_to_dict(vm, detail=False):
         d['created'] = isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.sourceimage.id
-        
+
         metadata = metadata_to_dict(vm)
         if metadata:
             d['metadata'] = {'values': metadata}
-        
+
         addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
         addresses.extend({'id': str(network.id), 'values': []} for network in vm.network_set.all())
         d['addresses'] = {'values': addresses}
@@ -105,7 +105,7 @@ def render_server(request, server, status=200):
     else:
         data = json.dumps({'server': server})
     return HttpResponse(data, status=status)
-    
+
 
 @api_method('GET')
 def list_servers(request, detail=False):
@@ -115,9 +115,9 @@ def list_servers(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     since = isoparse(request.GET.get('changes-since'))
-    
+
     if since:
         user_vms = VirtualMachine.objects.filter(owner=request.user, updated__gte=since)
         if not user_vms:
@@ -125,12 +125,12 @@ def list_servers(request, detail=False):
     else:
         user_vms = VirtualMachine.objects.filter(owner=request.user, deleted=False)
     servers = [vm_to_dict(server, detail) for server in user_vms]
-    
+
     if request.serialization == 'xml':
         data = render_to_string('list_servers.xml', {'servers': servers, 'detail': detail})
     else:
         data = json.dumps({'servers': {'values': servers}})
-    
+
     return HttpResponse(data, status=200)
 
 @api_method('POST')
@@ -144,9 +144,9 @@ def create_server(request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
-    
+
     req = get_request_dict(request)
-    
+
     try:
         server = req['server']
         name = server['name']
@@ -156,10 +156,10 @@ def create_server(request):
         flavor_id = server['flavorRef']
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-    
+
     image = get_image(image_id, request.user)
     flavor = get_flavor(flavor_id)
-    
+
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
@@ -168,21 +168,21 @@ def create_server(request):
         ipfour='0.0.0.0',
         ipsix='::1',
         flavor=flavor)
-    
+
     password = random_password()
-                
+
     try:
         create_instance(vm, flavor, password)
     except GanetiApiError:
         vm.delete()
         raise ServiceUnavailable('Could not create server.')
-        
+
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
-    
+
     logging.info('created vm with %s cpus, %s ram and %s storage',
                     flavor.cpu, flavor.ram, flavor.disk)
-    
+
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
     server['adminPass'] = password
@@ -197,7 +197,7 @@ def get_server_details(request, server_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     vm = get_vm(server_id, request.user)
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
@@ -213,18 +213,18 @@ def update_server_name(request, server_id):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     req = get_request_dict(request)
-    
+
     try:
         name = req['server']['name']
     except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
-    
+
     vm = get_vm(server_id, request.user)
     vm.name = name
     vm.save()
-    
+
     return HttpResponse(status=204)
 
 @api_method('DELETE')
@@ -237,7 +237,7 @@ def delete_server(request, server_id):
     #                       unauthorized (401),
     #                       buildInProgress (409),
     #                       overLimit (413)
-    
+
     vm = get_vm(server_id, request.user)
     delete_instance(vm)
     return HttpResponse(status=204)
@@ -248,10 +248,10 @@ def server_action(request, server_id):
     req = get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
-    
+
     key = req.keys()[0]
     val = req[key]
-    
+
     try:
         assert isinstance(val, dict)
         return server_actions[key](request, vm, req[key])
@@ -268,15 +268,15 @@ def list_addresses(request, server_id):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     vm = get_vm(server_id, request.user)
     addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
-    
+
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
         data = json.dumps({'addresses': {'values': addresses}})
-    
+
     return HttpResponse(data, status=200)
 
 @api_method('GET')
@@ -288,18 +288,18 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    
+
     vm = get_vm(server_id, request.user)
     if network_id != 'public':
         raise ItemNotFound('Unknown network.')
-    
+
     address = address_to_dict(vm.ipfour, vm.ipsix)
-    
+
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'address': address})
     else:
         data = json.dumps({'network': address})
-    
+
     return HttpResponse(data, status=200)
 
 @api_method('GET')
@@ -333,9 +333,9 @@ def update_metadata(request, server_id):
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-    
+
     updated = {}
-    
+
     for key, val in metadata.items():
         try:
             meta = VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
@@ -344,7 +344,7 @@ def update_metadata(request, server_id):
             updated[key] = val
         except VirtualMachineMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
-    
+
     return render_metadata(request, updated, status=201)
 
 @api_method('GET')
@@ -356,7 +356,7 @@ def get_metadata_item(request, server_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-    
+
     vm = get_vm(server_id, request.user)
     meta = get_vm_meta(vm, key)
     return render_meta(request, meta, status=200)
@@ -382,7 +382,7 @@ def create_metadata_item(request, server_id, key):
         assert key in metadict
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-    
+
     meta, created = VirtualMachineMetadata.objects.get_or_create(meta_key=key, vm=vm)
     meta.meta_value = metadict[key]
     meta.save()
@@ -399,7 +399,7 @@ def delete_metadata_item(request, server_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413),
-    
+
     vm = get_vm(server_id, request.user)
     meta = get_vm_meta(vm, key)
     meta.delete()

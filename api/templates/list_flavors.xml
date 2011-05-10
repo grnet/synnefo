@@ -1,7 +1,7 @@
 {% spaceless %}
 <?xml version="1.0" encoding="UTF-8"?>
 <flavors xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom">
-  {% for flavor in flavors %}  
+  {% for flavor in flavors %}
   <flavor id="{{ flavor.id}}" name="{{ flavor.name }}"{% if detail %} ram="{{ flavor.ram }}" cpu="{{ flavor.cpu }}" disk="{{ flavor.disk }}"{% endif %}>
   </flavor>
   {% endfor %}

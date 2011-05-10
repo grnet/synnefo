@@ -28,40 +28,40 @@ from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
 class UTC(tzinfo):
     def utcoffset(self, dt):
         return timedelta(0)
-    
+
     def tzname(self, dt):
         return 'UTC'
-    
+
     def dst(self, dt):
         return timedelta(0)
 
 
 def isoformat(d):
     """Return an ISO8601 date string that includes a timezone."""
-    
+
     return d.replace(tzinfo=UTC()).isoformat()
 
 def isoparse(s):
     """Parse an ISO8601 date string into a datetime object."""
-    
+
     if not s:
         return None
-    
+
     try:
         since = dateutil.parser.parse(s)
         utc_since = since.astimezone(UTC()).replace(tzinfo=None)
     except ValueError:
         raise BadRequest('Invalid changes-since parameter.')
-    
+
     now = datetime.datetime.now()
     if utc_since > now:
         raise BadRequest('changes-since value set in the future.')
-    
+
     if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
         raise BadRequest('Too old changes-since value.')
-    
+
     return utc_since
-    
+
 def random_password(length=8):
     pool = ascii_letters + digits
     return ''.join(choice(pool) for i in range(length))
@@ -69,7 +69,7 @@ def random_password(length=8):
 
 def get_vm(server_id, owner):
     """Return a VirtualMachine instance or raise ItemNotFound."""
-    
+
     try:
         server_id = int(server_id)
         return VirtualMachine.objects.get(id=server_id, owner=owner)
@@ -80,7 +80,7 @@ def get_vm(server_id, owner):
 
 def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""
-    
+
     try:
         return VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
     except VirtualMachineMetadata.DoesNotExist:
@@ -88,7 +88,7 @@ def get_vm_meta(vm, key):
 
 def get_image(image_id, owner):
     """Return an Image instance or raise ItemNotFound."""
-    
+
     try:
         image_id = int(image_id)
         return Image.objects.get(id=image_id, owner=owner)
@@ -107,7 +107,7 @@ def get_image_meta(image, key):
 
 def get_flavor(flavor_id):
     """Return a Flavor instance or raise ItemNotFound."""
-    
+
     try:
         flavor_id = int(flavor_id)
         return Flavor.objects.get(id=flavor_id)
@@ -118,7 +118,7 @@ def get_flavor(flavor_id):
 
 def get_network(network_id, owner):
     """Return a Network instance or raise ItemNotFound."""
-    
+
     try:
         return Network.objects.get(id=network_id, owner=owner)
     except ValueError:
@@ -129,7 +129,7 @@ def get_network(network_id, owner):
 
 def get_request_dict(request):
     """Returns data sent by the client as a python dict."""
-    
+
     data = request.raw_post_data
     if request.META.get('CONTENT_TYPE').startswith('application/json'):
         try:
@@ -146,7 +146,7 @@ def update_response_headers(request, response):
         response['Content-Type'] = 'application/atom+xml'
     else:
         response['Content-Type'] = 'application/json'
-    
+
     if settings.TEST:
         response['Date'] = format_date_time(time())
 
@@ -168,13 +168,13 @@ def render_meta(request, meta, status=200):
 def render_fault(request, fault):
     if settings.DEBUG or settings.TEST:
         fault.details = format_exc(fault)
-    
+
     if request.serialization == 'xml':
         data = render_to_string('fault.xml', {'fault': fault})
     else:
         d = {fault.name: {'code': fault.code, 'message': fault.message, 'details': fault.details}}
         data = json.dumps(d)
-    
+
     resp = HttpResponse(data, status=fault.code)
     update_response_headers(request, resp)
     return resp
@@ -182,19 +182,19 @@ def render_fault(request, fault):
 
 def request_serialization(request, atom_allowed=False):
     """Return the serialization format requested.
-       
+
     Valid formats are 'json', 'xml' and 'atom' if `atom_allowed` is True.
     """
-    
+
     path = request.path
-    
+
     if path.endswith('.json'):
         return 'json'
     elif path.endswith('.xml'):
         return 'xml'
     elif atom_allowed and path.endswith('.atom'):
         return 'atom'
-    
+
     for item in request.META.get('HTTP_ACCEPT', '').split(','):
         accept, sep, rest = item.strip().partition(';')
         if accept == 'application/json':
@@ -203,12 +203,12 @@ def request_serialization(request, atom_allowed=False):
             return 'xml'
         elif atom_allowed and accept == 'application/atom+xml':
             return 'atom'
-    
+
     return 'json'
 
 def api_method(http_method=None, atom_allowed=False):
     """Decorator function for views that implement an API method."""
-    
+
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
@@ -218,7 +218,7 @@ def api_method(http_method=None, atom_allowed=False):
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-                
+
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp

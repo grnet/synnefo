@@ -40,7 +40,7 @@ class APITestCase(TestCase):
 
     def test_api_version(self):
         """Check API version."""
-        
+
         response = self.client.get('/api/v1.1/')
         self.assertEqual(response.status_code, 200)
         api_version = json.loads(response.content)['version']
@@ -49,7 +49,7 @@ class APITestCase(TestCase):
 
     def test_server_list(self):
         """Test if the expected list of servers is returned."""
-        
+
         response = self.client.get('/api/v1.1/servers')
         vms_from_api = json.loads(response.content)['servers']['values']
         vms_from_db = VirtualMachine.objects.filter(deleted=False)
@@ -62,7 +62,7 @@ class APITestCase(TestCase):
 
     def test_server_details(self):
         """Test if the expected server is returned."""
-        
+
         response = self.client.get('/api/v1.1/servers/%d' % self.test_server_id)
         vm_from_api = json.loads(response.content)['server']
         vm_from_db = VirtualMachine.objects.get(id=self.test_server_id)
@@ -76,7 +76,7 @@ class APITestCase(TestCase):
 
     def test_servers_details(self):
         """Test if the servers details are returned."""
-        
+
         response = self.client.get('/api/v1.1/servers/detail')
 
         # Make sure both DB and API responses are sorted by id,
@@ -110,21 +110,21 @@ class APITestCase(TestCase):
 
     def test_wrong_server(self):
         """Test 404 response if server does not exist."""
-        
+
         response = self.client.get('/api/v1.1/servers/%d' % self.test_wrong_server_id)
         self.assertEqual(response.status_code, 404)
 
     def test_create_server_empty(self):
         """Test if the create server call returns a 400 badRequest if
            no attributes are specified."""
-        
+
         response = self.client.post('/api/v1.1/servers', {})
         self.assertEqual(response.status_code, 400)
 
     def test_create_server(self):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
-        
+
         request = {
                     "server": {
                         "name": "new-server-test",
@@ -145,7 +145,7 @@ class APITestCase(TestCase):
 
     def test_server_polling(self):
         """Test if the server polling works as expected."""
-        
+
         response = self.client.get('/api/v1.1/servers/detail')
         vms_from_api_initial = json.loads(response.content)['servers']['values']
         ts = mktime(parsedate(response['Date']))
@@ -165,7 +165,7 @@ class APITestCase(TestCase):
                         "personality": []
                     }
         }
-        
+
         path = '/api/v1.1/servers'
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 202)
@@ -178,7 +178,6 @@ class APITestCase(TestCase):
 
     def test_reboot_server(self):
         """Test if the specified server is rebooted."""
-        
         request = {'reboot': {'type': 'HARD'}}
         path = '/api/v1.1/servers/%d/action' % self.test_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
@@ -190,7 +189,7 @@ class APITestCase(TestCase):
 
     def test_shutdown_server(self):
         """Test if the specified server is shutdown."""
-        
+
         request = {'shutdown': {}}
         path = '/api/v1.1/servers/%d/action' % self.test_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
@@ -202,7 +201,7 @@ class APITestCase(TestCase):
 
     def test_start_server(self):
         """Test if the specified server is started."""
-        
+
         request = {'start': {}}
         path = '/api/v1.1/servers/%d/action' % self.test_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
@@ -222,7 +221,7 @@ class APITestCase(TestCase):
 
     def test_flavor_list(self):
         """Test if the expected list of flavors is returned by."""
-        
+
         response = self.client.get('/api/v1.1/flavors')
         flavors_from_api = json.loads(response.content)['flavors']['values']
         flavors_from_db = Flavor.objects.all()
@@ -235,7 +234,7 @@ class APITestCase(TestCase):
 
     def test_flavors_details(self):
         """Test if the flavors details are returned."""
-        
+
         response = self.client.get('/api/v1.1/flavors/detail')
         flavors_from_db = Flavor.objects.all()
         flavors_from_api = json.loads(response.content)['flavors']['values']
@@ -264,7 +263,7 @@ class APITestCase(TestCase):
 
     def test_flavor_details(self):
         """Test if the expected flavor is returned."""
-        
+
         response = self.client.get('/api/v1.1/flavors/%d' % self.test_flavor_id)
         flavor_from_api = json.loads(response.content)['flavor']
         flavor_from_db = Flavor.objects.get(id=self.test_flavor_id)
@@ -277,13 +276,13 @@ class APITestCase(TestCase):
 
     def test_wrong_flavor(self):
         """Test 404 result when requesting a flavor that does not exist."""
-        
+
         response = self.client.get('/api/v1.1/flavors/%d' % self.test_wrong_flavor_id)
         self.assertTrue(response.status_code in [404, 503])
 
     def test_image_list(self):
         """Test if the expected list of images is returned by the API."""
-        
+
         response = self.client.get('/api/v1.1/images')
         images_from_api = json.loads(response.content)['images']['values']
         images_from_db = Image.objects.all()
@@ -296,16 +295,16 @@ class APITestCase(TestCase):
 
     def test_wrong_image(self):
         """Test 404 result if a non existent image is requested."""
-        
+
         response = self.client.get('/api/v1.1/images/%d' % self.test_wrong_image_id)
         self.assertEqual(response.status_code, 404)
 
     def test_server_metadata(self):
         """Test server's metadata (add, edit)."""
-        
+
         key = 'name'
         request = {'meta': {key: 'a fancy name'}}
-        
+
         path = '/api/v1.1/servers/%d/meta/%s' % (self.test_server_id, key)
         response = self.client.put(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 201)
@@ -375,11 +374,11 @@ class AssertInvariant(object):
         self.callable = callable
         self.args = args
         self.kwargs = kwargs
-    
+
     def __enter__(self):
         self.value = self.callable(*self.args, **self.kwargs)
         return self.value
-    
+
     def __exit__(self, type, value, tb):
         assert self.value == self.callable(*self.args, **self.kwargs)
 
@@ -392,7 +391,7 @@ class BaseTestCase(TestCase):
     SERVER_METADATA = 0
     IMAGE_METADATA = 0
     NETWORKS = 0
-    
+
     def setUp(self):
         self.client = AaiClient()
         create_users(self.USERS)
@@ -402,19 +401,19 @@ class BaseTestCase(TestCase):
         create_servers(self.SERVERS)
         create_server_metadata(self.SERVER_METADATA)
         create_networks(self.NETWORKS)
-    
+
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
         fault = json.loads(response.content)
         self.assertEqual(fault.keys(), [name])
-    
+
     def assertBadRequest(self, response):
         self.assertFault(response, 400, 'badRequest')
 
     def assertItemNotFound(self, response):
         self.assertFault(response, 404, 'itemNotFound')
-    
-    
+
+
     def list_images(self, detail=False):
         path = '/api/v1.1/images'
         if detail:
@@ -425,7 +424,7 @@ class BaseTestCase(TestCase):
         self.assertEqual(reply.keys(), ['images'])
         self.assertEqual(reply['images'].keys(), ['values'])
         return reply['images']['values']
-    
+
     def list_metadata(self, path):
         response = self.client.get(path)
         self.assertTrue(response.status_code in (200, 203))
@@ -433,15 +432,15 @@ class BaseTestCase(TestCase):
         self.assertEqual(reply.keys(), ['metadata'])
         self.assertEqual(reply['metadata'].keys(), ['values'])
         return reply['metadata']['values']
-    
+
     def list_server_metadata(self, server_id):
         path = '/api/v1.1/servers/%d/meta' % server_id
         return self.list_metadata(path)
-    
+
     def list_image_metadata(self, image_id):
         path = '/api/v1.1/images/%d/meta' % image_id
         return self.list_metadata(path)
-    
+
     def update_metadata(self, path, metadata):
         data = json.dumps({'metadata': metadata})
         response = self.client.post(path, data, content_type='application/json')
@@ -449,15 +448,15 @@ class BaseTestCase(TestCase):
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['metadata'])
         return reply['metadata']
-    
+
     def update_server_metadata(self, server_id, metadata):
         path = '/api/v1.1/servers/%d/meta' % server_id
         return self.update_metadata(path, metadata)
-    
+
     def update_image_metadata(self, image_id, metadata):
         path = '/api/v1.1/images/%d/meta' % image_id
         return self.update_metadata(path, metadata)
-    
+
     def create_server_meta(self, server_id, meta):
         key = meta.keys()[0]
         path = '/api/v1.1/servers/%d/meta/%s' % (server_id, key)
@@ -468,19 +467,19 @@ class BaseTestCase(TestCase):
         self.assertEqual(reply.keys(), ['meta'])
         response_meta = reply['meta']
         self.assertEqual(response_meta, meta)
-    
+
     def get_all_server_metadata(self):
         metadata = defaultdict(dict)
         for m in VirtualMachineMetadata.objects.all():
             metadata[m.vm.id][m.meta_key] = m.meta_value
         return metadata
-    
+
     def get_all_image_metadata(self):
         metadata = defaultdict(dict)
         for m in ImageMetadata.objects.all():
             metadata[m.image.id][m.meta_key] = m.meta_value
         return metadata
-    
+
     def list_networks(self, detail=False):
         path = '/api/v1.1/networks'
         if detail:
@@ -491,7 +490,7 @@ class BaseTestCase(TestCase):
         self.assertEqual(reply.keys(), ['networks'])
         self.assertEqual(reply['networks'].keys(), ['values'])
         return reply['networks']['values']
-    
+
     def create_network(self, name):
         path = '/api/v1.1/networks'
         data = json.dumps({'network': {'name': name}})
@@ -500,7 +499,7 @@ class BaseTestCase(TestCase):
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['network'])
         return reply
-    
+
     def get_network_details(self, network_id):
         path = '/api/v1.1/networks/%d' % network_id
         response = self.client.get(path)
@@ -508,24 +507,24 @@ class BaseTestCase(TestCase):
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['network'])
         return reply['network']
-    
+
     def update_network_name(self, network_id, new_name):
         path = '/api/v1.1/networks/%d' % network_id
         data = json.dumps({'network': {'name': new_name}})
         response = self.client.put(path, data, content_type='application/json')
         self.assertEqual(response.status_code, 204)
-    
+
     def delete_network(self, network_id):
         path = '/api/v1.1/networks/%d' % network_id
         response = self.client.delete(path)
         self.assertEqual(response.status_code, 204)
-    
+
     def add_to_network(self, network_id, server_id):
         path = '/api/v1.1/networks/%d/action' % network_id
         data = json.dumps({'add': {'serverRef': server_id}})
         response = self.client.post(path, data, content_type='application/json')
         self.assertEqual(response.status_code, 202)
-    
+
     def remove_from_network(self, network_id, server_id):
         path = '/api/v1.1/networks/%d/action' % network_id
         data = json.dumps({'remove': {'serverRef': server_id}})
@@ -535,7 +534,7 @@ class BaseTestCase(TestCase):
 
 def popdict(l, **kwargs):
     """Pops a dict from list `l` based on the predicates given as `kwargs`."""
-    
+
     for i in range(len(l)):
         item = l[i]
         match = True
@@ -551,7 +550,7 @@ def popdict(l, **kwargs):
 
 class ListImages(BaseTestCase):
     IMAGES = 10
-    
+
     def test_list_images(self):
         images = self.list_images()
         keys = set(['id', 'name'])
@@ -562,7 +561,7 @@ class ListImages(BaseTestCase):
             self.assertEqual(image['id'], img.id)
             self.assertEqual(image['name'], img.name)
         self.assertEqual(images, [])
-    
+
     def test_list_images_detail(self):
         images = self.list_images(detail=True)
         keys = set(['id', 'name', 'updated', 'created', 'status', 'progress'])
@@ -580,13 +579,13 @@ class ListImages(BaseTestCase):
 class ListServerMetadata(BaseTestCase):
     SERVERS = 5
     SERVER_METADATA = 100
-    
+
     def test_list_metadata(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             for vm in VirtualMachine.objects.all():
                 response_metadata = self.list_server_metadata(vm.id)
                 self.assertEqual(response_metadata, metadata[vm.id])
-    
+
     def test_invalid_server(self):
         with AssertInvariant(self.get_all_server_metadata):
             response = self.client.get('/api/v1.1/servers/0/meta')
@@ -595,7 +594,7 @@ class ListServerMetadata(BaseTestCase):
 
 class UpdateServerMetadata(BaseTestCase):
     SERVER_METADATA = 10
-    
+
     def test_update_metadata(self):
         metadata = self.get_all_server_metadata()
         server_id = choice(metadata.keys())
@@ -606,21 +605,21 @@ class UpdateServerMetadata(BaseTestCase):
         self.assertEqual(response_metadata, new_metadata)
         metadata[server_id].update(new_metadata)
         self.assertEqual(metadata, self.get_all_server_metadata())
-    
+
     def test_does_not_create(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
             new_metadata = {'Foo': 'Bar'}
             response_metadata = self.update_server_metadata(server_id, new_metadata)
             self.assertEqual(response_metadata, {})
-    
+
     def test_invalid_data(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
             path = '/api/v1.1/servers/%d/meta' % server_id
             response = self.client.post(path, 'metadata', content_type='application/json')
             self.assertBadRequest(response)
-    
+
     def test_invalid_server(self):
         with AssertInvariant(self.get_all_server_metadata):
             path = '/api/v1.1/servers/0/meta'
@@ -632,7 +631,7 @@ class UpdateServerMetadata(BaseTestCase):
 class GetServerMetadataItem(BaseTestCase):
     SERVERS = 5
     SERVER_METADATA = 100
-    
+
     def test_get_metadata_item(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
@@ -642,13 +641,13 @@ class GetServerMetadataItem(BaseTestCase):
             self.assertTrue(response.status_code in (200, 203))
             reply = json.loads(response.content)
             self.assertEqual(reply['meta'], {key: metadata[server_id][key]})
-    
+
     def test_invalid_key(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
             response = self.client.get('/api/v1.1/servers/%d/meta/foo' % server_id)
             self.assertItemNotFound(response)
-    
+
     def test_invalid_server(self):
         with AssertInvariant(self.get_all_server_metadata):
             response = self.client.get('/api/v1.1/servers/0/meta/foo')
@@ -657,7 +656,7 @@ class GetServerMetadataItem(BaseTestCase):
 
 class CreateServerMetadataItem(BaseTestCase):
     SERVER_METADATA = 10
-    
+
     def test_create_metadata(self):
         metadata = self.get_all_server_metadata()
         server_id = choice(metadata.keys())
@@ -665,7 +664,7 @@ class CreateServerMetadataItem(BaseTestCase):
         self.create_server_meta(server_id, meta)
         metadata[server_id].update(meta)
         self.assertEqual(metadata, self.get_all_server_metadata())
-    
+
     def test_update_metadata(self):
         metadata = self.get_all_server_metadata()
         server_id = choice(metadata.keys())
@@ -674,14 +673,14 @@ class CreateServerMetadataItem(BaseTestCase):
         self.create_server_meta(server_id, meta)
         metadata[server_id].update(meta)
         self.assertEqual(metadata, self.get_all_server_metadata())
-    
+
     def test_invalid_server(self):
         with AssertInvariant(self.get_all_server_metadata):
             path = '/api/v1.1/servers/0/meta/foo'
             data = json.dumps({'meta': {'foo': 'bar'}})
             response = self.client.put(path, data, content_type='application/json')
             self.assertItemNotFound(response)
-    
+
     def test_invalid_key(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
@@ -689,7 +688,7 @@ class CreateServerMetadataItem(BaseTestCase):
             data = json.dumps({'meta': {'foo': 'bar'}})
             response = self.client.put(path, data, content_type='application/json')
             self.assertBadRequest(response)
-    
+
     def test_invalid_data(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
@@ -700,7 +699,7 @@ class CreateServerMetadataItem(BaseTestCase):
 
 class DeleteServerMetadataItem(BaseTestCase):
     SERVER_METADATA = 10
-    
+
     def test_delete_metadata(self):
         metadata = self.get_all_server_metadata()
         server_id = choice(metadata.keys())
@@ -710,12 +709,12 @@ class DeleteServerMetadataItem(BaseTestCase):
         self.assertEqual(response.status_code, 204)
         metadata[server_id].pop(key)
         self.assertEqual(metadata, self.get_all_server_metadata())
-    
+
     def test_invalid_server(self):
         with AssertInvariant(self.get_all_server_metadata):
             response = self.client.delete('/api/v1.1/servers/9/meta/Key1')
             self.assertItemNotFound(response)
-    
+
     def test_invalid_key(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
@@ -855,7 +854,7 @@ class AaiTestCase(TestCase):
 class ListNetworks(BaseTestCase):
     SERVERS = 5
     NETWORKS = 5
-    
+
     def setUp(self):
         BaseTestCase.setUp(self)
         machines = VirtualMachine.objects.all()
@@ -863,14 +862,14 @@ class ListNetworks(BaseTestCase):
             n = randint(0, self.SERVERS)
             network.machines.add(*sample(machines, n))
             network.save()
-    
+
     def test_list_networks(self):
         networks = self.list_networks()
         for net in Network.objects.all():
             network = popdict(networks, id=net.id)
             self.assertEqual(network['name'], net.name)
         self.assertEqual(networks, [])
-    
+
     def test_list_networks_detail(self):
         networks = self.list_networks(detail=True)
         for net in Network.objects.all():
@@ -894,15 +893,15 @@ class CreateNetwork(BaseTestCase):
 class GetNetworkDetails(BaseTestCase):
     SERVERS = 5
     NETWORKS = 1
-    
+
     def test_get_network_details(self):
         servers = VirtualMachine.objects.all()
         network = Network.objects.all()[0]
-        
+
         net = self.get_network_details(network.id)
         self.assertEqual(net['name'], network.name)
         self.assertEqual(net['servers']['values'], [])
-        
+
         server_id = choice(servers).id
         self.add_to_network(network.id, server_id)
         net = self.get_network_details(network.id)
@@ -912,30 +911,30 @@ class GetNetworkDetails(BaseTestCase):
 
 class UpdateNetworkName(BaseTestCase):
     NETWORKS = 5
-    
+
     def test_update_network_name(self):
         networks = self.list_networks(detail=True)
         network = choice(networks)
         network_id = network['id']
         new_name = network['name'] + '_2'
         self.update_network_name(network_id, new_name)
-        
+
         network['name'] = new_name
         self.assertEqual(self.get_network_details(network_id), network)
 
 
 class DeleteNetwork(BaseTestCase):
     NETWORKS = 5
-    
+
     def test_delete_network(self):
         networks = self.list_networks()
         network = choice(networks)
         network_id = network['id']
         self.delete_network(network_id)
-        
+
         response = self.client.get('/api/v1.1/networks/%d' % network_id)
         self.assertItemNotFound(response)
-        
+
         networks.remove(network)
         self.assertEqual(self.list_networks(), networks)
 
@@ -943,27 +942,27 @@ class DeleteNetwork(BaseTestCase):
 class NetworkActions(BaseTestCase):
     SERVERS = 20
     NETWORKS = 1
-    
+
     def test_add_remove_server(self):
         server_ids = [vm.id for vm in VirtualMachine.objects.all()]
         network = self.list_networks(detail=True)[0]
         network_id = network['id']
-        
+
         to_add = set(sample(server_ids, 10))
         for server_id in to_add:
             self.add_to_network(network_id, server_id)
             net = self.get_network_details(network_id)
             self.assertTrue(server_id in net['servers']['values'])
-        
+
         net = self.get_network_details(network_id)
         self.assertEqual(set(net['servers']['values']), to_add)
-        
+
         to_remove = set(sample(to_add, 5))
         for server_id in to_remove:
             self.remove_from_network(network_id, server_id)
             net = self.get_network_details(network_id)
             self.assertTrue(server_id not in net['servers']['values'])
-        
+
         net = self.get_network_details(network_id)
         self.assertEqual(set(net['servers']['values']), to_add - to_remove)
 

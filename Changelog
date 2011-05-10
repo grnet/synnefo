@@ -1,6 +1,48 @@
 Changelog
 =========
 
+
+2011-05-10, v0.3
+
+FIXES/NEW FEATURES:
+
+    GUI:
+        * Report connection failures correctly, instead of a bogus 503 error (#427)
+        * Support rename Virtual Machines using a nifty pencil icon (#429)
+        * Fix complete failure of site with IE (starts, has known defects) (#431)
+        * Support expanding box in icon view, containing metadata info (#375, #435, #441)
+        * Support providing X-Auth-Token headers for authentication (#455)
+        * Support Java applet-based popup for VNC console access (#391)
+        * Initial implementation of "networks" tab interface mockup, no actual functionality (#415)
+    AAI:
+        * End-to-end Shibboleth support (#345)
+    API:
+        * Support creation, management and removal of private L2 networks (#409, #457)
+        * Fix API implementation does not return unAuthorized cloud faults (#459)
+        * Merge support for X-Auth-Token based authentication (#423)
+    Logic:
+        * Re-engineer messaging layer, migrate from 0mq to an AMQP-based infrastructure (#393)
+        * Extended dispatcher, provides the context for executing business layer functions (#393)
+        * Extended Ganeti event daemon, publish notifications over AMQP (#393)
+        * Support a generic Synnefo hook in Ganeti, publish notifications over AMQP (#393, #397)
+        * Extend logic layer, process NIC configuration notifications, update VM info in DB (#397)
+    Deployment:
+        * Add improved version of README.deploy, detailing node types in a Synnefo deployment
+
+KNOWN DEFECTS:
+
+    GUI:
+        * Inoperative console action in list view (#497)
+        * Various UI glitches under Chrome/Safari (wizard)
+        * Serious functionality glitches with IE (no auto-refresh, no machine rename)
+        * Serious UI glitches with non-standard dpi settings (#343)
+        * Does not work with relative URLs (cannot deploy under subdir) (#421)
+    API:
+        * No Greek characters allowed in server names with the MySQL backend (#499)
+    Deployment:
+        * No rigorous testing of data migration, migrations in real-world conditions will probably fail (#503)
+
+
 2011-04-19, v0.2.2
 
 Bug fix release:
@@ -13,6 +55,7 @@ Bug fix release:
 Bug fix release:
     GUI:
         * Fix shutdown operation breakage due to extra argument in API call (#433)
+
 
 2011-04-19, v0.2
 

@@ -184,6 +184,8 @@ APP_INSTALL_URL = "https://login.okeanos.grnet.gr/okeanos"
 
 LOGIN_PATH = "/login"
 
-#Number of hours during which a user token is active
-AUTH_TOKEN_DURATION = 24
+# Number of hours during which a user token is active
+# ACHTUNG: The test token distributed in db/initial_data.json will cease to
+#          work after this many hours after 2011/05/10
+AUTH_TOKEN_DURATION = 30 * 24
 

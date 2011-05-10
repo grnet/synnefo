@@ -213,9 +213,9 @@ def api_method(http_method=None, atom_allowed=False):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
+                request.serialization = request_serialization(request, atom_allowed)
                 if not request.user:
                     raise Unauthorized('No user found.')
-                request.serialization = request_serialization(request, atom_allowed)
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
                 

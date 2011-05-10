@@ -13,8 +13,8 @@ from django.utils import simplejson as json
 urlpatterns = patterns('synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
-    (r'^/(\w+)(?:.json|.xml)?$', 'network_demux'),
-    (r'^/(\w+)/action(?:.json|.xml)?$', 'network_action'),
+    (r'^/(\d+)(?:.json|.xml)?$', 'network_demux'),
+    (r'^/(\d+)/action(?:.json|.xml)?$', 'network_action'),
 )
 
 
@@ -26,19 +26,19 @@ def demux(request):
     else:
         return method_not_allowed(request)
 
-def network_demux(request, network):
+def network_demux(request, network_id):
     if request.method == 'GET':
-        return get_network_details(request, network)
+        return get_network_details(request, network_id)
     elif request.method == 'PUT':
-        return update_network_name(request, network)
+        return update_network_name(request, network_id)
     elif request.method == 'DELETE':
-        return delete_network(request, network)
+        return delete_network(request, network_id)
     else:
         return method_not_allowed(request)
 
 
 def network_to_dict(network, detail=True):
-    d = {'name': network.name}
+    d = {'id': network.id, 'name': network.name}
     if detail:
         d['servers'] = {'values': [vm.id for vm in network.machines.all()]}
     return d
@@ -84,6 +84,7 @@ def create_network(request):
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
+    #                       badMediaType(415),
     #                       badRequest (400),
     #                       overLimit (413)
     
@@ -95,47 +96,13 @@ def create_network(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
     
-    network, created = Network.objects.get_or_create(name=name, owner=request.user)
-    if not created:
-        raise BadRequest('Network already exists.')
+    network = Network.objects.create(name=name, owner=request.user)
     networkdict = network_to_dict(network)
     return render_network(request, networkdict, status=202)
 
 @api_method('GET')
-def get_network_details(request, network):
+def get_network_details(request, network_id):
     # Normal Response Codes: 200, 203
-    
-    net = get_network(network, request.user)
-    netdict = network_to_dict(net)
-    return render_network(request, netdict)
-
-@api_method('PUT')
-def update_network_name(request, network):
-    # Normal Response Code: 204
-
-    req = get_request_dict(request)
-
-    try:
-        name = req['network']['name']
-    except (TypeError, KeyError):
-        raise BadRequest('Malformed request.')
-
-    net = get_network(network, request.user)
-    net.name = name
-    net.save()
-    return HttpResponse(status=204)
-
-@api_method('DELETE')
-def delete_network(request, network):
-    # Normal Response Code: 204
-    
-    net = get_network(network, request.user)
-    net.delete()
-    return HttpResponse(status=204)
-
-@api_method('POST')
-def network_action(request, network):
-    # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
@@ -143,7 +110,50 @@ def network_action(request, network):
     #                       itemNotFound (404),
     #                       overLimit (413)
     
-    net = get_network(network, request.user)
+    net = get_network(network_id, request.user)
+    netdict = network_to_dict(net)
+    return render_network(request, netdict)
+
+@api_method('PUT')
+def update_network_name(request, network_id):
+    # Normal Response Code: 204
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
+    req = get_request_dict(request)
+
+    try:
+        name = req['network']['name']
+    except (TypeError, KeyError):
+        raise BadRequest('Malformed request.')
+
+    net = get_network(network_id, request.user)
+    net.name = name
+    net.save()
+    return HttpResponse(status=204)
+
+@api_method('DELETE')
+def delete_network(request, network_id):
+    # Normal Response Code: 204
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       overLimit (413)
+    
+    net = get_network(network_id, request.user)
+    net.delete()
+    return HttpResponse(status=204)
+
+@api_method('POST')
+def network_action(request, network_id):
+    net = get_network(network_id, request.user)
     req = get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')

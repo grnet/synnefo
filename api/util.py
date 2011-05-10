@@ -116,14 +116,14 @@ def get_flavor(flavor_id):
     except Flavor.DoesNotExist:
         raise ItemNotFound('Flavor not found.')
 
-def get_network(network, owner):
+def get_network(network_id, owner):
     """Return a Network instance or raise ItemNotFound."""
     
     try:
-        return Network.objects.get(name=network, owner=owner)
+        return Network.objects.get(id=network_id, owner=owner)
     except ValueError:
-        raise BadRequest('Invalid network name.')
-    except Image.DoesNotExist:
+        raise BadRequest('Invalid network ID.')
+    except Network.DoesNotExist:
         raise ItemNotFound('Network not found.')
 
 

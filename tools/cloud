@@ -336,7 +336,7 @@ class ListImages(Command):
                 print_dict(image)
                 print
             else:
-                print '%3d %s' % (id, name)        
+                print '%3d %s' % (id, name)
 
 
 @command_name('imginfo')
@@ -485,12 +485,14 @@ class ListNetworks(Command):
         reply = self.http_get(path)
 
         for network in reply['networks']['values']:
+            id = network.pop('id')
             name = network.pop('name')
             if self.detail:
-                servers = network['servers']['values']
-                print '%s: %s' % (name, ', '.join(str(server_id) for server_id in servers))
+                print '%d %s' % (id, name)
+                print_dict(network)
+                print
             else:
-                print name
+                print '%3d %s' % (id, name)
 
 
 @command_name('createnet')
@@ -509,23 +511,23 @@ class CreateNetwork(Command):
 @command_name('netinfo')
 class GetNetworkDetails(Command):
     description = 'get network details'
-    syntax = '<network>'
+    syntax = '<network id>'
 
-    def execute(self, network):
-        path = '/api/%s/networks/%s' % (self.api, network)
+    def execute(self, network_id):
+        path = '/api/%s/networks/%d' % (self.api, int(network_id))
         reply = self.http_get(path)
         net = reply['network']
-        name = net.pop('name')
+        name = net.pop('id')
         print_dict(net)
 
 
 @command_name('renamenet')
 class UpdateNetworkName(Command):
     description = 'update network name'
-    syntax = '<network> <new name>'
+    syntax = '<network_id> <new name>'
 
-    def execute(self, network, name):
-        path = '/api/%s/networks/%s' % (self.api, network)
+    def execute(self, network_id, name):
+        path = '/api/%s/networks/%d' % (self.api, int(network_id))
         body = json.dumps({'network': {'name': name}})
         self.http_put(path, body)
 
@@ -533,20 +535,20 @@ class UpdateNetworkName(Command):
 @command_name('deletenet')
 class DeleteNetwork(Command):
     description = 'delete network'
-    syntax = '<network>'
+    syntax = '<network id>'
 
-    def execute(self, network):
-        path = '/api/%s/networks/%s' % (self.api, network)
+    def execute(self, network_id):
+        path = '/api/%s/networks/%d' % (self.api, int(network_id))
         self.http_delete(path)
 
 
 @command_name('addnet')
 class AddNetwork(Command):
     description = 'add server to a network'
-    syntax = '<server id> <network>'
+    syntax = '<server id> <network id>'
 
-    def execute(self, server_id, network):
-        path = '/api/%s/networks/%s/action' % (self.api, network)
+    def execute(self, server_id, network_id):
+        path = '/api/%s/networks/%d/action' % (self.api, int(network_id))
         body = json.dumps({'add': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 
@@ -554,10 +556,10 @@ class AddNetwork(Command):
 @command_name('removenet')
 class RemoveNetwork(Command):
     description = 'remove server from a network'
-    syntax = '<server id> <network>'
+    syntax = '<server id> <network id>'
 
-    def execute(self, server_id, network):
-        path = '/api/%s/networks/%s/action' % (self.api, network)
+    def execute(self, server_id, network_id):
+        path = '/api/%s/networks/%s/action' % (self.api, int(network_id))
         body = json.dumps({'remove': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 

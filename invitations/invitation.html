@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Αποστολή προσκλήσεων σε χρήστες</title>
+</head>
+<body>
+
+{% if error_message %}<div id="error"><strong>{{ error_message }}</strong></div>{% endif %}
+
+<form id="" action="/invitations/" method="post">
+{% csrf_token %}
+
+    <textarea rows="15" cols="50">
+        Εισάγετε τη λίστα των email στα οποία θέλετε να αποσταλούν προσκλήσεις, ένα σε κάθε γραμμή.
+        Τα email θα πρέπει να είναι στη μορφή: Όνομα Επίθετο <uname@domain.tld>
+    </textarea>
+    <input type="submit" value="Αποστολή Προσκλήσεων" />
+</form>
+
+<div id="invsent">
+Λίστα προσκλήσεων που έχουν αποσταλεί
+    <div>
+        <ul>
+        {% for ivn in invitations.all %}
+            <li>{{ inv.name }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

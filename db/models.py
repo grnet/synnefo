@@ -379,3 +379,16 @@ class Network(models.Model):
     
     def __unicode__(self):
         return self.name
+
+class Invitations(models.Model):
+    source = models.ForeignKey(SynnefoUser, related_name="source")
+    target = models.ForeignKey(SynnefoUser, related_name="target")
+    accepted = models.BooleanField('Is the invitation accepted?', default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = u'Invitation'
+
+    def __unicode__(self):
+        return self.name

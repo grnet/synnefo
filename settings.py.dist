@@ -132,6 +132,7 @@ INSTALLED_APPS = (
     'synnefo.db',
     'synnefo.ganeti',
     'synnefo.logic',
+    'synnefo.invitations',
     'south'
 )
 

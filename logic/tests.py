@@ -7,6 +7,7 @@
 #
 
 from synnefo.db.models import *
+from synnefo.logic import backend
 from synnefo.logic import credits
 from synnefo.logic import users
 from django.test import TestCase
@@ -132,3 +133,30 @@ class AuthTestCase(TestCase):
         users.delete_user(self.user)
 
         self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get, name = "jpage")
+
+
+class ProcessNetStatusTestCase(TestCase):
+    fixtures = ['db_test_data']
+    def test_set_ipv4(self):
+        """Test reception of a net status notification"""
+        msg = {'instance': 'instance-name',
+               'type':     'ganeti-net-status',
+               'nics': [
+                   {'ip': '192.168.33.1', 'mac': 'aa:00:00:58:1e:b9'}
+               ]
+        }
+        vm = VirtualMachine.objects.get(pk=30000)
+        backend.process_net_status(vm, msg['nics'])
+        self.assertEquals(vm.ipfour, '192.168.33.1')
+
+    def test_set_empty_ipv4(self):
+        """Test reception of a net status notification with no IPv4 assigned"""
+        msg = {'instance': 'instance-name',
+               'type':     'ganeti-net-status',
+               'nics': [
+                   {'ip': '', 'mac': 'aa:00:00:58:1e:b9'}
+               ]
+        }
+        vm = VirtualMachine.objects.get(pk=30000)
+        backend.process_net_status(vm, msg['nics'])
+        self.assertEquals(vm.ipfour, '0.0.0.0')

@@ -57,7 +57,11 @@ def process_net_status(vm, nics):
 
     # For the time being, we can only update the ipfour field,
     # based on the IPv4 address of the first NIC
-    vm.ipfour = nics[0]['ip']
+    if len(nics) > 0:
+        ipv4 = nics[0]['ip']
+        if ipv4 == '':
+            ipv4 = '0.0.0.0'
+        vm.ipfour = ipv4
     vm.save()
 
 

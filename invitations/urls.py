@@ -1,12 +1,11 @@
 from django.conf.urls.defaults import patterns
 from django.views.generic import list_detail
 
-from synnefo.db.models import SynnefoUser
-
-from synnefo.invitations.views import inv_demux
+from synnefo.db.models import Invitations
 
 all_invitations = {
-    "queryset" : Invitation.objects.all(),
+    "queryset" : Invitations.objects.filter(source = request.user),
+    "template_name" : "invitations.html"
 }
 
 urlpatterns = patterns('',

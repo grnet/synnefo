@@ -1,10 +1,7 @@
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
-from django.template import Template
 from synnefo.api.common import method_not_allowed
-
-from synnefo.db.models import SynnefoUser
 
 class InvitationForm(forms.Form):
     emails = forms.Textarea
@@ -23,7 +20,7 @@ class InvitationForm(forms.Form):
 
 def inv_demux(request):
     if request.method == 'GET':
-        t = Template()
+
         data = t.render('invitation.html', {'invitations': None})
         return  HttpResponse(data)
     elif request.method == 'POST':

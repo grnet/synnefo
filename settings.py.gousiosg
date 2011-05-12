@@ -1,8 +1,0 @@
-
-AUTH_TOKEN_DURATION = 24 * 234
-
-DISPATCHER_LOG_FILE = "synnefo.log"
-
-BACKEND_PREFIX_ID = "gousiosg-"
-
-fix_amqp_settings(BACKEND_PREFIX_ID)

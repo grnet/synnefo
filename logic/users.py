@@ -21,6 +21,18 @@ def _register_user(f, u, unq, t):
     user.save()
     create_auth_token(user)
 
+def create_uname(fullname):
+    fullname = fullname.strip()
+    uname = None
+
+    if fullname.find(' ') is not -1:
+        (name, surname) = (fullname.split(' ')[0], fullname.split(' ')[-1:])
+        uname = "%s%s" % (surname[0:7], name[0])
+    else:
+        uname = fullname[0:7].lower()
+
+    return uname
+
 @transaction.commit_on_success
 def delete_user(user):
     if user is not None:
@@ -31,6 +43,10 @@ def register_student(fullname, username, uniqid):
 
 def register_professor(fullname, username, uniqid):
     _register_user(fullname, username, uniqid, 'PROFESSOR')
+
+def register_user(fullname, email):
+    uname = create_uname (fullname)
+    _register_user(fullname, uname, email, 'USER')
 
 @transaction.commit_on_success
 def create_auth_token(user):

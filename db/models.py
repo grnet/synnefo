@@ -10,7 +10,8 @@ class SynnefoUser(models.Model):
     #TODO: Amend this when we have groups
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
-        ('PROFESSOR', 'Professor')
+        ('PROFESSOR', 'Professor'),
+        ('USER', 'Generic User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')

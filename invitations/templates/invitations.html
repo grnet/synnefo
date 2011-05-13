@@ -4,40 +4,43 @@
 <head>
     <title>Αποστολή προσκλήσεων σε χρήστες</title>
     <script src="/static/jquery.tools.min.js"></script>
-
+    <script src="/static/jquery.dynamicField.js"></script>
     <script type="text/javascript">
 
     $(document).ready(function() {
-        $("#emaillist").click(function(){
-            $("#emaillist").text('');
-        });
+         $("#invform #removable-name-container-1").dynamicField();
     });
 
     </script>
 
     <style type="text/css">
-        
+
     </style>
 </head>
 <body>
-{% if error_message %}<div id="error"><strong>{{ error_message }}</strong></div>{% endif %}
+<form action="/invitation/" method="post" id="invform">
+    {% csrf_token %}
+    <div id="fieldheaders">
+        <span id="field_name_name">Όνομα</span>
+        <span id="field_email_name">Email</span>
+    </div>
+    <div id="fields">
+        <div id="removable-name-container-1" class="removable-field-row">
+            <label for="name_1">Name</label>
+            <input type="text" name="name_1" id="name_1" value="" class="textInput removable" />
+            <label for="email_1">Email</label>
+            <input type="text" name="email_1" id="email_1" value="" class="textInput removable" />
+            <img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
+        </div>
 
-<form id="" action="/invitations/" method="post">
-{% csrf_token %}
-        <label for="emaillist">Email για αποστολή προσκλήσεων (διαθέσιμες: 
-            <span id="remaining">{{ invitations.count }}</span>
-            )
-        </label>
-        <textarea id="emaillist" rows="24" cols="80">
-Εισάγετε τη λίστα των διευθύνσεων email στις οποίες θέλετε να αποσταλούν προσκλήσεις, μια σε κάθε γραμμή.
-Οι διευθύνσεις θα πρέπει να είναι στη μορφή: Όνομα Επίθετο <uname@domain.tld>, για παράδειγμα:
-
-Donald Knuth <knuth@stanford.edu>
-Dennis Ritchie <drm@bell.com>
-
-        </textarea>
-        <br/>
-        <input type="submit" value="Αποστολή Προσκλήσεων" />
+        <div id="add-name-container" class="add-field-container">
+        <span class="add-field-trigger">
+            <img src="/static/add.gif" alt="" title="Add New Item" />
+            Add Row
+        </span>
+        </div>
+    </div>
+    <p><input type="submit" value="Αποστολή Προσκλήσεων" /></p>
 </form>
 
 <div id="invsent">

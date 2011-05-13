@@ -1,35 +1,39 @@
 from django import forms
 from django.conf import settings
 from django.db import transaction
+from django.forms.util import ErrorList
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.template import Template
+from django.template.context import Context, RequestContext
 from django.template.loader import render_to_string
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users
 
 class InvitationForm(forms.Form):
-    emails = forms.Textarea
+    name = forms.CharField(required=True)
+    email = forms.EmailField(required=True)
 
-    def send_emails(self, request):
-        if request.method == 'POST': # If the form has been submitted...
-            form = InvitationForm(request.POST) # A form bound to the POST data
-            if form.is_valid(): # All validation rules pass
-                # Process the data in form.cleaned_data
-                # ...
-                return HttpResponseRedirect('/thanks/') # Redirect after POST
-        else:
-            form = InvitationForm() # An unbound form
+def send_emails(request):
+    if request.method == 'POST':
+        form = InvitationForm(request.POST)
+        if form.is_valid():
+            # Process the data in form.cleaned_data
+            return HttpResponseRedirect('/invitation/')
+    else:
+        form = InvitationForm() # An unbound form
 
-        return render_to_response('invitation.html', {'form': form,})
+    return render_to_response('invitations.html', {'form': form,})
 
 def inv_demux(request):
     if request.method == 'GET':
         invitations = Invitations.objects.filter(source = request.user)
-        data = render_to_string('invitations.html', {'invitations': invitations})
+        form = InvitationForm()
+        data = render_to_string('invitations.html', {'invitations': invitations, 'form':form})
         return  HttpResponse(data)
     elif request.method == 'POST':
-        f = InvitationForm(request)
+        return send_emails(request)
     else:
         method_not_allowed(request)
 

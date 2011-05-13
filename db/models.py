@@ -70,6 +70,8 @@ class Image(models.Model):
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey("VirtualMachine", null=True)
+    backend_id = models.TextField(default='debian_base')
+    format = models.TextField(default='dump')
 
     class Meta:
         verbose_name = u'Image'

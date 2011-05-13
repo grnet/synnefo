@@ -94,20 +94,20 @@ def start_action(vm, action):
     vm.save()
 
 
-def create_instance(vm, flavor, password):
-    # FIXME: `password` must be passed to the Ganeti OS provider via CreateInstance()
+def create_instance(vm, flavor, image, password):
     return rapi.CreateInstance(
         mode='create',
         name=vm.backend_id,
         disk_template='plain',
-        disks=[{"size": 2000}],         #FIXME: Always ask for a 2GB disk for now
+        disks=[{"size": 4000}],         #FIXME: Always ask for a 4GB disk for now
         nics=[{}],
-        os='debootstrap+default',       #TODO: select OS from imageRef
+        os='image+default',
         ip_check=False,
         name_check=False,
         pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
         dry_run=settings.TEST,
-        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram))
+        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
+        osparams=dict(img_id=image.backend_id, img_passwd=password))
 
 def delete_instance(vm):
     start_action(vm, 'DESTROY')

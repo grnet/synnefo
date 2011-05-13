@@ -27,7 +27,7 @@ def create_uname(fullname):
 
     if fullname.find(' ') is not -1:
         (name, surname) = (fullname.split(' ')[0], fullname.split(' ')[-1:])
-        uname = "%s%s" % (surname[0:7], name[0])
+        uname = "%s%s" % (surname[0:7], name[0]).lower()
     else:
         uname = fullname[0:7].lower()
 

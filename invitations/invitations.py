@@ -48,11 +48,17 @@ def add_invitation(source, name, email):
     if target.count() is not 0:
         raise AlreadyInvited("User already invited: %s <%s>" % (name, email))
 
-    users.register_student(name, '', email)
+    users.register_user(name, email)
+
+    target = SynnefoUser.objects.filter(uniq = email)
+
+    r = list(target[:1])
+    if not r:
+        raise Exception
 
     inv = Invitations()
     inv.source = source
-    inv.target = target
+    inv.target = target[0]
     inv.save()
 
 @transaction.commit_on_success

@@ -13,7 +13,7 @@ class InvitationsTestCase(TestCase):
         self.client = Client()
 
     def test_add_invitation(self):
-        source = SynnefoUser.objects.filter(auth_token = self.token)
+        source = SynnefoUser.objects.filter(auth_token = self.token)[0]
         invitations.add_invitation(source, "Test", "test@gmail.com")
 
         added_user = SynnefoUser.objects.filter(name = "Test",

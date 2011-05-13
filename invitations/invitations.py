@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
+from django.template.loader import render_to_string
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users
@@ -24,8 +25,8 @@ class InvitationForm(forms.Form):
 
 def inv_demux(request):
     if request.method == 'GET':
-
-        #data = t.render('invitation.html', {'invitations': None})
+        invitations = Invitations.objects.filter(source = request.user)
+        data = render_to_string('invitations.html', {'invitations': invitations})
         return  HttpResponse(data)
     elif request.method == 'POST':
         f = InvitationForm(request)

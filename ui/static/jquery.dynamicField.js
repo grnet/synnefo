@@ -103,25 +103,25 @@
 		$("div#" + settings.addContainerId + " span." + settings.addTriggerClass).click(function() {
 			var len = getFields().length;
 			var pos = new Number(len+1);
-			var newDiv = f
-							.clone()
+			var newDiv = f	.clone()
 							.attr("id",settings.cloneContainerId + "-" + pos)
 							.addClass(settings.rowContainerClass);
-			
-			newDiv.children("label")
-							.attr("for",settings.baseName + pos)
-							.html("");
-			
-			newDiv.children("input")
-							.attr({
-								"id":settings.baseName + pos,
-								"name":settings.baseName + pos,
+
+            $.each(settings.baseNames, function(index, name) {
+                var label = $("<label />").attr("for",name + pos).html("");
+                newDiv.append(label);
+
+                var input = $("<input/>").attr({
+								"id":name + pos,
+								"name":name + pos,
 								"value":""
 							});
-			
-			newDiv.children("img")
+                newDiv.append(input);
+                
+			    newDiv.children("img")
 							.attr("src",settings.removeImgSrc);
-			
+            });
+            
 			if ( len > 0 ) {
 				$("div#" + settings.cloneContainerId + "-" + len).after(newDiv);
 			} else {

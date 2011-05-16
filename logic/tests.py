@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 #
 # Unit Tests for logic
 #
@@ -132,3 +133,15 @@ class AuthTestCase(TestCase):
         users.delete_user(self.user)
 
         self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get, name = "jpage")
+
+class UsersTestCase(TestCase):
+
+    def test_create_uname(self):
+        username = users.create_uname("Donald Knuth")
+        self.assertEquals(username, "knuthd")
+
+        username = users.create_uname("Nemichandra Siddhanta Chakravati")
+        self.assertEquals(username, "chakravn")
+
+        username = users.create_uname(u'Γεώργιος Παπαγεωργίου')
+        self.assertEquals(username, u'παπαγεωγ')

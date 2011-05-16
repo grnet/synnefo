@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from functools import wraps
 from httplib import HTTPConnection
 from optparse import OptionParser
 from os.path import basename
@@ -25,15 +24,15 @@ def command_name(name):
 
 def address_to_string(address):
     key = address['id']
-    val = ' '.join(ip['addr'] for ip in address['values'])
-    return '%s: %s' % (key, val)
+    val = ', '.join(ip['addr'] for ip in address['values'])
+    return '%s[%s]' % (key, val) if val else key
 
 def print_dict(d, show_empty=True):
     for key, val in sorted(d.items()):
         if key == 'metadata':
             val = ', '.join('%s="%s"' % x for x in val['values'].items())
         elif key == 'addresses':
-            val = ', '.join(address_to_string(address) for address in val['values'])
+            val = ' '.join(address_to_string(address) for address in val['values'])
         elif key == 'servers':
             val = ', '.join(str(server_id) for server_id in val['values'])
         if val or show_empty:
@@ -564,21 +563,24 @@ class RemoveNetwork(Command):
         self.http_post(path, body, expected_status=202)
 
 
+def print_usage():
+    print 'Usage: %s <command>' % basename(argv[0])
+    print
+    print 'Commands:'
+    for name, cls in sorted(commands.items()):
+        description = getattr(cls, 'description', '')
+        print '  %s %s' % (name.ljust(12), description)
+
 def main():
     try:
         name = argv[1]    
         cls = commands[name]
     except (IndexError, KeyError):
-        print 'Usage: %s <command>' % basename(argv[0])
-        print
-        print 'Commands:'
-        for name, cls in sorted(commands.items()):
-            description = getattr(cls, 'description', '')
-            print '  %s %s' % (name.ljust(12), description)
+        print_usage()
         exit(1)
     
     try:
-        commands[name](argv[2:])
+        cls(argv[2:])
     except TypeError:
         syntax = getattr(cls, 'syntax', '')
         if syntax:

@@ -16,9 +16,9 @@
 			alert("The dynamicField plugin could not be initialized.\n\nPlease check the selector.");
 			return $;
 		}
-		
+
 		var f = $(this);
-		
+
 		var settings = $.extend({
 			maxFields: 5,
 			removeImgSrc: "/static/cross.png",
@@ -98,18 +98,16 @@
 			
 			addRemoveBtnCk();
 		});
-		
+
 		// handle field add
 		$("div#" + settings.addContainerId + " span." + settings.addTriggerClass).click(function() {
 			var len = getFields().length;
 			var pos = new Number(len+1);
-			var newDiv = f	.clone()
+			var newDiv = $("<div/>")
 							.attr("id",settings.cloneContainerId + "-" + pos)
 							.addClass(settings.rowContainerClass);
-
+            
             $.each(settings.baseNames, function(index, name) {
-                var label = $("<label />").attr("for",name + pos).html("");
-                newDiv.append(label);
 
                 var input = $("<input/>").attr({
 								"id":name + pos,
@@ -117,10 +115,8 @@
 								"value":""
 							});
                 newDiv.append(input);
-                
-			    newDiv.children("img")
-							.attr("src",settings.removeImgSrc);
             });
+            newDiv.append($("<img>").attr("src",settings.removeImgSrc));
             
 			if ( len > 0 ) {
 				$("div#" + settings.cloneContainerId + "-" + len).after(newDiv);

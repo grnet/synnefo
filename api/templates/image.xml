@@ -1,7 +1,7 @@
 {% spaceless %}
 <?xml version="1.0" encoding="UTF-8"?>
 <image xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom" id="{{ image.id }}" name="{{ image.name }}" serverRef="{{ image.serverRef }}" updated="{{ image.updated }}" created="{{ image.created }}" status="{{ image.status }}" progress="{{ image.progress }}">
-</image>
+
 {% if image.metadata %}
 <metadata>
   {% for key, val in image.metadata.values.items %}
@@ -9,4 +9,6 @@
   {% endfor %}
 </metadata>
 {% endif %}
+
+</image>
 {% endspaceless %}

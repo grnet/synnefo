@@ -7,6 +7,7 @@ from synnefo.db.models import Network
 
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 
@@ -40,6 +41,8 @@ def network_demux(request, network_id):
 def network_to_dict(network, detail=True):
     d = {'id': network.id, 'name': network.name}
     if detail:
+        d['updated'] = isoformat(network.updated)
+        d['created'] = isoformat(network.created)
         d['servers'] = {'values': [vm.id for vm in network.machines.all()]}
     return d
 

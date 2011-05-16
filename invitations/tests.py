@@ -20,3 +20,5 @@ class InvitationsTestCase(TestCase):
                                                 uniq = "test@gmail.com")
 
         self.assertNotEquals(added_user, None)
+
+        invitations.add_invitation(source, u'', "test@gmail.com")

@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-<form action="/invitation/" method="post" id="invform">
+<form action="/invitations/" method="post" id="invform">
     {% csrf_token %}
     <div id="fieldheaders">
         <span id="field_name_name">Όνομα</span>
@@ -26,15 +26,12 @@
     </div>
     <div id="fields">
         <div id="removable-name-container-1" class="removable-field-row">
-            <input type="text" name="name_1" id="name_1" value="" class="textInput removable" />
-            <input type="text" name="email_1" id="email_1" value="" class="textInput removable" />
-            <img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
+            <input type="text" name="name_1" id="name_1" value="" class="textInput removable" /><input type="text" name="email_1" id="email_1" value="" class="textInput removable" /><img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
         </div>
-
         <div id="add-name-container" class="add-field-container">
         <span class="add-field-trigger">
             <img src="/static/add.gif" alt="" title="Add New Item" />
-            Add Row
+            Προσθήκη Παραλήπτη
         </span>
         </div>
     </div>
@@ -45,12 +42,12 @@
 Λίστα προσκλήσεων που έχουν αποσταλεί (<img src="/static/save.png" alt=""> = Η πρόσκληση έγινε αποδεκτή)
     <div>
         <ul>
-        {% for ivn in invitations %}
+        {% for inv in invitations %}
             <li>
                 {% if inv.accepted %}
                     <img src="/static/save.png" alt="">
                 {% endif %}
-                {{ inv.target }}
+                {{ inv.targetname }} &lt;{{ inv.target }}&gt;
             </li>
         {% endfor %}
         </ul>

@@ -344,7 +344,10 @@ def update_metadata(request, server_id):
             updated[key] = val
         except VirtualMachineMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
-
+    
+    if updated:
+        vm.save()
+    
     return render_metadata(request, updated, status=201)
 
 @api_method('GET')
@@ -386,6 +389,7 @@ def create_metadata_item(request, server_id, key):
     meta, created = VirtualMachineMetadata.objects.get_or_create(meta_key=key, vm=vm)
     meta.meta_value = metadict[key]
     meta.save()
+    vm.save()
     return render_meta(request, meta, status=201)
 
 @api_method('DELETE')
@@ -403,4 +407,5 @@ def delete_metadata_item(request, server_id, key):
     vm = get_vm(server_id, request.user)
     meta = get_vm_meta(vm, key)
     meta.delete()
+    vm.save()
     return HttpResponse(status=204)

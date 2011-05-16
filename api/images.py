@@ -219,7 +219,10 @@ def update_metadata(request, image_id):
             updated[key] = val
         except ImageMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
-
+    
+    if updated:
+        image.save()
+    
     return render_metadata(request, updated, status=201)
 
 @api_method('GET')
@@ -261,6 +264,7 @@ def create_metadata_item(request, image_id, key):
     meta, created = ImageMetadata.objects.get_or_create(meta_key=key, image=image)
     meta.meta_value = metadict[key]
     meta.save()
+    image.save()
     return render_meta(request, meta, status=201)
 
 @api_method('DELETE')
@@ -278,4 +282,5 @@ def delete_metadata_item(request, image_id, key):
     image = get_image(image_id, request.user)
     meta = get_image_meta(image, key)
     meta.delete()
+    image.save()
     return HttpResponse(status=204)

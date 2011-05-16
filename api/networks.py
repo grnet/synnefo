@@ -148,6 +148,8 @@ def delete_network(request, network_id):
     #                       overLimit (413)
 
     net = get_network(network_id, request.user)
+    for vm in net.machines.all():
+        vm.save()
     net.delete()
     return HttpResponse(status=204)
 

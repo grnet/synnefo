@@ -253,6 +253,7 @@ def add(request, net, args):
     vm = get_vm(server_id, request.user)
     net.machines.add(vm)
     net.save()
+    vm.save()
     return HttpResponse(status=202)
 
 @network_action('remove')
@@ -272,4 +273,5 @@ def remove(request, net, args):
     vm = get_vm(server_id, request.user)
     net.machines.remove(vm)
     net.save()
+    vm.save()
     return HttpResponse(status=202)

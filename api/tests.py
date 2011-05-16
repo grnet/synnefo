@@ -920,7 +920,10 @@ class UpdateNetworkName(BaseTestCase):
         self.update_network_name(network_id, new_name)
 
         network['name'] = new_name
-        self.assertEqual(self.get_network_details(network_id), network)
+        del network['updated']
+        net = self.get_network_details(network_id)
+        del net['updated']
+        self.assertEqual(net, network)
 
 
 class DeleteNetwork(BaseTestCase):

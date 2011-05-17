@@ -3,13 +3,15 @@
 
 <container name="{{ container }}">
   {% for object in objects %}
+  {% if object.subdir %}
+  <subdir name="{{ object.subdir }}" />
+  {% else %}
   <object>
-    <name>{{ object.name }}</name>
-    <hash>{{ object.hash }}</hash>
-    <bytes>{{ object.bytes }}</bytes>
-    <content_type>{{ object.content_type }}</content_type>
-    <last_modified>{{ object.last_modified }}</last_modified>
+  {% for key, value in object.items %}
+    <{{ key }}>{{ value }}</{{ key }}>
+  {% endfor %}
   </object>
+  {% endif %}
   {% endfor %}
 </container>
 {% endspaceless %}

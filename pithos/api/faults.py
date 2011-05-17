@@ -1,7 +1,3 @@
-#
-# Copyright (c) 2011 Greek Research and Technology Network
-#
-
 def camelCase(s):
     return s[0].lower() + s[1:]
 

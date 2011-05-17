@@ -4,9 +4,9 @@
 <account name="{{ account }}">
   {% for container in containers %}
   <container>
-    <name>{{ container.name }}</name>
-    <count>{{ container.count }}</count>
-    <bytes>{{ container.bytes }}</bytes>
+  {% for key, value in container.items %}
+    <{{ key }}>{{ value }}</{{ key }}>
+  {% endfor %}
   </container>
   {% endfor %}
 </account>

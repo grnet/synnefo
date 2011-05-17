@@ -1,44 +1,30 @@
-#
-# Copyright (c) 2011 Greek Research and Technology Network
-#
+import os
+import logging
+import hashlib
+import types
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
-from django.utils.http import http_date, parse_etags
+from django.utils.http import parse_etags
 
-from pithos.api.compat import parse_http_date_safe
+from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
+    LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
+from pithos.api.util import (printable_meta_dict, get_account_meta, put_account_meta,
+    get_container_meta, put_container_meta, get_object_meta, put_object_meta,
+    validate_modification_preconditions, copy_or_move_object, get_range,
+    raw_input_socket, socket_read_iterator, api_method)
+from pithos.backends import backend
 
-from pithos.api.faults import Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict, LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity
-from pithos.api.util import get_meta, get_range, api_method
-from pithos.backends.dummy import BackEnd
-
-import os
-import datetime
-import logging
-
-from settings import PROJECT_PATH
-STORAGE_PATH = os.path.join(PROJECT_PATH, 'data')
 
 logger = logging.getLogger(__name__)
 
-@api_method('GET')
-def authenticate(request):
-    # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
-    #                       unauthorized (401),
-    #                       badRequest (400)
-    
-    x_auth_user = request.META.get('HTTP_X_AUTH_USER')
-    x_auth_key = request.META.get('HTTP_X_AUTH_KEY')
-    
-    if not x_auth_user or not x_auth_key:
-        raise BadRequest('Missing auth user or key.')
-    
-    response = HttpResponse(status = 204)
-    response['X-Auth-Token'] = '0000'
-    response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(), 'demo')
-    return response
+
+def top_demux(request):
+    if request.method == 'GET':
+        return authenticate(request)
+    else:
+        return method_not_allowed(request)
 
 def account_demux(request, v_account):
     if request.method == 'HEAD':
@@ -73,12 +59,31 @@ def object_demux(request, v_account, v_container, v_object):
         return object_write(request, v_account, v_container, v_object)
     elif request.method == 'COPY':
         return object_copy(request, v_account, v_container, v_object)
+    elif request.method == 'MOVE':
+        return object_move(request, v_account, v_container, v_object)
     elif request.method == 'POST':
         return object_update(request, v_account, v_container, v_object)
     elif request.method == 'DELETE':
         return object_delete(request, v_account, v_container, v_object)
     else:
         return method_not_allowed(request)
+
+@api_method('GET')
+def authenticate(request):
+    # Normal Response Codes: 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    x_auth_user = request.META.get('HTTP_X_AUTH_USER')
+    x_auth_key = request.META.get('HTTP_X_AUTH_KEY')
+    if not x_auth_user or not x_auth_key:
+        raise BadRequest('Missing X-Auth-User or X-Auth-Key header')
+    
+    response = HttpResponse(status=204)
+    response['X-Auth-Token'] = '0000'
+    response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(), 'demo')
+    return response
 
 @api_method('HEAD')
 def account_meta(request, v_account):
@@ -87,36 +92,24 @@ def account_meta(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    be = BackEnd(STORAGE_PATH)
-    try:
-        info = be.get_account_meta(request.user)
-    except NameError:
-        info = {'count': 0, 'bytes': 0}
+    meta = backend.get_account_meta(request.user)
     
-    response = HttpResponse(status = 204)
-    response['X-Account-Container-Count'] = info['count']
-    response['X-Account-Bytes-Used'] = info['bytes']
-    for k in [x for x in info.keys() if x.startswith('X-Account-Meta-')]:
-        response[k.encode('utf-8')] = info[k].encode('utf-8')
-    
+    response = HttpResponse(status=204)
+    put_account_meta(response, meta)
     return response
 
 @api_method('POST')
 def account_update(request, v_account):
     # Normal Response Codes: 202
     # Error Response Codes: serviceUnavailable (503),
-    #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_meta(request, 'X-Account-Meta-')
-    
-    be = BackEnd(STORAGE_PATH)
-    be.update_account_meta(request.user, meta)
-    
-    return HttpResponse(status = 202)
+    meta = get_account_meta(request)    
+    backend.update_account_meta(request.user, meta)
+    return HttpResponse(status=202)
 
-@api_method('GET', format_allowed = True)
+@api_method('GET', format_allowed=True)
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: serviceUnavailable (503),
@@ -124,36 +117,51 @@ def container_list(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    meta = backend.get_account_meta(request.user)
+    
+    validate_modification_preconditions(request, meta)
+    
+    response = HttpResponse()
+    put_account_meta(response, meta)
+    
     marker = request.GET.get('marker')
     limit = request.GET.get('limit')
     if limit:
         try:
             limit = int(limit)
+            if limit <= 0:
+                raise ValueError
         except ValueError:
             limit = 10000
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        containers = be.list_containers(request.user, marker, limit)
+        containers = backend.list_containers(request.user, marker, limit)
     except NameError:
         containers = []
     
     if request.serialization == 'text':
         if len(containers) == 0:
             # The cloudfiles python bindings expect 200 if json/xml.
-            return HttpResponse(status = 204)
-        return HttpResponse('\n'.join(containers), status = 200)
+            response.status_code = 204
+            return response
+        response.status_code = 200
+        response.content = '\n'.join(containers) + '\n'
+        return response
     
-    # TODO: Do this with a backend parameter?
-    try:
-        containers = [be.get_container_meta(request.user, x) for x in containers]
-    except NameError:
-        raise ItemNotFound()
+    container_meta = []
+    for x in containers:
+        try:
+            meta = backend.get_container_meta(request.user, x)
+        except NameError:
+            continue
+        container_meta.append(printable_meta_dict(meta))
     if request.serialization == 'xml':
-        data = render_to_string('containers.xml', {'account': request.user, 'containers': containers})
+        data = render_to_string('containers.xml', {'account': request.user, 'containers': container_meta})
     elif request.serialization  == 'json':
-        data = json.dumps(containers)
-    return HttpResponse(data, status = 200)
+        data = json.dumps(container_meta)
+    response.status_code = 200
+    response.content = data
+    return response
 
 @api_method('HEAD')
 def container_meta(request, v_account, v_container):
@@ -163,18 +171,13 @@ def container_meta(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        info = be.get_container_meta(request.user, v_container)
+        meta = backend.get_container_meta(request.user, v_container)
     except NameError:
-        raise ItemNotFound()
+        raise ItemNotFound('Container does not exist')
     
-    response = HttpResponse(status = 204)
-    response['X-Container-Object-Count'] = info['count']
-    response['X-Container-Bytes-Used'] = info['bytes']
-    for k in [x for x in info.keys() if x.startswith('X-Container-Meta-')]:
-        response[k.encode('utf-8')] = info[k].encode('utf-8')
-    
+    response = HttpResponse(status=204)
+    put_container_meta(response, meta)
     return response
 
 @api_method('PUT')
@@ -185,19 +188,18 @@ def container_create(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_meta(request, 'X-Container-Meta-')
+    meta = get_container_meta(request)
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        be.create_container(request.user, v_container)
+        backend.create_container(request.user, v_container)
         ret = 201
     except NameError:
         ret = 202
     
     if len(meta) > 0:
-        be.update_container_meta(request.user, v_container, meta)
+        backend.update_container_meta(request.user, v_container, meta)
     
-    return HttpResponse(status = ret)
+    return HttpResponse(status=ret)
 
 @api_method('POST')
 def container_update(request, v_account, v_container):
@@ -207,15 +209,12 @@ def container_update(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_meta(request, 'X-Container-Meta-')
-    
-    be = BackEnd(STORAGE_PATH)
+    meta = get_container_meta(request)
     try:
-        be.update_container_meta(request.user, v_container, meta)
+        backend.update_container_meta(request.user, v_container, meta)
     except NameError:
-        raise ItemNotFound()
-    
-    return HttpResponse(status = 202)
+        raise ItemNotFound('Container does not exist')
+    return HttpResponse(status=202)
 
 @api_method('DELETE')
 def container_delete(request, v_account, v_container):
@@ -226,16 +225,15 @@ def container_delete(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        be.delete_container(request.user, v_container)
+        backend.delete_container(request.user, v_container)
     except NameError:
-        raise ItemNotFound()
+        raise ItemNotFound('Container does not exist')
     except IndexError:
-        raise Conflict()
-    return HttpResponse(status = 204)
+        raise Conflict('Container is not empty')
+    return HttpResponse(status=204)
 
-@api_method('GET', format_allowed = True)
+@api_method('GET', format_allowed=True)
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
     # Error Response Codes: serviceUnavailable (503),
@@ -243,55 +241,75 @@ def object_list(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    try:
+        meta = backend.get_container_meta(request.user, v_container)
+    except NameError:
+        raise ItemNotFound('Container does not exist')
+    
+    validate_modification_preconditions(request, meta)
+    
+    response = HttpResponse()
+    put_container_meta(response, meta)
+    
     path = request.GET.get('path')
     prefix = request.GET.get('prefix')
     delimiter = request.GET.get('delimiter')
     
-    # TODO: Check if the cloudfiles python bindings expect the results with the prefix.
     # Path overrides prefix and delimiter.
+    virtual = True
     if path:
         prefix = path
         delimiter = '/'
+        virtual = False
+    
     # Naming policy.
     if prefix and delimiter:
         prefix = prefix + delimiter
     if not prefix:
         prefix = ''
+    prefix = prefix.lstrip('/')
     
     marker = request.GET.get('marker')
     limit = request.GET.get('limit')
     if limit:
         try:
             limit = int(limit)
+            if limit <= 0:
+                raise ValueError
         except ValueError:
             limit = 10000
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        objects = be.list_objects(request.user, v_container, prefix, delimiter, marker, limit)
+        objects = backend.list_objects(request.user, v_container, prefix, delimiter, marker, limit, virtual)
     except NameError:
-        raise ItemNotFound()
+        raise ItemNotFound('Container does not exist')
     
     if request.serialization == 'text':
         if len(objects) == 0:
             # The cloudfiles python bindings expect 200 if json/xml.
-            return HttpResponse(status = 204)
-        return HttpResponse('\n'.join(objects), status = 200)
+            response.status_code = 204
+            return response
+        response.status_code = 200
+        response.content = '\n'.join(objects) + '\n'
+        return response
     
-    # TODO: Do this with a backend parameter?
-    try:
-        objects = [be.get_object_meta(request.user, v_container, x) for x in objects]
-    except NameError:
-        raise ItemNotFound()
-    # Format dates.
+    object_meta = []
     for x in objects:
-        if x.has_key('last_modified'):
-            x['last_modified'] = datetime.datetime.fromtimestamp(x['last_modified']).isoformat()
+        try:
+            meta = backend.get_object_meta(request.user, v_container, x)
+        except NameError:
+            # Virtual objects/directories.
+            if virtual and delimiter and x.endswith(delimiter):
+                object_meta.append({"subdir": x})
+            continue
+        object_meta.append(printable_meta_dict(meta))
     if request.serialization == 'xml':
-        data = render_to_string('objects.xml', {'container': v_container, 'objects': objects})
+        data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':
-        data = json.dumps(objects)
-    return HttpResponse(data, status = 200)
+        data = json.dumps(object_meta)
+    response.status_code = 200
+    response.content = data
+    return response
 
 @api_method('HEAD')
 def object_meta(request, v_account, v_container, v_object):
@@ -301,20 +319,13 @@ def object_meta(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        info = be.get_object_meta(request.user, v_container, v_object)
+        meta = backend.get_object_meta(request.user, v_container, v_object)
     except NameError:
-        raise ItemNotFound()
+        raise ItemNotFound('Object does not exist')
     
-    response = HttpResponse(status = 204)
-    response['ETag'] = info['hash']
-    response['Content-Length'] = info['bytes']
-    response['Content-Type'] = info['content_type']
-    response['Last-Modified'] = http_date(info['last_modified'])
-    for k in [x for x in info.keys() if x.startswith('X-Object-Meta-')]:
-        response[k.encode('utf-8')] = info[k].encode('utf-8')
-    
+    response = HttpResponse(status=204)
+    put_object_meta(response, meta)
     return response
 
 @api_method('GET')
@@ -328,68 +339,47 @@ def object_read(request, v_account, v_container, v_object):
     #                       badRequest (400),
     #                       notModified (304)
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        info = be.get_object_meta(request.user, v_container, v_object)
+        meta = backend.get_object_meta(request.user, v_container, v_object)
     except NameError:
-        raise ItemNotFound()
+        raise ItemNotFound('Object does not exist')
     
-    # TODO: Check if the cloudfiles python bindings expect hash/content_type/last_modified on range requests.
     response = HttpResponse()
-    response['ETag'] = info['hash']
-    response['Content-Type'] = info['content_type']
-    response['Last-Modified'] = http_date(info['last_modified'])
+    put_object_meta(response, meta)
     
     # Range handling.
     range = get_range(request)
     if range is not None:
         offset, length = range
-        if length:
-            if offset + length > info['bytes']:
-                raise RangeNotSatisfiable()
-        else:
-            if offset > info['bytes']:
-                raise RangeNotSatisfiable()
+        if offset < 0:
+            offset = meta['bytes'] + offset
+        if offset > meta['bytes'] or (length and offset + length > meta['bytes']):
+            raise RangeNotSatisfiable('Requested range exceeds object limits')
         if not length:
             length = -1
         
-        response['Content-Length'] = length        
+        response['Content-Length'] = length # Update with the correct length.
         response.status_code = 206
     else:
         offset = 0
         length = -1
-        
-        response['Content-Length'] = info['bytes']
         response.status_code = 200
     
     # Conditions (according to RFC2616 must be evaluated at the end).
-    # TODO: Check etag/date conditions.
+    validate_modification_preconditions(request, meta)
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None and if_match != '*':
-        if info['hash'] not in parse_etags(if_match):
-            raise PreconditionFailed()
-    
+        if meta['hash'] not in [x.lower() for x in parse_etags(if_match)]:
+            raise PreconditionFailed('Object Etag does not match')    
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
     if if_none_match is not None:
-        if if_none_match == '*' or info['hash'] in parse_etags(if_none_match):
-            raise NotModified()
-    
-    if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE')
-    if if_modified_since is not None:
-        if_modified_since = parse_http_date_safe(if_modified_since)
-    if if_modified_since is not None and info['last_modified'] <= if_modified_since:
-        raise NotModified()
-
-    if_unmodified_since = request.META.get('HTTP_IF_UNMODIFIED_SINCE')
-    if if_unmodified_since is not None:
-        if_unmodified_since = parse_http_date_safe(if_unmodified_since)
-    if if_unmodified_since is not None and info['last_modified'] > if_unmodified_since:
-        raise PreconditionFailed()
+        if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
+            raise NotModified('Object Etag matches')
     
     try:
-        response.content = be.get_object(request.user, v_container, v_object, offset, length)
+        response.content = backend.get_object(request.user, v_container, v_object, offset, length)
     except NameError:
-        raise ItemNotFound()
+        raise ItemNotFound('Object does not exist')
     
     return response
 
@@ -403,68 +393,60 @@ def object_write(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    be = BackEnd(STORAGE_PATH)
-    
     copy_from = request.META.get('HTTP_X_COPY_FROM')
-    if copy_from:
-        parts = copy_from.split('/')
-        if len(parts) < 3 or parts[0] != '':
-            raise BadRequest('Bad X-Copy-From path.')
-        copy_container = parts[1]
-        copy_name = '/'.join(parts[2:])
-        
-        try:
-            info = be.get_object_meta(request.user, copy_container, copy_name)
-        except NameError:
-            raise ItemNotFound()
-        
-        content_length = request.META.get('CONTENT_LENGTH')
-        content_type = request.META.get('CONTENT_TYPE')
+    move_from = request.META.get('HTTP_X_MOVE_FROM')
+    if copy_from or move_from:
         # TODO: Why is this required? Copy this ammount?
-        if not content_length:
-            raise LengthRequired()
-        if content_type:
-            info['content_type'] = content_type
-        
-        meta = get_meta(request, 'X-Object-Meta-')
-        info.update(meta)
-        
-        try:
-            be.copy_object(request.user, copy_container, copy_name, v_container, v_object)
-            be.update_object_meta(request.user, v_container, v_object, info)
-        except NameError:
-            raise ItemNotFound()
-        
-        response = HttpResponse(status = 201)
-    else:
         content_length = request.META.get('CONTENT_LENGTH')
-        content_type = request.META.get('CONTENT_TYPE')
-        if not content_length or not content_type:
-            raise LengthRequired()
+        if not content_length:
+            raise LengthRequired('Missing Content-Length header')
         
-        info = {'content_type': content_type}
-        meta = get_meta(request, 'X-Object-Meta-')
-        info.update(meta)
-        
-        data = request.raw_post_data
-        try:
-            be.update_object(request.user, v_container, v_object, data)
-            be.update_object_meta(request.user, v_container, v_object, info)
-        except NameError:
-            raise ItemNotFound()
-        
-        # TODO: Check before update?
-        info = be.get_object_meta(request.user, v_container, v_object)
-        etag = request.META.get('HTTP_ETAG')
-        if etag:
-            etag = parse_etags(etag)[0] # TODO: Unescape properly.
-            if etag != info['hash']:
-                be.delete_object(request.user, v_container, v_object)
-                raise UnprocessableEntity()
-        
-        response = HttpResponse(status = 201)
-        response['ETag'] = info['hash']
+        if move_from:
+            copy_or_move_object(request, move_from, (v_container, v_object), move=True)
+        else:
+            copy_or_move_object(request, copy_from, (v_container, v_object), move=False)
+        return HttpResponse(status=201)
     
+    meta = get_object_meta(request)
+    content_length = -1
+    if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
+        content_length = request.META.get('CONTENT_LENGTH')
+        if not content_length:
+            raise LengthRequired('Missing Content-Length header')
+        try:
+            content_length = int(content_length)
+            if content_length < 0:
+                raise ValueError
+        except ValueError:
+            raise BadRequest('Invalid Content-Length header')
+    # Should be BadRequest, but API says otherwise.
+    if 'Content-Type' not in meta:
+        raise LengthRequired('Missing Content-Type header')
+    
+    sock = raw_input_socket(request)
+    md5 = hashlib.md5()
+    offset = 0
+    for data in socket_read_iterator(sock, content_length):
+        # TODO: Raise 408 (Request Timeout) if this takes too long.
+        # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+        md5.update(data)
+        try:
+            backend.update_object(request.user, v_container, v_object, data, offset)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+        offset += len(data)
+    
+    meta['hash'] = md5.hexdigest().lower()
+    etag = request.META.get('HTTP_ETAG')
+    if etag and parse_etags(etag)[0].lower() != meta['hash']:
+        raise UnprocessableEntity('Object Etag does not match')
+    try:
+        backend.update_object_meta(request.user, v_container, v_object, meta)
+    except NameError:
+        raise ItemNotFound('Object does not exist')
+    
+    response = HttpResponse(status=201)
+    response['ETag'] = meta['hash']
     return response
 
 @api_method('COPY')
@@ -475,35 +457,25 @@ def object_copy(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    destination = request.META.get('HTTP_DESTINATION')
-    if not destination:
-        raise BadRequest('Missing Destination.');
+    dest_path = request.META.get('HTTP_DESTINATION')
+    if not dest_path:
+        raise BadRequest('Missing Destination header')
+    copy_or_move_object(request, (v_container, v_object), dest_path, move=False)
+    return HttpResponse(status=201)
+
+@api_method('MOVE')
+def object_move(request, v_account, v_container, v_object):
+    # Normal Response Codes: 201
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
     
-    parts = destination.split('/')
-    if len(parts) < 3 or parts[0] != '':
-        raise BadRequest('Bad Destination path.')
-    dest_container = parts[1]
-    dest_name = '/'.join(parts[2:])
-    
-    be = BackEnd(STORAGE_PATH)
-    try:
-        info = be.get_object_meta(request.user, v_container, v_object)
-    except NameError:
-        raise ItemNotFound()
-    
-    content_type = request.META.get('CONTENT_TYPE')
-    if content_type:
-        info['content_type'] = content_type
-    meta = get_meta(request, 'X-Object-Meta-')
-    info.update(meta)
-    
-    try:
-        be.copy_object(request.user, v_container, v_object, dest_container, dest_name)
-        be.update_object_meta(request.user, dest_container, dest_name, info)
-    except NameError:
-        raise ItemNotFound()
-    
-    response = HttpResponse(status = 201)
+    dest_path = request.META.get('HTTP_DESTINATION')
+    if not dest_path:
+        raise BadRequest('Missing Destination header')
+    copy_or_move_object(request, (v_container, v_object), dest_path, move=True)
+    return HttpResponse(status=201)
 
 @api_method('POST')
 def object_update(request, v_account, v_container, v_object):
@@ -513,15 +485,14 @@ def object_update(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_meta(request, 'X-Object-Meta-')
-    
-    be = BackEnd(STORAGE_PATH)
+    meta = get_object_meta(request)
+    if 'Content-Type' in meta:
+        del(meta['Content-Type']) # Do not allow changing the Content-Type.
     try:
-        be.update_object_meta(request.user, v_container, v_object, meta)
+        backend.update_object_meta(request.user, v_container, v_object, meta)
     except NameError:
-        raise ItemNotFound()
-    
-    return HttpResponse(status = 202)
+        raise ItemNotFound('Object does not exist')
+    return HttpResponse(status=202)
 
 @api_method('DELETE')
 def object_delete(request, v_account, v_container, v_object):
@@ -531,13 +502,12 @@ def object_delete(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    be = BackEnd(STORAGE_PATH)
     try:
-        be.delete_object(request.user, v_container, v_object)
+        backend.delete_object(request.user, v_container, v_object)
     except NameError:
-        raise ItemNotFound()
-    return HttpResponse(status = 204)
+        raise ItemNotFound('Object does not exist')
+    return HttpResponse(status=204)
 
 @api_method()
 def method_not_allowed(request):
-    raise BadRequest('Method not allowed.')
+    raise BadRequest('Method not allowed')

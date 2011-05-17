@@ -1,7 +1,7 @@
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import *
+import os
 
-
-urlpatterns = patterns('synnefo.invitations.invitations',
-    (r'^$', 'inv_demux'),
-    (r'^/$', 'inv_demux'),
+urlpatterns = patterns('',
+    (r'^$', 'synnefo.invitations.invitations.inv_demux'),
+    (r'^static/(.*)$', 'django.views.static.serve', {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
 )

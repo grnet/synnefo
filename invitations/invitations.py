@@ -2,17 +2,17 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseRedirect
+from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
+from django.views.decorators.csrf import csrf_protect
 
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users
 
-import json
-
 def send_emails(request):
-    errors = ()
+    errors = []
     valid_inv = filter(lambda x: x.startswith("name_"), request.POST.keys())
 
     for inv in valid_inv:
@@ -22,20 +22,32 @@ def send_emails(request):
             email = request.POST['email_' + inv_id]
             name = request.POST[inv]
 
-            validate_email(email)
             validate_name(name)
-            add_invitation(request.user, name, email)
-        except Exception as e:
-            errors += e.message
-        except ValidationError as v:
-            errors += v.message
+            validate_email(email)
 
-    response = HttpResponseRedirect("/invitations/")
+            add_invitation(request.user, name, email)
+
+        except Exception as e:
+            errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.messages[0])]
+
+    respose = None
+    if errors:
+        data = render_to_string('invitations.html',
+                                {'invitations': invitations_for_user(request),
+                                 'errors': errors},
+                                context_instance=RequestContext(request))
+        response =  HttpResponse(data)
+    else:
+        response = HttpResponseRedirect("/invitations/")
+
     return response
 
 def validate_name(name):
     if name is None or name.strip() == '' :
-        raise ValidationError("Name cannot be empty")
+        raise ValidationError("Name is empty")
+
+    if name.find(' ') is -1:
+        raise ValidationError("Name must contain at least one space")
 
     return True
 
@@ -59,10 +71,12 @@ def invitation_to_dict(inv):
 
     return invitation
 
+@csrf_protect
 def inv_demux(request):
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request)})
+                                {'invitations': invitations_for_user(request)},
+                                context_instance=RequestContext(request))
         return  HttpResponse(data)
     elif request.method == 'POST':
         return send_emails(request)
@@ -78,12 +92,12 @@ def add_invitation(source, name, email):
     num_inv = Invitations.objects.filter(source = source).count()
 
     if num_inv >= settings.MAX_INVITATIONS:
-        raise TooManyInvitations(source)
+        raise TooManyInvitations("User invitation limit (%d) exhausted" % settings.MAX_INVITATIONS)
 
     target = SynnefoUser.objects.filter(name = name, uniq = email)
 
     if target.count() is not 0:
-        raise AlreadyInvited("User already invited: %s <%s>" % (name, email))
+        raise AlreadyInvited("User %s <%s> already invited" % (name, email))
 
     users.register_user(name, email)
 
@@ -106,13 +120,15 @@ def invitation_accepted(invitation):
     invitation.accepted = True
     invitation.save()
 
-class TooManyInvitations(BaseException):
 
-    def __init__(self, source):
-        self.source = source
-
-
-class AlreadyInvited(BaseException):
+class TooManyInvitations(Exception):
 
     def __init__(self, msg):
-        self.msg = msg
+        self.messages.append(msg)
+
+
+class AlreadyInvited(Exception):
+    messages = []
+
+    def __init__(self, msg):
+        self.messages.append(msg)

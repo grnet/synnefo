@@ -4,7 +4,7 @@
 <head>
     <title>Αποστολή προσκλήσεων σε χρήστες</title>
     <script src="/static/jquery.tools.min.js"></script>
-    <script src="/static/jquery.dynamicField.js"></script>
+    <script src="/invitations/static/invitations.js"></script>
     <script type="text/javascript">
 
     $(document).ready(function() {
@@ -20,6 +20,15 @@
 <body>
 <form action="/invitations/" method="post" id="invform">
     {% csrf_token %}
+
+    <div id="errors">
+    <ul>
+    {% for error in errors %}
+        <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+    </div>
+
     <div id="fieldheaders">
         <span id="field_name_name">Όνομα</span>
         <span id="field_email_name">Email</span>

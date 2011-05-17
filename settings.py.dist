@@ -242,3 +242,14 @@ AUTH_TOKEN_DURATION = 30 * 24
 
 #Max number of invitations allowed per user
 MAX_INVITATIONS = 20
+
+#Key to encrypt X-Auth-Token with when sending invitations
+INVITATION_ENCR_KEY = '8d342f6e7a0366c632978a80257019af'
+
+#Days during which an invitation is active
+INVITATION_VALID_DAYS = 30
+
+#SMTP server for the system
+SMTP_SERVER="127.0.0.1"
+
+

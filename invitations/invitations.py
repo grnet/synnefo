@@ -1,3 +1,6 @@
+from datetime import timedelta
+import base64
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -10,8 +13,11 @@ from django.views.decorators.csrf import csrf_protect
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users
+from synnefo.logic import email
 
-def send_emails(request):
+from Crypto.Cipher import AES
+
+def process_form(request):
     errors = []
     valid_inv = filter(lambda x: x.startswith("name_"), request.POST.keys())
 
@@ -25,7 +31,8 @@ def send_emails(request):
             validate_name(name)
             validate_email(email)
 
-            add_invitation(request.user, name, email)
+            inv = add_invitation(request.user, name, email)
+            queue_email(inv)
 
         except Exception as e:
             errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.messages[0])]
@@ -55,21 +62,18 @@ def invitations_for_user(request):
     invitations = []
 
     for inv in Invitations.objects.filter(source = request.user):
-        invitations.append(invitation_to_dict(inv))
+        invitation = {}
+
+        invitation['sourcename'] = inv.source.realname
+        invitation['source'] = inv.source.uniq
+        invitation['targetname'] = inv.target.realname
+        invitation['target'] = inv.target.uniq
+        invitation['accepted'] = inv.accepted
+        invitation['sent'] = inv.created
+
+        invitations.append(invitation)
 
     return invitations
-
-def invitation_to_dict(inv):
-    invitation = {}
-
-    invitation['sourcename'] = inv.source.realname
-    invitation['source'] = inv.source.uniq
-    invitation['targetname'] = inv.target.realname
-    invitation['target'] = inv.target.uniq
-    invitation['accepted'] = inv.accepted
-    invitation['sent'] = inv.created
-
-    return invitation
 
 @csrf_protect
 def inv_demux(request):
@@ -79,9 +83,30 @@ def inv_demux(request):
                                 context_instance=RequestContext(request))
         return  HttpResponse(data)
     elif request.method == 'POST':
-        return send_emails(request)
+        return process_form(request)
     else:
         method_not_allowed(request)
+
+def queue_email(invitation):
+    email = {}
+    email['invitee'] = invitation.target.realname
+    email['inviter'] = invitation.source.realname
+
+    valid = timedelta(days = settings.INVITATION_VALID_DAYS)
+    valid_until = invitation.created + valid
+    email['valid_until'] = valid_until.strftime('%A, %d %B %Y')
+
+    PADDING = '{'
+    pad = lambda s: s + (32 - len(s) % 32) * PADDING
+    EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
+
+    cipher = AES.new(settings.INVITATION_ENCR_KEY)
+    encoded = EncodeAES(cipher, invitation.target.auth_token)
+
+    email['url'] = settings.APP_INSTALL_URL + "/invitations/login?key=" + encoded
+
+    data = render_to_string('invitation.txt', {'email': email})
+    email.send_async()
 
 @transaction.commit_on_success
 def add_invitation(source, name, email):
@@ -111,6 +136,7 @@ def add_invitation(source, name, email):
     inv.source = source
     inv.target = target[0]
     inv.save()
+    return inv
 
 @transaction.commit_on_success
 def invitation_accepted(invitation):

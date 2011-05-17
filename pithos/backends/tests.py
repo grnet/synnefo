@@ -1,21 +1,24 @@
-from dummy import BackEnd
 import unittest
 import os
 import types
 import json
 
+from simple import SimpleBackend
+
+
 class TestAccount(unittest.TestCase):
     def setUp(self):
         self.basepath = './test/content'
-        self.b = BackEnd(self.basepath)
+        self.b = SimpleBackend(self.basepath)
         self.account = 'account1'
-        
+    
     def tearDown(self):
         containers = self.b.list_containers(self.account)
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
-            except IndexError: # container not empty
+            except IndexError:
+                # container not empty
                 for obj in self.b.list_objects(self.account, container):
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
@@ -27,7 +30,7 @@ class TestAccount(unittest.TestCase):
         l2 = self.b.list_containers(self.account)
         l1.sort()
         self.assertEquals(l1, l2)
-        
+    
     def test_list_containers_with_limit_marker(self):
         l1 = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in l1:
@@ -43,45 +46,44 @@ class TestAccount(unittest.TestCase):
         l2 = self.b.list_containers(self.account, limit=2, marker='oranges')
         self.assertTrue(len(l2) <= 2)
         self.assertEquals(l1[4:], l2)
-        
+    
     def test_get_account_meta(self):
         meta = {
-        "name": "account1",
-        "username": "aaitest@uth.gr",
-        "email": "aaitest@uth.gr",
-        "fileroot": "http://hostname/gss/rest/aaitest@uth.gr/files",
-        "trash": "http://hostname/gss/rest/aaitest@uth.gr/trash",
-        "shared": "http://hostname/gss/rest/aaitest@uth.gr/shared",
-        "others": "http://hostname/gss/rest/aaitest@uth.gr/others",
-        "tags": "http://hostname/gss/rest/aaitest@uth.gr/tags",
-        "groups": "http://hostname/gss/rest/aaitest@uth.gr/groups",
-        "creationDate": 1223372769275,
-        "modificationDate": 1223372769275,
-        "lastLogin": 1223372769275
-        }
+            "name": "account1",
+            "username": "aaitest@uth.gr",
+            "email": "aaitest@uth.gr",
+            "fileroot": "http://hostname/gss/rest/aaitest@uth.gr/files",
+            "trash": "http://hostname/gss/rest/aaitest@uth.gr/trash",
+            "shared": "http://hostname/gss/rest/aaitest@uth.gr/shared",
+            "others": "http://hostname/gss/rest/aaitest@uth.gr/others",
+            "tags": "http://hostname/gss/rest/aaitest@uth.gr/tags",
+            "groups": "http://hostname/gss/rest/aaitest@uth.gr/groups",
+            "creationDate": 1223372769275,
+            "modificationDate": 1223372769275,
+            "lastLogin": 1223372769275}
         self.b.update_account_meta(self.account, meta)
         d = self.b.get_account_meta(self.account)
         for k,v in meta.iteritems():
             self.assertEquals(unicode(v), d[k])
-            
+    
     def test_get_non_existing_account_meta(self):
-        self.assertRaises(NameError, self.b.get_account_meta, 'account2')
+        meta = self.b.get_account_meta('account2')
+        self.assertEquals(meta, {'name': 'account2', 'count': 0, 'bytes': 0})
     
     def test_update_account_meta(self):
         meta = {
-        "name": "account1",
-        "username": "aaitest@uth.gr",
-        "email": "aaitest@uth.gr",
-        "fileroot": "http://hostname/gss/rest/aaitest@uth.gr/files",
-        "trash": "http://hostname/gss/rest/aaitest@uth.gr/trash",
-        "shared": "http://hostname/gss/rest/aaitest@uth.gr/shared",
-        "others": "http://hostname/gss/rest/aaitest@uth.gr/others",
-        "tags": "http://hostname/gss/rest/aaitest@uth.gr/tags",
-        "groups": "http://hostname/gss/rest/aaitest@uth.gr/groups",
-        "creationDate": 1223372769275,
-        "modificationDate": 1223372769275,
-        "lastLogin": 1223372769275
-        }
+            "name": "account1",
+            "username": "aaitest@uth.gr",
+            "email": "aaitest@uth.gr",
+            "fileroot": "http://hostname/gss/rest/aaitest@uth.gr/files",
+            "trash": "http://hostname/gss/rest/aaitest@uth.gr/trash",
+            "shared": "http://hostname/gss/rest/aaitest@uth.gr/shared",
+            "others": "http://hostname/gss/rest/aaitest@uth.gr/others",
+            "tags": "http://hostname/gss/rest/aaitest@uth.gr/tags",
+            "groups": "http://hostname/gss/rest/aaitest@uth.gr/groups",
+            "creationDate": 1223372769275,
+            "modificationDate": 1223372769275,
+            "lastLogin": 1223372769275}
         self.b.update_account_meta(self.account, meta)
         p = os.path.join(self.basepath, self.account)
         self.assertTrue(os.path.exists(p))
@@ -95,22 +97,22 @@ class TestAccount(unittest.TestCase):
 class TestContainer(unittest.TestCase):
     def setUp(self):
         self.basepath = './test/content'
-        self.b = BackEnd(self.basepath)
+        self.b = SimpleBackend(self.basepath)
         self.account = 'account1'
-        
+    
     def tearDown(self):
         containers = self.b.list_containers(self.account)
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
-            except Exception: # container not empty
+            except IndexError: # container not empty
                 for obj in self.b.list_objects(self.account, container):
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
-                
+    
     def test_list_non_existing_account_objects(self):
         self.assertRaises(NameError, self.b.list_objects, 'account2', 'container1')
-        
+    
     def test_list_objects(self):
         self.b.create_container(self.account, 'container1')
         objects = self.b.list_objects(self.account, 'container1')
@@ -128,7 +130,7 @@ class TestContainer(unittest.TestCase):
             self.b.update_object(self.account, 'container1', item['name'], json.dumps(item))
         objects = self.b.list_objects(self.account, 'container1')
         self.assertEquals(len(l), len(objects))
-        
+    
     def test_list_objects_with_limit_marker(self):
         self.b.create_container(self.account, 'container1')
         l = ['gala', 'grannysmith', 'honeycrisp', 'jonagold', 'reddelicious']
@@ -157,23 +159,23 @@ class TestContainer(unittest.TestCase):
             self.b.update_object(self.account, 'container1', item, item)
         
         objects = self.b.list_objects(self.account, 'container1', prefix='photos/', delimiter='/')
-        self.assertEquals(['animals', 'me.jpg', 'plants'], objects)
+        self.assertEquals(['photos/animals/', 'photos/me.jpg', 'photos/plants/'], objects)
         
         objects = self.b.list_objects(self.account, 'container1', prefix='photos/animals/', delimiter='/')
-        self.assertEquals(['cats', 'dogs'], objects)
+        self.assertEquals(['photos/animals/cats/', 'photos/animals/dogs/'], objects)
         
         self.b.create_container(self.account, 'container2')
-        l = ['photos/photo1', 'photos/photo2', 'movieobject', 'videos/movieobj4']
+        l = ['photos/photo1', 'photos/photo2', 'movieobject', 'videos', 'videos/movieobj4']
         for item in l:
             self.b.update_object(self.account, 'container2', item, item)
         objects = self.b.list_objects(self.account, 'container2', delimiter='/')
-        self.assertEquals(['movieobject', 'photos', 'videos'], objects)    
-        
+        self.assertEquals(['movieobject', 'photos/', 'videos', 'videos/'], objects)
+    
     def test_create_container(self):
-        cname = 'container1' 
+        cname = 'container1'
         self.b.create_container(self.account, cname)
         self.assertTrue(cname in self.b.list_containers(self.account))
-        
+    
     def test_create_container_twice(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
@@ -184,7 +186,7 @@ class TestContainer(unittest.TestCase):
         self.b.create_container(self.account, cname)
         self.b.delete_container(self.account, cname)
         self.assertTrue(cname not in self.b.list_containers(self.account))
-
+    
     def test_delete_non_exisitng_container(self):
         cname = 'container1'
         self.assertRaises(NameError, self.b.delete_container, self.account, cname)
@@ -193,8 +195,8 @@ class TestContainer(unittest.TestCase):
         cname = 'container1'
         self.b.create_container(self.account, cname)
         self.b.update_object(self.account, cname, 'object1', 'alkhadlkhalkdhal')
-        self.assertRaises(Exception, self.b.delete_container, self.account, cname)
-        
+        self.assertRaises(IndexError, self.b.delete_container, self.account, cname)
+    
     def test_get_container_meta(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
@@ -210,15 +212,15 @@ class TestContainer(unittest.TestCase):
 class TestObject(unittest.TestCase):
     def setUp(self):
         self.basepath = './test/content'
-        self.b = BackEnd(self.basepath)
+        self.b = SimpleBackend(self.basepath)
         self.account = 'account1'
-        
+    
     def tearDown(self):
         containers = self.b.list_containers(self.account)
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
-            except Exception: # container not empty
+            except IndexError: # container not empty
                 for obj in self.b.list_objects(self.account, container):
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
@@ -243,8 +245,7 @@ class TestObject(unittest.TestCase):
         input = {'name':'kate_beckinsale.jpg'}
         self.b.update_object(self.account, cname, input['name'], json.dumps(input))
         meta = self.b.get_object_meta(self.account, cname, input['name'])
-        self.assertTrue('hash' in meta)
-        
+    
     def test_copy_object(self):
         src_cname = 'container1'
         src_obj = 'photos/me.jpg'
@@ -291,20 +292,20 @@ class TestObject(unittest.TestCase):
         self.b.create_container(self.account, dest_cname)
         self.b.update_object_meta(self.account, src_cname, src_obj, {'tag':'sfsfssf'})
         self.b.copy_object(self.account, src_cname, src_obj, dest_cname, dest_obj)
-        self.assertTrue(dest_obj.split('/')[-1] in self.b.list_objects(self.account,
-                                                                       dest_cname,
-                                                                       prefix='photos/personal/',
-                                                                       delimiter='/'))
+        self.assertTrue(dest_obj in self.b.list_objects(self.account,
+                                                        dest_cname,
+                                                        prefix='photos/personal/',
+                                                        delimiter='/'))
         # TODO: test metadata changes
         meta_tag = self.b.get_object_meta(self.account, dest_cname, dest_obj)['tag']
         self.assertEquals(meta_tag, unicode('sfsfssf'))
-        
+    
     def test_delete_non_existing_object(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.assertRaises(NameError, self.b.delete_object, self.account, cname, name)
-        
+    
     def test_delete_object(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
@@ -315,13 +316,13 @@ class TestObject(unittest.TestCase):
         self.b.delete_object(self.account, cname, name)
         self.assertTrue(name not in self.b.list_objects(self.account, cname))
         self.assertRaises(NameError, self.b.delete_object, self.account, cname, name)
-        
+    
     def test_get_non_existing_object_meta(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.assertRaises(NameError, self.b.get_object_meta, self.account, cname, name)
-        
+    
     def test_get_update_object_meta(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
@@ -336,7 +337,7 @@ class TestObject(unittest.TestCase):
         for k,v in m1.iteritems():
             self.assertTrue(k in meta)
             self.assertEquals(unicode(v), meta[k])
-
+        
         m2 = {'X-Object-Meta-Meat': 'Bacon',
              'X-Object-Meta-Fruit': 'Bacon',
              'X-Object-Meta-Veggie': 'Bacon',
@@ -347,12 +348,12 @@ class TestObject(unittest.TestCase):
         for k,v in m1.iteritems():
             self.assertTrue(k in meta)
             self.assertEquals(unicode(v), meta[k])
-
+    
     def test_update_non_existing_object_meta(self):
         cname = 'container1'
         self.b.create_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.assertRaises(NameError, self.b.update_object_meta, self.account, cname, name, {})
-    
+
 if __name__ == "__main__":
-    unittest.main()        
+    unittest.main()

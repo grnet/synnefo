@@ -9,6 +9,7 @@ except:
 from django.conf import settings
 import amqp_connection
 
+
 def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
                to = None, subject = None, body = None):
     """
@@ -24,6 +25,7 @@ def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
 
     routekey = "logic.email.outgoing"
     amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
+
 
 def send (frm = settings.SYSTEM_EMAIL_ADDR,
           to = None, subject = None, body = None):

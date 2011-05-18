@@ -24,20 +24,40 @@ def send(payload, exchange, key):
         Send payload to the specified exchange using the provided routing key
     """
     global _conn, _chan
+
+    if payload is None:
+        raise AMQPError("Message is empty")
+
+    if exchange is None:
+        raise AMQPError("Unknown exchange")
+
+    if key is None:
+        raise AMQPError("Unknown routing key")
+
     msg = amqp.Message(payload)
     msg.properties["delivery_mode"] = 2  # Persistent
 
     while True:
-       try:
+        try:
            _chan.basic_publish(msg,
                                exchange=exchange,
                                routing_key=key)
            return
-       except socket.error:
+        except socket.error:
            #logger.exception("Server went away, reconnecting...")
            _connect()
-       except Exception as e:
-           #self.logger.exception("Caught unexpected exception (msg: %s)", msg)
+        except Exception as e:
+            if _conn is None:
+               _connect()
+            else:
+                #self.logger.exception("Caught unexpected exception (msg: %s)", msg)
+               raise AMQPError("Error sending message to exchange %s with key %s. Payload: %s. Error was: %s",
+               (exchange, key, payload, e.message))
 
 def __init__():
     _connect()
+
+
+class AMQPError(Exception):
+    def __init__(self, msg):
+        self.message = msg

@@ -1,6 +1,8 @@
 # vim: set fileencoding=utf-8 :
 from datetime import timedelta
 import base64
+import time
+import urllib
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -34,7 +36,7 @@ def process_form(request):
             validate_email(email)
 
             inv = add_invitation(request.user, name, email)
-            queue_email(inv)
+            send_invitation(inv)
 
         except Exception as e:
             try :
@@ -85,6 +87,7 @@ def invitations_for_user(request):
 
 @csrf_protect
 def inv_demux(request):
+
     if request.method == 'GET':
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request)},
@@ -95,8 +98,59 @@ def inv_demux(request):
     else:
         method_not_allowed(request)
 
+def login(request):
 
-def queue_email(invitation):
+    if not request.method == 'GET':
+        method_not_allowed(request)
+
+    key = request.GET['key']
+
+    if key is None:
+        return HttpResponse("Required key is missing")
+
+    PADDING = '{'
+    DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
+    cipher = AES.new(settings.INVITATION_ENCR_KEY)
+
+    decoded = DecodeAES(cipher, key)
+
+    users = SynnefoUser.objects.filter(auth_token = decoded)
+
+    if users.count() is 0:
+        return HttpResponse("Invalid key")
+
+    user = users[0]
+    invitations = Invitations.objects.filter(target = user)
+
+    if invitations.count() is 0:
+        return HttpResponse("Non-existent invitation")
+
+    inv = invitations[0]
+
+    valid = timedelta(days = settings.INVITATION_VALID_DAYS)
+    valid_until = inv.created + valid
+
+    if (time.time() -
+        time.mktime(inv.created.timetuple()) -
+        settings.INVITATION_VALID_DAYS * 3600) > 0:
+        return HttpResponse("Invitation expired (was valid until %s)"%
+                            valid_until.strftime('%A, %d %B %Y'))
+
+    inv.accepted = True
+    inv.save()
+
+    response = HttpResponse()
+
+    response.set_cookie('X-Auth-Token', value=user.auth_token,
+                        expires = valid_until.strftime('%a, %d-%b-%Y %H:%M:%S %Z'),
+                        path='/')
+    response['X-Auth-Token'] = user.auth_token
+    response['Location'] = settings.APP_INSTALL_URL
+    response.status_code = 302
+    return response
+
+
+def send_invitation(invitation):
     email = {}
     email['invitee'] = invitation.target.realname
     email['inviter'] = invitation.source.realname
@@ -112,9 +166,14 @@ def queue_email(invitation):
     cipher = AES.new(settings.INVITATION_ENCR_KEY)
     encoded = EncodeAES(cipher, invitation.target.auth_token)
 
-    email['url'] = settings.APP_INSTALL_URL + "/invitations/login?key=" + encoded
+    url_safe = urllib.urlencode({'key': encoded})
+
+    email['url'] = settings.APP_INSTALL_URL + "/invitations/login?" + url_safe
 
     data = render_to_string('invitation.txt', {'email': email})
+
+    print data
+
     send_async(
         frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),

@@ -15,6 +15,9 @@ class SynnefoAuthMiddleware(object):
         if request.path.startswith('/api/') :
             return
 
+        if request.path.startswith('/invitations/login') :
+            return
+
         # Special case for testing purposes, delivers the cookie for the
         # test user on first access
         # TODO: REMOVE THE FOLLOWING BEFORE DEPLOYMENT

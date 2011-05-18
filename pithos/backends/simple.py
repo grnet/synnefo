@@ -38,7 +38,9 @@ class SimpleBackend(BaseBackend):
             return {'name': account, 'count': 0, 'bytes': 0}
         contents = os.listdir(fullname)
         count = len(contents)
-        size = sum((os.path.getsize(os.path.join(fullname, x)) for x in os.listdir(fullname)))
+        size = 0
+        for y in (os.path.join(fullname, z) for z in contents):
+            size += sum((os.path.getsize(os.path.join(y, x)) for x in os.listdir(y)))
         meta = self._get_metadata(account)
         meta.update({'name': account, 'count': count, 'bytes': size})
         return meta
@@ -81,7 +83,7 @@ class SimpleBackend(BaseBackend):
         fullname = self._get_containerinfo(account, name)
         contents = os.listdir(fullname)
         count = len(contents)
-        size = os.stat(fullname).st_size
+        size = sum((os.path.getsize(os.path.join(fullname, x)) for x in contents))
         meta = self._get_metadata(os.path.join(account, name))
         meta.update({'name': name, 'count': count, 'bytes': size})
         return meta

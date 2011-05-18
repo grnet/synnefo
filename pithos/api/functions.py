@@ -423,18 +423,24 @@ def object_write(request, v_account, v_container, v_object):
     if 'Content-Type' not in meta:
         raise LengthRequired('Missing Content-Type header')
     
-    sock = raw_input_socket(request)
     md5 = hashlib.md5()
-    offset = 0
-    for data in socket_read_iterator(sock, content_length):
-        # TODO: Raise 408 (Request Timeout) if this takes too long.
-        # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
-        md5.update(data)
+    if content_length == 0:
         try:
-            backend.update_object(request.user, v_container, v_object, data, offset)
+            backend.update_object(request.user, v_container, v_object, '')
         except NameError:
-            raise ItemNotFound('Object does not exist')
-        offset += len(data)
+            raise ItemNotFound('Container does not exist')
+    else:
+        sock = raw_input_socket(request)
+        offset = 0
+        for data in socket_read_iterator(sock, content_length):
+            # TODO: Raise 408 (Request Timeout) if this takes too long.
+            # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+            md5.update(data)
+            try:
+                backend.update_object(request.user, v_container, v_object, data, offset)
+            except NameError:
+                raise ItemNotFound('Container does not exist')
+            offset += len(data)
     
     meta['hash'] = md5.hexdigest().lower()
     etag = request.META.get('HTTP_ETAG')

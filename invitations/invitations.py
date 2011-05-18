@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 from datetime import timedelta
 import base64
 
@@ -9,13 +10,14 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
+from synnefo.logic.email import send_async
 
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users
-from synnefo.logic import email
 
 from Crypto.Cipher import AES
+
 
 def process_form(request):
     errors = []
@@ -35,7 +37,10 @@ def process_form(request):
             queue_email(inv)
 
         except Exception as e:
-            errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.messages[0])]
+            try :
+                errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.messages[0])]
+            except:
+                errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.message)]
 
     respose = None
     if errors:
@@ -49,6 +54,7 @@ def process_form(request):
 
     return response
 
+
 def validate_name(name):
     if name is None or name.strip() == '' :
         raise ValidationError("Name is empty")
@@ -57,6 +63,7 @@ def validate_name(name):
         raise ValidationError("Name must contain at least one space")
 
     return True
+
 
 def invitations_for_user(request):
     invitations = []
@@ -75,6 +82,7 @@ def invitations_for_user(request):
 
     return invitations
 
+
 @csrf_protect
 def inv_demux(request):
     if request.method == 'GET':
@@ -86,6 +94,7 @@ def inv_demux(request):
         return process_form(request)
     else:
         method_not_allowed(request)
+
 
 def queue_email(invitation):
     email = {}
@@ -106,7 +115,13 @@ def queue_email(invitation):
     email['url'] = settings.APP_INSTALL_URL + "/invitations/login?key=" + encoded
 
     data = render_to_string('invitation.txt', {'email': email})
-    email.send_async()
+    send_async(
+        frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
+        to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
+        subject = u'Πρόσκληση για την υπηρεσία Ωκεανός',
+        body = data
+    )
+
 
 @transaction.commit_on_success
 def add_invitation(source, name, email):
@@ -119,10 +134,10 @@ def add_invitation(source, name, email):
     if num_inv >= settings.MAX_INVITATIONS:
         raise TooManyInvitations("User invitation limit (%d) exhausted" % settings.MAX_INVITATIONS)
 
-    target = SynnefoUser.objects.filter(name = name, uniq = email)
+    target = SynnefoUser.objects.filter(uniq = email)
 
     if target.count() is not 0:
-        raise AlreadyInvited("User %s <%s> already invited" % (name, email))
+        raise AlreadyInvited("User with email %s already invited" % (email))
 
     users.register_user(name, email)
 
@@ -138,6 +153,7 @@ def add_invitation(source, name, email):
     inv.save()
     return inv
 
+
 @transaction.commit_on_success
 def invitation_accepted(invitation):
     """
@@ -148,6 +164,7 @@ def invitation_accepted(invitation):
 
 
 class TooManyInvitations(Exception):
+    messages = []
 
     def __init__(self, msg):
         self.messages.append(msg)

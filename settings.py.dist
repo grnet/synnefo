@@ -252,4 +252,6 @@ INVITATION_VALID_DAYS = 30
 #SMTP server for the system
 SMTP_SERVER="127.0.0.1"
 
+#Email account to use for system emails
+SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
 

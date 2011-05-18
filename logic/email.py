@@ -1,13 +1,16 @@
 import smtplib
 import json
-import time
-import socket
-from email.mime.text import MIMEText
+
+try:
+    from email.mime.text import MIMEText
+except:
+    pass
 
 from django.conf import settings
-from amqplib import client_0_8 as amqp
+import amqp_connection
 
-def send_async(frm, to, subject, body):
+def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
+               to = None, subject = None, body = None):
     """
         Queue a message to be sent sometime later
         by a worker process.
@@ -20,25 +23,10 @@ def send_async(frm, to, subject, body):
     msg['body'] = body
 
     routekey = "logic.email.outgoing"
+    amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
 
-    msg = amqp.Message(json.dumps(msg))
-    msg.properties["delivery_mode"] = 2  # Persistent
-
-    conn = None
-    while conn == None:
-        try:
-            conn = amqp.Connection(host=settings.RABBIT_HOST,
-                                   userid=settings.RABBIT_USERNAME,
-                                   password=settings.RABBIT_PASSWORD,
-                                   virtual_host=settings.RABBIT_VHOST)
-        except socket.error:
-            time.sleep(1)
-
-    chan = conn.channel()
-    chan.basic_publish(msg,exchange=settings.EXCHANGE_EMAIL, routing_key=routekey)
-
-
-def send (frm, to, subject, body):
+def send (frm = settings.SYSTEM_EMAIL_ADDR,
+          to = None, subject = None, body = None):
     """
         Connect to the email server configured in settings.py
         and send the email.

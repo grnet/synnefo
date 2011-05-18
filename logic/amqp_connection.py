@@ -20,6 +20,9 @@ def _connect():
 
 
 def send(payload, exchange, key):
+    """
+        Send payload to the specified exchange using the provided routing key
+    """
     global _conn, _chan
     msg = amqp.Message(payload)
     msg.properties["delivery_mode"] = 2  # Persistent
@@ -35,8 +38,6 @@ def send(payload, exchange, key):
            _connect()
        except Exception as e:
            #self.logger.exception("Caught unexpected exception (msg: %s)", msg)
-           _connect()
-
 
 def __init__():
     _connect()

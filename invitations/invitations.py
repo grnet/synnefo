@@ -106,24 +106,27 @@ def login(request):
     key = request.GET['key']
 
     if key is None:
-        return HttpResponse("Required key is missing")
+        return render_login_error("10", "Required key is missing")
 
     PADDING = '{'
-    DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
-    cipher = AES.new(settings.INVITATION_ENCR_KEY)
 
-    decoded = DecodeAES(cipher, key)
+    try :
+        DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
+        cipher = AES.new(settings.INVITATION_ENCR_KEY)
+        decoded = DecodeAES(cipher, key)
+    except Exception:
+        return render_login_error("20", "Required key is invalid")
 
     users = SynnefoUser.objects.filter(auth_token = decoded)
 
     if users.count() is 0:
-        return HttpResponse("Invalid key")
+        return render_login_error("20", "Required key is invalid")
 
     user = users[0]
     invitations = Invitations.objects.filter(target = user)
 
     if invitations.count() is 0:
-        return HttpResponse("Non-existent invitation")
+        return render_login_error("30", "Non-existent invitation")
 
     inv = invitations[0]
 
@@ -133,20 +136,38 @@ def login(request):
     if (time.time() -
         time.mktime(inv.created.timetuple()) -
         settings.INVITATION_VALID_DAYS * 3600) > 0:
-        return HttpResponse("Invitation expired (was valid until %s)"%
-                            valid_until.strftime('%A, %d %B %Y'))
+        return render_login_error("40",
+                                  "Invitation expired (was valid until %s)"%
+                                  valid_until.strftime('%A, %d %B %Y'))
+    #if inv.accepted == False:
+    #    return render_login_error("60", "Invitation already accepted")
 
     inv.accepted = True
     inv.save()
 
-    response = HttpResponse()
+    data = dict()
+    data['user'] = user.realname
+    data['url'] = settings.APP_INSTALL_URL
+
+    welcome = render_to_string('welcome.html', {'data': data})
+
+    response = HttpResponse(welcome)
 
     response.set_cookie('X-Auth-Token', value=user.auth_token,
                         expires = valid_until.strftime('%a, %d-%b-%Y %H:%M:%S %Z'),
                         path='/')
     response['X-Auth-Token'] = user.auth_token
-    response['Location'] = settings.APP_INSTALL_URL
-    response.status_code = 302
+    return response
+
+
+def render_login_error(code, text):
+    error = dict()
+    error['id'] = code
+    error['text'] = text
+
+    data = render_to_string('error.html', {'error': error})
+
+    response = HttpResponse(data)
     return response
 
 

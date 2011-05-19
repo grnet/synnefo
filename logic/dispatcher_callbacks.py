@@ -10,7 +10,7 @@ import logging
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend
+from synnefo.logic import utils, backend, email
 
 _logger = logging.getLogger("synnefo.dispatcher")
 
@@ -78,8 +78,20 @@ def update_net(message):
 
 
 def send_email(message):
-    _logger.debug("Request to send email message")
-    message.channel.basic_ack(message.delivery_tag)
+    """Process an email submission request"""
+
+    try:
+        msg = json.loads(message.body)
+
+        email.send(frm=msg['frm'], to = msg[to], body=msg['body'], subject=msg['subject'])
+        message.channel.basic_ack(message.delivery_tag)
+    except KeyError:
+        _logger.error("Malformed incoming JSON, missing attributes: %s",
+                      message.body)
+    except Exception as e:
+        _logger.error("Unexpected error:%s\n%s",
+                      (e.message,"".
+                      join(traceback.format_exception(*sys.exc_info()))))
 
 
 def update_credits(message):

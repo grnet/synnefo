@@ -3,13 +3,14 @@
 #
 # Copyright 2010 Greek Research and Technology Network
 #
+from django.conf import settings
 
 from synnefo.db.models import SynnefoUser
 from django.db import transaction
 import hashlib
 import time
 import string
-from datetime import datetime
+from datetime import datetime, timedelta
 
 @transaction.commit_on_success
 def _register_user(f, u, unq, t):
@@ -59,7 +60,8 @@ def create_auth_token(user):
 
     user.auth_token = md5.hexdigest()
     user.auth_token_created = datetime.now()
-
+    user.auth_token_expires = user.auth_token_created + \
+                              timedelta(hours=settings.AUTH_TOKEN_DURATION)
     user.save()
 
 #def login(username, password):

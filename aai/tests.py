@@ -58,8 +58,9 @@ class AaiTestCase(TestCase):
         """ test request from expired token
         """
         user = SynnefoUser.objects.get(uniq="test@synnefo.gr")
-        self.assertNotEqual(user.auth_token_created, None)
-        _update_user_ts(user)
+        self.assertNotEqual(user.auth_token_expires, None)
+        user.auth_token_expires = datetime.now()
+        user.save()
         response = self.client.get('/index.html', {},
                                **{'X-Auth-Token': user.auth_token,
                                   'TEST-AAI': 'true'})
@@ -82,12 +83,18 @@ class AaiTestCase(TestCase):
         self.assertTrue('Vary' in response)
         self.assertTrue('X-Auth-Token' in response['Vary'])
 
+    def test_auth_cookie(self):
+        user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
+        self.client.cookies['X-Auth-Token'] = user.auth_token
+        response = self.client.get('/', {},
+                                   **{'X-Auth-Token': user.auth_token,
+                                      'TEST-AAI' : 'true'})
+        self.assertTrue(response.status_code, 200)
+        self.assertTrue('Vary' in response)
+        self.assertTrue('X-Auth-Token' in response['Vary'])
+
     def _test_redirect(self, response):
         self.assertEquals(response.status_code, 302)
         self.assertTrue('Location' in response)
         self.assertTrue(response['Location'].endswith(settings.LOGIN_PATH))
 
-def _update_user_ts(user):
-    user.auth_token_created = (datetime.now() -
-                               timedelta(hours = settings.AUTH_TOKEN_DURATION))
-    user.save()

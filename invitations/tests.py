@@ -16,9 +16,16 @@ class InvitationsTestCase(TestCase):
         source = SynnefoUser.objects.filter(auth_token = self.token)[0]
         invitations.add_invitation(source, "Test", "test@gmail.com")
 
+        # Check whether the invited user has been added to the database
         added_user = SynnefoUser.objects.filter(name = "Test",
                                                 uniq = "test@gmail.com")
-
         self.assertNotEquals(added_user, None)
 
-        invitations.add_invitation(source, u'', "test@gmail.com")
+        # Re-adding an existing invitation
+        try:
+            invitations.add_invitation(source, u'', "test@gmail.com")
+            self.assertTrue(False)
+        except invitations.AlreadyInvited:
+            self.assertTrue(True)
+
+        # 

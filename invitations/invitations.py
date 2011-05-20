@@ -225,7 +225,7 @@ def add_invitation(source, name, email):
 
     r = list(target[:1])
     if not r:
-        raise Exception
+        raise Exception("Invited user cannot be added")
 
     inv = Invitations()
     inv.source = source

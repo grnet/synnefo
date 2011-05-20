@@ -12,7 +12,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
-from synnefo.logic.email import send_async
+from synnefo.logic.email_send import send_async
 
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser

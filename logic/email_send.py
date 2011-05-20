@@ -1,10 +1,6 @@
-import smtplib
 import json
-
-try:
-    from email.mime.text import MIMEText
-except:
-    pass
+import smtplib
+from email.mime.text import MIMEText
 
 from django.conf import settings
 import amqp_connection

@@ -132,6 +132,7 @@ INSTALLED_APPS = (
     'synnefo.db',
     'synnefo.ganeti',
     'synnefo.logic',
+    'synnefo.invitations',
     'south'
 )
 
@@ -238,4 +239,19 @@ LOGIN_PATH = "/login"
 # ACHTUNG: The test token distributed in db/initial_data.json will cease to
 #          work after this many hours after 2011/05/10
 AUTH_TOKEN_DURATION = 30 * 24
+
+#Max number of invitations allowed per user
+MAX_INVITATIONS = 20
+
+#Key to encrypt X-Auth-Token with when sending invitations
+INVITATION_ENCR_KEY = '8d342f6e7a0366c632978a80257019af'
+
+#Days during which an invitation is active
+INVITATION_VALID_DAYS = 30
+
+#SMTP server for the system
+SMTP_SERVER="127.0.0.1"
+
+#Email account to use for system emails
+SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
 

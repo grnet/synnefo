@@ -15,12 +15,15 @@ class SynnefoAuthMiddleware(object):
         if request.path.startswith('/api/') :
             return
 
+        if request.path.startswith('/invitations/login') :
+            return
+
         # Special case for testing purposes, delivers the cookie for the
         # test user on first access
         # TODO: REMOVE THE FOLLOWING BEFORE DEPLOYMENT
         if request.GET.get('test') is not None:
-            u = SynnefoUser.objects.get(auth_token='46e427d657b20defe352804f0eb6f8a2')
-            return self._redirect_shib_auth_user(user = u)
+            usr = SynnefoUser.objects.get(auth_token='46e427d657b20defe352804f0eb6f8a2')
+            return self._redirect_shib_auth_user(user = usr)
 
         token = None
         #Try to find token in a cookie

@@ -10,7 +10,8 @@ class SynnefoUser(models.Model):
     #TODO: Amend this when we have groups
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
-        ('PROFESSOR', 'Professor')
+        ('PROFESSOR', 'Professor'),
+        ('USER', 'Generic User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')
@@ -377,5 +378,18 @@ class Network(models.Model):
     owner = models.ForeignKey(SynnefoUser)
     machines = models.ManyToManyField(VirtualMachine)
     
+    def __unicode__(self):
+        return self.name
+
+class Invitations(models.Model):
+    source = models.ForeignKey(SynnefoUser, related_name="source")
+    target = models.ForeignKey(SynnefoUser, related_name="target")
+    accepted = models.BooleanField('Is the invitation accepted?', default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = u'Invitation'
+
     def __unicode__(self):
         return self.name

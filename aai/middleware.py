@@ -3,7 +3,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
-import datetime
 
 class SynnefoAuthMiddleware(object):
 
@@ -13,6 +12,9 @@ class SynnefoAuthMiddleware(object):
 
     def process_request(self, request):
         if request.path.startswith('/api/') :
+            return
+
+        if request.path.startswith('/invitations/login') :
             return
 
         # Special case for testing purposes, delivers the cookie for the

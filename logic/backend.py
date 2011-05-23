@@ -31,7 +31,7 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     vm.backendlogmsg = logmsg
 
     # Notifications of success change the operating state
-    if status == 'success' and VirtualMachine.OPER_STATE_FROM_OPCODE is not None:
+    if status == 'success' and VirtualMachine.OPER_STATE_FROM_OPCODE[opcode] is not None:
         utils.update_state(vm, VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
         # Set the deleted flag explicitly, to cater for admin-initiated removals
         if opcode == 'OP_INSTANCE_REMOVE':

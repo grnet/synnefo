@@ -141,10 +141,33 @@ to Synnefo v0.3.
       FIXME: The CTRL_SOCKET setting will be moved to settings.py as
       VNCAUTHPROXY_CTRL_SOCKET.
 
+    * Ganeti Instance Image
+
+      For Synnefo to be able to launch VMs from specified Images, you need
+      the gnt-instance-image OS Provider.
+
+      Download and install gnt-instance-image in all Ganeti nodes from its own repository,
+      at https://code.grnet.gr/git/gnt-instance-image
+
+      After installing gnt-instance-image do the following:
+      1.root@ganeti-master:/path-to-repo# cp ./defaults /etc/default/ganeti-instance-image
+      2.Uncomment the following in /etc/default/ganeti-instance-image:
+        SWAP=no
+        ARCH="x86_64"
+      3.Add to /etc/default/ganeti-instance-image (so that make-dump makes no /boot partition):
+        KERNEL_PATH="True"
+      4.Change the path in make-dump line 22 according to your installation
+        (/usr/share/ganeti/os/image/common.sh --> /srv/ganeti/os/image/common.sh)
+      5.Comment line 401 in common.sh (#KERNEL_PATH="$INSTANCE_HV_kernel_path")
+
+      Your Custom Images should be stored in a dump format under /var/cache/ganeti-instance-image
+      and their filenames should have the following format:
+      {backend_id}-x86_64-root.dump
+      e.g. debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
+
 
 - OS Specific instructions
 
     * Debian Squeeze
 
       TBD.
-

@@ -92,7 +92,7 @@ def trigger_status_update(message):
     try:
         msg = json.loads(message.body)
 
-        if msg["type"] != "" :
+        if msg["type"] != "reconciliate" :
              _logger.error("Message is of unknown type %s", msg["type"])
              return
 

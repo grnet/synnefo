@@ -41,7 +41,7 @@ class Command(NoArgsCommand):
 
         to_update = all.count() / settings.RECONCILIATION_MIN
 
-        vm_ids = map(lambda x: x.vm_id,  all.filter()) #TODO: Fix filtering
+        vm_ids = map(lambda x: x.name,  VirtualMachine.objects.all()[:to_update])
         sent = False
 
         for vmid in vm_ids :
@@ -50,7 +50,7 @@ class Command(NoArgsCommand):
                     msg = dict(type = "reconciliate", vmid = vmid)
                     self.chan.basic_publish(json.dumps(msg),
                             exchange=settings.EXCHANGE_CRON,
-                            routing_key="reconciliation.%s", vmid)
+                            routing_key="reconciliation.%s"%vmid)
                     sent = True
                 except socket.error:
                     self.chan = self.open_channel()
@@ -58,4 +58,4 @@ class Command(NoArgsCommand):
                     raise
 
 
-        print "All:%d, Not Updated:%d, Triggered update for:%d" % (all.count(), not_updated.count(), vm_ids)
+        print "All: %d, To update: %d, Triggered update for: %s" % (all.count(), not_updated.count(), vm_ids)

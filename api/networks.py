@@ -6,6 +6,7 @@ from synnefo.api.util import (isoformat, isoparse, get_network,
 from synnefo.db.models import Network
 
 from django.conf.urls.defaults import patterns
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -44,6 +45,7 @@ def network_to_dict(network, detail=True):
         d['updated'] = isoformat(network.updated)
         d['created'] = isoformat(network.created)
         d['servers'] = {'values': [vm.id for vm in network.machines.all()]}
+        d['status'] = network.state
     return d
 
 def render_network(request, networkdict, status=200):
@@ -62,16 +64,18 @@ def list_networks(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    owner = request.user
     since = isoparse(request.GET.get('changes-since'))
-
+    user_networks = Network.objects.filter(Q(owner=owner) | Q(public=True))
+    
     if since:
-        user_networks = Network.objects.filter(owner=request.user, updated__gte=since)
+        user_networks = user_networks.filter(updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
     else:
-        user_networks = Network.objects.filter(owner=request.user)
-
+        user_networks = user_networks.filter(state='ACTIVE')
+    
     networks = [network_to_dict(network, detail) for network in user_networks]
 
     if request.serialization == 'xml':
@@ -99,7 +103,7 @@ def create_network(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
 
-    network = Network.objects.create(name=name, owner=request.user)
+    network = Network.objects.create(name=name, owner=request.user, state='ACTIVE')
     networkdict = network_to_dict(network)
     return render_network(request, networkdict, status=202)
 
@@ -149,11 +153,15 @@ def delete_network(request, network_id):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       overLimit (413)
-
+    
+    if network_id in ('1', 'public'):
+        raise Unauthorized('Can not delete the public network.')
     net = get_network(network_id, request.user)
+    net.nics.all().delete()
     for vm in net.machines.all():
         vm.save()
-    net.delete()
+    net.state = 'DELETED'
+    net.save()
     return HttpResponse(status=204)
 
 @api_method('POST')

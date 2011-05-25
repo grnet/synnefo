@@ -349,8 +349,6 @@ def create_servers(n=1):
             owner=choice(users),
             sourceimage=choice(images),
             hostid=str(i),
-            ipfour='0.0.0.0',
-            ipsix='::1',
             flavor=choice(flavors))
 
 def create_server_metadata(n=1):
@@ -366,7 +364,8 @@ def create_networks(n):
     for i in range(n):
         Network.objects.create(
             name='Network%d' % (i + 1),
-            owner=choice(users))
+            owner=choice(users),
+            state='ACTIVE')
 
 
 class AssertInvariant(object):
@@ -860,9 +859,9 @@ class ListNetworks(BaseTestCase):
         machines = VirtualMachine.objects.all()
         for network in Network.objects.all():
             n = randint(0, self.SERVERS)
-            network.machines.add(*sample(machines, n))
-            network.save()
-
+            for machine in sample(machines, n):
+                machine.nics.create(network=network)
+    
     def test_list_networks(self):
         networks = self.list_networks()
         for net in Network.objects.all():
@@ -882,12 +881,16 @@ class ListNetworks(BaseTestCase):
 
 class CreateNetwork(BaseTestCase):
     def test_create_network(self):
-        self.assertEqual(self.list_networks(), [])
+        before = self.list_networks()
         self.create_network('net')
-        networks = self.list_networks()
-        self.assertEqual(len(networks), 1)
-        network = networks[0]
-        self.assertEqual(network['name'], 'net')
+        after = self.list_networks()
+        self.assertEqual(len(after) - len(before), 1)
+        found = False
+        for network in after:
+            if network['name'] == 'net':
+                found = True
+                break
+        self.assertTrue(found)
 
 
 class GetNetworkDetails(BaseTestCase):
@@ -932,11 +935,13 @@ class DeleteNetwork(BaseTestCase):
     def test_delete_network(self):
         networks = self.list_networks()
         network = choice(networks)
+        while network['id'] == 1:
+            network = choice(networks)
         network_id = network['id']
         self.delete_network(network_id)
-
-        response = self.client.get('/api/v1.1/networks/%d' % network_id)
-        self.assertItemNotFound(response)
+        
+        net = self.get_network_details(network_id)
+        self.assertEqual(net['status'], 'DELETED')
 
         networks.remove(network)
         self.assertEqual(self.list_networks(), networks)

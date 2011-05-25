@@ -13,7 +13,7 @@ from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
 from synnefo.api.util import (isoformat, isoparse, random_password,
-                                get_vm, get_vm_meta, get_image, get_flavor,
+                                get_vm, get_vm_meta, get_image, get_flavor, get_network, get_nic,
                                 get_request_dict, render_metadata, render_meta, api_method)
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
@@ -70,9 +70,15 @@ def metadata_item_demux(request, server_id, key):
         return method_not_allowed(request)
 
 
-def address_to_dict(ipfour, ipsix):
-    return {'id': 'public',
-            'values': [{'version': 4, 'addr': ipfour}, {'version': 6, 'addr': ipsix}]}
+def nic_to_dict(nic):
+    d = {
+        'id': nic.network.id,
+        'name': nic.network.name,
+        'mac': nic.mac,
+        'firewallProfile': nic.firewall_profile}
+    if nic.ipv4 or nic.ipv6:
+        d['values'] = [{'version': 4, 'addr': nic.ipv4}, {'version': 6, 'addr': nic.ipv6}]
+    return d
 
 def metadata_to_dict(vm):
     vm_meta = vm.virtualmachinemetadata_set.all()
@@ -93,8 +99,7 @@ def vm_to_dict(vm, detail=False):
         if metadata:
             d['metadata'] = {'values': metadata}
 
-        addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
-        addresses.extend({'id': str(network.id), 'values': []} for network in vm.network_set.all())
+        addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
         d['addresses'] = {'values': addresses}
     return d
 
@@ -146,7 +151,8 @@ def create_server(request):
     #                       overLimit (413)
 
     req = get_request_dict(request)
-
+    owner = request.user
+    
     try:
         server = req['server']
         name = server['name']
@@ -156,21 +162,14 @@ def create_server(request):
         flavor_id = server['flavorRef']
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-
-    image = get_image(image_id, request.user)
+    
+    image = get_image(image_id, owner)
     flavor = get_flavor(flavor_id)
-
-    # We must save the VM instance now, so that it gets a valid vm.backend_id.
-    vm = VirtualMachine.objects.create(
-        name=name,
-        owner=request.user,
-        sourceimage=image,
-        ipfour='0.0.0.0',
-        ipsix='::1',
-        flavor=flavor)
-
     password = random_password()
-
+    
+    # We must save the VM instance now, so that it gets a valid vm.backend_id.
+    vm = VirtualMachine.objects.create(name=name, owner=owner, sourceimage=image, flavor=flavor)
+    
     try:
         create_instance(vm, flavor, password)
     except GanetiApiError:
@@ -270,8 +269,8 @@ def list_addresses(request, server_id):
     #                       overLimit (413)
 
     vm = get_vm(server_id, request.user)
-    addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
-
+    addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
+    
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
@@ -288,13 +287,13 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
-    vm = get_vm(server_id, request.user)
-    if network_id != 'public':
-        raise ItemNotFound('Unknown network.')
-
-    address = address_to_dict(vm.ipfour, vm.ipsix)
-
+    
+    owner = request.user
+    machine = get_vm(server_id, owner)
+    network = get_network(network_id, owner)
+    nic = get_nic(machine, network)
+    address = nic_to_dict(nic)
+    
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'address': address})
     else:

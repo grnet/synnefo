@@ -22,7 +22,8 @@ from django.utils import simplejson as json
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress, ItemNotFound,
                                 ServiceUnavailable, Unauthorized)
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
-                                VirtualMachine, VirtualMachineMetadata, Network)
+                                VirtualMachine, VirtualMachineMetadata,
+                                Network, NetworkInterface)
 
 
 class UTC(tzinfo):
@@ -120,11 +121,22 @@ def get_network(network_id, owner):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
-        return Network.objects.get(id=network_id, owner=owner)
+        if network_id == 'public':
+            network_id = 0
+        network = Network.objects.get(id=network_id)
+        if not network.public and network.owner != owner:
+            raise ItemNotFound('Network not found.')
+        return network
     except ValueError:
         raise BadRequest('Invalid network ID.')
     except Network.DoesNotExist:
         raise ItemNotFound('Network not found.')
+
+def get_nic(machine, network):
+    try:
+        return NetworkInterface.objects.get(machine=machine, network=network)
+    except NetworkInterface.DoesNotExist:
+        raise ItemNotFound('Server not connected to this network.')
 
 
 def get_request_dict(request):

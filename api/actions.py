@@ -10,7 +10,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.faults import BadRequest, ServiceUnavailable
-from synnefo.api.util import random_password, get_vm
+from synnefo.api.util import random_password, get_vm, get_nic
 from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
 from synnefo.logic.backend import (reboot_instance, startup_instance, shutdown_instance,
                                     get_instance_console)
@@ -251,9 +251,9 @@ def add(request, net, args):
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user)
-    net.machines.add(vm)
-    net.save()
+    vm.nics.create(network=net)
     vm.save()
+    net.save()
     return HttpResponse(status=202)
 
 @network_action('remove')
@@ -271,7 +271,8 @@ def remove(request, net, args):
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user)
-    net.machines.remove(vm)
-    net.save()
+    nic = get_nic(vm, net)
+    nic.delete()
     vm.save()
+    net.save()
     return HttpResponse(status=202)

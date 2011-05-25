@@ -137,8 +137,6 @@
             "charged": "2010-02-06 00:00:00",
             "sourceimage": 30000,
             "hostid": "HAL-9000",
-            "ipfour": "192.168.2.1",
-            "ipsix": "::1",
             "flavor": 30000,
             "operstate": "STARTED"
         }
@@ -153,8 +151,6 @@
             "charged": "2010-02-06 00:00:00",
             "sourceimage": 30000,
             "hostid": "HAL-9000",
-            "ipfour": "192.168.2.1",
-            "ipsix": "::1",
             "flavor": 30000,
             "operstate": "STOPPED"
         }

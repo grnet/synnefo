@@ -112,6 +112,7 @@ def create_instance(vm, flavor, password):
 def delete_instance(vm):
     start_action(vm, 'DESTROY')
     rapi.DeleteInstance(vm.backend_id)
+    vm.nics.all().delete()
 
 
 def reboot_instance(vm, reboot_type):

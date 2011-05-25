@@ -236,8 +236,6 @@ class VirtualMachine(models.Model):
     charged = models.DateTimeField(default=datetime.datetime.now())
     sourceimage = models.ForeignKey("Image", null=False) 
     hostid = models.CharField(max_length=100)
-    ipfour = models.IPAddressField()
-    ipsix = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
     deleted = models.BooleanField('Deleted', default=False)
     suspended = models.BooleanField('Administratively Suspended', default=False)
@@ -371,11 +369,35 @@ class Disk(models.Model):
 
 
 class Network(models.Model):
+    NETWORK_STATES = (
+        ('ACTIVE', 'Active'),
+        ('DELETED', 'Deleted')
+    )
+    
     name = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     owner = models.ForeignKey(SynnefoUser)
-    machines = models.ManyToManyField(VirtualMachine)
+    state = models.CharField(choices=NETWORK_STATES, max_length=30)
+    public = models.BooleanField(default=False)
+    machines = models.ManyToManyField(VirtualMachine, through='NetworkInterface')
     
     def __unicode__(self):
         return self.name
+
+
+class NetworkInterface(models.Model):
+    FIREWALL_PROFILES = (
+        ('ENABLED', 'Enabled'),
+        ('DISABLED', 'Disabled')
+    )
+    
+    machine = models.ForeignKey(VirtualMachine, related_name='nics')
+    network = models.ForeignKey(Network, related_name='nics')
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    index = models.IntegerField(null=True)
+    mac = models.CharField(max_length=17, null=True)
+    ipv4 = models.IPAddressField(null=True)
+    ipv6 = models.CharField(max_length=100, null=True)
+    firewall_profile = models.CharField(choices=FIREWALL_PROFILES, max_length=30, null=True)

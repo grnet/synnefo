@@ -12,5 +12,16 @@
             "type": "STUDENT",
             "created": "2011-05-10"
    	    }
+    },
+    {
+        "model": "db.Network",
+        "pk": 1,
+        "fields": {
+            "name": "public",
+            "created": "2011-04-01",
+            "updated": "2011-04-01",
+            "state": "ACTIVE",
+            "public": 1
+        }
     }
 ] 

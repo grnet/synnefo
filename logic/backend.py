@@ -131,3 +131,15 @@ def shutdown_instance(vm):
 
 def get_instance_console(vm):
     return rapi.GetInstanceConsole(vm.backend_id)
+
+
+def request_status_update(vm):
+    return rapi.GetInstanceInfo(vm.backend_id)
+
+
+def get_job_status(jobid):
+    return rapi.GetJobStatus(jobid)
+
+
+def update_status(vm, status):
+    utils.update_state(vm, status)

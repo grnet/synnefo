@@ -200,6 +200,7 @@ BINDINGS = [
     (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',        'update_credits'),
     (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',          'send_email'),
     (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',          'send_email'),
+    (QUEUE_API,             EXCHANGE_API,       '*.email.*',          'send_email'),
 ]
 
 def fix_amqp_settings(backend_prefix):
@@ -239,3 +240,5 @@ LOGIN_PATH = "/login"
 #          work after this many hours after 2011/05/10
 AUTH_TOKEN_DURATION = 30 * 24
 
+# Number of minutes between reconciliations
+RECONCILIATION_MIN = 30

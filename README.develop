@@ -235,7 +235,7 @@ See "Initial Migration" section.
 Each time you make changes to the database and data migration is not required (WARNING: always
 perform this with extreme care):
 
-    $ ./bin/python schemamigration db --auto
+    $ ./bin/python manage.py schemamigration db --auto
 
 The above will create the migration script. Now this must be applied to the live database.
 

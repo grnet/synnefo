@@ -377,7 +377,7 @@ class Network(models.Model):
     name = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(SynnefoUser)
+    owner = models.ForeignKey(SynnefoUser, null=True)
     state = models.CharField(choices=NETWORK_STATES, max_length=30)
     public = models.BooleanField(default=False)
     machines = models.ManyToManyField(VirtualMachine, through='NetworkInterface')

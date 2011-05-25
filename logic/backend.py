@@ -107,7 +107,7 @@ def create_instance(vm, flavor, image, password):
         pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
-        osparams=dict(img_id=image.backend_id, img_passwd=password))
+        osparams=dict(img_id=image.backend_id, img_passwd=password, img_format=image.format))
 
 def delete_instance(vm):
     start_action(vm, 'DESTROY')

@@ -52,6 +52,19 @@
         }
     },
     {
+        "model": "db.Image",
+        "pk": 7,
+        "fields": {
+            "name": "Debian base LVM",
+            "owner": 1,
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "debian_base",
+            "format": "lvm"
+        }
+    },
+    {
         "model": "db.ImageMetadata",
         "pk": 1,
         "fields": {
@@ -193,6 +206,42 @@
             "meta_key": "size",
             "meta_value": "4000",
             "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 17,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "debian",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 18,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.32",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 19,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "This is the same as -Debian base- but stored in a LVM format",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 20,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2000",
+            "image": 7
         }
     }
 ]

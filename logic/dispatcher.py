@@ -53,8 +53,8 @@ class Dispatcher:
                 self._init()
 
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
-        self.chan.close()
         self.chan.connection.close()
+        self.chan.close()
         sys.exit()
 
     def _init(self):
@@ -182,6 +182,14 @@ def cleanup_queues() :
     chan.connection.close()
 
 
+def debug_mode(logger):
+    disp = Dispatcher(debug = True, logger = logger)
+    signal(SIGINT, _exit_handler)
+    signal(SIGTERM, _exit_handler)
+
+    disp.wait()
+
+
 def main():
     global children, logger
     (opts, args) = parse_arguments(sys.argv[1:])
@@ -200,6 +208,11 @@ def main():
     # Special case for the clean up queues action
     if opts.cleanup_queues:
         cleanup_queues()
+        return
+
+    # Debug mode, process messages without spawning workers
+    if opts.debug:
+        debug_mode(logger = logger)
         return
 
     # Fork workers
@@ -228,8 +241,9 @@ def main():
     for pid in children:
         try:
             os.waitpid(pid)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("Error waiting for child %d: %s"%(pid, e.message))
+            raise
 
 
 if __name__ == "__main__":

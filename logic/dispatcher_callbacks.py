@@ -4,6 +4,7 @@
 #
 # Copyright 2010 Greek Research and Technology Network
 #
+import socket
 import traceback
 import json
 import logging
@@ -83,16 +84,17 @@ def send_email(message):
     try:
         msg = json.loads(message.body)
 
-        email_send.send(frm=msg['frm'], to = msg['to'],
+        email_send.send(sender=msg['frm'], recipient = msg['to'],
                         body=msg['body'], subject=msg['subject'])
         message.channel.basic_ack(message.delivery_tag)
     except KeyError:
         _logger.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
+    except socket.error as e:
+        _logger.error("Cannot connect to SMTP server:%s\n", e)
     except Exception as e:
-        _logger.error("Unexpected error:%s\n%s",
-                      (e.message,"".
-                      join(traceback.format_exception(*sys.exc_info()))))
+        _logger.error("Unexpected error:%s\n", e)
+        raise
 
 
 def update_credits(message):

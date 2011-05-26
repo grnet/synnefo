@@ -43,7 +43,7 @@ import json
 
 class Command(NoArgsCommand):
     help = 'Reconcile VM status with the backend'
-
+    chan = None
     def open_channel(self):
         conn = None
         while conn == None:
@@ -56,7 +56,7 @@ class Command(NoArgsCommand):
                 time.sleep(1)
                 pass
 
-        return conn.channel()
+        self.chan = conn.channel()
 
     def handle_noargs(self, **options):
 

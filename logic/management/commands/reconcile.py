@@ -67,14 +67,15 @@ class Command(NoArgsCommand):
 
         to_update = all.count() / settings.RECONCILIATION_MIN
 
-        vm_ids = map(lambda x: x.name,  VirtualMachine.objects.all()[:to_update])
+        vm_ids = map(lambda x: x.id,  VirtualMachine.objects.all()[:to_update])
         sent = False
-
+        self.open_channel()
         for vmid in vm_ids :
             while sent is False:
                 try:
-                    msg = dict(type = "reconciliate", vmid = vmid)
-                    self.chan.basic_publish(json.dumps(msg),
+                    msg = dict(type = "reconcile", vmid = vmid)
+                    amqp_msg = amqp.Message(json.dumps(msg))
+                    self.chan.basic_publish(amqp_msg,
                             exchange=settings.EXCHANGE_CRON,
                             routing_key="reconciliation.%s"%vmid)
                     sent = True
@@ -82,6 +83,5 @@ class Command(NoArgsCommand):
                     self.chan = self.open_channel()
                 except Exception:
                     raise
-
 
         print "All: %d, To update: %d, Triggered update for: %s" % (all.count(), not_updated.count(), vm_ids)

@@ -173,11 +173,11 @@ def cleanup_queues() :
     if ans not in ['Y', 'y']:
         return
 
-    for exchange in settings.EXCHANGES:
-        try:
-            chan.exchange_delete(exchange=exchange)
-        except amqp.exceptions.AMQPChannelException as e:
-            print e.amqp_reply_code, " ", e.amqp_reply_text
+    #for exchange in settings.EXCHANGES:
+    #    try:
+    #        chan.exchange_delete(exchange=exchange)
+    #    except amqp.exceptions.AMQPChannelException as e:
+    #        print e.amqp_reply_code, " ", e.amqp_reply_text
 
     for queue in settings.QUEUES:
         try:

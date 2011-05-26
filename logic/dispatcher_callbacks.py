@@ -44,7 +44,7 @@ def update_db(message):
     """Process the status of a VM based on a ganeti status message"""
     _logger.debug("Processing ganeti-op-status msg: %s", message.body)
     try:
-        msg = json.loads(message.body)
+        msg = _parse_json(message.body)
 
         if msg["type"] != "ganeti-op-status":
             _logger.error("Message is of unknown type %s.", msg["type"])
@@ -79,7 +79,7 @@ def update_net(message):
     """Process a network status update notification from Ganeti"""
     _logger.debug("Processing ganeti-net-status msg: %s", message.body)
     try:
-        msg = json.loads(message.body)
+        msg = _parse_json(message.body)
 
         if msg["type"] != "ganeti-net-status":
             _logger.error("Message is of unknown type %s", msg["type"])
@@ -119,7 +119,7 @@ def trigger_status_update(message):
     _logger.debug("Request to trigger status update: %s", message.body)
 
     try:
-        msg = json.loads(message.body)
+        msg = _parse_json(message.body)
 
         if msg["type"] != "reconcile" :
              _logger.error("Message is of unknown type %s", msg["type"])
@@ -140,7 +140,7 @@ def trigger_status_update(message):
 
 def status_job_finished (message) :
     try:
-        msg = json.loads(message.body)
+        msg = _parse_json(message.body)
 
         if msg["operation"] != 'OP_INSTANCE_QUERY_DATA':
             _logger.error("Message is of unknown type %s", msg["operation"])
@@ -155,7 +155,7 @@ def status_job_finished (message) :
 
         _logger.debug("Node status job result: %s" % status)
 
-        stat = json.loads(status)
+        stat = _parse_json(status)
 
         if stat["summary"] != "INSTANCE_QUERY_DATA" or \
            type(stat["opresult"]) is not list:
@@ -175,9 +175,16 @@ def status_job_finished (message) :
 
 def dummy_proc(message):
     try:
-        msg = json.loads(message.body)
+        msg = _logger.debug(message.body)
         _logger.debug("Msg (exchange:%s) ", msg)
         message.channel.basic_ack(message.delivery_tag)
     except Exception as e:
         _logger.error("Could not receive message %s" % e.message)
         pass
+
+def _parse_json(data):
+    try:
+        return json.loads(data)
+    except Exception as e:
+        _logger.error("Could not parse JSON file: %s", e)
+        raise

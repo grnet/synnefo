@@ -48,6 +48,9 @@ class Dispatcher:
                 self.chan.wait()
             except SystemExit:
                 break
+            except amqp.exceptions.AMQPConnectionException:
+                self.logger.error("Server went away, reconnecting...")
+                self._init()
             except socket.error:
                 self.logger.error("Server went away, reconnecting...")
                 self._init()

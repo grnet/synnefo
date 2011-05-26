@@ -1,4 +1,5 @@
 settings.py
+doc/build
 *.db
 *.pyc
 .DS_Store

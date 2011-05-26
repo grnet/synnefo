@@ -83,7 +83,8 @@ def send_email(message):
     try:
         msg = json.loads(message.body)
 
-        email_send.send(frm=msg['frm'], to = msg[to], body=msg['body'], subject=msg['subject'])
+        email_send.send(frm=msg['frm'], to = msg['to'],
+                        body=msg['body'], subject=msg['subject'])
         message.channel.basic_ack(message.delivery_tag)
     except KeyError:
         _logger.error("Malformed incoming JSON, missing attributes: %s",

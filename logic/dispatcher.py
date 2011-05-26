@@ -243,10 +243,9 @@ def main():
     # Wait for all children process to die, one by one
     for pid in children:
         try:
-            os.waitpid(pid)
-        except Exception as e:
-            logger.error("Error waiting for child %d: %s"%(pid, e.message))
-            raise
+            os.waitpid(pid, 0)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

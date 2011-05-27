@@ -543,6 +543,7 @@ class ListObjects(BaseTestCase):
         self.assertEqual(r.status_code, 200)
         obj = get_content_splitted(r)
         self.assertEqual(len(obj), 2)
+        self.assertTrue(obj, [o['name'] for o in self.obj[:2]])
         
         # test case insensitive
         r = self.list_objects(self.account,
@@ -551,6 +552,7 @@ class ListObjects(BaseTestCase):
         self.assertEqual(r.status_code, 200)
         obj = get_content_splitted(r)
         self.assertEqual(len(obj), 2)
+        self.assertTrue(obj, [o['name'] for o in self.obj[:2]])
         
         # test multiple matches
         r = self.list_objects(self.account,
@@ -559,6 +561,7 @@ class ListObjects(BaseTestCase):
         self.assertEqual(r.status_code, 200)
         obj = get_content_splitted(r)
         self.assertEqual(len(obj), 4)
+        self.assertTrue(obj, [o['name'] for o in self.obj[:4]])
         
         # test non 1-1 multiple match
         r = self.list_objects(self.account,
@@ -567,7 +570,7 @@ class ListObjects(BaseTestCase):
         self.assertEqual(r.status_code, 200)
         obj = get_content_splitted(r)
         self.assertEqual(len(obj), 2)
-        
+        self.assertTrue(obj, [o['name'] for o in self.obj[:2]])   
 
 class ContainerMeta(BaseTestCase):
     def setUp(self):
@@ -601,7 +604,8 @@ class ContainerMeta(BaseTestCase):
             self.assertTrue('Trash' in r['X-Container-Object-Meta'])
 
     def test_update_meta(self):
-        meta = {'HTTP_X_CONTAINER_META_TEST':'test33', 'HTTP_X_CONTAINER_META_TOST':'tost22'}
+        meta = {'HTTP_X_CONTAINER_META_TEST':'test33',
+                'HTTP_X_CONTAINER_META_TOST':'tost22'}
         response = self.update_container_meta(self.account, self.container, **meta)
         response = self.get_container_meta(self.account, self.container)
         for k,v in meta.items():

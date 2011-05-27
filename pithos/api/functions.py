@@ -1,3 +1,36 @@
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 import os
 import logging
 import hashlib
@@ -539,6 +572,38 @@ def object_update(request, v_account, v_container, v_object):
     ranges = get_content_range(request)
     if not ranges:
         return HttpResponse(status=202)
+    
+#     # Need Content-Type and optional Transfer-Encoding.
+#     content_length = -1
+#     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
+#         content_length = get_content_length(request)
+#     # Use BadRequest here, even if the API says otherwise for PUT.
+#     if not content_type:
+#         raise BadRequest('Missing Content-Type header')
+#     
+#     if not prev_meta:
+#         try:
+#             prev_meta = backend.get_object_meta(request.user, v_container, v_object)
+#         except NameError:
+#             raise ItemNotFound('Object does not exist')
+#     size = prev_meta['bytes']
+#     offset, length, total = ranges
+#     if offset is None:
+#         offset = size
+#     if length is None:
+#         length = content_length # Nevermind the error.
+#     if total is not None and (total != size or offset >= size or (length > 0 and offset + length >= size)):
+#         raise RangeNotSatisfiable('Supplied range will change provided object limits')
+#     
+#     sock = raw_input_socket(request)
+#     for data in socket_read_iterator(sock, length):
+#         # TODO: Raise 408 (Request Timeout) if this takes too long.
+#         # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+#         try:
+#             backend.update_object(request.user, v_container, v_object, data, offset)
+#         except NameError:
+#             raise ItemNotFound('Container does not exist')
+#         offset += len(data)
     
     return HttpResponse(status=202)
 

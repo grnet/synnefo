@@ -61,13 +61,15 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
 
         now = datetime.now()
-        last_update = timedelta(minutes = 30)
-        not_updated = VirtualMachine.objects.filter(updated__lte = (now - last_update))
+        last_update = timedelta(minutes = settings.RECONCILIATION_MIN)
+        not_updated = VirtualMachine.objects.filter(deleted = False) \
+                                            .filter(suspended = False) \
+                                            .filter(updated__lte = (now - last_update))
         all =  VirtualMachine.objects.all()
 
         to_update = all.count() / settings.RECONCILIATION_MIN
 
-        vm_ids = map(lambda x: x.id,  VirtualMachine.objects.all()[:to_update])
+        vm_ids = map(lambda x: x.id, not_updated[:to_update])
         sent = False
         self.open_channel()
         for vmid in vm_ids :

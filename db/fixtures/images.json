@@ -65,6 +65,19 @@
         }
     },
     {
+        "model": "db.Image",
+        "pk": 8,
+        "fields": {
+            "name": "Fedora 14 Desktop",
+            "owner": 1,
+            "created": "2011-05-27 00:00:00",
+            "updated": "2011-05-27 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "fedora-14-1",
+            "format": "dump"
+        }
+    },
+    {
         "model": "db.ImageMetadata",
         "pk": 1,
         "fields": {
@@ -242,6 +255,42 @@
             "meta_key": "size",
             "meta_value": "2000",
             "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 21,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "fedora",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 22,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.35",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 23,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Fedora 14 Desktop, full installation",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 24,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "3300",
+            "image": 8
         }
     }
 ]

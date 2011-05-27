@@ -39,6 +39,7 @@ class Client(object):
         kwargs['headers']['Content-Length'] = len(body) if body else 0
         if body:
             kwargs['body'] = body
+            kwargs['headers']['Content-Type'] = 'application/octet-stream'
         
         conn.request(method, full_path, **kwargs)
         resp = conn.getresponse()

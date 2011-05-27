@@ -5,13 +5,18 @@ from xml.dom import minidom
 import types
 import hashlib
 import os
+import mimetypes
+import random
+import datetime
 
+DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
+                "%A, %d-%b-%y %H:%M:%S GMT",
+                "%a, %d %b %Y %H:%M:%S GMT"]
 
 class AaiClient(Client):
     def request(self, **request):
         request['HTTP_X_AUTH_TOKEN'] = '46e427d657b20defe352804f0eb6f8a2'
         return super(AaiClient, self).request(**request)
-
 
 class BaseTestCase(TestCase):
     #TODO unauthorized request
@@ -21,17 +26,26 @@ class BaseTestCase(TestCase):
             'account':(
                 'X-Account-Container-Count',
                 'X-Account-Bytes-Used',
-                'Last-Modified',),
+                'Last-Modified',
+                'Content-Length',
+                'Date',
+                'Content-Type',),
             'container':(
                 'X-Container-Object-Count',
                 'X-Container-Bytes-Used',
-                'Last-Modified',),
+                'Content-Type',
+                'Last-Modified',
+                'Content-Length',
+                'Date',),
             'object':(
                 'ETag',
                 'Content-Length',
                 'Content-Type',
                 'Content-Encoding',
-                'Last-Modified',)}
+                'Last-Modified',
+                'Date',
+                'X-Object-Manifest',
+                'Content-Range',)}
         self.contentTypes = {'xml':'application/xml',
                              'json':'application/json',
                              '':'text/plain'}
@@ -76,11 +90,11 @@ class BaseTestCase(TestCase):
             l.append(codes)
         self.assertTrue(response.status_code in l)
 
-    def get_account_meta(self, account):
+    def get_account_meta(self, account, exp_meta={}):
         path = '/v1/%s' % account
         response = self.client.head(path)
         self.assert_status(response, 204)
-        self.assert_headers(response, 'account')
+        self.assert_headers(response, 'account', exp_meta)
         return response
 
     def list_containers(self, account, limit=10000, marker='', format=''):
@@ -105,7 +119,7 @@ class BaseTestCase(TestCase):
         self.assert_status(response, 202)
         return response
 
-    def get_container_meta(self, account, container):
+    def get_container_meta(self, account, container, exp_meta={}):
         params = locals()
         params.pop('self')
         params.pop('account')
@@ -115,10 +129,10 @@ class BaseTestCase(TestCase):
         response.content = response.content.strip()
         self.assert_status(response, 204)
         if response.status_code == 204:
-            self.assert_headers(response, 'container')
+            self.assert_headers(response, 'container', exp_meta)
         return response
 
-    def list_objects(self, account, container, limit=10000, marker='', prefix='', format='', path='', delimiter=''):
+    def list_objects(self, account, container, limit=10000, marker='', prefix='', format='', path='', delimiter='', meta=''):
         params = locals()
         params.pop('self')
         params.pop('account')
@@ -159,7 +173,7 @@ class BaseTestCase(TestCase):
         self.assert_status(response, 204)
         return response
 
-    def get_object(self, account, container, name, **headers):
+    def get_object(self, account, container, name, exp_meta={}, **headers):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.get(path, **headers)
         response.content = response.content.strip()
@@ -179,15 +193,16 @@ class BaseTestCase(TestCase):
 
     def copy_object(self, account, container, name, src, **headers):
         path = '/v1/%s/%s/%s' %(account, container, name)
-        headers['X-Copy-From'] = src
+        headers['HTTP_X_COPY_FROM'] = src
         response = self.client.put(path, **headers)
         response.content = response.content.strip()
         self.assert_status(response, 201)
         return response
 
-    def move_object(self, account, container, name, **headers):
-        path = '/v1/%s/%s/%s' % account, container, name
-        response = self.client.move(path, **headers)
+    def move_object(self, account, container, name, src, **headers):
+        path = '/v1/%s/%s/%s' % (account, container, name)
+        headers['HTTP_X_MOVE_FROM'] = src
+        response = self.client.put(path, **headers)
         response.content = response.content.strip()
         self.assert_status(response, 201)
         return response
@@ -206,9 +221,15 @@ class BaseTestCase(TestCase):
         self.assert_status(response, 204)
         return response
 
-    def assert_headers(self, response, type):
-        for item in self.headers[type]:
-            self.assertTrue(response[item])
+    def assert_headers(self, response, type, exp_meta={}):
+        entities = ['Account', 'Container', 'Container-Object', 'Object']
+        user_defined_meta = ['X-%s-Meta' %elem for elem in entities]
+        headers = [item for item in response._headers.values()]
+        system_headers = [h for h in headers if not h[0].startswith(tuple(user_defined_meta))]
+        for h in system_headers:
+            self.assertTrue(h[0] in self.headers[type])
+            if exp_meta:
+                self.assertEqual(h[1], exp_meta[h[0]])
 
     def assert_extended(self, response, format, type, size):
         self.assertEqual(response['Content-Type'].find(self.contentTypes[format]), 0)
@@ -231,11 +252,52 @@ class BaseTestCase(TestCase):
     def assert_xml(self, response, type, size):
         convert = lambda s: s.lower()
         info = [convert(elem) for elem in self.extended[type]]
+        try:
+            info.remove('content_encoding')
+        except ValueError:
+            pass
         xml = minidom.parseString(response.content)
         for item in info:
             nodes = xml.getElementsByTagName(item)
             self.assertTrue(nodes)
             self.assertTrue(len(nodes) <= size)
+            
+
+    def upload_os_file(self, account, container, fullpath, meta={}):
+        try:
+            f = open(fullpath, 'r')
+            data = f.read()
+            name = os.path.split(fullpath)[-1]
+            return self.upload_data(account, container, name, data)    
+        except IOError:
+            return
+
+    def upload_random_data(self, account, container, name, length=1024, meta={}):
+        data = str(random.getrandbits(length))
+        return self.upload_data(account, container, name, data, meta)
+
+    def upload_data(self, account, container, name, data, meta={}):
+        obj = {}
+        obj['name'] = name
+        try:
+            obj['data'] = data
+            obj['hash'] = compute_hash(obj['data'])
+            meta.update({'HTTP_X_OBJECT_META_TEST':'test1',
+                         'HTTP_ETAG':obj['hash']})
+            meta['HTTP_CONTENT_TYPE'], enc = mimetypes.guess_type(name)
+            if enc:
+                meta['HTTP_CONTENT_TYPE'] = enc
+            obj['meta'] = meta
+            r = self.upload_object(account,
+                               container,
+                               obj['name'],
+                               obj['data'],
+                               meta['HTTP_CONTENT_TYPE'],
+                               **meta)
+            if r.status_code == 201:
+                return obj
+        except IOError:
+            return
 
 class ListContainers(BaseTestCase):
     def setUp(self):
@@ -281,9 +343,9 @@ class ListContainers(BaseTestCase):
         i = self.containers.index(marker) + 1
         self.assertEquals(self.containers[i:(i+limit)], containers)
 
-    def test_extended_list(self):
-        self.list_containers(self.account, limit=3, format='xml')
-        self.list_containers(self.account, limit=3, format='json')
+    #def test_extended_list(self):
+    #    self.list_containers(self.account, limit=3, format='xml')
+    #    self.list_containers(self.account, limit=3, format='json')
 
     def test_list_json_with_marker(self):
         limit = 2
@@ -349,120 +411,17 @@ class ListObjects(BaseTestCase):
         BaseTestCase.setUp(self)
         self.account = 'test'
         self.container = ['pears', 'apples']
-        self.create_container(self.account, self.container[0])
-        self.l = [
-            {'name':'kate.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test1'}},
-            {'name':'kate_beckinsale.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test1'}},
-            {'name':'How To Win Friends And Influence People.pdf',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':28,
-                     'HTTP_CONTENT_TYPE':'application/pdf',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test2'}},
-            {'name':'moms_birthday.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':255, 'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test3'}},
-            {'name':'poodle_strut.mov',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test4'}},
-            {'name':'Disturbed - Down With The Sickness.mp3',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test5'}},
-            {'name':'army_of_darkness.avi',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_':'test6'}},
-            {'name':'the_mad.avi',
-             'meta':{'HTTP_ETAG':'wrong-hash',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test7'}}
-        ]
-        for item in self.l[:-1]:
-            response = self.upload_object(self.account, self.container[0], item['name'], json.dumps({}), **item['meta'])
-        self.create_container(self.account, self.container[1])
-        l = [
-            {'name':'photos/animals/dogs/poodle.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test1'}},
-            {'name':'photos/animals/dogs/terrier.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test1'}},
-            {'name':'photos/animals/cats/persian.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':28,
-                     'HTTP_CONTENT_TYPE':'application/pdf',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test2'}},
-            {'name':'photos/animals/cats/siamese.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':255,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test3'}},
-            {'name':'photos/plants/fern.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test4'}},
-            {'name':'photos/plants/rose.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'HTTP_X_OBJECT_MANIFEST':123,
-                     'XHTTP__OBJECT_META_TEST':'test5'}},
-            {'name':'photos/me.jpg',
-             'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                     'HTTP_CONTENT-LENGTH':23,
-                     'HTTP_CONTENT_TYPE':'image/jpeg',
-                     'HTTP_CONTENT_ENCODING':'utf8',
-                     'X_OBJECT_MANIFEST':123,
-                     'HTTP_X_OBJECT_META_TEST':'test6'}},
-        ]
-        for item in l:
-            response = self.upload_object(self.account, self.container[1], item['name'], json.dumps({}), **item['meta'])
+        for c in self.container:
+            self.create_container(self.account, c)
+        self.obj = []
+        for o in o_names[:8]:
+            self.obj.append(self.upload_random_data(self.account,
+                                                    self.container[0],
+                                                    o))
+        for o in o_names[8:]:
+            self.obj.append(self.upload_random_data(self.account,
+                                                    self.container[1],
+                                                    o))
 
     def tearDown(self):
         for c in self.container:
@@ -476,28 +435,29 @@ class ListObjects(BaseTestCase):
     def test_list_objects(self):
         response = self.list_objects(self.account, self.container[0])
         objects = get_content_splitted(response)
-        l = [elem['name'] for elem in self.l[:-1]]
+        l = [elem['name'] for elem in self.obj[:8]]
         l.sort()
         self.assertEqual(objects, l)
 
     def test_list_objects_with_limit_marker(self):
         response = self.list_objects(self.account, self.container[0], limit=2)
         objects = get_content_splitted(response)
-        l = [elem['name'] for elem in self.l[:-1]]
+        l = [elem['name'] for elem in self.obj[:8]]
         l.sort()
         self.assertEqual(objects, l[:2])
         
-        response = self.list_objects(self.account, self.container[0], limit=4, marker='How To Win Friends And Influence People.pdf')
-        objects = get_content_splitted(response)
-        l = [elem['name'] for elem in self.l[:-1]]
-        l.sort()
-        self.assertEqual(objects, l[2:6])
-        
-        response = self.list_objects(self.account, self.container[0], limit=4, marker='moms_birthday.jpg')
-        objects = get_content_splitted(response)
-        l = [elem['name'] for elem in self.l[:-1]]
-        l.sort()
-        self.assertEqual(objects, l[-1:])
+        markers = ['How To Win Friends And Influence People.pdf',
+                   'moms_birthday.jpg']
+        limit = 4
+        for m in markers:
+            response = self.list_objects(self.account, self.container[0], limit=limit, marker=m)
+            objects = get_content_splitted(response)
+            l = [elem['name'] for elem in self.obj[:8]]
+            l.sort()
+            start = l.index(m) + 1
+            end = start + limit
+            end = len(l) >= end and end or len(l)
+            self.assertEqual(objects, l[start:end])
 
     def test_list_pseudo_hierarchical_folders(self):
         response = self.list_objects(self.account, self.container[1], prefix='photos', delimiter='/')
@@ -530,6 +490,52 @@ class ListObjects(BaseTestCase):
         self.assertEqual(len(objects), 1)
         self.assertEqual(objects[0].childNodes[0].data, 'photos/me.jpg')
 
+    def test_list_using_meta(self):
+        meta = {'HTTP_X_OBJECT_META_QUALITY':'aaa'}
+        for o in self.obj[:2]:
+            r = self.update_object_meta(self.account,
+                                    self.container[0],
+                                    o['name'],
+                                    **meta)
+        meta = {'HTTP_X_OBJECT_META_STOCK':'true'}
+        for o in self.obj[3:5]:
+            r = self.update_object_meta(self.account,
+                                    self.container[0],
+                                    o['name'],
+                                    **meta)
+            
+        r = self.list_objects(self.account,
+                          self.container[0],
+                          meta='Quality')
+        self.assertEqual(r.status_code, 200)
+        obj = get_content_splitted(r)
+        self.assertEqual(len(obj), 2)
+        
+        # test case insensitive
+        r = self.list_objects(self.account,
+                          self.container[0],
+                          meta='quality')
+        self.assertEqual(r.status_code, 200)
+        obj = get_content_splitted(r)
+        self.assertEqual(len(obj), 2)
+        
+        # test multiple matches
+        r = self.list_objects(self.account,
+                          self.container[0],
+                          meta='Quality, Stock')
+        self.assertEqual(r.status_code, 200)
+        obj = get_content_splitted(r)
+        self.assertEqual(len(obj), 4)
+        
+        # test non 1-1 multiple match
+        r = self.list_objects(self.account,
+                          self.container[0],
+                          meta='Quality, aaaa')
+        self.assertEqual(r.status_code, 200)
+        obj = get_content_splitted(r)
+        self.assertEqual(len(obj), 2)
+        
+
 class ContainerMeta(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -538,7 +544,28 @@ class ContainerMeta(BaseTestCase):
         self.create_container(self.account, self.container)
 
     def tearDown(self):
+        for o in self.list_objects(self.account, self.container):
+            self.delete_object(self.account, self.container, o)
         self.delete_container(self.account, self.container)
+    
+    def test_get_meta(self):
+        headers = {'HTTP_X_OBJECT_META_TRASH':'true'}
+        t1 = datetime.datetime.utcnow()
+        o = self.upload_random_data(self.account,
+                                self.container,
+                                'McIntosh.jpg',
+                                meta=headers)
+        if o:
+            r = self.get_container_meta(self.account,
+                                        self.container)
+            self.assertEqual(r['X-Container-Object-Count'], '1')
+            self.assertEqual(r['X-Container-Bytes-Used'], str(len(o['data'])))
+            t2 = datetime.datetime.strptime(r['Last-Modified'], DATE_FORMATS[2])
+            delta = (t2 - t1)
+            threashold = datetime.timedelta(seconds=1) 
+            self.assertTrue(delta < threashold)
+            self.assertTrue(r['X-Container-Object-Meta'])
+            self.assertTrue('Trash' in r['X-Container-Object-Meta'])
 
     def test_update_meta(self):
         meta = {'HTTP_X_CONTAINER_META_TEST':'test33', 'HTTP_X_CONTAINER_META_TOST':'tost22'}
@@ -579,16 +606,9 @@ class DeleteContainer(BaseTestCase):
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.create_container(self.account, c)
-        obj = {'name':'kate.jpg',
-               'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                       'HTTP_CONTENT-LENGTH':23,
-                       'HTTP_CONTENT_TYPE':'image/jpeg',
-                       'HTTP_CONTENT_ENCODING':'utf8',
-                       'HTTP_X_OBJECT_MANIFEST':123,
-                       'HTTP_X_OBJECT_META_TEST':'test1'
-                       }
-                }
-        self.upload_object(self.account, self.containers[1], obj['name'], json.dumps({}), **obj['meta'])
+        self.upload_random_data(self.account,
+                                self.containers[1],
+                                'nice.jpg')
 
     def tearDown(self):
         for c in self.containers:
@@ -612,18 +632,18 @@ class GetObjects(BaseTestCase):
         BaseTestCase.setUp(self)
         self.account = 'test'
         self.containers = ['c1', 'c2']
+        #create some containers
         for c in self.containers:
             self.create_container(self.account, c)
-        self.obj = {'name':'kate.jpg',
-               'meta':{'HTTP_ETAG':'99914b932bd37a50b983c5e7c90ae93b',
-                       'HTTP_CONTENT-LENGTH':23,
-                       'HTTP_CONTENT_TYPE':'image/jpeg',
-                       'HTTP_CONTENT_ENCODING':'utf8',
-                       'HTTP_X_OBJECT_MANIFEST':123,
-                       'HTTP_X_OBJECT_META_TEST':'test1'
-                       }
-                }
-        self.upload_object(self.account, self.containers[1], self.obj['name'], json.dumps({}), **self.obj['meta'])
+        
+        #upload a file
+        self.objects = []
+        self.objects.append(self.upload_os_file(self.account,
+                            self.containers[1],
+                            './api/tests.py'))
+        self.objects.append(self.upload_os_file(self.account,
+                            self.containers[1],
+                            'settings.py'))
 
     def tearDown(self):
         for c in self.containers:
@@ -632,29 +652,279 @@ class GetObjects(BaseTestCase):
             self.delete_container(self.account, c)
 
     def test_get(self):
-        r = self.get_object(self.account, self.containers[1], self.obj['name'])
+        #perform get
+        r = self.get_object(self.account,
+                            self.containers[1],
+                            self.objects[0]['name'],
+                            self.objects[0]['meta'])
+        #assert success
         self.assertEqual(r.status_code, 200)
 
     def test_get_invalid(self):
-        r = self.get_object(self.account, self.containers[0], self.obj['name'])
+        r = self.get_object(self.account,
+                            self.containers[0],
+                            self.objects[0]['name'])
         self.assertItemNotFound(r)
 
-    def test_get_with_range(self):
-        return
-    
+    def test_get_partial(self):
+        #perform get with range
+        headers = {'HTTP_RANGE':'bytes=0-499'}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert successful partial content
+        self.assertEqual(r.status_code, 206)
+        
+        #assert content length
+        self.assertEqual(int(r['Content-Length']), 500)
+        
+        #assert content
+        self.assertEqual(self.objects[0]['data'][:500], r.content)
+
+    def test_get_final_500(self):
+        #perform get with range
+        headers = {'HTTP_RANGE':'bytes=-500'}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert successful partial content
+        self.assertEqual(r.status_code, 206)
+        
+        #assert content length
+        self.assertEqual(int(r['Content-Length']), 500)
+        
+        #assert content
+        self.assertTrue(self.objects[0]['data'][-500:], r.content)
+
+    def test_get_rest(self):
+        #perform get with range
+        offset = len(self.objects[0]['data']) - 500
+        headers = {'HTTP_RANGE':'bytes=%s-' %offset}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert successful partial content
+        self.assertEqual(r.status_code, 206)
+        
+        #assert content length
+        self.assertEqual(int(r['Content-Length']), 500)
+        
+        #assert content
+        self.assertTrue(self.objects[0]['data'][-500:], r.content)
+        
+    def test_get_range_not_satisfiable(self):
+        #perform get with range
+        offset = len(self.objects[0]['data']) + 1
+        headers = {'HTTP_RANGE':'bytes=0-%s' %offset}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert Range Not Satisfiable
+        self.assertEqual(r.status_code, 416)
+
+    def test_multiple_range(self):
+        #perform get with multiple range
+        ranges = ['0-499', '-500', '1000-']
+        headers = {'HTTP_RANGE' : 'bytes=%s' % ','.join(ranges)}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        # assert partial content
+        self.assertEqual(r.status_code, 206)
+        
+        # assert Content-Type of the reply will be multipart/byteranges
+        self.assertTrue(r['Content-Type'])
+        content_type_parts = r['Content-Type'].split()
+        self.assertEqual(content_type_parts[0], ('multipart/byteranges;'))
+        
+        boundary = '--%s' %content_type_parts[1].split('=')[-1:][0]
+        cparts = r.content.split(boundary)[1:-1]
+        
+        # assert content parts are exactly 2
+        self.assertEqual(len(cparts), len(ranges))
+        
+        # for each content part assert headers
+        i = 0
+        for cpart in cparts:
+            content = cpart.split('\r\n')
+            headers = content[1:3]
+            content_range = headers[0].split(': ')
+            self.assertEqual(content_range[0], 'Content-Range')
+            
+            r = ranges[i].split('-')
+            if not r[0] and not r[1]:
+                pass
+            elif not r[0]:
+                start = len(self.objects[0]['data']) - int(r[1])
+                end = len(self.objects[0]['data'])
+            elif not r[1]:
+                start = int(r[0])
+                end = len(self.objects[0]['data'])
+            else:
+                start = int(r[0])
+                end = int(r[1]) + 1
+            fdata = self.objects[0]['data'][start:end]
+            sdata = '\r\n'.join(content[4:-1])
+            self.assertEqual(len(fdata), len(sdata))
+            self.assertEquals(fdata, sdata)
+            i+=1
+
+    def test_multiple_range_not_satisfiable(self):
+        #perform get with multiple range
+        out_of_range = len(self.objects[0]['data']) + 1
+        ranges = ['0-499', '-500', '%d-' %out_of_range]
+        headers = {'HTTP_RANGE' : 'bytes=%s' % ','.join(ranges)}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        # assert partial content
+        self.assertEqual(r.status_code, 416)
+
     def test_get_with_if_match(self):
-        return
-    
-    def test_get_with_if_none_match(self):
-        return
-    
+        #perform get with If-Match
+        headers = {'HTTP_IF_MATCH':self.objects[0]['hash']}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        #assert get success
+        self.assertEqual(r.status_code, 200)
+        
+        #assert response content
+        self.assertEqual(self.objects[0]['data'].strip(), r.content.strip())
+
+    def test_get_with_if_match_star(self):
+        #perform get with If-Match *
+        headers = {'HTTP_IF_MATCH':'*'}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        #assert get success
+        self.assertEqual(r.status_code, 200)
+        
+        #assert response content
+        self.assertEqual(self.objects[0]['data'].strip(), r.content.strip())
+
+    def test_get_with_multiple_if_match(self):
+        #perform get with If-Match
+        etags = [i['hash'] for i in self.objects if i]
+        etags = ','.join('"%s"' % etag for etag in etags)
+        headers = {'HTTP_IF_MATCH':etags}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        #assert get success
+        self.assertEqual(r.status_code, 200)
+        
+        #assert response content
+        self.assertEqual(self.objects[0]['data'].strip(), r.content.strip())
+
+    def test_if_match_precondition_failed(self):
+        #perform get with If-Match
+        headers = {'HTTP_IF_MATCH':'123'}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert precondition failed 
+        self.assertEqual(r.status_code, 412)
+
+    def test_if_none_match(self):
+        #perform get with If-Match
+        headers = {'HTTP_IF_NONE_MATCH':'123'}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert get success
+        self.assertEqual(r.status_code, 200)
+
+    def test_if_none_match(self):
+        #perform get with If-Match *
+        headers = {'HTTP_IF_NONE_MATCH':'*'}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert get success
+        self.assertEqual(r.status_code, 304)
+        
+    def test_if_none_match_not_modified(self):
+        #perform get with If-Match
+        headers = {'HTTP_IF_NONE_MATCH':'%s' %self.objects[0]['hash']}
+        r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+        
+        #assert not modified
+        self.assertEqual(r.status_code, 304)
+        self.assertEqual(r['ETag'], self.objects[0]['hash'])
+        
     def test_get_with_if_modified_since(self):
-        return
-    
+        t = datetime.datetime.utcnow()
+        t2 = t - datetime.timedelta(minutes=10)
+        
+        #modify the object
+        self.upload_object(self.account,
+                           self.containers[1],
+                           self.objects[0]['name'],
+                           self.objects[0]['data'][:200])
+        
+        for f in DATE_FORMATS:
+            past = t2.strftime(f)
+            
+            headers = {'HTTP_IF_MODIFIED_SINCE':'%s' %past}
+            r = self.get_object(self.account,
+                        self.containers[1],
+                        self.objects[0]['name'],
+                        **headers)
+            
+            #assert get success
+            self.assertEqual(r.status_code, 200)
+            
+    def test_get_modified_since_invalid_date(self):
+        headers = {'HTTP_IF_MODIFIED_SINCE':''}
+        r = self.get_object(self.account,
+                    self.containers[1],
+                    self.objects[0]['name'],
+                    **headers)
+        
+        #assert get success
+        self.assertEqual(r.status_code, 200)
+
+    def test_get_not_modified_since(self):
+        now = datetime.datetime.utcnow()
+        since = now + datetime.timedelta(1)
+        
+        for f in DATE_FORMATS:
+            headers = {'HTTP_IF_MODIFIED_SINCE':'%s' %since.strftime(f)}
+            r = self.get_object(self.account,
+                                self.containers[1],
+                                self.objects[0]['name'],
+                                **headers)
+            
+            #assert not modified
+            self.assertEqual(r.status_code, 304)
+
     def test_get_with_if_unmodified_since(self):
-        return
-    
-    def test_get_with_several_headers(self):
         return
 
 class UploadObject(BaseTestCase):
@@ -663,27 +933,270 @@ class UploadObject(BaseTestCase):
         self.account = 'test'
         self.container = 'c1'
         self.create_container(self.account, self.container)
+        
+        self.src = os.path.join('.', 'api', 'tests.py')
+        self.dest = os.path.join('.', 'api', 'chunked_update_test_file')
+        create_chunked_update_test_file(self.src, self.dest)
 
     def tearDown(self):
         for o in get_content_splitted(self.list_objects(self.account, self.container)):
             self.delete_object(self.account, self.container, o)
         self.delete_container(self.account, self.container)
-    
+        
+        # delete test file
+        os.remove(self.dest)
+        
     def test_upload(self):
-        filename = './api/tests.py'
-        f = open(filename, 'r')
+        filename = 'tests.py'
+        fullpath = os.path.join('.', 'api', filename) 
+        f = open(fullpath, 'r')
         data = f.read()
         hash = compute_hash(data)
         meta={'HTTP_ETAG':hash,
-              'HTTP_CONTENT-LENGTH':os.path.getsize(filename),
-              'HTTP_CONTENT_TYPE':'text/x-java',
-              'HTTP_CONTENT_ENCODING':'us-ascii',
               'HTTP_X_OBJECT_MANIFEST':123,
               'HTTP_X_OBJECT_META_TEST':'test1'
               }
-        r = self.upload_object(self.account, self.container, filename, data, content_type='plain/text',**meta)
+        meta['HTTP_CONTENT_TYPE'], meta['HTTP_CONTENT_ENCODING'] = mimetypes.guess_type(fullpath)
+        r = self.upload_object(self.account,
+                               self.container,
+                               filename,
+                               data,
+                               content_type=meta['HTTP_CONTENT_TYPE'],
+                               **meta)
+        self.assertEqual(r.status_code, 201)
+        r = self.get_object_meta(self.account, self.container, filename)
+        self.assertTrue(r['X-Object-Meta-Test'])
+        self.assertEqual(r['X-Object-Meta-Test'], meta['HTTP_X_OBJECT_META_TEST'])
+        
+        #assert uploaded content
+        r = self.get_object(self.account, self.container, filename)
+        self.assertEqual(os.path.getsize(fullpath), int(r['Content-Length']))
+        self.assertEqual(data.strip(), r.content.strip())
+
+    def test_upload_unprocessable_entity(self):
+        filename = 'tests.py'
+        fullpath = os.path.join('.', 'api', filename) 
+        f = open(fullpath, 'r')
+        data = f.read()
+        meta={'HTTP_ETAG':'123',
+              'HTTP_X_OBJECT_MANIFEST':123,
+              'HTTP_X_OBJECT_META_TEST':'test1'
+              }
+        meta['HTTP_CONTENT_TYPE'], meta['HTTP_CONTENT_ENCODING'] = mimetypes.guess_type(fullpath)
+        r = self.upload_object(self.account,
+                               self.container,
+                               filename,
+                               data,
+                               content_type = meta['HTTP_CONTENT_TYPE'],
+                               **meta)
+        self.assertEqual(r.status_code, 422)
+        
+    def test_chucked_update(self):
+        objname = os.path.split(self.src)[-1:][0]
+        f = open(self.dest, 'r')
+        data = f.read()
+        meta = {}
+        meta['HTTP_CONTENT_TYPE'], meta['HTTP_CONTENT_ENCODING'] = mimetypes.guess_type(objname)
+        meta.update({'HTTP_TRANSFER_ENCODING':'chunked'})
+        r = self.upload_object(self.account,
+                               self.container,
+                               objname,
+                               data,
+                               content_type = 'plain/text',
+                               **meta)
         self.assertEqual(r.status_code, 201)
         
+        r = self.get_object(self.account,
+                            self.container,
+                            objname)
+        uploaded_data = r.content
+        f = open(self.src, 'r')
+        actual_data = f.read()
+        self.assertEqual(actual_data, uploaded_data)
+
+class CopyObject(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        self.account = 'test'
+        self.containers = ['c1', 'c2']
+        for c in self.containers:
+            self.create_container(self.account, c)
+        self.obj = self.upload_os_file(self.account,
+                            self.containers[0],
+                            './api/tests.py')
+
+    def tearDown(self):
+        for c in self.containers:
+            for o in get_content_splitted(self.list_objects(self.account, c)):
+                self.delete_object(self.account, c, o)
+            self.delete_container(self.account, c)
+
+    def test_copy(self):
+        with AssertInvariant(self.get_object_meta, self.account, self.containers[0], self.obj['name']):
+            #perform copy
+            meta = {'HTTP_X_OBJECT_META_TEST':'testcopy'}
+            src_path = os.path.join('/', self.containers[0], self.obj['name'])
+            r = self.copy_object(self.account,
+                             self.containers[0],
+                             'testcopy',
+                             src_path,
+                             **meta)
+            #assert copy success
+            self.assertEqual(r.status_code, 201)
+            
+            #assert access the new object
+            r = self.get_object_meta(self.account,
+                                     self.containers[0],
+                                     'testcopy')
+            self.assertTrue(r['X-Object-Meta-Test'])
+            self.assertTrue(r['X-Object-Meta-Test'], 'testcopy')
+            
+            #assert etag is the same
+            self.assertEqual(r['ETag'], self.obj['hash'])
+            
+            #assert src object still exists
+            r = self.get_object_meta(self.account, self.containers[0], self.obj['name'])
+            self.assertEqual(r.status_code, 204)
+
+    def test_copy_from_different_container(self):
+        with AssertInvariant(self.get_object_meta,
+                             self.account,
+                             self.containers[0],
+                             self.obj['name']):
+            meta = {'HTTP_X_OBJECT_META_TEST':'testcopy'}
+            src_path = os.path.join('/', self.containers[0], self.obj['name'])
+            r = self.copy_object(self.account,
+                             self.containers[1],
+                             'testcopy',
+                             src_path,
+                             **meta)
+            self.assertEqual(r.status_code, 201)
+            
+            # assert updated metadata
+            r = self.get_object_meta(self.account,
+                                     self.containers[1],
+                                     'testcopy')
+            self.assertTrue(r['X-Object-Meta-Test'])
+            self.assertTrue(r['X-Object-Meta-Test'], 'testcopy')
+            
+            #assert src object still exists
+            r = self.get_object_meta(self.account, self.containers[0], self.obj['name'])
+            self.assertEqual(r.status_code, 204)
+
+    def test_copy_invalid(self):
+        #copy from invalid object
+        meta = {'HTTP_X_OBJECT_META_TEST':'testcopy'}
+        r = self.copy_object(self.account,
+                         self.containers[1],
+                         'testcopy',
+                         os.path.join('/', self.containers[0], 'test.py'),
+                         **meta)
+        self.assertItemNotFound(r)
+        
+        
+        #copy from invalid container
+        meta = {'HTTP_X_OBJECT_META_TEST':'testcopy'}
+        src_path = os.path.join('/', self.containers[1], self.obj['name'])
+        r = self.copy_object(self.account,
+                         self.containers[1],
+                         'testcopy',
+                         src_path,
+                         **meta)
+        self.assertItemNotFound(r)
+
+class MoveObject(CopyObject):
+    def test_move(self):
+        #perform move
+        meta = {'HTTP_X_OBJECT_META_TEST':'testcopy'}
+        src_path = os.path.join('/', self.containers[0], self.obj['name'])
+        r = self.move_object(self.account,
+                         self.containers[0],
+                         'testcopy',
+                         src_path,
+                         **meta)
+        #assert successful move
+        self.assertEqual(r.status_code, 201)
+        
+        #assert updated metadata
+        r = self.get_object_meta(self.account,
+                                 self.containers[0],
+                                 'testcopy')
+        self.assertTrue(r['X-Object-Meta-Test'])
+        self.assertTrue(r['X-Object-Meta-Test'], 'testcopy')
+        
+        #assert src object no more exists
+        r = self.get_object_meta(self.account, self.containers[0], self.obj['name'])
+        self.assertItemNotFound(r)
+
+class UpdateObjectMeta(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        self.account = 'test'
+        self.containers = ['c1', 'c2']
+        for c in self.containers:
+            self.create_container(self.account, c)
+        self.obj = self.upload_os_file(self.account,
+                                       self.containers[0],
+                                       './api/tests.py')
+
+    def tearDown(self):
+        for c in self.containers:
+            for o in get_content_splitted(self.list_objects(self.account, c)):
+                self.delete_object(self.account, c, o)
+            self.delete_container(self.account, c)
+
+    def test_update(self):
+        #perform update metadata
+        more = {'HTTP_X_OBJECT_META_FOO':'foo',
+                'HTTP_X_OBJECT_META_BAR':'bar'}
+        r = self.update_object_meta(self.account,
+                                self.containers[0],
+                                self.obj['name'],
+                                **more)
+        #assert request accepted
+        self.assertEqual(r.status_code, 202)
+        
+        #assert old metadata are still there
+        r = self.get_object_meta(self.account, self.containers[0], self.obj['name'])
+        self.assertTrue('X-Object-Meta-Test' not in r.items())
+        
+        #assert new metadata have been updated
+        for k,v in more.items():
+            key = '-'.join(elem.capitalize() for elem in k.split('_')[1:])
+            self.assertTrue(r[key])
+            self.assertTrue(r[key], v)
+
+class DeleteObject(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        self.account = 'test'
+        self.containers = ['c1', 'c2']
+        for c in self.containers:
+            self.create_container(self.account, c)
+        self.obj = self.upload_os_file(self.account,
+                            self.containers[0],
+                            './api/tests.py')
+
+    def tearDown(self):
+        for c in self.containers:
+            for o in get_content_splitted(self.list_objects(self.account, c)):
+                self.delete_object(self.account, c, o)
+            self.delete_container(self.account, c)
+
+    def test_delete(self):
+        #perform delete object
+        r = self.delete_object(self.account, self.containers[0], self.obj['name'])
+        
+        #assert success
+        self.assertEqual(r.status_code, 204)
+        
+    def test_delete_invalid(self):
+        #perform delete object
+        r = self.delete_object(self.account, self.containers[1], self.obj['name'])
+        
+        #assert failure
+        self.assertItemNotFound(r)
+
 class AssertInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable
@@ -691,11 +1204,12 @@ class AssertInvariant(object):
         self.kwargs = kwargs
 
     def __enter__(self):
-        self.value = self.callable(*self.args, **self.kwargs)
-        return self.value
+        self.items = self.callable(*self.args, **self.kwargs).items()
+        return self.items
 
     def __exit__(self, type, value, tb):
-        assert self.value == self.callable(*self.args, **self.kwargs)
+        items = self.callable(*self.args, **self.kwargs).items()
+        assert self.items == items
 
 def get_content_splitted(response):
     if response:
@@ -706,3 +1220,31 @@ def compute_hash(data):
     offset = 0
     md5.update(data)
     return md5.hexdigest().lower()
+
+def create_chunked_update_test_file(src, dest):
+    fr = open(src, 'r')
+    fw = open(dest, 'w')
+    data = fr.readline()
+    while data:
+        fw.write(hex(len(data)))
+        fw.write('\r\n')
+        fw.write(data)
+        data = fr.readline()
+    fw.write(hex(0))
+    fw.write('\r\n')
+
+o_names = ['kate.jpg',
+           'kate_beckinsale.jpg',
+           'How To Win Friends And Influence People.pdf',
+           'moms_birthday.jpg',
+           'poodle_strut.mov',
+           'Disturbed - Down With The Sickness.mp3',
+           'army_of_darkness.avi',
+           'the_mad.avi',
+           'photos/animals/dogs/poodle.jpg',
+           'photos/animals/dogs/terrier.jpg',
+           'photos/animals/cats/persian.jpg',
+           'photos/animals/cats/siamese.jpg',
+           'photos/plants/fern.jpg',
+           'photos/plants/rose.jpg',
+           'photos/me.jpg']

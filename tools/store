@@ -10,7 +10,7 @@ import json
 import logging
 
 
-DEFAULT_HOST = '127.0.0.1:9000'
+DEFAULT_HOST = 'pithos.dev.grnet.gr'
 DEFAULT_API = 'v1'
 
 
@@ -36,8 +36,8 @@ class Client(object):
         
         kwargs = {}
         kwargs['headers'] = headers or {}
+        kwargs['headers']['Content-Length'] = len(body) if body else 0
         if body:
-            kwargs['headers']['Content-Length'] = len(body)
             kwargs['body'] = body
         
         conn.request(method, full_path, **kwargs)

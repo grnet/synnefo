@@ -149,24 +149,34 @@ def status_job_finished (message) :
         if msg["status"] != "success" :
             _logger.warn("Ignoring non-success status update from job %d on VM %s",
                           msg['jobId'], msg['instance'])
+            message.channel.basic_ack(message.delivery_tag)
             return
 
         status = backend.get_job_status(msg['jobId'])
 
         _logger.debug("Node status job result: %s" % status)
 
-        stat = _parse_json(status)
-
-        if stat["summary"] != "INSTANCE_QUERY_DATA" or \
-           type(stat["opresult"]) is not list:
-             _logger.error("Status is of unknown type %s", stat["summary"])
+        if status['summary'][0] != u'INSTANCE_QUERY_DATA' :
+             _logger.error("Status update is of unknown type %s", status['summary'])
              return
 
-        req_state = stat['opresult'][msg['instance']]['config_state']
-        run_state = stat['opresult'][msg['instance']]['run_state']
-        vm = VirtualMachine.objects.get(name=msg['instance'])
-        backend.update_status(vm, run_state)
-        
+        conf_state = status['opresult'][0][msg['instance']]['config_state']
+        run_state = status['opresult'][0][msg['instance']]['run_state']
+
+        # XXX: The following assumes names like snf-12
+        instid = msg['instance'].split('-')[1]
+
+        vm = VirtualMachine.objects.get(id = instid)
+
+        if run_state == "up":
+            opcode = "OP_INSTANCE_REBOOT"
+        else :
+            opcode = "OP_INSTANCE_SHUTDOWN"
+
+        backend.process_op_status(vm=vm, jobid=msg['jobId'],opcode=opcode,
+                                  status="success",
+                                  logmsg="Reconciliation: simulated event")
+
         message.channel.basic_ack(message.delivery_tag)
     except KeyError as k:
         _logger.error("Malformed incoming JSON, missing attributes: %s", k)

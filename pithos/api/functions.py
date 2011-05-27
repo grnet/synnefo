@@ -1,7 +1,7 @@
 import os
 import logging
 import hashlib
-import types
+import uuid
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -10,10 +10,11 @@ from django.utils.http import parse_etags
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
-from pithos.api.util import (printable_meta_dict, get_account_meta, put_account_meta,
-    get_container_meta, put_container_meta, get_object_meta, put_object_meta,
-    validate_modification_preconditions, copy_or_move_object, get_range,
-    raw_input_socket, socket_read_iterator, api_method)
+from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
+    put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
+    validate_modification_preconditions, validate_matching_preconditions, copy_or_move_object,
+    get_content_length, get_range, get_content_range, raw_input_socket, socket_read_iterator,
+    ObjectWrapper, api_method)
 from pithos.backends import backend
 
 
@@ -106,7 +107,7 @@ def account_update(request, v_account):
     #                       badRequest (400)
     
     meta = get_account_meta(request)    
-    backend.update_account_meta(request.user, meta)
+    backend.update_account_meta(request.user, meta, replace=True)
     return HttpResponse(status=202)
 
 @api_method('GET', format_allowed=True)
@@ -173,6 +174,7 @@ def container_meta(request, v_account, v_container):
     
     try:
         meta = backend.get_container_meta(request.user, v_container)
+        meta['object_meta'] = backend.list_object_meta(request.user, v_container)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -191,13 +193,13 @@ def container_create(request, v_account, v_container):
     meta = get_container_meta(request)
     
     try:
-        backend.create_container(request.user, v_container)
+        backend.put_container(request.user, v_container)
         ret = 201
     except NameError:
         ret = 202
     
     if len(meta) > 0:
-        backend.update_container_meta(request.user, v_container, meta)
+        backend.update_container_meta(request.user, v_container, meta, replace=True)
     
     return HttpResponse(status=ret)
 
@@ -211,7 +213,7 @@ def container_update(request, v_account, v_container):
     
     meta = get_container_meta(request)
     try:
-        backend.update_container_meta(request.user, v_container, meta)
+        backend.update_container_meta(request.user, v_container, meta, replace=True)
     except NameError:
         raise ItemNotFound('Container does not exist')
     return HttpResponse(status=202)
@@ -243,6 +245,7 @@ def object_list(request, v_account, v_container):
     
     try:
         meta = backend.get_container_meta(request.user, v_container)
+        meta['object_meta'] = backend.list_object_meta(request.user, v_container)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -279,8 +282,15 @@ def object_list(request, v_account, v_container):
         except ValueError:
             limit = 10000
     
+    keys = request.GET.get('meta')
+    if keys:
+        keys = keys.split(',')
+        keys = [format_meta_key('X-Object-Meta-' + x.strip()) for x in keys if x.strip() != '']
+    else:
+        keys = []
+    
     try:
-        objects = backend.list_objects(request.user, v_container, prefix, delimiter, marker, limit, virtual)
+        objects = backend.list_objects(request.user, v_container, prefix, delimiter, marker, limit, virtual, keys)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -300,7 +310,7 @@ def object_list(request, v_account, v_container):
         except NameError:
             # Virtual objects/directories.
             if virtual and delimiter and x.endswith(delimiter):
-                object_meta.append({"subdir": x})
+                object_meta.append({'subdir': x})
             continue
         object_meta.append(printable_meta_dict(meta))
     if request.serialization == 'xml':
@@ -328,7 +338,7 @@ def object_meta(request, v_account, v_container, v_object):
     put_object_meta(response, meta)
     return response
 
-@api_method('GET')
+@api_method('GET', format_allowed=True)
 def object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
     # Error Response Codes: serviceUnavailable (503),
@@ -344,43 +354,61 @@ def object_read(request, v_account, v_container, v_object):
     except NameError:
         raise ItemNotFound('Object does not exist')
     
-    response = HttpResponse()
-    put_object_meta(response, meta)
-    
-    # Range handling.
-    range = get_range(request)
-    if range is not None:
-        offset, length = range
-        if offset < 0:
-            offset = meta['bytes'] + offset
-        if offset > meta['bytes'] or (length and offset + length > meta['bytes']):
-            raise RangeNotSatisfiable('Requested range exceeds object limits')
-        if not length:
-            length = -1
-        
-        response['Content-Length'] = length # Update with the correct length.
-        response.status_code = 206
-    else:
-        offset = 0
-        length = -1
-        response.status_code = 200
-    
-    # Conditions (according to RFC2616 must be evaluated at the end).
+    # Evaluate conditions.
     validate_modification_preconditions(request, meta)
-    if_match = request.META.get('HTTP_IF_MATCH')
-    if if_match is not None and if_match != '*':
-        if meta['hash'] not in [x.lower() for x in parse_etags(if_match)]:
-            raise PreconditionFailed('Object Etag does not match')    
-    if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
-    if if_none_match is not None:
-        if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
-            raise NotModified('Object Etag matches')
+    try:
+        validate_matching_preconditions(request, meta)
+    except NotModified:
+        response = HttpResponse(status=304)
+        response['ETag'] = meta['hash']
+        return response
     
     try:
-        response.content = backend.get_object(request.user, v_container, v_object, offset, length)
+        size, hashmap = backend.get_object_hashmap(v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
+    # Reply with the hashmap.
+    if request.serialization != 'text':
+        if request.serialization == 'xml':
+            data = render_to_string('hashes.xml', {'object': v_object, 'bytes': size, 'hashes': hashmap})
+        elif request.serialization  == 'json':
+            data = json.dumps({'bytes': size, 'hashes': hashmap})
+        
+        response = HttpResponse(data, status=200)
+        put_object_meta(response, meta)
+        response['Content-Length'] = len(data)
+        return response
+    
+    # Range handling.
+    ranges = get_range(request, size)
+    if ranges is None:
+        ranges = [(0, size)]
+        ret = 200
+    else:
+        check = [True for offset, length in ranges if
+                    length <= 0 or length > size or
+                    offset < 0 or offset >= size or
+                    offset + length > size]
+        if len(check) > 0:
+            raise RangeNotSatisfiable('Requested range exceeds object limits')        
+        ret = 206
+    
+    if ret == 206 and len(ranges) > 1:
+        boundary = uuid.uuid4().hex
+    else:
+        boundary = ''
+    wrapper = ObjectWrapper(request.user, v_container, v_object, ranges, size, hashmap, boundary)
+    response = HttpResponse(wrapper, status=ret)
+    put_object_meta(response, meta)
+    if ret == 206:
+        if len(ranges) == 1:
+            offset, length = ranges[0]
+            response['Content-Length'] = length # Update with the correct length.
+            response['Content-Range'] = 'bytes %d-%d/%d' % (offset, offset + length - 1, size)
+        else:
+            del(response['Content-Length'])
+            response['Content-Type'] = 'multipart/byteranges; boundary=%s' % (boundary,)
     return response
 
 @api_method('PUT')
@@ -397,9 +425,7 @@ def object_write(request, v_account, v_container, v_object):
     move_from = request.META.get('HTTP_X_MOVE_FROM')
     if copy_from or move_from:
         # TODO: Why is this required? Copy this ammount?
-        content_length = request.META.get('CONTENT_LENGTH')
-        if not content_length:
-            raise LengthRequired('Missing Content-Length header')
+        content_length = get_content_length(request)
         
         if move_from:
             copy_or_move_object(request, move_from, (v_container, v_object), move=True)
@@ -410,15 +436,7 @@ def object_write(request, v_account, v_container, v_object):
     meta = get_object_meta(request)
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
-        content_length = request.META.get('CONTENT_LENGTH')
-        if not content_length:
-            raise LengthRequired('Missing Content-Length header')
-        try:
-            content_length = int(content_length)
-            if content_length < 0:
-                raise ValueError
-        except ValueError:
-            raise BadRequest('Invalid Content-Length header')
+        content_length = get_content_length(request)
     # Should be BadRequest, but API says otherwise.
     if 'Content-Type' not in meta:
         raise LengthRequired('Missing Content-Type header')
@@ -426,26 +444,29 @@ def object_write(request, v_account, v_container, v_object):
     md5 = hashlib.md5()
     if content_length == 0:
         try:
-            backend.update_object(request.user, v_container, v_object, '')
+            backend.update_object_hashmap(request.user, v_container, v_object, 0, [])
         except NameError:
             raise ItemNotFound('Container does not exist')
     else:
+        size = 0
+        hashmap = []
         sock = raw_input_socket(request)
-        offset = 0
-        for data in socket_read_iterator(sock, content_length):
+        for data in socket_read_iterator(sock, content_length, backend.block_size):
             # TODO: Raise 408 (Request Timeout) if this takes too long.
             # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+            size += len(data)
+            hashmap.append(backend.put_block(data))
             md5.update(data)
-            try:
-                backend.update_object(request.user, v_container, v_object, data, offset)
-            except NameError:
-                raise ItemNotFound('Container does not exist')
-            offset += len(data)
     
     meta['hash'] = md5.hexdigest().lower()
     etag = request.META.get('HTTP_ETAG')
     if etag and parse_etags(etag)[0].lower() != meta['hash']:
-        raise UnprocessableEntity('Object Etag does not match')
+        raise UnprocessableEntity('Object ETag does not match')
+    
+    try:
+        backend.update_object_hashmap(request.user, v_container, v_object, size, hashmap)
+    except NameError:
+        raise ItemNotFound('Container does not exist')
     try:
         backend.update_object_meta(request.user, v_container, v_object, meta)
     except NameError:
@@ -492,12 +513,33 @@ def object_update(request, v_account, v_container, v_object):
     #                       badRequest (400)
     
     meta = get_object_meta(request)
-    if 'Content-Type' in meta:
+    content_type = meta.get('Content-Type')
+    if content_type:
         del(meta['Content-Type']) # Do not allow changing the Content-Type.
-    try:
-        backend.update_object_meta(request.user, v_container, v_object, meta)
-    except NameError:
-        raise ItemNotFound('Object does not exist')
+    
+    prev_meta = None
+    if len(meta) != 0:
+        try:
+            prev_meta = backend.get_object_meta(request.user, v_container, v_object)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+        # Keep previous values of 'Content-Type' and 'hash'.
+        for k in ('Content-Type', 'hash'):
+            if k in prev_meta:
+                meta[k] = prev_meta[k]
+        try:
+            backend.update_object_meta(request.user, v_container, v_object, meta, replace=True)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+    
+    # Based on: http://code.google.com/p/gears/wiki/ContentRangePostProposal
+    content_range = request.META.get('HTTP_CONTENT_RANGE')
+    if not content_range:
+        return HttpResponse(status=202)
+    ranges = get_content_range(request)
+    if not ranges:
+        return HttpResponse(status=202)
+    
     return HttpResponse(status=202)
 
 @api_method('DELETE')

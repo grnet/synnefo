@@ -5,15 +5,16 @@ from wsgiref.handlers import format_date_time
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.utils.http import http_date
+from django.utils.http import http_date, parse_etags
 
 from pithos.api.compat import parse_http_date_safe
-from pithos.api.faults import (Fault, NotModified, BadRequest, ItemNotFound, PreconditionFailed,
-                                ServiceUnavailable)
+from pithos.api.faults import (Fault, NotModified, BadRequest, ItemNotFound, LengthRequired,
+                                PreconditionFailed, ServiceUnavailable)
 from pithos.backends import backend
 
 import datetime
 import logging
+import re
 
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ def put_container_meta(response, meta):
         response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
+    response['X-Container-Object-Meta'] = [x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
 
 def get_object_meta(request):
     """Get metadata from an object request"""
@@ -74,6 +76,8 @@ def get_object_meta(request):
         meta['Content-Type'] = request.META['CONTENT_TYPE']
     if request.META.get('HTTP_CONTENT_ENCODING'):
         meta['Content-Encoding'] = request.META['HTTP_CONTENT_ENCODING']
+    if request.META.get('HTTP_CONTENT_DISPOSITION'):
+        meta['Content-Disposition'] = request.META['HTTP_CONTENT_DISPOSITION']
     if request.META.get('HTTP_X_OBJECT_MANIFEST'):
         meta['X-Object-Manifest'] = request.META['HTTP_X_OBJECT_MANIFEST']
     return meta
@@ -86,23 +90,41 @@ def put_object_meta(response, meta):
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
-    for k in ('Content-Encoding', 'X-Object-Manifest'):
+    for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest'):
         if k in meta:
             response[k] = meta[k]
 
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set"""
+    if 'modified' not in meta:
+        return # TODO: Always return?
+    
     if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE')
     if if_modified_since is not None:
         if_modified_since = parse_http_date_safe(if_modified_since)
-    if if_modified_since is not None and 'modified' in meta and int(meta['modified']) <= if_modified_since:
+    if if_modified_since is not None and int(meta['modified']) <= if_modified_since:
         raise NotModified('Object has not been modified')
     
     if_unmodified_since = request.META.get('HTTP_IF_UNMODIFIED_SINCE')
     if if_unmodified_since is not None:
         if_unmodified_since = parse_http_date_safe(if_unmodified_since)
-    if if_unmodified_since is not None and 'modified' in meta and int(meta['modified']) > if_unmodified_since:
+    if if_unmodified_since is not None and int(meta['modified']) > if_unmodified_since:
         raise PreconditionFailed('Object has been modified')
+
+def validate_matching_preconditions(request, meta):
+    """Check that the ETag conforms with the preconditions set"""
+    if 'hash' not in meta:
+        return # TODO: Always return?
+    
+    if_match = request.META.get('HTTP_IF_MATCH')
+    if if_match is not None and if_match != '*':
+        if meta['hash'] not in [x.lower() for x in parse_etags(if_match)]:
+            raise PreconditionFailed('Object Etag does not match')
+    
+    if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
+    if if_none_match is not None:
+        if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
+            raise NotModified('Object Etag matches')
 
 def copy_or_move_object(request, src_path, dest_path, move=False):
     """Copy or move an object"""
@@ -114,7 +136,6 @@ def copy_or_move_object(request, src_path, dest_path, move=False):
         src_name = '/'.join(parts[2:])
     elif type(src_path) == tuple and len(src_path) == 2:
         src_container, src_name = src_path
-    
     if type(dest_path) == str:
         parts = dest_path.split('/')
         if len(parts) < 3 or parts[0] != '':
@@ -123,57 +144,114 @@ def copy_or_move_object(request, src_path, dest_path, move=False):
         dest_name = '/'.join(parts[2:])
     elif type(dest_path) == tuple and len(dest_path) == 2:
         dest_container, dest_name = dest_path
-
+    
     meta = get_object_meta(request)
+    # Keep previous values of 'Content-Type' (if a new one is absent) and 'hash'.
+    try:
+        src_meta = backend.get_object_meta(request.user, src_container, src_name)
+    except NameError:
+        raise ItemNotFound('Container or object does not exist')
+    if 'Content-Type' in meta and 'Content-Type' in src_meta:
+        del(src_meta['Content-Type'])
+    for k in ('Content-Type', 'hash'):
+        if k in src_meta:
+            meta[k] = src_meta[k]
+    
     try:
         if move:
-            backend.move_object(request.user, src_container, src_name, dest_container, dest_name, meta)
+            backend.move_object(request.user, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
         else:
-            backend.copy_object(request.user, src_container, src_name, dest_container, dest_name, meta)
+            backend.copy_object(request.user, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
 
-def get_range(request):
+def get_content_length(request):
+    content_length = request.META.get('CONTENT_LENGTH')
+    if not content_length:
+        raise LengthRequired('Missing Content-Length header')
+    try:
+        content_length = int(content_length)
+        if content_length < 0:
+            raise ValueError
+    except ValueError:
+        raise BadRequest('Invalid Content-Length header')
+    return content_length
+
+def get_range(request, size):
     """Parse a Range header from the request
     
-    Either returns None, or an (offset, length) tuple.
-    If no length is defined length is None.
-    May return a negative offset (offset from the end).
+    Either returns None, when the header is not existent or should be ignored,
+    or a list of (offset, length) tuples - should be further checked.
     """
-    range = request.META.get('HTTP_RANGE', '').replace(' ', '')
-    if not range.startswith('bytes='):
+    ranges = request.META.get('HTTP_RANGE', '').replace(' ', '')
+    if not ranges.startswith('bytes='):
         return None
     
-    parts = range[6:].split('-')
-    if len(parts) != 2:
-        return None
-    
-    offset, upto = parts
-    if offset == '' and upto == '':
-        return None
-    if offset != '':
-        try:
+    ret = []
+    for r in (x.strip() for x in ranges[6:].split(',')):
+        p = re.compile('^(?P<offset>\d*)-(?P<upto>\d*)$')
+        m = p.match(r)
+        if not m:
+            return None
+        offset = m.group('offset')
+        upto = m.group('upto')
+        if offset == '' and upto == '':
+            return None
+        
+        if offset != '':
             offset = int(offset)
-        except ValueError:
-            return None
-        
-        if upto != '':
-            try:
+            if upto != '':
                 upto = int(upto)
-            except ValueError:
-                return None
+                if offset > upto:
+                    return None
+                ret.append((offset, upto - offset + 1))
+            else:
+                ret.append((offset, size - offset))
         else:
-            return (offset, None)
-        
-        if offset > upto:
-            return None
-        return (offset, upto - offset + 1)
+            length = int(upto)
+            ret.append((size - length, length))
+    
+    return ret
+
+def get_content_range(request):
+    """Parse a Content-Range header from the request
+    
+    Either returns None, when the header is not existent or should be ignored,
+    or an (offset, length, total) tuple - check as length, total may be None.
+    Returns (None, None, None) if the provided range is '*/*'.
+    """
+    
+    ranges = request.META.get('HTTP_CONTENT_RANGE', '')
+    if not ranges:
+        return None
+    
+    p = re.compile('^bytes (?P<offset>\d+)-(?P<upto>\d*)/(?P<total>(\d+|\*))$')
+    m = p.match(ranges)
+    if not m:
+        if ranges == 'bytes */*':
+            return (None, None, None)
+        return None
+    offset = int(m.group('offset'))
+    upto = m.group('upto')
+    total = m.group('total')
+    if upto != '':
+        upto = int(upto)
     else:
-        try:
-            offset = -int(upto)
-        except ValueError:
-            return None
-        return (offset, None)
+        upto = None
+    if total != '*':
+        total = int(total)
+    else:
+        total = None
+    if (upto and offset > upto) or \
+        (total and offset >= total) or \
+        (total and upto and upto >= total):
+        return None
+    
+    if not upto:
+        length = None
+    else:
+        length = upto - offset + 1
+    return (offset, length, total)
 
 def raw_input_socket(request):
     """Return the socket for reading the rest of the request"""
@@ -190,15 +268,23 @@ def raw_input_socket(request):
 
 MAX_UPLOAD_SIZE = 10 * (1024 * 1024) # 10MB
 
-def socket_read_iterator(sock, length=-1, blocksize=4096):
+def socket_read_iterator(sock, length=0, blocksize=4096):
     """Return a maximum of blocksize data read from the socket in each iteration
     
-    Read up to 'length'. If no 'length' is defined, will attempt a chunked read.
+    Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
     """
     if length < 0: # Chunked transfers
+        data = ''
         while length < MAX_UPLOAD_SIZE:
-            chunk_length = sock.readline()
+            # Get chunk size.
+            if hasattr(sock, 'readline'):
+                chunk_length = sock.readline()
+            else:
+                chunk_length = ''
+                while chunk_length[-1:] != '\n':
+                    chunk_length += sock.read(1)
+                chunk_length.strip()
             pos = chunk_length.find(';')
             if pos >= 0:
                 chunk_length = chunk_length[:pos]
@@ -206,14 +292,22 @@ def socket_read_iterator(sock, length=-1, blocksize=4096):
                 chunk_length = int(chunk_length, 16)
             except Exception, e:
                 raise BadRequest('Bad chunk size') # TODO: Change to something more appropriate.
+            # Check if done.
             if chunk_length == 0:
+                if len(data) > 0:
+                    yield data
                 return
+            # Get the actual data.
             while chunk_length > 0:
-                data = sock.read(min(chunk_length, blocksize))
-                chunk_length -= len(data)
-                length += len(data)
-                yield data
-            data = sock.read(2) # CRLF
+                chunk = sock.read(min(chunk_length, blocksize))
+                chunk_length -= len(chunk)
+                length += len(chunk)
+                data += chunk
+                if len(data) >= blocksize:
+                    ret = data[:blocksize]
+                    data = data[blocksize:]
+                    yield ret
+            sock.read(2) # CRLF
         # TODO: Raise something to note that maximum size is reached.
     else:
         if length > MAX_UPLOAD_SIZE:
@@ -224,12 +318,86 @@ def socket_read_iterator(sock, length=-1, blocksize=4096):
             length -= len(data)
             yield data
 
+class ObjectWrapper(object):
+    """Return the object's data block-per-block in each iteration
+    
+    Read from the object using the offset and length provided in each entry of the range list.
+    """
+    
+    def __init__(self, v_account, v_container, v_object, ranges, size, hashmap, boundary):
+        self.v_account = v_account
+        self.v_container = v_container
+        self.v_object = v_object
+        self.ranges = ranges
+        self.size = size
+        self.hashmap = hashmap
+        self.boundary = boundary
+        
+        self.block_index = -1
+        self.block = ''
+        
+        self.range_index = -1
+        self.offset, self.length = self.ranges[0]
+    
+    def __iter__(self):
+        return self
+    
+    def part_iterator(self):
+        if self.length > 0:
+            # Get the block for the current offset.
+            bi = int(self.offset / backend.block_size)
+            if self.block_index != bi:
+                try:
+                    self.block = backend.get_block(self.hashmap[bi])
+                except NameError:
+                    raise ItemNotFound('Block does not exist')
+                self.block_index = bi
+            # Get the data from the block.
+            bo = self.offset % backend.block_size
+            bl = min(self.length, backend.block_size - bo)
+            data = self.block[bo:bo + bl]
+            self.offset += bl
+            self.length -= bl
+            return data
+        else:
+            raise StopIteration
+    
+    def next(self):
+        if len(self.ranges) == 1:
+            return self.part_iterator()
+        if self.range_index == len(self.ranges):
+            raise StopIteration
+        try:
+            if self.range_index == -1:
+                raise StopIteration
+            return self.part_iterator()
+        except StopIteration:
+            self.range_index += 1
+            out = []
+            if self.range_index < len(self.ranges):
+                # Part header.
+                self.offset, self.length = self.ranges[self.range_index]
+                if self.range_index > 0:
+                    out.append('')
+                out.append('--' + self.boundary)
+                out.append('Content-Range: bytes %d-%d/%d' % (self.offset, self.offset + self.length - 1, self.size))
+                out.append('Content-Transfer-Encoding: binary')
+                out.append('')
+                out.append('')
+                return '\r\n'.join(out)
+            else:
+                # Footer.
+                out.append('')
+                out.append('--' + self.boundary + '--')
+                out.append('')
+                return '\r\n'.join(out)
+
 def update_response_headers(request, response):
     if request.serialization == 'xml':
         response['Content-Type'] = 'application/xml; charset=UTF-8'
     elif request.serialization == 'json':
         response['Content-Type'] = 'application/json; charset=UTF-8'
-    else:
+    elif not response['Content-Type']:
         response['Content-Type'] = 'text/plain; charset=UTF-8'
 
     if settings.TEST:
@@ -261,9 +429,7 @@ def request_serialization(request, format_allowed=False):
     
     for item in request.META.get('HTTP_ACCEPT', '').split(','):
         accept, sep, rest = item.strip().partition(';')
-        if accept == 'text/plain':
-            return 'text'
-        elif accept == 'application/json':
+        if accept == 'application/json':
             return 'json'
         elif accept == 'application/xml' or accept == 'text/xml':
             return 'xml'

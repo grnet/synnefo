@@ -26,7 +26,7 @@ class TestAccount(unittest.TestCase):
     def test_list_containers(self):
         l1 = ['images', 'movies', 'documents', 'backups']
         for item in l1:
-            self.b.create_container(self.account, item)
+            self.b.put_container(self.account, item)
         l2 = self.b.list_containers(self.account)
         l1.sort()
         self.assertEquals(l1, l2)
@@ -34,7 +34,7 @@ class TestAccount(unittest.TestCase):
     def test_list_containers_with_limit_marker(self):
         l1 = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in l1:
-            self.b.create_container(self.account, item)
+            self.b.put_container(self.account, item)
         l2 = self.b.list_containers(self.account, limit=2)
         self.assertEquals(len(l2), 2)
         self.assertEquals(l1[:2], l2)
@@ -86,7 +86,6 @@ class TestAccount(unittest.TestCase):
             "lastLogin": 1223372769275}
         self.b.update_account_meta(self.account, meta)
         p = os.path.join(self.basepath, self.account)
-        self.assertTrue(os.path.exists(p))
         
         db_meta = self.b.get_account_meta(self.account)
         for k,v in meta.iteritems():
@@ -114,7 +113,7 @@ class TestContainer(unittest.TestCase):
         self.assertRaises(NameError, self.b.list_objects, 'account2', 'container1')
     
     def test_list_objects(self):
-        self.b.create_container(self.account, 'container1')
+        self.b.put_container(self.account, 'container1')
         objects = self.b.list_objects(self.account, 'container1')
         self.assertEquals(len([]), len(objects))
         l = [
@@ -127,15 +126,15 @@ class TestContainer(unittest.TestCase):
             {'name':'the_mad.avi'}
         ]
         for item in l:
-            self.b.update_object(self.account, 'container1', item['name'], json.dumps(item))
+            self.b.update_object_hashmap(self.account, 'container1', item['name'], 0, [])
         objects = self.b.list_objects(self.account, 'container1')
         self.assertEquals(len(l), len(objects))
     
     def test_list_objects_with_limit_marker(self):
-        self.b.create_container(self.account, 'container1')
+        self.b.put_container(self.account, 'container1')
         l = ['gala', 'grannysmith', 'honeycrisp', 'jonagold', 'reddelicious']
         for item in l:
-            self.b.update_object(self.account, 'container1', item, item)
+            self.b.update_object_hashmap(self.account, 'container1', item, 0, [])
         objects = self.b.list_objects(self.account, 'container1', limit=2)
         self.assertEquals(l[:2], objects)
         
@@ -146,7 +145,7 @@ class TestContainer(unittest.TestCase):
         self.assertEquals(l[4:], objects)
     
     def test_list_pseudo_hierarchical_folders(self):
-        self.b.create_container(self.account, 'container1')
+        self.b.put_container(self.account, 'container1')
         l = ['photos/animals/dogs/poodle.jpg',
              'photos/animals/dogs/terrier.jpg',
              'photos/animals/cats/persian.jpg',
@@ -156,7 +155,7 @@ class TestContainer(unittest.TestCase):
              'photos/me.jpg'
              ]
         for item in l:
-            self.b.update_object(self.account, 'container1', item, item)
+            self.b.update_object_hashmap(self.account, 'container1', item, 0, [])
         
         objects = self.b.list_objects(self.account, 'container1', prefix='photos/', delimiter='/')
         self.assertEquals(['photos/animals/', 'photos/me.jpg', 'photos/plants/'], objects)
@@ -164,26 +163,26 @@ class TestContainer(unittest.TestCase):
         objects = self.b.list_objects(self.account, 'container1', prefix='photos/animals/', delimiter='/')
         self.assertEquals(['photos/animals/cats/', 'photos/animals/dogs/'], objects)
         
-        self.b.create_container(self.account, 'container2')
+        self.b.put_container(self.account, 'container2')
         l = ['photos/photo1', 'photos/photo2', 'movieobject', 'videos', 'videos/movieobj4']
         for item in l:
-            self.b.update_object(self.account, 'container2', item, item)
+            self.b.update_object_hashmap(self.account, 'container2', item, 0, [])
         objects = self.b.list_objects(self.account, 'container2', delimiter='/')
         self.assertEquals(['movieobject', 'photos/', 'videos', 'videos/'], objects)
     
-    def test_create_container(self):
+    def test_put_container(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         self.assertTrue(cname in self.b.list_containers(self.account))
     
-    def test_create_container_twice(self):
+    def test_put_container_twice(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
-        self.assertRaises(NameError, self.b.create_container, self.account, cname)
+        self.b.put_container(self.account, cname)
+        self.assertRaises(NameError, self.b.put_container, self.account, cname)
     
     def test_delete_container(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         self.b.delete_container(self.account, cname)
         self.assertTrue(cname not in self.b.list_containers(self.account))
     
@@ -193,19 +192,19 @@ class TestContainer(unittest.TestCase):
     
     def test_delete_non_empty_container(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
-        self.b.update_object(self.account, cname, 'object1', 'alkhadlkhalkdhal')
+        self.b.put_container(self.account, cname)
+        self.b.update_object_hashmap(self.account, cname, 'object1', 0, [])
         self.assertRaises(IndexError, self.b.delete_container, self.account, cname)
     
     def test_get_container_meta(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         meta = self.b.get_container_meta(self.account, cname)
         self.assertEquals(meta['count'], 0)
         
         l = ['photos/photo1', 'photos/photo2', 'movieobject', 'videos/movieobj4']
         for item in l:
-            self.b.update_object(self.account, cname, item, item)
+            self.b.update_object_hashmap(self.account, cname, item, 0, [])
         meta = self.b.get_container_meta(self.account, cname)
         self.assertEquals(meta['count'], 4)
 
@@ -227,24 +226,28 @@ class TestObject(unittest.TestCase):
     
     def test_get_non_existing_object(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
-        self.assertRaises(NameError, self.b.get_object, self.account, 'cname', 'testobj')
-        self.assertRaises(NameError, self.b.get_object, self.account, cname, 'testobj')
+        self.b.put_container(self.account, cname)
+        self.assertRaises(NameError, self.b.get_object_hashmap, self.account, 'cname', 'testobj')
+        self.assertRaises(NameError, self.b.get_object_hashmap, self.account, cname, 'testobj')
     
     def test_get_object(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         input = {'name':'kate_beckinsale.jpg'}
-        self.b.update_object(self.account, cname, input['name'], json.dumps(input))
-        out = self.b.get_object(self.account, cname, 'kate_beckinsale.jpg')
-        self.assertEquals(input, json.loads(out))
+        data = json.dumps(input)
+        hash = self.b.put_block(data)
+        self.b.update_object_hashmap(self.account, cname, input['name'], len(data), [hash])
+        size, hashmap = self.b.get_object_hashmap(self.account, cname, 'kate_beckinsale.jpg')
+        self.assertEquals(len(data), size)
+        self.assertEquals(hash, hashmap[0])
+        self.assertEquals(input, json.loads(self.b.get_block(hash)))
     
-    def test_update_object(self):
-        cname = 'container1'
-        self.b.create_container(self.account, cname)
-        input = {'name':'kate_beckinsale.jpg'}
-        self.b.update_object(self.account, cname, input['name'], json.dumps(input))
-        meta = self.b.get_object_meta(self.account, cname, input['name'])
+#     def test_update_object(self):
+#         cname = 'container1'
+#         self.b.put_container(self.account, cname)
+#         input = {'name':'kate_beckinsale.jpg'}
+#         self.b.update_object(self.account, cname, input['name'], json.dumps(input))
+#         meta = self.b.get_object_meta(self.account, cname, input['name'])
     
     def test_copy_object(self):
         src_cname = 'container1'
@@ -269,7 +272,7 @@ class TestObject(unittest.TestCase):
                           dest_cname,
                           dest_obj)
         
-        self.b.create_container(self.account, src_cname)
+        self.b.put_container(self.account, src_cname)
         # non existing source object
         self.assertRaises(NameError,
                           self.b.copy_object,
@@ -279,7 +282,7 @@ class TestObject(unittest.TestCase):
                           dest_cname,
                           dest_obj)
         
-        self.b.update_object(self.account, src_cname, src_obj, src_obj)
+        self.b.update_object_hashmap(self.account, src_cname, src_obj, 0, [])
         # non existing destination container
         self.assertRaises(NameError,
                           self.b.copy_object,
@@ -289,7 +292,7 @@ class TestObject(unittest.TestCase):
                           dest_cname,
                           dest_obj)
         
-        self.b.create_container(self.account, dest_cname)
+        self.b.put_container(self.account, dest_cname)
         self.b.update_object_meta(self.account, src_cname, src_obj, {'tag':'sfsfssf'})
         self.b.copy_object(self.account, src_cname, src_obj, dest_cname, dest_obj)
         self.assertTrue(dest_obj in self.b.list_objects(self.account,
@@ -302,15 +305,15 @@ class TestObject(unittest.TestCase):
     
     def test_delete_non_existing_object(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.assertRaises(NameError, self.b.delete_object, self.account, cname, name)
     
     def test_delete_object(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
-        self.b.update_object(self.account, cname, name, name)
+        self.b.update_object_hashmap(self.account, cname, name, 0, [])
         self.assertTrue(name in self.b.list_objects(self.account, cname))
         
         self.b.delete_object(self.account, cname, name)
@@ -319,15 +322,15 @@ class TestObject(unittest.TestCase):
     
     def test_get_non_existing_object_meta(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.assertRaises(NameError, self.b.get_object_meta, self.account, cname, name)
     
     def test_get_update_object_meta(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
-        self.b.update_object(self.account, cname, name, name)
+        self.b.update_object_hashmap(self.account, cname, name, 0, [])
         
         m1 = {'X-Object-Meta-Meat': 'Bacon',
              'X-Object-Meta-Fruit': 'Bacon',
@@ -351,7 +354,7 @@ class TestObject(unittest.TestCase):
     
     def test_update_non_existing_object_meta(self):
         cname = 'container1'
-        self.b.create_container(self.account, cname)
+        self.b.put_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.assertRaises(NameError, self.b.update_object_meta, self.account, cname, name, {})
 

@@ -30,6 +30,7 @@ import re
 import datetime
 import calendar
 
+MONTHS = 'jan feb mar apr may jun jul aug sep oct nov dec'.split()
 __D = r'(?P<day>\d{2})'
 __D2 = r'(?P<day>[ \d]\d)'
 __M = r'(?P<mon>\w{3})'

@@ -146,8 +146,8 @@ to Synnefo v0.3.
       For Synnefo to be able to launch VMs from specified Images, you need
       the gnt-instance-image OS Provider.
 
-      Download and install gnt-instance-image in all Ganeti nodes from its own repository,
-      at https://code.grnet.gr/git/gnt-instance-image
+      Download and install gnt-instance-image in all Ganeti nodes from its own
+      repository, at https://code.grnet.gr/git/gnt-instance-image
 
       After installing gnt-instance-image do the following:
       1.root@ganeti-master:/path-to-repo# cp ./defaults /etc/default/ganeti-instance-image
@@ -158,7 +158,13 @@ to Synnefo v0.3.
         KERNEL_PATH="True"
       4.Change the path in make-dump line 22 according to your installation
         (/usr/share/ganeti/os/image/common.sh --> /srv/ganeti/os/image/common.sh)
-      5.Comment line 401 in common.sh (#KERNEL_PATH="$INSTANCE_HV_kernel_path")
+      5.In common.sh, comment out the KERNEL_PATH variable initialization.
+        (#KERNEL_PATH="$INSTANCE_HV_kernel_path")
+      6.In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
+        run during instance creation process have execute permission. At least
+        `grub' and `root_passwd' should be triggered to make the instance
+        usable:
+            chmod +x /etc/ganeti/instance-image/hooks/{grub,root_passwd}
 
       Your Custom Images should be stored in a dump format under /var/cache/ganeti-instance-image
       and their filenames should have the following format:

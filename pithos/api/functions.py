@@ -397,7 +397,8 @@ def object_read(request, v_account, v_container, v_object):
         return response
     
     try:
-        size, hashmap = backend.get_object_hashmap(v_account, v_container, v_object)
+        # TODO: Also check for IndexError.
+        size, hashmap = backend.get_object_hashmap(request.user, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     

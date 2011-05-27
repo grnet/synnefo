@@ -7,12 +7,12 @@ http://sphinx.pocoo.org/
 Run:
     python setup.py build_sphinx
 
-The documentation will be built in the doc/build/html directory.
+The documentation will be built in the docs/build/html directory.
 
 Also run:
     python setup.py build_sphinx -b text
 
-Then find the plain text version of the docs in doc/build/text.
+Then find the plain text version of the docs in docs/build/text.
 
 Running the server
 ------------------

@@ -125,11 +125,11 @@ class BaseBackend(object):
             'delimiter': Return unique names before 'delimiter' and after 'prefix'
             'marker': Start list from the next item after 'marker'
             'limit': Number of objects to return
-            'virtual': If not set, the result will only include names starting
-                with 'prefix' and ending without a 'delimiter' or with the first
-                occurance of the 'delimiter' after 'prefix'.
-                If set, the result will include all names after 'prefix', up to and
-                including the 'delimiter' if it is found
+            'virtual': If not set, the result will only include names starting\
+                       with 'prefix' and ending without a 'delimiter' or with\
+                       the first occurance of the 'delimiter' after 'prefix'.\
+                       If set, the result will include all names after 'prefix',\
+                       up to and including the 'delimiter' if it is found
             'keys': Include objects that have meta with the keys in the list
         
         Raises:
@@ -164,8 +164,8 @@ class BaseBackend(object):
         """Update the metadata associated with the object.
         
         Parameters:
-            'meta': Dictionary with metadata to update.
-                Use the 'versioned' key to control versioning
+            'meta': Dictionary with metadata to update.\
+                    Use the 'versioned' key to control versioning
             'replace': Replace instead of update
         
         Raises:

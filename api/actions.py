@@ -10,10 +10,9 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.faults import BadRequest, ServiceUnavailable
-from synnefo.api.util import random_password, get_vm, get_nic
+from synnefo.api.util import random_password, get_vm
 from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
-from synnefo.logic.backend import (reboot_instance, startup_instance, shutdown_instance,
-                                    get_instance_console)
+from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
 
 
@@ -76,7 +75,7 @@ def reboot(request, vm, args):
     reboot_type = args.get('type', '')
     if reboot_type not in ('SOFT', 'HARD'):
         raise BadRequest('Malformed Request.')
-    reboot_instance(vm, reboot_type.lower())
+    backend.reboot_instance(vm, reboot_type.lower())
     return HttpResponse(status=202)
 
 @server_action('start')
@@ -87,7 +86,7 @@ def start(request, vm, args):
 
     if args:
         raise BadRequest('Malformed Request.')
-    startup_instance(vm)
+    backend.startup_instance(vm)
     return HttpResponse(status=202)
 
 @server_action('shutdown')
@@ -98,7 +97,7 @@ def shutdown(request, vm, args):
 
     if args:
         raise BadRequest('Malformed Request.')
-    shutdown_instance(vm)
+    backend.shutdown_instance(vm)
     return HttpResponse(status=202)
 
 @server_action('rebuild')
@@ -196,7 +195,7 @@ def get_console(request, vm, args):
     if settings.TEST:
         console_data = {'kind': 'vnc', 'host': 'ganeti_node', 'port': 1000}
     else:
-        console_data = get_instance_console(vm)
+        console_data = backend.get_instance_console(vm)
 
     if console_data['kind'] != 'vnc':
         raise ServiceUnavailable('Could not create a console of requested type.')
@@ -251,7 +250,7 @@ def add(request, net, args):
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user)
-    vm.nics.create(network=net)
+    backend.connect_to_network(vm, net)
     vm.save()
     net.save()
     return HttpResponse(status=202)
@@ -271,8 +270,7 @@ def remove(request, net, args):
     if not server_id:
         raise BadRequest('Malformed Request.')
     vm = get_vm(server_id, request.user)
-    nic = get_nic(vm, net)
-    nic.delete()
+    backend.disconnect_from_network(vm, net)
     vm.save()
     net.save()
     return HttpResponse(status=202)

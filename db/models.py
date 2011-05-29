@@ -401,3 +401,10 @@ class NetworkInterface(models.Model):
     ipv4 = models.IPAddressField(null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES, max_length=30, null=True)
+
+
+class NetworkLink(models.Model):
+    network = models.OneToOneField(Network, null=True, related_name='link')
+    index = models.IntegerField()
+    name = models.CharField(max_length=255)
+    available = models.BooleanField(default=True)

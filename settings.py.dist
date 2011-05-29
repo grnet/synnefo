@@ -239,3 +239,6 @@ LOGIN_PATH = "/login"
 #          work after this many hours after 2011/05/10
 AUTH_TOKEN_DURATION = 30 * 24
 
+GANETI_PUBLIC_LINK = 'snf_public'
+GANETI_LINK_PREFIX = 'prv'
+GANETI_MAX_LINK_NUMBER = 100

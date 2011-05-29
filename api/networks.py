@@ -1,9 +1,10 @@
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, Unauthorized
+from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
 from synnefo.api.util import (isoformat, isoparse, get_network,
                                 get_request_dict, api_method)
 from synnefo.db.models import Network
+from synnefo.logic import backend
 
 from django.conf.urls.defaults import patterns
 from django.db.models import Q
@@ -104,6 +105,10 @@ def create_network(request):
         raise BadRequest('Malformed request.')
 
     network = Network.objects.create(name=name, owner=request.user, state='ACTIVE')
+    if not backend.create_network(network):
+        network.delete()
+        raise OverLimit('Maximum number of networks reached.')
+    
     networkdict = network_to_dict(network)
     return render_network(request, networkdict, status=202)
 
@@ -157,11 +162,7 @@ def delete_network(request, network_id):
     if network_id in ('1', 'public'):
         raise Unauthorized('Can not delete the public network.')
     net = get_network(network_id, request.user)
-    net.nics.all().delete()
-    for vm in net.machines.all():
-        vm.save()
-    net.state = 'DELETED'
-    net.save()
+    backend.delete_network(net)
     return HttpResponse(status=204)
 
 @api_method('POST')

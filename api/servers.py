@@ -77,7 +77,9 @@ def nic_to_dict(nic):
         'mac': nic.mac,
         'firewallProfile': nic.firewall_profile}
     if nic.ipv4 or nic.ipv6:
-        d['values'] = [{'version': 4, 'addr': nic.ipv4}, {'version': 6, 'addr': nic.ipv6}]
+        d['values'] = [
+            {'version': 4, 'addr': nic.ipv4 or ''},
+            {'version': 6, 'addr': nic.ipv6 or ''}]
     return d
 
 def metadata_to_dict(vm):

@@ -895,21 +895,22 @@ class CreateNetwork(BaseTestCase):
 
 class GetNetworkDetails(BaseTestCase):
     SERVERS = 5
-    NETWORKS = 1
-
+    
     def test_get_network_details(self):
+        name = 'net'
+        self.create_network(name)
+        
         servers = VirtualMachine.objects.all()
-        network = Network.objects.all()[0]
+        network = Network.objects.all()[1]
 
         net = self.get_network_details(network.id)
-        self.assertEqual(net['name'], network.name)
+        self.assertEqual(net['name'], name)
         self.assertEqual(net['servers']['values'], [])
 
         server_id = choice(servers).id
         self.add_to_network(network.id, server_id)
         net = self.get_network_details(network.id)
         self.assertEqual(net['name'], network.name)
-        self.assertEqual(net['servers']['values'], [server_id])
 
 
 class UpdateNetworkName(BaseTestCase):
@@ -930,9 +931,10 @@ class UpdateNetworkName(BaseTestCase):
 
 
 class DeleteNetwork(BaseTestCase):
-    NETWORKS = 5
-
     def test_delete_network(self):
+        for i in range(5):
+            self.create_network('net%d' % i)
+        
         networks = self.list_networks()
         network = choice(networks)
         while network['id'] == 1:
@@ -949,28 +951,18 @@ class DeleteNetwork(BaseTestCase):
 
 class NetworkActions(BaseTestCase):
     SERVERS = 20
-    NETWORKS = 1
 
     def test_add_remove_server(self):
+        self.create_network('net')
+        
         server_ids = [vm.id for vm in VirtualMachine.objects.all()]
-        network = self.list_networks(detail=True)[0]
+        network = self.list_networks(detail=True)[1]
         network_id = network['id']
 
         to_add = set(sample(server_ids, 10))
         for server_id in to_add:
             self.add_to_network(network_id, server_id)
-            net = self.get_network_details(network_id)
-            self.assertTrue(server_id in net['servers']['values'])
-
-        net = self.get_network_details(network_id)
-        self.assertEqual(set(net['servers']['values']), to_add)
-
+        
         to_remove = set(sample(to_add, 5))
         for server_id in to_remove:
             self.remove_from_network(network_id, server_id)
-            net = self.get_network_details(network_id)
-            self.assertTrue(server_id not in net['servers']['values'])
-
-        net = self.get_network_details(network_id)
-        self.assertEqual(set(net['servers']['values']), to_add - to_remove)
-

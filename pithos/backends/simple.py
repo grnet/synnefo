@@ -211,7 +211,7 @@ class SimpleBackend(BaseBackend):
     def update_object_hashmap(self, account, container, name, size, hashmap):
         """Create/update an object with the specified size and partial hashes."""
         
-        logger.debug("update_object_hashmap: %s %s %s %s", account, container, name, hashmap)
+        logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
         path, link, tstamp = self._get_containerinfo(account, container)
         try:
             path, link, tstamp, version, s = self._get_objectinfo(account, container, name)
@@ -224,7 +224,7 @@ class SimpleBackend(BaseBackend):
             self._del_path(path, delmeta=False)
             link = self._put_linkinfo(path)
         else:
-            version = version + 1
+            version += 1
         
         sql = 'insert or replace into versions (object_id, version, size) values (?, ?, ?)'
         version_id = self.con.execute(sql, (link, version, size)).lastrowid
@@ -266,6 +266,7 @@ class SimpleBackend(BaseBackend):
     def get_block(self, hash):
         """Return a block's data."""
         
+        logger.debug("get_block: %s", hash)
         c = self.con.execute('select data from blocks where block_id = ?', (hash,))
         row = c.fetchone()
         if row:
@@ -276,6 +277,7 @@ class SimpleBackend(BaseBackend):
     def put_block(self, data):
         """Create a block and return the hash."""
         
+        logger.debug("put_block: %s", len(data))
         h = hashlib.new(self.hash_algorithm)
         h.update(data.rstrip('\x00'))
         hash = h.hexdigest()
@@ -287,6 +289,9 @@ class SimpleBackend(BaseBackend):
     def update_block(self, hash, data, offset=0):
         """Update a known block and return the hash."""
         
+        logger.debug("update_block: %s %s %s", hash, len(data), offset)
+        if offset == 0 and len(data) == self.block_size:
+            return self.put_block(data)
         src_data = self.get_block(hash)
         bs = self.block_size
         if offset < 0 or offset > bs or offset + len(data) > bs:

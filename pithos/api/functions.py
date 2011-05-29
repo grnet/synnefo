@@ -502,7 +502,7 @@ def object_write(request, v_account, v_container, v_object):
     except NameError:
         raise ItemNotFound('Container does not exist')
     try:
-        backend.update_object_meta(request.user, v_container, v_object, meta)
+        backend.update_object_meta(request.user, v_container, v_object, meta, replace=True)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -551,12 +551,13 @@ def object_update(request, v_account, v_container, v_object):
     if content_type:
         del(meta['Content-Type']) # Do not allow changing the Content-Type.
     
-    prev_meta = None
+    try:
+        prev_meta = backend.get_object_meta(request.user, v_container, v_object)
+    except NameError:
+        raise ItemNotFound('Object does not exist')
+    
+    # Handle metadata changes.
     if len(meta) != 0:
-        try:
-            prev_meta = backend.get_object_meta(request.user, v_container, v_object)
-        except NameError:
-            raise ItemNotFound('Object does not exist')
         # Keep previous values of 'Content-Type' and 'hash'.
         for k in ('Content-Type', 'hash'):
             if k in prev_meta:
@@ -566,45 +567,84 @@ def object_update(request, v_account, v_container, v_object):
         except NameError:
             raise ItemNotFound('Object does not exist')
     
+    # A Content-Type or Content-Range header may indicate data updates.
+    if content_type and content_type.startswith('multipart/byteranges'):
+        # TODO: Support multiple update ranges.
+        return HttpResponse(status=202)
+    # Single range update. Range must be in Content-Range.
     # Based on: http://code.google.com/p/gears/wiki/ContentRangePostProposal
+    # (with the addition that '*' is allowed for the range - will append).
+    if content_type and content_type != 'application/octet-stream':
+        return HttpResponse(status=202)
     content_range = request.META.get('HTTP_CONTENT_RANGE')
     if not content_range:
         return HttpResponse(status=202)
     ranges = get_content_range(request)
     if not ranges:
         return HttpResponse(status=202)
+    # Require either a Content-Length, or 'chunked' Transfer-Encoding.
+    content_length = -1
+    if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
+        content_length = get_content_length(request)
     
-#     # Need Content-Type and optional Transfer-Encoding.
-#     content_length = -1
-#     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
-#         content_length = get_content_length(request)
-#     # Use BadRequest here, even if the API says otherwise for PUT.
-#     if not content_type:
-#         raise BadRequest('Missing Content-Type header')
-#     
-#     if not prev_meta:
-#         try:
-#             prev_meta = backend.get_object_meta(request.user, v_container, v_object)
-#         except NameError:
-#             raise ItemNotFound('Object does not exist')
-#     size = prev_meta['bytes']
-#     offset, length, total = ranges
-#     if offset is None:
-#         offset = size
-#     if length is None:
-#         length = content_length # Nevermind the error.
-#     if total is not None and (total != size or offset >= size or (length > 0 and offset + length >= size)):
-#         raise RangeNotSatisfiable('Supplied range will change provided object limits')
-#     
-#     sock = raw_input_socket(request)
-#     for data in socket_read_iterator(sock, length):
-#         # TODO: Raise 408 (Request Timeout) if this takes too long.
-#         # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
-#         try:
-#             backend.update_object(request.user, v_container, v_object, data, offset)
-#         except NameError:
-#             raise ItemNotFound('Container does not exist')
-#         offset += len(data)
+    try:
+        # TODO: Also check for IndexError.
+        size, hashmap = backend.get_object_hashmap(request.user, v_container, v_object)
+    except NameError:
+        raise ItemNotFound('Object does not exist')
+    
+    offset, length, total = ranges
+    if offset is None:
+        offset = size
+    if length is None:
+        length = content_length # Nevermind the error.
+    elif length != content_length:
+        raise BadRequest('Content length does not match range length')
+    if total is not None and (total != size or offset >= size or (length > 0 and offset + length >= size)):
+        raise RangeNotSatisfiable('Supplied range will change provided object limits')
+    
+    sock = raw_input_socket(request)
+    data = ''
+    for d in socket_read_iterator(sock, length, backend.block_size):
+        # TODO: Raise 408 (Request Timeout) if this takes too long.
+        # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+        data += d
+        bi = int(offset / backend.block_size)
+        bo = offset % backend.block_size
+        bl = min(len(data), backend.block_size - bo)
+        offset += bl
+        h = backend.update_block(hashmap[bi], data[:bl], bo)
+        if bi < len(hashmap):
+            hashmap[bi] = h
+        else:
+            hashmap.append(h)
+        data = data[bl:]
+    if len(data) > 0:
+        bi = int(offset / backend.block_size)
+        offset += len(data)
+        h = backend.update_block(hashmap[bi], data)
+        if bi < len(hashmap):
+            hashmap[bi] = h
+        else:
+            hashmap.append(h)
+    
+    if offset > size:
+        size = offset
+    try:
+        backend.update_object_hashmap(request.user, v_container, v_object, size, hashmap)
+    except NameError:
+        raise ItemNotFound('Container does not exist')
+    
+    # Update ETag.
+    # TODO: Decide on the new ETag to use here.
+    meta = {}
+    md5 = hashlib.md5()
+    md5.update(str(hashmap))
+    meta['hash'] = md5.hexdigest().lower()
+    try:
+        backend.update_object_meta(request.user, v_container, v_object, meta)
+    except NameError:
+        raise ItemNotFound('Object does not exist')
     
     return HttpResponse(status=202)
 

@@ -540,7 +540,7 @@ def object_move(request, v_account, v_container, v_object):
 
 @api_method('POST')
 def object_update(request, v_account, v_container, v_object):
-    # Normal Response Codes: 202
+    # Normal Response Codes: 202, 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
     #                       unauthorized (401),
@@ -646,7 +646,9 @@ def object_update(request, v_account, v_container, v_object):
     except NameError:
         raise ItemNotFound('Object does not exist')
     
-    return HttpResponse(status=202)
+    response = HttpResponse(status=204)
+    response['ETag'] = meta['hash']
+    return response
 
 @api_method('DELETE')
 def object_delete(request, v_account, v_container, v_object):

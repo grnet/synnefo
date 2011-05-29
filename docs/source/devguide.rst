@@ -6,6 +6,10 @@ Introduction
 
 Pithos is a storage service implemented by GRNET (http://www.grnet.gr). Data is stored as objects, organized in containers, belonging to an account. This hierarchy of storage layers has been inspired by the OpenStack Object Storage (OOS) API and similar CloudFiles API by Rackspace. The Pithos API follows the OOS API as closely as possible. One of the design requirements has been to be able to use Pithos with clients built for the OOS, without changes.
 
+However, to be able to take full advantage of the Pithos infrastructure, client software should be aware of the extensions that differentiate Pithos from OOS. Pithos objects can be updated, or appended to. They can also be versioned, meaning that the server will track changes, assign version numbers and allow reading previous instances.
+
+The storage backend of Pithos is block oriented, which allows for efficient, deduplicated data placement. The block structure of objects is exposed at the API layer, in order to encourage external software to implement advanced data management operations.
+
 This document's goals are:
 
 * Define the Pithos ReST API that allows the storage and retrieval of data and metadata via HTTP calls
@@ -21,7 +25,9 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.2 (May 25, 2011)         Add object meta listing and filtering in containers.
+0.2 (May 29, 2011)         Add object meta listing and filtering in containers.
+\                          Support for partial object updates through POST.
+\                          Expose object hashmaps through GET.
 \                          Support for multi-range object GET requests.
 0.1 (May 17, 2011)         Initial release. Based on OpenStack Object Storage Developer Guide API v1 (Apr. 15, 2011).
 =========================  ================================
@@ -38,7 +44,7 @@ The URI requests supported by Pithos follow one of the following forms:
 
 All requests must include an ``X-Auth-Token``, except from those that refer to publicly available files (**TBD**). The process of obtaining the token is still to be determined (**TBD**).
 
-The allowable request operations and corresponding return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
+The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
 =========================  ================================
 Return Code                Description
@@ -253,7 +259,7 @@ For each object, the information will include all object metadata (names will be
 Name                 Description
 ===================  ======================================
 name                 The name of the object
-hash                 The MD5 hash of the object
+hash                 The ETag of the object
 bytes                The size of the object
 content_type         The MIME content type of the object
 content_encoding     The encoding of the object (optional)
@@ -359,7 +365,7 @@ No request parameters/headers.
 ==========================  ===============================
 Reply Header Name           Value
 ==========================  ===============================
-ETag                        The MD5 hash of the object
+ETag                        The ETag of the object
 Content-Length              The size of the object
 Content-Type                The MIME content type of the object
 Last-Modified               The last object modification date
@@ -391,14 +397,44 @@ If-Modified-Since     Retrieve if object has changed since provided timestamp
 If-Unmodified-Since   Retrieve if object has not changed since provided timestamp
 ====================  ================================
 
-The reply is the object's data (or part of it). Object headers (as in a ``HEAD`` request) will also be included.
+|
+
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+format                  Optional extended reply type (can be ``json`` or ``xml``)
+======================  ===================================
+
+The reply is the object's data (or part of it), except if a hashmap is requested with the ``format`` parameter. Object headers (as in a ``HEAD`` request) are always included.
+
+Hashmaps expose the underlying storage format of the object:
+
+* Blocksize of 4MB.
+* Blocks stored indexed by SHA256 hash.
+* Hash is computed after trimming trailing null bytes.
+
+Example ``format=json`` reply:
+
+::
+
+  {"hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c", ...], "bytes": 24223726}
+
+Example ``format=xml`` reply:
+
+::
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <object name="file" bytes="24223726">
+    <hash>7295c41da03d7f916440b98e32c4a2a39351546c</hash>
+    <hash>...</hash>
+  </object>
 
 The ``Range`` header may include multiple ranges, as outlined in RFC2616. Then the ``Content-Type`` of the reply will be ``multipart/byteranges`` and each part will include a ``Content-Range`` header.
 
 ==========================  ===============================
 Reply Header Name           Value
 ==========================  ===============================
-ETag                        The MD5 hash of the object
+ETag                        The ETag of the object
 Content-Length              The size of the data returned
 Content-Type                The MIME content type of the object
 Content-Range               The range of data included (only on a single range request)
@@ -494,20 +530,46 @@ POST
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+Content-Length        The size of the data written (optional, to update)
+Content-Type          The MIME content type of the object (optional, to update)
+Content-Range         The range of data supplied (optional, to update)
+Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Large object support (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-No reply content/headers.
+The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest`` and ``X-Object-Meta-*`` headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
 
-The allowed headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
+To update an object:
+
+* Supply ``Content-Length`` (except if using chunked transfers), ``Content-Type`` and ``Content-Range`` headers.
+* Set ``Content-Type`` to ``application/octet-stream``.
+* Set ``Content-Range`` as specified in RFC2616, with the following differences:
+
+  * Client software MAY omit ``last-byte-pos`` of if the length of the range being transferred is unknown or difficult to determine.
+  * Client software SHOULD not specify the ``instance-length`` (use a ``*``), unless there is a reason for performing a size check at the server.
+* If ``Content-Range`` used has a ``byte-range-resp-spec = *``, data supplied will be appended to the object.
+
+A data update will trigger an ETag change. The new ETag will not correspond to the object's MD5 sum (**TBD**) and will be included in reply headers.
+
+No reply content. No reply headers if only metadata is updated.
+
+==========================  ===============================
+Reply Header Name           Value
+==========================  ===============================
+ETag                        The new ETag of the object (data updated)
+==========================  ===============================
+
+|
 
 ===========================  ==============================
 Return Code                  Description
 ===========================  ==============================
-202 (Accepted)               The request has been accepted
+202 (Accepted)               The request has been accepted (not a data update)
+204 (No Content)             The request succeeded (data updated)
+416 (Range Not Satisfiable)  The supplied range is out of limits or invalid size
 ===========================  ==============================
 
 
@@ -538,6 +600,8 @@ List of differences from the OOS API:
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation.
 * Multi-range object GET support as outlined in RFC2616.
+* Object hashmap retrieval through GET and the ``format`` parameter.
+* Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers.
 * Object ``MOVE`` support.
 
 Clarifications/suggestions:

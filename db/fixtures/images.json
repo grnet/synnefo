@@ -78,6 +78,19 @@
         }
     },
     {
+        "model": "db.Image",
+        "pk": 9,
+        "fields": {
+            "name": "Fedora 15 Desktop",
+            "owner": 1,
+            "created": "2011-05-30 00:00:00",
+            "updated": "2011-05-30 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "fedora-15-1",
+            "format": "dump"
+        }
+    },
+    {
         "model": "db.ImageMetadata",
         "pk": 1,
         "fields": {
@@ -291,6 +304,42 @@
             "meta_key": "size",
             "meta_value": "3300",
             "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 25,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "fedora",
+            "image": 9
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 26,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.38",
+            "image": 9
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 27,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Fedora 15 Desktop Edition",
+            "image": 9
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 28,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2284",
+            "image": 9
         }
     }
 ]

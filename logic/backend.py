@@ -174,7 +174,7 @@ def create_network(net):
 def delete_network(net):
     link = net.link
     link.available = True
-    link.netowrk = False
+    link.network = None
     link.save()
     
     for vm in net.machines.all():

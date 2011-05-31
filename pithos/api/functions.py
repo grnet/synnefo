@@ -47,7 +47,7 @@ from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_m
     put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
     validate_modification_preconditions, validate_matching_preconditions, copy_or_move_object,
     get_content_length, get_range, get_content_range, raw_input_socket, socket_read_iterator,
-    ObjectWrapper, api_method)
+    ObjectWrapper, hashmap_hash, api_method)
 from pithos.backends import backend
 
 
@@ -637,11 +637,9 @@ def object_update(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     
     # Update ETag.
-    # TODO: Decide on the new ETag to use here.
+    # TODO: Move this to the backend.
     meta = {}
-    md5 = hashlib.md5()
-    md5.update(str(hashmap))
-    meta['hash'] = md5.hexdigest().lower()
+    meta['hash'] = hashmap_hash(hashmap)
     try:
         backend.update_object_meta(request.user, v_container, v_object, meta)
     except NameError:

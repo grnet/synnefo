@@ -35,6 +35,7 @@ from functools import wraps
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
+from binascii import hexlify
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -426,6 +427,21 @@ class ObjectWrapper(object):
                 out.append('--' + self.boundary + '--')
                 out.append('')
                 return '\r\n'.join(out)
+
+def hashmap_hash(hashmap):
+    """ Produce the root hash, treating the hashmap as a Merkle-like tree."""
+    
+    def subhash(d):
+        h = hashlib.new(backend.hash_algorithm)
+        h.update(d)
+        return h.digest()
+    
+    # TODO: Should create the whole tree and decide what to do with fillers.
+    h = hashmap
+    h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
+    while len(h) > 1:
+        h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
+    return hexlify(h[0])
 
 def update_response_headers(request, response):
     if request.serialization == 'xml':

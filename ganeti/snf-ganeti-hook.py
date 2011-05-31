@@ -63,7 +63,9 @@ from synnefo.ganeti.hooks import \
     PostStartHook, PostStopHook
 
 hooks = {
+    ("instance-add", "post"): PostStartHook,
     ("instance-start", "post"): PostStartHook,
+    ("instance-reboot", "post"): PostStartHook,
     ("instance-stop", "post"): PostStopHook
 }
 

@@ -122,11 +122,10 @@ def get_network(network_id, owner):
 
     try:
         if network_id == 'public':
-            network_id = 0
-        network = Network.objects.get(id=network_id)
-        if not network.public and network.owner != owner:
-            raise ItemNotFound('Network not found.')
-        return network
+            return Network.objects.get(public=True)
+        else:
+            network_id = int(network_id)
+            return Network.objects.get(id=network_id, owner=owner)
     except ValueError:
         raise BadRequest('Invalid network ID.')
     except Network.DoesNotExist:

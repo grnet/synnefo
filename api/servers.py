@@ -71,11 +71,11 @@ def metadata_item_demux(request, server_id, key):
 
 
 def nic_to_dict(nic):
-    d = {
-        'id': nic.network.id,
-        'name': nic.network.name,
-        'mac': nic.mac,
-        'firewallProfile': nic.firewall_profile}
+    network = nic.network
+    network_id = str(network.id) if not network.public else 'public'
+    d = {'id': network_id, 'name': network.name, 'mac': nic.mac}
+    if nic.firewall_profile:
+        d['firewallProfile'] = nic.firewall_profile
     if nic.ipv4 or nic.ipv6:
         d['values'] = []
         if nic.ipv4:
@@ -104,7 +104,8 @@ def vm_to_dict(vm, detail=False):
             d['metadata'] = {'values': metadata}
 
         addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
-        d['addresses'] = {'values': addresses}
+        if addresses:
+            d['addresses'] = {'values': addresses}
     return d
 
 

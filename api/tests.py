@@ -500,7 +500,7 @@ class BaseTestCase(TestCase):
         return reply
 
     def get_network_details(self, network_id):
-        path = '/api/v1.1/networks/%d' % network_id
+        path = '/api/v1.1/networks/%s' % network_id
         response = self.client.get(path)
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
@@ -508,24 +508,24 @@ class BaseTestCase(TestCase):
         return reply['network']
 
     def update_network_name(self, network_id, new_name):
-        path = '/api/v1.1/networks/%d' % network_id
+        path = '/api/v1.1/networks/%s' % network_id
         data = json.dumps({'network': {'name': new_name}})
         response = self.client.put(path, data, content_type='application/json')
         self.assertEqual(response.status_code, 204)
 
     def delete_network(self, network_id):
-        path = '/api/v1.1/networks/%d' % network_id
+        path = '/api/v1.1/networks/%s' % network_id
         response = self.client.delete(path)
         self.assertEqual(response.status_code, 204)
 
     def add_to_network(self, network_id, server_id):
-        path = '/api/v1.1/networks/%d/action' % network_id
+        path = '/api/v1.1/networks/%s/action' % network_id
         data = json.dumps({'add': {'serverRef': server_id}})
         response = self.client.post(path, data, content_type='application/json')
         self.assertEqual(response.status_code, 202)
 
     def remove_from_network(self, network_id, server_id):
-        path = '/api/v1.1/networks/%d/action' % network_id
+        path = '/api/v1.1/networks/%s/action' % network_id
         data = json.dumps({'remove': {'serverRef': server_id}})
         response = self.client.post(path, data, content_type='application/json')
         self.assertEqual(response.status_code, 202)
@@ -865,14 +865,16 @@ class ListNetworks(BaseTestCase):
     def test_list_networks(self):
         networks = self.list_networks()
         for net in Network.objects.all():
-            network = popdict(networks, id=net.id)
+            net_id = str(net.id) if not net.public else 'public'
+            network = popdict(networks, id=net_id)
             self.assertEqual(network['name'], net.name)
         self.assertEqual(networks, [])
 
     def test_list_networks_detail(self):
         networks = self.list_networks(detail=True)
         for net in Network.objects.all():
-            network = popdict(networks, id=net.id)
+            net_id = str(net.id) if not net.public else 'public'
+            network = popdict(networks, id=net_id)
             self.assertEqual(network['name'], net.name)
             machines = set(vm.id for vm in net.machines.all())
             self.assertEqual(set(network['servers']['values']), machines)
@@ -914,11 +916,12 @@ class GetNetworkDetails(BaseTestCase):
 
 
 class UpdateNetworkName(BaseTestCase):
-    NETWORKS = 5
-
     def test_update_network_name(self):
+        name = 'net'
+        self.create_network(name)
         networks = self.list_networks(detail=True)
-        network = choice(networks)
+        priv = [net for net in networks if net['id'] != 'public']
+        network = choice(priv)
         network_id = network['id']
         new_name = network['name'] + '_2'
         self.update_network_name(network_id, new_name)
@@ -936,17 +939,18 @@ class DeleteNetwork(BaseTestCase):
             self.create_network('net%d' % i)
         
         networks = self.list_networks()
-        network = choice(networks)
-        while network['id'] == 1:
-            network = choice(networks)
+        priv = [net for net in networks if net['id'] != 'public']
+        network = choice(priv)
         network_id = network['id']
         self.delete_network(network_id)
         
         net = self.get_network_details(network_id)
         self.assertEqual(net['status'], 'DELETED')
 
-        networks.remove(network)
-        self.assertEqual(self.list_networks(), networks)
+        priv.remove(network)
+        networks = self.list_networks()
+        new_priv = [net for net in networks if net['id'] != 'public']
+        self.assertEqual(priv, new_priv)
 
 
 class NetworkActions(BaseTestCase):

@@ -41,7 +41,8 @@ def network_demux(request, network_id):
 
 
 def network_to_dict(network, detail=True):
-    d = {'id': network.id, 'name': network.name}
+    network_id = str(network.id) if not network.public else 'public'
+    d = {'id': network_id, 'name': network.name}
     if detail:
         d['updated'] = isoformat(network.updated)
         d['created'] = isoformat(network.created)
@@ -145,6 +146,8 @@ def update_network_name(request, network_id):
         raise BadRequest('Malformed request.')
 
     net = get_network(network_id, request.user)
+    if net.public:
+        raise Unauthorized('Can not rename the public network.')
     net.name = name
     net.save()
     return HttpResponse(status=204)
@@ -159,15 +162,18 @@ def delete_network(request, network_id):
     #                       unauthorized (401),
     #                       overLimit (413)
     
-    if network_id in ('1', 'public'):
-        raise Unauthorized('Can not delete the public network.')
     net = get_network(network_id, request.user)
+    if net.public:
+        raise Unauthorized('Can not delete the public network.')
     backend.delete_network(net)
     return HttpResponse(status=204)
 
 @api_method('POST')
 def network_action(request, network_id):
     net = get_network(network_id, request.user)
+    if net.public:
+        raise Unauthorized('Can not modify the public network.')
+    
     req = get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')

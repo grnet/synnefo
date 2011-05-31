@@ -29,7 +29,7 @@ def print_addresses(networks):
         if 'values' in net:
             addr = '[%s]' % ' '.join(ip['addr'] for ip in net['values'])
         
-        val = '%d/%s %s %s' % (net['id'], net['name'], net['mac'], addr)
+        val = '%s/%s %s %s' % (net['id'], net['name'], net['mac'], addr)
         print '%s %s' % (key, val)
 
 def print_dict(d, show_empty=True):

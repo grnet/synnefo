@@ -5,6 +5,8 @@
 #
 
 from django.conf import settings
+from django.db import transaction
+
 from synnefo.db.models import VirtualMachine, Network, NetworkLink
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
@@ -45,6 +47,7 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     vm.save()
 
 
+@transaction.commit_on_success
 def process_net_status(vm, nics):
     """Process a net status notification from the backend
 
@@ -154,6 +157,7 @@ def create_network_link():
         return NetworkLink.objects.create(index=index, name=name, available=True)
     return None     # All link slots are filled
 
+@transaction.commit_on_success
 def create_network(net):
     try:
         link = NetworkLink.objects.filter(available=True)[0]
@@ -166,6 +170,7 @@ def create_network(net):
     link.save()
     return True
 
+@transaction.commit_on_success
 def delete_network(net):
     link = net.link
     link.available = True

@@ -436,8 +436,14 @@ def hashmap_hash(hashmap):
         h.update(d)
         return h.digest()
     
-    # TODO: Should create the whole tree and decide what to do with fillers.
-    h = hashmap
+    if len(hashmap) == 0:
+        return hexlify(subhash(''))
+    if len(hashmap) == 1:
+        return hexlify(subhash(hashmap[0]))
+    s = 2
+    while s < len(hashmap):
+        s = s * 2
+    h = hashmap + ([('\x00' * len(hashmap[0]))] * (s - len(hashmap)))
     h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
     while len(h) > 1:
         h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]

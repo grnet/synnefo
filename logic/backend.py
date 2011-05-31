@@ -60,7 +60,7 @@ def process_net_status(vm, nics):
     vm.nics.all().delete()
     for i, nic in enumerate(nics):
         if i == 0:
-            net = Network.objects.filter(public=True)[0]
+            net = Network.objects.get(public=True)
         else:
             link = NetworkLink.objects.get(name=nic['link'])
             net = link.network
@@ -193,17 +193,18 @@ def delete_network(net):
 
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
-    rapi.ModifyInstance(vm.backend_id, nics=[('add', nic)], dry_run=settings.TEST)
+    rapi.ModifyInstance(vm.backend_id,
+        nics=[('add', nic)],
+        dry_run=settings.TEST)
 
 def disconnect_from_network(vm, net):
-    nics = vm.nics.order_by('index')[1:]    # Skip the public network
-    ops = [('remove', {})] * len(nics)
-    for nic in nics:
-        if nic.network == net:
-            continue
-        ops.append(('add', {
+    nics = vm.nics.filter(network__public=False).order_by('index')
+    new_nics = [nic for nic in nics if nic.network != net]
+    if new_nics == nics:
+        return      # Nothing to remove
+    ops = [('remove', {})]
+    for i, nic in enumerate(new_nics):
+        ops.append((i + 1, {
             'mode': 'bridged',
-            'link': nic.network.link.name,
-            'mac': nic.mac}))
-    for op in ops:
-        rapi.ModifyInstance(vm.backend_id, nics=[op], dry_run=settings.TEST)
+            'link': nic.network.link.name}))
+    rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)

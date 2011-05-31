@@ -14,6 +14,15 @@
    	    }
     },
     {
+        "model": "db.NetworkLink",
+        "pk": 1,
+        "fields": {
+            "index": 0,
+            "name": "snf_public",
+            "available": 0
+        }
+    },
+    {
         "model": "db.Network",
         "pk": 1,
         "fields": {
@@ -21,7 +30,8 @@
             "created": "2011-04-01",
             "updated": "2011-04-01",
             "state": "ACTIVE",
-            "public": 1
+            "public": 1,
+            "link": 1
         }
     }
 ] 

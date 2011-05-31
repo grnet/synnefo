@@ -359,14 +359,6 @@ def create_server_metadata(n=1):
             meta_value='Value %d' % (i + 1),
             vm = choice(servers))
 
-def create_networks(n):
-    users = SynnefoUser.objects.all()
-    for i in range(n):
-        Network.objects.create(
-            name='Network%d' % (i + 1),
-            owner=choice(users),
-            state='ACTIVE')
-
 
 class AssertInvariant(object):
     def __init__(self, callable, *args, **kwargs):
@@ -389,7 +381,6 @@ class BaseTestCase(TestCase):
     SERVERS = 1
     SERVER_METADATA = 0
     IMAGE_METADATA = 0
-    NETWORKS = 0
 
     def setUp(self):
         self.client = AaiClient()
@@ -399,7 +390,6 @@ class BaseTestCase(TestCase):
         create_image_metadata(self.IMAGE_METADATA)
         create_servers(self.SERVERS)
         create_server_metadata(self.SERVER_METADATA)
-        create_networks(self.NETWORKS)
 
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
@@ -852,10 +842,13 @@ class AaiTestCase(TestCase):
 
 class ListNetworks(BaseTestCase):
     SERVERS = 5
-    NETWORKS = 5
 
     def setUp(self):
         BaseTestCase.setUp(self)
+        
+        for i in range(5):
+            self.create_network('net%d' % i)
+        
         machines = VirtualMachine.objects.all()
         for network in Network.objects.all():
             n = randint(0, self.SERVERS)

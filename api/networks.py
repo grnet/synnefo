@@ -106,13 +106,8 @@ def create_network(request):
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
     
-    network = Network.objects.create(
-        name=name,
-        owner=request.user,
-        state='ACTIVE')
-    
-    if not backend.create_network(network):
-        network.delete()
+    network = backend.create_network(name, request.user)
+    if not network:
         raise OverLimit('Maximum number of networks reached.')
     
     networkdict = network_to_dict(network)

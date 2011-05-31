@@ -380,7 +380,9 @@ class Network(models.Model):
     owner = models.ForeignKey(SynnefoUser, null=True)
     state = models.CharField(choices=NETWORK_STATES, max_length=30)
     public = models.BooleanField(default=False)
-    machines = models.ManyToManyField(VirtualMachine, through='NetworkInterface')
+    link = models.ForeignKey('NetworkLink', related_name='+')
+    machines = models.ManyToManyField(VirtualMachine,
+                                        through='NetworkInterface')
     
     def __unicode__(self):
         return self.name
@@ -400,11 +402,12 @@ class NetworkInterface(models.Model):
     mac = models.CharField(max_length=17, null=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
-    firewall_profile = models.CharField(choices=FIREWALL_PROFILES, max_length=30, null=True)
+    firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
+                                        max_length=30, null=True)
 
 
 class NetworkLink(models.Model):
-    network = models.OneToOneField(Network, null=True, related_name='link')
+    network = models.ForeignKey(Network, null=True, related_name='+')
     index = models.IntegerField()
     name = models.CharField(max_length=255)
     available = models.BooleanField(default=True)

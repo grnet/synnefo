@@ -158,17 +158,25 @@ def create_network_link():
     return None     # All link slots are filled
 
 @transaction.commit_on_success
-def create_network(net):
+def create_network(name, owner):
     try:
         link = NetworkLink.objects.filter(available=True)[0]
     except IndexError:
         link = create_network_link()
         if not link:
-            return False
-    link.network = net
+            return None
+    
+    network = Network.objects.create(
+        name=name,
+        owner=owner,
+        state='ACTIVE',
+        link=link)
+    
+    link.network = network
     link.available = False
     link.save()
-    return True
+    
+    return network
 
 @transaction.commit_on_success
 def delete_network(net):

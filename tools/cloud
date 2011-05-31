@@ -492,11 +492,11 @@ class ListNetworks(Command):
             id = network.pop('id')
             name = network.pop('name')
             if self.detail:
-                print '%d %s' % (id, name)
+                print '%s %s' % (id, name)
                 print_dict(network)
                 print
             else:
-                print '%3d %s' % (id, name)
+                print '%3s %s' % (id, name)
 
 
 @command_name('createnet')
@@ -546,9 +546,9 @@ class DeleteNetwork(Command):
         self.http_delete(path)
 
 
-@command_name('addnet')
+@command_name('connect')
 class AddNetwork(Command):
-    description = 'add server to a network'
+    description = 'connect a server to a network'
     syntax = '<server id> <network id>'
 
     def execute(self, server_id, network_id):
@@ -557,9 +557,9 @@ class AddNetwork(Command):
         self.http_post(path, body, expected_status=202)
 
 
-@command_name('removenet')
+@command_name('disconnect')
 class RemoveNetwork(Command):
-    description = 'remove server from a network'
+    description = 'disconnect a server from a network'
     syntax = '<server id> <network id>'
 
     def execute(self, server_id, network_id):

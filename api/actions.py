@@ -198,7 +198,8 @@ def get_console(request, vm, args):
         console_data = backend.get_instance_console(vm)
 
     if console_data['kind'] != 'vnc':
-        raise ServiceUnavailable('Could not create a console of requested type.')
+        message = 'Could not create a console of requested type.'
+        raise ServiceUnavailable(message)
 
     # Let vncauthproxy decide on the source port.
     # The alternative: static allocation, e.g.

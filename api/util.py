@@ -19,8 +19,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import (Fault, BadRequest, BuildInProgress, ItemNotFound,
-                                ServiceUnavailable, Unauthorized)
+from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
+                                ItemNotFound, ServiceUnavailable, Unauthorized)
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
@@ -165,7 +165,10 @@ def render_metadata(request, metadata, use_values=False, status=200):
     if request.serialization == 'xml':
         data = render_to_string('metadata.xml', {'metadata': metadata})
     else:
-        d = {'metadata': {'values': metadata}} if use_values else {'metadata': metadata}
+        if use_values:
+            d = {'metadata': {'values': metadata}}
+        else:
+            d = {'metadata': metadata}
         data = json.dumps(d)
     return HttpResponse(data, status=status)
 
@@ -183,7 +186,10 @@ def render_fault(request, fault):
     if request.serialization == 'xml':
         data = render_to_string('fault.xml', {'fault': fault})
     else:
-        d = {fault.name: {'code': fault.code, 'message': fault.message, 'details': fault.details}}
+        d = {fault.name: {
+                'code': fault.code,
+                'message': fault.message,
+                'details': fault.details}}
         data = json.dumps(d)
 
     resp = HttpResponse(data, status=fault.code)
@@ -224,7 +230,9 @@ def api_method(http_method=None, atom_allowed=False):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
-                request.serialization = request_serialization(request, atom_allowed)
+                request.serialization = request_serialization(
+                    request,
+                    atom_allowed)
                 if not request.user:
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:

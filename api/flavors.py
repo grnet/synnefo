@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.util import get_flavor, api_method
+from synnefo.api import util
 from synnefo.db.models import Flavor
 
 
@@ -27,7 +27,7 @@ def flavor_to_dict(flavor, detail=True):
     return d
 
 
-@api_method('GET')
+@util.api_method('GET')
 def list_flavors(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -40,13 +40,15 @@ def list_flavors(request, detail=False):
     flavors = [flavor_to_dict(flavor, detail) for flavor in all_flavors]
 
     if request.serialization == 'xml':
-        data = render_to_string('list_flavors.xml', {'flavors': flavors, 'detail': detail})
+        data = render_to_string('list_flavors.xml', {
+            'flavors': flavors,
+            'detail': detail})
     else:
         data = json.dumps({'flavors': {'values': flavors}})
 
     return HttpResponse(data, status=200)
 
-@api_method('GET')
+@util.api_method('GET')
 def get_flavor_details(request, flavor_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -56,7 +58,7 @@ def get_flavor_details(request, flavor_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    flavor = get_flavor(flavor_id)
+    flavor = util.get_flavor(flavor_id)
     flavordict = flavor_to_dict(flavor, detail=True)
 
     if request.serialization == 'xml':

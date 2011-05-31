@@ -101,6 +101,8 @@ def put_container_meta(response, meta):
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
     response['X-Container-Object-Meta'] = [x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
+    response['X-Container-Block-Size'] = backend.block_size
+    response['X-Container-Block-Hash'] = backend.hash_algorithm
 
 def get_object_meta(request):
     """Get metadata from an object request"""

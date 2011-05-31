@@ -113,7 +113,6 @@ def authenticate(request):
     x_auth_key = request.META.get('HTTP_X_AUTH_KEY')
     if not x_auth_user or not x_auth_key:
         raise BadRequest('Missing X-Auth-User or X-Auth-Key header')
-    
     response = HttpResponse(status=204)
     response['X-Auth-Token'] = '0000'
     response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(), 'demo')
@@ -404,10 +403,12 @@ def object_read(request, v_account, v_container, v_object):
     
     # Reply with the hashmap.
     if request.serialization != 'text':
+        d = {'block_size': backend.block_size, 'block_hash': backend.hash_algorithm, 'bytes': size, 'hashes': hashmap}
         if request.serialization == 'xml':
-            data = render_to_string('hashes.xml', {'object': v_object, 'bytes': size, 'hashes': hashmap})
+            d['object'] = v_object
+            data = render_to_string('hashes.xml', d)
         elif request.serialization  == 'json':
-            data = json.dumps({'bytes': size, 'hashes': hashmap})
+            data = json.dumps(d)
         
         response = HttpResponse(data, status=200)
         put_object_meta(response, meta)

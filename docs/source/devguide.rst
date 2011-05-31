@@ -25,7 +25,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.2 (May 29, 2011)         Add object meta listing and filtering in containers.
+0.2 (May 31, 2011)         Add object meta listing and filtering in containers.
+\                          Include underlying storage characteristics in container meta.
 \                          Support for partial object updates through POST.
 \                          Expose object hashmaps through GET.
 \                          Support for multi-range object GET requests.
@@ -153,12 +154,14 @@ x_container_meta_*   Optional user defined metadata
 
 For examples of container details returned in JSON/XML formats refer to the OOS API documentation.
 
-================  =====================
-Return Code       Description
-================  =====================
-200 (OK)          The request succeeded
-204 (No Content)  The account has no containers (only for non-extended replies)
-================  =====================
+===========================  =====================
+Return Code                  Description
+===========================  =====================
+200 (OK)                     The request succeeded
+204 (No Content)             The account has no containers (only for non-extended replies)
+304 (Not Modified)           The account has not been modified
+412 (Precondition Failed)    The condition set can not be satisfied
+===========================  =====================
 
 Will use a ``200`` return code if the reply is of type json/xml.
 
@@ -211,6 +214,8 @@ X-Container-Object-Count    The total number of objects in the container
 X-Container-Bytes-Used      The total number of bytes of all objects stored
 X-Container-Meta-*          Optional user defined metadata
 X-Container-Object-Meta     A list with all meta keys used by objects
+X-Container-Block-Size      The block size used by the storage backend
+X-Container-Block-Hash      The hash algorithm used for block identifiers in object hashmaps
 Last-Modified               The last object modification date
 ==========================  ===============================
 
@@ -275,12 +280,14 @@ In case there is an object with the same name as a virtual directory marker, the
  
 For examples of object details returned in JSON/XML formats refer to the OOS API documentation.
 
-================  ===============================
-Return Code       Description
-================  ===============================
-200 (OK)          The request succeeded
-204 (No Content)  The account has no containers (only for non-extended replies)
-================  ===============================
+===========================  ===============================
+Return Code                  Description
+===========================  ===============================
+200 (OK)                     The request succeeded
+204 (No Content)             The account has no containers (only for non-extended replies)
+304 (Not Modified)           The container has not been modified
+412 (Precondition Failed)    The condition set can not be satisfied
+===========================  ===============================
 
 Will use a ``200`` return code if the reply is of type json/xml.
 
@@ -352,7 +359,7 @@ GET        Read object data
 PUT        Write object data or copy/move object
 COPY       Copy object
 MOVE       Move object
-POST       Update object metadata
+POST       Update object metadata/data
 DELETE     Delete object
 =========  =================================
 
@@ -407,24 +414,20 @@ format                  Optional extended reply type (can be ``json`` or ``xml``
 
 The reply is the object's data (or part of it), except if a hashmap is requested with the ``format`` parameter. Object headers (as in a ``HEAD`` request) are always included.
 
-Hashmaps expose the underlying storage format of the object:
-
-* Blocksize of 4MB.
-* Blocks stored indexed by SHA256 hash.
-* Hash is computed after trimming trailing null bytes.
+Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block.
 
 Example ``format=json`` reply:
 
 ::
 
-  {"hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c", ...], "bytes": 24223726}
+  {"block_hash": "sha1", "hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c"], "block_size": 131072, "bytes": 242}
 
 Example ``format=xml`` reply:
 
 ::
 
   <?xml version="1.0" encoding="UTF-8"?>
-  <object name="file" bytes="24223726">
+  <object name="file" bytes="24223726" block_size="131072" block_hash="sha1">
     <hash>7295c41da03d7f916440b98e32c4a2a39351546c</hash>
     <hash>...</hash>
   </object>
@@ -595,6 +598,7 @@ List of differences from the OOS API:
 * Support for ``X-Account-Meta-*`` style headers at the account level. Use ``POST`` to update.
 * Support for ``X-Container-Meta-*`` style headers at the account level. Can be set when creating via ``PUT``. Use ``POST`` to update.
 * Header ``X-Container-Object-Meta`` at the container level and parameter ``meta`` in container listings.
+* Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 

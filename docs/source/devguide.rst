@@ -572,7 +572,8 @@ Return Code                  Description
 ===========================  ==============================
 202 (Accepted)               The request has been accepted (not a data update)
 204 (No Content)             The request succeeded (data updated)
-416 (Range Not Satisfiable)  The supplied range is out of limits or invalid size
+411 (Length Required)        Missing ``Content-Length`` in the request
+416 (Range Not Satisfiable)  The supplied range is out of limits or invalid size (**TBD**)
 ===========================  ==============================
 
 

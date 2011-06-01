@@ -181,9 +181,10 @@ def create_network(name, owner):
 @transaction.commit_on_success
 def delete_network(net):
     link = net.link
-    link.available = True
-    link.network = None
-    link.save()
+    if link.name != settings.GANETI_NULL_LINK:
+        link.available = True
+        link.network = None
+        link.save()
     
     for vm in net.machines.all():
         disconnect_from_network(vm, net)

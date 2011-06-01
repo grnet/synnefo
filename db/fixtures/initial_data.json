@@ -18,7 +18,7 @@
         "pk": 1,
         "fields": {
             "index": 0,
-            "name": "snf_public",
+            "name": "snf_null",
             "available": 0
         }
     },

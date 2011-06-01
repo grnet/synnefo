@@ -278,12 +278,12 @@ def get_content_range(request):
         total = int(total)
     else:
         total = None
-    if (upto and offset > upto) or \
-        (total and offset >= total) or \
-        (total and upto and upto >= total):
+    if (upto is not None and offset > upto) or \
+        (total is not None and offset >= total) or \
+        (total is not None and upto is not None and upto >= total):
         return None
     
-    if not upto:
+    if upto is None:
         length = None
     else:
         length = upto - offset + 1

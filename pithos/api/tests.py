@@ -1526,13 +1526,10 @@ class ObjectPost(BaseTestCase):
                            instance_length = True,
                            content_length = 500):
         l = len(self.obj['data'])
-        if instance_length:
-            range = 'bytes %d-%d/%d' %(first_byte_pos,
+        length =  instance_length and l or '*'
+        range = 'bytes %d-%d/%s' %(first_byte_pos,
                                        last_byte_pos,
-                                       l)
-        else:
-            range = 'bytes %d-%d/*' %(first_byte_pos,
-                                       last_byte_pos)
+                                       length)
         partial = last_byte_pos - first_byte_pos + 1
         data = get_random_data(partial)
         more = {'HTTP_CONTENT_RANGE':range}
@@ -1610,25 +1607,47 @@ class ObjectPost(BaseTestCase):
                                 self.containers[0],
                                 self.obj['name'])
         self.assertEqual(len(r.content), len(self.obj['data']) + 500)
+        self.assertEqual(r.content[:-500], self.obj['data'])
 
-    #def test_update_with_chunked_transfer(self):
-    #    linenum = 5
-    #    data = create_random_chunked_data(linenum)
-    #    print data
-    #    first_byte_pos=0,
-    #    last_byte_pos=499,
-    #    instance_length = True,
-    #    content_length = 500
-    #    l = len(self.obj['data'])
-    #    meta = {'HTTP_TRANSFER_ENCODING':'chunked',
-    #            'HTTP_CONTENT_RANGE':'bytes 0-499/%d' %l}
-    #    r = self.update_object(self.account,
-    #                            self.containers[0],
-    #                            self.obj['name'],
-    #                            data,
-    #                            'application/octet-stream',
-    #                            **meta)
-    #    print r.request, r.status_code, r
+    def test_update_with_chunked_transfer(self):
+        data, pure = create_random_chunked_data()
+        dl = len(pure)
+        fl = len(self.obj['data'])
+        meta = {'HTTP_TRANSFER_ENCODING':'chunked',
+                'HTTP_CONTENT_RANGE':'bytes 0-/%d' %fl}
+        r = self.update_object(self.account,
+                                self.containers[0],
+                                self.obj['name'],
+                                data,
+                                'application/octet-stream',
+                                **meta)
+        
+        #check modified object
+        r = self.get_object(self.account,
+                        self.containers[0],
+                        self.obj['name'])
+        self.assertEqual(r.content[0:dl], pure)
+        self.assertEqual(r.content[dl:fl], self.obj['data'][dl:fl])
+
+    def test_update_with_chunked_transfer_strict_range(self):
+        data, pure = create_random_chunked_data()
+        dl = len(pure) - 1
+        fl = len(self.obj['data'])
+        meta = {'HTTP_TRANSFER_ENCODING':'chunked',
+                'HTTP_CONTENT_RANGE':'bytes 0-%d/%d' %(dl, fl)}
+        r = self.update_object(self.account,
+                                self.containers[0],
+                                self.obj['name'],
+                                data,
+                                'application/octet-stream',
+                                **meta)
+        
+        #check modified object
+        r = self.get_object(self.account,
+                        self.containers[0],
+                        self.obj['name'])
+        self.assertEqual(r.content[0:dl+1], pure)
+        self.assertEqual(r.content[dl+1:fl], self.obj['data'][dl+1:fl])
 
 class ObjectDelete(BaseTestCase):
     def setUp(self):
@@ -1718,19 +1737,21 @@ def create_chunked_update_test_file(src, dest):
     fw.write(hex(0))
     fw.write('\r\n')
 
-def create_random_chunked_data(rows):
+def create_random_chunked_data(rows=5):
     i = 0
     out = []
+    pure= []
     while i < rows:
         data = get_random_data(random.randint(1, 100))
         out.append(hex(len(data)))
         out.append(data)
+        pure.append(data)
         i+=1
     out.append(hex(0))
     out.append('\r\n')
-    return '\r\n'.join(out)
+    return '\r\n'.join(out), ''.join(pure)
 
-def get_random_data(length):
+def get_random_data(length=500):
     char_set = string.ascii_uppercase + string.digits
     return ''.join(random.choice(char_set) for x in range(length))
 

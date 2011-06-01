@@ -7,7 +7,6 @@
 #   1. Redistributions of source code must retain the above copyright
 #      notice, this list of conditions and the following disclaimer.
 #
-<<<<<<< HEAD
 #  2. Redistributions in binary form must reproduce the above copyright
 #     notice, this list of conditions and the following disclaimer in the
 #     documentation and/or other materials provided with the distribution.
@@ -31,9 +30,7 @@
 # Callback functions used by the dispatcher to process incoming notifications
 # from AMQP queues.
 
-=======
 import socket
->>>>>>> invitations
 import traceback
 import json
 import logging
@@ -134,6 +131,9 @@ def update_credits(message):
     message.channel.basic_ack(message.delivery_tag)
 
 def trigger_status_update(message):
+    """
+        Triggers a status update job for a specific VM id.
+    """
     _logger.debug("Request to trigger status update: %s", message.body)
 
     try:
@@ -157,6 +157,9 @@ def trigger_status_update(message):
         _logger.error("Unexpected error:%s", e)
 
 def status_job_finished (message) :
+    """
+        Updates VM status based on a previously sent status update request
+    """
     try:
         msg = _parse_json(message.body)
 

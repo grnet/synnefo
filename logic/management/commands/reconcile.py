@@ -29,11 +29,11 @@
 #
 # Reconcile VM state - Management Script
 
-
-from django.core.management.base import NoArgsCommand
 from synnefo.db.models import VirtualMachine
 from django.conf import settings
 from datetime import datetime, timedelta
+from optparse import make_option
+from django.core.management.base import BaseCommand
 
 from synnefo.logic import amqp_connection
 from synnefo.logic.amqp_connection import AMQPError
@@ -41,20 +41,32 @@ from synnefo.logic.amqp_connection import AMQPError
 import json
 import sys
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = 'Reconcile VM status with the backend'
 
-    def handle_noargs(self, **options):
+    option_list = BaseCommand.option_list +  (
+         make_option('--all', action='store_true', dest='all_vms', default=False,
+                     help='Run the reconciliation function for all VMs, now'),
+         make_option('--interval', action='store', dest='interval', default=1,
+                     help='Interval in minutes between reconciliations'),
+    )
 
-        now = datetime.now()
-        last_update = timedelta(minutes = settings.RECONCILIATION_MIN)
-        not_updated = VirtualMachine.objects \
+    def handle(self, all_vms = False, interval = 1, **options):
+        all =  VirtualMachine.objects.all()
+
+        if not all_vms:
+            now = datetime.now()
+            last_update = timedelta(minutes = settings.RECONCILIATION_MIN)
+            not_updated = VirtualMachine.objects \
                                     .filter(deleted = False) \
                                     .filter(suspended = False) \
                                     .filter(updated__lte = (now - last_update))
-        all =  VirtualMachine.objects.all()
 
-        to_update = all.count() / settings.RECONCILIATION_MIN
+            to_update = ((all.count() / settings.RECONCILIATION_MIN) * interval)
+        else:
+            to_update = all.count()
+            not_updated = all
+
         vm_ids = map(lambda x: x.id, not_updated[:to_update])
 
         for vmid in vm_ids :

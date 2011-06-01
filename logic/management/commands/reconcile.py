@@ -35,28 +35,14 @@ from synnefo.db.models import VirtualMachine
 from django.conf import settings
 from datetime import datetime, timedelta
 
-from amqplib import client_0_8 as amqp
+from synnefo.logic import amqp_connection
+from synnefo.logic.amqp_connection import AMQPError
 
-import time
-import socket
 import json
+import sys
 
 class Command(NoArgsCommand):
     help = 'Reconcile VM status with the backend'
-    chan = None
-    def open_channel(self):
-        conn = None
-        while conn == None:
-            try:
-                conn = amqp.Connection(host=settings.RABBIT_HOST,
-                     userid=settings.RABBIT_USERNAME,
-                     password=settings.RABBIT_PASSWORD,
-                     virtual_host=settings.RABBIT_VHOST)
-            except socket.error:
-                time.sleep(1)
-                pass
-
-        self.chan = conn.channel()
 
     def handle_noargs(self, **options):
 
@@ -69,23 +55,16 @@ class Command(NoArgsCommand):
         all =  VirtualMachine.objects.all()
 
         to_update = all.count() / settings.RECONCILIATION_MIN
-
         vm_ids = map(lambda x: x.id, not_updated[:to_update])
-        sent = False
-        self.open_channel()
+
         for vmid in vm_ids :
-            while sent is False:
-                try:
-                    msg = dict(type = "reconcile", vmid = vmid)
-                    amqp_msg = amqp.Message(json.dumps(msg))
-                    self.chan.basic_publish(amqp_msg,
-                            exchange=settings.EXCHANGE_CRON,
-                            routing_key="reconciliation.%s"%vmid)
-                    sent = True
-                except socket.error:
-                    self.chan = self.open_channel()
-                except Exception:
-                    raise
+            msg = dict(type = "reconcile", vmid = vmid)
+            try:
+                amqp_connection.send(json.dumps(msg), settings.EXCHANGE_CRON,
+                                 "reconciliation.%s"%vmid)
+            except AMQPError as e:
+                print >> sys.stderr, 'Error sending reconciliation request: %s' % e
+                raise
 
         print "All: %d, To update: %d, Triggered update for: %s" % \
               (all.count(), not_updated.count(), vm_ids)

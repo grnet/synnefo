@@ -30,8 +30,6 @@ from signal import signal, SIGINT, SIGTERM
 
 from amqplib import client_0_8 as amqp
 
-from threading import Thread, Event, currentThread
-
 from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
@@ -54,7 +52,6 @@ class JobFileHandler(pyinotify.ProcessEvent):
                      virtual_host=settings.RABBIT_VHOST)
             except socket.error:
                 time.sleep(1)
-                pass
         
         handler_logger.info("Connection succesful, opening channel")
         return conn.channel()
@@ -135,7 +132,7 @@ def fatal_signal_handler(signum, frame):
     global handler_logger
 
     handler_logger.info("Caught fatal signal %d, will raise SystemExit",
-            signum)
+                        signum)
     raise SystemExit
 
 def parse_arguments(args):
@@ -143,17 +140,17 @@ def parse_arguments(args):
 
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", dest="debug",
-            help="Enable debugging information")
+                      help="Enable debugging information")
     parser.add_option("-l", "--log", dest="log_file",
-            default=settings.GANETI_EVENTD_LOG_FILE,
-            metavar="FILE",
-            help="Write log to FILE instead of %s" %
-            settings.GANETI_EVENTD_LOG_FILE),
+                      default=settings.GANETI_EVENTD_LOG_FILE,
+                      metavar="FILE",
+                      help="Write log to FILE instead of %s" %
+                           settings.GANETI_EVENTD_LOG_FILE)
     parser.add_option('--pid-file', dest="pid_file",
-            default=settings.GANETI_EVENTD_PID_FILE,
-            metavar='PIDFILE',
-            help="Save PID to file (default: %s)" %
-            settings.GANETI_EVENTD_PID_FILE)
+                      default=settings.GANETI_EVENTD_PID_FILE,
+                      metavar='PIDFILE',
+                      help="Save PID to file (default: %s)" %
+                           settings.GANETI_EVENTD_PID_FILE)
 
     return parser.parse_args(args)
 

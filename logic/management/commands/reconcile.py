@@ -48,7 +48,7 @@ class Command(NoArgsCommand):
         conn = None
         while conn == None:
             try:
-                conn = amqp.Connection( host=settings.RABBIT_HOST,
+                conn = amqp.Connection(host=settings.RABBIT_HOST,
                      userid=settings.RABBIT_USERNAME,
                      password=settings.RABBIT_PASSWORD,
                      virtual_host=settings.RABBIT_VHOST)
@@ -62,9 +62,10 @@ class Command(NoArgsCommand):
 
         now = datetime.now()
         last_update = timedelta(minutes = settings.RECONCILIATION_MIN)
-        not_updated = VirtualMachine.objects.filter(deleted = False) \
-                                            .filter(suspended = False) \
-                                            .filter(updated__lte = (now - last_update))
+        not_updated = VirtualMachine.objects \
+                                    .filter(deleted = False) \
+                                    .filter(suspended = False) \
+                                    .filter(updated__lte = (now - last_update))
         all =  VirtualMachine.objects.all()
 
         to_update = all.count() / settings.RECONCILIATION_MIN
@@ -86,4 +87,5 @@ class Command(NoArgsCommand):
                 except Exception:
                     raise
 
-        print "All: %d, To update: %d, Triggered update for: %s" % (all.count(), not_updated.count(), vm_ids)
+        print "All: %d, To update: %d, Triggered update for: %s" % \
+              (all.count(), not_updated.count(), vm_ids)

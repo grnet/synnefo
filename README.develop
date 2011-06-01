@@ -19,6 +19,13 @@ also, depending on the database engine of choice, on one of the following:
 - MySQL-python [MySQL-python==1.2.3]
 - psycopg2 [psycopg2==2.4]
 
+if the invitations application is deployed, the following
+dependencies should be installed
+
+-pycrypto==2.1.0
+
+if you want to test the ganeti 
+
 to run the user interface tests, selenium must be installed
 - selenium [?]
 

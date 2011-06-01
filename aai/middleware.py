@@ -3,7 +3,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
-import datetime
 
 class SynnefoAuthMiddleware(object):
 
@@ -13,6 +12,9 @@ class SynnefoAuthMiddleware(object):
 
     def process_request(self, request):
         if request.path.startswith('/api/') :
+            return
+
+        if request.path.startswith('/invitations/login') :
             return
 
         # Special case for testing purposes, delivers the cookie for the
@@ -43,8 +45,7 @@ class SynnefoAuthMiddleware(object):
 
             #Check user's auth token
             if (time.time() -
-                time.mktime(user.auth_token_created.timetuple()) -
-                settings.AUTH_TOKEN_DURATION * 3600) > 0:
+                time.mktime(user.auth_token_expires.timetuple())) > 0:
                 #The user's token has expired, re-login
                 return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
 
@@ -92,8 +93,7 @@ class SynnefoAuthMiddleware(object):
         return response
 
     def _redirect_shib_auth_user(self, user):
-        expire = user.auth_token_created + datetime.timedelta(hours=settings.AUTH_TOKEN_DURATION)
-        expire_fmt = expire.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+        expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
 
         response = HttpResponse()
 

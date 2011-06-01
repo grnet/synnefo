@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Αποστολή προσκλήσεων σε χρήστες</title>
+    <script src="/static/jquery.tools.min.js"></script>
+    <script src="/invitations/static/invitations.js"></script>
+    <script type="text/javascript">
+
+    $(document).ready(function() {
+         $("#invform #removable-name-container-1").dynamicField();
+    });
+
+    </script>
+
+    <style type="text/css">
+
+    </style>
+</head>
+<body>
+<form action="/invitations/" method="post" id="invform">
+    {% csrf_token %}
+
+    <div id="errors">
+    <ul>
+    {% for error in errors %}
+        <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+    </div>
+
+    <div id="fieldheaders">
+        <span id="field_name_name">Όνομα</span>
+        <span id="field_email_name">Email</span>
+    </div>
+    <div id="fields">
+        <div id="removable-name-container-1" class="removable-field-row">
+            <input type="text" name="name_1" id="name_1" value="" class="textInput removable" /><input type="text" name="email_1" id="email_1" value="" class="textInput removable" /><img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
+        </div>
+        <div id="add-name-container" class="add-field-container">
+        <span class="add-field-trigger">
+            <img src="/static/add.gif" alt="" title="Add New Item" />
+            Προσθήκη Παραλήπτη
+        </span>
+        </div>
+    </div>
+    <p><input type="submit" value="Αποστολή Προσκλήσεων" /></p>
+</form>
+
+<div id="invsent">
+Λίστα προσκλήσεων που έχουν αποσταλεί (<img src="/static/save.png" alt=""> = Η πρόσκληση έγινε αποδεκτή)
+    <div>
+        <ul>
+        {% for inv in invitations %}
+            <li>
+                {% if inv.accepted %}
+                    <img src="/static/save.png" alt="">
+                {% endif %}
+                {{ inv.targetname }} &lt;{{ inv.target }}&gt;
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

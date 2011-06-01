@@ -7,6 +7,7 @@
 #   1. Redistributions of source code must retain the above copyright
 #      notice, this list of conditions and the following disclaimer.
 #
+<<<<<<< HEAD
 #  2. Redistributions in binary form must reproduce the above copyright
 #     notice, this list of conditions and the following disclaimer in the
 #     documentation and/or other materials provided with the distribution.
@@ -30,13 +31,16 @@
 # Callback functions used by the dispatcher to process incoming notifications
 # from AMQP queues.
 
+=======
+import socket
+>>>>>>> invitations
 import traceback
 import json
 import logging
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend
+from synnefo.logic import utils, backend, email_send
 
 _logger = logging.getLogger("synnefo.dispatcher")
 
@@ -107,8 +111,22 @@ def update_net(message):
 
 
 def send_email(message):
-    _logger.debug("Request to send email message")
-    message.channel.basic_ack(message.delivery_tag)
+    """Process an email submission request"""
+
+    try:
+        msg = json.loads(message.body)
+
+        email_send.send(sender=msg['frm'], recipient = msg['to'],
+                        body=msg['body'], subject=msg['subject'])
+        message.channel.basic_ack(message.delivery_tag)
+    except KeyError:
+        _logger.error("Malformed incoming JSON, missing attributes: %s",
+                      message.body)
+    except socket.error as e:
+        _logger.error("Cannot connect to SMTP server:%s\n", e)
+    except Exception as e:
+        _logger.error("Unexpected error:%s\n", e)
+        raise
 
 
 def update_credits(message):

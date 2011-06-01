@@ -2,10 +2,11 @@
 #
 # Copyright (c) 2011 Greek Research and Technology Network
 #
-"""Connect to a queue 
+""" Message queue setup and dispatch
 
-This daemon receives job notifications from a number of queues
-
+This program sets up connections to the queues configured in settings.py
+and implements the message wait and dispatch loops. Actual messages are
+handled in the dispatched functions.
 
 """
 
@@ -20,7 +21,6 @@ import synnefo.settings as settings
 setup_environ(settings)
 
 from amqplib import client_0_8 as amqp
-
 from signal import signal, SIGINT, SIGTERM
 
 import logging
@@ -29,8 +29,6 @@ import socket
 
 from synnefo.logic import dispatcher_callbacks
 
-# List of worker ids
-global children
 
 class Dispatcher:
 
@@ -50,14 +48,16 @@ class Dispatcher:
                 self.chan.wait()
             except SystemExit:
                 break
+            except amqp.exceptions.AMQPConnectionException:
+                self.logger.error("Server went away, reconnecting...")
+                self._init()
             except socket.error:
                 self.logger.error("Server went away, reconnecting...")
                 self._init()
-                pass
 
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
-        self.chan.close()
         self.chan.connection.close()
+        self.chan.close()
         sys.exit()
 
     def _init(self):
@@ -73,7 +73,6 @@ class Dispatcher:
                                        virtual_host=settings.RABBIT_VHOST)
             except socket.error:
                 time.sleep(1)
-                pass
 
         self.logger.info("Connection succesful, opening channel")
         self.chan = conn.channel()
@@ -98,14 +97,14 @@ class Dispatcher:
         # Bind queues to handler methods
         for binding in bindings:
             try:
-                cb = getattr(dispatcher_callbacks, binding[3])
+                callback = getattr(dispatcher_callbacks, binding[3])
             except AttributeError:
                 self.logger.error("Cannot find callback %s" % binding[3])
                 continue
 
             self.chan.queue_bind(queue=binding[0], exchange=binding[1],
                                  routing_key=binding[2])
-            tag = self.chan.basic_consume(queue=binding[0], callback=cb)
+            tag = self.chan.basic_consume(queue=binding[0], callback=callback)
             self.logger.debug("Binding %s(%s) to queue %s with handler %s" %
                               (binding[1], binding[2], binding[0], binding[3]))
             self.clienttags.append(tag)
@@ -113,7 +112,7 @@ class Dispatcher:
 
 def _exit_handler(signum, frame):
     """"Catch exit signal in children processes."""
-    print "%d: Caught signal %d, will raise SystemExit" % (os.getpid(),signum)
+    print "%d: Caught signal %d, will raise SystemExit" % (os.getpid(), signum)
     raise SystemExit
 
 
@@ -129,10 +128,10 @@ def child(cmdline, logger):
 
     # Cmd line argument parsing
     (opts, args) = parse_arguments(cmdline)
-    d = Dispatcher(debug = opts.debug, logger = logger)
+    disp = Dispatcher(debug = opts.debug, logger = logger)
 
     # Start the event loop
-    d.wait()
+    disp.wait()
 
 
 def parse_arguments(args):
@@ -140,18 +139,16 @@ def parse_arguments(args):
 
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
-                      dest="debug",
-            help="Enable debug mode")
+                      dest="debug", help="Enable debug mode")
     parser.add_option("-l", "--log", dest="log_file",
-            default=settings.DISPATCHER_LOG_FILE,
-            metavar="FILE",
-            help="Write log to FILE instead of %s" %
-            settings.DISPATCHER_LOG_FILE)
+                      default=settings.DISPATCHER_LOG_FILE, metavar="FILE",
+                      help="Write log to FILE instead of %s" %
+                           settings.DISPATCHER_LOG_FILE)
     parser.add_option("-c", "--cleanup-queues", action="store_true",
                       default=False, dest="cleanup_queues",
-            help="Remove all queues declared in settings.py (DANGEROUS!)")
+                      help="Remove all queues declared in settings.py (DANGEROUS!)")
     parser.add_option("-w", "--workers", default=2, dest="workers",
-            help="Number of workers to spawn", type="int")
+                      help="Number of workers to spawn", type="int")
     
     return parser.parse_args(args)
 
@@ -188,6 +185,14 @@ def cleanup_queues() :
     chan.connection.close()
 
 
+def debug_mode(logger):
+    disp = Dispatcher(debug = True, logger = logger)
+    signal(SIGINT, _exit_handler)
+    signal(SIGTERM, _exit_handler)
+
+    disp.wait()
+
+
 def main():
     global children, logger
     (opts, args) = parse_arguments(sys.argv[1:])
@@ -197,8 +202,8 @@ def main():
     logger = logging.getLogger("synnefo.dispatcher")
     logger.setLevel(lvl)
     formatter = logging.Formatter(
-            "%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
-            "%Y-%m-%d %H:%M:%S")
+        "%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
+        "%Y-%m-%d %H:%M:%S")
     handler = logging.FileHandler(opts.log_file)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -206,6 +211,11 @@ def main():
     # Special case for the clean up queues action
     if opts.cleanup_queues:
         cleanup_queues()
+        return
+
+    # Debug mode, process messages without spawning workers
+    if opts.debug:
+        debug_mode(logger = logger)
         return
 
     # Fork workers
@@ -231,9 +241,9 @@ def main():
     signal(SIGTERM, _parent_handler)
 
     # Wait for all children process to die, one by one
-    for c in children:
+    for pid in children:
         try:
-            os.wait()
+            os.waitpid(pid, 0)
         except Exception:
             pass
 

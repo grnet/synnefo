@@ -26,10 +26,10 @@ def ganeti_net_status(logger, environ):
     
     Process all GANETI_INSTANCE_NICx_y environment variables,
     where x is the NIC index, starting at 0,
-    and y is one of "MAC", "IP".
+    and y is one of "MAC", "IP", "BRIDGE".
 
     The result is returned as a single notification message
-    of type 'Ganeti-net-status', detailing the NIC configuration
+    of type 'ganeti-net-status', detailing the NIC configuration
     of a Ganeti instance.
 
     """

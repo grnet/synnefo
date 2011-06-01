@@ -66,7 +66,8 @@ hooks = {
     ("instance-add", "post"): PostStartHook,
     ("instance-start", "post"): PostStartHook,
     ("instance-reboot", "post"): PostStartHook,
-    ("instance-stop", "post"): PostStopHook
+    ("instance-stop", "post"): PostStopHook,
+    ("instance-modify", "post"): PostStartHook
 }
 
 def main():

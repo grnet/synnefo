@@ -62,9 +62,19 @@ def process_net_status(vm, nics):
         if i == 0:
             net = Network.objects.get(public=True)
         else:
-            link = NetworkLink.objects.get(name=nic['link'])
+            try:
+                link = NetworkLink.objects.get(name=nic['link'])
+            except NetworkLink.DoesNotExist:
+                # Cannot find an instance of NetworkLink for
+                # the link attribute specified in the notification
+                raise NetworkLink.DoesNotExist("Cannot find a NetworkLink "
+                    "object for link='%s'" % nic['link'])
             net = link.network
-        
+            if net is None:
+                raise Network.DoesNotExist("NetworkLink for link='%s' not "
+                    "associated with an existing Network instance." %
+                    nic['link'])
+
         vm.nics.create(
             network=net,
             index=i,

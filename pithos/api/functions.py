@@ -597,7 +597,7 @@ def object_update(request, v_account, v_container, v_object):
     offset, length, total = ranges
     if offset is None:
         offset = size
-    if length is None:
+    if length is None or content_length == -1:
         length = content_length # Nevermind the error.
     elif length != content_length:
         raise BadRequest('Content length does not match range length')

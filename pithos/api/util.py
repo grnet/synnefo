@@ -49,6 +49,7 @@ from pithos.backends import backend
 import datetime
 import logging
 import re
+import hashlib
 
 
 logger = logging.getLogger(__name__)

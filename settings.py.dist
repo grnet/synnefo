@@ -260,3 +260,8 @@ SMTP_SERVER="127.0.0.1"
 #Email account to use for system emails
 SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
 
+#Enable receiving a temporary auth token (using the ?test URL parameter) that
+#bypasses the authentication mechanism
+#WARNING, ACHTUNG, README, XXX ,etc: DO NOT ENABLE THIS ON DEPLOYED VERSIONS
+BYPASS_AUTHENTICATION = False
+

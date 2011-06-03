@@ -140,13 +140,13 @@ def validate_modification_preconditions(request, meta):
     if if_modified_since is not None:
         if_modified_since = parse_http_date_safe(if_modified_since)
     if if_modified_since is not None and int(meta['modified']) <= if_modified_since:
-        raise NotModified('Object has not been modified')
+        raise NotModified('Resource has not been modified')
     
     if_unmodified_since = request.META.get('HTTP_IF_UNMODIFIED_SINCE')
     if if_unmodified_since is not None:
         if_unmodified_since = parse_http_date_safe(if_unmodified_since)
     if if_unmodified_since is not None and int(meta['modified']) > if_unmodified_since:
-        raise PreconditionFailed('Object has been modified')
+        raise PreconditionFailed('Resource has been modified')
 
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set"""
@@ -156,12 +156,12 @@ def validate_matching_preconditions(request, meta):
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None and if_match != '*':
         if meta['hash'] not in [x.lower() for x in parse_etags(if_match)]:
-            raise PreconditionFailed('Object Etag does not match')
+            raise PreconditionFailed('Resource Etag does not match')
     
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
     if if_none_match is not None:
         if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
-            raise NotModified('Object Etag matches')
+            raise NotModified('Resource Etag matches')
 
 def copy_or_move_object(request, src_path, dest_path, move=False):
     """Copy or move an object"""

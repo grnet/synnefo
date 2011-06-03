@@ -1,0 +1,37 @@
+{% load i18n %}
+
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="/static/main.css"/>
+        <title>{% trans "Console" %}</title>
+    </head>
+    <body>
+     <div id="wrapper" class="console">
+        <div class='console-info'>
+            <div class='machine-name'>
+                {% trans "machine" %}: {{machine|slice:":50"}}
+            </div>
+            <div class="host-ip">
+                {% trans "IP" %}: {{host_ip}}
+            </div>
+        </div>
+        <div id='console-header'>
+            <div class="console-header-logo">
+                <a href="/">
+                    <img src="/static/okeanos_console.png" alt="okeanos console"/>
+                </a>
+            </div>
+        </div>
+        <div class="console-container">
+            <applet code="VncViewer.class" archive="/static/vncviewer/VncViewer.jar">
+                <param name="HOST" value="{{host}}"></param>
+                <param name="PORT" value="{{port}}"></param>
+                <param name="PASSWORD" value="{{password}}"></param>
+            </applet>
+        </div>
+    </div>
+    <div class="console-footer">
+        {% include "footer.html" %}
+    </div>
+    </body>
+</html>

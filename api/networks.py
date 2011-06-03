@@ -1,13 +1,15 @@
+from django.conf.urls.defaults import patterns
+from django.db.models import Q
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.utils import simplejson as json
+
+from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, Unauthorized
-from synnefo.api.util import (isoformat, isoparse, get_network,
-                                get_request_dict, api_method)
+from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
 from synnefo.db.models import Network
-
-from django.conf.urls.defaults import patterns
-from django.http import HttpResponse
-from django.utils import simplejson as json
+from synnefo.logic import backend
 
 
 urlpatterns = patterns('synnefo.api.networks',
@@ -38,9 +40,13 @@ def network_demux(request, network_id):
 
 
 def network_to_dict(network, detail=True):
-    d = {'id': network.id, 'name': network.name}
+    network_id = str(network.id) if not network.public else 'public'
+    d = {'id': network_id, 'name': network.name}
     if detail:
+        d['updated'] = util.isoformat(network.updated)
+        d['created'] = util.isoformat(network.created)
         d['servers'] = {'values': [vm.id for vm in network.machines.all()]}
+        d['status'] = network.state
     return d
 
 def render_network(request, networkdict, status=200):
@@ -51,7 +57,7 @@ def render_network(request, networkdict, status=200):
     return HttpResponse(data, status=status)
 
 
-@api_method('GET')
+@util.api_method('GET')
 def list_networks(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -59,26 +65,30 @@ def list_networks(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
-    since = isoparse(request.GET.get('changes-since'))
-
+    
+    owner = request.user
+    since = util.isoparse(request.GET.get('changes-since'))
+    user_networks = Network.objects.filter(Q(owner=owner) | Q(public=True))
+    
     if since:
-        user_networks = Network.objects.filter(owner=request.user, updated__gte=since)
+        user_networks = user_networks.filter(updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
     else:
-        user_networks = Network.objects.filter(owner=request.user)
-
+        user_networks = user_networks.filter(state='ACTIVE')
+    
     networks = [network_to_dict(network, detail) for network in user_networks]
 
     if request.serialization == 'xml':
-        data = render_to_string('list_networks.xml', {'networks': networks, 'detail': detail})
+        data = render_to_string('list_networks.xml', {
+            'networks': networks,
+            'detail': detail})
     else:
         data = json.dumps({'networks': {'values': networks}})
 
     return HttpResponse(data, status=200)
 
-@api_method('POST')
+@util.api_method('POST')
 def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -88,19 +98,22 @@ def create_network(request):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    req = get_request_dict(request)
+    req = util.get_request_dict(request)
 
     try:
         d = req['network']
         name = d['name']
     except (KeyError, ValueError):
         raise BadRequest('Malformed request.')
-
-    network = Network.objects.create(name=name, owner=request.user)
+    
+    network = backend.create_network(name, request.user)
+    if not network:
+        raise OverLimit('Maximum number of networks reached.')
+    
     networkdict = network_to_dict(network)
     return render_network(request, networkdict, status=202)
 
-@api_method('GET')
+@util.api_method('GET')
 def get_network_details(request, network_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -110,11 +123,11 @@ def get_network_details(request, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    net = get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user)
     netdict = network_to_dict(net)
     return render_network(request, netdict)
 
-@api_method('PUT')
+@util.api_method('PUT')
 def update_network_name(request, network_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -125,19 +138,21 @@ def update_network_name(request, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    req = get_request_dict(request)
+    req = util.get_request_dict(request)
 
     try:
         name = req['network']['name']
     except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
 
-    net = get_network(network_id, request.user)
+    net = util.get_network(network_id, request.user)
+    if net.public:
+        raise Unauthorized('Can not rename the public network.')
     net.name = name
     net.save()
     return HttpResponse(status=204)
 
-@api_method('DELETE')
+@util.api_method('DELETE')
 def delete_network(request, network_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -146,15 +161,20 @@ def delete_network(request, network_id):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       overLimit (413)
-
-    net = get_network(network_id, request.user)
-    net.delete()
+    
+    net = util.get_network(network_id, request.user)
+    if net.public:
+        raise Unauthorized('Can not delete the public network.')
+    backend.delete_network(net)
     return HttpResponse(status=204)
 
-@api_method('POST')
+@util.api_method('POST')
 def network_action(request, network_id):
-    net = get_network(network_id, request.user)
-    req = get_request_dict(request)
+    net = util.get_network(network_id, request.user)
+    if net.public:
+        raise Unauthorized('Can not modify the public network.')
+    
+    req = util.get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
 

@@ -20,8 +20,6 @@
             "charged": "2011-02-06 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "ipfour": "192.168.2.1",
-            "ipsix": "::1",
             "flavor": 1,
             "operstate": "STOPPED"
         }
@@ -37,8 +35,6 @@
             "charged": "2011-02-10 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "ipfour": "192.168.2.2",
-            "ipsix": "::2",
             "flavor": 1,
             "operstate": "BUILD"
         }
@@ -54,8 +50,6 @@
             "charged": "2011-02-10 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "ipfour": "192.168.2.3",
-            "ipsix": "::3",
             "flavor": 1,
             "operstate": "STARTED"
         }
@@ -72,8 +66,6 @@
             "charged": "2011-02-10 00:00:00",
             "sourceimage": 1,
             "hostid": "HAL-9000",
-            "ipfour": "192.168.2.4",
-            "ipsix": "::4",
             "flavor": 1,
             "operstate": "STARTED"
         }

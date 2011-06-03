@@ -148,7 +148,7 @@ class ProcessNetStatusTestCase(TestCase):
         }
         vm = VirtualMachine.objects.get(pk=30000)
         backend.process_net_status(vm, msg['nics'])
-        self.assertEquals(vm.ipfour, '192.168.33.1')
+        self.assertEquals(vm.nics.all()[0].ipv4, '192.168.33.1')
 
     def test_set_empty_ipv4(self):
         """Test reception of a net status notification with no IPv4 assigned"""
@@ -160,7 +160,7 @@ class ProcessNetStatusTestCase(TestCase):
         }
         vm = VirtualMachine.objects.get(pk=30000)
         backend.process_net_status(vm, msg['nics'])
-        self.assertEquals(vm.ipfour, '0.0.0.0')
+        self.assertEquals(vm.nics.all()[0].ipv4, '')
 
 
 class UsersTestCase(TestCase):
@@ -174,4 +174,3 @@ class UsersTestCase(TestCase):
 
         username = users.create_uname(u'Γεώργιος Παπαγεωργίου')
         self.assertEquals(username, u'παπαγεωγ')
-

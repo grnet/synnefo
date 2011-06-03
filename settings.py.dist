@@ -173,7 +173,7 @@ RABBIT_USERNAME = "okeanos"
 RABBIT_PASSWORD = "0k3@n0s"
 RABBIT_VHOST = "/"
 
-# 
+#
 # Queues, exchanges and bindings for AMQP
 #
 EXCHANGE_GANETI = "ganeti"  # Messages from Ganeti
@@ -245,23 +245,52 @@ AUTH_TOKEN_DURATION = 30 * 24
 # Minutes between reconciliations
 RECONCILIATION_MIN = 30
 
-#Max number of invitations allowed per user
+# Max number of invitations allowed per user
 MAX_INVITATIONS = 20
 
-#Key to encrypt X-Auth-Token with when sending invitations
+# Key to encrypt X-Auth-Token with when sending invitations
 INVITATION_ENCR_KEY = '8d342f6e7a0366c632978a80257019af'
 
-#Days during which an invitation is active
+# Days for which an invitation is active
 INVITATION_VALID_DAYS = 30
 
-#SMTP server for the system
+# SMTP server to use when sending out emails
 SMTP_SERVER="127.0.0.1"
 
-#Email account to use for system emails
+# The address to use in the From: field when sending out emails
 SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
 
-#Enable receiving a temporary auth token (using the ?test URL parameter) that
-#bypasses the authentication mechanism
-#WARNING, ACHTUNG, README, XXX ,etc: DO NOT ENABLE THIS ON DEPLOYED VERSIONS
+# Enable receiving a temporary auth token (using the ?test URL parameter) that
+# bypasses the authentication mechanism
+#
+# WARNING, ACHTUNG, README, etc: DO NOT ENABLE THIS ON DEPLOYED VERSIONS!
+#
 BYPASS_AUTHENTICATION = False
+
+#
+# Network Configuration
+#
+# Synnefo assigns this link id to NICs connected on the public network.
+# An IP pool should be associated with this link by the Ganeti administrator.
+GANETI_PUBLIC_LINK = 'snf_public'
+# This link id is assigned to NICs that should be isolated from anything else
+# (e.g., right before the NIC gets deleted).
+# This value is also hardcoded in a fixture in db/fixtures/initial_data.json.
+GANETI_NULL_LINK = 'snf_null'
+#
+# The pool of private network links to use is
+# $GANETI_LINK_PREFIX{1..$GANETI_MAX_LINK_NUMBER}.
+#
+# The prefix to use for private network links.
+GANETI_LINK_PREFIX = 'prv'
+# The number of private network links to use.
+GANETI_MAX_LINK_NUMBER = 100
+
+# A list of suggested server tags (server metadata keys)
+DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
+
+# A list of allowed icons for OS Images
+IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
+               "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
+               "suse"]
 

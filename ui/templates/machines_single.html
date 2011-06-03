@@ -1,0 +1,430 @@
+{% load i18n %}
+
+<!-- the single view -->
+<div id="machinesview-single" class="single">
+    <div class="large-spinner"></div>
+    <div class="single-container" id="machine-container-template" style="display:none;" >
+        <div class="column1">
+            <img src="/static/icons/machines/large/ubuntu-on.png" class="single-image" />
+            <div class="state">
+                <span class="state-label">{% trans "Running" %}</span>
+            </div>
+            <div class="single-actions">
+                <div class="single-action action-start">{% trans "Start" %}</a></div>
+                <div class="single-action action-console">{% trans "Console" %}</a></div>
+                <div class="single-action action-reboot">{% trans "Reboot" %}</a></div>
+                <div class="single-action action-shutdown">{% trans "Shutdown" %}</a></div>
+                <div class="single-action action-destroy">{% trans "Destroy" %}</a></div>
+            </div>
+        </div>
+        <div class="column2">
+            <div class="machine-labels">
+                <div class="machine-label name">{% trans "Name" %}:</div>
+                <div class="machine-label cpus">{% trans "CPUs" %}:</div>
+                <div class="machine-label ram">{% trans "RAM (MB)" %}:</div>
+                <div class="machine-label disk">{% trans "System Disk (GB)" %}:</div>
+                <div class="machine-label image-name">{% trans "Image Name" %}:</div>
+                <div class="machine-label image-size">{% trans "Image Size (GB)" %}:</div>
+                <div class="machine-label ipv4">{% trans "Public IPv4" %}:</div>
+                <div class="machine-label ipv6">{% trans "Public IPv6" %}:</div>
+                <div class="machine-label groups">{% trans "Groups" %}:</div>
+            </div>
+            <div class="machine-details">
+                <div class="machine-detail name">My Desktop</div>
+                <div class="machine-detail cpus">4</div>
+                <div class="machine-detail ram">2048</div>
+                <div class="machine-detail disk">100</div>
+                <div class="machine-detail image-name">windos_XP_blah_blah</div>
+                <div class="machine-detail image-size">2.3</div>
+                <div class="machine-detail ipv4">no ipv4</div>
+                <div class="machine-detail ipv6">2001:db8:1f70::999:de8:7648:6e8</div>
+                <div class="machine-detail groups">
+                    <div class="machine-detail group">group</div>
+                </div>
+            </div>
+        </div>
+        <div class="disks">
+            {% trans "disks" %}<span class="toggler">&#710;</span>
+        </div>
+        <div class="disks-content">
+
+        </div>
+        <div class="networks">
+            {% trans "networks" %}<span class="toggler">&#710;</span>
+        </div>
+        <div class="networks-content">
+
+        </div>
+        <div class="stats">
+            {% trans "stats" %}<span class="toggler">&#710;</span>
+        </div>
+        <div class="stats-content">
+
+        </div>
+    </div>
+    <div class="column3">
+        <div class="controls">
+            <div class="previous">
+                &lt;{% trans "previous" %}
+            </div>
+            <div class="next">
+                {% trans "next" %}&gt;
+            </div>
+        </div>
+        <div class="separator">
+        </div>
+        <div class="servers">
+            <div class="server-name" id="servers-widget-template" style="display:none;">server1</div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+//hide the all of the info contents
+$("#machinesview-single.single .disks-content").hide();
+$("#machinesview-single.single .networks-content").hide();
+$("#machinesview-single.single .stats-content").hide();
+
+// intercept start click
+$("#machinesview-single.single div.action-start").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = start;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([start, serverID, serverName])
+    update_confirmations()
+    return false;
+});
+
+// update the servers list
+function update_machines_view(data){
+    /*
+    Go through the servers in the input data. Update existing entries, add
+    new ones to the list
+    */
+
+    $.each(data.servers.values, function(i,server){
+
+        existing = $('#machinesview-single.single #' + server.id);
+
+        //hide next button if there is only one vm
+        if (data.servers.values.length == 1) {
+            $("#machinesview-single.single .column3 .next").hide();
+        }
+
+        // if multiple machines exist in the DOM, delete all but one
+        // defensive coding - that shouldn't happen normally
+        while (existing.length > 1){
+            existing.remove();
+        }
+
+        var server_image = os_icon(server.metadata);
+
+        // server already exists in DOM
+        if (existing.length){
+            $("#machinesview-single.single div.single-container:last-child").find("div.separator").show();
+            //  if the status is deleted, delete it from the DOM
+            if (server.status == 'DELETED') {
+                existing.remove();
+                try {
+                    console.info(existing.find("div.name span.name").text() + ' removed');
+                } catch(err) {}
+            } else if (existing.find(".status").text() != STATUSES[server.status]) {
+                try { // firebug console logging
+                    console.info(existing.find("div.name span.name").text() + ' from '
+                                + existing.find(".status").text() + ' to ' + STATUSES[server.status]);
+                } catch(err) {}
+                // show console action only on active servers, else hide it
+                if (server.status == 'ACTIVE') {
+                    $('#machinesview-single.single div.#' + server.id + ' div.action-console').show();
+                } else {
+                    $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
+                }
+                // show reboot and shutdown actions on active of rebooting servers
+                if (server.status == 'ACTIVE' || server.status == 'REBOOT') {
+                    $('#machinesview-single.single div.#' + server.id + ' div.action-reboot').show();
+                    $('#machinesview-single.single div.#' + server.id + ' div.action-shutdown').show();
+                    $('#machinesview-single.single div.#' + server.id + ' div.action-destroy').show();
+                }
+                if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
+                    [STATUSES['STOPPED'], STATUSES['ERROR'],
+                     TRANSITIONS['Starting']].indexOf(existing.find(".status").text()) >= 0) {
+                    // from stopped, on error or starting to building, active or rebooting
+                    // starting is not an api state, it means the vm is stopped or on error
+                    existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-on.png');
+                    existing.find(".state-label").text(STATUSES[server.status]);
+                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
+                           [STATUSES['ACTIVE'], STATUSES['BUILD'], STATUSES['REBOOT'],
+                            TRANSITIONS['Shutting down'], TRANSITIONS['Starting']].indexOf(existing.find(".status").text()) >= 0) {
+                    // from active, building, rebooting, or shutting down to stopped or on error
+                    // shutting down is not an api state, it means the server is active
+                    existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-off.png');
+                    existing.find(".state-label").text(STATUSES[server.status]);
+                } else if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
+                            [STATUSES['ACTIVE'], STATUSES['BUILD'],
+                             STATUSES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
+                    // the server changes status
+                    existing.find(".state-label").text(STATUSES[server.status]);
+                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
+                    [STATUSES['STOPPED'],
+                     STATUSES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
+                    // the server changes status
+                    existing.find(".state-label").text(STATUSES[server.status]);
+                }
+                existing.find('.spinner').hide();
+                existing.find(' .wave').attr('src','static/wave.gif').show();
+                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
+                // show spinner while the server is rebooting, starting or shutting down
+                if ([STATUSES['REBOOT'],
+                    TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
+                    existing.find(' .wave').hide();
+                    existing.find('.spinner').show();
+                }
+            } else if (existing.find(".status").text() == STATUSES['REBOOT'] && server.status == 'REBOOT') {
+                    $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
+            }
+            // find and display ips
+            var ips = get_public_ips(server);
+            existing.find(".machine-details div.ipv4").text(ips['ip4']);
+            existing.find(".machine-details div.ipv6").text(ips['ip6']);
+        } else if (server.status != 'DELETED') {
+            // If it does not exist and it's not deleted, we should create it
+            var serverwidget = $("#servers-widget-template").clone().attr("id", 'link-' + server.id);
+            if (server.name.length > 18) {
+                serverwidget.text(server.name.substring(0,15) + '...');
+            } else {
+                serverwidget.text(server.name)
+            }
+            serverwidget.appendTo('.servers');
+            serverwidget.show();
+            //find and hide the previous selected server
+            $('.single').find('.single-container').hide();
+            $('.single .column3').find('.selected').removeClass('selected');
+            //create and select the new one
+            var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
+            machine.find(".machine-details div.name").text(server.name.substring(0,100));
+            machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
+            machine.find("span.imagetag").text(server_image);
+            machine.find(".state-label").text(STATUSES[server.status]);
+            // find and display ips
+            var ips = get_public_ips(server);
+            machine.find(".machine-details div.ipv4").text(ips['ip4']);
+            machine.find(".machine-details div.ipv6").text(ips['ip6']);
+            // find and display flavor parameters
+            var CPUs, RAM, disk, image_name, image_size;
+            if ( flavors.length > 0 ) {
+                var current_flavor = '';
+                for (i=0; i<flavors.length; i++) {
+                    if (flavors[i]['id'] == server.flavorRef) {
+                        current_flavor = flavors[i];
+                    }
+                }
+                CPUs = current_flavor['cpu'];
+                RAM = current_flavor['ram'];
+                disk = current_flavor['disk'];
+            } else {
+                CPUs = 0;
+                RAM = 0;
+                disk = 0;
+            }
+            if ( images.length > 0 ) {
+                var current_image = '';
+                for (i=0; i<images.length; i++) {
+                    if (images[i]['id'] == server.imageRef) {
+                        current_image = images[i];
+                    }
+                }
+                image_name = current_image['name'];
+                image_size = current_image['metadata']['values']['size'];
+            } else {
+                image_name = ''
+                image_size = ''
+            }
+            machine.find(".machine-details div.cpus").text(CPUs);
+            machine.find(".machine-details div.ram").text(RAM);
+            machine.find(".machine-details div.disk").text(disk);
+            machine.find(".machine-details div.image-name").text(image_name.substring(0,15));
+            machine.find(".machine-details div.image-size").text(image_size);
+            //show off image if server is not active
+            if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) < 0){
+                    machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-off.png');
+            }
+            //show spinner while machine is building
+            if (server.status == 'BUILD' ||
+                [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
+                machine.find('.spinner').show();
+            }
+            machine.appendTo("#machinesview-single.single");
+            //disable reboot and shutdown actions while machine is building
+            if (server.status == 'BUILD') {
+                $('#machinesview-single.single div.#' + server.id + ' div.action-reboot').hide();
+                $('#machinesview-single.single div.#' + server.id + ' div.action-shutdown').hide();
+            }
+            // show console action only on active servers
+            if (server.status == 'ACTIVE') {
+                $('#machinesview-single.single div.#' + server.id + ' div.action-console').show();
+                $('#machinesview-single.single div.#' + server.id + ' div.action-start').hide();
+            } else if (server.status == 'REBOOT'){
+                $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
+            } else {
+                $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
+                $('#machinesview-single.single div.#' + server.id + ' div.action-reboot').hide();
+                $('#machinesview-single.single div.#' + server.id + ' div.action-shutdown').hide();
+            }
+        }
+    });
+
+    $("#machinesview-single.single > div.large-spinner").hide();
+
+    // show message in case user has no servers!
+    //if ($('.single-container').length < 2) {
+    //    showWelcome();
+    //} else {
+    //    hideWelcome();
+    //}
+
+    // set confirm box position
+    if (window.innerHeight - 220 < $('#machinesview-single').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+
+    //show the first machine and select it in the widget
+    $('.single-container:eq(1)').show();
+    $('.single .column3').find('.server-name:eq(1)').addClass('selected');
+
+    //enable widget links
+    $(".server-name").live('click', function() {
+        $('.single').find('.single-container').hide()
+        $('.single').find('#' + $(this).attr('id').substring(5)).show();
+        $('.single .column3').find('.selected').removeClass('selected');
+        $(this).addClass('selected');
+        $(".single .column3 .previous").show();
+        $(".single .column3 .next").show();
+        if ($(this).attr("id") == $(".single .column3 .server-name:eq(1)").attr("id")) {
+            $(".single .column3 .previous").hide();
+        } else if ($(this).attr("id") == $(".single .column3 .server-name:last").attr("id")) {
+            $(".single .column3 .next").hide();
+        }
+    });
+
+    //toggle content
+    $("div.disks").toggle(function() {
+            $(this).find('.toggler').html("&#711;");
+            $(this).next(".disks-content").slideToggle(600);
+            return false;
+        }, function() {
+            $(this).find('.toggler').html('&#710;');
+            $(this).next(".disks-content").slideToggle(600);
+            return false;
+    });
+    $("div.networks").toggle(function() {
+            $(this).find('.toggler').html("&#711;");
+            $(this).next(".networks-content").slideToggle(600);
+            return false;
+        }, function() {
+            $(this).find('.toggler').html('&#710;');
+            $(this).next(".networks-content").slideToggle(600);
+            return false;
+    });
+    $("div.stats").toggle(function() {
+            $(this).find('.toggler').html("&#711;");
+            $(this).next(".stats-content").slideToggle(600);
+            return false;
+        }, function() {
+            $(this).find('.toggler').html('&#710;');
+            $(this).next(".stats-content").slideToggle(600);
+            return false;
+    });
+
+    if ($.cookie('server')) {
+        $('div#link-' + $.cookie('server')).click();
+        $.cookie('server', null);
+    }
+
+    //if it is the last vm, hide the next button
+    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+        $("#machinesview-single.single .column3 .next").hide()
+    } else {
+        $("#machinesview-single.single .column3 .next").show()
+    }
+
+    //if it is the first vm, hide the prev button
+    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+        $("#machinesview-single.single .column3 .previous").hide()
+    } else {
+        $("#machinesview-single.single .column3 .previous").show()
+    }
+
+}
+
+//enable prev-next buttons
+$("#machinesview-single.single .column3 .previous").live('click', function(){
+    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+        return false;
+    } else {
+        current_server = $('#machinesview-single.single .column3').find('.selected').attr("id").substring(5);
+        $('#machinesview-single.single').find('#' + current_server).hide();
+        $('#machinesview-single.single').find('#' + current_server).prev().show();
+        $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('selected');
+        $('#machinesview-single.single .column3').find('#link-' + current_server).prev().addClass('selected');
+        if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+            $(this).hide()
+        }
+        $("#machinesview-single.single .column3 .next").show()
+    }
+});
+
+$("#machinesview-single.single .column3 .next").live('click', function(){
+    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+        return false;
+        } else {
+        current_server = $('#machinesview-single.single .column3').find('.selected').attr("id").substring(5);
+        $('#machinesview-single.single').find('#' + current_server).hide();
+        $('#machinesview-single.single').find('#' + current_server).next().show();
+        $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('selected');
+        $('#machinesview-single.single .column3').find('#link-' + current_server).next().addClass('selected');
+        //if it is the last vm, hide the next button
+        if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+            $(this).hide()
+        }
+        $("#machinesview-single.single .column3 .previous").show();
+    }
+});
+
+//hide prev button on startup
+$("#machinesview-single.single .column3 .previous").hide()
+
+// basic functions executed on page load
+if ( flavors.length == 0 && images.length == 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+    // populate image list
+    update_images();
+} else if ( flavors.length == 0 && images.length != 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+} else if ( flavors.length != 0 && images.length == 0 ) {
+    // populate image list
+    update_images();
+    update_vms(UPDATE_INTERVAL);
+} else {
+    // start updating vm list
+    update_vms(UPDATE_INTERVAL);
+}
+
+//FIXME: Hide and show welcome depending on number of machines
+hideWelcome();
+</script>

@@ -171,7 +171,9 @@ class FlavorCost(models.Model):
         verbose_name = u'Pricing history for flavors'
     
     def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (int(self.cost_active), int(self.cost_inactive), self.flavor.name, self.effective_from)
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % \
+                (int(self.cost_active), int(self.cost_inactive),
+                 self.flavor.name, self.effective_from)
 
 
 class VirtualMachine(models.Model):
@@ -246,8 +248,6 @@ class VirtualMachine(models.Model):
     charged = models.DateTimeField(default=datetime.datetime.now())
     sourceimage = models.ForeignKey("Image", null=False) 
     hostid = models.CharField(max_length=100)
-    ipfour = models.IPAddressField()
-    ipsix = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
     deleted = models.BooleanField('Deleted', default=False)
     suspended = models.BooleanField('Administratively Suspended', default=False)
@@ -264,8 +264,10 @@ class VirtualMachine(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=30, null=True)
     operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
     backendjobid = models.PositiveIntegerField(null=True)
-    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
-    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
+    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
+                                     null=True)
+    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30,
+                                        null=True)
     backendlogmsg = models.TextField(null=True)
 
     # Error classes
@@ -280,7 +282,8 @@ class VirtualMachine(models.Model):
             self.opcode = opcode
             self.status = status
          def __str__(self):
-            return repr("<opcode: %s, status: %s>" % (str(self.opcode), str(self.status)))
+            return repr("<opcode: %s, status: %s>" % (str(self.opcode),
+                                                      str(self.status)))
 
     class InvalidActionError(Exception):
          def __init__(self, action):
@@ -362,7 +365,8 @@ class Debit(models.Model):
         verbose_name = u'Accounting log'
 
     def __unicode__(self):
-        return u'%s - %s - %s - %s' % ( self.user.id, self.vm.name, str(self.when), self.description)
+        return u'%s - %s - %s - %s' % (self.user.id, self.vm.name,
+                                       str(self.when), self.description)
 
 
 class Disk(models.Model):
@@ -381,14 +385,24 @@ class Disk(models.Model):
 
 
 class Network(models.Model):
+    NETWORK_STATES = (
+        ('ACTIVE', 'Active'),
+        ('DELETED', 'Deleted')
+    )
+    
     name = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(SynnefoUser)
-    machines = models.ManyToManyField(VirtualMachine)
+    owner = models.ForeignKey(SynnefoUser, null=True)
+    state = models.CharField(choices=NETWORK_STATES, max_length=30)
+    public = models.BooleanField(default=False)
+    link = models.ForeignKey('NetworkLink', related_name='+')
+    machines = models.ManyToManyField(VirtualMachine,
+                                        through='NetworkInterface')
     
     def __unicode__(self):
         return self.name
+
 
 class Invitations(models.Model):
     source = models.ForeignKey(SynnefoUser, related_name="source")
@@ -402,3 +416,28 @@ class Invitations(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class NetworkInterface(models.Model):
+    FIREWALL_PROFILES = (
+        ('ENABLED', 'Enabled'),
+        ('DISABLED', 'Disabled')
+    )
+    
+    machine = models.ForeignKey(VirtualMachine, related_name='nics')
+    network = models.ForeignKey(Network, related_name='nics')
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    index = models.IntegerField(null=True)
+    mac = models.CharField(max_length=17, null=True)
+    ipv4 = models.CharField(max_length=15, null=True)
+    ipv6 = models.CharField(max_length=100, null=True)
+    firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
+                                        max_length=30, null=True)
+
+
+class NetworkLink(models.Model):
+    network = models.ForeignKey(Network, null=True, related_name='+')
+    index = models.IntegerField()
+    name = models.CharField(max_length=255)
+    available = models.BooleanField(default=True)

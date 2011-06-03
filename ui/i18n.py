@@ -3,7 +3,6 @@ from django.conf import settings
 from django.utils.translation import activate, to_locale
 from django.utils.translation import check_for_language, get_language
 
-
 def set_language(request):
     """
     Django's set_language function adapted to serve GET instead of POST

@@ -5,7 +5,9 @@
 #
 
 from django.conf import settings
-from synnefo.db.models import VirtualMachine
+from django.db import transaction
+
+from synnefo.db.models import VirtualMachine, Network, NetworkLink
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
 
@@ -45,6 +47,7 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     vm.save()
 
 
+@transaction.commit_on_success
 def process_net_status(vm, nics):
     """Process a net status notification from the backend
 
@@ -52,16 +55,31 @@ def process_net_status(vm, nics):
     detailing the NIC configuration of a VM instance.
 
     Update the state of the VM in the DB accordingly.
-
     """
+    
+    vm.nics.all().delete()
+    for i, nic in enumerate(nics):
+        if i == 0:
+            net = Network.objects.get(public=True)
+        else:
+            try:
+                link = NetworkLink.objects.get(name=nic['link'])
+            except NetworkLink.DoesNotExist:
+                # Cannot find an instance of NetworkLink for
+                # the link attribute specified in the notification
+                raise NetworkLink.DoesNotExist("Cannot find a NetworkLink "
+                    "object for link='%s'" % nic['link'])
+            net = link.network
+            if net is None:
+                raise Network.DoesNotExist("NetworkLink for link='%s' not "
+                    "associated with an existing Network instance." %
+                    nic['link'])
 
-    # For the time being, we can only update the ipfour field,
-    # based on the IPv4 address of the first NIC
-    if len(nics) > 0:
-        ipv4 = nics[0]['ip']
-        if ipv4 == '':
-            ipv4 = '0.0.0.0'
-        vm.ipfour = ipv4
+        vm.nics.create(
+            network=net,
+            index=i,
+            mac=nic.get('mac', ''),
+            ipv4=nic.get('ip', ''))
     vm.save()
 
 
@@ -95,38 +113,44 @@ def start_action(vm, action):
 
 
 def create_instance(vm, flavor, image, password):
+    
+    nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
+    
     return rapi.CreateInstance(
         mode='create',
         name=vm.backend_id,
         disk_template='plain',
-        disks=[{"size": 4000}],         #FIXME: Always ask for a 4GB disk for now
-        nics=[{}],
+        disks=[{"size": 4000}],     #FIXME: Always ask for a 4GB disk for now
+        nics=[nic],
         os='image+default',
         ip_check=False,
         name_check=False,
-        pnode=rapi.GetNodes()[0],       #TODO: verify if this is necessary
+        pnode=rapi.GetNodes()[0],   #TODO: use a Ganeti iallocator instead
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
-        osparams=dict(img_id=image.backend_id, img_passwd=password, img_format=image.format))
+        osparams=dict(img_id=image.backend_id, img_passwd=password,
+                      img_format=image.format))
+
 
 def delete_instance(vm):
     start_action(vm, 'DESTROY')
-    rapi.DeleteInstance(vm.backend_id)
+    rapi.DeleteInstance(vm.backend_id, dry_run=settings.TEST)
+    vm.nics.all().delete()
 
 
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
-    rapi.RebootInstance(vm.backend_id, reboot_type)
+    rapi.RebootInstance(vm.backend_id, reboot_type, dry_run=settings.TEST)
 
 
 def startup_instance(vm):
     start_action(vm, 'START')
-    rapi.StartupInstance(vm.backend_id)
+    rapi.StartupInstance(vm.backend_id, dry_run=settings.TEST)
 
 
 def shutdown_instance(vm):
     start_action(vm, 'STOP')
-    rapi.ShutdownInstance(vm.backend_id)
+    rapi.ShutdownInstance(vm.backend_id, dry_run=settings.TEST)
 
 
 def get_instance_console(vm):
@@ -143,3 +167,75 @@ def get_job_status(jobid):
 
 def update_status(vm, status):
     utils.update_state(vm, status)
+
+def create_network_link():
+    try:
+        last = NetworkLink.objects.order_by('-index')[0]
+        index = last.index + 1
+    except IndexError:
+        index = 1
+    
+    if index <= settings.GANETI_MAX_LINK_NUMBER:
+        name = '%s%d' % (settings.GANETI_LINK_PREFIX, index)
+        return NetworkLink.objects.create(index=index, name=name,
+                                          available=True)
+    # FIXME: Shouldn't something at least be logged here?
+    return None     # All link slots are filled
+
+
+@transaction.commit_on_success
+def create_network(name, owner):
+    try:
+        link = NetworkLink.objects.filter(available=True)[0]
+    except IndexError:
+        link = create_network_link()
+        if not link:
+            return None
+    
+    network = Network.objects.create(
+        name=name,
+        owner=owner,
+        state='ACTIVE',
+        link=link)
+    
+    link.network = network
+    link.available = False
+    link.save()
+    
+    return network
+
+
+@transaction.commit_on_success
+def delete_network(net):
+    link = net.link
+    if link.name != settings.GANETI_NULL_LINK:
+        link.available = True
+        link.network = None
+        link.save()
+    
+    for vm in net.machines.all():
+        disconnect_from_network(vm, net)
+        vm.save()
+    net.state = 'DELETED'
+    net.save()
+
+
+def connect_to_network(vm, net):
+    nic = {'mode': 'bridged', 'link': net.link.name}
+    rapi.ModifyInstance(vm.backend_id,
+        nics=[('add', nic)],
+        dry_run=settings.TEST)
+
+
+def disconnect_from_network(vm, net):
+    nics = vm.nics.filter(network__public=False).order_by('index')
+    new_nics = [nic for nic in nics if nic.network != net]
+    if new_nics == nics:
+        return      # Nothing to remove
+    ops = [('remove', {})]
+    for i, nic in enumerate(new_nics):
+        ops.append((i + 1, {
+            'mode': 'bridged',
+            'link': nic.network.link.name}))
+    rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)
+

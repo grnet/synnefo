@@ -26,21 +26,23 @@ def ganeti_net_status(logger, environ):
     
     Process all GANETI_INSTANCE_NICx_y environment variables,
     where x is the NIC index, starting at 0,
-    and y is one of "MAC", "IP".
+    and y is one of "MAC", "IP", "BRIDGE".
 
     The result is returned as a single notification message
-    of type 'Ganeti-net-status', detailing the NIC configuration
+    of type 'ganeti-net-status', detailing the NIC configuration
     of a Ganeti instance.
 
     """
     nics = {}
 
+    key_to_attr = { 'IP': 'ip', 'MAC': 'mac', 'BRIDGE': 'link' }
+
     for env in environ.keys():
         if env.startswith("GANETI_INSTANCE_NIC"):
             s = env.replace("GANETI_INSTANCE_NIC", "").split('_', 1)
-            if len(s) == 2 and s[0].isdigit() and s[1] in ('MAC', 'IP'):
+            if len(s) == 2 and s[0].isdigit() and s[1] in ('MAC', 'IP', 'BRIDGE'):
                 index = int(s[0])
-                key = s[1].lower()
+                key = key_to_attr[s[1]]
 
                 if nics.has_key(index):
                     nics[index][key] = environ[env]

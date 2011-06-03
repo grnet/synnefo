@@ -9,12 +9,10 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from synnefo.api import util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
-from synnefo.api.util import (isoformat, isoparse, random_password,
-                                get_vm, get_vm_meta, get_image, get_flavor,
-                                get_request_dict, render_metadata, render_meta, api_method)
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
@@ -70,9 +68,19 @@ def metadata_item_demux(request, server_id, key):
         return method_not_allowed(request)
 
 
-def address_to_dict(ipfour, ipsix):
-    return {'id': 'public',
-            'values': [{'version': 4, 'addr': ipfour}, {'version': 6, 'addr': ipsix}]}
+def nic_to_dict(nic):
+    network = nic.network
+    network_id = str(network.id) if not network.public else 'public'
+    d = {'id': network_id, 'name': network.name, 'mac': nic.mac}
+    if nic.firewall_profile:
+        d['firewallProfile'] = nic.firewall_profile
+    if nic.ipv4 or nic.ipv6:
+        d['values'] = []
+        if nic.ipv4:
+            d['values'].append({'version': 4, 'addr': nic.ipv4})
+        if nic.ipv6:
+            d['values'].append({'version': 6, 'addr': nic.ipv6})
+    return d
 
 def metadata_to_dict(vm):
     vm_meta = vm.virtualmachinemetadata_set.all()
@@ -84,8 +92,8 @@ def vm_to_dict(vm, detail=False):
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' else 0
         d['hostId'] = vm.hostid
-        d['updated'] = isoformat(vm.updated)
-        d['created'] = isoformat(vm.created)
+        d['updated'] = util.isoformat(vm.updated)
+        d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.sourceimage.id
 
@@ -93,21 +101,23 @@ def vm_to_dict(vm, detail=False):
         if metadata:
             d['metadata'] = {'values': metadata}
 
-        addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
-        addresses.extend({'id': str(network.id), 'values': []} for network in vm.network_set.all())
-        d['addresses'] = {'values': addresses}
+        addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
+        if addresses:
+            d['addresses'] = {'values': addresses}
     return d
 
 
 def render_server(request, server, status=200):
     if request.serialization == 'xml':
-        data = render_to_string('server.xml', {'server': server, 'is_root': True})
+        data = render_to_string('server.xml', {
+            'server': server,
+            'is_root': True})
     else:
         data = json.dumps({'server': server})
     return HttpResponse(data, status=status)
 
 
-@api_method('GET')
+@util.api_method('GET')
 def list_servers(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -116,24 +126,29 @@ def list_servers(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    since = isoparse(request.GET.get('changes-since'))
+    since = util.isoparse(request.GET.get('changes-since'))
 
     if since:
-        user_vms = VirtualMachine.objects.filter(owner=request.user, updated__gte=since)
+        user_vms = VirtualMachine.objects.filter(owner=request.user,
+                                                updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:
-        user_vms = VirtualMachine.objects.filter(owner=request.user, deleted=False)
+        user_vms = VirtualMachine.objects.filter(owner=request.user,
+                                                deleted=False)
+    
     servers = [vm_to_dict(server, detail) for server in user_vms]
 
     if request.serialization == 'xml':
-        data = render_to_string('list_servers.xml', {'servers': servers, 'detail': detail})
+        data = render_to_string('list_servers.xml', {
+            'servers': servers,
+            'detail': detail})
     else:
         data = json.dumps({'servers': {'values': servers}})
 
     return HttpResponse(data, status=200)
 
-@api_method('POST')
+@util.api_method('POST')
 def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -145,8 +160,9 @@ def create_server(request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
 
-    req = get_request_dict(request)
-
+    req = util.get_request_dict(request)
+    owner = request.user
+    
     try:
         server = req['server']
         name = server['name']
@@ -156,21 +172,18 @@ def create_server(request):
         flavor_id = server['flavorRef']
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-
-    image = get_image(image_id, request.user)
-    flavor = get_flavor(flavor_id)
-
+    
+    image = util.get_image(image_id, owner)
+    flavor = util.get_flavor(flavor_id)
+    password = util.random_password()
+    
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
-        owner=request.user,
+        owner=owner,
         sourceimage=image,
-        ipfour='0.0.0.0',
-        ipsix='::1',
         flavor=flavor)
-
-    password = random_password()
-
+    
     try:
         create_instance(vm, flavor, image, password)
     except GanetiApiError:
@@ -178,8 +191,11 @@ def create_server(request):
         raise ServiceUnavailable('Could not create server.')
 
     for key, val in metadata.items():
-        VirtualMachineMetadata.objects.create(meta_key=key, meta_value=val, vm=vm)
-
+        VirtualMachineMetadata.objects.create(
+            meta_key=key,
+            meta_value=val,
+            vm=vm)
+    
     logging.info('created vm with %s cpus, %s ram and %s storage',
                     flavor.cpu, flavor.ram, flavor.disk)
 
@@ -188,7 +204,7 @@ def create_server(request):
     server['adminPass'] = password
     return render_server(request, server, status=202)
 
-@api_method('GET')
+@util.api_method('GET')
 def get_server_details(request, server_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -198,11 +214,11 @@ def get_server_details(request, server_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user)
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 
-@api_method('PUT')
+@util.api_method('PUT')
 def update_server_name(request, server_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -214,20 +230,20 @@ def update_server_name(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    req = get_request_dict(request)
+    req = util.get_request_dict(request)
 
     try:
         name = req['server']['name']
     except (TypeError, KeyError):
         raise BadRequest('Malformed request.')
 
-    vm = get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user)
     vm.name = name
     vm.save()
 
     return HttpResponse(status=204)
 
-@api_method('DELETE')
+@util.api_method('DELETE')
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -238,14 +254,14 @@ def delete_server(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user)
     delete_instance(vm)
     return HttpResponse(status=204)
 
-@api_method('POST')
+@util.api_method('POST')
 def server_action(request, server_id):
-    vm = get_vm(server_id, request.user)
-    req = get_request_dict(request)
+    vm = util.get_vm(server_id, request.user)
+    req = util.get_request_dict(request)
     if len(req) != 1:
         raise BadRequest('Malformed request.')
 
@@ -260,7 +276,7 @@ def server_action(request, server_id):
     except AssertionError:
         raise BadRequest('Invalid argument.')
 
-@api_method('GET')
+@util.api_method('GET')
 def list_addresses(request, server_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -269,9 +285,9 @@ def list_addresses(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
-    addresses = [address_to_dict(vm.ipfour, vm.ipsix)]
-
+    vm = util.get_vm(server_id, request.user)
+    addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
+    
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
@@ -279,7 +295,7 @@ def list_addresses(request, server_id):
 
     return HttpResponse(data, status=200)
 
-@api_method('GET')
+@util.api_method('GET')
 def list_addresses_by_network(request, server_id, network_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -288,13 +304,13 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
-    vm = get_vm(server_id, request.user)
-    if network_id != 'public':
-        raise ItemNotFound('Unknown network.')
-
-    address = address_to_dict(vm.ipfour, vm.ipsix)
-
+    
+    owner = request.user
+    machine = util.get_vm(server_id, owner)
+    network = util.get_network(network_id, owner)
+    nic = util.get_nic(machine, network)
+    address = nic_to_dict(nic)
+    
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'address': address})
     else:
@@ -302,7 +318,7 @@ def list_addresses_by_network(request, server_id, network_id):
 
     return HttpResponse(data, status=200)
 
-@api_method('GET')
+@util.api_method('GET')
 def list_metadata(request, server_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -311,11 +327,11 @@ def list_metadata(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
+    vm = util.get_vm(server_id, request.user)
     metadata = metadata_to_dict(vm)
-    return render_metadata(request, metadata, use_values=True, status=200)
+    return util.render_metadata(request, metadata, use_values=True, status=200)
 
-@api_method('POST')
+@util.api_method('POST')
 def update_metadata(request, server_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -326,8 +342,8 @@ def update_metadata(request, server_id):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
-    req = get_request_dict(request)
+    vm = util.get_vm(server_id, request.user)
+    req = util.get_request_dict(request)
     try:
         metadata = req['metadata']
         assert isinstance(metadata, dict)
@@ -344,10 +360,13 @@ def update_metadata(request, server_id):
             updated[key] = val
         except VirtualMachineMetadata.DoesNotExist:
             pass    # Ignore non-existent metadata
+    
+    if updated:
+        vm.save()
+    
+    return util.render_metadata(request, updated, status=201)
 
-    return render_metadata(request, updated, status=201)
-
-@api_method('GET')
+@util.api_method('GET')
 def get_metadata_item(request, server_id, key):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -357,11 +376,11 @@ def get_metadata_item(request, server_id, key):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
-    meta = get_vm_meta(vm, key)
-    return render_meta(request, meta, status=200)
+    vm = util.get_vm(server_id, request.user)
+    meta = util.get_vm_meta(vm, key)
+    return util.render_meta(request, meta, status=200)
 
-@api_method('PUT')
+@util.api_method('PUT')
 def create_metadata_item(request, server_id, key):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -373,8 +392,8 @@ def create_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    vm = get_vm(server_id, request.user)
-    req = get_request_dict(request)
+    vm = util.get_vm(server_id, request.user)
+    req = util.get_request_dict(request)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -382,13 +401,17 @@ def create_metadata_item(request, server_id, key):
         assert key in metadict
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-
-    meta, created = VirtualMachineMetadata.objects.get_or_create(meta_key=key, vm=vm)
+    
+    meta, created = VirtualMachineMetadata.objects.get_or_create(
+        meta_key=key,
+        vm=vm)
+    
     meta.meta_value = metadict[key]
     meta.save()
-    return render_meta(request, meta, status=201)
+    vm.save()
+    return util.render_meta(request, meta, status=201)
 
-@api_method('DELETE')
+@util.api_method('DELETE')
 def delete_metadata_item(request, server_id, key):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -400,7 +423,8 @@ def delete_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413),
 
-    vm = get_vm(server_id, request.user)
-    meta = get_vm_meta(vm, key)
+    vm = util.get_vm(server_id, request.user)
+    meta = util.get_vm_meta(vm, key)
     meta.delete()
+    vm.save()
     return HttpResponse(status=204)

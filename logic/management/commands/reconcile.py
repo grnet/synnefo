@@ -52,15 +52,14 @@ class Command(BaseCommand):
     )
 
     def handle(self, all_vms = False, interval = 1, **options):
-        all =  VirtualMachine.objects.all()
+        all =  VirtualMachine.objects.all().filter(deleted = False) \
+                                           .filter(suspended = False)
 
         if not all_vms:
             now = datetime.now()
             last_update = timedelta(minutes = settings.RECONCILIATION_MIN)
             not_updated = VirtualMachine.objects \
-                                    .filter(deleted = False) \
-                                    .filter(suspended = False) \
-                                    .filter(updated__lte = (now - last_update))
+                    .filter(updated__lte = (now - last_update))
 
             to_update = ((all.count() / settings.RECONCILIATION_MIN) * interval)
         else:
@@ -73,7 +72,7 @@ class Command(BaseCommand):
             msg = dict(type = "reconcile", vmid = vmid)
             try:
                 amqp_connection.send(json.dumps(msg), settings.EXCHANGE_CRON,
-                                 "reconciliation.%s"%vmid)
+                                 "reconciliation.%s" % vmid)
             except AMQPError as e:
                 print >> sys.stderr, 'Error sending reconciliation request: %s' % e
                 raise

@@ -1,0 +1,18 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+<networks xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom">
+  {% for network in networks %}
+  <network id="{{ network.id }}" name="{{ network.name }}"{% if detail %} updated="{{ network.updated }}" created="{{ network.created }}"{% endif %}>
+
+  {% if network.servers %}
+  <servers>
+    {% for server_id in network.servers.values %}
+    <server id="{{ server_id }}"></server>
+    {% endfor %}
+  </servers>
+  {% endif %}
+
+  </network>
+  {% endfor %}
+</networks>
+{% endspaceless %}

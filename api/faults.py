@@ -28,5 +28,8 @@ class ItemNotFound(Fault):
 class BuildInProgress(Fault):
     code = 409
 
+class OverLimit(Fault):
+    code = 413
+
 class ServiceUnavailable(Fault):
     code = 503

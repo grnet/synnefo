@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from functools import wraps
 from httplib import HTTPConnection
 from optparse import OptionParser
 from os.path import basename
@@ -23,17 +22,23 @@ def command_name(name):
     return decorator
 
 
-def address_to_string(address):
-    key = address['id']
-    val = ' '.join(ip['addr'] for ip in address['values'])
-    return '%s: %s' % (key, val)
+def print_addresses(networks):
+    for i, net in enumerate(networks):
+        key = 'addresses:'.rjust(13) if i == 0 else ' ' * 13
+        addr = ''
+        if 'values' in net:
+            addr = '[%s]' % ' '.join(ip['addr'] for ip in net['values'])
+        
+        val = '%s/%s %s %s' % (net['id'], net['name'], net['mac'], addr)
+        print '%s %s' % (key, val)
 
 def print_dict(d, show_empty=True):
     for key, val in sorted(d.items()):
         if key == 'metadata':
             val = ', '.join('%s="%s"' % x for x in val['values'].items())
         elif key == 'addresses':
-            val = ', '.join(address_to_string(address) for address in val['values'])
+            print_addresses(val['values'])
+            continue
         elif key == 'servers':
             val = ', '.join(str(server_id) for server_id in val['values'])
         if val or show_empty:
@@ -273,8 +278,7 @@ class ListAddresses(Command):
         reply = self.http_get(path)
         
         addresses = [reply['network']] if network else reply['addresses']['values']
-        for address in addresses:
-            print address_to_string(address)
+        print_addresses(addresses)
 
 
 @command_name('lsflv')
@@ -488,11 +492,11 @@ class ListNetworks(Command):
             id = network.pop('id')
             name = network.pop('name')
             if self.detail:
-                print '%d %s' % (id, name)
+                print '%s %s' % (id, name)
                 print_dict(network)
                 print
             else:
-                print '%3d %s' % (id, name)
+                print '%3s %s' % (id, name)
 
 
 @command_name('createnet')
@@ -542,9 +546,9 @@ class DeleteNetwork(Command):
         self.http_delete(path)
 
 
-@command_name('addnet')
+@command_name('connect')
 class AddNetwork(Command):
-    description = 'add server to a network'
+    description = 'connect a server to a network'
     syntax = '<server id> <network id>'
 
     def execute(self, server_id, network_id):
@@ -553,9 +557,9 @@ class AddNetwork(Command):
         self.http_post(path, body, expected_status=202)
 
 
-@command_name('removenet')
+@command_name('disconnect')
 class RemoveNetwork(Command):
-    description = 'remove server from a network'
+    description = 'disconnect a server from a network'
     syntax = '<server id> <network id>'
 
     def execute(self, server_id, network_id):
@@ -564,21 +568,24 @@ class RemoveNetwork(Command):
         self.http_post(path, body, expected_status=202)
 
 
+def print_usage():
+    print 'Usage: %s <command>' % basename(argv[0])
+    print
+    print 'Commands:'
+    for name, cls in sorted(commands.items()):
+        description = getattr(cls, 'description', '')
+        print '  %s %s' % (name.ljust(12), description)
+
 def main():
     try:
         name = argv[1]    
         cls = commands[name]
     except (IndexError, KeyError):
-        print 'Usage: %s <command>' % basename(argv[0])
-        print
-        print 'Commands:'
-        for name, cls in sorted(commands.items()):
-            description = getattr(cls, 'description', '')
-            print '  %s %s' % (name.ljust(12), description)
+        print_usage()
         exit(1)
     
     try:
-        commands[name](argv[2:])
+        cls(argv[2:])
     except TypeError:
         syntax = getattr(cls, 'syntax', '')
         if syntax:

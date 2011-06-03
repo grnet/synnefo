@@ -132,6 +132,7 @@ INSTALLED_APPS = (
     'synnefo.db',
     'synnefo.ganeti',
     'synnefo.logic',
+    'synnefo.invitations',
     'south'
 )
 
@@ -183,8 +184,9 @@ EXCHANGES = (EXCHANGE_GANETI, EXCHANGE_CRON, EXCHANGE_API)
 QUEUE_GANETI_EVENTS = "events"
 QUEUE_CRON_CREDITS = "credits"
 QUEUE_EMAIL = "email"
+QUEUE_RECONC = "reconciliation"
 QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
-QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL)
+QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC)
 
 BINDINGS_DEBUG = [
     # Queue         # Exchange          # RouteKey  # Handler
@@ -200,6 +202,7 @@ BINDINGS = [
     (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',        'update_credits'),
     (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',          'send_email'),
     (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',          'send_email'),
+    (QUEUE_RECONC,          EXCHANGE_CRON,      'reconciliation.*',   'trigger_status_update'),
 ]
 
 def fix_amqp_settings(backend_prefix):
@@ -238,4 +241,27 @@ LOGIN_PATH = "/login"
 # ACHTUNG: The test token distributed in db/initial_data.json will cease to
 #          work after this many hours after 2011/05/10
 AUTH_TOKEN_DURATION = 30 * 24
+
+# Minutes between reconciliations
+RECONCILIATION_MIN = 30
+
+#Max number of invitations allowed per user
+MAX_INVITATIONS = 20
+
+#Key to encrypt X-Auth-Token with when sending invitations
+INVITATION_ENCR_KEY = '8d342f6e7a0366c632978a80257019af'
+
+#Days during which an invitation is active
+INVITATION_VALID_DAYS = 30
+
+#SMTP server for the system
+SMTP_SERVER="127.0.0.1"
+
+#Email account to use for system emails
+SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
+
+#Enable receiving a temporary auth token (using the ?test URL parameter) that
+#bypasses the authentication mechanism
+#WARNING, ACHTUNG, README, XXX ,etc: DO NOT ENABLE THIS ON DEPLOYED VERSIONS
+BYPASS_AUTHENTICATION = False
 

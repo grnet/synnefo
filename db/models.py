@@ -10,7 +10,8 @@ class SynnefoUser(models.Model):
     #TODO: Amend this when we have groups
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
-        ('PROFESSOR', 'Professor')
+        ('PROFESSOR', 'Professor'),
+        ('USER', 'Generic User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')
@@ -18,7 +19,8 @@ class SynnefoUser(models.Model):
     uniq = models.CharField('External Unique ID', max_length=255,null=True)
     credit = models.IntegerField('Credit Balance')
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True)
+    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True, null = True)
+    auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True, null = True)
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
@@ -377,5 +379,18 @@ class Network(models.Model):
     owner = models.ForeignKey(SynnefoUser)
     machines = models.ManyToManyField(VirtualMachine)
     
+    def __unicode__(self):
+        return self.name
+
+class Invitations(models.Model):
+    source = models.ForeignKey(SynnefoUser, related_name="source")
+    target = models.ForeignKey(SynnefoUser, related_name="target")
+    accepted = models.BooleanField('Is the invitation accepted?', default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = u'Invitation'
+
     def __unicode__(self):
         return self.name

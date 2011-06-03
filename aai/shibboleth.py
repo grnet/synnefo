@@ -6,6 +6,7 @@
 
 from synnefo.logic import users
 
+
 class Tokens:
     SIB_NAME = "Shib-InetOrgPerson-givenName"
     SIB_SURNAME = "Shib-Person-surname"
@@ -17,19 +18,15 @@ class Tokens:
     SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
     SIB_SESSION_ID = "Shib-Session-ID"
 
-class NoUniqueToken(object):
-
-    def __init__(self, msg):
-        self.msg = msg
-    
-    pass
-
-class NoRealName(object):
+class NoUniqueToken(BaseException):
 
     def __init__(self, msg):
         self.msg = msg
 
-    pass
+class NoRealName(BaseException):
+
+    def __init__(self, msg):
+        self.msg = msg
 
 def register_shibboleth_user(tokens):
     """Registers a sibbolleth user using the input hash as a source for data.
@@ -61,8 +58,8 @@ def register_shibboleth_user(tokens):
         raise NoRealName("Authentication does not return the user's name")
 
     if is_student:
-        users.register_student(realname, '' ,unq)
+        users.register_student(realname, '' , unq)
     else:
-        users.register_professor(realname, '' ,unq)
+        users.register_professor(realname, '' , unq)
 
     return True

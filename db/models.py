@@ -66,12 +66,20 @@ class Image(models.Model):
         ('DELETED', 'Deleted')
     )
 
+    # The list of supported Image formats
+    FORMATS = (
+        ('dump', 'ext2 dump'),
+        ('lvm', 'lvm snapshot')
+    )
+
     name = models.CharField('Image name', max_length=255)
     state = models.CharField('Current Image State', choices=IMAGE_STATES, max_length=30)
     owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey("VirtualMachine", null=True)
+    backend_id = models.CharField(max_length=50, default='debian_base')
+    format = models.CharField(choices=FORMATS, max_length=30, default='dump')
 
     class Meta:
         verbose_name = u'Image'

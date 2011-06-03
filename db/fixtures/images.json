@@ -3,33 +3,91 @@
         "model": "db.Image",
         "pk": 3,
         "fields": {
-            "name": "Debian Unstable",
+            "name": "Debian base",
             "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE"
+            "state": "ACTIVE",
+            "backend_id": "debian_base",
+            "format": "dump"
         }
     },
     {
         "model": "db.Image",
         "pk": 4,
         "fields": {
-            "name": "Red Hat Enterprise Linux",
+            "name": "Debian 6.0.1a Desktop",
             "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE"
+            "state": "ACTIVE",
+            "backend_id": "debian-6.0.1a",
+            "format": "dump"
         }
     },
     {
         "model": "db.Image",
         "pk": 5,
         "fields": {
-            "name": "Ubuntu 10.10",
+            "name": "Ubuntu 11.04 Server",
             "owner": 1,
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE"
+            "state": "ACTIVE",
+            "backend_id": "ubuntu_11.04_server",
+            "format": "dump"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 6,
+        "fields": {
+            "name": "Ubuntu 11.04 Desktop",
+            "owner": 1,
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "ubuntu_11.04_desktop",
+            "format": "dump"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 7,
+        "fields": {
+            "name": "Debian base LVM",
+            "owner": 1,
+            "created": "2011-02-06 00:00:00",
+            "updated": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "debian_base",
+            "format": "lvm"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 8,
+        "fields": {
+            "name": "Fedora 14 Desktop",
+            "owner": 1,
+            "created": "2011-05-27 00:00:00",
+            "updated": "2011-05-27 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "fedora-14-1",
+            "format": "dump"
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 9,
+        "fields": {
+            "name": "Fedora 15 Desktop",
+            "owner": 1,
+            "created": "2011-05-30 00:00:00",
+            "updated": "2011-05-30 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "fedora-15-1",
+            "format": "dump"
         }
     },
     {
@@ -55,7 +113,7 @@
         "pk": 3,
         "fields": {
             "meta_key": "OS",
-            "meta_value": "redhat",
+            "meta_value": "debian",
             "image": 4
         }
     },
@@ -73,7 +131,7 @@
         "pk": 5,
         "fields": {
             "meta_key": "description",
-            "meta_value": "Red Hat Enterprise Linux, full installation",
+            "meta_value": "Debian 6.0.1a Desktop, Vanilla Install",
             "image": 4
         }
     },
@@ -82,7 +140,7 @@
         "pk": 6,
         "fields": {
             "meta_key": "size",
-            "meta_value": "2048",
+            "meta_value": "4000",
             "image": 4
         }
     },
@@ -109,7 +167,7 @@
         "pk": 9,
         "fields": {
             "meta_key": "description",
-            "meta_value": "Ubuntu 10.10, full installation",
+            "meta_value": "Ubuntu 11.04 Server, Vanilla Installation",
             "image": 5
         }
     },
@@ -118,7 +176,7 @@
         "pk": 10,
         "fields": {
             "meta_key": "size",
-            "meta_value": "8192",
+            "meta_value": "2000",
             "image": 5
         }
     },
@@ -127,7 +185,7 @@
         "pk": 11,
         "fields": {
             "meta_key": "description",
-            "meta_value": "Debian Sid, full installation",
+            "meta_value": "Debian base Image, same as debootstrap",
             "image": 3
         }
     },
@@ -136,8 +194,152 @@
         "pk": 12,
         "fields": {
             "meta_key": "size",
-            "meta_value": "8192",
+            "meta_value": "2000",
             "image": 3
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 13,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "ubuntu",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 14,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.35",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 15,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Ubuntu 11.04 Desktop, Vanilla Installation",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 16,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "4000",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 17,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "debian",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 18,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.32",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 19,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "This is the same as -Debian base- but stored in a LVM format",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 20,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2000",
+            "image": 7
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 21,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "fedora",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 22,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.35",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 23,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Fedora 14 Desktop, full installation",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 24,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "3300",
+            "image": 8
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 25,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "fedora",
+            "image": 9
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 26,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.38",
+            "image": 9
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 27,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Fedora 15 Desktop Edition",
+            "image": 9
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 28,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2284",
+            "image": 9
         }
     }
 ]

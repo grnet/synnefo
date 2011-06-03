@@ -13,7 +13,8 @@ Synnefo is written in Python 2.6 and depends on the following Python modules
   WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work
            with Python 2.6
 - south [south==0.7.1]
-- ampqlib [ampqlib==0.6.1]
+  WARNING: not working with Debian squeeze's default south-0.7-1 package.
+- amqplib [amqplib==0.6.1]
 
 also, depending on the database engine of choice, on one of the following:
 - MySQL-python [MySQL-python==1.2.3]
@@ -175,7 +176,8 @@ print out DDL statements. It should not fail.
 	
 6. Create the DB and (optionally) load test data
     
-    $ ./bin/python manage.py syncdb
+	$ ./bin/python manage.py syncdb
+	$ ./bin/python manage.py migrate db
 	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
 	$ ./bin/python manage.py loaddata db/fixtures/images.json
 
@@ -193,6 +195,8 @@ testing requirements:
    The fix_amqp_settings() function is called once at the end of
    settings.py.dist, you must call it again if you change BACKEND_PREFIX_ID
    at some later point.
+   Also make sure that if /var/log/synnefo/dispatcher.log exists, it has proper
+   permissions. If not, /var/log/synnefo/ should be writable by the dispatcher.
 
 9. Start the system
     $ ./bin/python logic/dispatcher.py  # DB synch daemon
@@ -238,7 +242,7 @@ See "Initial Migration" section.
 Each time you make changes to the database and data migration is not required (WARNING: always
 perform this with extreme care):
 
-    $ ./bin/python schemamigration db --auto
+    $ ./bin/python manage.py schemamigration db --auto
 
 The above will create the migration script. Now this must be applied to the live database.
 

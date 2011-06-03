@@ -1,160 +1,16 @@
 #!/usr/bin/env python
 
 from getpass import getuser
-from httplib import HTTPConnection
 from optparse import OptionParser
 from os.path import basename
 from sys import argv, exit, stdin
+from pithos.lib.client import Client, Fault
 
 import json
 import logging
 
-
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
+DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1'
-
-
-class Fault(Exception):
-    def __init__(self, data=''):
-        Exception.__init__(self, data)
-        self.data = data
-
-
-class Client(object):
-    def __init__(self, host, account, api='v1', verbose=False, debug=False):
-        """`host` can also include a port, e.g '127.0.0.1:8000'."""
-        
-        self.host = host
-        self.account = account
-        self.api = api
-        self.verbose = verbose or debug
-        self.debug = debug
-    
-    def req(self, method, path, body=None, headers=None, format='text'):
-        full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path, format)
-        conn = HTTPConnection(self.host)
-        
-        kwargs = {}
-        kwargs['headers'] = headers or {}
-        kwargs['headers']['Content-Length'] = len(body) if body else 0
-        if body:
-            kwargs['body'] = body
-            kwargs['headers']['Content-Type'] = 'application/octet-stream'
-        
-        conn.request(method, full_path, **kwargs)
-        resp = conn.getresponse()
-        headers = dict(resp.getheaders())
-        
-        if self.verbose:
-            print '%d %s' % (resp.status, resp.reason)
-            for key, val in headers.items():
-                print '%s: %s' % (key.capitalize(), val)
-            print
-        
-        data = resp.read()
-        
-        if self.debug:
-            print data
-            print
-        
-        if format == 'json':
-            data = json.loads(data)
-        
-        return resp.status, headers, data
-    
-    def delete(self, path, format='text'):
-        return self.req('DELETE', path, format=format)
-    
-    def get(self, path, format='text'):
-        return self.req('GET', path, format=format)
-    
-    def head(self, path, format='text'):
-        return self.req('HEAD', path, format=format)
-    
-    def post(self, path, body=None, format='text', headers=None):
-        return self.req('POST', path, body, headers=headers, format=format)
-    
-    def put(self, path, body=None, format='text', headers=None):
-        return self.req('PUT', path, body, headers=headers, format=format)
-    
-    def _list(self, path, detail=False):
-        format = 'json' if detail else 'text'
-        status, headers, data = self.get(path, format=format)
-        return data
-    
-    def _get_metadata(self, path, prefix):
-        status, headers, data = self.head(path)
-        prefixlen = len(prefix)
-        meta = {}
-        for key, val in headers.items():
-            if key.startswith(prefix):
-                key = key[prefixlen:]
-                meta[key] = val
-        return meta
-    
-    
-    # Storage Account Services
-    
-    def list_containers(self, detail=False):
-        return self._list('', detail)
-    
-    def account_metadata(self):
-        return self._get_metadata('', 'x-account-')
-    
-    
-    # Storage Container Services
-    
-    def list_objects(self, container, detail=False):
-        return self._list('/' + container, detail)
-    
-    def create_container(self, container):
-        status, header, data = self.put('/' + container)
-        if status == 202:
-            return False
-        elif status != 201:
-            raise Fault(data)
-        return True
-    
-    def delete_container(self, container):
-        self.delete('/' + container)
-    
-    def retrieve_container_metadata(self, container):
-        return self._get_metadata('/%s' % container, 'x-container-')
-    
-    
-    # Storage Object Services
-    
-    def retrieve_object(self, container, object):
-        path = '/%s/%s' % (container, object)
-        status, headers, data = self.get(path)
-        return data
-    
-    def create_object(self, container, object, data):
-        path = '/%s/%s' % (container, object)
-        self.put(path, data)
-    
-    def copy_object(self, src_container, src_object, dst_container, dst_object):
-        path = '/%s/%s' % (dst_container, dst_object)
-        headers = {}
-        headers['X-Copy-From'] = '/%s/%s' % (src_container, src_object)
-        headers['Content-Length'] = 0
-        self.put(path, headers=headers)
-    
-    def delete_object(self, container, object):
-        self.delete('/%s/%s' % (container, object))
-    
-    def retrieve_object_metadata(self, container, object):
-        path = '/%s/%s' % (container, object)
-        return self._get_metadata(path, 'x-object-meta-')
-    
-    def update_object_metadata(self, container, object, **meta):
-        path = '/%s/%s' % (container, object)
-        headers = {}
-        for key, val in meta.items():
-            http_key = 'X-Object-Meta-' + key
-            headers[http_key] = val
-        self.post(path, headers=headers)
-
 
 _cli_commands = {}
 
@@ -217,9 +73,32 @@ class List(Command):
     description = 'list containers or objects'
     
     def add_options(self, parser):
-        parser.add_option('-l', action='store_true', dest='detail', default=False,
-                            help='show detailed output')
-    
+        parser.add_option('-l', action='store_true', dest='detail',
+                          default=False, help='show detailed output')
+        parser.add_option('-n', action='store', type='int', dest='limit',
+                          default=1000, help='show limited output')
+        parser.add_option('--marker', action='store', type='str',
+                          dest='marker', default=None,
+                          help='show output greater then marker')
+        parser.add_option('--prefix', action='store', type='str',
+                          dest='prefix', default=None,
+                          help='show output starting with prefix')
+        parser.add_option('--delimiter', action='store', type='str',
+                          dest='delimiter', default=None,
+                          help='show output up to the delimiter')
+        parser.add_option('--path', action='store', type='str',
+                          dest='path', default=None,
+                          help='show output starting with prefix up to /')
+        parser.add_option('--meta', action='store', type='str',
+                          dest='meta', default=None,
+                          help='show output having the specified meta keys')
+        parser.add_option('--if-modified-since', action='store', type='str',
+                          dest='if_modified_since', default=None,
+                          help='show output if modified since then')
+        parser.add_option('--if-unmodified-since', action='store', type='str',
+                          dest='if_unmodified_since', default=None,
+                          help='show output if not modified since then')
+        
     def execute(self, container=None):
         if container:
             self.list_objects(container)
@@ -227,21 +106,35 @@ class List(Command):
             self.list_containers()
     
     def list_containers(self):
+        l = self.client.list_containers(self.detail, self.limit, self.marker,
+                                        self.if_modified_since,
+                                        self.if_unmodified_since)
         if self.detail:
-            for container in self.client.list_containers(detail=True):
+            for container in l:
                 print_dict(container)
                 print
         else:
-            print self.client.list_containers().strip()
-    
+            if self.verbose:
+                print l
+            else:
+                print l.split('Traceback')[0]
+
     def list_objects(self, container):
+        l = self.client.list_objects(container, self.detail, self.limit,
+                                        self.marker, self.prefix,
+                                        self.delimiter, self.path,
+                                        self.meta,
+                                        self.if_modified_since,
+                                        self.if_unmodified_since)
         if self.detail:
-            for obj in self.client.list_objects(container, detail=True):
+            for obj in l:
                 print_dict(obj)
                 print
         else:
-            print self.client.list_objects(container).strip()
-
+            if self.verbose:
+                print l
+            else:
+                print l.split('Traceback')[0]
 
 @cli_command('meta')
 class Meta(Command):
@@ -319,20 +212,30 @@ class CopyObject(Command):
             dst_object = dst
         self.client.copy_object(src_container, src_object, dst_container, dst_object)
 
-
 @cli_command('set')
-class SetOjectMeta(Command):
-    syntax = '<container>/<object> key=val [key=val] [...]'
-    description = 'set object metadata'
+class SetMeta(Command):
+    syntax = '[<container>[/<object>]] key=val [key=val] [...]'
+    description = 'set metadata'
     
     def execute(self, path, *args):
-        container, sep, object = path.partition('/')
+        #in case of account fix the args
+        print path
+        if path.find('='):
+            args = list(args)
+            args.append(path)
+            args = tuple(args)
+            path = ''
         meta = {}
         for arg in args:
             key, sep, val = arg.partition('=')
             meta[key.strip()] = val.strip()
-        self.client.update_object_metadata(container, object, **meta)
-
+        container, sep, object = path.partition('/')
+        if object:
+            self.client.update_object_metadata(container, object, **meta)
+        elif container:
+            self.client.update_container_metadata(container, **meta)
+        else:
+            self.client.update_account_metadata(**meta)
 
 def print_usage():
     cmd = Command([])

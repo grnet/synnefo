@@ -5,6 +5,7 @@
 
 TAP_CONSTANT_MAC=cc:47:52:4e:45:54 # GRNET in hex :-)
 MAC2EUI64=/etc/ganeti/mac2eui64.py
+NFDHCPD_STATE_DIR=/var/lib/nfdhcpd
 
 function routed_setup_ipv4 {
 	# get the link's default gateway
@@ -65,7 +66,7 @@ function routed_setup_firewall {
 
 function routed_setup_nfdhcpd {
 	umask 022
-	cat >/var/run/ganeti-dhcpd/$INTERFACE <<EOF
+	cat >$NFDHCPD_STATE_DIR/$INTERFACE <<EOF
 IP=$IP
 MAC=$MAC
 LINK=$LINK
@@ -93,5 +94,5 @@ if [ "$MODE" = "routed" ]; then
 elif [ "$MODE" = "bridged" ]; then
 	ifconfig $INTERFACE 0.0.0.0 up
 	brctl addif $BRIDGE $INTERFACE
-	rm -f /var/run/ganeti-dhcpd/$INTERFACE
+	rm -f $NFDHCPD_STATE_DIR/$INTERFACE
 fi

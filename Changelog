@@ -2,6 +2,90 @@ Changelog
 =========
 
 
+2011-06-06, v0.4
+
+NEW FEATURES:
+    GUI:
+        * Support displaying info on and handling of public and private networks,
+          with differential updates (#407, #469)
+        * Support create new private network (#541), add machine to
+          private network (#543)
+        * Design and implement a completely revamped blue and orange
+          color theme (#529, #531)
+        * Implement improved add/edit metadata dialog with suggested values for
+          keys (#535, #537)
+        * Implement list of suggested keys in add server metadata dialog (#537)
+        * Add full-screen Console window, themed as the rest of the UI (#497)
+        * Implement single-machine view in the UI (#573)
+        * Add user notification (spinner) on button clicks performing
+          API actions (#471)
+        * Full IE support, differential updates (#461)
+    AAI:
+        * Each token has its own expiration date, fix expiration of
+          development test token (#483)
+        * Support adding new users to the DB by invitation (#439)
+    API:
+        * Extend networks API, support differential updates for private nets (#569)
+        * Support XML replies for the /networks API namespace (#553)
+        * Implement mechanism for reconciliation of DB state with Ganeti backend
+          state in case of AMQP failure (#505)
+        * Support Ganeti link pooling for management of private networks (#513)
+        * Support reception and processing of NIC configuration notifications
+          from Ganeti over AMQP (#513)
+    IMAGES:
+        * Implement generic API<->Ganeti mechanism for passing custom VM parameters (#487)
+        * Support selection and handling of OS images for VM customization (#489)
+        * Support random selection and enforcement of root password on Linux VMs (#485)
+    GANETI BACKEND:
+        * Design and implement mechanism for handling network connection requests,
+          based on link ids of virtual NICs (#411)
+        * Support handling of public and private networks,
+          based on NFDHCPD and custom KVM ifup scripts (#407, #411)
+
+FIXES:
+    GUI:
+        * Remove extraneous GET /server/id/meta requests (#463)
+        * Fix location of the "Create New" wizard in IE (#467)
+        * Make numerous hardcoded strings translatable (#473)
+        * Fix alignment of step names in "Create New" wizard (#475)
+        * Fix OS icons not appearing in Opera (#477)
+        * Fix correspondence of OS icons to icon URIs (#481)
+        * Fix console action inoperable in list view (#497)
+        * Fix HTTP errors from backend not reported correctly (#523)
+        * Fix handling of API "UKNNOWN" status for servers (#571)
+        * Add SVG-derived icons for Fedora in multiple resolutions (#587)
+        * Various minor UI glitches (#583, #585, #591)
+    API:
+        * Fix entering Greek characters in fields failed (was due to
+          problem with db creation parameters in MySQL) (#499)
+        * Fix return erroneous 304 NOT MOTIFIED for GET /servers if only
+          server metadata modified (#525)
+        * Fix return erroneous "UNKNOWN" status under specific circumstances (#573)
+        * Remove private network connections when a server is deleted (#579)
+
+
+KNOWN DEFECTS:
+
+    GUI:
+        * Does not work with relative URLs (cannot deploy under subdir) (#421)
+        * UI breaks if "Create New" called twice in quick succession (#609)
+        * Esc/Enter keys do not work in edit metadata window (#605)
+        * No spinner icon on outstanding requests for updates to private networks (#607)
+        * Error window overflows in case of longer-than-usual traceback in
+          "Details" field (#611)
+        * Single-server view does not update properly (#613)
+    IMAGES:
+        * Image deployment mechanism does not set Linux hostname properly (#603)
+    GANETI BACKEND:
+        * No IPv6 reported from the Synnefo Ganeti hook to the API
+          (backend, API and UI can all handle IPv6 though) (#615)
+        * All VMs currently allocated to the first Ganeti node, since no
+          allocator has been installed in the development Ganeti yet (#617)
+    Deployment:
+        * No rigorous testing of data migration, migrations in real-world
+          conditions will probably fail (#503)
+
+
 2011-05-10, v0.3
 
 FIXES/NEW FEATURES:

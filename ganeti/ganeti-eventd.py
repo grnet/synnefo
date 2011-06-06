@@ -57,6 +57,9 @@ class JobFileHandler(pyinotify.ProcessEvent):
         return conn.channel()
 
     def process_IN_CLOSE_WRITE(self, event):
+        self.process_IN_MOVED_TO(event)
+
+    def process_IN_MOVED_TO(self, event):
         if self.chan == None:
             self.chan = self.open_channel()
 
@@ -91,7 +94,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             except IndexError:
                 logmsg = None
 
-            self.logger.debug("%d: %s(%s) %s %s",
+            self.logger.debug("Job: %d: %s(%s) %s %s",
                     int(job.id), op.input.OP_ID, instances, op.status, logmsg)
 
             # Construct message
@@ -192,7 +195,8 @@ def main():
 
     # Monitor the Ganeti job queue, create and push notifications
     wm = pyinotify.WatchManager()
-    mask = pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
+    mask = pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] | \
+           pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
     handler = JobFileHandler(logger)
     notifier = pyinotify.Notifier(wm, handler)
 

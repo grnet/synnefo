@@ -5,7 +5,7 @@ This document describes the services that comprise the Synnefo software
 infrastructure and the dependencies among them. This document applies
 to Synnefo v0.3.
 
-
+    
 - Node types
 
   Nodes in a Synnefo deployment belong in one of the following types:
@@ -44,16 +44,21 @@ to Synnefo v0.3.
       Any WEBSERVER can issue commands to the GANETI-MASTER, over RAPI, to effect
       changes in the state of the VMs. The GANETI-MASTER runs the Ganeti request
       queue.
-      Services: only on GANETI-MASTER:
+      Services:
+      only on GANETI-MASTER:
         the Synnefo Ganeti monitoring daemon [/ganeti/ganeti-eventd],
         and the Synnefo Ganeti hook [/ganeti/snf-ganeti-hook.py].
+      on each GANETI_NODE:
+        a deployment-specific KVM ifup script
+        properly configured NFDHCPD
 
-    As of v0.3, the Synnefo Django project needs to be installed on nodes
+
+    As of v0.4, the Synnefo Django project needs to be installed on nodes
     of type WEBSERVER, LOGIC and on the GANETI-MASTER, with a properly configured
     settings.py. In later revisions, the specific parts of the Django project
     which need to run on each node type will be identified.
 
-    The settings.py file for Django is derived by concatenating the
+    The settings.py file for Django may be derived by concatenating the
     settings.py.dist file contained in the Synnefo distribution with a file
     containing custom modifications. This is recommended to minimize the load
     of reconstructing settings.py from scratch, since each release currently
@@ -63,6 +68,12 @@ to Synnefo v0.3.
 - Service dependencies
 
     This section describes each of the required service dependencies.
+
+    * API implementation
+
+      You need to load fixtures db/fixtures/{flavors,images}.json,
+      which make the API usable by end users by defining a sample
+      set of hardware configurations (flavors) and OS images.
 
     * RabbitMQ
 
@@ -111,8 +122,10 @@ to Synnefo v0.3.
       hooks in Ganeti.  It resides in the ganeti/ directory of the Synnefo
       project root.
 
-      The hook needs to be enabled for the post-start phase, by *symlinking*
-      in  /etc/ganeti/hooks/instance-start-post.d on GANETI-MASTER:
+      The hook needs to be enabled for phases
+      post-{add,modify,reboot,start,stop} by *symlinking*
+      in  /etc/ganeti/hooks/instance-{add,modify,reboot,start,stop}-post.d
+      on GANETI-MASTER, e.g.:
 
       root@ganeti-master:/etc/ganeti/hooks/instance-start-post.d# ls -l
       lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/ganeti/snf-ganeti-hook.py*
@@ -150,21 +163,21 @@ to Synnefo v0.3.
       repository, at https://code.grnet.gr/git/gnt-instance-image
 
       After installing gnt-instance-image do the following:
-      1.root@ganeti-master:/path-to-repo# cp ./defaults /etc/default/ganeti-instance-image
-      2.Uncomment the following in /etc/default/ganeti-instance-image:
-        SWAP=no
-        ARCH="x86_64"
-      3.Add to /etc/default/ganeti-instance-image (so that make-dump makes no /boot partition):
-        KERNEL_PATH="True"
-      4.Change the path in make-dump line 22 according to your installation
-        (/usr/share/ganeti/os/image/common.sh --> /srv/ganeti/os/image/common.sh)
-      5.In common.sh, comment out the KERNEL_PATH variable initialization.
-        (#KERNEL_PATH="$INSTANCE_HV_kernel_path")
-      6.In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
-        run during instance creation process have execute permission. At least
-        `grub' and `root_passwd' should be triggered to make the instance
-        usable:
-            chmod +x /etc/ganeti/instance-image/hooks/{grub,root_passwd}
+      1. root@ganeti-master:/path-to-repo# cp ./defaults /etc/default/ganeti-instance-image
+      2. Uncomment the following in /etc/default/ganeti-instance-image:
+         SWAP=no
+         ARCH="x86_64"
+      3. Add to /etc/default/ganeti-instance-image (so that make-dump makes no /boot partition):
+         KERNEL_PATH="True"
+      4. Change the path in make-dump line 22 according to your installation
+         (/usr/share/ganeti/os/image/common.sh --> /srv/ganeti/os/image/common.sh)
+      5. In common.sh, comment out the KERNEL_PATH variable initialization.
+         (#KERNEL_PATH="$INSTANCE_HV_kernel_path")
+      6. In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
+         run during instance creation process have execute permission. At least
+         `grub' and `root_passwd' should be triggered to make the instance
+         usable:
+             chmod +x /etc/ganeti/instance-image/hooks/{grub,root_passwd}
 
       Your Custom Images should be stored in a dump format under /var/cache/ganeti-instance-image
       and their filenames should have the following format:
@@ -172,7 +185,9 @@ to Synnefo v0.3.
       e.g. debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
 
 
--Administration
+
+- Administration
+
     * Reconciliation process: On certain occasions, such as a Ganeti or
       RabbitMQ failure, the VM state in the system's database may differ from
       that in the Ganeti installation. The reconciliation process is designed
@@ -197,8 +212,8 @@ to Synnefo v0.3.
 
       On each invocation of the reconcile command, the system will trigger a
       reconciliation for ((num_all_vms/RECONCILIATION_MIN) * interval)
-      machines. Obviously the less the interval value and the more the
-      RECONCILIATION_MIN setting, the less load is going to be put on Ganeti.
+      machines. Obviously the lower the interval value and the higher the
+      setting of RECONCILIATION_MIN, the less load is going to be put on Ganeti.
 
 
 - OS Specific instructions

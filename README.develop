@@ -23,9 +23,9 @@ also, depending on the database engine of choice, on one of the following:
 if the invitations application is deployed, the following
 dependencies should be installed
 
--pycrypto==2.1.0
+- pycrypto==2.1.0
 
-if you want to test the ganeti 
+if you want to test the ganeti (FIXME)
 
 to run the user interface tests, selenium must be installed
 - selenium [?]
@@ -33,20 +33,19 @@ to run the user interface tests, selenium must be installed
 Preparing the development environment
 -------------------------------------
 
-1. Prepare the system 
-The easiest method is to setup a working environment through virtualenv. 
-Alternatively, you can use your system's package manager to install
-the dependencies (e.g. Macports has them all).
+1. Prepare the system: The easiest method is to setup a working environment
+through virtualenv. Alternatively, you can use your system's package manager
+to install the dependencies (e.g. Macports has them all).
 
-*On Snow Leopard and linux (64-bit), you have to set the following environment
-variable for pip to compile the dependencies correctly.
+* On Snow Leopard and linux (64-bit), you have to set the following environment
+  variable for pip to compile the dependencies correctly.
 
-	$export ARCHFLAGS="-arch x86_64"
+	$ export ARCHFLAGS="-arch x86_64"
 
-*On Ubuntu, a few more packages must be installed before installing the
-prerequisite Python libraries
+* On Ubuntu, a few more packages must be installed before installing the
+  prerequisite Python libraries
 
-	$sudo aptitude install libcurl3-gnutls libcurl3-gnutls-dev uuid-dev 
+	$ sudo aptitude install libcurl3-gnutls libcurl3-gnutls-dev uuid-dev 
 
 2. Checkout the code and install the Python prerequisites. This assumes
 that python is already installed on the host.
@@ -61,18 +60,18 @@ that python is already installed on the host.
 3. At this point you should have all required dependencies installed. Now you
 have to select a database engine. The choices are: postgres, mysql and sqlite.
 
--SQLite
+- SQLite
 The python sqlite driver is available by default with Python so no additional 
 configuration is required. Also, most self-respecting systems have the sqlite 
 library installed by default.   
 
--MySQL
+- MySQL
 MySQL must be installed first
 
-*Ubuntu - Debian
-	$sudo apt-get install libmysqlclient-dev
+* Ubuntu - Debian
+	$ sudo apt-get install libmysqlclient-dev
 
-*MacPorts
+* MacPorts
 	$sudo port install mysql5
 
 Install the MySQL python library
@@ -93,12 +92,12 @@ Configure a MySQL db/account for synnefo
 	mysql> show databases;
 	mysql> GRANT ALL on synnefo.* TO username IDENTIFIED BY 'password';
  
--Postgres
+- Postgres
 
-#Ubuntu - Debian
+# Ubuntu - Debian
 	$ sudo apt-get install postgresql-8.4 libpq-dev
 
-#MacPorts
+# MacPorts
 	$ sudo port install postgresql84
 
 Install the postgres Python library
@@ -130,7 +129,7 @@ Copy the default configuration file
     
 and then copy/edit according to the database used:  
     
--SQLite
+- SQLite
 
 	PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 
@@ -141,7 +140,7 @@ and then copy/edit according to the database used:
 	    }
 	}
 
--MySQL
+- MySQL
 	DATABASES = {
 	    'default': {
 		'ENGINE': 'django.db.backends.mysql', 
@@ -156,7 +155,7 @@ and then copy/edit according to the database used:
 	    }
 	}
 
--Postgres    
+- Postgres    
 
     DATABASES = {
 	    'default': {
@@ -174,7 +173,7 @@ print out DDL statements. It should not fail.
 
 	$ ./bin/python manage.py sql db
 	
-6. Create the DB and (optionally) load test data
+6. Create the DB and load initial data:
     
 	$ ./bin/python manage.py syncdb
 	$ ./bin/python manage.py migrate db
@@ -204,21 +203,24 @@ testing requirements:
 
 10. (Hopefully) Done
 
+
 South Database Migrations
 ------------------------
 
-*Initial Migration
+* Initial Migration
 
-First, remember to add the south app to settings.py (it is already included in the
-settings.py.dist).
+First, remember to add the south app to settings.py (it is already included in
+the settings.py.dist).
 
-To initialise south migrations in your database the following commands must be executed:
+To initialise south migrations in your database the following commands must be
+executed:
 
     $ ./bin/python manage.py syncdb       # Create / update the database with the south tables
     $ ./bin/python manage.py migrate db   # Perform migration in the database
 
-Note that syncdb will create the latest models that exist in the db app, so some migrations may fail.
-If you are sure a migration has already taken place you must use the "--fake" option, to apply it.
+Note that syncdb will create the latest models that exist in the db app, so
+some migrations may fail.  If you are sure a migration has already taken place
+you must use the "--fake" option, to apply it.
 
 For example:
 
@@ -230,21 +232,24 @@ To be sure that all migrations are applied type:
 
 All starred migrations are applied.
 
-Remember, the migration is performed mainly for the data, not for the database schema. If you do not want to migrate the
-data, a syncdb and fake migrations for all the migration versions will suffice.
+Remember, the migration is performed mainly for the data, not for the database
+schema. If you do not want to migrate the data, a syncdb and fake migrations
+for all the migration versions will suffice.
 
-*Schema migrations:
+* Schema migrations:
 
 Do not use the syncdb management command. It can only be used
-the first time and/or if you drop the database and must recreate it from scratch.
+the first time and/or if you drop the database and must recreate it from
+scratch.
 See "Initial Migration" section.
 
-Each time you make changes to the database and data migration is not required (WARNING: always
-perform this with extreme care):
+Every time you make changes to the database and data migration is not required
+(WARNING: always perform this with extreme care):
 
     $ ./bin/python manage.py schemamigration db --auto
 
-The above will create the migration script. Now this must be applied to the live database.
+The above will create the migration script. Now this must be applied to the
+live database.
 
     $ ./bin/python migrate db
 
@@ -264,8 +269,9 @@ Consider this example (adding a field to the SynnefoUser model):
     Installing json fixture 'initial_data' from '/home/bkarak/devel/synnefo/../synnefo/db/fixtures'.
     Installed 1 object(s) from 1 fixture(s)
 
-South needs some extra definitions to the model to preserve and migrate the existing data, for example, if we add a field
-in a model, we should declare its default value. If not, South will propably fail, after indicating the error.
+South needs some extra definitions to the model to preserve and migrate the
+existing data, for example, if we add a field in a model, we should declare its
+default value. If not, South will propably fail, after indicating the error.
 
     $ ./bin/python manage.py schemamigration db --auto
      ? The field 'SynnefoUser.new_south_field_2' does not have a default specified, yet is NOT NULL.
@@ -275,12 +281,13 @@ in a model, we should declare its default value. If not, South will propably fai
      ?  2. Specify a one-off value to use for existing columns now
      ? Please select a choice: 1
 
-*Data migrations:
+* Data migrations:
 
-If we need to do data migration as well, for example rename a field, we use tha 'datamigration' management command.
+If we need to do data migration as well, for example rename a field, we use tha
+'datamigration' management command.
 
-In contrast with schemamigration, to perform complex data migration, we must write the script manually. The process is
-the following:
+In contrast with schemamigration, to perform complex data migration, we must
+write the script manually. The process is the following:
 
     1. Introduce the changes in the code and fixtures (initial data).
     2. Execute:
@@ -292,13 +299,15 @@ the following:
     $ ./bin/python manage.py datamigration db rename_credit_wallet
     Created 0003_rename_credit_wallet.py.
 
-    3. We edit the generated script. It contains two methods: forwards and backwards.
+    3. We edit the generated script. It contains two methods: forwards and
+    backwards.
 
-    For database operations (column additions, alter tables etc) we use the South database API
-    (http://south.aeracode.org/docs/databaseapi.html).
+    For database operations (column additions, alter tables etc) we use the
+    South database API (http://south.aeracode.org/docs/databaseapi.html).
 
-    To access the data, we use the database reference (orm) provided as parameter in forwards, backwards method declarations
-    in the migration script. For example:
+    To access the data, we use the database reference (orm) provided as
+    parameter in forwards, backwards method declarations in the migration
+    script. For example:
 
     class Migration(DataMigration):
 
@@ -322,6 +331,7 @@ More information and more thorough examples can be found in the South web site.
 
 http://south.aeracode.org/
 
+
 UI Testing
 ----------
 The functional ui tests require the Selenium server and the synnefo app to 
@@ -331,6 +341,7 @@ be running.
     $ java -jar selenium-server-standalone-2.0b2.jar &
     $ ./bin/python manage.py runserver &
     $ ./bin/python manage.py test ui
+
 
 Test coverage
 -------------

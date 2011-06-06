@@ -1,184 +1,105 @@
-DEVELOP.txt - Information on how to setup a development environment. 
+DEVELOP.txt - Information on how to setup a development environment.
 
-Preparing the development environment
--------------------------------------
+This file documents the installation of a development environment for Synnefo.
+It should be read alongside README.deploy.
 
-0. Please see file README.deploy for a list of software packages Synnefo
-depends on.
+It contains development-specific ammendments to the basic deployment steps
+outlined in README.deploy, and development-specific notes.
 
-1. Prepare the system: The easiest method is to setup a working environment
-through virtualenv. Alternatively, you can use your system's package manager
-to install the dependencies (e.g. Macports has them all).
 
-* On Snow Leopard and linux (64-bit), you have to set the following environment
-  variable for pip to compile the dependencies correctly.
+Installing the development environment
+======================================
 
-	$ export ARCHFLAGS="-arch x86_64"
+For a basic development environment you need to follow steps 0-15
+of README.deploy, which should be read in its entirety *before* this document.
 
-* On Ubuntu, a few more packages must be installed before installing the
-  prerequisite Python libraries
+Development-specific guidelines on each step:
 
-	$ sudo aptitude install libcurl3-gnutls libcurl3-gnutls-dev uuid-dev 
 
-2. Checkout the code and install the Python prerequisites. This assumes
-that python is already installed on the host.
+0. Allocation of physical nodes:
+   Node types DB, APISERVER, LOGIC may all be run on the same physical machine,
+   usually, your development workstation.
 
-    $ sudo easy_install virtualenv
-    $ git clone https://user@code.grnet.gr/git/synnefo synnefo
-    $ virtualenv --python=python2.6 synnefo --no-site-packages
-    ...
-    $ cd synnefo
-    $ ./bin/pip install <list_of_prerequisites>
+   Nodes of type GANETI-MASTER, GANETI-NODES and QUEUE are already provided
+   by the development Ganeti backend. Access credentials are provided in
+   settings.py.dist.
 
-3. At this point you should have all required dependencies installed. Now you
-have to select a database engine. The choices are: postgres, mysql and sqlite.
 
-- SQLite
-The python sqlite driver is available by default with Python so no additional 
-configuration is required. Also, most self-respecting systems have the sqlite 
-library installed by default.   
+1. You do not need to install your own Ganeti installation.
+   Use the RAPI endpoint as contained in settings.py.dist.
 
-- MySQL
-MySQL must be installed first
 
-* Ubuntu - Debian
-	$ sudo apt-get install libmysqlclient-dev
+2. You do not need to setup your own RabbitMQ nodes, use the AMQP endpoints
+   contained in settings.py.dist. MAKE SURE to call fix_amqp_settings()
+   after settings a custom BACKEND_PREFIX_ID.
 
-* MacPorts
-	$sudo port install mysql5
 
-Install the MySQL python library
+3. For development purposes, Django's own development server, ./manage.py runserver
+   will suffice.
 
-	$ bin/pip install MySQL-python
 
-Note: On MacOSX with Mysql install from MacPorts the above command will fail
-complaining that it cannot find the mysql_config command. Do the following and
-restart the installation
+4. Use a virtual environment to install the Django project, or packages provided
+   by your distribution.
 
-	$ echo "mysql_config = /opt/local/bin/mysql_config5" >> ./build/MySQL-python/site.cfg
 
-Configure a MySQL db/account for synnefo
+5. Install a DB of your own, or use the PostgreSQL instance available on the
+   development backend.
 
-	$ mysql -u root -p
 
-	mysql> create database synnefo;
-	mysql> show databases;
-	mysql> GRANT ALL on synnefo.* TO username IDENTIFIED BY 'password';
- 
-- Postgres
+6. As is.
 
-# Ubuntu - Debian
-	$ sudo apt-get install postgresql-8.4 libpq-dev
 
-# MacPorts
-	$ sudo port install postgresql84
-
-Install the postgres Python library
-
-	$ bin/pip install psycopg2
-
-Configure a postgres db/account for synnefo
-	Become the postgres user, connect to PostgreSQL:
-	$ sudo su - postgres 
-	$ psql
-	
-	Run the following commands:
-	DROP DATABASE synnefo;
-	DROP USER username;
-	CREATE USER username WITH PASSWORD 'password';
-	CREATE DATABASE synnefo;
-	GRANT ALL PRIVILEGES ON DATABASE synnefo TO username;
-	ALTER DATABASE synnefo OWNER TO username;
-	ALTER USER username CREATEDB;
-
-The last line enables the newly created user to create own databases. This is
-needed for Django to create and drop the test_synnefo database for unit
-testing.
-	
-4. At this point you should have a working DB. Now configure Django to access it: 
-Copy the default configuration file 
-
-    $ cp settings.py.dist settings.py
-    
-and then copy/edit according to the database used:  
-    
-- SQLite
-
-	PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
-
-	DATABASES = {
-	    'default': {
-		'ENGINE': 'django.db.backends.sqlite3',
-		'NAME': PROJECT_PATH + 'synnefo.db' #WARN: This must be an absolute path
-	    }
-	}
-
-- MySQL
-	DATABASES = {
-	    'default': {
-		'ENGINE': 'django.db.backends.mysql', 
-		'NAME': 'synnefo',
-		'USER': 'USERNAME',
-		'PASSWORD': 'PASSWORD',
-		'HOST': 'HOST',
-		'PORT': 'PORT',
-		'OPTIONS': {
-		    'init_command': 'SET storage_engine=INNODB',
-		}
-	    }
-	}
-
-- Postgres    
-
-    DATABASES = {
-	    'default': {
-		'ENGINE': 'django.db.backends.postgresql_psycopg2',
-		'NAME': 'DATABASE',
-		'USER': 'USERNAME',
-		'PASSWORD': 'PASSWORD',
-		'HOST': 'HOST',
-		'PORT': 'PORT',
-	    }
-	}
-
-5. Try it out. The following command will attempt to connect to the DB and 
-print out DDL statements. It should not fail.
-
-	$ ./bin/python manage.py sql db
-	
-6. Create the DB and load initial data:
-    
-	$ ./bin/python manage.py syncdb
-	$ ./bin/python manage.py migrate db
-	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
-	$ ./bin/python manage.py loaddata db/fixtures/images.json
-
-The following fixtures can be loaded optionally depending on
-testing requirements:
+7. The following fixtures can be loaded optionally depending on
+   testing/development requirements, and are not needed in a production setup:
 
 	$ ./bin/python manage.py loaddata db/fixtures/vms.json
 	$ ./bin/python manage.py loaddata db/fixtures/disks.json
 
-7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
-   username in settings.py. Several functional conventions within the system
-   require this variable to include a dash at its end (e.g. snf-)
 
-8. Fix the AMQP-specific settings based on the selected BACKEND_PREFIX_ID.
-   The fix_amqp_settings() function is called once at the end of
-   settings.py.dist, you must call it again if you change BACKEND_PREFIX_ID
-   at some later point.
-   Also make sure that if /var/log/synnefo/dispatcher.log exists, it has proper
-   permissions. If not, /var/log/synnefo/ should be writable by the dispatcher.
+8. MAKE SURE you setup a distinct BACKEND_PREFIX_ID, e.g., use your commit
+   username. Make sure you call fix_amqp_settings() to setup use of
+   individual queues on RabbiMQ.
 
-9. Start the system
-    $ ./bin/python logic/dispatcher.py  # DB synch daemon
-    $ ./bin/python manage.py runserver  # Django
 
-10. (Hopefully) Done
+9. The Ganeti monitoring daemon from the latest Synnefo release is already
+   running on the development Ganeti master. You may also run your own, on your
+   own Ganeti backend if you so wish.
+
+
+10.As is.
+
+11.The Synnefo Ganeti hook is already running on the development backend,
+   sending notifications over AMQP.
+
+
+12.The VNC authentication proxy is already running on the Ganeti development
+   backend. You *cannot* run your own, unless you install your own Ganeti backend,
+   because it needs direct access to the hypervisor's VNC port on GANETI-NODEs.
+
+
+13.The development Ganeti backend already has a number of OS Images available.
+
+
+14.The development Ganeti backend already has a number of pre-provisioned bridges
+   available, per each BACKEND_PREFIX_ID.
+
+   To setup simple NAT-based networking on a Ganeti backend on your own,
+   please see the provided patches under contrib/patches/.
+   You will need minor patches to the sample KVM ifup hook, kvm-vif-bridge,
+   and a small patch to NFDHCPD to enable it to work with bridged tap+ interfaces.
+   To support bridged tap interfaces you also need to patch the python-nfqueue
+   package, patches against python-nfqueue-0.3 [part of Debian Sid] are also
+   provided under contrib/patches/.
+
+
+15.As is.
+
+
+16.As is.
 
 
 South Database Migrations
-------------------------
+=========================
 
 * Initial Migration
 
@@ -306,8 +227,8 @@ http://south.aeracode.org/
 
 
 UI Testing
-----------
-The functional ui tests require the Selenium server and the synnefo app to 
+==========
+The functional ui tests require the Selenium server and the synnefo app to
 be running.
 
     $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
@@ -317,10 +238,10 @@ be running.
 
 
 Test coverage
--------------
+=============
 
 In order to get code coverage reports you need to install django-test-coverage
-   
+
    $ ./bin/pip install django-test-coverage
 
 Then edit your settings.py and configure the test runner:

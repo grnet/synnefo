@@ -661,6 +661,21 @@ class ContainerGet(BaseTestCase):
         self.assertEqual(len(objects), 1)
         self.assertEqual(objects[0].childNodes[0].data, 'photos/me.jpg')
 
+    def test_list_meta_double_matching(self):
+        meta = {'HTTP_X_OBJECT_META_QUALITY':'aaa',
+                'HTTP_X_OBJECT_META_STOCK':'true'}
+        r = self.update_object(self.account,
+                                    self.container[0],
+                                    self.obj[0]['name'],
+                                    **meta)
+        r = self.list_objects(self.account,
+                          self.container[0],
+                          meta='Quality,Stock')
+        self.assertEqual(r.status_code, 200)
+        obj = get_content_splitted(r)
+        self.assertEqual(len(obj), 1)
+        self.assertTrue(obj, self.obj[0]['name'])
+
     def test_list_using_meta(self):
         meta = {'HTTP_X_OBJECT_META_QUALITY':'aaa'}
         for o in self.obj[:2]:
@@ -695,7 +710,7 @@ class ContainerGet(BaseTestCase):
         # test multiple matches
         r = self.list_objects(self.account,
                           self.container[0],
-                          meta='Quality, Stock')
+                          meta='Quality,Stock')
         self.assertEqual(r.status_code, 200)
         obj = get_content_splitted(r)
         self.assertEqual(len(obj), 4)
@@ -704,7 +719,7 @@ class ContainerGet(BaseTestCase):
         # test non 1-1 multiple match
         r = self.list_objects(self.account,
                           self.container[0],
-                          meta='Quality, aaaa')
+                          meta='Quality,aaaa')
         self.assertEqual(r.status_code, 200)
         obj = get_content_splitted(r)
         self.assertEqual(len(obj), 2)

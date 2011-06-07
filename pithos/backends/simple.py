@@ -357,7 +357,7 @@ class SimpleBackend(BaseBackend):
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[]):
         cont_prefix = path + '/'
         if keys and len(keys) > 0:
-            sql = '''select o.name from objects o, metadata m where o.name like ? and
+            sql = '''select distinct o.name from objects o, metadata m where o.name like ? and
                         m.name = o.name and m.key in (%s) order by o.name'''
             sql = sql % ', '.join('?' * len(keys))
             param = (cont_prefix + prefix + '%',) + tuple(keys)

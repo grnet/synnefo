@@ -373,8 +373,8 @@ Synnefo deployment.
     repository, at https://code.grnet.gr/git/gnt-instance-image.
 
     After installing gnt-instance-image do the following:
-    1. root@ganeti-master$ cd /path-to-repocp
-       root@ganeti-master$ ./defaults /etc/default/ganeti-instance-image
+    1. root@ganeti-master$ cd /path-to-repo
+       root@ganeti-master$ cp ./defaults /etc/default/ganeti-instance-image
     2. Uncomment the following in /etc/default/ganeti-instance-image:
          SWAP=no
          ARCH="x86_64"

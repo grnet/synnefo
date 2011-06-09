@@ -116,6 +116,8 @@ def get_object_meta(request):
         meta['Content-Disposition'] = request.META['HTTP_CONTENT_DISPOSITION']
     if request.META.get('HTTP_X_OBJECT_MANIFEST'):
         meta['X-Object-Manifest'] = request.META['HTTP_X_OBJECT_MANIFEST']
+    if request.META.get('HTTP_X_OBJECT_PUBLIC'):
+        meta['X-Object-Public'] = request.META['HTTP_X_OBJECT_PUBLIC']
     return meta
 
 def put_object_meta(response, meta):
@@ -128,7 +130,7 @@ def put_object_meta(response, meta):
     response['X-Object-Version-Timestamp'] = meta['version_timestamp']
     for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
-    for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest'):
+    for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Public'):
         if k in meta:
             response[k] = meta[k]
 

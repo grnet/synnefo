@@ -33,8 +33,10 @@
 
 from django.conf.urls.defaults import *
 
-urlpatterns = patterns('',
-    (r'^v1(?:$|/)', include('pithos.api.urls')),
-    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'^public(?:$|/)', include('pithos.public.urls')),
+# TODO: This only works when in this order.
+urlpatterns = patterns('pithos.public.functions',
+    (r'^$', 'method_not_allowed'),
+    (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$', 'object_demux'),
+    (r'^(?P<v_account>.+?)/(?P<v_container>.+?)$', 'method_not_allowed'),
+    (r'^(?P<v_account>.+?)$', 'method_not_allowed')
 )

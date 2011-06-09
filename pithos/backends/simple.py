@@ -99,10 +99,14 @@ class SimpleBackend(BaseBackend):
         except NameError:
             version_id = None
         count, bytes, tstamp = self._get_pathstats(account, until)
+        if mtime > tstamp:
+            tstamp = mtime
         if until is None:
             modified = tstamp
         else:
             modified = self._get_pathstats(account)[2] # Overall last modification
+            if mtime > modified:
+                modified = mtime
         
         # Proper count.
         sql = 'select count(name) from (%s) where name glob ? and not name glob ?'
@@ -161,10 +165,14 @@ class SimpleBackend(BaseBackend):
         
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         count, bytes, tstamp = self._get_pathstats(path, until)
+        if mtime > tstamp:
+            tstamp = mtime
         if until is None:
             modified = tstamp
         else:
-            modified = self._get_pathstats(account)[2] # Overall last modification
+            modified = self._get_pathstats(path)[2] # Overall last modification
+            if mtime > modified:
+                modified = mtime
         
         meta = self._get_metadata(path, version_id)
         meta.update({'name': container, 'count': count, 'bytes': bytes, 'modified': modified})

@@ -32,13 +32,12 @@
 # or implied, of GRNET S.A.
 
 import logging
-import uuid
 
 from django.http import HttpResponse
 
-from pithos.api.faults import (Fault, BadRequest, ItemNotFound, RangeNotSatisfiable)
+from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
 from pithos.api.util import (put_object_meta, validate_modification_preconditions,
-    validate_matching_preconditions, get_range, ObjectWrapper, api_method)
+    validate_matching_preconditions, object_data_response, api_method)
 from pithos.backends import backend
 
 
@@ -72,7 +71,7 @@ def object_meta(request, v_account, v_container, v_object):
         raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=204)
-    put_object_meta(response, meta)
+    put_object_meta(response, meta, True)
     return response
 
 @api_method('GET')
@@ -108,36 +107,7 @@ def object_read(request, v_account, v_container, v_object):
     except NameError:
         raise ItemNotFound('Object does not exist')
     
-    # Range handling.
-    ranges = get_range(request, size)
-    if ranges is None:
-        ranges = [(0, size)]
-        ret = 200
-    else:
-        check = [True for offset, length in ranges if
-                    length <= 0 or length > size or
-                    offset < 0 or offset >= size or
-                    offset + length > size]
-        if len(check) > 0:
-            raise RangeNotSatisfiable('Requested range exceeds object limits')        
-        ret = 206
-    
-    if ret == 206 and len(ranges) > 1:
-        boundary = uuid.uuid4().hex
-    else:
-        boundary = ''
-    wrapper = ObjectWrapper(v_account, v_container, v_object, ranges, size, hashmap, boundary)
-    response = HttpResponse(wrapper, status=ret)
-    put_object_meta(response, meta)
-    if ret == 206:
-        if len(ranges) == 1:
-            offset, length = ranges[0]
-            response['Content-Length'] = length # Update with the correct length.
-            response['Content-Range'] = 'bytes %d-%d/%d' % (offset, offset + length - 1, size)
-        else:
-            del(response['Content-Length'])
-            response['Content-Type'] = 'multipart/byteranges; boundary=%s' % (boundary,)
-    return response
+    return object_data_response(request, size, hashmap, meta, True)
 
 @api_method()
 def method_not_allowed(request):

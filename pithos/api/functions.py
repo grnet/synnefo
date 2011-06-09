@@ -34,7 +34,6 @@
 import os
 import logging
 import hashlib
-import uuid
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -46,8 +45,8 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
 from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
     put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
     validate_modification_preconditions, validate_matching_preconditions, copy_or_move_object,
-    get_version, get_content_length, get_range, get_content_range, raw_input_socket,
-    socket_read_iterator, ObjectWrapper, hashmap_hash, api_method)
+    get_version, get_content_length, get_content_range, raw_input_socket,
+    socket_read_iterator, object_data_response, hashmap_hash, api_method)
 from pithos.backends import backend
 
 
@@ -422,36 +421,7 @@ def object_read(request, v_account, v_container, v_object):
         response['Content-Length'] = len(data)
         return response
     
-    # Range handling.
-    ranges = get_range(request, size)
-    if ranges is None:
-        ranges = [(0, size)]
-        ret = 200
-    else:
-        check = [True for offset, length in ranges if
-                    length <= 0 or length > size or
-                    offset < 0 or offset >= size or
-                    offset + length > size]
-        if len(check) > 0:
-            raise RangeNotSatisfiable('Requested range exceeds object limits')        
-        ret = 206
-    
-    if ret == 206 and len(ranges) > 1:
-        boundary = uuid.uuid4().hex
-    else:
-        boundary = ''
-    wrapper = ObjectWrapper(v_account, v_container, v_object, ranges, size, hashmap, boundary)
-    response = HttpResponse(wrapper, status=ret)
-    put_object_meta(response, meta)
-    if ret == 206:
-        if len(ranges) == 1:
-            offset, length = ranges[0]
-            response['Content-Length'] = length # Update with the correct length.
-            response['Content-Range'] = 'bytes %d-%d/%d' % (offset, offset + length - 1, size)
-        else:
-            del(response['Content-Length'])
-            response['Content-Type'] = 'multipart/byteranges; boundary=%s' % (boundary,)
-    return response
+    return object_data_response(request, size, hashmap, meta)
 
 @api_method('PUT')
 def object_write(request, v_account, v_container, v_object):

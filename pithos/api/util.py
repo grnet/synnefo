@@ -43,13 +43,14 @@ from django.utils.http import http_date, parse_etags
 
 from pithos.api.compat import parse_http_date_safe
 from pithos.api.faults import (Fault, NotModified, BadRequest, ItemNotFound, LengthRequired,
-                                PreconditionFailed, ServiceUnavailable)
+                                PreconditionFailed, RangeNotSatisfiable, ServiceUnavailable)
 from pithos.backends import backend
 
 import datetime
 import logging
 import re
 import hashlib
+import uuid
 
 
 logger = logging.getLogger(__name__)
@@ -120,19 +121,24 @@ def get_object_meta(request):
         meta['X-Object-Public'] = request.META['HTTP_X_OBJECT_PUBLIC']
     return meta
 
-def put_object_meta(response, meta):
+def put_object_meta(response, meta, public=False):
     """Put metadata in an object response."""
     response['ETag'] = meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
-    response['X-Object-Version'] = meta['version']
-    response['X-Object-Version-Timestamp'] = meta['version_timestamp']
-    for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
-        response[k.encode('utf-8')] = meta[k].encode('utf-8')
-    for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Public'):
-        if k in meta:
-            response[k] = meta[k]
+    if not public:
+        response['X-Object-Version'] = meta['version']
+        response['X-Object-Version-Timestamp'] = meta['version_timestamp']
+        for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
+            response[k.encode('utf-8')] = meta[k].encode('utf-8')
+        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Public'):
+            if k in meta:
+                response[k] = meta[k]
+    else:
+        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest'):
+            if k in meta:
+                response[k] = meta[k]
 
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set."""
@@ -376,10 +382,7 @@ class ObjectWrapper(object):
     Read from the object using the offset and length provided in each entry of the range list.
     """
     
-    def __init__(self, v_account, v_container, v_object, ranges, size, hashmap, boundary):
-        self.v_account = v_account
-        self.v_container = v_container
-        self.v_object = v_object
+    def __init__(self, ranges, size, hashmap, boundary):
         self.ranges = ranges
         self.size = size
         self.hashmap = hashmap
@@ -443,6 +446,40 @@ class ObjectWrapper(object):
                 out.append('--' + self.boundary + '--')
                 out.append('')
                 return '\r\n'.join(out)
+
+def object_data_response(request, size, hashmap, meta, public=False):
+    """Get the HttpResponse object for replying with the object's data."""
+    
+    # Range handling.
+    ranges = get_range(request, size)
+    if ranges is None:
+        ranges = [(0, size)]
+        ret = 200
+    else:
+        check = [True for offset, length in ranges if
+                    length <= 0 or length > size or
+                    offset < 0 or offset >= size or
+                    offset + length > size]
+        if len(check) > 0:
+            raise RangeNotSatisfiable('Requested range exceeds object limits')        
+        ret = 206
+    
+    if ret == 206 and len(ranges) > 1:
+        boundary = uuid.uuid4().hex
+    else:
+        boundary = ''
+    wrapper = ObjectWrapper(ranges, size, hashmap, boundary)
+    response = HttpResponse(wrapper, status=ret)
+    put_object_meta(response, meta, public)
+    if ret == 206:
+        if len(ranges) == 1:
+            offset, length = ranges[0]
+            response['Content-Length'] = length # Update with the correct length.
+            response['Content-Range'] = 'bytes %d-%d/%d' % (offset, offset + length - 1, size)
+        else:
+            del(response['Content-Length'])
+            response['Content-Type'] = 'multipart/byteranges; boundary=%s' % (boundary,)
+    return response
 
 def hashmap_hash(hashmap):
     """Produce the root hash, treating the hashmap as a Merkle-like tree."""

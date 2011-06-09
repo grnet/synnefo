@@ -64,7 +64,7 @@ def object_meta(request, v_account, v_container, v_object):
     #                       badRequest (400)
     
     try:
-        meta = backend.get_object_meta(request.user, v_container, v_object)
+        meta = backend.get_object_meta(v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -87,7 +87,7 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     try:
-        meta = backend.get_object_meta(request.user, v_container, v_object)
+        meta = backend.get_object_meta(v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -104,7 +104,7 @@ def object_read(request, v_account, v_container, v_object):
         return response
     
     try:
-        size, hashmap = backend.get_object_hashmap(request.user, v_container, v_object)
+        size, hashmap = backend.get_object_hashmap(v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -126,7 +126,7 @@ def object_read(request, v_account, v_container, v_object):
         boundary = uuid.uuid4().hex
     else:
         boundary = ''
-    wrapper = ObjectWrapper(request.user, v_container, v_object, ranges, size, hashmap, boundary)
+    wrapper = ObjectWrapper(v_account, v_container, v_object, ranges, size, hashmap, boundary)
     response = HttpResponse(wrapper, status=ret)
     put_object_meta(response, meta)
     if ret == 206:

@@ -166,7 +166,7 @@ def validate_matching_preconditions(request, meta):
         if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
             raise NotModified('Resource Etag matches')
 
-def copy_or_move_object(request, src_path, dest_path, move=False):
+def copy_or_move_object(request, v_account, src_path, dest_path, move=False):
     """Copy or move an object."""
     if type(src_path) == str:
         parts = src_path.split('/')
@@ -188,7 +188,7 @@ def copy_or_move_object(request, src_path, dest_path, move=False):
     meta = get_object_meta(request)
     # Keep previous values of 'Content-Type' (if a new one is absent) and 'hash'.
     try:
-        src_meta = backend.get_object_meta(request.user, src_container, src_name)
+        src_meta = backend.get_object_meta(v_account, src_container, src_name)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
     if 'Content-Type' in meta and 'Content-Type' in src_meta:
@@ -200,9 +200,9 @@ def copy_or_move_object(request, src_path, dest_path, move=False):
     # TODO: Copy or move with 'versioned' set.
     try:
         if move:
-            backend.move_object(request.user, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
+            backend.move_object(v_account, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
         else:
-            backend.copy_object(request.user, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
+            backend.copy_object(v_account, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
 
@@ -517,7 +517,7 @@ def api_method(http_method=None, format_allowed=False):
             try:
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
-
+                
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:
                     raise BadRequest('Container name too large.')

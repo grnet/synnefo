@@ -46,13 +46,13 @@ class TestAccount(unittest.TestCase):
         self.account = 'account1'
     
     def tearDown(self):
-        containers = self.b.list_containers(self.account)
+        containers = [x[0] for x in self.b.list_containers(self.account)]
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
             except IndexError:
                 # container not empty
-                for obj in self.b.list_objects(self.account, container):
+                for obj in [x[0] for x in self.b.list_objects(self.account, container)]:
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
     
@@ -60,7 +60,7 @@ class TestAccount(unittest.TestCase):
         l1 = ['images', 'movies', 'documents', 'backups']
         for item in l1:
             self.b.put_container(self.account, item)
-        l2 = self.b.list_containers(self.account)
+        l2 = [x[0] for x in self.b.list_containers(self.account)]
         l1.sort()
         self.assertEquals(l1, l2)
     
@@ -68,15 +68,15 @@ class TestAccount(unittest.TestCase):
         l1 = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in l1:
             self.b.put_container(self.account, item)
-        l2 = self.b.list_containers(self.account, limit=2)
+        l2 = [x[0] for x in self.b.list_containers(self.account, limit=2)]
         self.assertEquals(len(l2), 2)
         self.assertEquals(l1[:2], l2)
     
-        l2 = self.b.list_containers(self.account, limit=2, marker='bananas')
+        l2 = [x[0] for x in self.b.list_containers(self.account, limit=2, marker='bananas')]
         self.assertTrue(len(l2) <= 2)
         self.assertEquals(l1[2:4], l2)
 
-        l2 = self.b.list_containers(self.account, limit=2, marker='oranges')
+        l2 = [x[0] for x in self.b.list_containers(self.account, limit=2, marker='oranges')]
         self.assertTrue(len(l2) <= 2)
         self.assertEquals(l1[4:], l2)
     
@@ -133,12 +133,12 @@ class TestContainer(unittest.TestCase):
         self.account = 'account1'
     
     def tearDown(self):
-        containers = self.b.list_containers(self.account)
+        containers = [x[0] for x in self.b.list_containers(self.account)]
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
             except IndexError: # container not empty
-                for obj in self.b.list_objects(self.account, container):
+                for obj in [x[0] for x in self.b.list_objects(self.account, container)]:
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
     
@@ -147,7 +147,7 @@ class TestContainer(unittest.TestCase):
     
     def test_list_objects(self):
         self.b.put_container(self.account, 'container1')
-        objects = self.b.list_objects(self.account, 'container1')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1')]
         self.assertEquals(len([]), len(objects))
         l = [
             {'name':'kate_beckinsale.jpg'},
@@ -160,7 +160,7 @@ class TestContainer(unittest.TestCase):
         ]
         for item in l:
             self.b.update_object_hashmap(self.account, 'container1', item['name'], 0, [])
-        objects = self.b.list_objects(self.account, 'container1')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1')]
         self.assertEquals(len(l), len(objects))
     
     def test_list_objects_with_limit_marker(self):
@@ -168,13 +168,13 @@ class TestContainer(unittest.TestCase):
         l = ['gala', 'grannysmith', 'honeycrisp', 'jonagold', 'reddelicious']
         for item in l:
             self.b.update_object_hashmap(self.account, 'container1', item, 0, [])
-        objects = self.b.list_objects(self.account, 'container1', limit=2)
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1', limit=2)]
         self.assertEquals(l[:2], objects)
         
-        objects = self.b.list_objects(self.account, 'container1', limit=2, marker='grannysmith')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1', limit=2, marker='grannysmith')]
         self.assertEquals(l[2:4], objects)
         
-        objects = self.b.list_objects(self.account, 'container1', limit=2, marker='jonagold')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1', limit=2, marker='jonagold')]
         self.assertEquals(l[4:], objects)
     
     def test_list_pseudo_hierarchical_folders(self):
@@ -190,23 +190,23 @@ class TestContainer(unittest.TestCase):
         for item in l:
             self.b.update_object_hashmap(self.account, 'container1', item, 0, [])
         
-        objects = self.b.list_objects(self.account, 'container1', prefix='photos/', delimiter='/')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1', prefix='photos/', delimiter='/')]
         self.assertEquals(['photos/animals/', 'photos/me.jpg', 'photos/plants/'], objects)
         
-        objects = self.b.list_objects(self.account, 'container1', prefix='photos/animals/', delimiter='/')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container1', prefix='photos/animals/', delimiter='/')]
         self.assertEquals(['photos/animals/cats/', 'photos/animals/dogs/'], objects)
         
         self.b.put_container(self.account, 'container2')
         l = ['photos/photo1', 'photos/photo2', 'movieobject', 'videos', 'videos/movieobj4']
         for item in l:
             self.b.update_object_hashmap(self.account, 'container2', item, 0, [])
-        objects = self.b.list_objects(self.account, 'container2', delimiter='/')
+        objects = [x[0] for x in self.b.list_objects(self.account, 'container2', delimiter='/')]
         self.assertEquals(['movieobject', 'photos/', 'videos', 'videos/'], objects)
     
     def test_put_container(self):
         cname = 'container1'
         self.b.put_container(self.account, cname)
-        self.assertTrue(cname in self.b.list_containers(self.account))
+        self.assertTrue(cname in [x[0] for x in self.b.list_containers(self.account)])
     
     def test_put_container_twice(self):
         cname = 'container1'
@@ -217,7 +217,7 @@ class TestContainer(unittest.TestCase):
         cname = 'container1'
         self.b.put_container(self.account, cname)
         self.b.delete_container(self.account, cname)
-        self.assertTrue(cname not in self.b.list_containers(self.account))
+        self.assertTrue(cname not in [x[0] for x in self.b.list_containers(self.account)])
     
     def test_delete_non_exisitng_container(self):
         cname = 'container1'
@@ -248,12 +248,12 @@ class TestObject(unittest.TestCase):
         self.account = 'account1'
     
     def tearDown(self):
-        containers = self.b.list_containers(self.account)
+        containers = [x[0] for x in self.b.list_containers(self.account)]
         for container in containers:
             try:
                 self.b.delete_container(self.account, container)
             except IndexError: # container not empty
-                for obj in self.b.list_objects(self.account, container):
+                for obj in [x[0] for x in self.b.list_objects(self.account, container)]:
                     self.b.delete_object(self.account, container, obj)
                 self.b.delete_container(self.account, container)
     
@@ -328,10 +328,10 @@ class TestObject(unittest.TestCase):
         self.b.put_container(self.account, dest_cname)
         self.b.update_object_meta(self.account, src_cname, src_obj, {'tag':'sfsfssf'})
         self.b.copy_object(self.account, src_cname, src_obj, dest_cname, dest_obj)
-        self.assertTrue(dest_obj in self.b.list_objects(self.account,
-                                                        dest_cname,
-                                                        prefix='photos/personal/',
-                                                        delimiter='/'))
+        self.assertTrue(dest_obj in [x[0] for x in self.b.list_objects(self.account,
+                                                                        dest_cname,
+                                                                        prefix='photos/personal/',
+                                                                        delimiter='/')])
         # TODO: test metadata changes
         meta_tag = self.b.get_object_meta(self.account, dest_cname, dest_obj)['tag']
         self.assertEquals(meta_tag, unicode('sfsfssf'))
@@ -347,10 +347,10 @@ class TestObject(unittest.TestCase):
         self.b.put_container(self.account, cname)
         name = 'kate_beckinsale.jpg'
         self.b.update_object_hashmap(self.account, cname, name, 0, [])
-        self.assertTrue(name in self.b.list_objects(self.account, cname))
+        self.assertTrue(name in [x[0] for x in self.b.list_objects(self.account, cname)])
         
         self.b.delete_object(self.account, cname, name)
-        self.assertTrue(name not in self.b.list_objects(self.account, cname))
+        self.assertTrue(name not in [x[0] for x in self.b.list_objects(self.account, cname)])
         self.assertRaises(NameError, self.b.delete_object, self.account, cname, name)
     
     def test_get_non_existing_object_meta(self):

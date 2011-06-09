@@ -82,7 +82,9 @@ class BaseTestCase(TestCase):
                 'Last-Modified',
                 'Date',
                 'X-Object-Manifest',
-                'Content-Range',)}
+                'Content-Range',
+                'X-Object-Version',
+                'X-Object-Version-Timestamp',)}
         self.contentTypes = {'xml':'application/xml',
                              'json':'application/json',
                              '':'text/plain'}

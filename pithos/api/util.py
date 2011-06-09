@@ -67,21 +67,21 @@ def printable_meta_dict(d):
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 def format_meta_key(k):
-    """Convert underscores to dashes and capitalize intra-dash strings"""
+    """Convert underscores to dashes and capitalize intra-dash strings."""
     return '-'.join([x.capitalize() for x in k.replace('_', '-').split('-')])
 
 def get_meta_prefix(request, prefix):
-    """Get all prefix-* request headers in a dict. Reformat keys with format_meta_key()"""
+    """Get all prefix-* request headers in a dict. Reformat keys with format_meta_key()."""
     prefix = 'HTTP_' + prefix.upper().replace('-', '_')
     return dict([(format_meta_key(k[5:]), v) for k, v in request.META.iteritems() if k.startswith(prefix)])
 
 def get_account_meta(request):
-    """Get metadata from an account request"""
+    """Get metadata from an account request."""
     meta = get_meta_prefix(request, 'X-Account-Meta-')    
     return meta
 
 def put_account_meta(response, meta):
-    """Put metadata in an account response"""
+    """Put metadata in an account response."""
     response['X-Account-Container-Count'] = meta['count']
     response['X-Account-Bytes-Used'] = meta['bytes']
     if 'modified' in meta:
@@ -90,16 +90,15 @@ def put_account_meta(response, meta):
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
 
 def get_container_meta(request):
-    """Get metadata from a container request"""
+    """Get metadata from a container request."""
     meta = get_meta_prefix(request, 'X-Container-Meta-')
     return meta
 
 def put_container_meta(response, meta):
-    """Put metadata in a container response"""
+    """Put metadata in a container response."""
     response['X-Container-Object-Count'] = meta['count']
     response['X-Container-Bytes-Used'] = meta['bytes']
-    if 'modified' in meta:
-        response['Last-Modified'] = http_date(int(meta['modified']))
+    response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
     response['X-Container-Object-Meta'] = [x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
@@ -107,7 +106,7 @@ def put_container_meta(response, meta):
     response['X-Container-Block-Hash'] = backend.hash_algorithm
 
 def get_object_meta(request):
-    """Get metadata from an object request"""
+    """Get metadata from an object request."""
     meta = get_meta_prefix(request, 'X-Object-Meta-')
     if request.META.get('CONTENT_TYPE'):
         meta['Content-Type'] = request.META['CONTENT_TYPE']
@@ -120,11 +119,13 @@ def get_object_meta(request):
     return meta
 
 def put_object_meta(response, meta):
-    """Put metadata in an object response"""
+    """Put metadata in an object response."""
     response['ETag'] = meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
+    response['X-Object-Version'] = meta['version']
+    response['X-Object-Version-Timestamp'] = meta['version_timestamp']
     for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
     for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest'):
@@ -132,7 +133,7 @@ def put_object_meta(response, meta):
             response[k] = meta[k]
 
 def validate_modification_preconditions(request, meta):
-    """Check that the modified timestamp conforms with the preconditions set"""
+    """Check that the modified timestamp conforms with the preconditions set."""
     if 'modified' not in meta:
         return # TODO: Always return?
     
@@ -149,7 +150,7 @@ def validate_modification_preconditions(request, meta):
         raise PreconditionFailed('Resource has been modified')
 
 def validate_matching_preconditions(request, meta):
-    """Check that the ETag conforms with the preconditions set"""
+    """Check that the ETag conforms with the preconditions set."""
     if 'hash' not in meta:
         return # TODO: Always return?
     
@@ -164,7 +165,7 @@ def validate_matching_preconditions(request, meta):
             raise NotModified('Resource Etag matches')
 
 def copy_or_move_object(request, src_path, dest_path, move=False):
-    """Copy or move an object"""
+    """Copy or move an object."""
     if type(src_path) == str:
         parts = src_path.split('/')
         if len(parts) < 3 or parts[0] != '':
@@ -194,6 +195,7 @@ def copy_or_move_object(request, src_path, dest_path, move=False):
         if k in src_meta:
             meta[k] = src_meta[k]
     
+    # TODO: Copy or move with 'versioned' set.
     try:
         if move:
             backend.move_object(request.user, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
@@ -201,6 +203,17 @@ def copy_or_move_object(request, src_path, dest_path, move=False):
             backend.copy_object(request.user, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
+
+def get_version(request):
+    version = request.GET.get('version')
+    if version is not None:
+        try:
+            version = int(version)
+        except ValueError:
+            return None
+        if version < 0:
+            return None
+    return version
 
 def get_content_length(request):
     content_length = request.META.get('CONTENT_LENGTH')
@@ -215,7 +228,7 @@ def get_content_length(request):
     return content_length
 
 def get_range(request, size):
-    """Parse a Range header from the request
+    """Parse a Range header from the request.
     
     Either returns None, when the header is not existent or should be ignored,
     or a list of (offset, length) tuples - should be further checked.
@@ -251,7 +264,7 @@ def get_range(request, size):
     return ret
 
 def get_content_range(request):
-    """Parse a Content-Range header from the request
+    """Parse a Content-Range header from the request.
     
     Either returns None, when the header is not existent or should be ignored,
     or an (offset, length, total) tuple - check as length, total may be None.
@@ -291,7 +304,7 @@ def get_content_range(request):
     return (offset, length, total)
 
 def raw_input_socket(request):
-    """Return the socket for reading the rest of the request"""
+    """Return the socket for reading the rest of the request."""
     server_software = request.META.get('SERVER_SOFTWARE')
     if not server_software:
         if 'wsgi.input' in request.environ:
@@ -306,7 +319,7 @@ def raw_input_socket(request):
 MAX_UPLOAD_SIZE = 10 * (1024 * 1024) # 10MB
 
 def socket_read_iterator(sock, length=0, blocksize=4096):
-    """Return a maximum of blocksize data read from the socket in each iteration
+    """Return a maximum of blocksize data read from the socket in each iteration.
     
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
@@ -356,7 +369,7 @@ def socket_read_iterator(sock, length=0, blocksize=4096):
             yield data
 
 class ObjectWrapper(object):
-    """Return the object's data block-per-block in each iteration
+    """Return the object's data block-per-block in each iteration.
     
     Read from the object using the offset and length provided in each entry of the range list.
     """
@@ -430,7 +443,7 @@ class ObjectWrapper(object):
                 return '\r\n'.join(out)
 
 def hashmap_hash(hashmap):
-    """ Produce the root hash, treating the hashmap as a Merkle-like tree."""
+    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
     
     def subhash(d):
         h = hashlib.new(backend.hash_algorithm)
@@ -472,7 +485,7 @@ def render_fault(request, fault):
     return response
 
 def request_serialization(request, format_allowed=False):
-    """Return the serialization format requested
+    """Return the serialization format requested.
     
     Valid formats are 'text' and 'json', 'xml' if 'format_allowed' is True.
     """
@@ -495,7 +508,7 @@ def request_serialization(request, format_allowed=False):
     return 'text'
 
 def api_method(http_method=None, format_allowed=False):
-    """Decorator function for views that implement an API method"""
+    """Decorator function for views that implement an API method."""
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):

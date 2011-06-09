@@ -52,6 +52,8 @@ class SimpleBackend(BaseBackend):
     Uses SQLite for storage.
     """
     
+    # TODO: Automatic/manual clean-up after a time interval.
+    
     def __init__(self, db):
         self.hash_algorithm = 'sha1'
         self.block_size = 128 * 1024 # 128KB
@@ -61,150 +63,168 @@ class SimpleBackend(BaseBackend):
             os.makedirs(basepath)
         
         self.con = sqlite3.connect(db)
-        sql = '''create table if not exists objects (
-                    name text, tstamp text, primary key (name))'''
+        sql = '''create table if not exists versions (
+                    version_id integer primary key,
+                    name text,
+                    tstamp datetime default current_timestamp,
+                    size integer default 0,
+                    hide integer default 0)'''
         self.con.execute(sql)
         sql = '''create table if not exists metadata (
-                    name text, key text, value text, primary key (name, key))'''
-        self.con.execute(sql)
-        sql = '''create table if not exists versions (
-                    object_id int, version int, size int, primary key (object_id, version))'''
+                    version_id integer, key text, value text, primary key (version_id, key))'''
         self.con.execute(sql)
         sql = '''create table if not exists blocks (
                     block_id text, data blob, primary key (block_id))'''
         self.con.execute(sql)
         sql = '''create table if not exists hashmaps (
-                    version_id int, pos int, block_id text, primary key (version_id, pos))'''
+                    version_id integer, pos integer, block_id text, primary key (version_id, pos))'''
         self.con.execute(sql)
         self.con.commit()
     
-    def get_account_meta(self, account):
+    def delete_account(self, account):
+        """Delete the account with the given name."""
+        
+        logger.debug("delete_account: %s", account)
+        count, bytes, tstamp = self._get_pathstats(account)
+        if count > 0:
+            raise IndexError('Account is not empty')
+        self._del_path(account) # Point of no return.
+    
+    def get_account_meta(self, account, until=None):
         """Return a dictionary with the account metadata."""
         
-        logger.debug("get_account_meta: %s", account)
-        count, bytes = self._get_pathstats(account)
+        logger.debug("get_account_meta: %s %s", account, until)
+        try:
+            version_id, mtime = self._get_accountinfo(account, until)
+        except NameError:
+            version_id = None
+        count, bytes, tstamp = self._get_pathstats(account, until)
+        if until is None:
+            modified = tstamp
+        else:
+            modified = self._get_pathstats(account)[2] # Overall last modification
         
         # Proper count.
-        sql = 'select count(name) from objects where name glob ? and not name glob ?'
+        sql = 'select count(name) from (%s) where name glob ? and not name glob ?'
+        sql = sql % self._sql_until(until)
         c = self.con.execute(sql, (account + '/*', account + '/*/*'))
         row = c.fetchone()
         count = row[0]
         
-        meta = self._get_metadata(account)
+        meta = self._get_metadata(account, version_id)
         meta.update({'name': account, 'count': count, 'bytes': bytes})
+        if modified:
+            meta.update({'modified': modified})
+        if until is not None:
+            meta.update({'until_timestamp': tstamp})
         return meta
     
     def update_account_meta(self, account, meta, replace=False):
         """Update the metadata associated with the account."""
         
         logger.debug("update_account_meta: %s %s %s", account, meta, replace)
-        self._update_metadata(account, None, None, meta, replace)
+        self._put_metadata(account, meta, replace)
     
-    def put_container(self, account, name):
-        """Create a new container with the given name."""
-        
-        logger.debug("put_container: %s %s", account, name)
-        try:
-            path, link, tstamp = self._get_containerinfo(account, name)
-        except NameError:
-            path = os.path.join(account, name)
-            link = self._put_linkinfo(path)
-        else:
-            raise NameError('Container already exists')
-        self._update_metadata(account, name, None, None)
-    
-    def delete_container(self, account, name):
-        """Delete the container with the given name."""
-        
-        logger.debug("delete_container: %s %s", account, name)
-        path, link, tstamp = self._get_containerinfo(account, name)
-        count, bytes = self._get_pathstats(path)
-        if count > 0:
-            raise IndexError('Container is not empty')
-        self._del_path(path)
-        self._update_metadata(account, None, None, None)
-    
-    def get_container_meta(self, account, name):
-        """Return a dictionary with the container metadata."""
-        
-        logger.debug("get_container_meta: %s %s", account, name)
-        path, link, tstamp = self._get_containerinfo(account, name)
-        count, bytes = self._get_pathstats(path)
-        meta = self._get_metadata(path)
-        meta.update({'name': name, 'count': count, 'bytes': bytes, 'created': tstamp})
-        return meta
-    
-    def update_container_meta(self, account, name, meta, replace=False):
-        """Update the metadata associated with the container."""
-        
-        logger.debug("update_container_meta: %s %s %s %s", account, name, meta, replace)
-        path, link, tstamp = self._get_containerinfo(account, name)
-        self._update_metadata(account, name, None, meta, replace)
-    
-    def list_containers(self, account, marker=None, limit=10000):
+    def list_containers(self, account, marker=None, limit=10000, until=None):
         """Return a list of containers existing under an account."""
         
-        logger.debug("list_containers: %s %s %s", account, marker, limit)
-        return self._list_objects(account, '', '/', marker, limit, False, [])
+        logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
+        return self._list_objects(account, '', '/', marker, limit, False, [], until)
     
-    def list_objects(self, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[]):
+    def put_container(self, account, container):
+        """Create a new container with the given name."""
+        
+        logger.debug("put_container: %s %s", account, container)
+        try:
+            path, version_id, mtime = self._get_containerinfo(account, container)
+        except NameError:
+            path = os.path.join(account, container)
+            version_id = self._put_version(path)
+        else:
+            raise NameError('Container already exists')
+    
+    def delete_container(self, account, container):
+        """Delete the container with the given name."""
+        
+        logger.debug("delete_container: %s %s", account, container)
+        path, version_id, mtime = self._get_containerinfo(account, container)
+        count, bytes, tstamp = self._get_pathstats(path)
+        if count > 0:
+            raise IndexError('Container is not empty')
+        self._del_path(path) # Point of no return.
+        self._copy_version(account, account, True, True) # New account version.
+    
+    def get_container_meta(self, account, container, until=None):
+        """Return a dictionary with the container metadata."""
+        
+        logger.debug("get_container_meta: %s %s %s", account, container, until)
+        
+        path, version_id, mtime = self._get_containerinfo(account, container, until)
+        count, bytes, tstamp = self._get_pathstats(path, until)
+        if until is None:
+            modified = tstamp
+        else:
+            modified = self._get_pathstats(account)[2] # Overall last modification
+        
+        meta = self._get_metadata(path, version_id)
+        meta.update({'name': container, 'count': count, 'bytes': bytes, 'modified': modified})
+        if until is not None:
+            meta.update({'until_timestamp': tstamp})
+        return meta
+    
+    def update_container_meta(self, account, container, meta, replace=False):
+        """Update the metadata associated with the container."""
+        
+        logger.debug("update_container_meta: %s %s %s %s", account, container, meta, replace)
+        path, version_id, mtime = self._get_containerinfo(account, container)
+        self._put_metadata(path, meta, replace)
+    
+    def list_objects(self, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
         
-        logger.debug("list_objects: %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit)
-        path, link, tstamp = self._get_containerinfo(account, container)
-        return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys)
+        logger.debug("list_objects: %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, until)
+        path, version_id, mtime = self._get_containerinfo(account, container, until)
+        return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until)
     
-    def list_object_meta(self, account, name):
+    def list_object_meta(self, account, container, until=None):
         """Return a list with all the container's object meta keys."""
         
-        logger.debug("list_object_meta: %s %s", account, name)
-        path, link, tstamp = self._get_containerinfo(account, name)
-        sql = 'select distinct key from metadata where name like ?'
+        logger.debug("list_object_meta: %s %s %s", account, container, until)
+        path, version_id, mtime = self._get_containerinfo(account, container, until)
+        sql = '''select distinct m.key from (%s) o, metadata m
+                    where m.version_id = o.version_id and o.name like ?'''
+        sql = sql % self._sql_until(until)
         c = self.con.execute(sql, (path + '/%',))
         return [x[0] for x in c.fetchall()]
     
-    def get_object_meta(self, account, container, name):
+    def get_object_meta(self, account, container, name, version=None):
         """Return a dictionary with the object metadata."""
         
-        logger.debug("get_object_meta: %s %s %s", account, container, name)
-        path, link, tstamp = self._get_containerinfo(account, container)
-        path, link, tstamp, version, size = self._get_objectinfo(account, container, name)
-        meta = self._get_metadata(path)
-        meta.update({'name': name, 'bytes': size, 'version': version, 'created': tstamp})
+        logger.debug("get_object_meta: %s %s %s %s", account, container, name, version)
+        path, version_id, mtime, size = self._get_objectinfo(account, container, name, version)
+        if version is None:
+            modified = mtime
+        else:
+            modified = self._get_version(path)[1] # Overall last modification
+        
+        meta = self._get_metadata(path, version_id)
+        meta.update({'name': name, 'bytes': size, 'version': version_id, 'version_timestamp': mtime, 'modified': modified})
         return meta
     
     def update_object_meta(self, account, container, name, meta, replace=False):
         """Update the metadata associated with the object."""
         
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
-        path, link, tstamp = self._get_containerinfo(account, container)
-        path, link, tstamp, version, size = self._get_objectinfo(account, container, name)
-        if 'versioned' in meta:
-            if meta['versioned']:
-                if version == 0:
-                    sql = 'update versions set version = 1 where object_id = ?'
-                    self.con.execute(sql, (link,))
-                    self.con.commit()
-            else:
-                if version > 0:
-                    self._del_uptoversion(link, version)
-                    sql = 'update versions set version = 0 where object_id = ?'
-                    self.con.execute(sql, (link,))
-                    self.con.commit()
-            del(meta['versioned'])
-        self._update_metadata(account, container, name, meta, replace)
+        path, version_id, mtime, size = self._get_objectinfo(account, container, name)
+        self._put_metadata(path, meta, replace)
     
     def get_object_hashmap(self, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
         
         logger.debug("get_object_hashmap: %s %s %s %s", account, container, name, version)
-        path, link, tstamp = self._get_containerinfo(account, container)
-        path, link, tstamp, version, size = self._get_objectinfo(account, container, name, version)
-        
-        sql = '''select block_id from hashmaps where version_id =
-                    (select rowid from versions where object_id = ? and version = ?)
-                    order by pos'''
-        c = self.con.execute(sql, (link, version))
+        path, version_id, mtime, size = self._get_objectinfo(account, container, name, version)
+        sql = 'select block_id from hashmaps where version_id = ? order by pos asc'
+        c = self.con.execute(sql, (version_id,))
         hashmap = [x[0] for x in c.fetchall()]
         return size, hashmap
     
@@ -212,56 +232,55 @@ class SimpleBackend(BaseBackend):
         """Create/update an object with the specified size and partial hashes."""
         
         logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
-        path, link, tstamp = self._get_containerinfo(account, container)
-        try:
-            path, link, tstamp, version, s = self._get_objectinfo(account, container, name)
-        except NameError:
-            version = 0
-        
-        if version == 0:
-            path = os.path.join(account, container, name)
-            
-            self._del_path(path, delmeta=False)
-            link = self._put_linkinfo(path)
-        else:
-            version += 1
-        
-        sql = 'insert or replace into versions (object_id, version, size) values (?, ?, ?)'
-        version_id = self.con.execute(sql, (link, version, size)).lastrowid
+        path = self._get_containerinfo(account, container)[0]
+        path = os.path.join(path, name)
+        src_version_id, dest_version_id = self._copy_version(path, path, True, False)
+        sql = 'update versions set size = ? where version_id = ?'
+        self.con.execute(sql, (size, dest_version_id))
+        # TODO: Check for block_id existence.
         for i in range(len(hashmap)):
             sql = 'insert or replace into hashmaps (version_id, pos, block_id) values (?, ?, ?)'
-            self.con.execute(sql, (version_id, i, hashmap[i]))
+            self.con.execute(sql, (dest_version_id, i, hashmap[i]))
         self.con.commit()
     
-    def copy_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
+    def copy_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Copy an object's data and metadata."""
         
-        logger.debug("copy_object: %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta)
-        size, hashmap = self.get_object_hashmap(account, src_container, src_name)
-        self.update_object_hashmap(account, dest_container, dest_name, size, hashmap)
-        if not replace_meta:
-            meta = self._get_metadata(os.path.join(account, src_container, src_name))
-            meta.update(dest_meta)
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
+        if src_version is None:
+            src_path = self._get_objectinfo(account, src_container, src_name)[0]
         else:
-            meta = dest_meta
-        self._update_metadata(account, dest_container, dest_name, meta, replace_meta)
+            src_path = os.path.join(account, src_container, src_name)
+        dest_path = self._get_containerinfo(account, dest_container)[0]
+        dest_path = os.path.join(dest_path, dest_name)
+        src_version_id, dest_version_id = self._copy_version(src_path, dest_path, not replace_meta, True, src_version)
+        for k, v in dest_meta.iteritems():
+            sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (dest_version_id, k, v))
+        self.con.commit()
     
-    def move_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
+    def move_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta)
-        self.copy_object(account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta)
+        logger.debug("move_object: %s %s %s %s, %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
+        self.copy_object(account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
         self.delete_object(account, src_container, src_name)
     
     def delete_object(self, account, container, name):
         """Delete an object."""
         
         logger.debug("delete_object: %s %s %s", account, container, name)
-        path, link, tstamp = self._get_containerinfo(account, container)
+        path, version_id, mtime, size = self._get_objectinfo(account, container, name)
+        self._put_version(path, 0, 1)
+    
+    def list_versions(self, account, container, name):
+        """Return a list of version (version_id, version_modified) tuples for an object."""
+        
+        # This will even show deleted versions.
         path = os.path.join(account, container, name)
-        link, tstamp = self._get_linkinfo(path)
-        self._del_path(path)
-        self._update_metadata(account, container, None, None)
+        sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ?'''
+        c = self.con.execute(sql, (path,))
+        return [(str(x[0]), int(x[1])) for x in c.fetchall()]
     
     def get_block(self, hash):
         """Return a block's data."""
@@ -299,147 +318,171 @@ class SimpleBackend(BaseBackend):
         dest_data = src_data[:offset] + data + src_data[offset + len(data):]
         return self.put_block(dest_data)
     
-    def _get_linkinfo(self, path):
-        c = self.con.execute('select rowid, tstamp from objects where name = ?', (path,))
-        row = c.fetchone()
-        if row:
-            return str(row[0]), str(row[1])
-        else:
-            raise NameError('Object does not exist')
+    def _sql_until(self, until=None):
+        """Return the sql to get the latest versions until the timestamp given."""
+        if until is None:
+            until = int(time.time())
+        sql = '''select version_id, name, strftime('%s', tstamp) as tstamp, size from versions v
+                    where version_id = (select max(version_id) from versions
+                                        where v.name = name and tstamp <= datetime(%s, 'unixepoch'))
+                    and hide = 0'''
+        return sql % ('%s', until)
     
-    def _put_linkinfo(self, path):
-        sql = 'insert into objects (name, tstamp) values (?, ?)'
-        id = self.con.execute(sql, (path, int(time.time()))).lastrowid
+    def _get_pathstats(self, path, until=None):
+        """Return count and sum of size of everything under path and latest timestamp."""
+        
+        sql = 'select count(version_id), total(size), max(tstamp) from (%s) where name like ?'
+        sql = sql % self._sql_until(until)
+        c = self.con.execute(sql, (path + '/%',))
+        row = c.fetchone()
+        tstamp = row[2] if row[2] is not None else 0
+        return int(row[0]), int(row[1]), int(tstamp)
+    
+    def _get_version(self, path, version=None):
+        if version is None:            
+            sql = '''select version_id, strftime('%s', tstamp), size, hide from versions where name = ?
+                        order by version_id desc limit 1'''
+            c = self.con.execute(sql, (path,))
+            row = c.fetchone()
+            if not row or int(row[3]):
+                raise NameError('Object does not exist')
+        else:
+            sql = '''select version_id, strftime('%s', tstamp), size from versions where name = ?
+                        and version_id = ?'''
+            c = self.con.execute(sql, (path, version))
+            row = c.fetchone()
+            if not row:
+                raise IndexError('Version does not exist')
+        return str(row[0]), int(row[1]), int(row[2])
+    
+    def _put_version(self, path, size=0, hide=0):
+        sql = 'insert into versions (name, size, hide) values (?, ?, ?)'
+        id = self.con.execute(sql, (path, size, hide)).lastrowid
         self.con.commit()
         return str(id)
     
-    def _get_containerinfo(self, account, container):
-        path = os.path.join(account, container)
+    def _copy_version(self, src_path, dest_path, copy_meta=True, copy_data=True, src_version=None):
+        if src_version is not None:
+            src_version_id, mtime, size = self._get_version(src_path, src_version)
+        else:
+            # Latest or create from scratch.
+            try:
+                src_version_id, mtime, size = self._get_version(src_path)
+            except NameError:
+                src_version_id = None
+                size = 0
+        if not copy_data:
+            size = 0
+        dest_version_id = self._put_version(dest_path, size)
+        if copy_meta and src_version_id is not None:
+            sql = 'insert into metadata select %s, key, value from metadata where version_id = ?'
+            sql = sql % dest_version_id
+            self.con.execute(sql, (src_version_id,))
+        if copy_data and src_version_id is not None:
+            sql = 'insert into hashmaps select %s, pos, block_id from hashmaps where version_id = ?'
+            sql = sql % dest_version_id
+            self.con.execute(sql, (src_version_id,))
+        self.con.commit()
+        return src_version_id, dest_version_id
+    
+    def _get_versioninfo(self, account, container, name, until=None):
+        """Return path, latest version, associated timestamp and size until the timestamp given."""
+        
+        p = (account, container, name)
         try:
-            link, tstamp = self._get_linkinfo(path)
-        except NameError:
+            p = p[:p.index(None)]
+        except ValueError:
+            pass
+        path = os.path.join(*p)
+        sql = '''select version_id, tstamp, size from (%s) where name = ?'''
+        sql = sql % self._sql_until(until)
+        c = self.con.execute(sql, (path,))
+        row = c.fetchone()
+        if row is None:
+            raise NameError('Path does not exist')
+        return path, str(row[0]), int(row[1]), int(row[2])
+    
+    def _get_accountinfo(self, account, until=None):
+        try:
+            path, version_id, mtime, size = self._get_versioninfo(account, None, None, until)
+            return version_id, mtime
+        except:
+            raise NameError('Account does not exist')
+    
+    def _get_containerinfo(self, account, container, until=None):
+        try:
+            path, version_id, mtime, size = self._get_versioninfo(account, container, None, until)
+            return path, version_id, mtime
+        except:
             raise NameError('Container does not exist')
-        return path, link, tstamp
     
     def _get_objectinfo(self, account, container, name, version=None):
         path = os.path.join(account, container, name)
-        link, tstamp = self._get_linkinfo(path)
-        if not version: # If zero or None.
-            sql = '''select version, size from versions v,
-                        (select object_id, max(version) as m from versions
-                            where object_id = ? group by object_id) as g
-                        where v.object_id = g.object_id and v.version = g.m'''
-            c = self.con.execute(sql, (link,))
-        else:
-            sql = 'select version, size from versions where object_id = ? and version = ?'
-            c = self.con.execute(sql, (link, version))
-        row = c.fetchone()
-        if not row:
-            raise IndexError('Version does not exist')
-        
-        return path, link, tstamp, int(row[0]), int(row[1])
+        version_id, mtime, size = self._get_version(path, version)
+        return path, version_id, mtime, size
     
-    def _get_pathstats(self, path):
-        """Return count and sum of size of all objects under path."""
-        
-        sql = '''select count(o), total(size) from (
-                    select v.object_id as o, v.size from versions v,
-                        (select object_id, max(version) as m from versions where object_id in
-                            (select rowid from objects where name like ?) group by object_id) as g
-                        where v.object_id = g.object_id and v.version = g.m
-                    union
-                    select rowid as o, 0 as size from objects where name like ?
-                        and rowid not in (select object_id from versions))'''
-        c = self.con.execute(sql, (path + '/%', path + '/%'))
-        row = c.fetchone()
-        return int(row[0]), int(row[1])
+    def _get_metadata(self, path, version):
+        sql = 'select key, value from metadata where version_id = ?'
+        c = self.con.execute(sql, (version,))
+        return dict(c.fetchall())
     
-    def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[]):
+    def _put_metadata(self, path, meta, replace=False):
+        """Create a new version and store metadata."""
+        
+        src_version_id, dest_version_id = self._copy_version(path, path, not replace, True)
+        for k, v in meta.iteritems():
+            sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (dest_version_id, k, v))
+        self.con.commit()
+    
+    def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         cont_prefix = path + '/'
         if keys and len(keys) > 0:
-            sql = '''select distinct o.name from objects o, metadata m where o.name like ? and
-                        m.name = o.name and m.key in (%s) order by o.name'''
-            sql = sql % ', '.join('?' * len(keys))
+            sql = '''select distinct o.name, o.version_id from (%s) o, metadata m where o.name like ? and
+                        m.version_id = o.version_id and m.key in (%s) order by o.name'''
+            sql = sql % (self._sql_until(until), ', '.join('?' * len(keys)))
             param = (cont_prefix + prefix + '%',) + tuple(keys)
         else:
-            sql = 'select name from objects where name like ? order by name'
+            sql = 'select name, version_id from (%s) where name like ? order by name'
+            sql = sql % self._sql_until(until)
             param = (cont_prefix + prefix + '%',)
         c = self.con.execute(sql, param)
-        objects = [x[0][len(cont_prefix):] for x in c.fetchall()]
+        objects = [(x[0][len(cont_prefix):], x[1]) for x in c.fetchall()]
         if delimiter:
             pseudo_objects = []
             for x in objects:
-                pseudo_name = x
+                pseudo_name = x[0]
                 i = pseudo_name.find(delimiter, len(prefix))
                 if not virtual:
                     # If the delimiter is not found, or the name ends
                     # with the delimiter's first occurence.
                     if i == -1 or len(pseudo_name) == i + len(delimiter):
-                        pseudo_objects.append(pseudo_name)
+                        pseudo_objects.append(x)
                 else:
                     # If the delimiter is found, keep up to (and including) the delimiter.
                     if i != -1:
                         pseudo_name = pseudo_name[:i + len(delimiter)]
-                    if pseudo_name not in pseudo_objects:
-                        pseudo_objects.append(pseudo_name)
+                    if pseudo_name not in [y[0] for y in pseudo_objects]:
+                        pseudo_objects.append((pseudo_name, x[1]))
             objects = pseudo_objects
         
         start = 0
         if marker:
             try:
-                start = objects.index(marker) + 1
+                start = [x[0] for x in objects].index(marker) + 1
             except ValueError:
                 pass
         if not limit or limit > 10000:
             limit = 10000
         return objects[start:start + limit]
     
-    def _get_metadata(self, path):
-        sql = 'select key, value from metadata where name = ?'
-        c = self.con.execute(sql, (path,))
-        return dict(c.fetchall())
-    
-    def _put_metadata(self, path, meta, replace=False):
-        if replace:
-            sql = 'delete from metadata where name = ?'
-            self.con.execute(sql, (path,))
-        for k, v in meta.iteritems():
-            sql = 'insert or replace into metadata (name, key, value) values (?, ?, ?)'
-            self.con.execute(sql, (path, k, v))
-        self.con.commit()
-    
-    def _update_metadata(self, account, container, name, meta, replace=False):
-        """Recursively update metadata and set modification time."""
-        
-        modified = {'modified': int(time.time())}
-        if not meta:
-            meta = {}
-        meta.update(modified)
-        path = (account, container, name)
-        for x in reversed(range(3)):
-            if not path[x]:
-                continue
-            self._put_metadata(os.path.join(*path[:x+1]), meta, replace)
-            break
-        for y in reversed(range(x)):
-            self._put_metadata(os.path.join(*path[:y+1]), modified)
-    
-    def _del_uptoversion(self, link, version):
-        sql = '''delete from hashmaps where version_id
-                    (select rowid from versions where object_id = ? and version < ?)'''
-        self.con.execute(sql, (link, version))
-        self.con.execute('delete from versions where object_id = ?', (link,))
-        self.con.commit()
-    
-    def _del_path(self, path, delmeta=True):
+    def _del_path(self, path):
         sql = '''delete from hashmaps where version_id in
-                    (select rowid from versions where object_id in
-                    (select rowid from objects where name = ?))'''
+                    (select version_id from versions where name = ?)'''
         self.con.execute(sql, (path,))
-        sql = '''delete from versions where object_id in
-                    (select rowid from objects where name = ?)'''
+        sql = '''delete from metadata where version_id in
+                    (select version_id from versions where name = ?)'''
         self.con.execute(sql, (path,))
-        self.con.execute('delete from objects where name = ?', (path,))
-        if delmeta:
-            self.con.execute('delete from metadata where name = ?', (path,))
+        sql = '''delete from versions where name = ?'''
+        self.con.execute(sql, (path,))
         self.con.commit()

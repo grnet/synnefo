@@ -46,8 +46,8 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
 from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
     put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
     validate_modification_preconditions, validate_matching_preconditions, copy_or_move_object,
-    get_content_length, get_range, get_content_range, raw_input_socket, socket_read_iterator,
-    ObjectWrapper, hashmap_hash, api_method)
+    get_version, get_content_length, get_range, get_content_range, raw_input_socket,
+    socket_read_iterator, ObjectWrapper, hashmap_hash, api_method)
 from pithos.backends import backend
 
 
@@ -168,7 +168,7 @@ def container_list(request, v_account):
             limit = 10000
     
     try:
-        containers = backend.list_containers(request.user, marker, limit)
+        containers = [x[0] for x in backend.list_containers(request.user, marker, limit)]
     except NameError:
         containers = []
     
@@ -322,7 +322,7 @@ def object_list(request, v_account, v_container):
         keys = []
     
     try:
-        objects = backend.list_objects(request.user, v_container, prefix, delimiter, marker, limit, virtual, keys)
+        objects = [x[0] for x in backend.list_objects(request.user, v_container, prefix, delimiter, marker, limit, virtual, keys)]
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -361,10 +361,13 @@ def object_meta(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    version = get_version(request)
     try:
-        meta = backend.get_object_meta(request.user, v_container, v_object)
+        meta = backend.get_object_meta(request.user, v_container, v_object, version)
     except NameError:
         raise ItemNotFound('Object does not exist')
+    except IndexError:
+        raise ItemNotFound('Version does not exist')
     
     response = HttpResponse(status=204)
     put_object_meta(response, meta)
@@ -381,10 +384,13 @@ def object_read(request, v_account, v_container, v_object):
     #                       badRequest (400),
     #                       notModified (304)
     
+    version = get_version(request)
     try:
-        meta = backend.get_object_meta(request.user, v_container, v_object)
+        meta = backend.get_object_meta(request.user, v_container, v_object, version)
     except NameError:
         raise ItemNotFound('Object does not exist')
+    except IndexError:
+        raise ItemNotFound('Version does not exist')
     
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
@@ -396,10 +402,11 @@ def object_read(request, v_account, v_container, v_object):
         return response
     
     try:
-        # TODO: Also check for IndexError.
-        size, hashmap = backend.get_object_hashmap(request.user, v_container, v_object)
+        size, hashmap = backend.get_object_hashmap(request.user, v_container, v_object, version)
     except NameError:
         raise ItemNotFound('Object does not exist')
+    except IndexError:
+        raise ItemNotFound('Version does not exist')
     
     # Reply with the hashmap.
     if request.serialization != 'text':
@@ -477,21 +484,15 @@ def object_write(request, v_account, v_container, v_object):
         raise LengthRequired('Missing Content-Type header')
     
     md5 = hashlib.md5()
-    if content_length == 0:
-        try:
-            backend.update_object_hashmap(request.user, v_container, v_object, 0, [])
-        except NameError:
-            raise ItemNotFound('Container does not exist')
-    else:
-        size = 0
-        hashmap = []
-        sock = raw_input_socket(request)
-        for data in socket_read_iterator(sock, content_length, backend.block_size):
-            # TODO: Raise 408 (Request Timeout) if this takes too long.
-            # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
-            size += len(data)
-            hashmap.append(backend.put_block(data))
-            md5.update(data)
+    size = 0
+    hashmap = []
+    sock = raw_input_socket(request)
+    for data in socket_read_iterator(sock, content_length, backend.block_size):
+        # TODO: Raise 408 (Request Timeout) if this takes too long.
+        # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+        size += len(data)
+        hashmap.append(backend.put_block(data))
+        md5.update(data)
     
     meta['hash'] = md5.hexdigest().lower()
     etag = request.META.get('HTTP_ETAG')
@@ -499,6 +500,7 @@ def object_write(request, v_account, v_container, v_object):
         raise UnprocessableEntity('Object ETag does not match')
     
     try:
+        # TODO: Update metadata with the hashmap.
         backend.update_object_hashmap(request.user, v_container, v_object, size, hashmap)
     except NameError:
         raise ItemNotFound('Container does not exist')
@@ -589,7 +591,6 @@ def object_update(request, v_account, v_container, v_object):
         content_length = get_content_length(request)
     
     try:
-        # TODO: Also check for IndexError.
         size, hashmap = backend.get_object_hashmap(request.user, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
@@ -632,12 +633,12 @@ def object_update(request, v_account, v_container, v_object):
     if offset > size:
         size = offset
     try:
+        # TODO: Update metadata with the hashmap.
         backend.update_object_hashmap(request.user, v_container, v_object, size, hashmap)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
     # Update ETag.
-    # TODO: Move this to the backend.
     meta = {}
     meta['hash'] = hashmap_hash(hashmap)
     try:

@@ -44,14 +44,23 @@ class BaseBackend(object):
         'block_size': Suggested is 4MB
     """
     
-    def get_account_meta(self, account):
+    def delete_account(self, account):
+        """Delete the account with the given name.
+
+        Raises:
+            IndexError: Account is not empty
+        """
+        return
+    
+    def get_account_meta(self, account, until=None):
         """Return a dictionary with the account metadata.
         
         The keys returned are all user-defined, except:
             'name': The account name
             'count': The number of containers (or 0)
             'bytes': The total data size (or 0)
-            'modified': Last modification timestamp
+            'modified': Last modification timestamp (overall)
+            'until_timestamp': Last modification until the timestamp provided
         """
         return {}
     
@@ -64,7 +73,16 @@ class BaseBackend(object):
         """
         return
     
-    def put_container(self, account, name):
+    def list_containers(self, account, marker=None, limit=10000, until=None):
+        """Return a list of container (name, version_id) tuples existing under an account.
+        
+        Parameters:
+            'marker': Start list from the next item after 'marker'
+            'limit': Number of containers to return
+        """
+        return []
+    
+    def put_container(self, account, container):
         """Create a new container with the given name.
 
         Raises:
@@ -72,7 +90,7 @@ class BaseBackend(object):
         """
         return
     
-    def delete_container(self, account, name):
+    def delete_container(self, account, container):
         """Delete the container with the given name.
 
         Raises:
@@ -81,22 +99,22 @@ class BaseBackend(object):
         """
         return
     
-    def get_container_meta(self, account, name):
+    def get_container_meta(self, account, container, until=None):
         """Return a dictionary with the container metadata.
 
         The keys returned are all user-defined, except:
             'name': The container name
             'count': The number of objects
             'bytes': The total data size
-            'created': Creation timestamp
-            'modified': Last modification timestamp
+            'modified': Last modification timestamp (overall)
+            'until_timestamp': Last modification until the timestamp provided
         
         Raises:
             NameError: Container does not exist
         """
         return {}
     
-    def update_container_meta(self, account, name, meta, replace=False):
+    def update_container_meta(self, account, container, meta, replace=False):
         """Update the metadata associated with the container.
         
         Parameters:
@@ -108,17 +126,8 @@ class BaseBackend(object):
         """
         return
     
-    def list_containers(self, account, marker=None, limit=10000):
-        """Return a list of containers existing under an account.
-        
-        Parameters:
-            'marker': Start list from the next item after 'marker'
-            'limit': Number of containers to return
-        """
-        return []
-    
-    def list_objects(self, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[]):
-        """Return a list of objects existing under a container.
+    def list_objects(self, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
+        """Return a list of object (name, version_id) tuples existing under a container.
         
         Parameters:
             'prefix': List objects starting with 'prefix'
@@ -137,7 +146,7 @@ class BaseBackend(object):
         """
         return []
     
-    def list_object_meta(self, account, name):
+    def list_object_meta(self, account, container, until=None):
         """Return a list with all the container's object meta keys.
         
         Raises:
@@ -145,18 +154,19 @@ class BaseBackend(object):
         """
         return []
     
-    def get_object_meta(self, account, container, name):
+    def get_object_meta(self, account, container, name, version=None):
         """Return a dictionary with the object metadata.
         
         The keys returned are all user-defined, except:
-            'name': The account name
+            'name': The object name
             'bytes': The total data size
-            'version': The latest version (zero if not versioned)
-            'created': Creation timestamp
-            'modified': Last modification timestamp
+            'modified': Last modification timestamp (overall)
+            'version': The version identifier
+            'version_timestamp': The version's modification timestamp
         
         Raises:
             NameError: Container/object does not exist
+            IndexError: Version does not exist
         """
         return {}
     
@@ -164,8 +174,7 @@ class BaseBackend(object):
         """Update the metadata associated with the object.
         
         Parameters:
-            'meta': Dictionary with metadata to update.\
-                    Use the 'versioned' key to control versioning
+            'meta': Dictionary with metadata to update.
             'replace': Replace instead of update
         
         Raises:
@@ -186,31 +195,35 @@ class BaseBackend(object):
         """Create/update an object with the specified size and partial hashes.
         
         Raises:
-            NameError: Container/block does not exist
+            NameError: Container does not exist
         """
         return
     
-    def copy_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
+    def copy_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Copy an object's data and metadata.
         
         Parameters:
             'dest_meta': Dictionary with metadata to changes from source to destination
             'replace_meta': Replace metadata instead of update
+            'src_version': Copy from the version provided.
         
         Raises:
             NameError: Container/object does not exist
+            IndexError: Version does not exist
         """
         return
     
-    def move_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
+    def move_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Move an object's data and metadata.
         
         Parameters:
             'dest_meta': Dictionary with metadata to changes from source to destination
             'replace_meta': Replace metadata instead of update
+            'src_version': Copy from the version provided.
         
         Raises:
             NameError: Container/object does not exist
+            IndexError: Version does not exist
         """
         return
     
@@ -221,6 +234,10 @@ class BaseBackend(object):
             NameError: Container/object does not exist
         """
         return
+    
+    def list_versions(self, account, container, name):
+        """Return a list of version (version_id, version_modified) tuples for an object."""
+        return []
     
     def get_block(self, hash):
         """Return a block's data.

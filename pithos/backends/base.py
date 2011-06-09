@@ -44,15 +44,15 @@ class BaseBackend(object):
         'block_size': Suggested is 4MB
     """
     
-    def delete_account(self, account):
+    def delete_account(self, user, account):
         """Delete the account with the given name.
-
+        
         Raises:
             IndexError: Account is not empty
         """
         return
     
-    def get_account_meta(self, account, until=None):
+    def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata.
         
         The keys returned are all user-defined, except:
@@ -64,7 +64,7 @@ class BaseBackend(object):
         """
         return {}
     
-    def update_account_meta(self, account, meta, replace=False):
+    def update_account_meta(self, user, account, meta, replace=False):
         """Update the metadata associated with the account.
         
         Parameters:
@@ -73,7 +73,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_containers(self, account, marker=None, limit=10000, until=None):
+    def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of container (name, version_id) tuples existing under an account.
         
         Parameters:
@@ -82,26 +82,26 @@ class BaseBackend(object):
         """
         return []
     
-    def put_container(self, account, container):
+    def put_container(self, user, account, container):
         """Create a new container with the given name.
-
+        
         Raises:
             NameError: Container already exists
         """
         return
     
-    def delete_container(self, account, container):
+    def delete_container(self, user, account, container):
         """Delete the container with the given name.
-
+        
         Raises:
             NameError: Container does not exist
             IndexError: Container is not empty
         """
         return
     
-    def get_container_meta(self, account, container, until=None):
+    def get_container_meta(self, user, account, container, until=None):
         """Return a dictionary with the container metadata.
-
+        
         The keys returned are all user-defined, except:
             'name': The container name
             'count': The number of objects
@@ -114,7 +114,7 @@ class BaseBackend(object):
         """
         return {}
     
-    def update_container_meta(self, account, container, meta, replace=False):
+    def update_container_meta(self, user, account, container, meta, replace=False):
         """Update the metadata associated with the container.
         
         Parameters:
@@ -126,7 +126,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_objects(self, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of object (name, version_id) tuples existing under a container.
         
         Parameters:
@@ -146,7 +146,7 @@ class BaseBackend(object):
         """
         return []
     
-    def list_object_meta(self, account, container, until=None):
+    def list_object_meta(self, user, account, container, until=None):
         """Return a list with all the container's object meta keys.
         
         Raises:
@@ -154,7 +154,7 @@ class BaseBackend(object):
         """
         return []
     
-    def get_object_meta(self, account, container, name, version=None):
+    def get_object_meta(self, user, account, container, name, version=None):
         """Return a dictionary with the object metadata.
         
         The keys returned are all user-defined, except:
@@ -170,7 +170,7 @@ class BaseBackend(object):
         """
         return {}
     
-    def update_object_meta(self, account, container, name, meta, replace=False):
+    def update_object_meta(self, user, account, container, name, meta, replace=False):
         """Update the metadata associated with the object.
         
         Parameters:
@@ -182,7 +182,7 @@ class BaseBackend(object):
         """
         return
     
-    def get_object_hashmap(self, account, container, name, version=None):
+    def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes.
         
         Raises:
@@ -191,7 +191,7 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, account, container, name, size, hashmap):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False):
         """Create/update an object with the specified size and partial hashes.
         
         Raises:
@@ -199,7 +199,7 @@ class BaseBackend(object):
         """
         return
     
-    def copy_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Copy an object's data and metadata.
         
         Parameters:
@@ -213,7 +213,7 @@ class BaseBackend(object):
         """
         return
     
-    def move_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Move an object's data and metadata.
         
         Parameters:
@@ -227,7 +227,7 @@ class BaseBackend(object):
         """
         return
     
-    def delete_object(self, account, container, name):
+    def delete_object(self, user, account, container, name):
         """Delete an object.
         
         Raises:
@@ -235,8 +235,8 @@ class BaseBackend(object):
         """
         return
     
-    def list_versions(self, account, container, name):
-        """Return a list of version (version_id, version_modified) tuples for an object."""
+    def list_versions(self, user, account, container, name):
+        """Return a list of all (version, version_timestamp) tuples for an object."""
         return []
     
     def get_block(self, hash):

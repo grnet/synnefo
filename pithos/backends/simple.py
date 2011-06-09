@@ -81,7 +81,7 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql)
         self.con.commit()
     
-    def delete_account(self, account):
+    def delete_account(self, user, account):
         """Delete the account with the given name."""
         
         logger.debug("delete_account: %s", account)
@@ -90,7 +90,7 @@ class SimpleBackend(BaseBackend):
             raise IndexError('Account is not empty')
         self._del_path(account) # Point of no return.
     
-    def get_account_meta(self, account, until=None):
+    def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata."""
         
         logger.debug("get_account_meta: %s %s", account, until)
@@ -124,19 +124,19 @@ class SimpleBackend(BaseBackend):
             meta.update({'until_timestamp': tstamp})
         return meta
     
-    def update_account_meta(self, account, meta, replace=False):
+    def update_account_meta(self, user, account, meta, replace=False):
         """Update the metadata associated with the account."""
         
         logger.debug("update_account_meta: %s %s %s", account, meta, replace)
         self._put_metadata(account, meta, replace)
     
-    def list_containers(self, account, marker=None, limit=10000, until=None):
+    def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of containers existing under an account."""
         
         logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
         return self._list_objects(account, '', '/', marker, limit, False, [], until)
     
-    def put_container(self, account, container):
+    def put_container(self, user, account, container):
         """Create a new container with the given name."""
         
         logger.debug("put_container: %s %s", account, container)
@@ -148,7 +148,7 @@ class SimpleBackend(BaseBackend):
         else:
             raise NameError('Container already exists')
     
-    def delete_container(self, account, container):
+    def delete_container(self, user, account, container):
         """Delete the container with the given name."""
         
         logger.debug("delete_container: %s %s", account, container)
@@ -159,7 +159,7 @@ class SimpleBackend(BaseBackend):
         self._del_path(path) # Point of no return.
         self._copy_version(account, account, True, True) # New account version.
     
-    def get_container_meta(self, account, container, until=None):
+    def get_container_meta(self, user, account, container, until=None):
         """Return a dictionary with the container metadata."""
         
         logger.debug("get_container_meta: %s %s %s", account, container, until)
@@ -181,21 +181,21 @@ class SimpleBackend(BaseBackend):
             meta.update({'until_timestamp': tstamp})
         return meta
     
-    def update_container_meta(self, account, container, meta, replace=False):
+    def update_container_meta(self, user, account, container, meta, replace=False):
         """Update the metadata associated with the container."""
         
         logger.debug("update_container_meta: %s %s %s %s", account, container, meta, replace)
         path, version_id, mtime = self._get_containerinfo(account, container)
         self._put_metadata(path, meta, replace)
     
-    def list_objects(self, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
         
         logger.debug("list_objects: %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, until)
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until)
     
-    def list_object_meta(self, account, container, until=None):
+    def list_object_meta(self, user, account, container, until=None):
         """Return a list with all the container's object meta keys."""
         
         logger.debug("list_object_meta: %s %s %s", account, container, until)
@@ -206,7 +206,7 @@ class SimpleBackend(BaseBackend):
         c = self.con.execute(sql, (path + '/%',))
         return [x[0] for x in c.fetchall()]
     
-    def get_object_meta(self, account, container, name, version=None):
+    def get_object_meta(self, user, account, container, name, version=None):
         """Return a dictionary with the object metadata."""
         
         logger.debug("get_object_meta: %s %s %s %s", account, container, name, version)
@@ -220,14 +220,14 @@ class SimpleBackend(BaseBackend):
         meta.update({'name': name, 'bytes': size, 'version': version_id, 'version_timestamp': mtime, 'modified': modified})
         return meta
     
-    def update_object_meta(self, account, container, name, meta, replace=False):
+    def update_object_meta(self, user, account, container, name, meta, replace=False):
         """Update the metadata associated with the object."""
         
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
         path, version_id, mtime, size = self._get_objectinfo(account, container, name)
         self._put_metadata(path, meta, replace)
     
-    def get_object_hashmap(self, account, container, name, version=None):
+    def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
         
         logger.debug("get_object_hashmap: %s %s %s %s", account, container, name, version)
@@ -237,22 +237,25 @@ class SimpleBackend(BaseBackend):
         hashmap = [x[0] for x in c.fetchall()]
         return size, hashmap
     
-    def update_object_hashmap(self, account, container, name, size, hashmap):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False):
         """Create/update an object with the specified size and partial hashes."""
         
         logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
         path = self._get_containerinfo(account, container)[0]
         path = os.path.join(path, name)
-        src_version_id, dest_version_id = self._copy_version(path, path, True, False)
+        src_version_id, dest_version_id = self._copy_version(path, path, not replace_meta, False)
         sql = 'update versions set size = ? where version_id = ?'
         self.con.execute(sql, (size, dest_version_id))
         # TODO: Check for block_id existence.
         for i in range(len(hashmap)):
             sql = 'insert or replace into hashmaps (version_id, pos, block_id) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, i, hashmap[i]))
+        for k, v in meta.iteritems():
+            sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
-    def copy_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Copy an object's data and metadata."""
         
         logger.debug("copy_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
@@ -268,23 +271,24 @@ class SimpleBackend(BaseBackend):
             self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
-    def move_object(self, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
         """Move an object's data and metadata."""
         
         logger.debug("move_object: %s %s %s %s, %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
-        self.copy_object(account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
-        self.delete_object(account, src_container, src_name)
+        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
+        self.delete_object(user, account, src_container, src_name)
     
-    def delete_object(self, account, container, name):
+    def delete_object(self, user, account, container, name):
         """Delete an object."""
         
         logger.debug("delete_object: %s %s %s", account, container, name)
         path, version_id, mtime, size = self._get_objectinfo(account, container, name)
         self._put_version(path, 0, 1)
     
-    def list_versions(self, account, container, name):
-        """Return a list of version (version_id, version_modified) tuples for an object."""
+    def list_versions(self, user, account, container, name):
+        """Return a list of all (version, version_timestamp) tuples for an object."""
         
+        logger.debug("list_versions: %s %s %s", account, container, name)
         # This will even show deleted versions.
         path = os.path.join(account, container, name)
         sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ?'''
@@ -472,7 +476,10 @@ class SimpleBackend(BaseBackend):
                     if i != -1:
                         pseudo_name = pseudo_name[:i + len(delimiter)]
                     if pseudo_name not in [y[0] for y in pseudo_objects]:
-                        pseudo_objects.append((pseudo_name, x[1]))
+                        if pseudo_name == x[0]:
+                            pseudo_objects.append(x)
+                        else:
+                            pseudo_objects.append((pseudo_name, None))
             objects = pseudo_objects
         
         start = 0

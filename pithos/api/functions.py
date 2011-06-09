@@ -44,8 +44,8 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
     put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
-    validate_modification_preconditions, validate_matching_preconditions, copy_or_move_object,
-    get_version, get_content_length, get_content_range, raw_input_socket,
+    validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
+    copy_or_move_object, get_int_parameter, get_content_length, get_content_range, raw_input_socket,
     socket_read_iterator, object_data_response, hashmap_hash, api_method)
 from pithos.backends import backend
 
@@ -62,24 +62,24 @@ def top_demux(request):
 def account_demux(request, v_account):
     if request.method == 'HEAD':
         return account_meta(request, v_account)
-    elif request.method == 'GET':
-        return container_list(request, v_account)
     elif request.method == 'POST':
         return account_update(request, v_account)
+    elif request.method == 'GET':
+        return container_list(request, v_account)
     else:
         return method_not_allowed(request)
 
 def container_demux(request, v_account, v_container):
     if request.method == 'HEAD':
         return container_meta(request, v_account, v_container)
-    elif request.method == 'GET':
-        return object_list(request, v_account, v_container)
     elif request.method == 'PUT':
         return container_create(request, v_account, v_container)
     elif request.method == 'POST':
         return container_update(request, v_account, v_container)
     elif request.method == 'DELETE':
         return container_delete(request, v_account, v_container)
+    elif request.method == 'GET':
+        return object_list(request, v_account, v_container)
     else:
         return method_not_allowed(request)
 
@@ -124,7 +124,8 @@ def account_meta(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = backend.get_account_meta(v_account)
+    until = get_int_parameter(request, 'until')
+    meta = backend.get_account_meta(request.user, v_account, until)
     
     response = HttpResponse(status=204)
     put_account_meta(response, meta)
@@ -138,7 +139,7 @@ def account_update(request, v_account):
     #                       badRequest (400)
     
     meta = get_account_meta(request)    
-    backend.update_account_meta(v_account, meta, replace=True)
+    backend.update_account_meta(request.user, v_account, meta, replace=True)
     return HttpResponse(status=202)
 
 @api_method('GET', format_allowed=True)
@@ -149,7 +150,8 @@ def container_list(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = backend.get_account_meta(v_account)
+    until = get_int_parameter(request, 'until')
+    meta = backend.get_account_meta(request.user, v_account, until)
     
     validate_modification_preconditions(request, meta)
     
@@ -167,7 +169,7 @@ def container_list(request, v_account):
             limit = 10000
     
     try:
-        containers = [x[0] for x in backend.list_containers(v_account, marker, limit)]
+        containers = backend.list_containers(request.user, v_account, marker, limit, until)
     except NameError:
         containers = []
     
@@ -177,16 +179,17 @@ def container_list(request, v_account):
             response.status_code = 204
             return response
         response.status_code = 200
-        response.content = '\n'.join(containers) + '\n'
+        response.content = '\n'.join([x[0] for x in containers]) + '\n'
         return response
     
     container_meta = []
     for x in containers:
-        try:
-            meta = backend.get_container_meta(v_account, x)
-        except NameError:
-            continue
-        container_meta.append(printable_meta_dict(meta))
+        if x[1] is not None:
+            try:
+                meta = backend.get_container_meta(request.user, v_account, x[0], until)
+                container_meta.append(printable_meta_dict(meta))
+            except NameError:
+                pass
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': v_account, 'containers': container_meta})
     elif request.serialization  == 'json':
@@ -203,9 +206,10 @@ def container_meta(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    until = get_int_parameter(request, 'until')
     try:
-        meta = backend.get_container_meta(v_account, v_container)
-        meta['object_meta'] = backend.list_object_meta(v_account, v_container)
+        meta = backend.get_container_meta(request.user, v_account, v_container, until)
+        meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -224,13 +228,13 @@ def container_create(request, v_account, v_container):
     meta = get_container_meta(request)
     
     try:
-        backend.put_container(v_account, v_container)
+        backend.put_container(request.user, v_account, v_container)
         ret = 201
     except NameError:
         ret = 202
     
     if len(meta) > 0:
-        backend.update_container_meta(v_account, v_container, meta, replace=True)
+        backend.update_container_meta(request.user, v_account, v_container, meta, replace=True)
     
     return HttpResponse(status=ret)
 
@@ -244,7 +248,7 @@ def container_update(request, v_account, v_container):
     
     meta = get_container_meta(request)
     try:
-        backend.update_container_meta(v_account, v_container, meta, replace=True)
+        backend.update_container_meta(request.user, v_account, v_container, meta, replace=True)
     except NameError:
         raise ItemNotFound('Container does not exist')
     return HttpResponse(status=202)
@@ -259,7 +263,7 @@ def container_delete(request, v_account, v_container):
     #                       badRequest (400)
     
     try:
-        backend.delete_container(v_account, v_container)
+        backend.delete_container(request.user, v_account, v_container)
     except NameError:
         raise ItemNotFound('Container does not exist')
     except IndexError:
@@ -274,9 +278,10 @@ def object_list(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    until = get_int_parameter(request, 'until')
     try:
-        meta = backend.get_container_meta(v_account, v_container)
-        meta['object_meta'] = backend.list_object_meta(v_account, v_container)
+        meta = backend.get_container_meta(request.user, v_account, v_container, until)
+        meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -321,7 +326,7 @@ def object_list(request, v_account, v_container):
         keys = []
     
     try:
-        objects = [x[0] for x in backend.list_objects(v_account, v_container, prefix, delimiter, marker, limit, virtual, keys)]
+        objects = backend.list_objects(request.user, v_account, v_container, prefix, delimiter, marker, limit, virtual, keys, until)
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -331,19 +336,20 @@ def object_list(request, v_account, v_container):
             response.status_code = 204
             return response
         response.status_code = 200
-        response.content = '\n'.join(objects) + '\n'
+        response.content = '\n'.join([x[0] for x in objects]) + '\n'
         return response
     
     object_meta = []
     for x in objects:
-        try:
-            meta = backend.get_object_meta(v_account, v_container, x)
-        except NameError:
+        if x[1] is None:
             # Virtual objects/directories.
-            if virtual and delimiter and x.endswith(delimiter):
-                object_meta.append({'subdir': x})
-            continue
-        object_meta.append(printable_meta_dict(meta))
+            object_meta.append({'subdir': x[0]})
+        else:
+            try:
+                meta = backend.get_object_meta(request.user, v_account, v_container, x[0], x[1])
+                object_meta.append(printable_meta_dict(meta))
+            except NameError:
+                pass
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':
@@ -360,9 +366,9 @@ def object_meta(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    version = get_version(request)
+    version = get_int_parameter(request, 'version')
     try:
-        meta = backend.get_object_meta(v_account, v_container, v_object, version)
+        meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -383,9 +389,9 @@ def object_read(request, v_account, v_container, v_object):
     #                       badRequest (400),
     #                       notModified (304)
     
-    version = get_version(request)
+    version = get_int_parameter(request, 'version')
     try:
-        meta = backend.get_object_meta(v_account, v_container, v_object, version)
+        meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -400,8 +406,25 @@ def object_read(request, v_account, v_container, v_object):
         response['ETag'] = meta['hash']
         return response
     
+    # Reply with the version list.
+    if version == 'list':
+        if request.serialization == 'text':
+            raise BadRequest('No format specified for version list.')
+        
+        d = {'versions': backend.list_versions(request.user, v_account, v_container, v_object)}
+        if request.serialization == 'xml':
+            d['object'] = v_object
+            data = render_to_string('versions.xml', d)
+        elif request.serialization  == 'json':
+            data = json.dumps(d)
+        
+        response = HttpResponse(data, status=200)
+        put_object_meta(response, meta)
+        response['Content-Length'] = len(data)
+        return response
+    
     try:
-        size, hashmap = backend.get_object_hashmap(v_account, v_container, v_object, version)
+        size, hashmap = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -440,9 +463,17 @@ def object_write(request, v_account, v_container, v_object):
         content_length = get_content_length(request)
         
         if move_from:
-            copy_or_move_object(request, v_account, move_from, (v_container, v_object), move=True)
+            try:
+                src_container, src_name = split_container_object_string(move_from)
+            except ValueError:
+                raise BadRequest('Invalid X-Move-From header')
+            copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=True)
         else:
-            copy_or_move_object(request, v_account, copy_from, (v_container, v_object), move=False)
+            try:
+                src_container, src_name = split_container_object_string(copy_from)
+            except ValueError:
+                raise BadRequest('Invalid X-Copy-From header')
+            copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
         return HttpResponse(status=201)
     
     meta = get_object_meta(request)
@@ -470,14 +501,9 @@ def object_write(request, v_account, v_container, v_object):
         raise UnprocessableEntity('Object ETag does not match')
     
     try:
-        # TODO: Update metadata with the hashmap.
-        backend.update_object_hashmap(v_account, v_container, v_object, size, hashmap)
+        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True)
     except NameError:
         raise ItemNotFound('Container does not exist')
-    try:
-        backend.update_object_meta(v_account, v_container, v_object, meta, replace=True)
-    except NameError:
-        raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=201)
     response['ETag'] = meta['hash']
@@ -494,7 +520,11 @@ def object_copy(request, v_account, v_container, v_object):
     dest_path = request.META.get('HTTP_DESTINATION')
     if not dest_path:
         raise BadRequest('Missing Destination header')
-    copy_or_move_object(request, v_account, (v_container, v_object), dest_path, move=False)
+    try:
+        dest_container, dest_name = split_container_object_string(dest_path)
+    except ValueError:
+        raise BadRequest('Invalid Destination header')
+    copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=False)
     return HttpResponse(status=201)
 
 @api_method('MOVE')
@@ -508,7 +538,11 @@ def object_move(request, v_account, v_container, v_object):
     dest_path = request.META.get('HTTP_DESTINATION')
     if not dest_path:
         raise BadRequest('Missing Destination header')
-    copy_or_move_object(request, v_account, (v_container, v_object), dest_path, move=True)
+    try:
+        dest_container, dest_name = split_container_object_string(dest_path)
+    except ValueError:
+        raise BadRequest('Invalid Destination header')
+    copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=True)
     return HttpResponse(status=201)
 
 @api_method('POST')
@@ -525,7 +559,7 @@ def object_update(request, v_account, v_container, v_object):
         del(meta['Content-Type']) # Do not allow changing the Content-Type.
     
     try:
-        prev_meta = backend.get_object_meta(v_account, v_container, v_object)
+        prev_meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -536,7 +570,7 @@ def object_update(request, v_account, v_container, v_object):
             if k in prev_meta:
                 meta[k] = prev_meta[k]
         try:
-            backend.update_object_meta(v_account, v_container, v_object, meta, replace=True)
+            backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace=True)
         except NameError:
             raise ItemNotFound('Object does not exist')
     
@@ -561,7 +595,7 @@ def object_update(request, v_account, v_container, v_object):
         content_length = get_content_length(request)
     
     try:
-        size, hashmap = backend.get_object_hashmap(v_account, v_container, v_object)
+        size, hashmap = backend.get_object_hashmap(request.user, v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -602,20 +636,12 @@ def object_update(request, v_account, v_container, v_object):
     
     if offset > size:
         size = offset
+    meta = {'hash': hashmap_hash(hashmap)} # Update ETag.
     try:
-        # TODO: Update metadata with the hashmap.
-        backend.update_object_hashmap(v_account, v_container, v_object, size, hashmap)
+        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, False)
     except NameError:
         raise ItemNotFound('Container does not exist')
-    
-    # Update ETag.
-    meta = {}
-    meta['hash'] = hashmap_hash(hashmap)
-    try:
-        backend.update_object_meta(v_account, v_container, v_object, meta)
-    except NameError:
-        raise ItemNotFound('Object does not exist')
-    
+        
     response = HttpResponse(status=204)
     response['ETag'] = meta['hash']
     return response
@@ -629,7 +655,7 @@ def object_delete(request, v_account, v_container, v_object):
     #                       badRequest (400)
     
     try:
-        backend.delete_object(v_account, v_container, v_object)
+        backend.delete_object(request.user, v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     return HttpResponse(status=204)

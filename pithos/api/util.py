@@ -62,6 +62,7 @@ def printable_meta_dict(d):
     Convert all keys to lower case and replace dashes to underscores.
     Change 'modified' key from backend to 'last_modified' and format date.
     """
+    
     if 'modified' in d:
         d['last_modified'] = datetime.datetime.fromtimestamp(int(d['modified'])).isoformat()
         del(d['modified'])
@@ -69,34 +70,42 @@ def printable_meta_dict(d):
 
 def format_meta_key(k):
     """Convert underscores to dashes and capitalize intra-dash strings."""
+    
     return '-'.join([x.capitalize() for x in k.replace('_', '-').split('-')])
 
 def get_meta_prefix(request, prefix):
     """Get all prefix-* request headers in a dict. Reformat keys with format_meta_key()."""
+    
     prefix = 'HTTP_' + prefix.upper().replace('-', '_')
     return dict([(format_meta_key(k[5:]), v) for k, v in request.META.iteritems() if k.startswith(prefix)])
 
 def get_account_meta(request):
     """Get metadata from an account request."""
+    
     meta = get_meta_prefix(request, 'X-Account-Meta-')    
     return meta
 
 def put_account_meta(response, meta):
     """Put metadata in an account response."""
+    
     response['X-Account-Container-Count'] = meta['count']
     response['X-Account-Bytes-Used'] = meta['bytes']
     if 'modified' in meta:
         response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
+    if 'until_timestamp' in meta:
+        response['X-Account-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
 
 def get_container_meta(request):
     """Get metadata from a container request."""
+    
     meta = get_meta_prefix(request, 'X-Container-Meta-')
     return meta
 
 def put_container_meta(response, meta):
     """Put metadata in a container response."""
+    
     response['X-Container-Object-Count'] = meta['count']
     response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
@@ -105,9 +114,12 @@ def put_container_meta(response, meta):
     response['X-Container-Object-Meta'] = [x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
     response['X-Container-Block-Size'] = backend.block_size
     response['X-Container-Block-Hash'] = backend.hash_algorithm
+    if 'until_timestamp' in meta:
+        response['X-Container-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
 
 def get_object_meta(request):
     """Get metadata from an object request."""
+    
     meta = get_meta_prefix(request, 'X-Object-Meta-')
     if request.META.get('CONTENT_TYPE'):
         meta['Content-Type'] = request.META['CONTENT_TYPE']
@@ -123,6 +135,7 @@ def get_object_meta(request):
 
 def put_object_meta(response, meta, public=False):
     """Put metadata in an object response."""
+    
     response['ETag'] = meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
@@ -142,6 +155,7 @@ def put_object_meta(response, meta, public=False):
 
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set."""
+    
     if 'modified' not in meta:
         return # TODO: Always return?
     
@@ -159,6 +173,7 @@ def validate_modification_preconditions(request, meta):
 
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
+    
     if 'hash' not in meta:
         return # TODO: Always return?
     
@@ -172,29 +187,19 @@ def validate_matching_preconditions(request, meta):
         if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
             raise NotModified('Resource Etag matches')
 
-def copy_or_move_object(request, v_account, src_path, dest_path, move=False):
+def split_container_object_string(s):
+    parts = s.split('/')
+    if len(parts) < 3 or parts[0] != '':
+        raise ValueError
+    return parts[1], '/'.join(parts[2:])
+
+def copy_or_move_object(request, v_account, src_container, src_name, dest_container, dest_name, move=False):
     """Copy or move an object."""
-    if type(src_path) == str:
-        parts = src_path.split('/')
-        if len(parts) < 3 or parts[0] != '':
-            raise BadRequest('Invalid X-Copy-From or X-Move-From header')
-        src_container = parts[1]
-        src_name = '/'.join(parts[2:])
-    elif type(src_path) == tuple and len(src_path) == 2:
-        src_container, src_name = src_path
-    if type(dest_path) == str:
-        parts = dest_path.split('/')
-        if len(parts) < 3 or parts[0] != '':
-            raise BadRequest('Invalid Destination header')
-        dest_container = parts[1]
-        dest_name = '/'.join(parts[2:])
-    elif type(dest_path) == tuple and len(dest_path) == 2:
-        dest_container, dest_name = dest_path
     
     meta = get_object_meta(request)
     # Keep previous values of 'Content-Type' (if a new one is absent) and 'hash'.
     try:
-        src_meta = backend.get_object_meta(v_account, src_container, src_name)
+        src_meta = backend.get_object_meta(request.user, v_account, src_container, src_name)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
     if 'Content-Type' in meta and 'Content-Type' in src_meta:
@@ -203,25 +208,25 @@ def copy_or_move_object(request, v_account, src_path, dest_path, move=False):
         if k in src_meta:
             meta[k] = src_meta[k]
     
-    # TODO: Copy or move with 'versioned' set.
+    src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:
-            backend.move_object(v_account, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
+            backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, src_version)
         else:
-            backend.copy_object(v_account, src_container, src_name, dest_container, dest_name, meta, replace_meta=True)
+            backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, src_version)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
 
-def get_version(request):
-    version = request.GET.get('version')
-    if version is not None:
+def get_int_parameter(request, name):
+    p = request.GET.get(name)
+    if p is not None:
         try:
-            version = int(version)
+            p = int(p)
         except ValueError:
             return None
-        if version < 0:
+        if p < 0:
             return None
-    return version
+    return p
 
 def get_content_length(request):
     content_length = request.META.get('CONTENT_LENGTH')
@@ -241,6 +246,7 @@ def get_range(request, size):
     Either returns None, when the header is not existent or should be ignored,
     or a list of (offset, length) tuples - should be further checked.
     """
+    
     ranges = request.META.get('HTTP_RANGE', '').replace(' ', '')
     if not ranges.startswith('bytes='):
         return None
@@ -313,6 +319,7 @@ def get_content_range(request):
 
 def raw_input_socket(request):
     """Return the socket for reading the rest of the request."""
+    
     server_software = request.META.get('SERVER_SOFTWARE')
     if not server_software:
         if 'wsgi.input' in request.environ:
@@ -332,6 +339,7 @@ def socket_read_iterator(sock, length=0, blocksize=4096):
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
     """
+    
     if length < 0: # Chunked transfers
         data = ''
         while length < MAX_UPLOAD_SIZE:
@@ -528,6 +536,7 @@ def request_serialization(request, format_allowed=False):
     
     Valid formats are 'text' and 'json', 'xml' if 'format_allowed' is True.
     """
+    
     if not format_allowed:
         return 'text'
     
@@ -548,6 +557,7 @@ def request_serialization(request, format_allowed=False):
 
 def api_method(http_method=None, format_allowed=False):
     """Decorator function for views that implement an API method."""
+    
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):

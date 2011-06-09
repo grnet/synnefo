@@ -98,6 +98,7 @@ class SimpleBackend(BaseBackend):
             version_id, mtime = self._get_accountinfo(account, until)
         except NameError:
             version_id = None
+            mtime = 0
         count, bytes, tstamp = self._get_pathstats(account, until)
         if mtime > tstamp:
             tstamp = mtime

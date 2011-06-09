@@ -91,6 +91,19 @@
         }
     },
     {
+        "model": "db.Image",
+        "pk": 10,
+        "fields": {
+            "name": "Windows Testing Image",
+            "owner": 1,
+            "created": "2011-06-09 00:00:00",
+            "updated": "2011-06-09 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "windows-2008R2-1",
+            "format": "ntfsclone"
+        }
+    },
+    {
         "model": "db.ImageMetadata",
         "pk": 1,
         "fields": {
@@ -341,5 +354,42 @@
             "meta_value": "2284",
             "image": 9
         }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 29,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "windows",
+            "image": 10
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 30,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "microsoft",
+            "image": 10
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 31,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Windows 2008 R2 Testing",
+            "image": 10
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 32,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "11000",
+            "image": 10
+        }
     }
+
 ]

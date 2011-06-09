@@ -68,8 +68,9 @@ class Image(models.Model):
 
     # The list of supported Image formats
     FORMATS = (
-        ('dump', 'ext2 dump'),
-        ('lvm', 'lvm snapshot')
+        ('dump', 'ext3 dump'),
+        ('lvm', 'lvm snapshot'),
+        ('ntfsclone', 'Windows Image produced by ntfsclone')
     )
 
     name = models.CharField('Image name', max_length=255)

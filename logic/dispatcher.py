@@ -24,8 +24,10 @@ from amqplib import client_0_8 as amqp
 from signal import signal, SIGINT, SIGTERM
 
 import logging
+import logging.config
 import time
 import socket
+from daemon import pidfile, daemon
 
 from synnefo.logic import callbacks
 
@@ -37,10 +39,14 @@ class Dispatcher:
     debug = False
     clienttags = []
 
-    def __init__(self, debug = False, logger = None):
-        self.logger = logger
+    def __init__(self, debug = False):
+        # Initialize logger
+        logging.config.fileConfig("/Volumes/Files/Developer/grnet/synnefo/logging.conf")
+        self.logger = logging.getLogger("synnefo.dispatcher")
+
         self.debug = debug
         self._init()
+
 
     def wait(self):
         while True:
@@ -58,9 +64,10 @@ class Dispatcher:
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
         self.chan.connection.close()
         self.chan.close()
-        sys.exit()
 
     def _init(self):
+        self.logger.info("Initializing")
+        
         # Connect to RabbitMQ
         conn = None
         while conn == None:
@@ -123,12 +130,12 @@ def _parent_handler(signum, frame):
     [os.kill(pid, SIGTERM) for pid in children]
 
 
-def child(cmdline, logger):
+def child(cmdline):
     """The context of the child process"""
 
     # Cmd line argument parsing
     (opts, args) = parse_arguments(cmdline)
-    disp = Dispatcher(debug = opts.debug, logger = logger)
+    disp = Dispatcher(debug = opts.debug)
 
     # Start the event loop
     disp.wait()
@@ -146,7 +153,7 @@ def parse_arguments(args):
                            settings.DISPATCHER_LOG_FILE)
     parser.add_option("-c", "--cleanup-queues", action="store_true",
                       default=False, dest="cleanup_queues",
-                      help="Remove all queues declared in settings.py (DANGEROUS!)")
+                      help="Remove all declared queues (DANGEROUS!)")
     parser.add_option("-w", "--workers", default=2, dest="workers",
                       help="Number of workers to spawn", type="int")
     
@@ -185,8 +192,8 @@ def cleanup_queues() :
     chan.connection.close()
 
 
-def debug_mode(logger):
-    disp = Dispatcher(debug = True, logger = logger)
+def debug_mode():
+    disp = Dispatcher(debug = True)
     signal(SIGINT, _exit_handler)
     signal(SIGTERM, _exit_handler)
 
@@ -198,15 +205,8 @@ def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
     # Initialize logger
-    lvl = logging.DEBUG if opts.debug else logging.INFO
+    logging.config.fileConfig("logging.conf")
     logger = logging.getLogger("synnefo.dispatcher")
-    logger.setLevel(lvl)
-    formatter = logging.Formatter(
-        "%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
-        "%Y-%m-%d %H:%M:%S")
-    handler = logging.FileHandler(opts.log_file)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
     # Special case for the clean up queues action
     if opts.cleanup_queues:
@@ -215,8 +215,20 @@ def main():
 
     # Debug mode, process messages without spawning workers
     if opts.debug:
-        debug_mode(logger = logger)
+        debug_mode()
         return
+
+    # Create pidfile
+    pidf = pidfile.TimeoutPIDLockFile("/Volumes/Files/Developer/grnet/synnefo/dispatcher.pid", 10)
+
+    # Become a daemon
+    daemon_context = daemon.DaemonContext(
+            pidfile=pidf,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            umask=022)
+    daemon_context.open()
+    logger.info("Became a daemon")
 
     # Fork workers
     children = []
@@ -228,8 +240,11 @@ def main():
         if newpid == 0:
             signal(SIGINT, _exit_handler)
             signal(SIGTERM, _exit_handler)
-            child(sys.argv[1:], logger)
-            sys.exit(0)
+            child(sys.argv[1:])
+            try:
+                sys.exit(0)
+            except Exception:
+                print "foo"
         else:
             pids = (os.getpid(), newpid)
             logger.debug("%d, forked child: %d" % pids)
@@ -240,7 +255,7 @@ def main():
     signal(SIGINT,  _parent_handler)
     signal(SIGTERM, _parent_handler)
 
-    # Wait for all children process to die, one by one
+    # Wait for all children processes to die, one by one
     for pid in children:
         try:
             os.waitpid(pid, 0)

@@ -2006,6 +2006,7 @@ div#user a.current_lang {
 
 .namecontainer {
     height: 18px;
+    margin-top: 5px;
 }
 
 .nametextbox {
@@ -2344,6 +2345,7 @@ div.network-machine div.machine-actions a.action-details {
 .state div {
     margin-right: 3px;
     text-align: right;
+    margin-top: 5px;
 }
 
 div.indicator {

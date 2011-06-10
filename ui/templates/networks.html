@@ -55,7 +55,7 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
         </div>
-        <img class="network-logos" src="/static/internet.png" />
+        <img class="network-logos" src="static/internet.png" />
         <div href="#" class="name-div">
             <h5 class="namecontainer">
                 <span class="name">{% trans "Internet" %}</span>
@@ -107,10 +107,10 @@
                 <span class="discreet">{% trans "IPv6" %}: </span>
                 <span class="ip6">vv</span>
             </div>
-            <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
-            <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+            <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+            <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
         </div>
-        <img class="logo" src="/static/icons/machines/medium/debian-on.png" />
+        <img class="logo" src="static/icons/machines/medium/debian-on.png" />
         <div class='network-remove-machine'>
             {# Replace the following with the comment below for full public network functionality #}
             {# <span class="remove-icon">X</span> #}
@@ -167,10 +167,10 @@
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
-            <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
-            <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+            <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+            <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
         </div>
-        <img class="network-logos" src="/static/network.png" />
+        <img class="network-logos" src="static/network.png" />
         <div href="#" class="name-div">
             <h5 class="namecontainer editable">
                 <span class="name">{% trans "My Network 1" %}</span>
@@ -217,10 +217,10 @@
             <button class="details">{% trans "Details" %}</button>
         </div>
         <div class="state">
-            <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
-            <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+            <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+            <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
         </div>
-        <img class="logo" src="/static/icons/machines/medium/debian-on.png" />
+        <img class="logo" src="static/icons/machines/medium/debian-on.png" />
         <div class='network-remove-machine'><span class="remove-icon">X</span></div>
         <div href="#" class="machine-name-div">
             <h5 class="namecontainer editable">
@@ -252,7 +252,7 @@
                     <div class="large-spinner"></div>
                     <div id='machine-entry-template' style="display:none;">
                         <input type="checkbox" />
-                        <img class=list-logo src="/static/icons/machines/small/debian-on.png" title="debian"></img>
+                        <img class=list-logo src="static/icons/machines/small/debian-on.png" title="debian"></img>
                         <span class="machine-name">kati</span>
                     </div>
                 </div>
@@ -313,7 +313,7 @@ $("#add-network-create").live('click', function() {
         $('#networks-wizard span.help').addClass('red');
     } else {
         $(this).text('');
-        $(this).html('<img src="/static/icons/indicators/medium/horizontal-progress.gif"></img>');
+        $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
         networkName = $('#networks-wizard input').val();
         create_network(networkName);
     }
@@ -502,7 +502,7 @@ function list_machines() {
             // put it in the list
             var entry = $("#add-machines-wizard #machine-entry-template").clone().attr("id", "list-entry-server-" + currentID);
             entry.find('input').attr("name", currentID);
-            entry.find('img').attr('src', '/static/icons/machines/small/' + $(machine).find('img.logo').attr('src').split('/').pop());
+            entry.find('img').attr('src', 'static/icons/machines/small/' + $(machine).find('img.logo').attr('src').split('/').pop());
             entry.find('.machine-name').text($(machine).find('span.name').text());
             entry.appendTo("#add-machines-wizard .machines-container");
         }
@@ -527,7 +527,7 @@ $("#add-server-add").live('click', function() {
     });
     $(this).text('');
     add_server_to_network(networkID, serverIDs);
-    $(this).html('<img src="/static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
     return false;
 });
 

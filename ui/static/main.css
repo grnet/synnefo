@@ -22,7 +22,7 @@ html {
 
 body {
     line-height: 1;
-    background: url(../static/body-bg.png) repeat-x scroll 0 0 #FFFFFF;
+    background: url(./body-bg.png) repeat-x scroll 0 0 #FFFFFF;
     height: 100%;
 }
 
@@ -34,12 +34,12 @@ body {
 	height:auto !important;
 	height:100%;
 	min-height:100%;
-    background: url("../static/body-bg2.png") no-repeat scroll right bottom transparent;
+    background: url("./body-bg2.png") no-repeat scroll right bottom transparent;
 }
 
 #header {
     height: 93px;
-    background: url("../static/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
     margin: 0 auto;
     width: 700px;
 }
@@ -243,7 +243,7 @@ div.css-panes {
 
 #console-header {
     height: 67px;
-    background: url("../static/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
 
 .header-logo {
@@ -268,7 +268,7 @@ div#footer-text{
 }
 
 #footer-bg {
-    background: url("../static/footer-bg.png") no-repeat scroll 0 0 #4085A5;
+    background: url("./footer-bg.png") no-repeat scroll 0 0 #4085A5;
     float:right;
     width: 700px;
     height: 119px;
@@ -623,7 +623,7 @@ div.image-container {
 /* drag handle */
 .handle {
     -moz-box-shadow: 0 0 2px #000000;
-    background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("./h30.png") repeat-x scroll 0 0 #FFFFFF;
     border: 1px solid #000000;
     cursor: move;
     display: block;
@@ -870,7 +870,7 @@ span.rename {
 div.name:hover span.rename {
     color: #3D3D3D;
     margin-top: 0.4em;
-    background-image: url(/static/pencil.png);
+    background-image: url(./pencil.png);
     background-position: 0 3px;
 }
 
@@ -956,39 +956,39 @@ a#standard:active, a#list:active {
 }
 
 a#standard {
-    background: url(/static/icon-view.png) no-repeat -36px 0;
+    background: url(./icon-view.png) no-repeat -36px 0;
 }
 
 a#list {
-    background: url(/static/list-view.png) no-repeat -36px 0;
+    background: url(./list-view.png) no-repeat -36px 0;
 }
 
 a#single {
-    background: url(/static/single-view.png) no-repeat -36px 0;
+    background: url(./single-view.png) no-repeat -36px 0;
 }
 
 a#standard:hover {
-    background: url(/static/icon-view.png) no-repeat -18px 0;
+    background: url(./icon-view.png) no-repeat -18px 0;
 }
 
 a#list:hover {
-    background: url(/static/list-view.png) no-repeat -18px 0;
+    background: url(./list-view.png) no-repeat -18px 0;
 }
 
 a#single:hover {
-    background: url(/static/single-view.png) no-repeat -18px 0;
+    background: url(./single-view.png) no-repeat -18px 0;
 }
 
 a#standard.activelink {
-    background: url(/static/icon-view.png) no-repeat 0px 0;
+    background: url(./icon-view.png) no-repeat 0px 0;
 }
 
 a#list.activelink {
-    background: url(/static/list-view.png) no-repeat 0px 0;
+    background: url(./list-view.png) no-repeat 0px 0;
 }
 
 a#single.activelink {
-    background: url(/static/single-view.png) no-repeat 0px 0;
+    background: url(./single-view.png) no-repeat 0px 0;
 }
 
 #machinetype {
@@ -1036,7 +1036,7 @@ div.machine-type {
 #emptymachineslist {
     display:none;
     color: #A0A0A0;
-    background-image: url(/static/emptydegradebg.png);
+    background-image: url(./emptydegradebg.png);
     width: 400px;
     margin-top: 5px;
     padding: 5px;
@@ -1226,7 +1226,7 @@ input.machine {
 }
 
 #metadata-wizard .close, #add-machines-wizard .close  {
-    background-image: url("/static/close-popup.png");
+    background-image: url("./close-popup.png");
     cursor: pointer;
     height: 13px;
     position: absolute;
@@ -1270,7 +1270,7 @@ input.machine {
 }
 
 #metadata-wizard .popup-body, #add-machines-wizard .popup-body {
-    background-image: url("/static/meta-wiz-bg.png");
+    background-image: url("./meta-wiz-bg.png");
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 1px;
@@ -1280,7 +1280,7 @@ input.machine {
 }
 
 #metadata-wizard .popup-body-inner, #add-machines-wizard .popup-body-inner {
-    background-image: url("/static/meta-wiz-inner-bg.png");
+    background-image: url("./meta-wiz-inner-bg.png");
     font-size: 80%;
     height: 180px;
     margin-left: 25px;
@@ -1443,12 +1443,12 @@ input.machine {
 }
 
 #metadata-wizard .metadata-edit .edit {
-    background-image: url("../static/meta-edit.png");
+    background-image: url("./meta-edit.png");
     margin-left: 3px;
 }
 
 #metadata-wizard .metadata-edit .remove, #metadata-wizard .editbuttons .remove {
-    background-image: url("../static/meta-remove.png");
+    background-image: url("./meta-remove.png");
     margin-left: 1px;
     background-repeat: no-repeat;
     color: transparent;
@@ -1459,17 +1459,17 @@ input.machine {
 }
 
 #metadata-wizard .editbuttons .save {
-    background-image: url("../static/meta-save.png");
+    background-image: url("./meta-save.png");
     padding-top:0;
 }
 
 #metadata-wizard .addbuttons .cancel {
-    background-image: url("../static/meta-remove.png");
+    background-image: url("./meta-remove.png");
     margin-left: 3px;
 }
 
 #metadata-wizard .addbuttons .save {
-    background-image: url("../static/meta-save.png");
+    background-image: url("./meta-save.png");
     margin-left: 1px;
 }
 
@@ -1584,7 +1584,7 @@ input.machine {
 #metadata-wizard .textdropdown-btn {
     width: 20px;
     float: right;
-    background: url("/static/dropdown-arrow.gif") no-repeat center;
+    background: url("./dropdown-arrow.gif") no-repeat center;
     cursor: pointer;
     left: 147px;
     margin-top: 3px;
@@ -1662,7 +1662,7 @@ input.machine {
 }
 
 #error-success .close {
-    background-image: url("/static/close-popup.png");
+    background-image: url("./close-popup.png");
     cursor: pointer;
     height: 13px;
     position: absolute;
@@ -1702,7 +1702,7 @@ input.machine {
 }
 
 #error-success .popup-body {
-    background-image: url("/static/popup-bg.png");
+    background-image: url("./popup-bg.png");
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 1px;
@@ -1711,7 +1711,7 @@ input.machine {
 }
 
 #error-success .popup-body-inner {
-    background-image: url("/static/popup-inner-bg.png");
+    background-image: url("./popup-inner-bg.png");
     font-size: 80%;
     min-height: 120px;
     margin-left: 20px;
@@ -1978,7 +1978,7 @@ div#user a.current_lang {
 }
 
 .editbuttons .cancel:hover {
-    background-image: url("../static/cancel-onhover.png");
+    background-image: url("./cancel-onhover.png");
 }
 
 .editbuttons .cancel, .editbuttons .save {
@@ -1990,12 +1990,12 @@ div#user a.current_lang {
 }
 
 .editbuttons .cancel {
-    background-image: url("../static/cancel.png");
+    background-image: url("./cancel.png");
     margin-left: 3px;
 }
 
 .editbuttons .save {
-    background-image: url("../static/save.png");
+    background-image: url("./save.png");
     margin-left: 1px;
 }
 
@@ -2015,7 +2015,7 @@ div#user a.current_lang {
 }
 
 .large-spinner {
-    background: url("/static/icons/indicators/large/progress.gif");
+    background: url("./icons/indicators/large/progress.gif");
     margin-left: 298px;
     margin-top: 80px;
     height: 31px;
@@ -2389,7 +2389,7 @@ span.rename-network {
 div.name-div:hover span.rename-network {
     color: #3D3D3D;
     margin-top: 0.4em;
-    background-image: url(/static/pencil.png);
+    background-image: url(./pencil.png);
     background-position: 0 3px;
 }
 
@@ -2720,11 +2720,11 @@ a.manage-metadata {
 }
 
 .metadata-actions .prev {
-    background: url("/static/roll-up.png") no-repeat scroll 0 0 transparent;
+    background: url("./roll-up.png") no-repeat scroll 0 0 transparent;
 }
 
 .metadata-actions .next {
-    background: url("/static/roll-down.png") no-repeat scroll 0 0 transparent;
+    background: url("./roll-down.png") no-repeat scroll 0 0 transparent;
 }
 
 .scrollable {

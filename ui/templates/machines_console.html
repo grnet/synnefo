@@ -2,7 +2,7 @@
 
 <html>
     <head>
-        <link rel="stylesheet" type="text/css" href="/static/main.css"/>
+        <link rel="stylesheet" type="text/css" href="static/main.css"/>
         <title>{% trans "Console" %}</title>
     </head>
     <body>
@@ -18,12 +18,12 @@
         <div id='console-header'>
             <div class="console-header-logo">
                 <a href="/">
-                    <img src="/static/okeanos_console.png" alt="okeanos console"/>
+                    <img src="static/okeanos_console.png" alt="okeanos console"/>
                 </a>
             </div>
         </div>
         <div class="console-container">
-            <applet code="VncViewer.class" archive="/static/vncviewer/VncViewer.jar">
+            <applet code="VncViewer.class" archive="static/vncviewer/VncViewer.jar">
                 <param name="HOST" value="{{host}}"></param>
                 <param name="PORT" value="{{port}}"></param>
                 <param name="PASSWORD" value="{{password}}"></param>

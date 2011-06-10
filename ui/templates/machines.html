@@ -11,9 +11,9 @@
 
 <!-- changing between standard/list view -->
 <div id="view-select">
-    <a id="standard" href="/machines/standard"></a>
-    <a id="list" href="/machines/list"></a>
-    <a id="single" href="/machines/single"></a>
+    <a id="standard" href="{% url machines-standard %}"></a>
+    <a id="list" href="{% url machines-list %}"></a>
+    <a id="single" href="{% url machines-single %}"></a>
 </div>
 
 <div id="emptymachineslist">
@@ -585,7 +585,7 @@ $("#start").click(function(){
 
     //replace text 'create new' with progress indicator
     $('#wizard #start').text('');
-    $('#wizard #start').html('<img src="/static/icons/indicators/medium/horizontal-progress.gif" / >');
+    $('#wizard #start').html('<img src="static/icons/indicators/medium/horizontal-progress.gif" / >');
 
     create_vm(machineName, imageRef, flavorRef);
 

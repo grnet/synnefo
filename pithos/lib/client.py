@@ -133,7 +133,7 @@ class Client(object):
         if detail:
             data = json.loads(data)
         else:
-            data = data.split('\n')
+            data = data.strip().split('\n')
         return data
 
     def _get_metadata(self, path, prefix=None):

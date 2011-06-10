@@ -28,6 +28,8 @@ def process_form(request):
     for inv in valid_inv:
         (name, inv_id) = inv.split('_')
 
+        email = ""
+        name = ""
         try:
             email = request.POST['email_' + inv_id]
             name = request.POST[inv]

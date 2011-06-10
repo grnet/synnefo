@@ -133,6 +133,7 @@ INSTALLED_APPS = (
     'synnefo.ganeti',
     'synnefo.logic',
     'synnefo.invitations',
+    'synnefo.helpdesk',
     'south'
 )
 

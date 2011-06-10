@@ -23,8 +23,6 @@ class Client(object):
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024):
         http = HTTPConnection(self.host)
-        #http = HTTP()
-        #http.connect('127.0.0.1', 8000)
         
         # write header
         path = '/%s/%s%s' % (self.api, self.account, path)

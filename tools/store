@@ -10,7 +10,7 @@ import json
 import logging
 import types
 
-DEFAULT_HOST = '127.0.0.1:8000'
+DEFAULT_HOST = 'pithos.dev.grnet.gr'
 DEFAULT_API = 'v1'
 
 _cli_commands = {}
@@ -400,16 +400,14 @@ def main():
     
     cmd = cls(argv[2:])
     
-    cmd.execute(*cmd.args)
-    
-    #try:
-    #    cmd.execute(*cmd.args)
-    #except TypeError:
-    #    cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
-    #    cmd.parser.print_help()
-    #    exit(1)
-    #except Fault, f:
-    #    print f.data
+    try:
+        cmd.execute(*cmd.args)
+    except TypeError:
+        cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
+        cmd.parser.print_help()
+        exit(1)
+    except Fault, f:
+        print f.data
 
 if __name__ == '__main__':
     main()

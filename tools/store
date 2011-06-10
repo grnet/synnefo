@@ -3,11 +3,12 @@
 from getpass import getuser
 from optparse import OptionParser
 from os.path import basename
-from sys import argv, exit, stdin
+from sys import argv, exit, stdin, stdout
 from pithos.lib.client import Client, Fault
 
 import json
 import logging
+import types
 
 DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1'
@@ -25,26 +26,19 @@ def cli_command(*args):
 def class_for_cli_command(name):
     return _cli_commands[name]
 
-def print_dict(d, header='name'):
-    if header:
-        print d.pop(header)
-    for key, val in sorted(d.items()):
-        print '%s: %s' % (key.rjust(15), val)
-
-
 class Command(object):
     def __init__(self, argv):
         parser = OptionParser()
-        parser.add_option('--host', dest='host', metavar='HOST', default=DEFAULT_HOST,
-                            help='use server HOST')
-        parser.add_option('--user', dest='user', metavar='USERNAME', default=getuser(),
-                            help='use account USERNAME')
-        parser.add_option('--api', dest='api', metavar='API', default=DEFAULT_API,
-                            help='use api API')
-        parser.add_option('-v', action='store_true', dest='verbose', default=False,
-                            help='use verbose output')
-        parser.add_option('-d', action='store_true', dest='debug', default=False,
-                            help='use debug output')
+        parser.add_option('--host', dest='host', metavar='HOST',
+                          default=DEFAULT_HOST, help='use server HOST')
+        parser.add_option('--user', dest='user', metavar='USERNAME',
+                          default=getuser(), help='use account USERNAME')
+        parser.add_option('--api', dest='api', metavar='API',
+                          default=DEFAULT_API, help='use api API')
+        parser.add_option('-v', action='store_true', dest='verbose',
+                          default=False, help='use verbose output')
+        parser.add_option('-d', action='store_true', dest='debug',
+                          default=False, help='use debug output')
         self.add_options(parser)
         options, args = parser.parse_args(argv)
         
@@ -55,7 +49,8 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
         
-        self.client = Client(self.host, self.user, self.api, self.verbose, self.debug)
+        self.client = Client(self.host, self.user, self.api, self.verbose,
+                             self.debug)
         
         self.parser = parser
         self.args = args
@@ -66,10 +61,9 @@ class Command(object):
     def execute(self, *args):
         pass
 
-
 @cli_command('list', 'ls')
 class List(Command):
-    syntax = '[container]'
+    syntax = '[<container>[/<object>]]'
     description = 'list containers or objects'
     
     def add_options(self, parser):
@@ -98,7 +92,7 @@ class List(Command):
         parser.add_option('--if-unmodified-since', action='store', type='str',
                           dest='if_unmodified_since', default=None,
                           help='show output if not modified since then')
-        
+
     def execute(self, container=None):
         if container:
             self.list_objects(container)
@@ -106,35 +100,20 @@ class List(Command):
             self.list_containers()
     
     def list_containers(self):
-        l = self.client.list_containers(self.detail, self.limit, self.marker,
-                                        self.if_modified_since,
-                                        self.if_unmodified_since)
-        if self.detail:
-            for container in l:
-                print_dict(container)
-                print
-        else:
-            if self.verbose:
-                print l
-            else:
-                print l.split('Traceback')[0]
+        params = {'limit':self.limit, 'marker':self.marker}
+        headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
+                   'IF_UNMODIFIED_SINCE':self.if_unmodified_since}
+        l = self.client.list_containers(self.detail, params, headers)
+        print_list(l)
 
     def list_objects(self, container):
-        l = self.client.list_objects(container, self.detail, self.limit,
-                                        self.marker, self.prefix,
-                                        self.delimiter, self.path,
-                                        self.meta,
-                                        self.if_modified_since,
-                                        self.if_unmodified_since)
-        if self.detail:
-            for obj in l:
-                print_dict(obj)
-                print
-        else:
-            if self.verbose:
-                print l
-            else:
-                print l.split('Traceback')[0]
+        params = {'limit':self.limit, 'marker':self.marker,
+                  'prefix':self.prefix, 'delimiter':self.delimiter,
+                  'path':self.path, 'meta':self.meta}
+        headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
+                   'IF_UNMODIFIED_SINCE':self.if_unmodified_since}
+        l = self.client.list_objects(container, self.detail, params, headers)
+        print_list(l)
 
 @cli_command('meta')
 class Meta(Command):
@@ -149,19 +128,24 @@ class Meta(Command):
             meta = self.client.retrieve_container_metadata(container)
         else:
             meta = self.client.account_metadata()
-        print_dict(meta, header=None)
-
+        if meta == None:
+            print 'Entity does not exist'
+        else:
+            print_dict(meta, header=None)
 
 @cli_command('create')
 class CreateContainer(Command):
-    syntax = '<container>'
+    syntax = '<container> [key=val] [...]'
     description = 'create a container'
     
-    def execute(self, container):
-        ret = self.client.create_container(container)
+    def execute(self, container, *args):
+        headers = {}
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            headers['X_CONTAINER_META_%s' %key.strip().upper()] = val.strip()
+        ret = self.client.create_container(container, headers)
         if not ret:
             print 'Container already exists'
-
 
 @cli_command('delete', 'rm')
 class Delete(Command):
@@ -175,29 +159,97 @@ class Delete(Command):
         else:
             self.client.delete_container(container)
 
-
 @cli_command('get')
 class GetObject(Command):
     syntax = '<container>/<object>'
     description = 'get the data of an object'
     
-    def execute(self, path):
-        container, sep, object = path.partition('/')
-        print self.client.retrieve_object(container, object)
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail',
+                          default=False, help='show detailed output')
+        parser.add_option('--range', action='store', dest='range',
+                          default=None, help='show range of data')
+        parser.add_option('--if-match', action='store', dest='if-match',
+                          default=None, help='show output if ETags match')
+        parser.add_option('--if-none-match', action='store',
+                          dest='if-none-match', default=None,
+                          help='show output if ETags don\'t match')
+        parser.add_option('--if-modified-since', action='store', type='str',
+                          dest='if-modified-since', default=None,
+                          help='show output if modified since then')
+        parser.add_option('--if-unmodified-since', action='store', type='str',
+                          dest='if-unmodified-since', default=None,
+                          help='show output if not modified since then')
+        parser.add_option('-f', action='store', type='str',
+                          dest='file', default=None,
+                          help='save output in file')
 
+    def execute(self, path):
+        headers = {}
+        if self.range:
+            headers['RANGE'] = 'bytes=%s' %self.range
+        attrs = ['if-match', 'if-none-match', 'if-modified-since',
+                 'if-unmodified-since']
+        attrs = [a for a in attrs if getattr(self, a)]
+        for a in attrs:
+            headers[a.replace('-', '_').upper()] = getattr(self, a)
+        container, sep, object = path.partition('/')
+        data = self.client.retrieve_object(container, object, self.detail,
+                                          headers)
+        if self.file:
+            if self.detail:
+                f = self.file and open(self.file, 'w') or stdout
+                data = json.loads(data)
+                print_dict(data, f=f)
+            else:
+                fw = open(self.file, 'w')
+                fw.write(data)
+                fw.close()
+        else:
+            print data
 
 @cli_command('put')
 class PutObject(Command):
-    syntax = '<container>/<object> <path>'
-    description = 'create or update an object with contents of path'
+    syntax = '<container>/<object> <path> [key=val] [...]'
+    description = 'create/override object with path contents or standard input'
 
-    def execute(self, path, srcpath):
+    def add_options(self, parser):
+        parser.add_option('--chunked', action='store_true', dest='chunked',
+                          default=False, help='set chunked transfer mode')
+        parser.add_option('--etag', action='store', dest='etag',
+                          default=None, help='check written data')
+        parser.add_option('--content-encoding', action='store',
+                          dest='content-encoding', default=None,
+                          help='provide the object MIME content type')
+        parser.add_option('--content-disposition', action='store', type='str',
+                          dest='content-disposition', default=None,
+                          help='provide the presentation style of the object')
+        parser.add_option('--manifest', action='store', type='str',
+                          dest='manifest', default=None,
+                          help='use for large file support')
+
+    def execute(self, path, srcpath, *args):
+        headers = {}
+        if self.manifest:
+            headers['X_OBJECT_MANIFEST'] = self.manifest
+            
+        attrs = ['etag', 'content-encoding', 'content-disposition']
+        attrs = [a for a in attrs if getattr(self, a)]
+        for a in attrs:
+            headers[a.replace('-', '_').upper()] = getattr(self, a)
+        
+        #prepare user defined meta
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            headers['X_OBJECT_META_%s' %key.strip().upper()] = val.strip()
+        
         container, sep, object = path.partition('/')
-        f = open(srcpath) if srcpath != '-' else stdin
-        data = f.read()
-        self.client.create_object(container, object, data)
+        
+        f = srcpath != '-' and open(srcpath) or stdin
+        chunked = (self.chunked or f == stdin) and True or False
+        self.client.create_object(container, object, f, chunked=chunked,
+                                  headers=headers)
         f.close()
-
 
 @cli_command('copy', 'cp')
 class CopyObject(Command):
@@ -210,7 +262,8 @@ class CopyObject(Command):
         if not sep:
             dst_container = src_container
             dst_object = dst
-        self.client.copy_object(src_container, src_object, dst_container, dst_object)
+        self.client.copy_object(src_container, src_object, dst_container,
+                                dst_object)
 
 @cli_command('set')
 class SetMeta(Command):
@@ -219,8 +272,7 @@ class SetMeta(Command):
     
     def execute(self, path, *args):
         #in case of account fix the args
-        print path
-        if path.find('='):
+        if path.find('=') != -1:
             args = list(args)
             args.append(path)
             args = tuple(args)
@@ -237,6 +289,73 @@ class SetMeta(Command):
         else:
             self.client.update_account_metadata(**meta)
 
+@cli_command('update')
+class UpdateObject(Command):
+    syntax = '<container>/<object> path [key=val] [...]'
+    description = 'update object metadata/data'
+    
+    def add_options(self, parser):
+        parser.add_option('-a', action='store_true', dest='append',
+                          default=None, help='append data')
+        parser.add_option('--start', action='store',
+                          dest='start',
+                          default=None, help='range of data to be updated')
+        parser.add_option('--range', action='store', dest='content-range',
+                          default=None, help='range of data to be updated')
+        parser.add_option('--chunked', action='store_true', dest='chunked',
+                          default=False, help='set chunked transfer mode')
+        parser.add_option('--content-encoding', action='store',
+                          dest='content-encoding', default=None,
+                          help='provide the object MIME content type')
+        parser.add_option('--content-disposition', action='store', type='str',
+                          dest='content-disposition', default=None,
+                          help='provide the presentation style of the object')
+        parser.add_option('--manifest', action='store', type='str',
+                          dest='manifest', default=None,
+                          help='use for large file support')
+
+    def execute(self, path, srcpath, *args):
+        headers = {}
+        if self.manifest:
+            headers['X_OBJECT_MANIFEST'] = self.manifest
+        
+        if self.append:
+            headers['CONTENT_RANGE'] = 'bytes */*'
+        elif self.start:
+            headers['CONTENT_RANGE'] = 'bytes %s-/*' % self.first-byte-pos
+        
+        attrs = ['content-encoding', 'content-disposition']
+        attrs = [a for a in attrs if getattr(self, a)]
+        for a in attrs:
+            headers[a.replace('-', '_').upper()] = getattr(self, a)
+        
+        #prepare user defined meta
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            headers['X_OBJECT_META_%s' %key.strip().upper()] = val.strip()
+        
+        container, sep, object = path.partition('/')
+        
+        f = srcpath != '-' and open(srcpath) or stdin
+        chunked = (self.chunked or f == stdin) and True or False
+        self.client.update_object(container, object, f, chunked=chunked,
+                                  headers=headers)
+        f.close()
+
+@cli_command('move', 'mv')
+class MoveObject(Command):
+    syntax = '<src container>/<src object> [<dst container>/]<dst object>'
+    description = 'moves an object to a different location'
+    
+    def execute(self, src, dst):
+        src_container, sep, src_object = src.partition('/')
+        dst_container, sep, dst_object = dst.partition('/')
+        if not sep:
+            dst_container = src_container
+            dst_object = dst
+        self.client.move_object(src_container, src_object, dst_container,
+                                dst_object)
+
 def print_usage():
     cmd = Command([])
     parser = cmd.parser
@@ -250,7 +369,26 @@ def print_usage():
         commands.append('  %s %s' % (name.ljust(12), description))
     print '\nCommands:\n' + '\n'.join(sorted(commands))
 
+def print_dict(d, header='name', f=stdout):
+    header = header in d and header or 'subdir'
+    if header and header in d:
+        f.write('%s\n' %d.pop(header))
+    for key, val in sorted(d.items()):
+        f.write('%s: %s\n' % (key.rjust(15), val))
 
+def print_list(l, verbose=False, f=stdout):
+    for elem in l:
+        #if it's empty string continue
+        if not elem:
+            continue
+        if type(elem) == types.DictionaryType:
+            print_dict(elem, f=f)
+        elif type(elem) == types.StringType:
+            if not verbose:
+                elem = elem.split('Traceback')[0]
+            f.write('%s\n' % elem)
+        else:
+            f.write('%s\n' % elem)
 
 def main():
     try:
@@ -259,18 +397,19 @@ def main():
     except (IndexError, KeyError):
         print_usage()
         exit(1)
-
+    
     cmd = cls(argv[2:])
     
-    try:
-        cmd.execute(*cmd.args)
-    except TypeError:
-        cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
-        cmd.parser.print_help()
-        exit(1)
-    except Fault, f:
-        print f.data
-
+    cmd.execute(*cmd.args)
+    
+    #try:
+    #    cmd.execute(*cmd.args)
+    #except TypeError:
+    #    cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
+    #    cmd.parser.print_help()
+    #    exit(1)
+    #except Fault, f:
+    #    print f.data
 
 if __name__ == '__main__':
     main()

@@ -1785,6 +1785,8 @@ div.confirm_single, div.confirm_multiple {
 
 div.confirm_multiple {
     background-color: #4085A5;
+    z-index: 1;
+    position: absolute;
 }
 
 div.action_error {
@@ -2156,7 +2158,7 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 .fixed {
     margin: 0 0 0 -35px !important;
     bottom: 0;
-    position: fixed;
+    position: fixed !important;
 }
 
 /* Networks */

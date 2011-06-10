@@ -96,6 +96,7 @@
 </div>
 
 <script>
+CONFIRMBOX_OFFSET = 200;
 
 //hide the all of the info contents
 $("#machinesview-icon.standard .info-content").hide();
@@ -497,11 +498,19 @@ function update_machines_view(data) {
         hideWelcome();
     }
     // set confirm box position
-    if (window.innerHeight - 335 < $('#machinesview-icon.standard').height())
+    if (window.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon.standard').height())
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
 }
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+});
 
 // update metadata list
 function list_metadata_keys(serverID, keys) {
@@ -556,14 +565,6 @@ if ( flavors.length == 0 && images.length == 0 ) {
     // start updating vm list
     update_vms(UPDATE_INTERVAL);
 }
-
-// reposition multiple confirmation box on window resize
-$(window).resize(function(){
-    if (this.innerHeight - 335 < $('#machinesview-icon').height())
-        $('.confirm_multiple').addClass('fixed');
-    else
-        $('.confirm_multiple').removeClass('fixed');
-});
 
 // set the label of the multiple buttons
 $('.confirm_multiple button.yes').text('Confirm All');

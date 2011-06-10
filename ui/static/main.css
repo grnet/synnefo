@@ -2649,13 +2649,14 @@ div.network div.display a:selected {
     padding-bottom: 5px;
 }
 
-.vm-stats, .vm-labels {
-    width: 109px;
+.vm-stats {
     padding-left: 10px;
+    padding-right: 5px;
+    width: 119px;
 }
 
 .vm-details {
-    width: 129px;
+    width: 169px;
 }
 
 .vm-metadata {

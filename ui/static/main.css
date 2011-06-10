@@ -691,7 +691,7 @@ div.machine {
 
 .machine .name, .machine .ip {
     text-decoration: none !important;
-    padding-top: 1px;
+    margin-top: 7px;
 }
 
 .oldValue {
@@ -1414,7 +1414,7 @@ input.machine {
     float: right;
     margin-right: 0;
     width: 40px;
-    margin-top: -12px;
+    margin-top: -14px;
     display:none;
 }
 
@@ -1422,7 +1422,9 @@ input.machine {
     background-repeat: no-repeat;
     color: transparent;
     font-size: 9pt;
-    padding-left: 16px;
+    float: left;
+    width: 16px;
+    height: 16px;
 }
 
 #metadata-wizard .addbuttons {
@@ -1430,14 +1432,14 @@ input.machine {
     clear: none;
     width: 40px;
     margin-right: -1px !important;
-    margin-top: 4px;
+    margin-top: 2px;
     float:right;
     cursor: pointer;
 }
 
 .metadata-pair-template .editbuttons {
-    margin-top: -16px !important;
-    margin-right: -1px !important;
+    margin-top: -19px !important;
+    margin-right: -2px !important;
 }
 
 #metadata-wizard .metadata-edit .edit {
@@ -1451,11 +1453,14 @@ input.machine {
     background-repeat: no-repeat;
     color: transparent;
     font-size: 9pt;
-    padding-left: 16px;
+    height: 16px;
+    width: 16px;
+    float: left;
 }
 
 #metadata-wizard .editbuttons .save {
     background-image: url("../static/meta-save.png");
+    padding-top:0;
 }
 
 #metadata-wizard .addbuttons .cancel {
@@ -1477,10 +1482,11 @@ input.machine {
 }
 
 #metadata-wizard .addbuttons .cancel, #metadata-wizard .addbuttons .save {
-    padding-left: 16px;
+    width: 16px;
+    height: 16px;
+    float: left;
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
 }
 
 #metadata-wizard .metatextbox {
@@ -1959,9 +1965,9 @@ div#user a.current_lang {
     display: block;
     clear: none;
     width: 40px;
-    margin-right:32%;
-    margin-top:3px;
-    float:right;
+    margin-right: 32%;
+    padding-top: 2px;
+    float: right;
     cursor: pointer;
 }
 
@@ -1974,10 +1980,11 @@ div#user a.current_lang {
 }
 
 .editbuttons .cancel, .editbuttons .save {
-    padding-left: 16px;
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    height: 16px;
+    width: 16px;
+    float: left;
 }
 
 .editbuttons .cancel {
@@ -1996,7 +2003,7 @@ div#user a.current_lang {
 }
 
 .namecontainer {
-    line-height: 22px;
+    height: 18px;
 }
 
 .nametextbox {

@@ -367,7 +367,8 @@ def socket_read_iterator(sock, length=0, blocksize=4096):
             while chunk_length > 0:
                 chunk = sock.read(min(chunk_length, blocksize))
                 chunk_length -= len(chunk)
-                length += len(chunk)
+                if length > 0:
+                    length += len(chunk)
                 data += chunk
                 if len(data) >= blocksize:
                     ret = data[:blocksize]

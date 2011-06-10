@@ -293,7 +293,7 @@ class SimpleBackend(BaseBackend):
         path = os.path.join(account, container, name)
         sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ?'''
         c = self.con.execute(sql, (path,))
-        return [(str(x[0]), int(x[1])) for x in c.fetchall()]
+        return [(int(x[0]), int(x[1])) for x in c.fetchall()]
     
     def get_block(self, hash):
         """Return a block's data."""

@@ -149,7 +149,7 @@ def put_object_meta(response, meta, public=False):
             if k in meta:
                 response[k] = meta[k]
     else:
-        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest'):
+        for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = meta[k]
 

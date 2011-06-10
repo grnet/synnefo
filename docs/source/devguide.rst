@@ -6,9 +6,9 @@ Introduction
 
 Pithos is a storage service implemented by GRNET (http://www.grnet.gr). Data is stored as objects, organized in containers, belonging to an account. This hierarchy of storage layers has been inspired by the OpenStack Object Storage (OOS) API and similar CloudFiles API by Rackspace. The Pithos API follows the OOS API as closely as possible. One of the design requirements has been to be able to use Pithos with clients built for the OOS, without changes.
 
-However, to be able to take full advantage of the Pithos infrastructure, client software should be aware of the extensions that differentiate Pithos from OOS. Pithos objects can be updated, or appended to. They can also be versioned, meaning that the server will track changes, assign version numbers and allow reading previous instances.
+However, to be able to take full advantage of the Pithos infrastructure, client software should be aware of the extensions that differentiate Pithos from OOS. Pithos objects can be updated, or appended to. Automatic version management, allows taking account and container listings back in time, as well as reading previous instances of objects.
 
-The storage backend of Pithos is block oriented, which allows for efficient, deduplicated data placement. The block structure of objects is exposed at the API layer, in order to encourage external software to implement advanced data management operations.
+The storage backend of Pithos is block oriented, permitting efficient, deduplicated data placement. The block structure of objects is exposed at the API layer, in order to encourage external software to implement advanced data management operations.
 
 This document's goals are:
 
@@ -25,6 +25,10 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.3 (June 10, 2011)        Allow for publicly available objects via ``https://hostname/public``.
+\                          Support time-variant account/container listings. 
+\                          Add source version when duplicating with PUT/COPY/MOVE.
+\                          Request version in object HEAD/GET requests (list versions with GET).
 0.2 (May 31, 2011)         Add object meta listing and filtering in containers.
 \                          Include underlying storage characteristics in container meta.
 \                          Support for partial object updates through POST.
@@ -36,14 +40,14 @@ Revision                   Description
 The Pithos API
 --------------
 
-The URI requests supported by Pithos follow one of the following forms:
+The URI requests supported by the Pithos API follow one of the following forms:
 
 * Top level: ``https://hostname/v1/``
 * Account level: ``https://hostname/v1/<account>``
 * Container level: ``https://hostname/v1/<account>/<container>``
 * Object level: ``https://hostname/v1/<account>/<container>/<object>``
 
-All requests must include an ``X-Auth-Token``, except from those that refer to publicly available files (**TBD**). The process of obtaining the token is still to be determined (**TBD**).
+All requests must include an ``X-Auth-Token``. The process of obtaining the token is still to be determined (**TBD**).
 
 The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
@@ -95,7 +99,13 @@ POST       Update account metadata
 HEAD
 """"
 
-No request parameters/headers.
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+until                   Optional timestamp
+======================  ===================================
+
+|
 
 ==========================  =====================
 Reply Header Name           Value
@@ -105,8 +115,9 @@ X-Account-Object-Count      The total number of objects (**TBD**)
 X-Account-Bytes-Used        The total number of bytes stored
 X-Account-Bytes-Remaining   The total number of bytes remaining (**TBD**)
 X-Account-Last-Login        The last login (**TBD**)
+X-Account-Until-Timestamp   The last account modification date until the timestamp provided
 X-Account-Meta-*            Optional user defined metadata
-Last-Modified               The last object modification date
+Last-Modified               The last account modification date (regardless of ``until``)
 ==========================  =====================
 
 |
@@ -136,21 +147,23 @@ Request Parameter Name  Value
 limit                   The amount of results requested (default is 10000)
 marker                  Return containers with name lexicographically after marker
 format                  Optional extended reply type (can be ``json`` or ``xml``)
+until                   Optional timestamp
 ======================  =========================
 
 The reply is a list of container names. Account headers (as in a ``HEAD`` request) will also be included.
 If a ``format=xml`` or ``format=json`` argument is given, extended information on the containers will be returned, serialized in the chosen format.
 For each container, the information will include all container metadata (names will be in lower case and with hyphens replaced with underscores):
 
-===================  ============================
-Name                 Description
-===================  ============================
-name                 The name of the container
-count                The number of objects inside the container
-bytes                The total size of the objects inside the container
-last_modified        The last object modification date
-x_container_meta_*   Optional user defined metadata
-===================  ============================
+===========================  ============================
+Name                         Description
+===========================  ============================
+name                         The name of the container
+count                        The number of objects inside the container
+bytes                        The total size of the objects inside the container
+last_modified                The last container modification date (regardless of ``until``)
+x_container_until_timestamp  The last container modification date until the timestamp provided
+x_container_meta_*           Optional user defined metadata
+===========================  ============================
 
 For examples of container details returned in JSON/XML formats refer to the OOS API documentation.
 
@@ -205,19 +218,26 @@ DELETE     Delete container
 HEAD
 """"
 
-No request parameters/headers.
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+until                   Optional timestamp
+======================  ===================================
 
-==========================  ===============================
-Reply Header Name           Value
-==========================  ===============================
-X-Container-Object-Count    The total number of objects in the container
-X-Container-Bytes-Used      The total number of bytes of all objects stored
-X-Container-Meta-*          Optional user defined metadata
-X-Container-Object-Meta     A list with all meta keys used by objects
-X-Container-Block-Size      The block size used by the storage backend
-X-Container-Block-Hash      The hash algorithm used for block identifiers in object hashmaps
-Last-Modified               The last object modification date
-==========================  ===============================
+|
+
+===========================  ===============================
+Reply Header Name            Value
+===========================  ===============================
+X-Container-Object-Count     The total number of objects in the container
+X-Container-Bytes-Used       The total number of bytes of all objects stored
+X-Container-Block-Size       The block size used by the storage backend
+X-Container-Block-Hash       The hash algorithm used for block identifiers in object hashmaps
+X-Container-Until-Timestamp  The last container modification date until the timestamp provided
+X-Container-Object-Meta      A list with all meta keys used by objects
+X-Container-Meta-*           Optional user defined metadata
+Last-Modified                The last container modification date (regardless of ``until``)
+===========================  ===============================
 
 The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix.
 
@@ -250,6 +270,7 @@ delimiter               Return objects up to the delimiter (discussion follows)
 path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 meta                    Return objects having the specified meta keys (can be a comma separated list)
+until                   Optional timestamp
 ======================  ===================================
 
 The ``path`` parameter overrides ``prefix`` and ``delimiter``. When using ``path``, results will include objects ending in ``delimiter``.
@@ -260,24 +281,28 @@ The reply is a list of object names. Container headers (as in a ``HEAD`` request
 If a ``format=xml`` or ``format=json`` argument is given, extended information on the objects will be returned, serialized in the chosen format.
 For each object, the information will include all object metadata (names will be in lower case and with hyphens replaced with underscores):
 
-===================  ======================================
-Name                 Description
-===================  ======================================
-name                 The name of the object
-hash                 The ETag of the object
-bytes                The size of the object
-content_type         The MIME content type of the object
-content_encoding     The encoding of the object (optional)
-last_modified        The last object modification date
-x_object_manifest    Large object support
-x_object_meta_*      Optional user defined metadata
-===================  ======================================
+==========================  ======================================
+Name                        Description
+==========================  ======================================
+name                        The name of the object
+hash                        The ETag of the object
+bytes                       The size of the object
+content_type                The MIME content type of the object
+content_encoding            The encoding of the object (optional)
+content-disposition         The presentation style of the object (optional)
+last_modified               The last object modification date (regardless of version)
+x_object_version            The object's version identifier
+x_object_version_timestamp  The object's version timestamp
+x_object_manifest           Large object support (optional)
+x_object_public             Object is publicly accessible (optional)
+x_object_meta_*             Optional user defined metadata
+==========================  ======================================
 
 Extended replies may also include virtual directory markers in separate sections of the ``json`` or ``xml`` results.
 Virtual directory markers are only included when ``delimiter`` is explicitly set. They correspond to the substrings up to and including the first occurrence of the delimiter.
 In JSON results they appear as dictionaries with only a ``"subdir"`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
 In case there is an object with the same name as a virtual directory marker, the object will be returned.
- 
+
 For examples of object details returned in JSON/XML formats refer to the OOS API documentation.
 
 ===========================  ===============================
@@ -367,7 +392,13 @@ DELETE     Delete object
 HEAD
 """"
 
-No request parameters/headers.
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+version                 Optional version identifier
+======================  ===================================
+
+|
 
 ==========================  ===============================
 Reply Header Name           Value
@@ -375,10 +406,13 @@ Reply Header Name           Value
 ETag                        The ETag of the object
 Content-Length              The size of the object
 Content-Type                The MIME content type of the object
-Last-Modified               The last object modification date
+Last-Modified               The last object modification date (regardless of version)
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
+X-Object-Version            The object's version identifier
+X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Manifest           Large object support (optional)
+X-Object-Public             Object is publicly accessible (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -410,9 +444,10 @@ If-Unmodified-Since   Retrieve if object has not changed since provided timestam
 Request Parameter Name  Value
 ======================  ===================================
 format                  Optional extended reply type (can be ``json`` or ``xml``)
+version                 Optional version identifier or ``list`` (specify a format if requesting a list)
 ======================  ===================================
 
-The reply is the object's data (or part of it), except if a hashmap is requested with the ``format`` parameter. Object headers (as in a ``HEAD`` request) are always included.
+The reply is the object's data (or part of it), except if a hashmap is requested with the ``format`` parameter, or a version list with ``version=list`` (in which case an extended reply format must be specified). Object headers (as in a ``HEAD`` request) are always included.
 
 Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block.
 
@@ -420,7 +455,7 @@ Example ``format=json`` reply:
 
 ::
 
-  {"block_hash": "sha1", "hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c"], "block_size": 131072, "bytes": 242}
+  {"block_hash": "sha1", "hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c", ...], "block_size": 131072, "bytes": 242}
 
 Example ``format=xml`` reply:
 
@@ -432,6 +467,25 @@ Example ``format=xml`` reply:
     <hash>...</hash>
   </object>
 
+Version lists include the version identifier and timestamp for each available object version. Version identifiers are integers, with the only requirement that newer versions have a larger identifier than previous ones.
+
+Example ``format=json`` reply:
+
+::
+
+  {"versions": [[23, 1307700892], [28, 1307700898], ...]}
+
+Example ``format=xml`` reply:
+
+::
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <object name="file">
+    <version timestamp="1307700892">23</version>
+    <version timestamp="1307700898">28</version>
+    <version timestamp="...">...</version>
+  </object>
+
 The ``Range`` header may include multiple ranges, as outlined in RFC2616. Then the ``Content-Type`` of the reply will be ``multipart/byteranges`` and each part will include a ``Content-Range`` header.
 
 ==========================  ===============================
@@ -441,10 +495,13 @@ ETag                        The ETag of the object
 Content-Length              The size of the data returned
 Content-Type                The MIME content type of the object
 Content-Range               The range of data included (only on a single range request)
-Last-Modified               The last object modification date
+Last-Modified               The last object modification date (regardless of version)
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
+X-Object-Version            The object's version identifier
+X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Manifest           Large object support (optional)
+X-Object-Public             Object is publicly accessible (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -473,9 +530,11 @@ Content-Type          The MIME content type of the object
 Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 X-Copy-From           The source path in the form ``/<container>/<object>``
 X-Move-From           The source path in the form ``/<container>/<object>``
+X-Source-Version      The source version to copy/move from
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Large object support (optional)
+X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
@@ -508,7 +567,9 @@ Destination           The destination path in the form ``/<container>/<object>``
 Content-Type          The MIME content type of the object (optional)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
+X-Source-Version      The source version to copy/move from
 X-Object-Manifest     Large object support (optional)
+X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
@@ -540,10 +601,11 @@ Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if us
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Large object support (optional)
+X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest`` and ``X-Object-Meta-*`` headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
+The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` and ``X-Object-Meta-*`` headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
 
 To update an object:
 
@@ -590,6 +652,22 @@ Return Code                  Description
 204 (No Content)             The request succeeded
 ===========================  ==============================
 
+Public Objects
+^^^^^^^^^^^^^^
+
+Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI ``https://hostname/public/<account>/<container>/<object>`` for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden).
+
+==========================  ===============================
+Reply Header Name           Value
+==========================  ===============================
+ETag                        The ETag of the object
+Content-Length              The size of the data returned
+Content-Type                The MIME content type of the object
+Content-Range               The range of data included (only on a single range request)
+Last-Modified               The last object modification date (regardless of version)
+Content-Encoding            The encoding of the object (optional)
+Content-Disposition         The presentation style of the object (optional)
+==========================  ===============================
 
 Summary
 ^^^^^^^
@@ -603,11 +681,14 @@ List of differences from the OOS API:
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
-* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation.
+* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public``. These are all replaced with every update operation.
 * Multi-range object GET support as outlined in RFC2616.
 * Object hashmap retrieval through GET and the ``format`` parameter.
 * Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers.
 * Object ``MOVE`` support.
+* Time-variant account/container listings via the ``until`` parameter.
+* Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY/MOVE.
+* Publicly accessible objects via ``https://hostname/public``. Control with ``X-Object-Public``.
 
 Clarifications/suggestions:
 
@@ -618,6 +699,7 @@ Clarifications/suggestions:
 * The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired reply format. The parameter overrides the header.
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
 * In headers, dates are formatted according to RFC 1123. In extended information listings, dates are formatted according to ISO 8601.
+* The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
 * While ``X-Object-Manifest`` can be set and unset, large object support is not yet implemented (**TBD**).
 
 The Pithos Client
@@ -643,7 +725,7 @@ Objects in Pithos can be:
 * Moved to trash and then deleted.
 * Shared with specific permissions.
 * Made public (shared with non-Pithos users).
-* Set to monitor changes via version tracking.
+* Restored from previous versions.
 
 Some of these functions are performed by the client software and some by the Pithos server. Client-driven functionality is based on specific metadata that should be handled equally across implementations. These metadata names are discussed in the next chapter. 
 

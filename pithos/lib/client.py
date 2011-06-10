@@ -3,6 +3,7 @@ from sys import stdin
 
 import json
 import types
+import socket
 
 class Fault(Exception):
     def __init__(self, data=''):
@@ -91,6 +92,7 @@ class Client(object):
             kwargs['body'] = body
             kwargs['headers']['Content-Type'] = 'application/octet-stream'
         #print '****', method, full_path, kwargs
+        #TODO catch socket.error
         conn.request(method, full_path, **kwargs)
         resp = conn.getresponse()
         headers = dict(resp.getheaders())
@@ -131,19 +133,21 @@ class Client(object):
         if detail:
             data = json.loads(data)
         else:
-            data = [data]
+            data = data.split('\n')
         return data
 
-    def _get_metadata(self, path, prefix):
+    def _get_metadata(self, path, prefix=None):
         status, headers, data = self.head(path)
         if status == '404':
             return None
-        prefixlen = len(prefix)
+        prefixlen = prefix and len(prefix) or 0
         meta = {}
         for key, val in headers.items():
-            if key.startswith(prefix):
+            if prefix and not key.startswith(prefix):
+                continue
+            elif prefix and key.startswith(prefix):
                 key = key[prefixlen:]
-                meta[key] = val
+            meta[key] = val
         return meta
 
     def _set_metadata(self, path, entity, **meta):
@@ -158,8 +162,9 @@ class Client(object):
     def list_containers(self, detail=False, params=None, headers=None):
         return self._list('', detail, params, headers)
 
-    def account_metadata(self):
-        return self._get_metadata('', 'x-account-meta-')
+    def account_metadata(self, restricted=False):
+        prefix = restricted and 'x-account-meta-' or None
+        return self._get_metadata('', prefix)
 
     def update_account_metadata(self, **meta):
         self._set_metadata('', 'account', **meta)
@@ -180,8 +185,9 @@ class Client(object):
     def delete_container(self, container):
         self.delete('/' + container)
 
-    def retrieve_container_metadata(self, container):
-        return self._get_metadata('/%s' % container, 'x-container-meta-')
+    def retrieve_container_metadata(self, container, restricted=False):
+        prefix = restricted and 'x-container-meta-' or None
+        return self._get_metadata('/%s' % container, prefix)
 
     def update_container_metadata(self, container, **meta):
         self._set_metadata('/' + container, 'container', **meta)
@@ -242,9 +248,10 @@ class Client(object):
     def delete_object(self, container, object):
         self.delete('/%s/%s' % (container, object))
 
-    def retrieve_object_metadata(self, container, object):
+    def retrieve_object_metadata(self, container, object, restricted=False):
         path = '/%s/%s' % (container, object)
-        return self._get_metadata(path, 'x-object-meta-')
+        prefix = restricted and 'x-object-meta-' or None
+        return self._get_metadata(path, prefix)
 
     def update_object_metadata(self, container, object, **meta):
         path = '/%s/%s' % (container, object)

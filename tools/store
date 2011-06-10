@@ -119,15 +119,21 @@ class List(Command):
 class Meta(Command):
     syntax = '[<container>[/<object>]]'
     description = 'get the metadata of an account, a container or an object'
+    
+    def add_options(self, parser):
+        parser.add_option('-r', action='store_true', dest='restricted',
+                          default=False, help='show only user defined metadata')
 
     def execute(self, path=''):
         container, sep, object = path.partition('/')
         if object:
-            meta = self.client.retrieve_object_metadata(container, object)
+            meta = self.client.retrieve_object_metadata(container, object,
+                                                        self.restricted)
         elif container:
-            meta = self.client.retrieve_container_metadata(container)
+            meta = self.client.retrieve_container_metadata(container,
+                                                           self.restricted)
         else:
-            meta = self.client.account_metadata()
+            meta = self.client.account_metadata(self.restricted)
         if meta == None:
             print 'Entity does not exist'
         else:

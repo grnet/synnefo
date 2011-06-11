@@ -2006,7 +2006,7 @@ div#user a.current_lang {
 
 .namecontainer {
     height: 18px;
-    margin-top: 5px;
+    margin-top: 9px;
 }
 
 .nametextbox {
@@ -2420,7 +2420,7 @@ div.name-div:hover span.rename-network {
     padding-bottom: 5px;
     padding-left: 5px;
     padding-top: 10px;
-    margin-top: 2px;
+    margin-top: 5px;
 }
 
 .network-machine .logo {
@@ -2466,7 +2466,8 @@ div.network div.machine-actions {
     background-color: #DCDCDC;
     height: 1px;
     margin-left: 5px;
-    margin-top: 3px;
+    margin-top: -1px;
+    margin-bottom: -3px;
     position: absolute;
     width: 473px;
 }
@@ -2497,9 +2498,10 @@ div.network div.machine-actions {
 }
 
 .machines {
-    margin: 2px 0 0 0;
     width: 410px;
     background-color: #B3B3B3;
+    margin-bottom: -8px;
+    margin-top: 10px;
 }
 
 div.empty-network-slot {
@@ -2624,7 +2626,7 @@ div.network div.display a:selected {
 }
 
 .machine-name-div {
-    margin-bottom: 22px;
+    margin-bottom: 20px;
     margin-left: 60px;
 }
 

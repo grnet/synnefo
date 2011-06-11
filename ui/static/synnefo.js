@@ -832,7 +832,7 @@ function show_vnc_console(serverID, serverName, serverIP, host, port, password) 
                         'width=' + screen.width + ',' +
                         'fullscreen=yes';
 
-    window.open('/machines/console' + params_url, 'formresult' + serverID, params_window);
+    window.open('machines/console' + params_url, 'formresult' + serverID, params_window);
 
     // Restore os icon in list view
     osIcon = $('#'+serverID).parent().parent().find('.list-logo');

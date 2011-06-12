@@ -2466,14 +2466,13 @@ div.network div.machine-actions {
     background-color: #DCDCDC;
     height: 1px;
     margin-left: 5px;
-    margin-top: -1px;
+    margin-top: 5px;
     margin-bottom: -3px;
     position: absolute;
     width: 473px;
 }
 
 .network-machines {
-    margin-bottom: 10px;
 }
 
 .network-machine .state {

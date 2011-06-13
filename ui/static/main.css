@@ -2119,6 +2119,7 @@ div.list table .selection {
     width: 20px !important;
     text-align: left;
     background-image: none;
+    padding-left: 6px;
 }
 
 div.list table thead .vmflavor {

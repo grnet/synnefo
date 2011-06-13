@@ -26,7 +26,9 @@
                 <tr>
                     <th class="selection select-running">
                         <input type="checkbox"/>
+                        <!-- Drop down selector is commented out for v0.5
                         <div class="expand-icon"></div>
+                        -->
                     </th>
                     <th class="vmos">{% trans "OS" %}</th>
                     <th class="vmname">{% trans "Name" %}</th>
@@ -37,11 +39,13 @@
             </thead>
             <tbody class="machines"></tbody>
         </table>
+        <!-- Drop down selector is commented out for v0.5
         <ul class="dropdown-selector" style="display: none">
             <li class="select-all" ><a href="#">{% trans "all" %}</a></li>
             <li class="select-none"><a href="#">{% trans "none" %}</a></li>
             <li class="select-group"><a href="#">{% trans "group" %}</a></li>
         </ul>
+        -->
     </div>
 </div>
 
@@ -59,6 +63,7 @@ $("#machinesview .list table thead tr th.selection :checkbox").live('change', fu
     return false;
 });
 
+/* Drop down selector is commented out for v0.5
 // select all from drop down menu
 $("#machinesview .list ul.dropdown-selector li.select-all a").live('click', function() {
     $(":checkbox").attr("checked", true);
@@ -88,6 +93,8 @@ $("#machinesview .list table.list-machines thead tr th.selection .expand-icon").
     $(".dropdown-selector").slideToggle('medium');
     return false;
 });
+
+*/
 
 // TODO: This should be populated with more rules for all available states
 var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],

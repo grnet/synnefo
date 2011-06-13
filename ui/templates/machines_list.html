@@ -15,11 +15,13 @@
             <br />
             <a id="action-console">{% trans "Console" %}</a>
             <br />
+            {% comment %}
             <a id="action-attach">{% trans "Attach disk" %}</a>
             <a id="action-detach">{% trans "Detach disk" %}</a>
             <br />
             <a id="action-connect">{% trans "Connect to network" %}</a>
             <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
+            {% endcomment %}
         </div>
         <table class="list-machines" style="display: none">
             <thead>
@@ -97,10 +99,11 @@ $("#machinesview .list table.list-machines thead tr th.selection .expand-icon").
 */
 
 // TODO: This should be populated with more rules for all available states
+//a key represents an action, while values are lists with permitted states to which the action can be applied
 var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
                 'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
-                'connect':       ['UNKOWN', 'ACTIVE'],
-                'disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
+                //'connect':       ['UNKOWN', 'ACTIVE'],
+                //'disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
                 'console':       ['UNKOWN', 'ACTIVE', 'multiple'],
                 'details':       ['UNKOWN', 'ACTIVE', 'REBOOT', 'STOPPED'],
                 'start':         ['UNKOWN', 'STOPPED', 'multiple'],

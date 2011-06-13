@@ -602,7 +602,7 @@ $(function() {
         top: '10%',
         closeOnClick: false,
         oneInstance: false,
-        closeOnEsc: true,
+        closeOnEsc: false,
         load: false,
         onClose: function(){
             // reset input areas
@@ -697,6 +697,15 @@ $("#metadata-wizard #metadata-create").click(function(){
         });
       }
     pair.find('input#add-meta-key').focus();
+    //submit keyword by pressing enter on the textbox
+    $(this).parent().parent().find('input#add-meta-value').keypress(function (e) {
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('.addbuttons .save').click();
+            return false;
+        } else {
+            return true;
+        }
+    });
 });
 
 //save new metadata
@@ -731,8 +740,7 @@ $('#metadata-wizard .addbuttons .save').live('click', function(){
 //intercept cancel new metadata creation
 $("#metadata-wizard .addbuttons .cancel").die('click');
 $("#metadata-wizard .addbuttons .cancel").live('click',function(){
-    $(this).parent().parent().fadeOut('fast');
-    window.setTimeout(function(){$(this).parent().parent().remove();}, 400);
+    $(this).parent().parent().fadeOut('fast', function() { $(this).remove(); });
 });
 
 //metadata remove button
@@ -755,10 +763,42 @@ $("#metadata-wizard .metadata-edit .edit").live('click', function() {
     $(this).parent().parent().find('div.metadata-value').html("<input id=\"value-edit\" maxlength=\"150\" type=\"text\" class=\"metatextbox\" value=\"" + $(this).parent().parent().find('.metadata-full-value').text() +
                                     "\" / ><span class=\"oldValue\">" +
                                     $(this).parent().parent().find('.metadata-full-value').text() + "</span>");
+    //submit keyword by pressing enter on the textbox
+    $(this).parent().parent().find('input.metatextbox').keypress(function (e) {
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('.editbuttons .save').click();
+            return false;
+        } else {
+            return true;
+        }
+    });
+    $(this).parent().parent().find('input.metatextbox').select()
     $(this).parent().hide();
     $(this).parent().parent().unbind('mouseenter').unbind('mouseleave');
     $(this).parent().parent().find('.editbuttons').show();
 });
+
+//capture Esc key
+bar = {};
+bar.onkeyup = function(e) {
+    if (e.keyCode == 27) {
+        //if we are inside an add or edit textbox, cancel editing
+        if ($('input.metatextbox:focus').length > 0) {
+            $('input.metatextbox:focus').parent().parent().find('.editbuttons .remove').click();
+        } else if ($('input#add-meta-key:focus').length > 0)  {
+            $('input#add-meta-key:focus').parent().parent().find('.addbuttons .cancel').click();
+        } else if ($('input#add-meta-value:focus').length > 0) {
+            $('input#add-meta-value:focus').parent().parent().find('.addbuttons .cancel').click();
+        } else {
+            //else close the metadata wizard
+            $("a#metadata-scrollable").overlay().close();
+        }
+        e.preventDefault();
+        e.stopPropagation();
+    }
+};
+document.onkeyup = bar.onkeyup; 
+
 
 //metadata cancel edit button
 $("#metadata-wizard .editbuttons .remove").die('click');
@@ -771,6 +811,7 @@ $("#metadata-wizard .editbuttons .remove").live('click', function() {
     $(this).parent().parent().hover(function () {$(this).find('.metadata-edit').show();}, function () {$(this).find('.metadata-edit').hide();});
     $(this).parent().hide();
 });
+
 
 //metadata save edit button
 $("#metadata-wizard .editbuttons .save").die('click');
@@ -792,14 +833,6 @@ $("#metadata-wizard .editbuttons .save").live('click', function() {
     $(this).parent().hide();
 
 });
-
-// trapping keydown event
-jQuery.expr[':'].focus = function( elem ) {
-    var api = $("#metadata-wizard").data("scrollable");
-    if (api.getIndex() == 1) {
-      return elem === document.activeElement && ( elem.type || elem.href );
-    }
-};
 
 // intercept create metadata key focus
 $("#metadata-wizard input#add-meta-key").live('focusin', function() {

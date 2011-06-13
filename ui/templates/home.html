@@ -299,7 +299,13 @@
     <script>
 
         $(function() {
+            // check pane cookie to select the initial pane
+            var initial = 0, pane = $.cookie("pane");
+            if (pane > 0)
+                initial = pane;
+            //alert(initial);
             $("ul.css-tabs").tabs("div.css-panes div.pane", {
+                initialIndex: initial,
                 onBeforeClick: function(event, i) {
                     // get the pane to be opened
                     var pane = this.getPanes().eq(i);
@@ -311,7 +317,12 @@
                 }
             });
         });
-
+        
+        // set pane cookie whenever the user clicks on a different pane
+        $("ul.css-tabs a").click(function(i){
+            $.cookie("pane", $("ul.css-tabs a").index(this));
+        });
+        
         //change menu title on hover
         $("ul.css-tabs li").hover(
             function () {
@@ -323,6 +334,7 @@
                 $(this).parent().parent().find(".tab-name").text($(this).parent().find("a.current").attr("href"));
             }
         );
+        
     </script>
 </body>
 </html>

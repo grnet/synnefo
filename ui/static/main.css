@@ -2047,7 +2047,7 @@ div.list table tbody td {
 }
 
 div.list table thead tr th {
-    background-color: #5CA1C0;
+    background-color: #CDE2EC;
     background-image: url(bg.gif);
     background-repeat: no-repeat;
     background-position: right 11px;
@@ -2061,7 +2061,7 @@ div.list table thead tr th {
 }
 
 div.list table thead .sorting_asc, div.list table thead .sorting_desc {
-    background-color: #87AADE;
+    background-color: #5CA1C0;
 }
 
 div.list table thead .sorting_asc {
@@ -2098,7 +2098,7 @@ ul.dropdown-selector li {
 }
 
 ul.dropdown-selector li:hover {
-    background-color: #87AADE;
+    background-color: #5CA1C0;
 }
 
 ul.dropdown-selector li a{

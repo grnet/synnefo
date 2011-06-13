@@ -215,7 +215,7 @@ div.css-panes {
     float: left;
     height: 32px;
     margin-left: -50px;
-    margin-top: 8px;
+    margin-top: -8px;
     width: 20px;
 }
 
@@ -1008,7 +1008,7 @@ div.machine-type {
 
 #machinesview {
     min-height: 270px;
-    margin-top: 30px;
+    margin-top: 40px;
 }
 
 .list#machinesview {
@@ -1034,14 +1034,14 @@ div.machine-type {
 }
 
 #emptymachineslist {
-    display:none;
+    background-color: #6BA9C6;
     color: #A0A0A0;
-    background-image: url(./emptydegradebg.png);
-    width: 400px;
-    margin-top: 5px;
-    padding: 5px;
-    padding-left: 10px;
-    margin-left: -10px;
+    display: none;
+    margin-left: -35px;
+    margin-top: -45px;
+    padding: 65px 150px 35px;
+    text-align: justify;
+    width: 398px;
 }
 
 #welcomeheader {
@@ -1049,21 +1049,21 @@ div.machine-type {
 }
 
 .welcomebody {
-    color:black;
+    color: white;
     font-size:80%;
 }
 
 .welcomebody a {
-    color:black;
+    color: white;
 }
 
 .welcomefooter {
-    color:black;
+    color: white;
     font-size:60%;
 }
 
 .welcomefooter a {
-    color:black;
+    color: white;
 }
 
 .emptycreatecontainer {

@@ -1212,28 +1212,22 @@ function remove_server_from_network(networkIDs, serverIDs) {
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");
-    $("#machinesview-icon.standard").fadeOut("fast");
-    $("#createcontainer").addClass('emptycreatecontainer')
-    $("#create").addClass('emptycreate')
     $("#emptymachineslist").fadeIn("fast");
-    $("#createbody").fadeIn("fast");
-    $("#create").css("display", "block");
+    $("#create").css("display", "inline");
     $("#createcontainer").fadeIn("fast");
-    $("#beforecreate").fadeOut("fast");
+    $("#beforecreate").fadeIn("fast");
+    $("#machinesview").hide();
 }
 
 // hide the welcome screen
 function hideWelcome() {
     $("#emptymachineslist").fadeOut("fast");
-    $("#createbody").fadeOut("fast");
-    $("#createcontainer").removeClass('emptycreatecontainer')
-    $("#create").removeClass('emptycreate')
     $("#view-select").fadeIn("fast");
-    $("#machinesview-icon.standard").fadeIn("fast");
     $("div#view-select").show();
     $("#create").css("display", "inline");
     $("#createcontainer").fadeIn("fast");
     $("#beforecreate").fadeIn("fast");
+    $("#machinesview").show();
 }
 
 function log_server_status_change(server_entry, new_status) {

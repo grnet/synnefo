@@ -11,16 +11,17 @@
             <a id="action-destroy">{% trans "Destroy" %}</a>
             <br />
             <a id="action-details">{% trans "Show Details" %}</a>
-            <a id="action-group">{% trans "Add to group" %}</a>
+            {% comment %}<a id="action-group">{% trans "Add to group" %}</a>{% endcomment %}
             <br />
             <a id="action-console">{% trans "Console" %}</a>
+            <a id="action-connect">{% trans "Connect" %}</a>
             <br />
             {% comment %}
             <a id="action-attach">{% trans "Attach disk" %}</a>
             <a id="action-detach">{% trans "Detach disk" %}</a>
             <br />
-            <a id="action-connect">{% trans "Connect to network" %}</a>
-            <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
+            <a id="action-network-connect">{% trans "Connect to network" %}</a>
+            <a id="action-network-disconnect">{% trans "Disconnect from net" %}</a>
             {% endcomment %}
         </div>
         <table class="list-machines" style="display: none">
@@ -102,13 +103,14 @@ $("#machinesview .list table.list-machines thead tr th.selection .expand-icon").
 //a key represents an action, while values are lists with permitted states to which the action can be applied
 var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
                 'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
-                //'connect':       ['UNKOWN', 'ACTIVE'],
-                //'disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
+                'connect':       ['UNKOWN', 'ACTIVE'],
+                //'network-connect':       ['UNKOWN', 'ACTIVE'],
+                //'network-disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
                 'console':       ['UNKOWN', 'ACTIVE', 'multiple'],
                 'details':       ['UNKOWN', 'ACTIVE', 'REBOOT', 'STOPPED'],
                 'start':         ['UNKOWN', 'STOPPED', 'multiple'],
                 'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD', 'multiple'],
-                'group':         ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT','multiple'],
+                //'group':         ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT','multiple'],
                };
 
 // on checkbox click, update the actions

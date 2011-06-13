@@ -693,7 +693,7 @@ div.machine {
 
 .machine .name, .machine .ip {
     text-decoration: none !important;
-    margin-top: 7px;
+    margin-top: 6px;
 }
 
 .oldValue {
@@ -1959,11 +1959,11 @@ div#user a.current_lang {
 }
 
 .machine h5 {
-    margin: -1px 60px 1px 84px;
+    margin: -1px 60px -2px 84px;
 }
 
 .machine .settings {
-    margin-top: 9px;
+    margin-top: 15px;
 }
 
 .editbuttons {

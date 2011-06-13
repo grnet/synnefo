@@ -313,9 +313,10 @@ $("#machines-pane a#single").click(function(){
 $("#machines-pane a#create").click(function(){
     // launch wizard only if images and flavors are found
     if (images.length > 0  && flavors.length > 0) {
+        $('#machines-pane a#create').data('overlay').close();
         $("#wizard").scrollable().begin();
         $("#wizard").show();
-        $('#machines-pane a#create').data('overlay').load()
+        $('#machines-pane a#create').data('overlay').load();
     } else if (images.length == 0 ) {
         ajax_error('NO_IMAGES');
         return false;

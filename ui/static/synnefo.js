@@ -1213,9 +1213,6 @@ function remove_server_from_network(networkIDs, serverIDs) {
 function showWelcome() {
     $("#view-select").fadeOut("fast");
     $("#emptymachineslist").fadeIn("fast");
-    $("#create").css("display", "inline");
-    $("#createcontainer").fadeIn("fast");
-    $("#beforecreate").fadeIn("fast");
     $("#machinesview").hide();
 }
 
@@ -1224,9 +1221,6 @@ function hideWelcome() {
     $("#emptymachineslist").fadeOut("fast");
     $("#view-select").fadeIn("fast");
     $("div#view-select").show();
-    $("#create").css("display", "inline");
-    $("#createcontainer").fadeIn("fast");
-    $("#beforecreate").fadeIn("fast");
     $("#machinesview").show();
 }
 

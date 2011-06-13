@@ -114,7 +114,6 @@ function update_machines_view(data){
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */
-
     $.each(data.servers.values, function(i,server){
 
         existing = $('#machinesview-single.single #' + server.id);

@@ -222,14 +222,12 @@ div.css-panes {
 #createcontainer {
     margin-top: 20px;
     margin-bottom: 10px;
-    display:none;
 }
 
 #create {
     background-color: #FF7F2A;
     color: #000;
     cursor: pointer;
-    display: none;
     padding: 7px 24px;
     margin: 0 0 0 -36px;
     width: 125px;
@@ -2046,10 +2044,18 @@ div#user a.current_lang {
 .large-spinner {
     background: url("./icons/indicators/large/progress.gif");
     margin-left: 298px;
-    margin-top: 80px;
+    margin-top: 30px;
     height: 31px;
     width: 31px;
     position: absolute;
+}
+
+.list .large-spinner {
+    margin-top:-50px;
+}
+
+.single .large-spinner {
+    margin-top:-45px;
 }
 
 /* tables in list view */
@@ -3024,4 +3030,8 @@ applet {
 
 #add-machines-wizard img.list-logo {
     margin: 2px 1px 1px;
+}
+
+.css-panes {
+    clear: both;
 }

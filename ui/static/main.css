@@ -329,10 +329,12 @@ div#wrapper {
 
 /* title */
 #wizard h2, #networks-wizard h2 {
-    color: black;
+    color: #FF7B24;
     font-size: 100%;
-    font-weight: normal;
-    padding-left: 20px;
+    font-style: italic;
+    font-weight: bold;
+    padding-left: 37px;
+    padding-top: 2px;
 }
 
 #networks-wizard h2 {
@@ -478,7 +480,7 @@ div#wrapper {
     margin-left: -1px;
     width: 447px;
     margin-bottom: 6px;
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 #wizard .bottomruler, #networks-wizard .bottomruler {
@@ -550,7 +552,7 @@ div#wrapper {
 .page ul.tabs {
     overflow: hidden;
     height: auto;
-    margin-bottom: 3px;
+    margin-bottom: -1px;
     margin-top: -1px;
 }
 
@@ -659,7 +661,7 @@ div.image-container {
     float: none;
     margin: 0 0 0 10px;
     border: 1px solid #387693;
-    color: #222222;
+    color: #387693;
 }
 
 .machine-container {
@@ -994,7 +996,7 @@ a#single.activelink {
 #machinetype {
     background-color: #CDE2EC;
     height: 25px;
-    margin-bottom: 4px !important;
+    margin-bottom: 0px !important;
 }
 
 div.machine-type {

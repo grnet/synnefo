@@ -2443,7 +2443,7 @@ div.name-div:hover span.rename-network {
 div.network div.machine-actions {
     float: right;
     width: 100px;
-    margin:0px -100px 0 0;
+    margin: -5px -100px 0 0;
     font-weight: normal;
 }
 

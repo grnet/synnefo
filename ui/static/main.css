@@ -1704,6 +1704,15 @@ input.machine {
     width: 482px;
 }
 
+#error-success.success h3.popup-header{
+    background-color: #4085A5;
+    display: block;
+    background-image: url("./save.png");
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+
 #error-success .popup-body {
     background-image: url("./popup-bg.png");
     margin-left: -16px;
@@ -1736,21 +1745,18 @@ input.machine {
 }
 
 #error-success .password-container {
-    float: left;
-    width: 100px;
+    width: 430px;
+    padding: 5px;
+    border: 2px solid #75b54a;
+    background-color: #aade87;
 }
 
 #error-success .password-header {
     margin-bottom: 5px;
-    text-align: center;
 }
 
 #error-success .password {
-    background-color: #FF7F2A;
-    height: 20px;
-    padding-top: 5px;
-    text-align: center;
-    width: 100px;
+    color: #447821;
 }
 
 #error-success .popup-details {
@@ -1760,10 +1766,30 @@ input.machine {
     padding: 2px;
 }
 
-#error-success .write-password {
-    color: #FF7F2A;
-    margin-bottom: 5px;
+#error-success.success .popup-details {
+    border: none !important;
+    float: none !important;
+    margin-left: none !important;
+    margin-top: 10px;
 }
+
+#error-success.success .popup-separator {
+    margin-bottom: 10px !important;
+}
+
+
+#error-success .write-password {
+    margin-bottom: 5px;
+    padding-left: 30px;
+}
+
+#error-success .write-password-password {
+    padding-left: 30px;
+    color: #447821;
+    display: inline;
+    font-size: 110%;
+}
+
 
 #error-success .write-password-details {
     font-size: 75%;

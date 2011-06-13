@@ -94,13 +94,16 @@
             'PASSWORD' : '{% trans "Password:" %}',
             'CREATE_VM_SUCCESS' : '{% trans "Success!" %}',
             'CREATE_VM_SUCCESS_ONE' : '{% trans "Your new machine is now buidling... (this might take a few minutes)" %}',
-            'CREATE_VM_SUCCESS_TWO' : '{% trans "Write down your password now!" %}',
+            'CREATE_VM_SUCCESS_TWO' : '{% trans "Write down your password now:" %}',
             'CREATE_VM_SUCCESS_THREE' : '{% trans "You will need this later to connect to your machine." %}',
             'CREATE_VM_SUCCESS_FOUR' : '{% trans "After closing this window you will NOT be able to retrieve it again." %}'
         };
 
         // ajax error checking
         function ajax_error(status, serverID, action, responseText) {
+            $('#error-success').addClass('error');
+            $('#error-success').removeClass('success');
+
             var serverName = '';
 
             if (serverID != undefined) {
@@ -185,6 +188,8 @@
         function ajax_success(status, password) {
             // prepare the error message
             // bring up success notification
+            $('#error-success').addClass('success');
+            $('#error-success').removeClass('error');
             if (status != undefined && SUCCESS[status]) {
                 if (password != undefined && status == "CREATE_VM_SUCCESS") {
 
@@ -201,8 +206,9 @@
                     $("#error-success .popup-details").removeClass("popup-details-error");
                     $("#error-success .popup-separator").removeClass("popup-separator-error");
                     $("#error-success .password-container").show();
-                    $("#error-success .popup-details").html("<div class=\"write-password\">"+ SUCCESS["CREATE_VM_SUCCESS_TWO"] + "</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG +"</div>");
-                    $("#error-success div.password").html(password);
+
+                    $("#error-success .popup-details").html("</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG +"</div>");
+                    $("#error-success div.password").html("<div class=\"write-password\">"+ SUCCESS["CREATE_VM_SUCCESS_TWO"] + "<div class=\"write-password-password\">" + password +"</div></div>");
                     //$("#error-success div.write-password").html(SUCCESS["CREATE_VM_SUCCESS_TWO"]);
                     //$("#error-success div.write-password-details").html(CREATE_VM_SUCCESS_MSG);
                 } else {
@@ -280,7 +286,7 @@
                             <div class="machine-now-building"></div>
                             <div class="popup-separator"></div>
                             <div class="password-container">
-                                <div class="password-header">{% trans "Password:" %}</div>
+                                <div class="password-header"></div>
                                 <div class="password"></div>
                             </div>
                             <div class="popup-details">

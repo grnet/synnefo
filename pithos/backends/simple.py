@@ -259,6 +259,7 @@ class SimpleBackend(BaseBackend):
         """Copy an object's data and metadata."""
         
         logger.debug("copy_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
+        self._get_containerinfo(account, src_container)
         if src_version is None:
             src_path = self._get_objectinfo(account, src_container, src_name)[0]
         else:

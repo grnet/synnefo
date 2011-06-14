@@ -160,7 +160,7 @@ def update_manifest_meta(request, v_account, meta):
         hash = ''
         bytes = 0
         try:
-            src_container, src_name = split_container_object_string(meta['X-Object-Manifest'])
+            src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
             objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
             for x in objects:
                 src_meta = backend.get_object_meta(request.user, v_account, src_container, x[0], x[1])
@@ -209,6 +209,9 @@ def validate_matching_preconditions(request, meta):
             raise NotModified('Resource Etag matches')
 
 def split_container_object_string(s):
+    if not len(s) > 0 or s[0] != '/':
+        raise ValueError
+    s = s[1:]
     pos = s.find('/')
     if pos == -1:
         raise ValueError

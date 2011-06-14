@@ -109,7 +109,7 @@ def object_read(request, v_account, v_container, v_object):
     hashmaps = []
     if 'X-Object-Manifest' in meta:
         try:
-            src_container, src_name = split_container_object_string(meta['X-Object-Manifest'])
+            src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
             objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
         except ValueError:
             raise ItemNotFound('Object does not exist')

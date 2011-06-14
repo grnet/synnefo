@@ -294,7 +294,7 @@ content-disposition         The presentation style of the object (optional)
 last_modified               The last object modification date (regardless of version)
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
-x_object_manifest           Large object support (optional)
+x_object_manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 x_object_public             Object is publicly accessible (optional)
 x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
@@ -412,7 +412,7 @@ Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
-X-Object-Manifest           Large object support (optional)
+X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public             Object is publicly accessible (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
@@ -501,7 +501,7 @@ Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
-X-Object-Manifest           Large object support (optional)
+X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public             Object is publicly accessible (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
@@ -534,7 +534,7 @@ X-Move-From           The source path in the form ``/<container>/<object>``
 X-Source-Version      The source version to copy/move from
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
-X-Object-Manifest     Large object support (optional)
+X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
@@ -569,7 +569,7 @@ Content-Type          The MIME content type of the object (optional)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Version      The source version to copy/move from
-X-Object-Manifest     Large object support (optional)
+X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
@@ -601,7 +601,7 @@ Content-Range         The range of data supplied (optional, to update)
 Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
-X-Object-Manifest     Large object support (optional)
+X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================

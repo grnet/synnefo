@@ -3052,6 +3052,6 @@ applet {
     background-color:transparent
 }
 
-.empty-network-slot {
+.public-networks .empty-network-slot {
     display: none;
 }

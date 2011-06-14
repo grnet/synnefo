@@ -15,17 +15,29 @@
 
         $(document).ready(function() {
 
-            $("#go").
-
-            $.ajax({
-                url:  '/helpdesk/token',
-                type: 'POST',
-                success: function(data) {
-
-                },
-                error : function() {
-
+            $("#username").change(function() {
+                if ($("#username").val() != '') {
+                    $("#go").removeAttr("disabled");
+                } else {
+                    $("#go").attr('disabled', 'disabled');
                 }
+            });
+
+            $("#go").click(function() {
+
+                var val = $("#username").val();
+                $.ajax({
+                    url:  '/helpdesk/token',
+                    data: {user_id: $("#username").val()},
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        alert(data.token)
+                    },
+                    error : function(xhr, textStatus, errorThrown) {
+                        alert(errorThrown)
+                    }
+                });
             });
         });
 
@@ -42,7 +54,7 @@
              <option value="{{ user.id }}">{{ user.name }}</option>
          {% endfor %}
     </select>
-    <input id="go" type="button" value="Go"/>
+    <input id="go" type="button" value="Go" disabled="true"/>
 </div>
 
 <iframe id="content" src="/" class="center frame">

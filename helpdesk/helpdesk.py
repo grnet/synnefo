@@ -27,6 +27,7 @@
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
+import json
 
 from django.views.decorators.csrf import csrf_protect
 from django.template.loader import render_to_string
@@ -43,7 +44,7 @@ def index(request):
         data = render_to_string('helpdesk.html',
                                 {'users': get_users(request)},
                                 context_instance=RequestContext(request))
-        return  HttpResponse(data)
+        return HttpResponse(data)
     else:
         method_not_allowed(request)
 
@@ -65,4 +66,7 @@ def get_users(request):
     return result
 
 def get_tmp_token(request):
-    pass
+    token = dict()
+    token['token'] = "0xtoken"
+
+    return HttpResponse(json.dumps(token))

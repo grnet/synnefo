@@ -3062,9 +3062,16 @@ applet {
     clear: both;
 }
 
-.last-separator {
-    margin-top:-3px;
-    background-color:transparent
+.last .network-separator {
+    background-color: white;
+    height: 10px;
+    margin-left: -50px;
+    margin-top: -5px;
+    width: 20px;
+}
+
+.network-contents:hover .last .network-separator {
+    background-color: #CDE2EC;
 }
 
 .public-networks .empty-network-slot {

@@ -834,8 +834,8 @@ function update_networks_view(servers_data, networks_data){
     }
     
     // tag the last seperator for better styling
-    $("div.network-separator").removeClass('last-separator');
-    $("div.machines-list .network-separator:last").addClass('last-separator');
+    $("#pub .network-machine").removeClass('last');
+    $("#pub .network-machine").last().addClass('last');
 }
 
 // reposition multiple confirmation box on window resize

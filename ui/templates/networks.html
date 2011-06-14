@@ -534,6 +534,7 @@ $("#add-server-add").live('click', function() {
 // toggle component with class firewall-contents
 $("#networks-pane .show-firewall").live('click', function() {
     $(this).parent().next(".firewall-content").slideToggle(600);
+    return false;
 });
 
 //hide firewall content on apply click

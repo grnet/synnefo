@@ -1977,6 +1977,15 @@ div#user a.current_lang {
     background-color: #6c535d;
 }
 
+#networks-pane .public-networks .namecontainer {
+    margin-top: 4px !important;
+}
+
+.network-machine h5 {
+    margin-bottom: 15px;
+    margin-top: 5px;
+}
+
 #desktops.separator {
     background-color: #dea842;
 }
@@ -2393,6 +2402,11 @@ div.network-machine div.machine-actions a.action-details {
     margin-right: 3px;
     text-align: right;
     margin-top: 5px;
+}
+
+.private-networks .state div {
+    margin-top: 10px;
+    margin-bottom: -6px;
 }
 
 div.indicator {

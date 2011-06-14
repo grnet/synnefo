@@ -3074,6 +3074,10 @@ applet {
     width: 20px;
 }
 
+.last .firewall-content {
+    margin-bottom:13px;
+}
+
 #pub:hover .last .network-separator {
     background-color: #CDE2EC;
 }

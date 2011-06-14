@@ -1707,12 +1707,13 @@ input.machine {
     background-color: #71c837;
     display: block;
     background-image: url("./save-green.png");
-    background-position: right center;
+    background-position: right 0;
     background-repeat: no-repeat;
     width: 80px;
     padding: 3px 3px 3px 8px;
     margin-top: -3px;
     font-size: 90% !important;
+    margin-left: -11px;
 }
 
 

@@ -453,10 +453,12 @@ function update_machines_view(data) {
                 // append to terminated
                 machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-off.png');
                 machine.appendTo("#machinesview-icon.standard .terminated");
+                machine.find('.state').removeClass().addClass('state error-state');
             }
             //show spinner if server is still building or rebooting
             if (server.status == 'BUILD' || server.status == 'REBOOT' ) {
                 machine.find('.spinner').show();
+                machine.find('.state').removeClass().addClass('state build-state');
             }
             // find and display flavor parameters
             var flavor_params = get_flavor_params(server.flavorRef);

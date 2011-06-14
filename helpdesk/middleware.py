@@ -41,13 +41,13 @@ class HelpdeskMiddleware(object):
         tmp_token = None
         try:
             tmp_token = request.COOKIES['X-Auth-Tmp-Token']
-        except Exception:
-            pass
+        except KeyError:
+            return
 
         tmp_user = SynnefoUser.objects.get(tmp_auth_token=tmp_token)
 
         if (time.time() -
-            time.mktime(tmp_user.tmp_token_expires.timetuple())) > 0:
+            time.mktime(tmp_user.tmp_auth_token_expires.timetuple())) > 0:
             # The impersonated user's token has expired, re-login
             return HttpResponse("User token expired, request a new token")
 

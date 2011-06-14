@@ -28,7 +28,7 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 import json
-import time
+import time 
 
 from django.views.decorators.csrf import csrf_protect
 from django.template.loader import render_to_string
@@ -78,11 +78,12 @@ def get_tmp_token(request):
     if user is None:
         return HttpResponseBadRequest()
 
-    if time.time() - time.mktime(user.tmp_token_expires.timetuple()) > 0:
+    if  user.tmp_auth_token_expires is None or \
+        time.time() - time.mktime(user.tmp_auth_token_expires.timetuple()) > 0:
         users.create_tmp_token(user)
 
     token = dict()
     token['token'] = user.tmp_auth_token
-    token['expires'] = user.tmp_auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    token['expires'] = int(time.mktime(user.tmp_auth_token_expires.timetuple()))
 
     return HttpResponse(json.dumps(token))

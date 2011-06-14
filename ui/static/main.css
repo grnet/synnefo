@@ -2257,14 +2257,15 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 /* Networks */
 #networks-pane {
     background-color: transparent;
+    color: black;
     margin-left: 1px;
     margin-right: 0;
     padding-left: 35px;
 }
 
 #networkscreate {
+    color: black;
     background-color: #FF7F2A;
-    color: #000000;
     cursor: pointer;
     padding: 7px 24px;
     text-decoration: none;
@@ -2334,24 +2335,19 @@ div.network-placeholder {
     margin-left: 33px;
 }
 
-.network a, .show-machines, span.ip, .show-firewall {
-    color: #3d3d3d;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 9pt;
-}
-
 .network a:hover, .show-machines:hover, span.ip:hover, .show-firewall:hover {
-    color: #000;
     text-decoration: underline;
     cursor: pointer;
 }
 
 #networks-container .name {
-    text-decoration: none !important;
+    font-size: 75%;
     margin-bottom: 25px;
-    color: #000000;
     margin-top: -4px;
+}
+
+h5.network-machines, h5.machine-settings {
+    font-size: 75%;
 }
 
 .state {
@@ -2366,12 +2362,14 @@ div.network-placeholder {
 div.network div.actions {
     float: right;
     width: 100px;
+    font-size: 75%;
     margin:0px -120px 0 0;
     font-weight: normal;
 }
 
 div.network div.actions a {
     color: transparent;
+    text-decoration: none;
     margin: 0 0 0 8px;
     display: block;
 }
@@ -2383,7 +2381,7 @@ div.actions a.enabled:hover{
 }
 
 .network:hover .actions a {
-    color: #3d3d3d;
+    color: black;
     display: block;
 }
 
@@ -2539,8 +2537,10 @@ div.name-div:hover span.rename-network {
 div.network div.machine-actions {
     float: right;
     width: 100px;
+    color: black;
     margin: -5px -100px 0 0;
     font-weight: normal;
+    font-size: 75%;
 }
 
 .discreet {
@@ -2570,9 +2570,6 @@ div.network div.machine-actions {
     margin-bottom: -3px;
     position: absolute;
     width: 473px;
-}
-
-.network-machines {
 }
 
 .network-machine .state {
@@ -2684,12 +2681,15 @@ div.network div.display a:selected {
     font-size: 100%;
 }
 
-.machine-connect {
-    color:black !important;
-    text-decoration: underline !important;
+h5.machine-connect {
+    font-size: 75%;
 }
 
-.machine-connect:hover {
+.machine-connect span {
+    text-decoration: underline;
+}
+
+.machine-connect span:hover {
     cursor: pointer;
 }
 

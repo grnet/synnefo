@@ -121,7 +121,7 @@
                 <span class="name">my desktop1</span>
             </h5>
         </div>
-        <h5>
+        <h5 class="machine-settings">
             <span class="ip">{% trans "IPs" %}</span> |
             <span class="show-firewall">{% trans "Firewall" %}</span>
             (<span class="firewall-off">{% trans "Off" %}</span>)
@@ -227,8 +227,8 @@
                 <span class="name">my desktop1</span>
             </h5>
         </div>
-        <h5>
-            <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
+        <h5 class='machine-connect'>
+            <span>{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
         </h5>
         <div class="network-separator machines"></div>
     </div>
@@ -834,7 +834,7 @@ function update_networks_view(servers_data, networks_data){
     } else {
         $("div.private-networks").fadeOut("slow");
     }
-    
+
     // tag the last seperator for better styling
     $("#pub .network-machine").removeClass('last');
     $("#pub .network-machine").last().addClass('last');

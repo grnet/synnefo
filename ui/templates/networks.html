@@ -63,7 +63,7 @@
         </div>
         <h5 class="network-machines">
             {% trans "Show:" %} <span class="show-machines">{% trans "machines" %}</span>
-            (<span class="machines-count">1</span>)
+            (<span class="machines-count">0</span>)
         </h5>
         <div class="network-contents">
             <div class="network-placeholder">
@@ -183,7 +183,7 @@
         </div>
         <h5 class="network-machines">
             {% trans "Show:" %} <span class="show-machines">{% trans "machines" %}</span>
-            (<span class="machines-count">1</span>)
+            (<span class="machines-count">0</span>)
         </h5>
         <div class="network-contents">
             <div class="network-placeholder">
@@ -322,7 +322,9 @@ $("#add-network-create").live('click', function() {
 
 // toggle component with class network-contents
 $("#networks-pane .show-machines").live('click', function() {
-    $(this).parent().next("#networks-pane .network-contents").slideToggle(600);
+    if ($('#networks-pane .network-contents .network-machine').length > 0) {
+        $(this).parent().next("#networks-pane .network-contents").slideToggle(600);
+    }
     return false;
 });
 

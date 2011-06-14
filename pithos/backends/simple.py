@@ -62,7 +62,7 @@ class SimpleBackend(BaseBackend):
         if basepath and not os.path.exists(basepath):
             os.makedirs(basepath)
         
-        self.con = sqlite3.connect(db)
+        self.con = sqlite3.connect(db, check_same_thread=False)
         sql = '''create table if not exists versions (
                     version_id integer primary key,
                     name text,

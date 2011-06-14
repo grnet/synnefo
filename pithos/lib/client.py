@@ -73,14 +73,18 @@ class Client(object):
         
         return resp.status, headers, data
 
-    def req(self, method, path, body=None, headers=None, format='text', params=None):
-        full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path, format)
+    def req(self, method, path, body=None, headers=None, format='text',
+            params=None):
+        full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path,
+                                            format)
         if params:
             for k,v in params.items():
                 if v:
                     full_path = '%s&%s=%s' %(full_path, k, v)
         conn = HTTPConnection(self.host)
         
+        #encode whitespace
+        full_path = full_path.replace(' ', '%20')
         
         kwargs = {}
         kwargs['headers'] = headers or {}
@@ -108,6 +112,11 @@ class Client(object):
             print data
             print
         
+        if data:
+            assert data[-1] == '\n'
+        #remove trailing enter
+        data = data and data[:-1] or data
+        
         return resp.status, headers, data
 
     def delete(self, path, format='text'):
@@ -117,8 +126,8 @@ class Client(object):
         return self.req('GET', path, headers=headers, format=format,
                         params=params)
 
-    def head(self, path, format='text'):
-        return self.req('HEAD', path, format=format)
+    def head(self, path, format='text', params=None):
+        return self.req('HEAD', path, format=format, params=params)
 
     def post(self, path, body=None, format='text', headers=None):
         return self.req('POST', path, body, headers=headers, format=format)
@@ -136,8 +145,8 @@ class Client(object):
             data = data.strip().split('\n')
         return data
 
-    def _get_metadata(self, path, prefix=None):
-        status, headers, data = self.head(path)
+    def _get_metadata(self, path, prefix=None, params=None):
+        status, headers, data = self.head(path, params=params)
         if status == '404':
             return None
         prefixlen = prefix and len(prefix) or 0
@@ -162,9 +171,10 @@ class Client(object):
     def list_containers(self, detail=False, params=None, headers=None):
         return self._list('', detail, params, headers)
 
-    def account_metadata(self, restricted=False):
+    def account_metadata(self, restricted=False, until=None):
         prefix = restricted and 'x-account-meta-' or None
-        return self._get_metadata('', prefix)
+        params = until and {'until':until} or None
+        return self._get_metadata('', prefix, params=params)
 
     def update_account_metadata(self, **meta):
         self._set_metadata('', 'account', **meta)
@@ -185,9 +195,11 @@ class Client(object):
     def delete_container(self, container):
         self.delete('/' + container)
 
-    def retrieve_container_metadata(self, container, restricted=False):
+    def retrieve_container_metadata(self, container, restricted=False,
+                                    until=None):
         prefix = restricted and 'x-container-meta-' or None
-        return self._get_metadata('/%s' % container, prefix)
+        params = until and {'until':until} or None
+        return self._get_metadata('/%s' % container, prefix, params=params)
 
     def update_container_metadata(self, container, **meta):
         self._set_metadata('/' + container, 'container', **meta)
@@ -202,11 +214,14 @@ class Client(object):
 
     def create_object(self, container, object, f=stdin, chunked=False,
                       blocksize=1024, headers=None):
-        if not f:
-            return
+        """
+        creates an object
+        if f is None then creates a zero length object
+        if f is stdin or chunked is set then performs chunked transfer 
+        """
         path = '/%s/%s' % (container, object)
         if not chunked and f != stdin:
-            data = f.read()
+            data = f and f.read() or None
             self.put(path, data, headers=headers)
         else:
             self._chunked_transfer(path, 'PUT', f, headers=headers,

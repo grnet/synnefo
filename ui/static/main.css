@@ -94,7 +94,6 @@ table {
 
 h5 {
     font-weight: normal;
-    font-size: 9pt;
     margin-bottom:3px;
 }
 
@@ -671,27 +670,29 @@ div.image-container {
 }
 
 div.machine {
-    color: #666;
     min-height: 65px;
     padding-right: 15px;
     padding-top: 2px;
 }
 
 .machine a {
-    color: #3d3d3d;
     font-weight: normal;
     text-decoration: none;
-    font-size: 9pt;
 }
 
 .machine a:hover {
-    color: #000;
-    text-decoration: underline;
+    background-color:#CDE2EC;
+    width: 180px;
 }
 
-.machine .name, .machine .ip {
-    text-decoration: none !important;
+.machine span.name, .machine a.ip {
+    font-size: 75%;
+    color: black;
     margin-top: 6px;
+}
+
+.machine span.name {
+    font-weight: bold;
 }
 
 .oldValue {
@@ -712,6 +713,7 @@ div.machine div.actions {
     width: 70px;
     margin: 0 -80px 0 0;
     font-weight: normal;
+    font-size: 75%;
     height: 68px;
     position: relative;
 }
@@ -742,12 +744,12 @@ div.actions a.enabled:hover{
 }
 
 .machine:hover .actions a {
-    color: #3d3d3d;
+    color: black;
     display: block;
 }
 
 div.machine div.display a{
-    color: #3d3d3d;
+    color: black;
     display: block;
 }
 
@@ -787,8 +789,7 @@ div.running div.machine div.actions a.action-destroy {
 }
 
 div.ip, div.state {
-    font-size: 9pt;
-    color: #3d3d3d;
+    font-size: 75%;
 }
 
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
@@ -820,11 +821,11 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
-    background-color: #447821; 
+    background-color: #447821;
 }
 
 .rebooting-state .indicator1, .rebooting-state .indicator2, .rebooting-state .indicator3, .rebooting-state .indicator4 {
-    background-color: #d4aa00; 
+    background-color: #d4aa00;
 }
 
 .starting-state .indicator1, .starting-state .indicator3 {
@@ -2318,7 +2319,6 @@ div.network a.action-network-destroy {
 
 div.network {
     clear: both;
-    color: #666666;
     min-height: 65px;
     margin: 5px 0 0 -30px;
     padding: 3px 20px 0 4px;

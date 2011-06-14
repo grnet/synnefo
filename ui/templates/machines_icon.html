@@ -34,7 +34,7 @@
             <img class="logo" src="" />
             <div href="#" class="name">
                 <h5 class="namecontainer editable">
-                    {% trans "Name" %}: <span class="name">node.name</span><span class="rename"></span>
+                    <span class="name">node.name</span><span class="rename"></span>
                     <div class="editbuttons" style="display:none">
                         <div class="save"></div>
                         <div class="cancel"></div>
@@ -44,12 +44,7 @@
             <a href="#" class="ip">
                 <h5>{% trans "IP" %}: <span class="public">node.public_ip</span></h5>
             </a>
-            <h5 class="settings">
-                {% trans "Show" %}:
-                <a class="show-disks" href="#">{% trans "disks" %}</a> |
-                <a class="show-networks" href="#">{% trans "networks" %}</a> |
-                <a class="show-info" href="#">{% trans "more info" %}</a>
-            </h5>
+            <a class="show-info" href="#">{% trans "info" %}</a>
             <div class="info-content">
                 <div class="metadata-separator"></div>
                 <div class="metadata-container">

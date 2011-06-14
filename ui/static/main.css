@@ -819,27 +819,31 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     min-height: 50px;
 }
 
-.rebooting .indicator1, .rebooting .indicator2, .rebooting .indicator3, .rebooting .indicator4 {
+.running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
+    background-color: #447821; 
+}
+
+.rebooting-state .indicator1, .rebooting-state .indicator2, .rebooting-state .indicator3, .rebooting-state .indicator4 {
     background-color: #d4aa00; 
 }
 
-.starting .indicator1, .starting .indicator3 {
+.starting-state .indicator1, .starting-state .indicator3 {
     background-color: #666666;
 }
 
-.starting .indicator2, .starting .indicator4 {
+.starting-state .indicator2, .starting-state .indicator4 {
     background-color: #d4aa00;
 }
 
-.shutting .indicator1, .shutting .indicator3 {
+.shutting-state .indicator1, .shutting-state .indicator3 {
     background-color: #447821;
 }
 
-.shutting .indicator2, .shutting .indicator4 {
+.shutting-state .indicator2, .shutting-state .indicator4 {
     background-color: #666666
 }
 
-.destroying .indicator1, .destroying .indicator2, .destroying .indicator3, .destroying .indicator4 {
+.destroying-state .indicator1, .destroying-state .indicator2, .destroying-state .indicator3, .destroying-state .indicator4 {
     background-color: #666666;
 }
 

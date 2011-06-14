@@ -5,10 +5,9 @@ from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
 
 class SynnefoAuthMiddleware(object):
-
-    auth_token = "X-Auth-Token"
-    auth_user  = "X-Auth-User"
-    auth_key   = "X-Auth-Key"
+    auth_token     = "X-Auth-Token"
+    auth_user      = "X-Auth-User"
+    auth_key       = "X-Auth-Key"
 
     def process_request(self, request):
         if request.path.startswith('/api/') :
@@ -26,35 +25,39 @@ class SynnefoAuthMiddleware(object):
             return self._redirect_shib_auth_user(user = u)
 
         token = None
-        #Try to find token in a cookie
+        # Try to find token in a cookie
         try:
             token = request.COOKIES['X-Auth-Token']
         except Exception:
             pass
 
-        #Try to find token in request header
+        # Try to find token in request header
         if not token:
             token = request.META.get('HTTP_X_AUTH_TOKEN', None)
 
         if token:
             user = None
-            #Retrieve user from DB or other caching mechanism
+            # Retrieve user from DB or other caching mechanism
             try:
                 user = SynnefoUser.objects.get(auth_token=token)
-            except SynnefoUser.DoesNotExist:
-                return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
 
-            #Check user's auth token
+            except SynnefoUser.DoesNotExist:
+                return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                            settings.LOGIN_PATH)
+
+            # Check user's auth token
             if (time.time() -
                 time.mktime(user.auth_token_expires.timetuple())) > 0:
-                #The user's token has expired, re-login
-                return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+                # The user's token has expired, re-login
+                return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                            settings.LOGIN_PATH)
 
             request.user = user
             return
 
-        #A user authenticated by Shibboleth, must include a uniq id
-        if Tokens.SIB_EPPN in request.META and Tokens.SIB_SESSION_ID in request.META:
+        # A user authenticated by Shibboleth, must include a uniq id
+        if Tokens.SIB_EPPN in request.META and \
+           Tokens.SIB_SESSION_ID in request.META:
             user = None
             try:
                 user = SynnefoUser.objects.get(
@@ -62,34 +65,37 @@ class SynnefoAuthMiddleware(object):
             except SynnefoUser.DoesNotExist:
                 pass
 
-            #No user with this id could be found in the database
+            # No user with this id could be found in the database
             if user is None:
-                #Attempt to register the incoming user
+                # Attempt to register the incoming user
                 if register_shibboleth_user(request.META):
                     user = SynnefoUser.objects.get(
                         uniq = request.META[Tokens.SIB_EPPN])
                     return self._redirect_shib_auth_user(user)
                 else:
-                    return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+                    return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                                settings.LOGIN_PATH)
 
-            #User and authentication token valid, user allowed to proceed
+            # User and authentication token valid, user allowed to proceed
             return self._redirect_shib_auth_user(user)
 
         if settings.TEST:
             if 'TEST-AAI' in request.META:
-                return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+                return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                            settings.LOGIN_PATH)
         else:
-            #Avoid redirect loops
+            # Avoid redirect loops
             if request.path.endswith(settings.LOGIN_PATH): 
                 return
             else :
-                #No authentication info found in headers, redirect to Shibboleth
-                return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+                # No authentication info found in headers, redirect to Shiboleth
+                return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                            settings.LOGIN_PATH)
 
     def process_response(self, request, response):
-        #Tell proxies and other interested parties that the
-        #request varies based on the auth token, to avoid
-        #caching of results
+        # Tell proxies and other interested parties that the
+        # request varies based on the auth token, to avoid
+        # caching of results
         response['Vary'] = self.auth_token
         return response
 
@@ -98,7 +104,8 @@ class SynnefoAuthMiddleware(object):
 
         response = HttpResponse()
 
-        response.set_cookie('X-Auth-Token', value=user.auth_token, expires = expire_fmt, path='/')
+        response.set_cookie('X-Auth-Token', value=user.auth_token,
+                            expires = expire_fmt, path='/')
         response[self.auth_token] = user.auth_token
         response['Location'] = settings.APP_INSTALL_URL
         response.status_code = 302

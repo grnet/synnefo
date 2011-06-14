@@ -3046,3 +3046,12 @@ applet {
 .css-panes {
     clear: both;
 }
+
+.last-separator {
+    margin-top:-3px;
+    background-color:transparent
+}
+
+.empty-network-slot {
+    display: none;
+}

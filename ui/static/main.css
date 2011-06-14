@@ -288,7 +288,7 @@ div#wrapper {
 
 /* server wizard scrollable root element and network wizard */
 #wizard, #networks-wizard {
-    font-size:9pt;
+    font-size:75%;
     height:405px;
     width:453px;
     overflow:hidden;
@@ -347,7 +347,7 @@ div#wrapper {
 }
 
 #wizard label {
-    font-size:16px;
+    font-size:120%;
     display:block;
     clear: both;
 }
@@ -360,7 +360,7 @@ div#wrapper {
 }
 
 #wizard label em {
-    font-size:9pt;
+    font-size:75%;
     color:#666;
     font-style:normal;
 }
@@ -416,7 +416,7 @@ div#wrapper {
 }
 
 #wizard div.image span.size {
-    font-size: 9pt;
+    font-size: 75%;
     color: #666;
 }
 
@@ -426,7 +426,7 @@ div#wrapper {
 }
 
 #wizard div.image span.image-id, #wizard div.image span.description {
-    font-size: 9pt;
+    font-size: 75%;
     color: #666;
     font-weight: normal;
     display:inline;
@@ -887,7 +887,7 @@ div.machine-tabs {
 span.rename, span.configure {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    font-size: 75%;
     font-weight: normal;
     margin-left: 10px;
     padding-left: 10px;
@@ -904,7 +904,6 @@ div.name:hover span.rename {
     background-image: url(./pencil.png);
     background-position: 0 3px;
 }
-
 
 a.settings:hover span.configure {
     color: #3D3D3D;
@@ -1123,7 +1122,7 @@ div.list label img {
 
 div.list label {
     color: #3D3D3D;
-    font-size: 9pt;
+    font-size: 75%;
 }
 
 div.list .state {
@@ -1218,7 +1217,7 @@ div.list div.actions a {
     clear: left;
     color: #D3D3D3;
     display: block;
-    font-size:9pt;
+    font-size:75%;
     margin-bottom: 2px;
 }
 
@@ -1453,7 +1452,7 @@ input.machine {
 #metadata-wizard .metadata-edit .edit, #metadata-wizard .metadata-edit .remove {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    font-size: 75%;
     float: left;
     width: 16px;
     height: 16px;
@@ -1484,7 +1483,7 @@ input.machine {
     margin-left: 1px;
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    font-size: 75%;
     height: 16px;
     width: 16px;
     float: left;
@@ -1747,8 +1746,6 @@ input.machine {
     margin-left: -11px;
 }
 
-
-
 #error-success .popup-body {
     background-image: url("./popup-bg.png");
     margin-left: -16px;
@@ -1850,7 +1847,7 @@ div.confirm_single, div.confirm_multiple {
     display: none;
     background-color: #CDE2EC;
     color: orange;
-    font-size: 9pt;
+    font-size: 75%;
 }
 
 div.confirm_multiple {
@@ -1867,7 +1864,7 @@ div.action_error {
     margin: -2px -175px 0 0;
     display: none;
     background-color: #DCDCDC;
-    font-size: 9pt;
+    font-size: 75%;
     color: black;
     line-height: 1.5;
 }
@@ -1882,7 +1879,7 @@ div.action_error button.details {
 }
 
 div.confirm_single button, div.confirm_multiple button, div.action_error button{
-    font-size: 9pt;
+    font-size: 75%;
     background-color: transparent;
     border: 1px solid #5CA1C0;
     color: #3D3D3D;
@@ -2112,7 +2109,7 @@ div#user a.current_lang {
 
 /* tables in list view */
 div.list div.dataTables_filter,  div.list div.dataTables_filter input{
-    font-size: 9pt;
+    font-size: 75%;
     display: none;
 }
 
@@ -2123,7 +2120,7 @@ div.list div.dataTables_filter input{
 
 div.list table {
     width: 515px;
-    font-size: 9pt;
+    font-size: 75%;
 }
 
 div.list table tbody td {
@@ -2176,7 +2173,7 @@ ul.dropdown-selector {
     margin-left: 1px;
     display: block;
     top: 255px;
-    font-size:9pt;
+    font-size:75%;
     width:40px;
 }
 
@@ -2469,7 +2466,7 @@ div.indicator {
 span.rename-network, span.configure {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    font-size: 75%;
     font-weight: normal;
     margin-left: 10px;
     padding-left: 10px;

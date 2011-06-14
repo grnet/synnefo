@@ -44,9 +44,10 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
     put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
-    validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
-    copy_or_move_object, get_int_parameter, get_content_length, get_content_range, raw_input_socket,
-    socket_read_iterator, object_data_response, hashmap_hash, api_method)
+    update_manifest_meta, validate_modification_preconditions, validate_matching_preconditions,
+    split_container_object_string, copy_or_move_object, get_int_parameter, get_content_length,
+    get_content_range, raw_input_socket, socket_read_iterator, object_data_response,
+    hashmap_hash, api_method)
 from pithos.backends import backend
 
 
@@ -374,6 +375,8 @@ def object_meta(request, v_account, v_container, v_object):
     except IndexError:
         raise ItemNotFound('Version does not exist')
     
+    update_manifest_meta(request, v_account, meta)
+    
     response = HttpResponse(status=204)
     put_object_meta(response, meta)
     return response
@@ -396,6 +399,8 @@ def object_read(request, v_account, v_container, v_object):
         raise ItemNotFound('Object does not exist')
     except IndexError:
         raise ItemNotFound('Version does not exist')
+    
+    update_manifest_meta(request, v_account, meta)
     
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
@@ -423,15 +428,40 @@ def object_read(request, v_account, v_container, v_object):
         response['Content-Length'] = len(data)
         return response
     
-    try:
-        size, hashmap = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
-    except NameError:
-        raise ItemNotFound('Object does not exist')
-    except IndexError:
-        raise ItemNotFound('Version does not exist')
+    sizes = []
+    hashmaps = []
+    if 'X-Object-Manifest' in meta:
+        try:
+            src_container, src_name = split_container_object_string(meta['X-Object-Manifest'])
+            objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
+        except ValueError:
+            raise BadRequest('Invalid X-Object-Manifest header')
+        except NameError:
+            raise ItemNotFound('Container does not exist')
+        
+        try:
+            for x in objects:
+                s, h = backend.get_object_hashmap(request.user, v_account, src_container, x[0], x[1])
+                sizes.append(s)
+                hashmaps.append(h)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+        except IndexError:
+            raise ItemNotFound('Version does not exist')
+    else:
+        try:
+            s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
+            sizes.append(s)
+            hashmaps.append(h)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+        except IndexError:
+            raise ItemNotFound('Version does not exist')
     
     # Reply with the hashmap.
     if request.serialization != 'text':
+        size = sum(sizes)
+        hashmap = sum(hashmaps, [])
         d = {'block_size': backend.block_size, 'block_hash': backend.hash_algorithm, 'bytes': size, 'hashes': hashmap}
         if request.serialization == 'xml':
             d['object'] = v_object
@@ -444,7 +474,7 @@ def object_read(request, v_account, v_container, v_object):
         response['Content-Length'] = len(data)
         return response
     
-    return object_data_response(request, size, hashmap, meta)
+    return object_data_response(request, sizes, hashmaps, meta)
 
 @api_method('PUT')
 def object_write(request, v_account, v_container, v_object):

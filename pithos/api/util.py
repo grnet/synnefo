@@ -153,6 +153,27 @@ def put_object_meta(response, meta, public=False):
             if k in meta:
                 response[k] = meta[k]
 
+def update_manifest_meta(request, v_account, meta):
+    """Update metadata if the object has an X-Object-Manifest."""
+    
+    if 'X-Object-Manifest' in meta:
+        hash = ''
+        bytes = 0
+        try:
+            src_container, src_name = split_container_object_string(meta['X-Object-Manifest'])
+            objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
+            for x in objects:
+                src_meta = backend.get_object_meta(request.user, v_account, src_container, x[0], x[1])
+                hash += src_meta['hash']
+                bytes += src_meta['bytes']
+        except:
+            # Ignore errors.
+            return
+        meta['bytes'] = bytes
+        md5 = hashlib.md5()
+        md5.update(hash)
+        meta['hash'] = md5.hexdigest().lower()
+
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set."""
     
@@ -188,10 +209,10 @@ def validate_matching_preconditions(request, meta):
             raise NotModified('Resource Etag matches')
 
 def split_container_object_string(s):
-    parts = s.split('/')
-    if len(parts) < 3 or parts[0] != '':
+    pos = s.find('/')
+    if pos == -1:
         raise ValueError
-    return parts[1], '/'.join(parts[2:])
+    return s[:pos], s[(pos + 1):]
 
 def copy_or_move_object(request, v_account, src_container, src_name, dest_container, dest_name, move=False):
     """Copy or move an object."""
@@ -391,13 +412,16 @@ class ObjectWrapper(object):
     Read from the object using the offset and length provided in each entry of the range list.
     """
     
-    def __init__(self, ranges, size, hashmap, boundary):
+    def __init__(self, ranges, sizes, hashmaps, boundary):
         self.ranges = ranges
-        self.size = size
-        self.hashmap = hashmap
+        self.sizes = sizes
+        self.hashmaps = hashmaps
         self.boundary = boundary
+        self.size = sum(self.sizes)
         
-        self.block_index = -1
+        self.file_index = 0
+        self.block_index = 0
+        self.block_hash = -1
         self.block = ''
         
         self.range_index = -1
@@ -408,17 +432,25 @@ class ObjectWrapper(object):
     
     def part_iterator(self):
         if self.length > 0:
-            # Get the block for the current offset.
-            bi = int(self.offset / backend.block_size)
-            if self.block_index != bi:
+            # Get the file for the current offset.
+            file_size = self.sizes[self.file_index]
+            while self.offset >= file_size:
+                self.offset -= file_size
+                self.file_index += 1
+                file_size = self.sizes[self.file_index]
+            
+            # Get the block for the current position.
+            self.block_index = int(self.offset / backend.block_size)
+            if self.block_hash != self.hashmaps[self.file_index][self.block_index]:
+                self.block_hash = self.hashmaps[self.file_index][self.block_index]
                 try:
-                    self.block = backend.get_block(self.hashmap[bi])
+                    self.block = backend.get_block(self.block_hash)
                 except NameError:
                     raise ItemNotFound('Block does not exist')
-                self.block_index = bi
+            
             # Get the data from the block.
             bo = self.offset % backend.block_size
-            bl = min(self.length, backend.block_size - bo)
+            bl = min(self.length, len(self.block) - bo)
             data = self.block[bo:bo + bl]
             self.offset += bl
             self.length -= bl
@@ -441,6 +473,7 @@ class ObjectWrapper(object):
             if self.range_index < len(self.ranges):
                 # Part header.
                 self.offset, self.length = self.ranges[self.range_index]
+                self.file_index = 0
                 if self.range_index > 0:
                     out.append('')
                 out.append('--' + self.boundary)
@@ -456,10 +489,11 @@ class ObjectWrapper(object):
                 out.append('')
                 return '\r\n'.join(out)
 
-def object_data_response(request, size, hashmap, meta, public=False):
+def object_data_response(request, sizes, hashmaps, meta, public=False):
     """Get the HttpResponse object for replying with the object's data."""
     
     # Range handling.
+    size = sum(sizes)
     ranges = get_range(request, size)
     if ranges is None:
         ranges = [(0, size)]
@@ -477,7 +511,7 @@ def object_data_response(request, size, hashmap, meta, public=False):
         boundary = uuid.uuid4().hex
     else:
         boundary = ''
-    wrapper = ObjectWrapper(ranges, size, hashmap, boundary)
+    wrapper = ObjectWrapper(ranges, sizes, hashmaps, boundary)
     response = HttpResponse(wrapper, status=ret)
     put_object_meta(response, meta, public)
     if ret == 206:

@@ -25,7 +25,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.3 (June 10, 2011)        Allow for publicly available objects via ``https://hostname/public``.
+0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
+\                          Allow for publicly available objects via ``https://hostname/public``.
 \                          Support time-variant account/container listings. 
 \                          Add source version when duplicating with PUT/COPY/MOVE.
 \                          Request version in object HEAD/GET requests (list versions with GET).
@@ -689,6 +690,7 @@ List of differences from the OOS API:
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY/MOVE.
 * Publicly accessible objects via ``https://hostname/public``. Control with ``X-Object-Public``.
+* Large object support with ``X-Object-Manifest``.
 
 Clarifications/suggestions:
 
@@ -700,7 +702,7 @@ Clarifications/suggestions:
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
 * In headers, dates are formatted according to RFC 1123. In extended information listings, dates are formatted according to ISO 8601.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
-* While ``X-Object-Manifest`` can be set and unset, large object support is not yet implemented (**TBD**).
+* A ``HEAD`` or ``GET`` for an ``X-Object-Manifest`` object, will include modified ``Content-Length`` and ``ETag`` headers, according to the characteristics of the objects under the specified prefix. The ``Etag`` will be the MD5 hash of the corresponding ETags concatenated. In extended container listings there is no metadata processing.
 
 The Pithos Client
 -----------------

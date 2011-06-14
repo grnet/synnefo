@@ -36,8 +36,9 @@ import logging
 from django.http import HttpResponse
 
 from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
-from pithos.api.util import (put_object_meta, validate_modification_preconditions,
-    validate_matching_preconditions, object_data_response, api_method)
+from pithos.api.util import (put_object_meta, update_manifest_meta,
+    validate_modification_preconditions, validate_matching_preconditions,
+    object_data_response, api_method)
 from pithos.backends import backend
 
 
@@ -69,6 +70,7 @@ def object_meta(request, v_account, v_container, v_object):
     
     if 'X-Object-Public' not in meta:
         raise ItemNotFound('Object does not exist')
+    update_manifest_meta(request, v_account, meta)
     
     response = HttpResponse(status=204)
     put_object_meta(response, meta, True)
@@ -92,6 +94,7 @@ def object_read(request, v_account, v_container, v_object):
     
     if 'X-Object-Public' not in meta:
         raise ItemNotFound('Object does not exist')
+    update_manifest_meta(request, v_account, meta)
     
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
@@ -102,12 +105,33 @@ def object_read(request, v_account, v_container, v_object):
         response['ETag'] = meta['hash']
         return response
     
-    try:
-        size, hashmap = backend.get_object_hashmap(request.user, v_account, v_container, v_object)
-    except NameError:
-        raise ItemNotFound('Object does not exist')
+    sizes = []
+    hashmaps = []
+    if 'X-Object-Manifest' in meta:
+        try:
+            src_container, src_name = split_container_object_string(meta['X-Object-Manifest'])
+            objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
+        except ValueError:
+            raise ItemNotFound('Object does not exist')
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+        
+        try:
+            for x in objects:
+                s, h = backend.get_object_hashmap(request.user, v_account, src_container, x[0], x[1])
+                sizes.append(s)
+                hashmaps.append(h)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+    else:
+        try:
+            s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
+            sizes.append(s)
+            hashmaps.append(h)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
     
-    return object_data_response(request, size, hashmap, meta, True)
+    return object_data_response(request, sizes, hashmaps, meta, True)
 
 @api_method()
 def method_not_allowed(request):

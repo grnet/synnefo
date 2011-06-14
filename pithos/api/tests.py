@@ -155,7 +155,7 @@ class BaseTestCase(TestCase):
     def update_account_meta(self, account, **metadata):
         path = '/v1/%s' % account
         response = self.client.post(path, **metadata)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 202)
         return response
 
@@ -166,7 +166,7 @@ class BaseTestCase(TestCase):
         params.pop('container')
         path = '/v1/%s/%s' %(account, container)
         response = self.client.head(path, params)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 204)
         if response.status_code == 204:
             self.assert_headers(response, 'container', exp_meta)
@@ -190,7 +190,7 @@ class BaseTestCase(TestCase):
     def create_container(self, account, name, **meta):
         path = '/v1/%s/%s' %(account, name)
         response = self.client.put(path, **meta)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, [201, 202])
         return response
 
@@ -200,28 +200,28 @@ class BaseTestCase(TestCase):
                                     data=None,
                                     content_type='text/xml',
                                     follow=False, **meta)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 202)
         return response
 
     def delete_container(self, account, container):
         path = '/v1/%s/%s' %(account, container)
         response = self.client.delete(path)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, [204, 409])
         return response
 
     def get_object_meta(self, account, container, name):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.head(path)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 204)
         return response
 
     def get_object(self, account, container, name, format='', **headers):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.get(path, {'format':format}, **headers)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, [200, 206, 304, 412, 416])
         if response.status_code in [200, 206]:
             self.assert_headers(response, 'object')
@@ -231,7 +231,7 @@ class BaseTestCase(TestCase):
                       **headers):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.put(path, data, content_type, **headers)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, [201, 411, 422])
         if response.status_code == 201:
             self.assertTrue(response['Etag'])
@@ -241,7 +241,7 @@ class BaseTestCase(TestCase):
         path = '/v1/%s/%s/%s' %(account, container, name)
         headers['HTTP_X_COPY_FROM'] = src
         response = self.client.put(path, **headers)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 201)
         return response
 
@@ -249,7 +249,7 @@ class BaseTestCase(TestCase):
         path = '/v1/%s/%s/%s' % (account, container, name)
         headers['HTTP_X_MOVE_FROM'] = src
         response = self.client.put(path, **headers)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 201)
         return response
 
@@ -257,14 +257,14 @@ class BaseTestCase(TestCase):
                       content_type='MULTIPART_CONTENT', **headers):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.post(path, data, content_type, **headers)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, [202, 204, 416])
         return response
 
     def delete_object(self, account, container, name):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.delete(path)
-        response.content = response.content.strip()
+        response.content = response.content
         self.assert_status(response, 204)
         return response
 
@@ -1310,7 +1310,6 @@ class ObjectPut(BaseTestCase):
         data = f.read()
         hash = compute_md5_hash(data)
         meta={'HTTP_ETAG':hash,
-              'HTTP_X_OBJECT_MANIFEST':123,
               'HTTP_X_OBJECT_META_TEST':'test1'
               }
         type, enc = mimetypes.guess_type(fullpath)
@@ -1340,7 +1339,6 @@ class ObjectPut(BaseTestCase):
         f = open(fullpath, 'r')
         data = f.read()
         meta={'HTTP_ETAG':'123',
-              'HTTP_X_OBJECT_MANIFEST':123,
               'HTTP_X_OBJECT_META_TEST':'test1'
               }
         type, enc = mimetypes.guess_type(fullpath)

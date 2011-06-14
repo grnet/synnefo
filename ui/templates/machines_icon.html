@@ -24,10 +24,10 @@
             </div>
             <div class="state">
                 <div class="status">{% trans "Running" %}</div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
+                <div class="indicator1"></div>
+                <div class="indicator2"></div>
+                <div class="indicator3"></div>
+                <div class="indicator4"></div>
                 <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
                 <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
             </div>
@@ -290,15 +290,19 @@ $("#machinesview-icon.standard div.confirm_single .yes").live('click', function(
             // change the status text in cases where no api state exists
             if (action[0] == start) {
                 $(this).parent().parent().find('.status').text(TRANSITIONS['Starting']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state starting');
                 $(this).parent().parent().find('.spinner').show();
             } else if (action[0] == shutdown) {
                 $(this).parent().parent().find('.status').text(TRANSITIONS['Shutting down']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state shutting');
                 $(this).parent().parent().find('.spinner').show();
             } else if (action[0] == reboot) {
                 $(this).parent().parent().find('.status').text(TRANSITIONS['Rebooting']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state rebooting');
                 $(this).parent().parent().find('.spinner').show();
             }  else if (action[0] == destroy) {
                 $(this).parent().parent().find('.status').text(TRANSITIONS['Destroying']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state destroying');
                 $(this).parent().parent().find('.spinner').show();
             }
             action[0]([action[1]]); // execute action

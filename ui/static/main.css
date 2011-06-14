@@ -791,7 +791,7 @@ div.ip, div.state {
     color: #3d3d3d;
 }
 
-div.indicator {
+div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     width:10px;
     height:11px;
     margin: 3px -1px;
@@ -803,12 +803,12 @@ div.indicator {
     color:#5F8DD3;
 }
 
-.running .indicator {
+.running .indicator1, .running .indicator2, .running .indicator3, .running .indicator4 {
     border-top: 2px solid white;
     border-bottom: 2px solid white;
     border-left: 2px solid white;
     border-right: 3px solid white;
-    background-color: #4085A5;
+    background-color: #447821;
 }
 
 .running {
@@ -821,6 +821,31 @@ div.indicator {
     width: 664px;
     min-height: 50px;
 }
+
+.rebooting .indicator1, .rebooting .indicator2, .rebooting .indicator3, .rebooting .indicator4 {
+    background-color: #d4aa00; 
+}
+
+.starting .indicator1, .starting .indicator3 {
+    background-color: #666666;
+}
+
+.starting .indicator2, .starting .indicator4 {
+    background-color: #d4aa00;
+}
+
+.shutting .indicator1, .shutting .indicator3 {
+    background-color: #447821;
+}
+
+.shutting .indicator2, .shutting .indicator4 {
+    background-color: #666666
+}
+
+.destroying .indicator1, .destroying .indicator2, .destroying .indicator3, .destroying .indicator4 {
+    background-color: #666666;
+}
+
 
 .terminated {
     background-color: white;

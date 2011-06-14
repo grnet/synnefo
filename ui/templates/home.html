@@ -197,7 +197,7 @@
                     $('#wizard #start').text('{% trans "Create VM" %}');
                     $("#wizard").hide();
 
-                    $("#error-success h3").text(SUCCESS[status]);
+                    $("#error-success h3 span.header-box").text(SUCCESS[status]);
                     var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_THREE"] + '<br / >'
                         + SUCCESS["CREATE_VM_SUCCESS_FOUR"];
                     $("#error-success div.machine-now-building").html(SUCCESS["CREATE_VM_SUCCESS_ONE"]);
@@ -280,7 +280,9 @@
                 <a id="notification" rel="#error-success" href="#"></a>
 
                 <div class="modal" id="error-success">
-                    <h3 class="popup-header">{% trans "Error!/Success!" %}</h3>
+                    <h3 class="popup-header">
+                        <span class="header-box"></span>
+                    </h3>
                     <div class="popup-body">
                         <div class="popup-body-inner">
                             <div class="machine-now-building"></div>

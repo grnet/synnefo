@@ -1702,13 +1702,19 @@ input.machine {
     width: 482px;
 }
 
-#error-success.success h3.popup-header{
-    background-color: #4085A5;
+
+#error-success.success h3 span.header-box{
+    background-color: #71c837;
     display: block;
-    background-image: url("./save.png");
-    background-position: center center;
+    background-image: url("./save-green.png");
+    background-position: right center;
     background-repeat: no-repeat;
+    width: 80px;
+    padding: 3px 3px 3px 8px;
+    margin-top: -3px;
+    font-size: 90% !important;
 }
+
 
 
 #error-success .popup-body {
@@ -1742,6 +1748,10 @@ input.machine {
     padding-top: 10px;
 }
 
+#error-success.success .machine-now-building {
+    padding-bottom: 14px !important;
+}
+
 #error-success .password-container {
     width: 430px;
     padding: 5px;
@@ -1772,7 +1782,7 @@ input.machine {
 }
 
 #error-success.success .popup-separator {
-    margin-bottom: 10px !important;
+    margin-bottom: 14px !important;
 }
 
 
@@ -1786,6 +1796,7 @@ input.machine {
     color: #447821;
     display: inline;
     font-size: 110%;
+    font-weight: bold;
 }
 
 

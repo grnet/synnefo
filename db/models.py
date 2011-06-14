@@ -21,6 +21,8 @@ class SynnefoUser(models.Model):
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
     auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True, null = True)
     auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True, null = True)
+#    tmp_auth_token = models.CharField('Temporary authentication token', max_length=32, null=True)
+#    tmp_auth_token_expires = models.DateTimeField('Time of temporary auth token expiration', auto_now_add=True, null = True)
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)

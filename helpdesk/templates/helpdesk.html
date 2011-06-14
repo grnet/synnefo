@@ -4,6 +4,7 @@
 <head>
     <title>Σύννεφο -- Εφαρμογή HelpDesk</title>
     <script src="/static/jquery.tools.min.js"></script>
+    <script src="/static/jquery.cookie.js"></script>
     
     <style>
         .center {text-align: center;}
@@ -32,7 +33,9 @@
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
-                        alert(data.token)
+                        $.cookie('X-Auth-Tmp-Token', data.token,
+                                {expires: data.expires, secure: true});
+                        $("#content").attr("src", "/");
                     },
                     error : function(xhr, textStatus, errorThrown) {
                         alert(errorThrown)

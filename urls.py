@@ -15,5 +15,5 @@ urlpatterns = patterns('',
     (r'^', include('synnefo.ui.urls')),
     (r'^admin/', include(admin.site.urls)),
     (r'^invitations/?', include('synnefo.invitations.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
+    (r'^helpdesk/?', include('synnefo.helpdesk.urls')),
 )

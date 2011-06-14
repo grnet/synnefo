@@ -14,6 +14,33 @@
 
     <script type="text/javascript">
 
+        jQuery.fn.countdown = function(options) {
+
+            if(!options) options = '()';
+            if(jQuery(this).length == 0) return false;
+            var obj = this;
+
+            if(options.seconds < 0 || options.seconds == 'undefined') {
+                if(options.callback) eval(options.callback);
+                return null;
+            }
+
+            window.setTimeout(
+                function() {
+                    jQuery(obj).html(String(options.seconds));
+                    --options.seconds;
+                    jQuery(obj).countdown(options);
+                }
+                , 1000
+            );
+
+            return this;
+        }
+
+        jQuery.fn.countdown.stop = function() {
+	        window.clearTimeout(setTimeout("0")-1);
+        }
+
         $(document).ready(function() {
 
             $("#username").change(function() {
@@ -33,8 +60,8 @@
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
-                        $.cookie('X-Auth-Tmp-Token', data.token,
-                                {expires: data.expires, secure: true});
+                        $('#remtime').countdown({seconds: 40,callback: 'alert(foo)'});
+                        $.cookie('X-Auth-Tmp-Token', data.token, {secure: true});
                         $("#content").attr("src", "/");
                     },
                     error : function(xhr, textStatus, errorThrown) {
@@ -58,6 +85,7 @@
          {% endfor %}
     </select>
     <input id="go" type="button" value="Go" disabled="true"/>
+    <span id="remtime"/>
 </div>
 
 <iframe id="content" src="/" class="center frame">

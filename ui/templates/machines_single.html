@@ -117,6 +117,7 @@ function update_machines_view(data){
     $.each(data.servers.values, function(i,server){
 
         existing = $('#machinesview-single.single #' + server.id);
+        existing_link = $('#machinesview-single div.column3 #link-' + server.id);
 
         //hide next button if there is only one vm
         if (data.servers.values.length == 1) {
@@ -137,6 +138,7 @@ function update_machines_view(data){
             //  if the status is deleted, delete it from the DOM
             if (server.status == 'DELETED') {
                 existing.remove();
+                existing_link.remove();
                 try {
                     console.info(existing.find("div.name span.name").text() + ' removed');
                 } catch(err) {}

@@ -2405,8 +2405,12 @@ div.network-machine div.machine-actions a.action-details {
     margin-top: 5px;
 }
 
+.public-networks .state div {
+    margin-top: 4px;
+}
+
 .private-networks .state div {
-    margin-top: 10px;
+    margin-top: 9px;
     margin-bottom: -6px;
 }
 

@@ -3070,11 +3070,11 @@ applet {
     background-color: white;
     height: 10px;
     margin-left: -50px;
-    margin-top: -5px;
+    margin-top: -12px;
     width: 20px;
 }
 
-.network-contents:hover .last .network-separator {
+#pub:hover .last .network-separator {
     background-color: #CDE2EC;
 }
 

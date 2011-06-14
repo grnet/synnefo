@@ -870,10 +870,6 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     filter: alpha(opacity = 80);
 }
 
-.terminated .machine .state .status {
-    color: #666;
-}
-
 .machine:hover div.uptime, .machine:hover a.rename, .machine:hover a.configure {
     color: #3d3d3d;
 }
@@ -2659,9 +2655,9 @@ div.network div.display a:selected {
     color: #3d3d3d !important;
 }
 
-
 .network-machine:hover .machine-actions a {
-    color: #3d3d3d;
+    color: black;
+    text-decoration: none;
     display: block;
 }
 

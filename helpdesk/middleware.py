@@ -27,6 +27,7 @@
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
+
 from synnefo.db.models import SynnefoUser
 from django.conf import settings
 from django.http import HttpResponse
@@ -37,6 +38,17 @@ class HelpdeskMiddleware(object):
     auth_tmp_token = "X-Auth-Tmp-Token"
 
     def process_request(self, request):
+
+        # Check the request's IP address
+        allowed = settings.HELPDESK_ALLOWED_IPS
+        if not check_ip(request.META['REMOTE_ADDR'], allowed):
+            try:
+                proxy_ip = request.META['HTTP_X_FORWARDED_FOR']
+            except Exception:
+                return HttpResponse(status=403, content="IP Address not allowed")
+            if not check_ip(proxy_ip, allowed):
+                return HttpResponse(status=403, content="IP Address not allowed")
+
         # Helpdesk application request, find the temp token
         tmp_token = None
         try:
@@ -49,6 +61,21 @@ class HelpdeskMiddleware(object):
         if (time.time() -
             time.mktime(tmp_user.tmp_auth_token_expires.timetuple())) > 0:
             # The impersonated user's token has expired, re-login
-            return HttpResponse("User token expired, request a new token")
+            return HttpResponse(status=403, content="Temporary token expired")
 
         request.user = tmp_user
+
+def check_ip(ip, allowed):
+    for addr in allowed:
+        # Check exact match
+        if ip == addr:
+            return True;
+        # Check range match
+        if addr.endswith('.0'):
+            iprange = ip[0:ip.rfind(".")]
+            if addr.startswith(iprange):
+                return True
+        else:
+            continue
+
+        return False

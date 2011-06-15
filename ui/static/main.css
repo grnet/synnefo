@@ -856,7 +856,6 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #87AADE;
 }
 
-
 .terminated {
     background-color: white;
     margin-bottom: 17px;
@@ -870,21 +869,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     filter: alpha(opacity = 80);
 }
 
-.machine:hover div.uptime, .machine:hover a.rename, .machine:hover a.configure {
-    color: #3d3d3d;
-}
-
-div.uptime {
-    clear: both;
-    color: transparent;
-    margin-left: 1px;
-}
-
-div.machine-tabs {
-    margin-top: 1em;
-}
-
-span.rename, span.configure {
+span.rename {
     background-repeat: no-repeat;
     color: transparent;
     font-size: 75%;
@@ -892,9 +877,6 @@ span.rename, span.configure {
     margin-left: 10px;
     padding-left: 10px;
     text-align: left;
-}
-
-span.rename {
     cursor: pointer;
 }
 
@@ -905,8 +887,28 @@ div.name:hover span.rename {
     background-position: 0 3px;
 }
 
-a.settings:hover span.configure {
-    color: #3D3D3D;
+.machine div.info {
+    margin-top: 10px;
+}
+
+.machine div.info div.info-header {
+    background-color: #88b4c8;
+    color: white;
+    width: 45px;
+    height: 20px;
+    margin-left: 85px;
+    cursor: pointer;
+}
+
+.machine div.info span.info-label {
+    font-size: 75%;
+    margin-left:6px;
+    margin-bottom: 8px;
+}
+
+.machine div.info span.toggler {
+    margin-top: 8px;
+    position: absolute;
 }
 
 button {
@@ -1980,26 +1982,8 @@ div#user a.current_lang {
     margin: 0 0 0 -36px;
 }
 
-.machine-separator {
-    width: 508px;
-    height: 1px;
-    margin: 15px 0 0 15px;
-    background-color: #DCDCDC;
-}
-
-#mini.separator {
-    width: 535px;
-    height: 5px;
-    margin: 17px 0 17px -36px;
-    display: none;
-}
-
 #disks.separator {
     background-color: #dea842;
-}
-
-#images.separator {
-    background-color: #87a06d;
 }
 
 #networks.separator {
@@ -2015,14 +1999,6 @@ div#user a.current_lang {
     margin-top: 5px;
 }
 
-#desktops.separator {
-    background-color: #dea842;
-}
-
-#apps.separator {
-    background-color: #87a06d;
-}
-
 .machine-container .separator {
     width: 508px;
     height: 1px;
@@ -2032,7 +2008,7 @@ div#user a.current_lang {
 }
 
 .machine h5 {
-    margin: -1px 60px -2px 84px;
+    margin: -1px 60px 4px 84px;
 }
 
 .machine .settings {

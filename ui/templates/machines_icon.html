@@ -44,44 +44,48 @@
             <a href="#" class="ip">
                 <h5>{% trans "IP" %}: <span class="public">node.public_ip</span></h5>
             </a>
-            <a class="show-info" href="#">{% trans "info" %}</a>
-            <div class="info-content">
-                <div class="metadata-separator"></div>
-                <div class="metadata-container">
-                    <div class="vm-details metadata-column">
-                        {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
-                        {% trans "RAM" %}: <span class="ram-data">2048</span> (MB)<br />
-                        {% trans "System Disk" %}: <span class="disk-data">20</span> (GB) <br /><br />
-                        {% trans "Image" %}: <span class="image-data">Debian</span><br />
-                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
-                    </div>
-                    <div class="vm-stats metadata-column">
-                        {% trans "CPU" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
-                        {% trans "RAM" %} <img src="static/ram-bar.png" class="metadata-bar" /><br />
-                        {% trans "S.Disk" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
-                        {% trans "Net" %} <img src="static/net-bar.png" class="metadata-bar" /><br /><br />
-                        {% trans "details" %}
-                    </div>
-                    <div class="vm-metadata metadata-column">
-                        <div class="metadata-left">
-                            {% trans "Metadata" %}: <br />
-                            (<span class="metadata-count">0</span>)
+            <div class="info">
+                <div class="info-header">
+                    <span class="info-label">{% trans "info" %}</span>
+                    <span class="toggler">&#711;</span>
+                </div>
+                <div class="info-content">
+                    <div class="metadata-separator"></div>
+                    <div class="metadata-container">
+                        <div class="vm-details metadata-column">
+                            {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
+                            {% trans "RAM" %}: <span class="ram-data">2048</span> (MB)<br />
+                            {% trans "System Disk" %}: <span class="disk-data">20</span> (GB) <br /><br />
+                            {% trans "Image" %}: <span class="image-data">Debian</span><br />
+                            {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
                         </div>
-                        <div class="metadata-keys-container">
-                            <div class="scrollable vertical">
-                                <div class="items">
-
+                        <div class="vm-stats metadata-column">
+                            {% trans "CPU" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
+                            {% trans "RAM" %} <img src="static/ram-bar.png" class="metadata-bar" /><br />
+                            {% trans "S.Disk" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
+                            {% trans "Net" %} <img src="static/net-bar.png" class="metadata-bar" /><br /><br />
+                            {% trans "details" %}
+                        </div>
+                        <div class="vm-metadata metadata-column">
+                            <div class="metadata-left">
+                                {% trans "Metadata" %}: <br />
+                                (<span class="metadata-count">0</span>)
+                            </div>
+                            <div class="metadata-keys-container">
+                                <div class="scrollable vertical">
+                                    <div class="items">
+                                    </div>
+                                </div>
+                                <div class="metadata-actions">
+                                    <div class="prev"></div>
+                                    <div class="next"></div>
                                 </div>
                             </div>
-                            <div class="metadata-actions">
-                                <div class="prev"></div>
-                                <div class="next"></div>
-                            </div>
+                            <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
                         </div>
-                        <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
                     </div>
+                    <div class="metadata-separator"></div>
                 </div>
-                <div class="metadata-separator"></div>
             </div>
         </div>
         <div class="separator"></div>
@@ -96,8 +100,15 @@ CONFIRMBOX_OFFSET = 200;
 //hide the all of the info contents
 $("#machinesview-icon.standard .info-content").hide();
 //toggle the component with class info-content
-$("a.show-info").live('click', function() {
-    $(this).parent().parent().find(".info-content").slideToggle(600);
+$("div.info").live('click', function() {
+    if ($(this).find('.toggler').hasClass('up')) {
+        $(this).find('.toggler').html("&#711;");
+        $(this).find('.toggler').removeClass('up');
+    } else {
+        $(this).find('.toggler').html("&#710;");
+        $(this).find('.toggler').addClass('up');
+    }
+    $(this).find(".info-content").slideToggle(600);
     return false;
 });
 

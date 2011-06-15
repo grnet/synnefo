@@ -41,7 +41,26 @@
 	        window.clearTimeout(setTimeout("0")-1);
         }
 
+        function setCookie(name, value, expires, path, domain, secure) {
+            var today = new Date();
+            //today.setU
+
+            var expires_date = new Date( today.getTime() + (expires) );
+
+            document.cookie = name + "=" +escape(value) +
+                (( expires ) ? ";expires=" + expires_date.toGMTString() : "") +
+                (( path ) ? ";path=" + path : "") +
+                (( domain ) ? ";domain=" + domain : "") +
+                (( secure ) ? ";secure" : "");
+        }
+
+        function delCookie(name) {
+            document.cookie = name + '=foo; expires=Fri, 27 Jul 2001 02:47:11 UTC; path=/';
+        }
+
         $(document).ready(function() {
+
+            delCookie('X-Auth-Tmp-Token');
 
             $("#username").change(function() {
                 if ($("#username").val() != '') {
@@ -53,21 +72,39 @@
 
             $("#go").click(function() {
 
-                var val = $("#username").val();
+                var val = $('#username').val();
+                if (val == '')
+                    return;
+
                 $.ajax({
                     url:  '/helpdesk/token',
                     data: {user_id: $("#username").val()},
                     type: 'GET',
                     dataType: 'json',
                     success: function(data) {
-                        $('#remtime').countdown({seconds: 40,callback: 'alert(foo)'});
-                        $.cookie('X-Auth-Tmp-Token', data.token, {secure: true});
-                        $("#content").attr("src", "/");
+                        $('#remtime').countdown.stop();
+                        $('#countdown').css('display', 'block');
+
+                        var secs = data.expires - parseInt((new Date()).getTime() / 1000);
+
+                        $('#remtime').countdown({seconds: secs, callback: function(){alert('Το token του χρήστη έληξε')}});
+
+                        setCookie('X-Auth-Tmp-Token', data.token, data.expires, '/', '', false);
+
+                        $('#content').attr('src', '/');
                     },
                     error : function(xhr, textStatus, errorThrown) {
                         alert(errorThrown)
                     }
                 });
+            });
+
+            $("#clear").click(function(){
+                delCookie('X-Auth-Tmp-Token');
+                $($('#username option').get(0)).attr('selected', 'selected')
+                $('#remtime').countdown.stop();
+                $('#countdown').css('display', 'none');
+                $('#go').attr('disabled', 'disabled');
             });
         });
 
@@ -85,7 +122,10 @@
          {% endfor %}
     </select>
     <input id="go" type="button" value="Go" disabled="true"/>
-    <span id="remtime"/>
+    <input id="clear" type="button" value="Clear"/>
+    <div id="countdown" style="display:none">
+        <span id="remtime"> </span><span> δευτερόλεπτα πριν το token λήξει</span>
+    </div>
 </div>
 
 <iframe id="content" src="/" class="center frame">

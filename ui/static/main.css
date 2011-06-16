@@ -780,6 +780,21 @@ div.running div.machine div.actions a.action-destroy {
     background-color:#CDE2EC;
 }
 
+.machine img.connect-arrow {
+    position: absolute;
+    margin-left: -85px!important;
+}
+
+.machine div.connect-border {
+    position: absolute;
+    height:28px;
+    width: 12px;
+    margin-left: -18px;
+    margin-top: 7px;
+    opacity: 0.8;
+    background-color:#4fe0c3;
+}
+
 .standard .machine img {
     float: left;
     margin: 7px 14px 0;

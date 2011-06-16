@@ -143,6 +143,7 @@ def put_object_meta(response, meta, public=False):
     if not public:
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = meta['version_timestamp']
+        response['X-Object-Size'] = meta['bytes']
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
             response[k.encode('utf-8')] = meta[k].encode('utf-8')
         for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Public'):

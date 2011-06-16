@@ -838,7 +838,7 @@ div.running div.machine div.actions a.action-destroy {
 
 .standard .machine img {
     float: left;
-    margin: 7px 14px 0;
+    margin: 4px 14px 0;
 }
 
 .standard .running .machine img {
@@ -2091,8 +2091,8 @@ div#user a.current_lang {
     margin: -1px 60px 4px 84px;
 }
 
-.machine .settings {
-    margin-top: 15px;
+.machine h5.namecontainer {
+    margin-top: 5px;
 }
 
 .editbuttons {
@@ -2142,7 +2142,6 @@ div#user a.current_lang {
 }
 
 .nametextbox {
-    height: 13px;
     font-size: 95%;
 }
 
@@ -2403,11 +2402,6 @@ h5.network-machines, h5.machine-settings {
     float: right;
 }
 
-.state div {
-    text-align: right;
-    margin-right: 3px;
-}
-
 div.network div.actions {
     float: right;
     width: 100px;
@@ -2481,9 +2475,8 @@ div.network-machine div.machine-actions a.action-details {
 }
 
 .state div {
-    margin-right: 3px;
     text-align: right;
-    margin-top: 5px;
+    margin: 5px 3px 4px;
 }
 
 .public-networks .state div {

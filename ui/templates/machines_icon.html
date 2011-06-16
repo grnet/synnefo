@@ -481,8 +481,12 @@ function update_machines_view(data) {
             } else {
                 // append to terminated
                 machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-off.png');
-                machine.appendTo("#machinesview-icon.standard .terminated");
-                machine.find('.state').removeClass().addClass('state error-state');
+                machine.appendTo("#machinesview-icon.standard .terminated");                
+                if (server.status == "STOPPED") { //if server status us stopped is a different case than status unknown/error
+                    machine.find('.state').removeClass().addClass('state terminated-state');
+                } else {
+                       machine.find('.state').removeClass().addClass('state error-state');
+                }
             }
             //show spinner if server is still building or rebooting
             if (server.status == 'BUILD' || server.status == 'REBOOT' ) {

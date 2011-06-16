@@ -872,6 +872,10 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #d4aa00;
 }
 
+.terminated-state .indicator1, .terminated-state .indicator2, .terminated-state .indicator3, .terminated-state .indicator4 {
+    background-color: #666666;
+}
+
 .starting-state .indicator1, .starting-state .indicator3 {
     background-color: #447821;
 }

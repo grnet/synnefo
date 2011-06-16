@@ -806,8 +806,9 @@ div.running div.machine div.actions a.action-destroy {
 }
 
 .machine img.connect-arrow {
-    display: none;
-    margin-left: -7px!important;
+    display: block;
+    margin-left: -7px !important;
+    position: absolute;
 }
 
 .machine div.connect-border {

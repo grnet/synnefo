@@ -2280,7 +2280,7 @@ div.list table thead .vmname {
 .spinner, .wave {
     clear: right;
     float:right !important;
-    margin: 5px 16px 0 15px !important;
+    margin: 1px 16px 0 15px !important;
 }
 
 .hidden {

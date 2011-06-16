@@ -133,7 +133,8 @@ or implied, of GRNET S.A.
 
 <script>
 CONFIRMBOX_OFFSET = 200;
-// actions on mahcine hover
+
+// actions on machine hover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
     // show connect button
     $(this).find("div.connect-arrow").show();
@@ -150,6 +151,17 @@ $("#machinesview-icon.standard .machine").live('mouseout', function() {
     $(this).find(".info-header").removeClass('info-hover');
 });
 
+// open console on machine logo click
+$("#machinesview-icon.standard .running img.logo").live('click', function(){
+    $(this).parent().parent().find("a.action-console").click();
+    return false;
+});
+
+// open console on connect arrow click
+$("#machinesview-icon.standard .running div.connect-arrow").live('click', function(){
+    $(this).parent().parent().find("a.action-console").click();
+    return false;
+});
 
 //hide the all of the info contents
 $("#machinesview-icon.standard .info-content").hide();
@@ -516,7 +528,7 @@ function update_machines_view(data) {
             } else {
                 // append to terminated
                 machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-off.png');
-                machine.appendTo("#machinesview-icon.standard .terminated");                
+                machine.appendTo("#machinesview-icon.standard .terminated");
                 if (server.status == "STOPPED") { //if server status us stopped is a different case than status unknown/error
                     machine.find('.state').removeClass().addClass('state terminated-state');
                 } else {

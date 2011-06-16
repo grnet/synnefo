@@ -809,7 +809,6 @@ div.running div.machine div.actions a.action-destroy {
 
 .machine div.connect-arrow {
     display: none;
-    cursor: pointer;
     margin-left: -7px !important;
     margin-top:7px;
     position: absolute;
@@ -818,7 +817,8 @@ div.running div.machine div.actions a.action-destroy {
     width:14px;
 }
 
-.machine div.connect-arrow:hover {
+.running .machine div.connect-arrow:hover {
+    cursor: pointer;
     background: url(/static/connect-arrow-hover.png) no-repeat;
     height: 28px;
     width:26px;
@@ -839,6 +839,10 @@ div.running div.machine div.actions a.action-destroy {
 .standard .machine img {
     float: left;
     margin: 7px 14px 0;
+}
+
+.standard .running .machine img {
+   cursor: pointer;
 }
 
 .list .machine img {

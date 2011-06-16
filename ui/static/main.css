@@ -953,7 +953,7 @@ div.name:hover span.rename {
 }
 
 .machine div.info {
-    margin-top: 10px;
+    margin-top: 5px;
 }
 
 .machine div.info div.info-header {
@@ -2083,7 +2083,7 @@ div#user a.current_lang {
     width: 508px;
     height: 1px;
     margin-top: 2px;
-    background-color: #DCDCDC;
+    background-color: #84b7d0;
     margin-left: 13px;
 }
 

@@ -707,6 +707,7 @@ div.machine {
     background-color:#CDE2EC;
     width: 180px;
     opacity:0.8;
+    filter: alpha(opacity = 80);
 }
 
 .machine span.name, .machine a.ip {
@@ -818,6 +819,7 @@ div.running div.machine div.actions a.action-destroy {
     margin-left: -18px;
     margin-top: 7px;
     opacity: 0.8;
+    filter: alpha(opacity = 80);
     background-color:#4fe0c3;
 }
 

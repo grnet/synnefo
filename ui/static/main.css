@@ -683,6 +683,7 @@ div.machine {
 .machine a:hover {
     background-color:#CDE2EC;
     width: 180px;
+    opacity:0.8;
 }
 
 .machine span.name, .machine a.ip {

@@ -466,8 +466,21 @@ div#wrapper {
     left: -8px;
 }
 
-#wizard .third {
+#wizard .checked {
+    color: #64a6c4 !important;
+}
+
+#wizard .li-2 {
     margin-top: -1px !important;
+}
+
+#wizard .img-check {
+    margin-bottom: 10px;
+    margin-left: -5px;
+}
+
+#wizard .li-1 .img-check {
+    margin-left: 3px;
 }
 
 #wizard .topruler, #networks-wizard .topruler {
@@ -571,7 +584,7 @@ div#wrapper {
 #status li {
     float: left;
     color: #387693;
-    padding: 0px 32px 0 33px;
+    padding: 0px 0px 0 33px;
     bottom: 0px;
 }
 

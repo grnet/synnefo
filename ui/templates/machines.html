@@ -33,15 +33,17 @@
     <div class="modal" id="wizard">
         <!-- status bar -->
         <ul id="status">
-            <li class="active">
+            <li class="active li-0">
                 <span class="headernumber" class="first">1</span>
                 <div class="headerbody first">{% trans "Image" %}</div>
+                <img src="static/check.png" class="img-check" style="visibility:hidden;" />
             </li>
-            <li>
+            <li class="li-1">
                 <span class="headernumber">2</span>
                 <div class="headerbody">{% trans "Flavor" %}</div>
+                <img src="static/check.png" class="img-check" style="visibility:hidden;" />
             </li>
-            <li class="third">
+            <li class="li-2">
                 <span class="headernumber">3</span>
                 <div class="headerbody">{% trans "Name" %}</div>
             </li>
@@ -49,7 +51,7 @@
         <!-- scrollable items -->
         <div class="items">
             <!-- pages -->
-            <div class="page">
+            <div class="page page1">
                 <h2>{% trans "Select an OS" %}</h2>
                 <hr class="topruler" />
                 <div id="tabscontainer">
@@ -88,7 +90,7 @@
                 <button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
                 <button type="button" class="next right">{% trans "Next" %}<img src="static/next.png" class="img-next" /></button>
             </div>
-            <div class="page">
+            <div class="page page2">
                 <h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
                 <hr class="topruler" />
                 <ul>
@@ -148,7 +150,7 @@
                 <button type="button" class="prev"><img src="static/prev.png" class="img-prev" />{% trans "Back" %}</button>
                 <button type="button" class="next right">{% trans "Next" %}<img src="static/next.png" class="img-next" /></button>
             </div>
-            <div class="page">
+            <div class="page page3">
                 <h2>{% trans "Confirm your settings" %}</h2>
                 <hr class="topruler" />
                 <ul id="page3-container">
@@ -360,8 +362,16 @@ $(function() {
     // rangeinput with default configuration
     // validation logic is done inside the onBeforeSeek callback
     api.onBeforeSeek(function(event, i) {
+        // update status bar
+        $("#status li").removeClass("active").eq(i).addClass("active");
         // we are going 1 step backwards so no need for validation
+        if (api.getIndex() > i) {
+            $("#wizard .li-" + i).removeClass("checked");
+            $("#wizard .li-" + i).find(".img-check").css("visibility","hidden");
+        }
         if (api.getIndex() < i) {
+            $("#wizard .li-" + api.getIndex()).addClass("checked");
+            $("#wizard .li-" + api.getIndex()).find(".img-check").css("visibility","visible");
              // 1. get current page
              var page = root.find(".page").eq(api.getIndex()),
              // 2. .. and all required fields inside the page
@@ -393,10 +403,6 @@ $(function() {
             $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
             $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
         }
-    });
-    api.onSeek(function(event, i) {
-        // update status bar
-        $("#status li").removeClass("active").eq(i).addClass("active");
     });
     // if tab is pressed on the next button seek to next page
     $(root).live('keydown', function (e) {

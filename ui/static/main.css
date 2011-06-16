@@ -943,8 +943,8 @@ div.name:hover span.rename {
     cursor: pointer;
 }
 
-.machine div.info div.info-hover {
-    background-color: #84b7d0 !important;
+.machine div.info div.info-header.info-hover {
+    background-color: #84b7d0;
 }
 
 .machine div.info span.info-label {

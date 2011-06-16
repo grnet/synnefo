@@ -720,12 +720,12 @@ div.machine div.actions {
 
 div.machine div.actions a {
     color: transparent;
-    margin: 0 0 5px 8px;
+    height: 15px;
+    margin: 0 0 2px 8px;
     display: block;
 }
 
 div.machine div.actions a.action-shutdown {
-    margin-bottom: 5px;
     display: block;
 }
 

@@ -2148,7 +2148,7 @@ div#user a.current_lang {
 .large-spinner {
     background: url("./icons/indicators/large/progress.gif");
     margin-left: 298px;
-    margin-top: 30px;
+    margin-top: 20px;
     height: 31px;
     width: 31px;
     position: absolute;

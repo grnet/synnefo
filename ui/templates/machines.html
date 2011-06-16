@@ -86,7 +86,7 @@
                 </div>
                 <hr class="bottomruler" />
                 <button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
-                <button type="button" class="next right">{% trans "Next" %}</button>
+                <button type="button" class="next right">{% trans "Next" %}<img src="static/next.png" class="img-next" /></button>
             </div>
             <div class="page">
                 <h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
@@ -145,8 +145,8 @@
                     </div>
                 </ul>
                 <hr class="bottomruler" />
-                <button type="button" class="prev">{% trans "Back" %}</button>
-                <button type="button" class="next right">{% trans "Next" %}</button>
+                <button type="button" class="prev"><img src="static/prev.png" class="img-prev" />{% trans "Back" %}</button>
+                <button type="button" class="next right">{% trans "Next" %}<img src="static/next.png" class="img-next" /></button>
             </div>
             <div class="page">
                 <h2>{% trans "Confirm your settings" %}</h2>
@@ -178,7 +178,7 @@
                     </li>
                 </ul>
                 <hr class="bottomruler" />
-                <button type="button" class="prev">{% trans "Back" %}</button>
+                <button type="button" class="prev"><img src="static/prev.png" class="img-prev" />{% trans "Back" %}</button>
                 <button type="button" class="next right" id="start">{% trans "Create VM" %}</button>
             </div>
         </div>
@@ -251,6 +251,22 @@
 </div>
 
 <script>
+
+//change hover icon on prev,next buttons
+$("#wizard button.next").hover(function() {
+        $(this).find(".img-next").attr("src","static/next-hover.png");
+    },
+    function() {
+        $(this).find(".img-next").attr("src","static/next.png");
+    }
+);
+$("#wizard button.prev").hover(function() {
+        $(this).find(".img-prev").attr("src","static/prev-hover.png");
+    },
+    function() {
+        $(this).find(".img-prev").attr("src","static/prev.png");
+    }
+);
 
 //add hover to labels
 $('#machines-pane span.typebody').mouseover(function() {

@@ -512,6 +512,16 @@ div#wrapper {
     border-color: #FF6600;
 }
 
+#wizard .img-next {
+    margin-right: -4px;
+    padding-left: 8px;
+}
+
+#wizard .img-prev {
+    margin-left: -4px;
+    padding-right: 8px;
+}
+
 #networks-wizard .create {
     float:right;
     width: 140px;

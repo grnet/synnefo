@@ -49,7 +49,7 @@
             <div class="info">
                 <div class="info-header">
                     <span class="info-label">{% trans "info" %}</span>
-                    <span class="toggler">&#711;</span>
+                    <div class="toggler down"></div>
                 </div>
                 <div class="info-content">
                     <div class="metadata-separator"></div>
@@ -115,10 +115,10 @@ $("#machinesview-icon.standard .info-content").hide();
 //toggle the component with class info-content
 $("#machinesview-icon.standard div.info").live('click', function() {
     if ($(this).find('.toggler').hasClass('up')) {
-        $(this).find('.toggler').html("&#711;");
         $(this).find('.toggler').removeClass('up');
+        $(this).find('.toggler').addClass('down');
     } else {
-        $(this).find('.toggler').html("&#710;");
+        $(this).find('.toggler').removeClass('down');
         $(this).find('.toggler').addClass('up');
     }
     $(this).find(".info-content").slideToggle(600);

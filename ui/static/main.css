@@ -910,7 +910,7 @@ div.name:hover span.rename {
 }
 
 .machine div.info div.info-header {
-    background-color: #88b4c8;
+    background-color: #96bfd2;
     color: white;
     width: 45px;
     height: 20px;
@@ -924,9 +924,20 @@ div.name:hover span.rename {
     margin-bottom: 8px;
 }
 
-.machine div.info span.toggler {
-    margin-top: 8px;
-    position: absolute;
+.machine div.info div.toggler {
+    position: relative;
+    height:4px;
+    width:8px;
+    margin-top: -6px;
+    margin-left: 33px;
+}
+
+.machine div.info div.down {
+    background: url(/static/down-arrow.png) no-repeat;
+}
+
+.machine div.info div.up {
+    background: url(/static/up-arrow.png) no-repeat;
 }
 
 button {

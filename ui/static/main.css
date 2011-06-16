@@ -861,7 +861,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #447821;
     width:10px;
     height:11px;
-    margin: 3px -1px !important;
+    margin: 2px -1px !important;
     clear: none;
     float:right;
 }
@@ -2092,7 +2092,6 @@ div#user a.current_lang {
 }
 
 .machine h5.namecontainer {
-    margin-top: 1px;
 }
 
 .editbuttons {
@@ -2476,7 +2475,7 @@ div.network-machine div.machine-actions a.action-details {
 
 .state div {
     text-align: right;
-    margin: 5px 3px 4px;
+    margin: 3px 3px 4px;
 }
 
 .public-networks .state div {

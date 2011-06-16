@@ -99,16 +99,23 @@
 <script>
 CONFIRMBOX_OFFSET = 200;
 
-// hide or show connect button
+// actions on mahcine hover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
+    // show connect button
     $(this).find("img.connect-arrow").show();
     $(this).find("div.connect-border").show();
+    // change color of info button
+    $(this).find(".info-header").addClass('info-hover');
 });
 
 $("#machinesview-icon.standard .machine").live('mouseout', function() {
+    // hide connect button
     $(this).find("img.connect-arrow").hide();
     $(this).find("div.connect-border").hide();
+    // change color of info button
+    $(this).find(".info-header").removeClass('info-hover');
 });
+
 
 //hide the all of the info contents
 $("#machinesview-icon.standard .info-content").hide();

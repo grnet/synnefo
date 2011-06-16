@@ -854,14 +854,9 @@ div.ip, div.state {
 }
 
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
-    border-top: 2px solid white;
-    border-bottom: 2px solid white;
-    border-left: 2px solid white;
-    border-right: 3px solid white;
     background-color: #447821;
     width:10px;
     height:11px;
-    margin: 2px -1px !important;
     clear: none;
     float:right;
 }
@@ -2475,7 +2470,7 @@ div.network:hover {
 
 .state div {
     text-align: right;
-    margin: 3px 3px 4px;
+    margin: 3px 1px 4px;
 }
 
 .public-networks .state div {

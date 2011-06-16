@@ -134,7 +134,7 @@ or implied, of GRNET S.A.
 <script>
 CONFIRMBOX_OFFSET = 200;
 
-// actions on machine hover
+// actions on machine mouseover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
     // show connect button
     $(this).find("div.connect-arrow").show();
@@ -143,12 +143,23 @@ $("#machinesview-icon.standard .machine").live('mouseover', function() {
     $(this).find(".info-header").addClass('info-hover');
 });
 
+// actions on machine mouseout
 $("#machinesview-icon.standard .machine").live('mouseout', function() {
     // hide connect button
     $(this).find("div.connect-arrow").hide();
     $(this).find("div.connect-border").hide();
     // change color of info button
     $(this).find(".info-header").removeClass('info-hover');
+});
+
+// actions on connect arrow border mouseover
+$("#machinesview-icon.standard .running div.connect-border").live('mouseover', function() {
+    $(this).next().addClass('border-hover');
+});
+
+// actions on connect arrow border mouseout
+$("#machinesview-icon.standard .running div.connect-border").live('mouseout', function() {
+    $(this).next().removeClass('border-hover');
 });
 
 // open console on machine logo click
@@ -159,6 +170,12 @@ $("#machinesview-icon.standard .running img.logo").live('click', function(){
 
 // open console on connect arrow click
 $("#machinesview-icon.standard .running div.connect-arrow").live('click', function(){
+    $(this).parent().parent().find("a.action-console").click();
+    return false;
+});
+
+// open console on connect arrow border click
+$("#machinesview-icon.standard .running div.connect-border").live('click', function(){
     $(this).parent().parent().find("a.action-console").click();
     return false;
 });

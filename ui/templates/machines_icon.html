@@ -32,7 +32,7 @@
                 <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
             </div>
             <div class='connect-border'></div>
-            <img class='connect-arrow' src="/static/connect-arrow.png"/>
+            <div class='connect-arrow'></div>
             <img class="logo" src="" />
             <div href="#" class="name">
                 <h5 class="namecontainer editable">
@@ -101,7 +101,7 @@ CONFIRMBOX_OFFSET = 200;
 // actions on mahcine hover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
     // show connect button
-    $(this).find("img.connect-arrow").show();
+    $(this).find("div.connect-arrow").show();
     $(this).find("div.connect-border").show();
     // change color of info button
     $(this).find(".info-header").addClass('info-hover');
@@ -109,7 +109,7 @@ $("#machinesview-icon.standard .machine").live('mouseover', function() {
 
 $("#machinesview-icon.standard .machine").live('mouseout', function() {
     // hide connect button
-    $(this).find("img.connect-arrow").hide();
+    $(this).find("div.connect-arrow").hide();
     $(this).find("div.connect-border").hide();
     // change color of info button
     $(this).find(".info-header").removeClass('info-hover');

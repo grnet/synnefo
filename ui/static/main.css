@@ -807,10 +807,21 @@ div.running div.machine div.actions a.action-destroy {
     background-color:#A1C8DB;
 }
 
-.machine img.connect-arrow {
-    display: block;
+.machine div.connect-arrow {
+    display: none;
+    cursor: pointer;
     margin-left: -7px !important;
+    margin-top:7px;
     position: absolute;
+    background: url(/static/connect-arrow.png) no-repeat;
+    height: 28px;
+    width:14px;
+}
+
+.machine div.connect-arrow:hover {
+    background: url(/static/connect-arrow-hover.png) no-repeat;
+    height: 28px;
+    width:26px;
 }
 
 .machine div.connect-border {

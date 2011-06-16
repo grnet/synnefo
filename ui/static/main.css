@@ -463,7 +463,7 @@ div#wrapper {
 }
 
 #wizard .first {
-    left: -8px;
+    left: -10px;
 }
 
 #wizard .checked {
@@ -475,12 +475,12 @@ div#wrapper {
 }
 
 #wizard .img-check {
-    margin-bottom: 10px;
-    margin-left: -5px;
+    margin-bottom: 8px;
+    margin-left: -8px;
 }
 
 #wizard .li-1 .img-check {
-    margin-left: 3px;
+    margin-left: 2px;
 }
 
 #wizard .topruler, #networks-wizard .topruler {

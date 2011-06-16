@@ -705,7 +705,7 @@ div.machine {
     text-decoration: none;
 }
 
-.machine a:hover {
+div.machine a:hover {
     background-color:#A1C8DB;
     width: 180px;
     opacity: 0.8;
@@ -771,7 +771,7 @@ div.actions a.enabled:hover{
     display: block;
 }
 
-.machine:hover .actions a {
+div.machine:hover .actions a {
     color: black;
     display: block;
 }
@@ -803,7 +803,7 @@ div.running div.machine div.actions a.action-destroy {
     bottom: 0;
 }
 
-.machine:hover {
+div.machine:hover {
     background-color:#A1C8DB;
 }
 
@@ -1416,7 +1416,7 @@ input.machine {
     width: 350px;
 }
 
-#metadata-wizard .metadata-pair-template:hover {
+#metadata-wizard div.metadata-pair-template:hover {
     background-color: #74AEC9;
 }
 
@@ -1590,7 +1590,7 @@ input.machine {
     background-color: #4287a7;
 }
 
-#metadata-wizard .metadata-edit .edit:hover, #metadata-wizard .metadata-edit .remove:hover, #metadata-wizard .editbuttons .remove:hover, #metadata-wizard .editbuttons .save:hover, #metadata-wizard .addbuttons .cancel:hover, #metadata-wizard .addbuttons .save:hover {
+#metadata-wizard div.metadata-edit div.edit:hover, #metadata-wizard div.metadata-edit div.remove:hover, #metadata-wizard div.editbuttons div.remove:hover, #metadata-wizard div.editbuttons div.save:hover, #metadata-wizard div.addbuttons div.cancel:hover, #metadata-wizard div.addbuttons div.save:hover {
     background-color: #74AEC9;
 }
 
@@ -2104,11 +2104,11 @@ div#user a.current_lang {
     cursor: pointer;
 }
 
-.editbuttons .save:hover, .editbuttons .cancel:hover {
+div.editbuttons div.save:hover, div.editbuttons div.cancel:hover {
     background-color: #CCCCCC;
 }
 
-.editbuttons .cancel:hover {
+div.editbuttons div.cancel:hover {
     background-image: url("./cancel-onhover.png");
 }
 
@@ -2382,7 +2382,7 @@ div.network-placeholder {
     margin-left: 33px;
 }
 
-.network a:hover, .show-machines:hover, span.ip:hover, .show-firewall:hover {
+div.network a:hover, span.show-machines:hover, span.ip:hover, span.show-firewall:hover {
     text-decoration: underline;
     cursor: pointer;
 }
@@ -2422,7 +2422,7 @@ div.actions a.enabled:hover{
     display: block;
 }
 
-.network:hover .actions a {
+div.network:hover .actions a {
     color: black;
     display: block;
 }
@@ -2435,7 +2435,7 @@ div.network-machine div.machine-actions a.action-details {
     margin-top: 10px;
 }
 
-.network:hover {
+div.network:hover {
     background-color: #CDE2EC;
 }
 
@@ -2532,7 +2532,7 @@ div.name-div:hover span.rename-network {
     background-position: 0 3px;
 }
 
-.network:hover a.rename {
+div.network:hover a.rename {
     color: #3d3d3d;
 }
 
@@ -2630,7 +2630,7 @@ div.network div.machine-actions {
     margin-bottom: 20px;
 }
 
-.network-machine:hover {
+div.network-machine:hover {
     background-color: #5CA1C0;
 }
 
@@ -2700,7 +2700,7 @@ div.network div.display a:selected {
     color: #3d3d3d !important;
 }
 
-.network-machine:hover .machine-actions a {
+div.network-machine:hover div.machine-actions a {
     color: black;
     text-decoration: none;
     display: block;
@@ -2730,7 +2730,7 @@ h5.machine-connect {
     text-decoration: underline;
 }
 
-.machine-connect span:hover {
+h5.machine-connect span:hover {
     cursor: pointer;
 }
 
@@ -2932,7 +2932,7 @@ a.manage-metadata {
     cursor: pointer;
 }
 
-.single div.single-action:hover {
+div.single div.single-action:hover {
     color: #000000;
 }
 
@@ -3005,7 +3005,7 @@ a.manage-metadata {
     padding-bottom: 2px;
 }
 
-.single .column3 .server-name:hover {
+div.single div.column3 div.server-name:hover {
     background-color:  #999999;
     color: white;
 }

@@ -536,11 +536,11 @@ function update_machines_view(data) {
                 }
             }
             //show spinner if server is still building or rebooting
-            if (server.status == 'BUILD' {
+            if (server.status == 'BUILD') {
                 machine.find('.spinner').show();
                 machine.find('.state').removeClass().addClass('state build-state');
             }
-            if (server.status == 'REBOOT' {
+            if (server.status == 'REBOOT') {
                 machine.find('.spinner').show();
                 machine.find('.state').removeClass().addClass('state rebooting-state');
             }

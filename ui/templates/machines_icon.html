@@ -486,6 +486,9 @@ function update_machines_view(data) {
                     existing = moved;
                     existing.find(".status").text(STATUSES[server.status]);
                     existing.find('.spinner').hide();
+                    if ($("div.terminated").find("div.machine-container").length > 0) {
+                        $("div.terminated").show();
+                    }
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
@@ -499,6 +502,9 @@ function update_machines_view(data) {
                     existing = moved;
                     existing.find(".status").text(STATUSES[server.status]);
                     existing.find('.spinner').hide();
+                    if ($("div.terminated").find("div.machine-container").length == 0) {
+                        $("div.terminated").hide();
+                    }
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
                     existing.find('.state').removeClass().addClass('state running-state');
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);

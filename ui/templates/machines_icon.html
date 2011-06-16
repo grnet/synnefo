@@ -99,10 +99,21 @@
 <script>
 CONFIRMBOX_OFFSET = 200;
 
+// hide or show connect button
+$("#machinesview-icon.standard .machine").live('mouseover', function() {
+    $(this).find("img.connect-arrow").show();
+    $(this).find("div.connect-border").show();
+});
+
+$("#machinesview-icon.standard .machine").live('mouseout', function() {
+    $(this).find("img.connect-arrow").hide();
+    $(this).find("div.connect-border").hide();
+});
+
 //hide the all of the info contents
 $("#machinesview-icon.standard .info-content").hide();
 //toggle the component with class info-content
-$("div.info").live('click', function() {
+$("#machinesview-icon.standard div.info").live('click', function() {
     if ($(this).find('.toggler').hasClass('up')) {
         $(this).find('.toggler').html("&#711;");
         $(this).find('.toggler').removeClass('up');

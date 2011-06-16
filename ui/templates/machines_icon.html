@@ -136,9 +136,11 @@ CONFIRMBOX_OFFSET = 200;
 
 // actions on machine mouseover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
-    // show connect button
-    $(this).find("div.connect-arrow").show();
-    $(this).find("div.connect-border").show();
+    // show connect button only if the machine is active
+    if ($(this).find('.status').text() == STATUSES['ACTIVE']) {
+        $(this).find("div.connect-arrow").show();
+        $(this).find("div.connect-border").show();
+    }
     // change color of info button
     $(this).find(".info-header").addClass('info-hover');
 });

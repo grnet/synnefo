@@ -57,7 +57,7 @@ class Command(object):
         
         self.parser = parser
         self.args = args
-    
+
     def add_options(self, parser):
         pass
 
@@ -105,7 +105,7 @@ class List(Command):
             self.list_objects(container)
         else:
             self.list_containers()
-    
+
     def list_containers(self):
         params = {'limit':self.limit, 'marker':self.marker}
         headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
@@ -148,6 +148,9 @@ class Meta(Command):
                           default=False, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
+        parser.add_option('--version', action='store', dest='version',
+                          default=None, help='show specific version \
+                                  (applies only for objects)')
 
     def execute(self, path=''):
         container, sep, object = path.partition('/')
@@ -263,7 +266,7 @@ class PutObject(Command):
                           dest='manifest', default=None,
                           help='use for large file support')
         parser.add_option('--touch', action='store_true',
-                          dest='touch', default=True,
+                          dest='touch', default=False,
                           help='create object with zero data')
 
     def execute(self, path, srcpath='-', *args):
@@ -334,11 +337,11 @@ class SetMeta(Command):
 @cli_command('update')
 class UpdateObject(Command):
     syntax = '<container>/<object> path [key=val] [...]'
-    description = 'update object metadata/data'
+    description = 'update object metadata/data (default mode: append)'
     
     def add_options(self, parser):
         parser.add_option('-a', action='store_true', dest='append',
-                          default=None, help='append data')
+                          default=True, help='append data')
         parser.add_option('--start', action='store',
                           dest='start',
                           default=None, help='range of data to be updated')
@@ -356,7 +359,7 @@ class UpdateObject(Command):
                           dest='manifest', default=None,
                           help='use for large file support')
 
-    def execute(self, path, srcpath, *args):
+    def execute(self, path, srcpath='-', *args):
         headers = {}
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
@@ -451,12 +454,13 @@ def main():
     
     try:
         cmd.execute(*cmd.args)
-    except TypeError:
+    except TypeError, e:
+        print e
         cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
         cmd.parser.print_help()
         exit(1)
     except Fault, f:
-        print f.data
+        print f.status, f.data
 
 if __name__ == '__main__':
     main()

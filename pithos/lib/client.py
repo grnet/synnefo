@@ -4,12 +4,26 @@ from sys import stdin
 import json
 import types
 import socket
+import pithos.api.faults
+
+ERROR_CODES = {304:'Not Modified',
+               400:'Bad Request',
+               401:'Unauthorized',
+               404:'Not Found',
+               409:'Conflict',
+               411:'Length Required',
+               412:'Precondition Failed',
+               416:'Range Not Satisfiable',
+               422:'Unprocessable Entity',
+               503:'Service Unavailable'}
 
 class Fault(Exception):
-    def __init__(self, data=''):
+    def __init__(self, data='', status=None):
+        if data == '' and status in ERROR_CODES.keys():
+            data = ERROR_CODES[status]
         Exception.__init__(self, data)
         self.data = data
-
+        self.status = status
 
 class Client(object):
     def __init__(self, host, account, api='v1', verbose=False, debug=False):
@@ -20,7 +34,7 @@ class Client(object):
         self.api = api
         self.verbose = verbose or debug
         self.debug = debug
-    
+
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024):
         http = HTTPConnection(self.host)
@@ -58,6 +72,7 @@ class Client(object):
         
         # get response
         resp = http.getresponse()
+        
         headers = dict(resp.getheaders())
         
         if self.verbose:
@@ -70,6 +85,14 @@ class Client(object):
         if self.debug:
             print data
             print
+        
+        if data:
+            assert data[-1] == '\n'
+        #remove trailing enter
+        data = data and data[:-1] or data
+        
+        if int(resp.status) in ERROR_CODES.keys():
+            raise Fault(data, int(resp.status))
         
         return resp.status, headers, data
 
@@ -96,8 +119,11 @@ class Client(object):
             kwargs['body'] = body
             kwargs['headers']['Content-Type'] = 'application/octet-stream'
         #print '****', method, full_path, kwargs
-        #TODO catch socket.error
-        conn.request(method, full_path, **kwargs)
+        try:
+            conn.request(method, full_path, **kwargs)
+        except socket.error, e:
+            raise Fault(status=503)
+            
         resp = conn.getresponse()
         headers = dict(resp.getheaders())
         
@@ -117,6 +143,10 @@ class Client(object):
         #remove trailing enter
         data = data and data[:-1] or data
         
+        if int(resp.status) in ERROR_CODES.keys():
+            raise Fault(data, int(resp.status))
+        
+        #print '*',  resp.status, headers, data
         return resp.status, headers, data
 
     def delete(self, path, format='text'):
@@ -147,8 +177,6 @@ class Client(object):
 
     def _get_metadata(self, path, prefix=None, params=None):
         status, headers, data = self.head(path, params=params)
-        if status == '404':
-            return None
         prefixlen = prefix and len(prefix) or 0
         meta = {}
         for key, val in headers.items():
@@ -189,7 +217,7 @@ class Client(object):
         if status == 202:
             return False
         elif status != 201:
-            raise Fault(data)
+            raise Fault(data, int(status))
         return True
 
     def delete_container(self, container):
@@ -222,9 +250,9 @@ class Client(object):
         path = '/%s/%s' % (container, object)
         if not chunked and f != stdin:
             data = f and f.read() or None
-            self.put(path, data, headers=headers)
+            return self.put(path, data, headers=headers)
         else:
-            self._chunked_transfer(path, 'PUT', f, headers=headers,
+            return self._chunked_transfer(path, 'PUT', f, headers=headers,
                                    blocksize=1024)
 
     def update_object(self, container, object, f=stdin, chunked=False,

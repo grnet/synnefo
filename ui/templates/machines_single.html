@@ -149,6 +149,7 @@ function update_machines_view(data){
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */
+
     $.each(data.servers.values, function(i,server){
 
         existing = $('#machinesview-single.single #' + server.id);
@@ -164,8 +165,14 @@ function update_machines_view(data){
         while (existing.length > 1){
             existing.remove();
         }
-
-        var server_image = os_icon(server.metadata);
+        // get server OS, if it exists
+        if (!(server.metadata == undefined)) {
+            var server_image = os_icon(server.metadata);
+        } else {
+            var server_image = "unknown"
+        }
+        // get server status message, if it exists
+        var current_message = existing.find(".state-label").text();
 
         // server already exists in DOM
         if (existing.length){
@@ -177,64 +184,53 @@ function update_machines_view(data){
                 try {
                     console.info(existing.find("div.name span.name").text() + ' removed');
                 } catch(err) {}
-            } else if (existing.find(".status").text() != STATUSES[server.status]) {
-                try { // firebug console logging
-                    console.info(existing.find("div.name span.name").text() + ' from '
-                                + existing.find(".status").text() + ' to ' + STATUSES[server.status]);
-                } catch(err) {}
-                // show console action only on active servers, else hide it
-                if (server.status == 'ACTIVE') {
-                    $('#machinesview-single.single div.#' + server.id + ' div.action-console').show();
-                } else {
-                    $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
-                }
-                // show reboot and shutdown actions on active of rebooting servers
-                if (server.status == 'ACTIVE' || server.status == 'REBOOT') {
-                    $('#machinesview-single.single div.#' + server.id + ' div.action-reboot').show();
-                    $('#machinesview-single.single div.#' + server.id + ' div.action-shutdown').show();
-                    $('#machinesview-single.single div.#' + server.id + ' div.action-destroy').show();
-                }
-                if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
-                    [STATUSES['STOPPED'], STATUSES['ERROR'],
-                     TRANSITIONS['Starting']].indexOf(existing.find(".status").text()) >= 0) {
-                    // from stopped, on error or starting to building, active or rebooting
-                    // starting is not an api state, it means the vm is stopped or on error
-                    existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-on.png');
-                    existing.find(".state-label").text(STATUSES[server.status]);
-                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
-                           [STATUSES['ACTIVE'], STATUSES['BUILD'], STATUSES['REBOOT'],
-                            TRANSITIONS['Shutting down'], TRANSITIONS['Starting']].indexOf(existing.find(".status").text()) >= 0) {
-                    // from active, building, rebooting, or shutting down to stopped or on error
-                    // shutting down is not an api state, it means the server is active
+            }
+            // if the status has changed
+            else if ( current_message != STATUSES[server.status]) {
+                /*
+                Here there are 4 possibilities:
+                    1. From an active state to an inactive one
+                    2. From an inactive state to an active one
+                    3. From an active state to a different active one
+                    4. From an inactive state to a different inactive one
+                The last two (3, 4) can be dealt with the same way
+                */
+                if (ACTIVE_STATES.indexOf(current_message) >= 0 &&
+                    INACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
+                    // from an active state to an inactive one
+                    log_server_status_change(existing, server.status);
                     existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-off.png');
                     existing.find(".state-label").text(STATUSES[server.status]);
-                } else if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
-                            [STATUSES['ACTIVE'], STATUSES['BUILD'],
-                             STATUSES['REBOOT']].indexOf(existing.find(".status").text()) >= 0) {
-                    // the server changes status
-                    existing.find(".state-label").text(STATUSES[server.status]);
-                } else if (['STOPPED','ERROR'].indexOf(server.status) >= 0 &&
-                    [STATUSES['STOPPED'],
-                     STATUSES['ERROR']].indexOf(existing.find(".status").text()) >= 0) {
-                    // the server changes status
+                }
+                else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&
+                         ACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
+                    // From an inactive state to an active one
+                    log_server_status_change(existing, server.status);
+                    existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-on.png');
                     existing.find(".state-label").text(STATUSES[server.status]);
                 }
-                existing.find('.spinner').hide();
-                existing.find(' .wave').attr('src','static/wave.gif').show();
-                setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
-                // show spinner while the server is rebooting, starting or shutting down
-                if ([STATUSES['REBOOT'],
-                    TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
-                    existing.find(' .wave').hide();
-                    existing.find('.spinner').show();
+                else {
+                    // handling active to active or inactive to inactive changes
+                    if (TRANSITIONS[current_message] && TRANSITIONS[current_message] != 'Rebooting') {
+                        // don't do anything if it is still in transition
+                    }
+                    else if ((TRANSITIONS[current_message] == 'Rebooting' && server.status == 'ACTIVE') ||
+                             (STATUSES['BUILD'] == current_message && server.status == 'ACTIVE')) {
+                        // if it has been rebooted or just created
+                        log_server_status_change(existing, server.status);
+                        existing.find(".state-label").text(STATUSES[server.status]);
+                    }
+                    else {
+                        // in any other case just change the status and ignore spinners/waves
+                        existing.find(".state-label").text(STATUSES[server.status]);
+                    }
                 }
-            } else if (existing.find(".status").text() == STATUSES['REBOOT'] && server.status == 'REBOOT') {
-                    $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
             }
             // find and display ips
             var ips = get_public_ips(server);
             existing.find(".machine-details div.ipv4").text(ips['ip4']);
             existing.find(".machine-details div.ipv6").text(ips['ip6']);
+
         } else if (server.status != 'DELETED') {
             // If it does not exist and it's not deleted, we should create it
             var serverwidget = $("#servers-widget-template").clone().attr("id", 'link-' + server.id);
@@ -319,6 +315,9 @@ function update_machines_view(data){
                 $('#machinesview-single.single div.#' + server.id + ' div.action-reboot').hide();
                 $('#machinesview-single.single div.#' + server.id + ' div.action-shutdown').hide();
             }
+            //show the first machine and select it in the widget
+            $('.single-container:eq(1)').show();
+            $('.single .column3').find('.server-name:eq(1)').addClass('selected');
         }
     });
 
@@ -336,10 +335,6 @@ function update_machines_view(data){
         $('.confirm_multiple').addClass('fixed');
     else
         $('.confirm_multiple').removeClass('fixed');
-
-    //show the first machine and select it in the widget
-    $('.single-container:eq(1)').show();
-    $('.single .column3').find('.server-name:eq(1)').addClass('selected');
 
     //enable widget links
     $(".server-name").live('click', function() {
@@ -420,6 +415,7 @@ $("#machinesview-single.single .column3 .previous").live('click', function(){
             $(this).hide()
         }
         $("#machinesview-single.single .column3 .next").show()
+        return false;
     }
 });
 
@@ -437,6 +433,7 @@ $("#machinesview-single.single .column3 .next").live('click', function(){
             $(this).hide()
         }
         $("#machinesview-single.single .column3 .previous").show();
+        return false;
     }
 });
 

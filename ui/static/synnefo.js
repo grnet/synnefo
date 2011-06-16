@@ -1261,9 +1261,15 @@ function hideWelcome() {
 function log_server_status_change(server_entry, new_status) {
     // firebug console logging
     try {
-        console.info(server_entry.find("div.name span.name").text() +
-                    ' from ' + server_entry.find(".status").text() +
-                    ' to ' + STATUSES[new_status]);
+        if ($("#machinesview-single").length > 0) {
+            console.info(server_entry.find("div.machine-details div.name").text() +
+                        ' from ' + server_entry.find(".state-label").text() +
+                        ' to ' + STATUSES[new_status]);
+        } else {
+            console.info(server_entry.find("div.name span.name").text() +
+                        ' from ' + server_entry.find(".status").text() +
+                        ' to ' + STATUSES[new_status]);
+        }
     } catch(err) {}
 }
 

@@ -624,7 +624,7 @@ function update_iconview_actions(serverID, server_status) {
         }
     } else {
         // remove .disable from all actions to begin with
-        $('#machinesview-icon.standard #' + serverID + ' div.actions').children().removeClass('disabled');
+        $('#machinesview-icon.standard #' + serverID + ' div.actions').find('a').removeClass('disabled');
         // decide which actions should be disabled
         for (current_action in actions) {
             if (actions[current_action].indexOf(server_status) == -1 ) {

@@ -39,10 +39,48 @@ or implied, of GRNET S.A.
 <div id="machinesview-single" class="single">
     <div class="large-spinner"></div>
     <div class="single-container" id="machine-container-template" style="display:none;" >
-        <div class="column1">
-            <img src="static/icons/machines/large/ubuntu-on.png" class="single-image" />
-            <div class="state">
-                <span class="state-label">{% trans "Running" %}</span>
+        <div class="upper">
+            <div class="column1">
+                <div class='connect-border'></div>
+                <div class='connect-arrow'></div>
+                <img src="static/icons/machines/large/ubuntu-on.png" class="single-image" />
+                <div class="state">
+                    <span class="state-label">{% trans "Running" %}</span>
+                    <div class="indicators">
+                        <div class="indicator1"></div>
+                        <div class="indicator2"></div>
+                        <div class="indicator3"></div>
+                        <div class="indicator4"></div>
+                    </div>
+                    <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+                    <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+                </div>
+            </div>
+            <div class="column2">
+                <div class="machine-labels">
+                    <div class="machine-label name">{% trans "Name" %}:</div>
+                    <div class="machine-label cpus">{% trans "CPUs" %}:</div>
+                    <div class="machine-label ram">{% trans "RAM (MB)" %}:</div>
+                    <div class="machine-label disk">{% trans "System Disk (GB)" %}:</div>
+                    <div class="machine-label image-name">{% trans "Image Name" %}:</div>
+                    <div class="machine-label image-size">{% trans "Image Size (GB)" %}:</div>
+                    <div class="machine-label ipv4">{% trans "Public IPv4" %}:</div>
+                    <div class="machine-label ipv6">{% trans "Public IPv6" %}:</div>
+                    <div class="machine-label groups">{% trans "Groups" %}:</div>
+                </div>
+                <div class="machine-details">
+                    <div class="machine-detail name">My Desktop</div>
+                    <div class="machine-detail cpus">4</div>
+                    <div class="machine-detail ram">2048</div>
+                    <div class="machine-detail disk">100</div>
+                    <div class="machine-detail image-name">windos_XP_blah_blah</div>
+                    <div class="machine-detail image-size">2.3</div>
+                    <div class="machine-detail ipv4">no ipv4</div>
+                    <div class="machine-detail ipv6">2001:db8:1f70::999:de8:7648:6e8</div>
+                    <div class="machine-detail groups">
+                        <div class="machine-detail group">group</div>
+                    </div>
+                </div>
             </div>
             <div class="single-actions">
                 <div class="single-action action-start">{% trans "Start" %}</a></div>
@@ -51,50 +89,27 @@ or implied, of GRNET S.A.
                 <div class="single-action action-shutdown">{% trans "Shutdown" %}</a></div>
                 <div class="single-action action-destroy">{% trans "Destroy" %}</a></div>
             </div>
-        </div>
-        <div class="column2">
-            <div class="machine-labels">
-                <div class="machine-label name">{% trans "Name" %}:</div>
-                <div class="machine-label cpus">{% trans "CPUs" %}:</div>
-                <div class="machine-label ram">{% trans "RAM (MB)" %}:</div>
-                <div class="machine-label disk">{% trans "System Disk (GB)" %}:</div>
-                <div class="machine-label image-name">{% trans "Image Name" %}:</div>
-                <div class="machine-label image-size">{% trans "Image Size (GB)" %}:</div>
-                <div class="machine-label ipv4">{% trans "Public IPv4" %}:</div>
-                <div class="machine-label ipv6">{% trans "Public IPv6" %}:</div>
-                <div class="machine-label groups">{% trans "Groups" %}:</div>
+            <div class="confirm_single">
+                <button class="yes">{% trans "Confirm" %}</button>
+                <button class="no">{% trans "Cancel" %}</button>
             </div>
-            <div class="machine-details">
-                <div class="machine-detail name">My Desktop</div>
-                <div class="machine-detail cpus">4</div>
-                <div class="machine-detail ram">2048</div>
-                <div class="machine-detail disk">100</div>
-                <div class="machine-detail image-name">windos_XP_blah_blah</div>
-                <div class="machine-detail image-size">2.3</div>
-                <div class="machine-detail ipv4">no ipv4</div>
-                <div class="machine-detail ipv6">2001:db8:1f70::999:de8:7648:6e8</div>
-                <div class="machine-detail groups">
-                    <div class="machine-detail group">group</div>
-                </div>
+            <div class="action_error" align="center">
+                {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+                <span class="code"></span>
+                <span class="message"></span>
+                <button class="details">{% trans "Details" %}</button>
             </div>
         </div>
-        <div class="disks">
-            {% trans "disks" %}<span class="toggler">&#710;</span>
-        </div>
-        <div class="disks-content">
+        <div class="lower">
+            <div class="disks">
+                {% trans "CPU Usage" %}<span class="toggler">&#710;</span>
+            </div>
+            <div class="networks">
+                {% trans "Network Usage" %}<span class="toggler">&#710;</span>
+            </div>
+            <div class="networks-content">
 
-        </div>
-        <div class="networks">
-            {% trans "networks" %}<span class="toggler">&#710;</span>
-        </div>
-        <div class="networks-content">
-
-        </div>
-        <div class="stats">
-            {% trans "stats" %}<span class="toggler">&#710;</span>
-        </div>
-        <div class="stats-content">
-
+            </div>
         </div>
     </div>
     <div class="column3">
@@ -121,6 +136,65 @@ $("#machinesview-single.single .disks-content").hide();
 $("#machinesview-single.single .networks-content").hide();
 $("#machinesview-single.single .stats-content").hide();
 
+// indicate that the requested action was not completed
+function display_failure(status, serverID, action, responseText) {
+    $('#machinesview-single.single #'+serverID+ ' .spinner').hide();
+    $('#machinesview-single.single #'+serverID+ ' .action_error .action').text(action);
+    $('#machinesview-single.single #'+serverID+ ' .action_error .code').text(status);
+    $('#machinesview-single.single #'+serverID+ ' .action_error .message').text(responseText);
+    $('#machinesview-single.single #'+serverID+ ' .action_error').show();
+}
+
+// cancel action
+$("#machinesview-single.single div.confirm_single .no").live('click', function(){
+    pending_actions = [];
+    update_confirmations();
+});
+
+//show error
+$("#machinesview-single.single div.action_error .details").live('click', function(){
+    // remove the action from the pending list
+    ajax_error($(this).parent().children('.code').text(), undefined, $(this).parent().children('.action').text(), $(this).parent().children('.message').text());
+    $(this).parent().hide();
+});
+
+//confirm action
+$("#machinesview-single.single div.confirm_single .yes").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    console.info(serverID);
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
+        if (pending_actions[i][1]==serverID){
+            action = pending_actions.splice(i,1)[0]; // extract action
+            // change the status text in cases where no api state exists
+            if (action[0] == start) {
+                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Starting']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state starting-state');
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == shutdown) {
+                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Shutting down']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state shutting-state');
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == reboot) {
+                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Rebooting']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state rebooting-state');
+                $(this).parent().parent().find('.spinner').show();
+            }  else if (action[0] == destroy) {
+                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Destroying']);
+                $(this).parent().parent().find('.state').removeClass().addClass('state destroying-state');
+                $(this).parent().parent().find('.spinner').show();
+            }
+            action[0]([action[1]]); // execute action
+        }
+    }
+    $(this).parent().hide();
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('.state').children('.spinner').show()
+    $(this).parent().parent().children('div.actions').removeClass('display');
+    update_confirmations();
+    return false;
+});
+
+
 // intercept start click
 $("#machinesview-single.single div.action-start").live('click', function(){
     var serverID = $(this).parent().parent().parent().attr("id");
@@ -140,6 +214,106 @@ $("#machinesview-single.single div.action-start").live('click', function(){
     if (!found) // no pending action for this server was found, so let's just add it to the list
         pending_actions.push([start, serverID, serverName])
     update_confirmations()
+    return false;
+});
+
+// intercept shutdown click
+$("#machinesview-single.single div.action-shutdown").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = shutdown;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([shutdown, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// intercept reboot click
+$("#machinesview-single.single div.action-reboot").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var found = false;
+
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display');
+    $(this).parent().parent().find('.action_error').hide();
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = reboot;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([reboot, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// intercept destroy click
+$("#machinesview-single.single div.action-destroy").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var found = false;
+
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = destroy;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([destroy, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// intercept console click
+$("#machinesview-single.single div.action-console").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = open_console;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([open_console, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// open console on connect arrow click
+$("#machinesview-single.single div.connect-arrow").live('click', function(){
+    $(this).parent().parent().find("div.action-console").click();
+    return false;
+});
+
+// open console on connect arrow border click
+$("#machinesview-single.single div.connect-border").live('click', function(){
+    $(this).parent().parent().find("div.action-console").click();
     return false;
 });
 
@@ -179,6 +353,7 @@ function update_machines_view(data){
             $("#machinesview-single.single div.single-container:last-child").find("div.separator").show();
             //  if the status is deleted, delete it from the DOM
             if (server.status == 'DELETED') {
+                existing.next().show();
                 existing.remove();
                 existing_link.remove();
                 try {
@@ -201,6 +376,12 @@ function update_machines_view(data){
                     log_server_status_change(existing, server.status);
                     existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-off.png');
                     existing.find(".state-label").text(STATUSES[server.status]);
+                    existing.find(".connect-border").hide();
+                    existing.find(".connect-arrow").hide();
+                    existing.find(".spinner").hide();
+                    existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                    existing.find(".state").removeClass().addClass("state terminated-state");
+                    setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&
                          ACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
@@ -208,6 +389,12 @@ function update_machines_view(data){
                     log_server_status_change(existing, server.status);
                     existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-on.png');
                     existing.find(".state-label").text(STATUSES[server.status]);
+                    existing.find(".connect-border").show();
+                    existing.find(".connect-arrow").show();
+                    existing.find(".spinner").hide();
+                    existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                    existing.find(".state").removeClass().addClass("state running-state");
+                    setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else {
                     // handling active to active or inactive to inactive changes
@@ -219,6 +406,12 @@ function update_machines_view(data){
                         // if it has been rebooted or just created
                         log_server_status_change(existing, server.status);
                         existing.find(".state-label").text(STATUSES[server.status]);
+                        existing.find(".connect-border").show();
+                        existing.find(".connect-arrow").show();
+                        existing.find(".spinner").hide();
+                        existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                        existing.find(".state").removeClass().addClass("state running-state");
+                        setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                     }
                     else {
                         // in any other case just change the status and ignore spinners/waves
@@ -287,16 +480,21 @@ function update_machines_view(data){
             machine.find(".machine-details div.cpus").text(CPUs);
             machine.find(".machine-details div.ram").text(RAM);
             machine.find(".machine-details div.disk").text(disk);
-            machine.find(".machine-details div.image-name").text(image_name.substring(0,15));
+            machine.find(".machine-details div.image-name").text(image_name.substring(0,35));
             machine.find(".machine-details div.image-size").text(image_size);
             //show off image if server is not active
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) < 0){
                     machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-off.png');
+                    machine.find(".connect-border").hide();
+                    machine.find(".connect-arrow").hide();
+                    machine.find(".state").removeClass().addClass("state terminated-state");
             }
             //show spinner while machine is building
             if (server.status == 'BUILD' ||
                 [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
                 machine.find('.spinner').show();
+                machine.find(".connect-border").hide();
+                machine.find(".connect-arrow").hide();
             }
             machine.appendTo("#machinesview-single.single");
             //disable reboot and shutdown actions while machine is building
@@ -308,6 +506,8 @@ function update_machines_view(data){
             if (server.status == 'ACTIVE') {
                 $('#machinesview-single.single div.#' + server.id + ' div.action-console').show();
                 $('#machinesview-single.single div.#' + server.id + ' div.action-start').hide();
+                machine.find(".connect-border").show();
+                machine.find(".connect-arrow").show();
             } else if (server.status == 'REBOOT'){
                 $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
             } else {
@@ -319,8 +519,8 @@ function update_machines_view(data){
             $('.single-container:eq(1)').show();
             $('.single .column3').find('.server-name:eq(1)').addClass('selected');
         }
+    update_iconview_actions(server.id, server.status);
     });
-
     $("#machinesview-single.single > div.large-spinner").hide();
 
     // show message in case user has no servers!
@@ -349,35 +549,6 @@ function update_machines_view(data){
         } else if ($(this).attr("id") == $(".single .column3 .server-name:last").attr("id")) {
             $(".single .column3 .next").hide();
         }
-    });
-
-    //toggle content
-    $("div.disks").toggle(function() {
-            $(this).find('.toggler').html("&#711;");
-            $(this).next(".disks-content").slideToggle(600);
-            return false;
-        }, function() {
-            $(this).find('.toggler').html('&#710;');
-            $(this).next(".disks-content").slideToggle(600);
-            return false;
-    });
-    $("div.networks").toggle(function() {
-            $(this).find('.toggler').html("&#711;");
-            $(this).next(".networks-content").slideToggle(600);
-            return false;
-        }, function() {
-            $(this).find('.toggler').html('&#710;');
-            $(this).next(".networks-content").slideToggle(600);
-            return false;
-    });
-    $("div.stats").toggle(function() {
-            $(this).find('.toggler').html("&#711;");
-            $(this).next(".stats-content").slideToggle(600);
-            return false;
-        }, function() {
-            $(this).find('.toggler').html('&#710;');
-            $(this).next(".stats-content").slideToggle(600);
-            return false;
     });
 
     if ($.cookie('server')) {

@@ -121,6 +121,11 @@ function update_confirmations() {
             $("#machines-pane div.machine-container#" + pending_actions[i][1] +
             " div.actions div." + action_type + " div.confirm_single").show();
         }
+    } else if ($.cookie("view") == '2') {
+        for (var i=0;i<pending_actions.length;i++){
+            // show single confirms
+            $("#machines-pane div.single-container#"+pending_actions[i][1]+' .confirm_single').show();
+        }
     }
 
     // if more than one pending action show multiple confirm box
@@ -608,12 +613,23 @@ function get_machine(serverID) {
 
 // update the actions in icon view, per server
 function update_iconview_actions(serverID, server_status) {
-    // remove .disable from all actions to begin with
-    $('#machinesview-icon.standard #' + serverID + ' div.actions').children().removeClass('disabled');
-    // decide which actions should be disabled
-    for (current_action in actions) {
-        if (actions[current_action].indexOf(server_status) == -1 ) {
-            $('#machinesview-icon.standard #' + serverID + ' a.action-' + current_action).addClass('disabled');
+    if ($.cookie("view")=='2') {
+        // remove .disable from all actions to begin with
+        $('#machinesview-single.single #' + serverID + ' div.single-actions').children().show();
+        // decide which actions should be disabled
+        for (current_action in actions) {
+            if (actions[current_action].indexOf(server_status) == -1 ) {
+                $('#machinesview-single.single #' + serverID + ' div.action-' + current_action).hide();
+            }
+        }
+    } else {
+        // remove .disable from all actions to begin with
+        $('#machinesview-icon.standard #' + serverID + ' div.actions').children().removeClass('disabled');
+        // decide which actions should be disabled
+        for (current_action in actions) {
+            if (actions[current_action].indexOf(server_status) == -1 ) {
+                $('#machinesview-icon.standard #' + serverID + ' a.action-' + current_action).addClass('disabled');
+            }
         }
     }
 }

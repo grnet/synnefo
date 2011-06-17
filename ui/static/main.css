@@ -811,33 +811,39 @@ div.machine.light-background {
     background-color:#aed2e3;
 }
 
+div.connect-arrow {
+    background: url(/static/connect-arrow.png) no-repeat;
+    height: 28px;
+    width:14px;
+    position: absolute;
+}
+
 .machine div.connect-arrow {
     display: none;
     margin-left: -7px !important;
     margin-top:7px;
-    position: absolute;
-    background: url(/static/connect-arrow.png) no-repeat;
-    height: 28px;
-    width:14px;
 }
 
-.running .machine div.connect-arrow:hover, .running .machine div.connect-arrow.border-hover {
+div.connect-arrow:hover, div.connect-arrow.border-hover {
     cursor: pointer;
     background: url(/static/connect-arrow-hover.png) no-repeat;
     height: 28px;
     width:26px;
 }
 
-.machine div.connect-border {
-    position: absolute;
-    display: none;
-    height:28px;
-    width: 12px;
-    margin-left: -18px;
-    margin-top: 7px;
+div.connect-border {
     opacity: 0.8;
     filter: alpha(opacity = 80);
     background-color:#4fe0c3;
+    height:28px;
+    width: 12px;
+    position: absolute;
+}
+
+.machine div.connect-border {
+    display: none;
+    margin-left: -18px;
+    margin-top: 7px;
 }
 
 .standard .machine img {
@@ -2898,7 +2904,6 @@ a.manage-metadata {
 
 /* single view */
 .single {
-    background-color: white;
     color: #383838;
     margin-left: -35px;
     margin-top: -76px;
@@ -2909,14 +2914,13 @@ a.manage-metadata {
 }
 
 .single .column1 {
-    width: 140px;
-    float:left;
+    float: left;
     margin-bottom: 25px;
+    width: 135px;
 }
 
 .single .column1 .state {
     width: 126px;
-    background-color: #999999;
     float: left;
     padding-bottom: 6px;
     padding-top: 3px;
@@ -2927,40 +2931,71 @@ a.manage-metadata {
     padding-top: 5px;
 }
 
-.single .column1 .single-actions {
-    border: 3px solid #999999;
+.single .column1 .indicators {
+    margin-right: 38px !important;
+}
+
+.single div.connect-arrow {
+    margin-left: -17px;
+}
+
+.single div.connect-border {
+    margin-left: -29px;
+}
+
+.single .single-actions {
     padding-bottom: 4px;
-    padding-left: 4px;
-    width: 119px;
+    padding-left: 8px;
+    width: 69px;
+    float: left;
 }
 
 .single div.single-action {
     font-size: 80%;
-    line-height: 16px;
+    line-height: 18px;
     text-decoration: none;
     cursor: pointer;
 }
 
 div.single div.single-action:hover {
-    color: #000000;
+    background-color:#A1C8DB;
+    width: 180px;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
+}
+
+.single div.confirm_single {
+    margin: -2px 5px 0 0;
+}
+
+.single .spinner, .single .wave {
+    margin: 5px 50px 0 0px !important
+}
+
+.single div.action_error {
+    margin: -2px 5px 0 0 !important;
 }
 
 .single .column2 {
+    background-color: #A1C8DB;
     float: left;
     font-size: 78%;
     line-height: 17px;
-    width: 370px;
     margin-bottom: 20px;
+    padding: 10px;
+    width: 348px;
 }
 
 .single .column2 .machine-labels {
     width: 130px;
     float:left;
+    font-size: 95%;
 }
 
 .single .column2 .machine-details {
-    float:left;
+    float: right;
     text-align: right;
+    font-size: 95%;
 }
 
 .single .column2 .name, .single .column2 .disk, .single .column2 .image-size, .single .column2 .ipv6 {
@@ -2968,12 +3003,12 @@ div.single div.single-action:hover {
 }
 
 .single .column3 {
-    width: 150px;
-    background-color: #CCCCCC;
-    height: 230px;
-    margin-left: 510px;
+    background-color: #A1C8DB;
+    height: 200px;
+    margin-left: 520px;
     position: absolute;
-    top: 195px;
+    top: 325px;
+    width: 150px;
 }
 
 .single .column3 .controls {
@@ -2995,7 +3030,7 @@ div.single div.single-action:hover {
 .single .column3 .separator {
     width: 135px;
     height: 1px;
-    background-color: #999999;
+    background-color: #84B7D0;
     margin: 0 0 0 7px;
     clear: both;
 }
@@ -3015,24 +3050,25 @@ div.single div.single-action:hover {
 }
 
 div.single div.column3 div.server-name:hover {
-    background-color:  #999999;
+    background-color: #84B7D0;
     color: white;
+    padding-right: 40px;
+    width: 135px;
 }
 
 .single .column3 .selected {
-    background-color:  #999999;
+    background-color: #84B7D0;
     color: white;
+    padding-right: 40px;
+    width: 135px;
 }
 
 .single .disks, .single .networks, .single .stats {
-    background-color: #999999;
     clear: both;
     cursor: pointer;
     height: 20px;
-    padding-left: 21px;
     padding-top: 2px;
     margin-bottom: 10px;
-    margin-left: -21px;
     width: 500px;
     font-size: 85%;
 }
@@ -3064,6 +3100,26 @@ div.single div.column3 div.server-name:hover {
 
 .single .column3 .previous , .single .column3 .next {
     cursor: pointer;
+}
+
+.single div.lower {
+    clear:both;
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
+    margin-left: -20px;
+    width: 707px;
+}
+
+.single div.upper {
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
+    clear: both;
+    float: left;
+    height: 330px;
+    margin-bottom: 10px;
+    margin-left: -20px;
+    margin-top: -75px;
+    padding-left: 29px;
+    padding-top: 75px;
+    width: 678px;
 }
 
 /* console css */

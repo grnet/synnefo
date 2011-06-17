@@ -289,6 +289,15 @@ or implied, of GRNET S.A.
 
 <script>
 
+// TODO: This should be populated with more rules for all available states
+var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT'],
+                'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT'],
+                'console':       ['ACTIVE'],
+                'start':         ['UNKOWN', 'STOPPED'],
+                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD']
+               };
+
+
 //change hover icon on prev,next buttons
 $("#wizard button.next").hover(function() {
         $(this).find(".img-next").attr("src","static/next-hover.png");

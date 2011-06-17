@@ -159,7 +159,8 @@ class Meta(Command):
             self.until = int(_time.mktime(t))
         if object:
             meta = self.client.retrieve_object_metadata(container, object,
-                                                        self.restricted)
+                                                        self.restricted,
+                                                        self.version)
         elif container:
             meta = self.client.retrieve_container_metadata(container,
                                                            self.restricted,
@@ -221,6 +222,11 @@ class GetObject(Command):
         parser.add_option('-f', action='store', type='str',
                           dest='file', default=None,
                           help='save output in file')
+        parser.add_option('--version', action='store', type='str',
+                          dest='version', default='list',
+                          help='if \'list\' and in detailed mode get object\'s \
+                               full version list otherwise get the specific \
+                               version')
 
     def execute(self, path):
         headers = {}
@@ -233,18 +239,17 @@ class GetObject(Command):
             headers[a.replace('-', '_').upper()] = getattr(self, a)
         container, sep, object = path.partition('/')
         data = self.client.retrieve_object(container, object, self.detail,
-                                          headers)
-        if self.file:
-            if self.detail:
-                f = self.file and open(self.file, 'w') or stdout
-                data = json.loads(data)
-                print_dict(data, f=f)
+                                          headers, self.version)
+        f = self.file and open(self.file, 'w') or stdout
+        if self.detail:
+            data = json.loads(data)
+            if self.version == 'list':
+                print_versions(data, f=f)
             else:
-                fw = open(self.file, 'w')
-                fw.write(data)
-                fw.close()
+                print_dict(data, f=f)
         else:
-            print data
+            f.write(data)
+        f.close()
 
 @cli_command('put')
 class PutObject(Command):
@@ -441,6 +446,14 @@ def print_list(l, verbose=False, f=stdout):
             f.write('%s\n' % elem)
         else:
             f.write('%s\n' % elem)
+
+def print_versions(data, f=stdout):
+    if 'versions' not in data:
+        f.write('%s\n' %data)
+        return
+    f.write('versions:\n')
+    for id, t in data['versions']:
+        f.write('%s @ %s\n' % (str(id).rjust(30), datetime.fromtimestamp(t)))
 
 def main():
     try:

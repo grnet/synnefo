@@ -234,10 +234,12 @@ class Client(object):
 
     # Storage Object Services
 
-    def retrieve_object(self, container, object, detail=False, headers=None):
+    def retrieve_object(self, container, object, detail=False, headers=None,
+                        version=None):
         path = '/%s/%s' % (container, object)
         format = 'json' if detail else 'text'
-        status, headers, data = self.get(path, format, headers)
+        params = version and {'version':version} or None 
+        status, headers, data = self.get(path, format, headers, params)
         return data
 
     def create_object(self, container, object, f=stdin, chunked=False,
@@ -291,10 +293,12 @@ class Client(object):
     def delete_object(self, container, object):
         self.delete('/%s/%s' % (container, object))
 
-    def retrieve_object_metadata(self, container, object, restricted=False):
+    def retrieve_object_metadata(self, container, object, restricted=False,
+                                 version=None):
         path = '/%s/%s' % (container, object)
         prefix = restricted and 'x-object-meta-' or None
-        return self._get_metadata(path, prefix)
+        params = version and {'version':version} or None
+        return self._get_metadata(path, prefix, params=params)
 
     def update_object_metadata(self, container, object, **meta):
         path = '/%s/%s' % (container, object)

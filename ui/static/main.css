@@ -804,7 +804,11 @@ div.running div.machine div.actions a.action-destroy {
 }
 
 div.machine:hover {
-    background-color:#A1C8DB;
+    background-color:#A1C8DB!important;
+}
+
+div.machine.light-background {
+    background-color:#aed2e3;
 }
 
 .machine div.connect-arrow {
@@ -957,21 +961,24 @@ div.name:hover span.rename {
 }
 
 .machine div.info div.info-header {
-    background-color: #CDE2EC;
+    background-color: #A1C8DB;
     color: white;
-    width: 45px;
-    height: 20px;
+    height: 14px;
+    width: 43px;
     margin-left: 85px;
     cursor: pointer;
 }
 
-.machine div.info div.info-header.info-hover {
+div.machine:hover div.info-header {
     background-color: #84b7d0;
+}
+
+div.machine span.info-label.darker {
+    background-color: #5CA1C0;
 }
 
 .machine div.info span.info-label {
     font-size: 75%;
-    margin-left:6px;
     margin-bottom: 8px;
 }
 
@@ -980,7 +987,7 @@ div.name:hover span.rename {
     height:4px;
     width:8px;
     margin-top: -6px;
-    margin-left: 33px;
+    margin-left: 29px;
 }
 
 .machine div.info div.down {
@@ -2083,7 +2090,7 @@ div#user a.current_lang {
     width: 508px;
     height: 1px;
     margin-top: 2px;
-    background-color: #84b7d0;
+    background-color: #5CA1C0;
     margin-left: 13px;
 }
 
@@ -2774,26 +2781,20 @@ h5.machine-connect span:hover {
 
 .info-content {
     height: 95px;
-    width: 540px;
+    width: 512px;
     margin-top: 10px;
-}
-
-.metadata-separator {
-    background-color: #808080;
-    height: 3px;
-    margin: 0 0 0 14px;
-    width: 492px;
 }
 
 .metadata-container {
     line-height: 12px;
-    margin-left: 14px;
+    margin-left: 2px;
     margin-top: 2px;
     height: 85px;
+    background-color: #84b7d0;
 }
 
 .metadata-column {
-    border-right: 1px solid #CECECE;
+    border-right: 1px solid #5CA1C0;
     color: black;
     float: left;
     font-size: 60%;
@@ -2810,6 +2811,7 @@ h5.machine-connect span:hover {
 
 .vm-details {
     width: 169px;
+    margin-left:17px;
 }
 
 .vm-metadata {

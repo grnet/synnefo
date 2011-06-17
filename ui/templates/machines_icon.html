@@ -490,6 +490,7 @@ function update_machines_view(data) {
                         $("div.terminated").show();
                     }
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                    existing.find('.state').removeClass().addClass('state terminated-state');
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&

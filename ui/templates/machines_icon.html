@@ -309,7 +309,7 @@ $("#machinesview-icon.standard div.actions a.action-reboot").live('click', funct
     if (!found)
         pending_actions.push([reboot, serverID, serverName])
     // pass the proper action to update confirmation boxes
-    update_confirmations('reboot');
+    update_confirmations();
     return false;
 });
 
@@ -334,7 +334,7 @@ $("#machinesview-icon.standard div.actions a.action-shutdown").live('click', fun
     // no pending action for this server was found, so let's just add it to the list
     if (!found)
         pending_actions.push([shutdown, serverID, serverName])
-    update_confirmations('shutdown');
+    update_confirmations();
     return false;
 });
 
@@ -359,7 +359,7 @@ $("#machinesview-icon.standard div.actions a.action-start").live('click', functi
     // no pending action for this server was found, so let's just add it to the list
     if (!found)
         pending_actions.push([start, serverID, serverName])
-    update_confirmations('start');
+    update_confirmations();
     return false;
 });
 
@@ -384,7 +384,7 @@ $("#machinesview-icon.standard div.actions a.action-console").live('click', func
     // no pending action for this server was found, so let's just add it to the list
     if (!found)
         pending_actions.push([open_console, serverID, serverName])
-    update_confirmations('console');
+    update_confirmations();
     return false;
 });
 
@@ -410,11 +410,11 @@ $("#machinesview-icon.standard div.actions a.action-destroy").live('click', func
     // no pending action for this server was found, so let's just add it to the list
     if (!found)
         pending_actions.push([destroy, serverID, serverName])
-    update_confirmations('destroy');
+    update_confirmations();
     return false;
 });
 
-$("#machinesview-icon.standard div.confirm_single .yes").live('click', function(){
+$("#machinesview-icon.standard div.confirm_single button.yes").live('click', function(){
     var serverID = $(this).closest("div.machine-container").attr("id");
     // if there is a pending action for this server execute it
     for (i=0; i<pending_actions.length; i++) {
@@ -449,7 +449,7 @@ $("#machinesview-icon.standard div.confirm_single .yes").live('click', function(
     return false;
 });
 
-$("#machinesview-icon.standard div.confirm_single .no").live('click', function(){
+$("#machinesview-icon.standard div.confirm_single button.no").live('click', function(){
     // remove the action from the pending list
     var serverID = $(this).closest("div.machine-container").attr("id");
 

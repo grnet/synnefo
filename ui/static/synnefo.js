@@ -98,17 +98,28 @@ if (!Array.prototype.indexOf) {
   };
 }
 
-function update_confirmations(action_type){
+function update_confirmations() {
     // hide all confirm boxes to begin with
     $('#machines-pane div.confirm_single').hide();
     $('#machines-pane div.confirm_multiple').hide();
+    var action_type = [];
     // standard view only
     if ($.cookie("view") == '0') {
         for (var i=0;i<pending_actions.length;i++){
             // show single confirms
+            if (pending_actions[i][0] == reboot) {
+                action_type = 'reboot';
+            } else if (pending_actions[i][0] == shutdown) {
+                action_type = 'shutdown';
+            } else if (pending_actions[i][0] == start) {
+                action_type = 'start';
+            } else if (pending_actions[i][0] == console) {
+                action_type = 'console';
+            } else {
+                action_type = 'destroy';
+            }
             $("#machines-pane div.machine-container#" + pending_actions[i][1] +
-              " div." + action_type +
-              " .confirm_single").show();
+            " div.actions div." + action_type + " div.confirm_single").show();
         }
     }
 

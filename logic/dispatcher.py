@@ -28,6 +28,7 @@ import logging.config
 import time
 import socket
 from daemon import pidfile, daemon
+import lockfile.pidlockfile
 
 from synnefo.logic import dispatcher_callbacks
 
@@ -46,7 +47,6 @@ class Dispatcher:
 
         self.debug = debug
         self._init()
-
 
     def wait(self):
         while True:
@@ -220,13 +220,15 @@ def main():
 
     # Create pidfile
     pidf = pidfile.TimeoutPIDLockFile("/Volumes/Files/Developer/grnet/synnefo/dispatcher.pid", 10)
+    pidf.acquire()
+    pidf.__enter__()
 
     # Become a daemon
     daemon_context = daemon.DaemonContext(
-            pidfile=pidf,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-            umask=022)
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        umask=022)
+
     daemon_context.open()
     logger.info("Became a daemon")
 
@@ -238,13 +240,10 @@ def main():
         newpid = os.fork()
 
         if newpid == 0:
-            signal(SIGINT, _exit_handler)
+            signal(SIGINT,  _exit_handler)
             signal(SIGTERM, _exit_handler)
             child(sys.argv[1:])
-            try:
-                sys.exit(0)
-            except Exception:
-                print "foo"
+            sys.exit(1)
         else:
             pids = (os.getpid(), newpid)
             logger.debug("%d, forked child: %d" % pids)
@@ -262,6 +261,8 @@ def main():
         except Exception:
             pass
 
+    pidf.release()
+    pidf.__exit__()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

@@ -393,6 +393,8 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     version = get_int_parameter(request, 'version')
+    if not version:
+        version = request.GET.get('version')
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
     except NameError:

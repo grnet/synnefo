@@ -353,7 +353,7 @@ class SimpleBackend(BaseBackend):
         return int(row[0]), int(row[1]), int(tstamp)
     
     def _get_version(self, path, version=None):
-        if version is None:            
+        if version in [None, 'list']:
             sql = '''select version_id, strftime('%s', tstamp), size, hide from versions where name = ?
                         order by version_id desc limit 1'''
             c = self.con.execute(sql, (path,))

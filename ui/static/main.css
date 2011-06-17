@@ -857,6 +857,9 @@ div.ip, div.state {
     font-size: 75%;
 }
 
+div.indicators {
+    margin-right: 2px !important;
+}
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #447821;
     width:10px;

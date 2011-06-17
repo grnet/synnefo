@@ -1981,20 +1981,32 @@ div.confirm_multiple {
 
 div.confirm_multiple p {
     float: left;
+    color: #FF7F2A;
     margin: 7px 0 0 200px;
 }
 
 div.confirm_multiple button {
     float: right;
+    background-color: transparent;
+    border: 1px solid #5CA1C0;
     margin: 4px 5px 0 0;
 }
 
+div.confirm_multiple button.yes {
+    border-color: #FF7F2A;
+    padding: 0 12px;
+}
+
 div.confirm_multiple button.yes:hover {
-    background-color: #FF9955;
+    background-color: #FF7F2A;
 }
 
 div.confirm_multiple button.no {
-    margin-right: 15px;
+    padding: 0px 16px;
+}
+
+div.confirm_multiple button.no:hover {
+    background-color: #5CA1C0;
 }
 
 div.action_error {

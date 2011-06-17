@@ -40,15 +40,41 @@ or implied, of GRNET S.A.
     <div class="machine-container" id="machine-container-template" style="display:none">
         <div class="machine" id="machine-template">
             <div class="actions">
-                <a href="#" class="action-start">{% trans "Start" %}</a>
-                <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
-                <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
-                <a href="#" class="action-console">{% trans "Console" %}</a>
-                <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
-            </div>
-            <div class="confirm_single">
-                <button class="yes">{% trans "Confirm" %}</button>
-                <button class="no">{% trans "Cancel" %}</button>
+                <div class="action-container start">
+                    <a href="#" class="action-start">{% trans "Start" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container reboot">
+                    <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container shutdown">
+                    <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container console">
+                    <a href="#" class="action-console">{% trans "Console" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container destroy">
+                    <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
             </div>
             <div class="action_error" align="center">
                 {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
@@ -262,113 +288,129 @@ $("#machinesview-icon.standard .editbuttons .cancel").live('click', function() {
 });
 
 // intercept reboot click
-$("#machinesview-icon.standard div.actions a.action-reboot").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+$("#machinesview-icon.standard div.actions a.action-reboot").live('click', function() {
+    // get server id and server name from DOM
+    var serverID = $(this).closest("div.machine-container").attr("id");
+    var serverName = $(this).closest("div.machine").find("div.name span.name").text();
     var found = false;
-
-    $(this).parent().children('a').removeClass('selected');
+    // show/hide proper menus
+    $(this).parent().parent().find('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display');
-    $(this).parent().parent().find('.action_error').hide();
-    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
-        if (pending_actions[i][1]==serverID){
+    $(this).parent().parent().addClass('display');
+    $(this).closest("div.machine").find('.action_error').hide();
+    // if there is already a pending action for this server replace it
+    for (i=0; i<pending_actions.length; i++) {
+        if (pending_actions[i][1]==serverID) {
             pending_actions[i][0] = reboot;
             found = true
         }
     }
-    if (!found) // no pending action for this server was found, so let's just add it to the list
+    // no pending action for this server was found, so let's just add it to the list
+    if (!found)
         pending_actions.push([reboot, serverID, serverName])
-    update_confirmations();
+    // pass the proper action to update confirmation boxes
+    update_confirmations('reboot');
     return false;
 });
 
 // intercept shutdown click
-$("#machinesview-icon.standard div.actions a.action-shutdown").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+$("#machinesview-icon.standard div.actions a.action-shutdown").live('click', function() {
+    // get server id and server name from DOM
+    var serverID = $(this).closest("div.machine-container").attr("id");
+    var serverName = $(this).closest("div.machine").find("div.name span.name").text();
     var found = false;
-    $(this).parent().children('a').removeClass('selected');
+    // show/hide proper menus
+    $(this).parent().parent().find('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
-    $(this).parent().parent().find('.action_error').hide();
-
-    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
-        if (pending_actions[i][1]==serverID){
+    $(this).parent().parent().addClass('display');
+    $(this).closest("div.machine").find('.action_error').hide();
+    // if there is already a pending action for this server replace it
+    for (i=0; i<pending_actions.length; i++) {
+        if (pending_actions[i][1]==serverID) {
             pending_actions[i][0] = shutdown;
             found = true
         }
     }
-    if (!found) // no pending action for this server was found, so let's just add it to the list
+    // no pending action for this server was found, so let's just add it to the list
+    if (!found)
         pending_actions.push([shutdown, serverID, serverName])
-    update_confirmations();
+    update_confirmations('shutdown');
     return false;
 });
 
 // intercept start click
-$("#machinesview-icon.standard div.actions a.action-start").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+$("#machinesview-icon.standard div.actions a.action-start").live('click', function() {
+    // get server id and server name from DOM
+    var serverID = $(this).closest("div.machine-container").attr("id");
+    var serverName = $(this).closest("div.machine").find("div.name span.name").text();
     var found = false;
-    $(this).parent().children('a').removeClass('selected');
+    // show/hide proper menus
+    $(this).parent().parent().find('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
-    $(this).parent().parent().find('.action_error').hide();
-
-    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
-        if (pending_actions[i][1]==serverID){
+    $(this).parent().parent().addClass('display');
+    $(this).closest("div.machine").find('.action_error').hide();
+    // if there is already a pending action for this server replace it
+    for (i=0; i<pending_actions.length; i++) {
+        if (pending_actions[i][1]==serverID) {
             pending_actions[i][0] = start;
             found = true
         }
     }
-    if (!found) // no pending action for this server was found, so let's just add it to the list
+    // no pending action for this server was found, so let's just add it to the list
+    if (!found)
         pending_actions.push([start, serverID, serverName])
-    update_confirmations();
+    update_confirmations('start');
     return false;
 });
 
 // intercept console click
-$("#machinesview-icon.standard div.actions a.action-console").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+$("#machinesview-icon.standard div.actions a.action-console").live('click', function() {
+    // get server id and server name from DOM
+    var serverID = $(this).closest("div.machine-container").attr("id");
+    var serverName = $(this).closest("div.machine").find("div.name span.name").text();
     var found = false;
-    $(this).parent().children('a').removeClass('selected');
+    // show/hide proper menus
+    $(this).parent().parent().find('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
-    $(this).parent().parent().find('.action_error').hide();
-
-    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
-        if (pending_actions[i][1]==serverID){
+    $(this).parent().parent().addClass('display');
+    $(this).closest("div.machine").find('.action_error').hide();
+    // if there is already a pending action for this server replace it
+    for (i=0; i<pending_actions.length; i++) {
+        if (pending_actions[i][1]==serverID) {
             pending_actions[i][0] = open_console;
             found = true
         }
     }
-    if (!found) // no pending action for this server was found, so let's just add it to the list
+    // no pending action for this server was found, so let's just add it to the list
+    if (!found)
         pending_actions.push([open_console, serverID, serverName])
-    update_confirmations();
+    update_confirmations('console');
     return false;
 });
 
 
 // intercept destroy click
-$("#machinesview-icon.standard div.actions a.action-destroy").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+$("#machinesview-icon.standard div.actions a.action-destroy").live('click', function() {
+    // get server id and server name from DOM
+    var serverID = $(this).closest("div.machine-container").attr("id");
+    var serverName = $(this).closest("div.machine").find("div.name span.name").text();
     var found = false;
-    $(this).parent().children('a').removeClass('selected');
+    // show/hide proper menus
+    $(this).parent().parent().find('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
-    $(this).parent().parent().find('.action_error').hide();
-
-    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
-        if (pending_actions[i][1]==serverID){
+    $(this).parent().parent().addClass('display');
+    $(this).closest("div.machine").find('.action_error').hide();
+    // if there is already a pending action for this server replace it
+    for (i=0; i<pending_actions.length; i++) {
+        if (pending_actions[i][1]==serverID) {
             pending_actions[i][0] = destroy;
             found = true
         }
     }
-    if (!found) // no pending action for this server was found, so let's just add it to the list
+    // no pending action for this server was found, so let's just add it to the list
+    if (!found)
         pending_actions.push([destroy, serverID, serverName])
-    update_confirmations();
+    update_confirmations('destroy');
     return false;
 });
 
@@ -408,12 +450,12 @@ $("#machinesview-icon.standard div.confirm_single .yes").live('click', function(
 
 $("#machinesview-icon.standard div.confirm_single .no").live('click', function(){
     // remove the action from the pending list
-    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverID = $(this).closest("div.machine-container").attr("id");
 
-    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
-    $(this).parent().parent().children('div.actions').removeClass('display');
-    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server remove it
-        if (pending_actions[i][1]==serverID){
+    $(this).closest('div.action-container').children('a').removeClass('selected');
+    $(this).closest('div.actions').removeClass('display');
+    for (i=0; i<pending_actions.length; i++) { // if there is a pending action for this server remove it
+        if (pending_actions[i][1]==serverID) {
             pending_actions.splice(i,1);
         }
     }

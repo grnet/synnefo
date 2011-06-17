@@ -174,16 +174,16 @@ def parse_arguments(args):
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
-    parser.add_option("-l", "--log", dest="log_file",
-                      default=settings.DISPATCHER_LOG_FILE, metavar="FILE",
-                      help="Write log to FILE instead of %s" %
-                           settings.DISPATCHER_LOG_FILE)
     parser.add_option("-c", "--cleanup-queues", action="store_true",
                       default=False, dest="cleanup_queues",
                       help="Remove all declared queues (DANGEROUS!)")
     parser.add_option("-w", "--workers", default=2, dest="workers",
                       help="Number of workers to spawn", type="int")
-    
+    parser.add_option("-p", '--pid-file', dest="pid_file",
+                      default=os.path.join(os.getcwd(), "dispatcher.pid"),
+                      help="Save PID to file (default:%s)" %
+                           os.path.join(os.getcwd(), "dispatcher.pid"))
+
     return parser.parse_args(args)
 
 
@@ -245,11 +245,6 @@ def main():
         debug_mode()
         return
 
-    # Create pidfile
-    pidf = pidfile.TimeoutPIDLockFile("/Volumes/Files/Developer/grnet/synnefo/dispatcher.pid", 10)
-    pidf.acquire()
-    pidf.__enter__()
-
     # Become a daemon
     daemon_context = daemon.DaemonContext(
         stdout=sys.stdout,
@@ -257,6 +252,11 @@ def main():
         umask=022)
 
     daemon_context.open()
+
+    # Create pidfile
+    pidf = pidfile.TimeoutPIDLockFile(opts.pid_file, 10)
+    pidf.acquire()
+
     logger.info("Became a daemon")
 
     # Fork workers
@@ -282,14 +282,14 @@ def main():
     signal(SIGTERM, _parent_handler)
 
     # Wait for all children processes to die, one by one
-    for pid in children:
-        try:
-            os.waitpid(pid, 0)
-        except Exception:
-            pass
-
-    pidf.release()
-    pidf.__exit__()
+    try :
+        for pid in children:
+            try:
+                os.waitpid(pid, 0)
+            except Exception:
+                pass
+    finally:
+        pidf.release()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

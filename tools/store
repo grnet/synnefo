@@ -126,7 +126,6 @@ class List(Command):
                    'IF_UNMODIFIED_SINCE':self.if_unmodified_since}
         container, sep, object = container.partition('/')
         if object:
-            print '%s/%s is an object' %(container, object)
             return
         
         if self.until:
@@ -224,9 +223,11 @@ class GetObject(Command):
                           help='save output in file')
         parser.add_option('--version', action='store', type='str',
                           dest='version', default=None,
-                          help='if \'list\' and in detailed mode get object\'s \
-                               full version list otherwise get the specific \
+                          help='get the specific \
                                version')
+        parser.add_option('--versionlist', action='store_true',
+                          dest='versionlist', default=False,
+                          help='get the full object version list')
 
     def execute(self, path):
         headers = {}
@@ -238,12 +239,15 @@ class GetObject(Command):
         for a in attrs:
             headers[a.replace('-', '_').upper()] = getattr(self, a)
         container, sep, object = path.partition('/')
+        if self.versionlist:
+            self.version = 'list'
+            self.detail = True
         data = self.client.retrieve_object(container, object, self.detail,
                                           headers, self.version)
         f = self.file and open(self.file, 'w') or stdout
         if self.detail:
             data = json.loads(data)
-            if self.version == 'list':
+            if self.versionlist:
                 print_versions(data, f=f)
             else:
                 print_dict(data, f=f)
@@ -417,8 +421,13 @@ class MoveObject(Command):
         if not sep:
             dst_container = src_container
             dst_object = dst
+        
+        version = getattr(self, 'version')
+        if version:
+            headers = {}
+            headers['SOURCE_VERSION'] = version 
         self.client.move_object(src_container, src_object, dst_container,
-                                dst_object)
+                                dst_object, headers)
 
 def print_usage():
     cmd = Command([])

@@ -265,7 +265,7 @@ SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
 #
 # WARNING, ACHTUNG, README, etc: DO NOT ENABLE THIS ON DEPLOYED VERSIONS!
 #
-BYPASS_AUTHENTICATION = False
+BYPASS_AUTHENTICATION = True
 
 #
 # Network Configuration
@@ -294,3 +294,4 @@ IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
                "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
                "suse"]
 
+UPDATE_INTERVAL = 5000

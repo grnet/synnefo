@@ -172,7 +172,14 @@ or implied, of GRNET S.A.
                 $("#error-success .popup-details").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p>{% trans "Action" %}: " + action + "</p><p>{% trans "Code" %}: " + errors[0].code + "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + details + "</div></p>");
             } else if (ERRORS[status] != undefined) {
                 if (serverID == undefined){
-                    $("#error-success p").text(ERRORS[status]);
+                    //eg no_images, no_flavors cases
+                    $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
+                    $("#error-success .popup-header").addClass("popup-header-error");
+                    $("#error-success").addClass("popup-border-error");
+                    $("#error-success .password-container").hide();
+                    $("#error-success .popup-details").addClass("popup-details-error");
+                    $("#error-success .popup-separator").addClass("popup-separator-error");
+                    $("#error-success .popup-details").html("<p>"+ ERRORS[status] +"</p></div></p>");
                 } else {
                     $("#error-success p").html("<b>" + serverName + "</b>" + ": " + ERRORS[status]);
                 }

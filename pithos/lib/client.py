@@ -270,9 +270,10 @@ class Client(object):
                                    blocksize=1024)
 
     def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False):
+                             dst_object, remove=False, headers=None):
         path = '/%s/%s' % (dst_container, dst_object)
-        headers = {}
+        if not headers:
+            headers = {}
         if remove:
             headers['X-Move-From'] = '/%s/%s' % (src_container, src_object)
         else:
@@ -281,14 +282,14 @@ class Client(object):
         self.put(path, headers=headers)
 
     def copy_object(self, src_container, src_object, dst_container,
-                             dst_object):
+                             dst_object, headers=None):
         self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object)
+                                   dst_container, dst_object, headers)
 
     def move_object(self, src_container, src_object, dst_container,
-                             dst_object):
+                             dst_object, headers=None):
         self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, True)
+                                   dst_container, dst_object, True, headers)
 
     def delete_object(self, container, object):
         self.delete('/%s/%s' % (container, object))

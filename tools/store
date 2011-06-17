@@ -223,7 +223,7 @@ class GetObject(Command):
                           dest='file', default=None,
                           help='save output in file')
         parser.add_option('--version', action='store', type='str',
-                          dest='version', default='list',
+                          dest='version', default=None,
                           help='if \'list\' and in detailed mode get object\'s \
                                full version list otherwise get the specific \
                                version')
@@ -306,12 +306,21 @@ class CopyObject(Command):
     syntax = '<src container>/<src object> [<dst container>/]<dst object>'
     description = 'copies an object to a different location'
     
+    def add_options(self, parser):
+        parser.add_option('--version', action='store',
+                          dest='version', default=False,
+                          help='copy specific version')
+
     def execute(self, src, dst):
         src_container, sep, src_object = src.partition('/')
         dst_container, sep, dst_object = dst.partition('/')
         if not sep:
             dst_container = src_container
             dst_object = dst
+        version = getattr(self, 'version')
+        if version:
+            headers = {}
+            headers['SOURCE_VERSION'] = version 
         self.client.copy_object(src_container, src_object, dst_container,
                                 dst_object)
 
@@ -397,6 +406,11 @@ class MoveObject(Command):
     syntax = '<src container>/<src object> [<dst container>/]<dst object>'
     description = 'moves an object to a different location'
     
+    def add_options(self, parser):
+        parser.add_option('--version', action='store',
+                          dest='version', default=False,
+                          help='move specific version')
+
     def execute(self, src, dst):
         src_container, sep, src_object = src.partition('/')
         dst_container, sep, dst_object = dst.partition('/')

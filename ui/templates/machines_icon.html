@@ -590,7 +590,6 @@ function update_machines_view(data) {
         if (!(server.metadata == undefined)) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
-        machine.find("img.connect-arrow").hide();
     });
     /*
     Do some standard stuff, repeated each time
@@ -613,10 +612,11 @@ function update_machines_view(data) {
         hideWelcome();
     }
     // set confirm box position
-    if (window.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon.standard').height())
+    if (window.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon.standard').height()) {
         $('.confirm_multiple').addClass('fixed');
-    else
+    } else {
         $('.confirm_multiple').removeClass('fixed');
+    }
 }
 
 // reposition multiple confirmation box on window resize

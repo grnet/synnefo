@@ -1915,7 +1915,6 @@ input.machine {
     font-weight: bold;
 }
 
-
 #error-success .write-password-details {
     font-size: 75%;
 }
@@ -1924,15 +1923,14 @@ input.machine {
     display: block;
 }
 
-.popup-details a:link,  .popup-details a:visited{
+.popup-details a:link, .popup-details a:visited{
     color: black;
 }
 
 /* Confirmation boxes */
 div.confirm_single, div.confirm_multiple {
     display: none;
-    background-color: #CDE2EC;
-    color: orange;
+    color: #FF7F2A;
     font-size: 75%;
 }
 
@@ -1965,9 +1963,8 @@ div.action_error button.details {
 }
 
 div.confirm_single button, div.confirm_multiple button, div.action_error button{
-    font-size: 75%;
-    background-color: transparent;
-    border: 1px solid #5CA1C0;
+    font-size: 100%;
+    border: 1px solid;
     color: #3D3D3D;
     cursor: pointer;
     padding: 0px;
@@ -1976,38 +1973,41 @@ div.confirm_single button, div.confirm_multiple button, div.action_error button{
 
 div.confirm_single button, .action_error button {
     width: 80px !important;
+    border-color: #FF7F2A;
 }
 
 div.confirm_single button.yes, div.confirm_multiple button.yes {
-    border-color: orange;
     padding: 0 12px;
 }
 
 div.confirm_single button.yes:hover, div.confirm_multiple button.yes:hover {
-    background-color: orange;
+    background-color: #FF9955;
 }
 
 div.confirm_single button.no, div.confirm_multiple button.no {
     padding: 0px 16px;
 }
 
-div.confirm_single button.no:hover, div.confirm_multiple button.no:hover, div.action_error button.details:hover {
+div.confirm_single button.no:hover {
+    color: white;
+}
+
+div.confirm_multiple button.no:hover, div.action_error button.details:hover {
     background-color: #5CA1C0;
 }
 
 div.confirm_single{
     float: right;
-    width: 90px;
-    height: 66px;
     margin: -2px -175px 0 0;
 }
 
 div.confirm_single button.yes {
-    margin: 5px 0 0 5px;
+    background-color:#FF7F2A;
 }
 
 div.confirm_single button.no {
-    margin: 16px 0 0 5px;
+    background-color: #FF9955;
+    border-color: #FF9955;
 }
 
 div.action_error {
@@ -2293,6 +2293,14 @@ div.list table thead .vmname {
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
     display:block !important;
     color: orange !important;
+}
+
+div.machine div.actions a.selected, div.machine div.actions a.selected:hover {
+    width:50px;
+}
+
+div.actions a.selected:hover {
+    background-color:transparent;
 }
 
 .action_error .message, .action_error .code {

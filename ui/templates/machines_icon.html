@@ -415,35 +415,36 @@ $("#machinesview-icon.standard div.actions a.action-destroy").live('click', func
 });
 
 $("#machinesview-icon.standard div.confirm_single .yes").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
+    var serverID = $(this).closest("div.machine-container").attr("id");
+    // if there is a pending action for this server execute it
+    for (i=0; i<pending_actions.length; i++) {
         if (pending_actions[i][1]==serverID){
             action = pending_actions.splice(i,1)[0]; // extract action
             // change the status text in cases where no api state exists
             if (action[0] == start) {
-                $(this).parent().parent().find('.status').text(TRANSITIONS['Starting']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state starting-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(this).closest("div.machine").find('.status').text(TRANSITIONS['Starting']);
+                $(this).closest("div.machine").find('.state').removeClass().addClass('state starting-state');
+                $(this).closest("div.machine").find('.spinner').show();
             } else if (action[0] == shutdown) {
-                $(this).parent().parent().find('.status').text(TRANSITIONS['Shutting down']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state shutting-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(this).closest("div.machine").find('.status').text(TRANSITIONS['Shutting down']);
+                $(this).closest("div.machine").find('.state').removeClass().addClass('state shutting-state');
+                $(this).closest("div.machine").find('.spinner').show();
             } else if (action[0] == reboot) {
-                $(this).parent().parent().find('.status').text(TRANSITIONS['Rebooting']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state rebooting-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(this).closest("div.machine").find('.status').text(TRANSITIONS['Rebooting']);
+                $(this).closest("div.machine").find('.state').removeClass().addClass('state rebooting-state');
+                $(this).closest("div.machine").find('.spinner').show();
             }  else if (action[0] == destroy) {
-                $(this).parent().parent().find('.status').text(TRANSITIONS['Destroying']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state destroying-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(this).closest("div.machine").find('.status').text(TRANSITIONS['Destroying']);
+                $(this).closest("div.machine").find('.state').removeClass().addClass('state destroying-state');
+                $(this).closest("div.machine").find('.spinner').show();
             }
             action[0]([action[1]]); // execute action
         }
     }
     $(this).parent().hide();
-    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
-    $(this).parent().parent().children('.state').children('.spinner').show()
-    $(this).parent().parent().children('div.actions').removeClass('display');
+    $(this).closest('div.actions').find('a').removeClass('selected');
+    $(this).closest("div.machine").children('.state').children('.spinner').show()
+    $(this).closest("div.machine").children('div.actions').removeClass('display');
     update_confirmations();
     return false;
 });

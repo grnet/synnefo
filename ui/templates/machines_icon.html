@@ -86,7 +86,6 @@ or implied, of GRNET S.A.
                     <div class="toggler down"></div>
                 </div>
                 <div class="info-content">
-                    <div class="metadata-separator"></div>
                     <div class="metadata-container">
                         <div class="vm-details metadata-column">
                             {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
@@ -120,7 +119,6 @@ or implied, of GRNET S.A.
                             <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
                         </div>
                     </div>
-                    <div class="metadata-separator"></div>
                 </div>
             </div>
         </div>
@@ -140,8 +138,6 @@ $("#machinesview-icon.standard .machine").live('mouseover', function() {
         $(this).find("div.connect-arrow").show();
         $(this).find("div.connect-border").show();
     }
-    // change color of info button
-    $(this).find(".info-header").addClass('info-hover');
 });
 
 // actions on machine mouseout
@@ -149,8 +145,6 @@ $("#machinesview-icon.standard .machine").live('mouseout', function() {
     // hide connect button
     $(this).find("div.connect-arrow").hide();
     $(this).find("div.connect-border").hide();
-    // change color of info button
-    $(this).find(".info-header").removeClass('info-hover');
 });
 
 // actions on connect arrow border mouseover
@@ -188,9 +182,13 @@ $("#machinesview-icon.standard div.info").live('click', function() {
     if ($(this).find('.toggler').hasClass('up')) {
         $(this).find('.toggler').removeClass('up');
         $(this).find('.toggler').addClass('down');
+        $(this).find('.info-label').removeClass('darker');
+        $(this).parent().removeClass('light-background');
     } else {
         $(this).find('.toggler').removeClass('down');
         $(this).find('.toggler').addClass('up');
+        $(this).find('.info-label').addClass('darker');
+        $(this).parent().addClass('light-background');
     }
     $(this).find(".info-content").slideToggle(600);
     return false;
@@ -199,7 +197,7 @@ $("#machinesview-icon.standard div.info").live('click', function() {
 // intercept manage metadata click
 $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
     // get server name and server ID
-    var serverID = $(this).parent().parent().parent().parent().parent().attr("id");
+    var serverID = $(this).parent().parent().parent().parent().parent().parent().attr("id");
     var serverName = $(this).parent().parent().parent().parent().parent().find("span.name").text();
     // set server name to all related metadata dialogs
     $("#metadata-wizard div.machine-name").text(serverName);
@@ -590,7 +588,6 @@ function update_machines_view(data) {
         if (!(server.metadata == undefined)) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
-        machine.find("img.connect-arrow").hide();
     });
     /*
     Do some standard stuff, repeated each time
@@ -613,10 +610,11 @@ function update_machines_view(data) {
         hideWelcome();
     }
     // set confirm box position
-    if (window.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon.standard').height())
+    if (window.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon.standard').height()) {
         $('.confirm_multiple').addClass('fixed');
-    else
+    } else {
         $('.confirm_multiple').removeClass('fixed');
+    }
 }
 
 // reposition multiple confirmation box on window resize

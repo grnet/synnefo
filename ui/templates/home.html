@@ -181,10 +181,21 @@ or implied, of GRNET S.A.
                     $("#error-success .popup-separator").addClass("popup-separator-error");
                     $("#error-success .popup-details").html("<p>"+ ERRORS[status] +"</p></div></p>");
                 } else {
-                    $("#error-success p").html("<b>" + serverName + "</b>" + ": " + ERRORS[status]);
+                    $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
+                    $("#error-success .popup-header").addClass("popup-header-error");
+                    $("#error-success").addClass("popup-border-error");
+                    $("#error-success .password-container").hide();
+                    $("#error-success .popup-details").addClass("popup-details-error");
+                    $("#error-success .popup-separator").addClass("popup-separator-error");
+                    $("#error-success .popup-details").html("<p>"+ ERRORS[status] +"</p>"+serverName +"</div></p>");
                 }
             } else {
-                $("#error-success p").text(ERRORS['DEFAULT']);
+                    $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
+                    $("#error-success .popup-header").addClass("popup-header-error");
+                    $("#error-success").addClass("popup-border-error");
+                    $("#error-success .password-container").hide();
+                    $("#error-success .popup-details").addClass("popup-details-error");
+                    $("#error-success .popup-separator").addClass("popup-separator-error");
             }
             $("#error-success p:first").css("padding-bottom","10px");
             $("#error-success p:first").css("color","#800000");

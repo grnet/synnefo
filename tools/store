@@ -324,9 +324,9 @@ class CopyObject(Command):
         version = getattr(self, 'version')
         if version:
             headers = {}
-            headers['SOURCE_VERSION'] = version 
+            headers['X_SOURCE_VERSION'] = version
         self.client.copy_object(src_container, src_object, dst_container,
-                                dst_object)
+                                dst_object, headers)
 
 @cli_command('set')
 class SetMeta(Command):
@@ -382,10 +382,10 @@ class UpdateObject(Command):
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
         
-        if self.append:
+        if getattr(self, 'start'):
+            headers['CONTENT_RANGE'] = 'bytes %s-/*' % getattr(self, 'start')
+        elif self.append:
             headers['CONTENT_RANGE'] = 'bytes */*'
-        elif self.start:
-            headers['CONTENT_RANGE'] = 'bytes %s-/*' % self.first-byte-pos
         
         attrs = ['content-encoding', 'content-disposition']
         attrs = [a for a in attrs if getattr(self, a)]
@@ -425,7 +425,7 @@ class MoveObject(Command):
         version = getattr(self, 'version')
         if version:
             headers = {}
-            headers['SOURCE_VERSION'] = version 
+            headers['X_SOURCE_VERSION'] = version 
         self.client.move_object(src_container, src_object, dst_container,
                                 dst_object, headers)
 

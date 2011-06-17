@@ -2965,7 +2965,12 @@ div.single div.single-action:hover {
 }
 
 .single div.confirm_single {
-    margin: -2px 5px 0 0;
+    margin: -2px -20px 0 0;
+    font-size: 80%;
+}
+
+.single div.confirm_single button.no {
+    margin-left: -5px;
 }
 
 .single .spinner, .single .wave {

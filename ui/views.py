@@ -41,6 +41,7 @@ from django.utils import simplejson as json
 from django.shortcuts import render_to_response
 
 TIMEOUT = settings.TIMEOUT
+UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
 
 def template(name, context):
@@ -54,6 +55,7 @@ def home(request):
                'project': '+nefo',
                'request': request,
                'current_lang': get_language() or 'en',
+               'update_interval': UPDATE_INTERVAL,
                'image_icons': IMAGE_ICONS,}
     return template('home', context)
 

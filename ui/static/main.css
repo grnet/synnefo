@@ -1939,6 +1939,14 @@ div.confirm_single, div.confirm_multiple, div.action_error {
     color: black;
 }
 
+div.action-container.destroy div.confirm_single {
+    margin-top: -5px;
+}
+
+div.terminated div.action-container.destroy div.confirm_single {
+    margin-top: 30px;
+}
+
 div.confirm_single button, div.confirm_multiple button, div.action_error button {
     font-size: 100%;
     cursor: pointer;

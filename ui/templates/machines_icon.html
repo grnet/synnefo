@@ -206,7 +206,7 @@ $("#machinesview-icon.standard .running div.connect-border").live('click', funct
 //hide the all of the info contents
 $("#machinesview-icon.standard .info-content").hide();
 //toggle the component with class info-content
-$("#machinesview-icon.standard div.info").live('click', function() {
+$("#machinesview-icon.standard div.info-header").live('click', function() {
     if ($(this).find('.toggler').hasClass('up')) {
         $(this).find('.toggler').removeClass('up');
         $(this).find('.toggler').addClass('down');
@@ -216,9 +216,9 @@ $("#machinesview-icon.standard div.info").live('click', function() {
         $(this).find('.toggler').removeClass('down');
         $(this).find('.toggler').addClass('up');
         $(this).find('.info-label').addClass('darker');
-        $(this).parent().addClass('light-background');
+        $(this).parent().parent().addClass('light-background');
     }
-    $(this).find(".info-content").slideToggle(600);
+    $(this).parent().find(".info-content").slideToggle(600);
     return false;
 });
 

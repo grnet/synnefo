@@ -291,8 +291,9 @@ function update_vms(interval) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     servers = data.servers.values;
-                } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
-                update_machines_view(data);
+                    jQuery.parseJSON(data);
+                    update_machines_view(data);
+                } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}          
             } else if (jqXHR.status != 304){
                 try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -348,8 +349,9 @@ function update_networks(interval) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     servers = data.servers.values;
+                    jQuery.parseJSON(data);
+                    update_network_names(data);
                 } catch(err) { ajax_error('400', undefined, 'Update networks', jqXHR.responseText);}
-                update_network_names(data);
             } else if (jqXHR.status == 304) {
                 update_network_names();
             }
@@ -402,10 +404,11 @@ function update_network_names(servers_data) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     networks = data.networks.values;
+                    jQuery.parseJSON(data);
+                    update_networks_view(servers_data, data);
                 } catch(err) {
                     ajax_error('400', undefined, 'Update network names', jqXHR.responseText);
                 }
-                update_networks_view(servers_data, data);
             } else if (jqXHR.status == 304) {
                 update_networks_view(servers_data);
             } else if (jqXHR.status != 304){
@@ -438,6 +441,7 @@ function update_images() {
         success: function(data, textStatus, jqXHR) {
             try {
                 images = data.images.values;
+				jQuery.parseJSON(data);
                 update_wizard_images();
             } catch(err){
                 ajax_error("NO_IMAGES");
@@ -563,16 +567,22 @@ function update_flavors() {
             update_vms(UPDATE_INTERVAL);
         },
         success: function(data, textStatus, jqXHR) {
-            flavors = data.flavors.values;
-            $.each(flavors, function(i, flavor) {
-                cpus[i] = flavor['cpu'];
-                disks[i] = flavor['disk'];
-                ram[i] = flavor['ram'];
-            });
-            cpus = cpus.unique();
-            disks = disks.unique();
-            ram = ram.unique();
-            update_wizard_flavors();
+            
+            try {
+                flavors = data.flavors.values;
+                jQuery.parseJSON(data);
+                $.each(flavors, function(i, flavor) {
+                    cpus[i] = flavor['cpu'];
+                    disks[i] = flavor['disk'];
+                    ram[i] = flavor['ram'];
+                });
+                cpus = cpus.unique();
+                disks = disks.unique();
+                ram = ram.unique();
+                update_wizard_flavors();
+            } catch(err){
+                ajax_error("NO_FLAVORS");
+            }
             // start updating vm list
             update_vms(UPDATE_INTERVAL);
         }

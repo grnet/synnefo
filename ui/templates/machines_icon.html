@@ -211,7 +211,7 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
         $(this).find('.toggler').removeClass('up');
         $(this).find('.toggler').addClass('down');
         $(this).find('.info-label').removeClass('darker');
-        $(this).parent().removeClass('light-background');
+        $(this).parent().parent().removeClass('light-background');
     } else {
         $(this).find('.toggler').removeClass('down');
         $(this).find('.toggler').addClass('up');

@@ -1174,7 +1174,7 @@ function delete_network(networkIDs){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Delete network', jqXHR.responseText);
+                display_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
             } catch (err) {
                 ajax_error(err);
             }

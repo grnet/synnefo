@@ -188,6 +188,12 @@ or implied, of GRNET S.A.
             <a href="#" class="action-add">{% trans "Add Machine" %}</a>
             <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
         </div>
+        <div class="action_error" align="center">
+            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
             <button class="no">X</button>
@@ -609,9 +615,15 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
         }
     }
     $(this).parent().hide();
-    $(this).parent().prev().children('a').removeClass('selected');
-    $(this).parent().prev().removeClass('display');
+    $(this).parent().prev().prev().removeClass('selected');
+    $(this).closest('div.actions').find('a').removeClass('selected');
+    $(this).closest("div.network").children('div.actions').removeClass('display');
+    $(this).closest("div.network").children('div.actions').removeClass('selected');
     update_network_confirmations();
+//
+//    $(this).closest('div.actions').find('a').removeClass('selected');
+//    $(this).closest("div.machine").children('.state').children('.spinner').show()
+//    $(this).closest("div.machine").children('div.actions').removeClass('display');
     return false;
 });
 
@@ -643,11 +655,11 @@ $("#networks-pane div.confirm_single .no").live('click', function(){
 // show, single action, error details
 $("#networks-pane div.action_error .details").live('click', function(){
     // remove the action from the pending list
+    $(this).parent().hide();
     ajax_error($(this).parent().children('.code').text(),
                  undefined,
                  $(this).parent().children('.action').text(),
                  $(this).parent().children('.message').text());
-    $(this).parent().hide();
     return false;
 });
 
@@ -658,6 +670,7 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
         var networkID = action[1];
         $('#networks-pane .selected').removeClass('selected');
         $('#networks-pane .display').removeClass('display');
+        $('#networks-pane .confirm_single').hide();
         if (action[0] == delete_network) {
             $('#networks-pane #net-' + networkID + ' .status').text(TRANSITIONS['Destroying']);
             $('#networks-pane #net-' + networkID + ' .spinner').show();
@@ -675,6 +688,7 @@ $("#networks-pane div.confirm_multiple .no").live('click', function(){
     pending_actions = [];
     $('#networks-pane .selected').removeClass('selected');
     $('#networks-pane .display').removeClass('display');
+    $('#networks-pane .confirm_single').hide();
     update_network_confirmations();
     return false;
 });
@@ -878,6 +892,16 @@ function update_networks_view(servers_data, networks_data){
     $("#pub .network-machine").removeClass('last');
     $("#pub .network-machine").last().addClass('last');
 }
+
+// indicate that the requested action was not completed
+function display_failure(status, networkID, action, responseText) {
+    $('#networks-container #net-'+networkID+ ' .spinner').hide();
+    $('#networks-container #net-'+networkID+ ' .action_error .action').text(action);
+    $('#networks-container #net-'+networkID+ ' .action_error .code').text(status);
+    $('#networks-container #net-'+networkID+ ' .action_error .message').text(responseText);
+    $('#networks-container #net-'+networkID+ ' .action_error').show();
+}
+
 
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){

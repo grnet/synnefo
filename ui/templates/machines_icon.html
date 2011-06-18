@@ -225,8 +225,8 @@ $("#machinesview-icon.standard div.info").live('click', function() {
 // intercept manage metadata click
 $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
     // get server name and server ID
-    var serverID = $(this).parent().parent().parent().parent().parent().parent().attr("id");
-    var serverName = $(this).parent().parent().parent().parent().parent().find("span.name").text();
+    var serverID = $(this).closest('.machine-container').attr("id");
+    var serverName = $(this).closest('.machine').find("span.name").text();
     // set server name to all related metadata dialogs
     $("#metadata-wizard div.machine-name").text(serverName);
     if ($(this).parent().parent().parent().parent().parent().parent().hasClass('terminated')) {

@@ -929,6 +929,10 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #87AADE;
 }
 
+.network-indicator .indicator1, .network-indicator .indicator2, .network-indicator .indicator3, .network-indicator .indicator4 {
+    background-color: #87AADE;
+}
+
 .terminated {
     background-color: white;
     margin-bottom: 17px;
@@ -1977,7 +1981,7 @@ div.confirm_single button.yes:hover {
 
 div.confirm_single button.no {
     width: 20px;
-    margin-left:-4px;
+    margin-left:-5px;
     background-color: #FF9955;
     color:#d95d0a;
 }
@@ -2310,6 +2314,12 @@ div.list table thead .vmname {
     margin: 1px 16px 0 15px !important;
 }
 
+#networks-pane .spinner {
+    margin-top: 18px !important;
+}
+
+
+
 .hidden {
     display:none;
 }
@@ -2520,7 +2530,7 @@ div.network:hover {
 
 .private-networks .state div {
     margin-top: 9px;
-    margin-bottom: -6px;
+    margin-bottom: -12px;
 }
 
 div.indicator {
@@ -2540,11 +2550,12 @@ div.indicator {
 }
 
 .private-networks div.confirm_single {
-    margin: -2px -200px 0 0;
+    margin: 46px -231px 0 0;
+    font-size: 80%;
 }
 
 .private-networks .network-machine div.confirm_single {
-    margin: -8px -180px 0 0;
+    margin: -8px -210px 0 0;
 }
 
 span.rename-network, span.configure {

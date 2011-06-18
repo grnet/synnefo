@@ -1340,8 +1340,12 @@ function get_image_params(imageRef) {
                 current_image = images[i];
             }
         }
-        image_name = current_image['name'];
-        image_size = current_image['metadata']['values']['size'];
+        try {
+            image_name = current_image['name'];
+        } catch(err) { image_name = 'undefined'; }
+        try{
+            image_size = current_image['metadata']['values']['size'];
+        } catch(err) { image_size = 'undefined'; }
     } else {
         image_name = 'undefined';
         image_size = 'undefined';

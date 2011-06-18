@@ -105,21 +105,21 @@ function update_confirmations() {
     var action_type = [];
     // standard view only
     if ($.cookie("view") == '0') {
-        for (var i=0;i<pending_actions.length;i++){
+        for (var i=0; i<pending_actions.length; i++) {
             // show single confirms
             if (pending_actions[i][0] == reboot) {
-                action_type = 'reboot';
+                action_type = "reboot";
             } else if (pending_actions[i][0] == shutdown) {
-                action_type = 'shutdown';
+                action_type = "shutdown";
             } else if (pending_actions[i][0] == start) {
-                action_type = 'start';
-            } else if (pending_actions[i][0] == console) {
-                action_type = 'console';
+                action_type = "start";
+            } else if (pending_actions[i][0] == open_console) {
+                action_type = "console";
             } else {
-                action_type = 'destroy';
+                action_type = "destroy";
             }
             $("#machines-pane div.machine-container#" + pending_actions[i][1] +
-            " div.actions div." + action_type + " div.confirm_single").show();
+            " div.actions div.action-container." + action_type + " div.confirm_single").show();
         }
     } else if ($.cookie("view") == '2') {
         for (var i=0;i<pending_actions.length;i++){

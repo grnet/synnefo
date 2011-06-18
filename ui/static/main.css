@@ -961,19 +961,19 @@ div.name:hover span.rename {
 }
 
 .machine div.info {
-    margin-top: 5px;
+    margin-top: 6px;
 }
 
 .machine div.info div.info-header {
     background-color: #A1C8DB;
     color: white;
-    height: 14px;
-    width: 43px;
+    height: 17px;
+    width: 50px;
     margin-left: 85px;
     cursor: pointer;
 }
 
-div.machine:hover div.info-header {
+div.machine:hover div.info-header, div.machine:hover div.toggler div.down {
     background-color: #84b7d0;
 }
 
@@ -983,14 +983,17 @@ div.machine div.info-label.darker {
 
 .machine div.info div.info-label {
     font-size: 75%;
+    height:16;
+    width: 30px;
+    padding: 1px 0 0 5px;
 }
 
 .machine div.info div.toggler {
     position: relative;
-    height:4px;
-    width:8px;
-    margin-top: -6px;
-    margin-left: 29px;
+    width:15px;
+    height:17px;
+    margin-top: -11px;
+    margin-left: 37px;
 }
 
 .machine div.info div.down {
@@ -2116,6 +2119,7 @@ div#user a.current_lang {
 }
 
 .machine h5.namecontainer {
+    margin-top: 5px;
 }
 
 .editbuttons {
@@ -2507,7 +2511,7 @@ div.network:hover {
 
 .state div {
     text-align: right;
-    margin: 3px 1px 4px;
+    margin: 5px 1px 4px;
 }
 
 .public-networks .state div {

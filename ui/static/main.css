@@ -1431,6 +1431,7 @@ input.machine {
 }
 
 #metadata-wizard .metadata-container, #add-machines-wizard .machines-container {
+    background-color: transparent;
     float: left;
     width: 400px;
     font-size: 120%;
@@ -2874,6 +2875,10 @@ a.manage-metadata {
     color: black;
     margin-left:17px;
     text-decoration: underline;
+}
+
+div.machine a.manage-metadata:hover {
+    background-color: transparent;
 }
 
 .metadata-actions, .scrollable {

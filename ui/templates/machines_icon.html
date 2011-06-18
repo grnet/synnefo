@@ -229,7 +229,7 @@ $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
     var serverName = $(this).closest('.machine').find("span.name").text();
     // set server name to all related metadata dialogs
     $("#metadata-wizard div.machine-name").text(serverName);
-    if ($(this).parent().parent().parent().parent().parent().parent().hasClass('terminated')) {
+    if ($(this).closest('.machine-container').parent().hasClass('terminated')) {
         $("#metadata-wizard div#on-off").text('off');
     } else {
         $("#metadata-wizard div#on-off").text('on');

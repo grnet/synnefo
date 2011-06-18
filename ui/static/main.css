@@ -983,7 +983,7 @@ div.machine div.info-label.darker {
 
 .machine div.info div.info-label {
     font-size: 75%;
-    height:16;
+    height:16px;
     width: 30px;
     padding: 1px 0 0 5px;
 }
@@ -997,11 +997,11 @@ div.machine div.info-label.darker {
 }
 
 .machine div.info div.down {
-    background: url(/static/down-arrow.png) no-repeat;
+    background: url(/static/down-arrow.png) no-repeat scroll 1px 0;
 }
 
 .machine div.info div.up {
-    background: url(/static/up-arrow.png) no-repeat;
+    background: url(/static/up-arrow.png) no-repeat scroll 1px 0;
 }
 
 button {

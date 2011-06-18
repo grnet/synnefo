@@ -977,13 +977,12 @@ div.machine:hover div.info-header {
     background-color: #84b7d0;
 }
 
-div.machine span.info-label.darker {
+div.machine div.info-label.darker {
     background-color: #5CA1C0;
 }
 
-.machine div.info span.info-label {
+.machine div.info div.info-label {
     font-size: 75%;
-    margin-bottom: 8px;
 }
 
 .machine div.info div.toggler {

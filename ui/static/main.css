@@ -1996,6 +1996,7 @@ div.confirm_multiple {
 div.confirm_multiple p {
     float: left;
     color: #FF7F2A;
+    font-weight: bold;
     margin: 7px 0 0 200px;
 }
 
@@ -2024,18 +2025,21 @@ div.confirm_multiple button.no:hover {
 }
 
 div.action_error {
-    float: right;
     width: 80px;
     height: 60px;
     padding: 5px;
-    margin: -2px -175px 0 0;
-    background-color: #DCDCDC;
+    margin: -2px 0 0 595px;
+    background-color: #4085A5;
     font-size: 75%;
     line-height: 1.5;
+    z-index:1;
+    color: #FF7F2A;
+    position:absolute;
 }
 
 .action_error button {
     width: 80px !important;
+    background-color: transparent;
     border: 1px solid;
     padding: 0px;
     border-color: #FF7F2A;
@@ -2046,8 +2050,8 @@ div.action_error button.details {
     padding: 0 15px;
 }
 
-div.confirm_multiple button.no:hover, div.action_error button.details:hover {
-    background-color: #5CA1C0;
+div.action_error button.details:hover {
+    background-color: #FF7F2A;
 }
 
 div#aboutuser{

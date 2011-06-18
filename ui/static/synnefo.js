@@ -122,12 +122,11 @@ function update_confirmations() {
             " div.actions div.action-container." + action_type + " div.confirm_single").show();
         }
     } else if ($.cookie("view") == '2') {
-        for (var i=0;i<pending_actions.length;i++){
+        for (var i=0; i<pending_actions.length; i++){
             // show single confirms
             $("#machines-pane div.single-container#"+pending_actions[i][1]+' .confirm_single').show();
         }
     }
-
     // if more than one pending action show multiple confirm box
     if (pending_actions.length>1 || $.cookie("view") == '1' && pending_actions.length == 1){
         $('#machines-pane div.confirm_multiple span.actionLen').text(pending_actions.length);

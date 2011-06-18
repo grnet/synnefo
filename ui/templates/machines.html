@@ -863,7 +863,7 @@ bar.onkeyup = function(e) {
         e.stopPropagation();
     }
 };
-document.onkeyup = bar.onkeyup; 
+document.onkeyup = bar.onkeyup;
 
 
 //metadata cancel edit button
@@ -1014,6 +1014,7 @@ $("#machines-pane div.confirm_multiple .yes").live('click', function(){
         action[0]([serverID]); // execute action
     }
     update_confirmations();
+    return false;
 });
 
 // cancel all actions
@@ -1023,6 +1024,7 @@ $("#machines-pane div.confirm_multiple .no").live('click', function(){
     $('#machinesview-list .actions .selected').removeClass('selected');
     $('#machines-pane .machine .display').removeClass('display');
     update_confirmations();
+    return false;
 });
 
 // basic functions executed on page load

@@ -494,12 +494,19 @@ function update_machines_view(data){
                     machine.find(".connect-arrow").hide();
                     machine.find(".state").removeClass().addClass("state terminated-state");
             }
-            //show spinner while machine is building
+            //show spinner while machine is building or rebooting
             if (server.status == 'BUILD' ||
                 [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
                 machine.find('.spinner').show();
                 machine.find(".connect-border").hide();
                 machine.find(".connect-arrow").hide();
+                machine.find('.state').removeClass().addClass('state build-state');
+            }
+            if (server.status == 'REBOOT') {
+                machine.find('.spinner').show();
+                machine.find(".connect-border").hide();
+                machine.find(".connect-arrow").hide();
+                machine.find('.state').removeClass().addClass('state rebooting-state');
             }
             machine.appendTo("#machinesview-single.single");
             //disable reboot and shutdown actions while machine is building

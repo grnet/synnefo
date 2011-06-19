@@ -223,9 +223,14 @@ div.css-panes {
     width: 20px;
 }
 
+#ie-fix {
+    z-index: 1000;
+    position: relative;
+}
 #createcontainer {
     margin-top: 20px;
     margin-bottom: 10px;
+    z-index: 1000;
 }
 
 #create {
@@ -233,7 +238,7 @@ div.css-panes {
     color: #000;
     cursor: pointer;
     padding: 7px 24px;
-    width: 125px;
+    width: 155px;
     text-decoration: none;
     font-size:100%;
 }
@@ -684,7 +689,7 @@ div.image-container {
 
 .machine-container {
     min-height: 65px;
-    margin: 2px 0 0 -32px;
+    margin: 2px 0 0 3px;
     padding: 0 4px 0;
     clear: both;
     width: 523px;
@@ -878,11 +883,10 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 
 .running {
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
-    padding-left: 35px;
     margin-top: -76px;
     padding-bottom: 15px;
     padding-top: 15px;
-    width: 664px;
+    width: 699px;
     min-height: 50px;
 }
 
@@ -935,9 +939,8 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     margin-bottom: 17px;
     margin-top: 15px;
     padding-bottom: 15px;
-    padding-left: 35px;
     padding-top: 15px;
-    width: 664px;
+    width: 699px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
 }

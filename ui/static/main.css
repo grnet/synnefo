@@ -2981,7 +2981,7 @@ div.machine a.manage-metadata:hover {
 
 .single .single-actions {
     padding-bottom: 4px;
-    padding-left: 14px;
+    padding-left: 12px;
     width: 69px;
     float: left;
 }
@@ -3014,7 +3014,7 @@ div.single div.single-action:hover {
 }
 
 .single div.action_error {
-    margin: -2px 0px 0 583px !important;
+    margin: -2px 0px 0 577px !important;
 }
 
 .single .column2 {

@@ -2954,12 +2954,14 @@ div.machine a.manage-metadata:hover {
 }
 
 .single .column1 .state {
-    width: 126px;
     float: left;
+    margin-left: 4px;
     padding-bottom: 6px;
     padding-top: 3px;
+    position: relative;
+    right: 0;
     text-align: center;
-    margin-left: 4px;
+    width: 126px;
 }
 
 .single .column1 .state-label {
@@ -3036,6 +3038,7 @@ div.single div.single-action:hover {
     float: right;
     text-align: right;
     font-size: 95%;
+    width: auto;
 }
 
 .single .column2 .name, .single .column2 .disk, .single .column2 .image-size, .single .column2 .ipv6 {

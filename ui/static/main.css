@@ -1063,6 +1063,11 @@ div.image {
     padding: 5px;
 }
 
+#ie-fix-view-select {
+    position: relative;
+    z-index: 1000;
+}
+
 div#view-select {
     float: right;
     clear: both;
@@ -1071,6 +1076,7 @@ div#view-select {
     right: 10px;
     top: -35px;
     display: none;
+    z-index: 1000;
 }
 
 a#standard, a#list, a#single {

@@ -96,7 +96,7 @@ or implied, of GRNET S.A.
                     </ul>
                 </div>
                 <div class="panes">
-                    <li id="image-template" style="display:none">
+                    <li id="image-template" style="display:none;">
                         <label for="image.id">
                             <a>
                                 <div class="image-container">
@@ -846,7 +846,7 @@ $("#metadata-wizard .metadata-edit .edit").live('click', function() {
 
 //capture Esc key
 bar = {};
-bar.onkeyup = function(e) {
+bar.keydown = function(e) {
     if (e.keyCode == 27) {
         //if we are inside an add or edit textbox, cancel editing
         if ($('input.metatextbox:focus').length > 0) {
@@ -863,7 +863,7 @@ bar.onkeyup = function(e) {
         e.stopPropagation();
     }
 };
-document.onkeyup = bar.onkeyup;
+document.keydown = bar.keydown;
 
 
 //metadata cancel edit button

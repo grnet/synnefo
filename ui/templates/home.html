@@ -33,6 +33,8 @@ interpreted as representing official policies, either expressed
 or implied, of GRNET S.A.
 -->
 
+<html>
+
 {% load i18n %}
 <!DOCTYPE html>
 <head>
@@ -141,37 +143,36 @@ or implied, of GRNET S.A.
 
             var serverName = '';
 
-            if (serverID != undefined) {
+            if (serverID !== undefined) {
                 // standard view
-                serverName = $("#"+serverID).find("span.name").text();
-                if (serverName == "") { // list view
-                    serverName = $("#"+serverID).parent().parent().find("span.name").text();
+                serverName = $("#" + serverID).find("span.name").text();
+                if (serverName === "") { // list view
+                    serverName = $("#" + serverID).parent().parent().find("span.name").text();
                 }
             }
 
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
-            if (responseText != undefined){
+            if (responseText !== undefined) {
                 var errors = parse_error(responseText, status), details = '';
-                if (serverName){
-                    serverName="<p>{% trans "Server" %}: " + serverName + "</p>";
+                if (serverName) {
+                    serverName = "<p>{% trans "Server" %}: " + serverName + "</p>";
                 }
-                if ((errors[0].details == undefined) || (errors[0].details == "")) {
+                if ((errors[0].details === undefined) || (errors[0].details === "")) {
                     details = ERRORS["NO_DETAILS"];
                 } else {
                     details = errors[0].details;
                 }
 
-                //$("#error-success div.popup-body-inner").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p><strong>{% trans "Action" %}:</strong> " + action + "</p><p><strong>{% trans "Code" %}:</strong> " + errors[0].code + "</p>" + details);
                 $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
                 $("#error-success .popup-header").addClass("popup-header-error");
                 $("#error-success").addClass("popup-border-error");
                 $("#error-success .password-container").hide();
                 $("#error-success .popup-details").addClass("popup-details-error");
                 $("#error-success .popup-separator").addClass("popup-separator-error");
-                $("#error-success .popup-details").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p>{% trans "Action" %}: " + action + "</p><p>{% trans "Code" %}: " + errors[0].code + "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + details + "</div></p>");
-            } else if (ERRORS[status] != undefined) {
-                if (serverID == undefined){
+                $("#error-success .popup-details").html("<p>" + (errors[0].message || ERRORS[errors[0].code]) + "</p>" + serverName + "<p>{% trans "Action" %}: " + action + "</p><p>{% trans "Code" %}: " + errors[0].code + "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + details + "</div></p>");
+            } else if (ERRORS[status] !== undefined) {
+                if (serverID === undefined) {
                     //eg no_images, no_flavors cases
                     $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
                     $("#error-success .popup-header").addClass("popup-header-error");
@@ -179,7 +180,7 @@ or implied, of GRNET S.A.
                     $("#error-success .password-container").hide();
                     $("#error-success .popup-details").addClass("popup-details-error");
                     $("#error-success .popup-separator").addClass("popup-separator-error");
-                    $("#error-success .popup-details").html("<p>"+ ERRORS[status] +"</p></div></p>");
+                    $("#error-success .popup-details").html("<p>" + ERRORS[status] + "</p>");
                 } else {
                     $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
                     $("#error-success .popup-header").addClass("popup-header-error");
@@ -187,31 +188,31 @@ or implied, of GRNET S.A.
                     $("#error-success .password-container").hide();
                     $("#error-success .popup-details").addClass("popup-details-error");
                     $("#error-success .popup-separator").addClass("popup-separator-error");
-                    $("#error-success .popup-details").html("<p>"+ ERRORS[status] +"</p>"+serverName +"</div></p>");
+                    $("#error-success .popup-details").html("<p>" + ERRORS[status] + "</p><p>" + serverName + "</p>");
                 }
             } else {
-                    $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
-                    $("#error-success .popup-header").addClass("popup-header-error");
-                    $("#error-success").addClass("popup-border-error");
-                    $("#error-success .password-container").hide();
-                    $("#error-success .popup-details").addClass("popup-details-error");
-                    $("#error-success .popup-separator").addClass("popup-separator-error");
+                $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
+                $("#error-success .popup-header").addClass("popup-header-error");
+                $("#error-success").addClass("popup-border-error");
+                $("#error-success .password-container").hide();
+                $("#error-success .popup-details").addClass("popup-details-error");
+                $("#error-success .popup-separator").addClass("popup-separator-error");
             }
-            $("#error-success p:first").css("padding-bottom","10px");
-            $("#error-success p:first").css("color","#800000");
+            $("#error-success p:first").css("padding-bottom", "10px");
+            $("#error-success p:first").css("color", "#800000");
             $("#error-success div.more-details").hide();
-            $("#error-success a.expand-details").live('click', function() {
+            $("#error-success a.expand-details").live('click', function () {
                 $(this).parent().parent().find("div.more-details").slideToggle(600);
                 return false;
-                });
+            });
             //stop the progress icon and hide the wizard
-            if (action != undefined) {
-                if (action == 'Create VM') {
+            if (action !== undefined) {
+                if (action === 'Create VM') {
                     $('#wizard #start').text('{% trans "Create VM" %}');
                     $("#wizard").hide();
-                } else if (action == 'Create network') {
+                } else if (action === 'Create network') {
                     $('#networks-wizard').hide();
-                } else if (action == 'Add server to network') {
+                } else if (action === 'Add server to network') {
                     $('#add-machines-wizard').hide();
                 }
             }
@@ -227,7 +228,7 @@ or implied, of GRNET S.A.
                 closeOnClick: false,
                 oneInstance: false,
                 load: false,
-                onClose: function(){
+                onClose: function () {
                     // With partial refresh working properly,
                     // it is no longer necessary to refresh the whole page
                     // choose_view();
@@ -243,8 +244,8 @@ or implied, of GRNET S.A.
             // bring up success notification
             $('#error-success').addClass('success');
             $('#error-success').removeClass('error');
-            if (status != undefined && SUCCESS[status]) {
-                if (password != undefined && status == "CREATE_VM_SUCCESS") {
+            if (status !== undefined && SUCCESS[status]) {
+                if (password !== undefined && status === "CREATE_VM_SUCCESS") {
 
                     //stop the progress icon and hide the wizard
                     $('#wizard #start').text('{% trans "Create VM" %}');
@@ -260,8 +261,8 @@ or implied, of GRNET S.A.
                     $("#error-success .popup-separator").removeClass("popup-separator-error");
                     $("#error-success .password-container").show();
 
-                    $("#error-success .popup-details").html("</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG +"</div>");
-                    $("#error-success div.password").html("<div class=\"write-password\">"+ SUCCESS["CREATE_VM_SUCCESS_TWO"] + "<div class=\"write-password-password\">" + password +"</div></div>");
+                    $("#error-success .popup-details").html("</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG + "</div>");
+                    $("#error-success div.password").html("<div class=\"write-password\">" + SUCCESS["CREATE_VM_SUCCESS_TWO"] + "<div class=\"write-password-password\">" + password + "</div></div>");
                     //$("#error-success div.write-password").html(SUCCESS["CREATE_VM_SUCCESS_TWO"]);
                     //$("#error-success div.write-password-details").html(CREATE_VM_SUCCESS_MSG);
                 } else {
@@ -283,7 +284,7 @@ or implied, of GRNET S.A.
                 closeOnClick: false,
                 oneInstance: false,
                 load: false,
-                onClose: function(){
+                onClose: function () {
                     // With partial refresh working properly,
                     // it is no longer necessary to refresh the whole page
                     // choose_view();
@@ -325,7 +326,7 @@ or implied, of GRNET S.A.
                         <img src="static/disks-icon.png" /></a></li>
                 </ul>
                 <div class="css-panes">
-                    <div id="machines-pane" class="pane" style="display:block">{% include "machines.html" %}</div>
+                    <div id="machines-pane" class="pane" style="display:block;">{% include "machines.html" %}</div>
                     <div id="networks-pane" class="pane"></div>
                     <div id="disks-pane" class="pane"></div>
                 </div>
@@ -374,13 +375,13 @@ or implied, of GRNET S.A.
                     //change the displaying title
                     $(".tab-name").text(this.getTabs().eq(i).attr("href"));
                     // load it with a page specified in the tab's href attribute
-                    pane.load(this.getTabs().eq(i).attr("href"),function(){if (!i) {choose_view()}});
+                    pane.load(this.getTabs().eq(i).attr("href"),function() {if (!i) {choose_view()}});
                 }
             });
         });
         
         // set pane cookie whenever the user clicks on a different pane
-        $("ul.css-tabs a").click(function(i){
+        $("ul.css-tabs a").click(function(i) {
             $.cookie("pane", $("ul.css-tabs a").index(this));
         });
         

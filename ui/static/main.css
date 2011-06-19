@@ -27,7 +27,7 @@ body {
 }
 
 #container {
-	position:relative;
+    position: relative;
 	margin:0 auto;
 	width: 100%;
 	background:#f0f0f0;
@@ -44,6 +44,8 @@ body {
     width: 700px;
 }
 
+#ie-container-fix {
+}
 
 #content {
     padding-bottom: 183px;

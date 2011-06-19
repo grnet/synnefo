@@ -47,7 +47,7 @@ from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_m
     update_manifest_meta, validate_modification_preconditions, validate_matching_preconditions,
     split_container_object_string, copy_or_move_object, get_int_parameter, get_content_length,
     get_content_range, raw_input_socket, socket_read_iterator, object_data_response,
-    hashmap_hash, api_method)
+    put_object_block, hashmap_hash, api_method)
 from pithos.backends import backend
 
 
@@ -377,7 +377,7 @@ def object_meta(request, v_account, v_container, v_object):
     
     update_manifest_meta(request, v_account, meta)
     
-    response = HttpResponse(status=204)
+    response = HttpResponse(status=200)
     put_object_meta(response, meta)
     return response
 
@@ -393,8 +393,9 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     version = get_int_parameter(request, 'version')
-    if not version:
-        version = request.GET.get('version')
+    version_list = False
+    if version is None and request.GET.get('version') == 'list':
+        version_list = True
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
     except NameError:
@@ -414,7 +415,7 @@ def object_read(request, v_account, v_container, v_object):
         return response
     
     # Reply with the version list.
-    if version == 'list':
+    if version_list:
         if request.serialization == 'text':
             raise BadRequest('No format specified for version list.')
         
@@ -634,6 +635,8 @@ def object_update(request, v_account, v_container, v_object):
     offset, length, total = ranges
     if offset is None:
         offset = size
+    elif offset > size:
+        raise RangeNotSatisfiable('Supplied offset is beyond object limits')
     if length is None or content_length == -1:
         length = content_length # Nevermind the error.
     elif length != content_length:
@@ -647,24 +650,11 @@ def object_update(request, v_account, v_container, v_object):
         # TODO: Raise 408 (Request Timeout) if this takes too long.
         # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
         data += d
-        bi = int(offset / backend.block_size)
-        bo = offset % backend.block_size
-        bl = min(len(data), backend.block_size - bo)
-        offset += bl
-        h = backend.update_block(hashmap[bi], data[:bl], bo)
-        if bi < len(hashmap):
-            hashmap[bi] = h
-        else:
-            hashmap.append(h)
-        data = data[bl:]
+        bytes = put_object_block(hashmap, data, offset)
+        offset += bytes
+        data = data[bytes:]
     if len(data) > 0:
-        bi = int(offset / backend.block_size)
-        offset += len(data)
-        h = backend.update_block(hashmap[bi], data)
-        if bi < len(hashmap):
-            hashmap[bi] = h
-        else:
-            hashmap.append(h)
+        put_object_block(hashmap, data, offset)
     
     if offset > size:
         size = offset

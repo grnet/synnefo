@@ -295,7 +295,7 @@ last_modified               The last object modification date (regardless of ver
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
 x_object_manifest           Object parts prefix in ``<container>/<object>`` form (optional)
-x_object_public             Object is publicly accessible (optional)
+x_object_public             Object is publicly accessible (optional) (**TBD**)
 x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
 
@@ -413,7 +413,7 @@ Content-Disposition         The presentation style of the object (optional)
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public             Object is publicly accessible (optional)
+X-Object-Public             Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -422,7 +422,7 @@ X-Object-Meta-*             Optional user defined metadata
 ================  ===============================
 Return Code       Description
 ================  ===============================
-204 (No Content)  The request succeeded
+200 (No Content)  The request succeeded
 ================  ===============================
 
 
@@ -502,7 +502,7 @@ Content-Disposition         The presentation style of the object (optional)
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public             Object is publicly accessible (optional)
+X-Object-Public             Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -531,11 +531,11 @@ Content-Type          The MIME content type of the object
 Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 X-Copy-From           The source path in the form ``/<container>/<object>``
 X-Move-From           The source path in the form ``/<container>/<object>``
-X-Source-Version      The source version to copy/move from
+X-Source-Version      The source version to copy from
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public       Object is publicly accessible (optional)
+X-Object-Public       Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
@@ -568,9 +568,9 @@ Destination           The destination path in the form ``/<container>/<object>``
 Content-Type          The MIME content type of the object (optional)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
-X-Source-Version      The source version to copy/move from
+X-Source-Version      The source version to copy from
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public       Object is publicly accessible (optional)
+X-Object-Public       Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
@@ -586,7 +586,7 @@ Return Code                  Description
 MOVE
 """"
 
-Same as ``COPY``.
+Same as ``COPY``, without the ``X-Source-Version`` request header. The ``MOVE`` operation is always applied on the latest version.
 
 
 POST
@@ -602,11 +602,11 @@ Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if us
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public       Object is publicly accessible (optional)
+X-Object-Public       Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` and ``X-Object-Meta-*`` headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
+The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**) and ``X-Object-Meta-*`` headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
 
 To update an object:
 
@@ -636,7 +636,7 @@ Return Code                  Description
 202 (Accepted)               The request has been accepted (not a data update)
 204 (No Content)             The request succeeded (data updated)
 411 (Length Required)        Missing ``Content-Length`` in the request
-416 (Range Not Satisfiable)  The supplied range is out of limits or invalid size (**TBD**)
+416 (Range Not Satisfiable)  The supplied range is out of limits or invalid size
 ===========================  ==============================
 
 
@@ -656,7 +656,7 @@ Return Code                  Description
 Public Objects
 ^^^^^^^^^^^^^^
 
-Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI ``https://hostname/public/<account>/<container>/<object>`` for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden).
+Objects that are marked as public, via the ``X-Object-Public`` meta (**TBD**), are also available at the corresponding URI ``https://hostname/public/<account>/<container>/<object>`` for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden).
 
 ==========================  ===============================
 Reply Header Name           Value
@@ -682,14 +682,14 @@ List of differences from the OOS API:
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
-* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public``. These are all replaced with every update operation.
+* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**). These are all replaced with every update operation.
 * Multi-range object GET support as outlined in RFC2616.
 * Object hashmap retrieval through GET and the ``format`` parameter.
 * Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers.
 * Object ``MOVE`` support.
 * Time-variant account/container listings via the ``until`` parameter.
-* Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY/MOVE.
-* Publicly accessible objects via ``https://hostname/public``. Control with ``X-Object-Public``.
+* Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY.
+* Publicly accessible objects via ``https://hostname/public``. Control with ``X-Object-Public`` (**TBD**).
 * Large object support with ``X-Object-Manifest``.
 
 Clarifications/suggestions:

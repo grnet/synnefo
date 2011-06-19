@@ -284,7 +284,8 @@ class Client(object):
     def copy_object(self, src_container, src_object, dst_container,
                              dst_object, headers=None):
         self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, headers)
+                                   dst_container, dst_object,
+                                   headers=headers)
 
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, headers=None):

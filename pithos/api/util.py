@@ -143,7 +143,6 @@ def put_object_meta(response, meta, public=False):
     if not public:
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = meta['version_timestamp']
-        response['X-Object-Size'] = meta['bytes']
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
             response[k.encode('utf-8')] = meta[k].encode('utf-8')
         for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Public'):
@@ -233,11 +232,11 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         if k in src_meta:
             meta[k] = src_meta[k]
     
-    src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:
-            backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, src_version)
+            backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True)
         else:
+            src_version = request.META.get('HTTP_X_SOURCE_VERSION')
             backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, src_version)
     except NameError:
         raise ItemNotFound('Container or object does not exist')
@@ -527,6 +526,18 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
             del(response['Content-Length'])
             response['Content-Type'] = 'multipart/byteranges; boundary=%s' % (boundary,)
     return response
+
+def put_object_block(hashmap, data, offset):
+    """Put one block of data at the given offset."""
+    
+    bi = int(offset / backend.block_size)
+    bo = offset % backend.block_size
+    bl = min(len(data), backend.block_size - bo)
+    if bi < len(hashmap):
+        hashmap[bi] = backend.update_block(hashmap[bi], data[:bl], bo)
+    else:
+        hashmap.append(backend.put_block(('\x00' * bo) + data[:bl]))
+    return bl # Return ammount of data written.
 
 def hashmap_hash(hashmap):
     """Produce the root hash, treating the hashmap as a Merkle-like tree."""

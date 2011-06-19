@@ -213,17 +213,15 @@ class BaseBackend(object):
         """
         return
     
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
         """Move an object's data and metadata.
         
         Parameters:
             'dest_meta': Dictionary with metadata to changes from source to destination
             'replace_meta': Replace metadata instead of update
-            'src_version': Copy from the version provided.
         
         Raises:
             NameError: Container/object does not exist
-            IndexError: Version does not exist
         """
         return
     

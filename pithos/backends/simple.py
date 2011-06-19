@@ -272,11 +272,11 @@ class SimpleBackend(BaseBackend):
             self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s, %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
-        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
+        logger.debug("move_object: %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta)
+        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, None)
         self.delete_object(user, account, src_container, src_name)
     
     def delete_object(self, user, account, container, name):
@@ -353,7 +353,7 @@ class SimpleBackend(BaseBackend):
         return int(row[0]), int(row[1]), int(tstamp)
     
     def _get_version(self, path, version=None):
-        if version in [None, 'list']:
+        if version is None:
             sql = '''select version_id, strftime('%s', tstamp), size, hide from versions where name = ?
                         order by version_id desc limit 1'''
             c = self.con.execute(sql, (path,))

@@ -831,8 +831,9 @@ div.connect-arrow {
 
 .machine div.connect-arrow {
     display: none;
-    margin-left: -7px !important;
-    margin-top:7px;
+    left: -3px;
+    position: absolute;
+    top: 9px;
 }
 
 div.connect-arrow:hover, div.connect-arrow.border-hover {
@@ -853,8 +854,9 @@ div.connect-border {
 
 .machine div.connect-border {
     display: none;
-    margin-left: -18px;
-    margin-top: 7px;
+    left: -15px;
+    position: absolute;
+    top: 9px;
 }
 
 .standard .machine img {

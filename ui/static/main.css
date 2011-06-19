@@ -753,6 +753,7 @@ div.machine div.actions {
     position: absolute;
     right: -63px;
     width: 70px;
+    top: 0px;
 }
 
 div.machine div.actions a {
@@ -2045,6 +2046,7 @@ div.action_error {
     z-index:1;
     color: #FF7F2A;
     position:absolute;
+    top: 0px;
 }
 
 .action_error button {
@@ -3015,6 +3017,7 @@ div.single div.single-action:hover {
 
 .single div.action_error {
     margin: -2px 0px 0 577px !important;
+    position: relative;
 }
 
 .single .column2 {

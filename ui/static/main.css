@@ -897,6 +897,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     padding-bottom: 15px;
     width: 699px;
     min-height: 50px;
+    padding-top: 60px;
 }
 
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {

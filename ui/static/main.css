@@ -2947,7 +2947,7 @@ div.machine a.manage-metadata:hover {
 .single .column1 {
     float: left;
     margin-bottom: 25px;
-    width: 135px;
+    width: 140px;
 }
 
 .single .column1 .state {
@@ -2956,6 +2956,7 @@ div.machine a.manage-metadata:hover {
     padding-bottom: 6px;
     padding-top: 3px;
     text-align: center;
+    margin-left: 4px;
 }
 
 .single .column1 .state-label {
@@ -2976,7 +2977,7 @@ div.machine a.manage-metadata:hover {
 
 .single .single-actions {
     padding-bottom: 4px;
-    padding-left: 8px;
+    padding-left: 14px;
     width: 69px;
     float: left;
 }
@@ -2990,7 +2991,7 @@ div.machine a.manage-metadata:hover {
 
 div.single div.single-action:hover {
     background-color:#A1C8DB;
-    width: 185px;
+    width: 180px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
 }
@@ -3019,11 +3020,11 @@ div.single div.single-action:hover {
     line-height: 17px;
     margin-bottom: 20px;
     padding: 10px;
-    width: 348px;
+    width: 338px;
 }
 
 .single .column2 .machine-labels {
-    width: 130px;
+    width: 120px;
     float:left;
     font-size: 95%;
 }
@@ -3057,10 +3058,27 @@ div.single div.single-action:hover {
 
 .single .column3 .previous {
     float:left;
+    width: 72px;
 }
 
 .single .column3 .next {
-    float:right;
+    float: right;
+    text-align: center;
+    width: 55px;
+}
+
+.single .column3 .next-arrow {
+    float: right;
+    height: 18px;
+    width: 12px;
+    background: url("./right-arrow.png") no-repeat scroll 3px 2px transparent;
+}
+
+.single .column3 .prev-arrow {
+    background: url("./left-arrow.png") no-repeat scroll 3px 2px transparent;
+    float: left;
+    height: 18px;
+    width: 12px;
 }
 
 .single .column3 .separator {
@@ -3085,28 +3103,13 @@ div.single div.single-action:hover {
     padding-bottom: 2px;
 }
 
-div.single div.column3 div.server-name:hover {
+div.single div.column3 div.server-name:hover, .single .column3 .selected {
     background-color: #84B7D0;
     color: white;
     padding-right: 40px;
-    width: 135px;
-}
-
-.single .column3 .selected {
-    background-color: #84B7D0;
-    color: white;
-    padding-right: 40px;
-    width: 135px;
-}
-
-.single .disks, .single .networks, .single .stats {
-    clear: both;
-    cursor: pointer;
-    height: 20px;
-    padding-top: 2px;
-    margin-bottom: 10px;
-    width: 500px;
-    font-size: 85%;
+    width: 130px;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
 }
 
 .single .toggler {
@@ -3117,25 +3120,39 @@ div.single div.column3 div.server-name:hover {
     padding-top: 7px;
 }
 
-.single .disks {
-    color: #C7A35F;
+.single .single-cpu, .single .single-network {
+    float: left;
+    height: 100px;
+    width: 48%;
 }
 
-.single .networks {
-    color: #9C7371;
+.single .cpu-usage, .single .network-usage {
+    padding-bottom: 15px;
+    padding-left: 20px;
+    padding-top: 15px;
+    font-size: 90%;
 }
 
-.single .disks-content, .single .networks-content, .single .stats-content {
-    height: 150px;
+.single .cpu-graph, .single .network-graph {
+    background-color: #A1C8DB;
+    height: 210px;
+    margin-left: 20px;
+    width: 300px;
 }
 
 .single .single-image {
     width: 126px;
     margin-bottom: 10px;
+    margin-left: 4px;
 }
 
-.single .column3 .previous , .single .column3 .next {
+.single .column3 .previous, .single .column3 .next {
     cursor: pointer;
+    background-color: #84B7D0;
+    color: white;
+    font-size: 100%;
+    height: 15px;
+    padding-top: 2px;
 }
 
 .single div.lower {
@@ -3143,6 +3160,7 @@ div.single div.column3 div.server-name:hover {
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
     margin-left: -20px;
     width: 707px;
+    height: 270px;
 }
 
 .single div.upper {
@@ -3155,7 +3173,7 @@ div.single div.column3 div.server-name:hover {
     margin-top: -75px;
     padding-left: 29px;
     padding-top: 75px;
-    width: 678px;
+    width: 670px;
 }
 
 /* console css */

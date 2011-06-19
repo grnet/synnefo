@@ -101,24 +101,37 @@ or implied, of GRNET S.A.
             </div>
         </div>
         <div class="lower">
-            <div class="disks">
-                {% trans "CPU Usage" %}<span class="toggler">&#710;</span>
-            </div>
-            <div class="networks">
-                {% trans "Network Usage" %}<span class="toggler">&#710;</span>
-            </div>
-            <div class="networks-content">
+            <div class="single-cpu">
+                <div class="cpu-usage">
+                    {% trans "CPU Usage" %}<span class="toggler">&#710;</span>
+                </div>
+                <div class="cpu-graph">
 
+                </div>
+            </div>
+            <div class="single-network">
+                <div class="network-usage">
+                    {% trans "Network Usage" %}<span class="toggler">&#710;</span>
+                </div>
+                <div class="network-graph">
+
+                </div>
             </div>
         </div>
     </div>
     <div class="column3">
         <div class="controls">
             <div class="previous" style="display:none;">
-                &lt;{% trans "previous" %}
+                <div class="prev-arrow">
+
+                </div>
+                {% trans "previous" %}
             </div>
             <div class="next" style="display:none;">
-                {% trans "next" %}&gt;
+                {% trans "next" %}
+                <div class="next-arrow">
+
+                </div>
             </div>
         </div>
         <div class="separator">

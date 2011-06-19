@@ -3039,6 +3039,36 @@ div.single div.single-action:hover {
     margin-bottom: 13px;
 }
 
+.single .tags {
+    clear: both;
+}
+
+.single .tags-label {
+    float: left;
+    height: 14px;
+    margin-top: -2px;
+    padding: 0 5px;
+    width: 30px;
+}
+
+.single .tags-down-arrow {
+    background: url("/static/tags-down-arrow.png") no-repeat scroll 1px 7px transparent;
+    float: left;
+    height: 16px;
+    width: 9px;
+}
+
+.single .tags-header {
+    background-color: #84B7D0;
+    cursor: pointer;
+    height: 16px;
+    width: 55px;
+}
+
+.single .tags-content {
+
+}
+
 .single .column3 {
     background-color: #A1C8DB;
     height: 200px;

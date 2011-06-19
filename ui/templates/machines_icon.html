@@ -39,6 +39,75 @@ or implied, of GRNET S.A.
 <div id="machinesview-icon" class="standard">
     <div class="machine-container" id="machine-container-template" style="display:none">
         <div class="machine" id="machine-template">
+            <div class='connect-border'></div>
+            <div class='connect-arrow'></div>
+            <img class="logo" src="" />
+            <div class="machine-details">
+                <div href="#" class="name">
+                    <h5 class="namecontainer editable">
+                        <span class="name">node.name</span><span class="rename"></span>
+                        <div class="editbuttons" style="display:none">
+                            <div class="save"></div>
+                            <div class="cancel"></div>
+                        </div>
+                    </h5>
+                </div>
+                <a href="#" class="ip">
+                    <h5>{% trans "IP" %}: <span class="public">node.public_ip</span></h5>
+                </a>
+            </div>
+            <div class="info">
+                <div class="info-header">
+                    <div class="info-label">{% trans "info" %}</div>
+                    <div class="toggler down"></div>
+                </div>
+            </div>
+            <div class="info-content">
+                <div class="metadata-container">
+                    <div class="vm-details metadata-column">
+                        {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
+                        {% trans "RAM" %}: <span class="ram-data">2048</span> (MB)<br />
+                        {% trans "System Disk" %}: <span class="disk-data">20</span> (GB) <br /><br />
+                        {% trans "Image" %}: <span class="image-data">Debian</span><br />
+                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
+                    </div>
+                    <div class="vm-stats metadata-column">
+                        {% trans "CPU" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
+                        {% trans "RAM" %} <img src="static/ram-bar.png" class="metadata-bar" /><br />
+                        {% trans "S.Disk" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
+                        {% trans "Net" %} <img src="static/net-bar.png" class="metadata-bar" /><br /><br />
+                        {% trans "details" %}
+                    </div>
+                    <div class="vm-metadata metadata-column">
+                        <div class="metadata-left">
+                            {% trans "Metadata" %}: <br />
+                            (<span class="metadata-count">0</span>)
+                        </div>
+                        <div class="metadata-keys-container">
+                            <div class="scrollable vertical">
+                                <div class="items">
+                                </div>
+                            </div>
+                            <div class="metadata-actions">
+                                <div class="prev"></div>
+                                <div class="next"></div>
+                            </div>
+                        </div>
+                        <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
+                    </div>
+                </div>
+            </div>
+            <div class="state">
+                <div class="status">{% trans "Running" %}</div>
+                <div class="indicators">
+                    <div class="indicator1"></div>
+                    <div class="indicator2"></div>
+                    <div class="indicator3"></div>
+                    <div class="indicator4"></div>
+                </div>
+                <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+                <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+            </div>
             <div class="actions">
                 <div class="action-container start">
                     <a href="#" class="action-start">{% trans "Start" %}</a>
@@ -81,73 +150,6 @@ or implied, of GRNET S.A.
                 <span class="code"></span>
                 <span class="message"></span>
                 <button class="details">{% trans "Details" %}</button>
-            </div>
-            <div class="state">
-                <div class="status">{% trans "Running" %}</div>
-                <div class="indicators">
-                    <div class="indicator1"></div>
-                    <div class="indicator2"></div>
-                    <div class="indicator3"></div>
-                    <div class="indicator4"></div>
-                </div>
-                <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
-                <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
-            </div>
-            <div class='connect-border'></div>
-            <div class='connect-arrow'></div>
-            <img class="logo" src="" />
-            <div href="#" class="name">
-                <h5 class="namecontainer editable">
-                    <span class="name">node.name</span><span class="rename"></span>
-                    <div class="editbuttons" style="display:none">
-                        <div class="save"></div>
-                        <div class="cancel"></div>
-                    </div>
-                </h5>
-            </div>
-            <a href="#" class="ip">
-                <h5>{% trans "IP" %}: <span class="public">node.public_ip</span></h5>
-            </a>
-            <div class="info">
-                <div class="info-header">
-                    <div class="info-label">{% trans "info" %}</div>
-                    <div class="toggler down"></div>
-                </div>
-                <div class="info-content">
-                    <div class="metadata-container">
-                        <div class="vm-details metadata-column">
-                            {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
-                            {% trans "RAM" %}: <span class="ram-data">2048</span> (MB)<br />
-                            {% trans "System Disk" %}: <span class="disk-data">20</span> (GB) <br /><br />
-                            {% trans "Image" %}: <span class="image-data">Debian</span><br />
-                            {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
-                        </div>
-                        <div class="vm-stats metadata-column">
-                            {% trans "CPU" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
-                            {% trans "RAM" %} <img src="static/ram-bar.png" class="metadata-bar" /><br />
-                            {% trans "S.Disk" %} <img src="static/cpu-bar.png" class="metadata-bar" /><br />
-                            {% trans "Net" %} <img src="static/net-bar.png" class="metadata-bar" /><br /><br />
-                            {% trans "details" %}
-                        </div>
-                        <div class="vm-metadata metadata-column">
-                            <div class="metadata-left">
-                                {% trans "Metadata" %}: <br />
-                                (<span class="metadata-count">0</span>)
-                            </div>
-                            <div class="metadata-keys-container">
-                                <div class="scrollable vertical">
-                                    <div class="items">
-                                    </div>
-                                </div>
-                                <div class="metadata-actions">
-                                    <div class="prev"></div>
-                                    <div class="next"></div>
-                                </div>
-                            </div>
-                            <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         <div class="separator"></div>

@@ -693,14 +693,16 @@ div.image-container {
     padding: 0 4px 0;
     clear: both;
     width: 523px;
+    position:relative;
 }
 
 div.machine {
     margin-left: -7px;
-    padding-left: 7px;
     min-height: 65px;
-    padding-right: 15px;
+    padding-left: 7px;
+    padding-right: 5px;
     padding-top: 2px;
+    width: 516px;
 }
 
 .machine a {
@@ -713,6 +715,11 @@ div.machine div.actions a:hover {
     width: 180px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
+}
+
+div.machine-details {
+    width: 400px;
+    float:left;
 }
 
 .machine span.name, .machine a.ip {
@@ -731,6 +738,7 @@ div.machine div.actions a:hover {
 
 .state {
     float: right;
+    margin-top: -40px;
 }
 
 .state div {
@@ -740,12 +748,12 @@ div.machine div.actions a:hover {
 
 div.machine div.actions {
     float: right;
-    width: 70px;
-    margin: 0 -80px 0 0;
-    font-weight: normal;
     font-size: 75%;
+    font-weight: normal;
     height: 68px;
+    margin: -42px -125px 0 0;
     position: relative;
+    width: 70px;
 }
 
 div.machine div.actions a {
@@ -885,7 +893,6 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
     margin-top: -76px;
     padding-bottom: 15px;
-    padding-top: 15px;
     width: 699px;
     min-height: 50px;
 }
@@ -964,7 +971,7 @@ div.name:hover span.rename {
 }
 
 .machine div.info {
-    margin-top: 6px;
+    float:left;
 }
 
 .machine div.info div.info-header {
@@ -972,7 +979,6 @@ div.name:hover span.rename {
     color: white;
     height: 17px;
     width: 50px;
-    margin-left: 85px;
     cursor: pointer;
 }
 
@@ -1961,7 +1967,7 @@ div.confirm_single button, div.confirm_multiple button, div.action_error button 
 
 div.confirm_single {
     float: right;
-    margin: -20px -124px 0 0;
+    margin: -20px -122px 0 0;
 }
 
 div.confirm_single button {
@@ -2117,7 +2123,7 @@ div#user a.current_lang {
 }
 
 .machine h5 {
-    margin: -1px 60px 4px 84px;
+    margin: -1px 0px 4px 0px;
 }
 
 .machine h5.namecontainer {

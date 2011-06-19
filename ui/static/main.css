@@ -751,8 +751,8 @@ div.machine div.actions {
     font-size: 75%;
     font-weight: normal;
     height: 68px;
-    margin: -42px -125px 0 0;
-    position: relative;
+    position: absolute;
+    right: -63px;
     width: 70px;
 }
 
@@ -2445,6 +2445,9 @@ h5.network-machines, h5.machine-settings {
 
 .state {
     float: right;
+    position: absolute;
+    right: 10px;
+    top: 40px;
 }
 
 div.network div.actions {
@@ -2820,9 +2823,10 @@ h5.machine-connect span:hover {
 /* Metadata */
 
 .info-content {
+    clear: both;
     height: 95px;
+    margin-top: 70px;
     width: 512px;
-    margin-top: 10px;
 }
 
 .metadata-container {

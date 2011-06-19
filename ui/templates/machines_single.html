@@ -114,10 +114,10 @@ or implied, of GRNET S.A.
     </div>
     <div class="column3">
         <div class="controls">
-            <div class="previous">
+            <div class="previous" style="display:none;">
                 &lt;{% trans "previous" %}
             </div>
-            <div class="next">
+            <div class="next" style="display:none;">
                 {% trans "next" %}&gt;
             </div>
         </div>
@@ -151,7 +151,7 @@ $("#machinesview-single.single div.confirm_single .no").live('click', function()
     update_confirmations();
 });
 
-//show error
+//show error popup box
 $("#machinesview-single.single div.action_error .details").live('click', function(){
     // remove the action from the pending list
     ajax_error($(this).parent().children('.code').text(), undefined, $(this).parent().children('.action').text(), $(this).parent().children('.message').text());
@@ -328,6 +328,7 @@ function update_machines_view(data){
 
         existing = $('#machinesview-single.single #' + server.id);
         existing_link = $('#machinesview-single div.column3 #link-' + server.id);
+        var current_Id = current_serverId();
 
         //hide next button if there is only one vm
         if (data.servers.values.length == 1) {
@@ -353,11 +354,15 @@ function update_machines_view(data){
             $("#machinesview-single.single div.single-container:last-child").find("div.separator").show();
             //  if the status is deleted, delete it from the DOM
             if (server.status == 'DELETED') {
-                existing.next().show();
                 existing.remove();
                 existing_link.remove();
+                //if the deleted vm is the displayed one, display the 1st vm
+                if (server.id == current_Id) {
+                    $("#machinesview-single.single div.single-container:eq(1)").show()
+                    $('#machinesview-single.single .column3').find('.server-name:eq(1)').addClass('selected');
+                }
                 try {
-                    console.info(existing.find("div.name span.name").text() + ' removed');
+                    console.info(existing.find(".machine-details div.name").text() + ' removed');
                 } catch(err) {}
             }
             // if the status has changed
@@ -434,7 +439,7 @@ function update_machines_view(data){
             }
             serverwidget.appendTo('.servers');
             serverwidget.show();
-            //find and hide the previous selected server
+            //find and hide the previously selected server
             $('.single').find('.single-container').hide();
             $('.single .column3').find('.selected').removeClass('selected');
             //create and select the new one
@@ -542,11 +547,15 @@ function update_machines_view(data){
         $('.single').find('#' + $(this).attr('id').substring(5)).show();
         $('.single .column3').find('.selected').removeClass('selected');
         $(this).addClass('selected');
-        $(".single .column3 .previous").show();
-        $(".single .column3 .next").show();
-        if ($(this).attr("id") == $(".single .column3 .server-name:eq(1)").attr("id")) {
+        //show prev next links only if there are prev next servers
+        if ($("#machinesview-single.single .column3 .selected").attr("id") != $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+            $(".single .column3 .previous").show();
+        } else {
             $(".single .column3 .previous").hide();
-        } else if ($(this).attr("id") == $(".single .column3 .server-name:last").attr("id")) {
+        }
+        if ($("#machinesview-single.single .column3 .selected").attr("id") != $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+            $(".single .column3 .next").show();
+        } else {
             $(".single .column3 .next").hide();
         }
     });
@@ -569,7 +578,11 @@ function update_machines_view(data){
     } else {
         $("#machinesview-single.single .column3 .previous").show()
     }
+}
 
+//get currently displayed serverId
+function current_serverId() {
+    return $("#machinesview-single.single").find("div.single-container:visible").attr("id");
 }
 
 //enable prev-next buttons

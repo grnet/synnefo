@@ -2990,7 +2990,7 @@ div.machine a.manage-metadata:hover {
 
 div.single div.single-action:hover {
     background-color:#A1C8DB;
-    width: 180px;
+    width: 185px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
 }
@@ -3009,7 +3009,7 @@ div.single div.single-action:hover {
 }
 
 .single div.action_error {
-    margin: -2px 5px 0 0 !important;
+    margin: -2px 0px 0 583px !important;
 }
 
 .single .column2 {

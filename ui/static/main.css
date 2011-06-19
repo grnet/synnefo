@@ -707,7 +707,7 @@ div.machine {
     text-decoration: none;
 }
 
-div.machine a:hover {
+div.machine div.actions a:hover {
     background-color:#A1C8DB;
     width: 180px;
     opacity: 0.8;

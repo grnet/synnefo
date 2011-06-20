@@ -509,14 +509,16 @@ function update_machines_view(data){
         }
     update_iconview_actions(server.id, server.status);
     });
+
+    // hide pane spinner
     $("#machinesview-single.single > div.large-spinner").hide();
 
-    // show message in case user has no servers!
-    //if ($('.single-container').length < 2) {
-    //    showWelcome();
-    //} else {
-    //    hideWelcome();
-    //}
+    // show message in case user has no server!
+    if ($('#machinesview-single div.single-container').length == 1) {
+        showWelcome();
+    } else {
+        hideWelcome();
+    }
 
     // set confirm box position
     if (window.innerHeight - 220 < $('#machinesview-single').height())
@@ -626,7 +628,4 @@ if ( flavors.length == 0 && images.length == 0 ) {
     // start updating vm list
     update_vms(UPDATE_INTERVAL);
 }
-
-//FIXME: Hide and show welcome depending on number of machines
-hideWelcome();
 </script>

@@ -755,6 +755,11 @@ function update_networks_view(servers_data, networks_data){
             existing_public = $('#networks-pane #net-pub-server-' + server.id);
             // get the server's OS icon
             var server_image = os_icon(server.metadata);
+            if (!(server.metadata == undefined)) {
+                var server_image = os_icon(server.metadata);
+            } else {
+                var server_image = "unknown"
+            }
 
             // if multiple servers exist in public network, delete all but one
             // defensive coding - that shouldn't happen normally
@@ -826,6 +831,7 @@ function update_networks_view(servers_data, networks_data){
                 }
                 machine.appendTo("#networks-pane .public-networks .machines-list");
             }
+
             /*
             Now update all private networks
             Since one server may belong to more than one private networks,

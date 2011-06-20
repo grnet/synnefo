@@ -246,6 +246,37 @@ function choose_view() {
     }
 }
 
+// return value from metadata key "OS", if it exists
+function os_icon(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+    if (metadata.values.OS == undefined || metadata.values.OS == '') {
+        return 'unknown';
+    } else {
+        if (os_icons.indexOf(metadata.values.OS) == -1) {
+            return 'unknown';
+        } else {
+            return metadata.values.OS;
+        }
+    }
+}
+
+function os_icon_from_value(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+if (metadata == undefined || metadata == '') {
+        return 'unknown';
+    } else {
+        if (os_icons.indexOf(metadata) == -1) {
+            return 'unknown';
+        } else {
+            return metadata;
+        }
+    }
+}
+
 // get and show a list of running and terminated machines
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}

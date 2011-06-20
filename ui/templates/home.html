@@ -326,8 +326,8 @@ or implied, of GRNET S.A.
                         <img src="static/disks-icon.png" /></a></li>
                 </ul>
                 <div class="css-panes">
-                    <div id="machines-pane" class="pane" style="display:block;">{% include "machines.html" %}</div>
-                    <div id="networks-pane" class="pane">{% include "networks.html" %}</div>
+                    <div id="machines-pane" class="pane" style="display:block;"></div>
+                    <div id="networks-pane" class="pane"></div>
                     <div id="disks-pane" class="pane"></div>
                 </div>
                 <!-- base notification for error/success reporting -->
@@ -371,7 +371,6 @@ or implied, of GRNET S.A.
                 onBeforeClick: function(event, i) {
                     // get the pane to be opened
                     var pane = this.getPanes().eq(i);
-                    pane.text('');
                     //change the displaying title
                     $(".tab-name").text(this.getTabs().eq(i).attr("href"));
                     // load it with a page specified in the tab's href attribute

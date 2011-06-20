@@ -326,37 +326,6 @@ $('#machines-pane span.typebody').mouseout(function() {
     $(this).removeClass('typehover');
 });
 
-// return value from metadata key "OS", if it exists
-function os_icon(metadata) {
-    if (!metadata) {
-        return 'unknown';
-    }
-    if (metadata.values.OS == undefined || metadata.values.OS == '') {
-        return 'unknown';
-    } else {
-        if (os_icons.indexOf(metadata.values.OS) == -1) {
-            return 'unknown';
-        } else {
-            return metadata.values.OS;
-        }
-    }
-}
-
-function os_icon_from_value(metadata) {
-    if (!metadata) {
-        return 'unknown';
-    }
-if (metadata == undefined || metadata == '') {
-        return 'unknown';
-    } else {
-        if (os_icons.indexOf(metadata) == -1) {
-            return 'unknown';
-        } else {
-            return metadata;
-        }
-    }
-}
-
 // switch to list view
 $("#machines-pane a#list").click(function(){
     list_view();

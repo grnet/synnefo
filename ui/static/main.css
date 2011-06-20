@@ -2332,8 +2332,6 @@ div.list table thead .vmname {
     margin-top: 18px !important;
 }
 
-
-
 .hidden {
     display:none;
 }
@@ -3012,8 +3010,11 @@ div.single div.single-action:hover {
 }
 
 .single div.confirm_single {
-    margin: -2px -20px 0 0;
     font-size: 80%;
+}
+
+.single div.action-container.destroy div.confirm_single {
+    margin-top: 0px;
 }
 
 .single div.confirm_single button.no {

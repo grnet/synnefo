@@ -636,8 +636,9 @@ $("#networks-pane div.confirm_single .no").live('click', function(){
     }
     var networkID = $(this).closest('.network').attr("id").split('-').pop();
     // remove the action from the pending list
-    $(this).parent().prev().children('a').removeClass('selected');
-    $(this).parent().prev().removeClass('display');
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('div.actions').removeClass('display');
+
     for (i=0; i < pending_actions.length; i++){ // if there is a pending action for this network remove it
         if (pending_actions[i][0] == delete_network && pending_actions[i][1] == networkID){
                 pending_actions.splice(i,1);

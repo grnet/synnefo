@@ -289,14 +289,22 @@ class ServerConsole(Command):
     description = 'get VNC console'
     syntax = '<server id>'
     
-    def add_options(self, parser):
-    	pass
-    
     def execute(self, server_id):
         path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
         body = json.dumps({'console': {'type': 'vnc'}})
         reply = self.http_cmd('POST', path, body, 200)
         print_dict(reply['console'])
+
+
+@command_name('profile')
+class SetFirewallProfile(Command):
+    description = 'set the firewall profile'
+    syntax = '<server id> <profile>'
+    
+    def execute(self, server_id, profile):
+        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        body = json.dumps({'firewallProfile': {'profile': profile}})
+        self.http_cmd('POST', path, body, 202)
 
 
 @command_name('lsaddr')

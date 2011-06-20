@@ -247,3 +247,16 @@ def disconnect_from_network(vm, net):
             'mode': 'bridged',
             'link': nic.network.link.name}))
     rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)
+
+def set_firewall_profile(vm, profile):
+    if profile == 'ENABLED':
+        to_delete = settings.GANETI_FIREWALL_DISABLED_TAG
+        to_add = settings.GANETI_FIREWALL_ENABLED_TAG
+    elif profile == 'DISABLED':
+        to_delete = settings.GANETI_FIREWALL_ENABLED_TAG
+        to_add = settings.GANETI_FIREWALL_DISABLED_TAG
+    else:
+        raise ValueError("Unsopported Firewall Profile: %s" % profile)
+    
+    rapi.DeleteInstanceTags(vm.backend_id, [to_delete], dry_run=settings.TEST)
+    rapi.AddInstanceTags(vm.backend_id, [to_add], dry_run=settings.TEST)

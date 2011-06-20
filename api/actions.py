@@ -264,6 +264,14 @@ def get_console(request, vm, args):
 
     return HttpResponse(data, mimetype=mimetype, status=200)
 
+@server_action('firewallProfile')
+def set_firewall_profile(request, vm, args):
+    profile = args.get('profile', '')
+    if profile not in ('ENABLED', 'DISABLED'):
+        raise BadRequest("Unsupported firewall profile")
+    backend.set_firewall_profile(vm, profile)
+    return HttpResponse(status=202)
+
 
 @network_action('add')
 def add(request, net, args):

@@ -33,13 +33,12 @@
 import socket
 import traceback
 import json
-import logging
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend, email_send
+from synnefo.logic import utils, backend, email_send, log
 
-_logger = logging.getLogger("synnefo.dispatcher")
+_logger = log.get_logger("synnefo.dispatcher")
 
 def update_db(message):
     """Process the status of a VM based on a ganeti status message"""

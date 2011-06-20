@@ -520,12 +520,6 @@ function update_machines_view(data){
         hideWelcome();
     }
 
-    // set confirm box position
-    if (window.innerHeight - 220 < $('#machinesview-single').height())
-        $('.confirm_multiple').addClass('fixed');
-    else
-        $('.confirm_multiple').removeClass('fixed');
-
     //enable widget links
     $(".server-name").live('click', function() {
         $('.single').find('.single-container').hide()

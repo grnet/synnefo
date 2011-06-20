@@ -70,6 +70,7 @@ class Image(models.Model):
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey("VirtualMachine", null=True)
+    public = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = u'Image'

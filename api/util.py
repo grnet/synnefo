@@ -121,7 +121,10 @@ def get_image(image_id, owner):
 
     try:
         image_id = int(image_id)
-        return Image.objects.get(id=image_id, owner=owner)
+        image = Image.objects.get(id=image_id)
+        if not image.public and image.owner != owner:
+            raise ItemNotFound('Image not found.')
+        return image
     except ValueError:
         raise BadRequest('Invalid image ID.')
     except Image.DoesNotExist:

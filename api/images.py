@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -119,15 +120,14 @@ def list_images(request, detail=False):
     #                       overLimit (413)
 
     since = util.isoparse(request.GET.get('changes-since'))
-
+    owner = request.user
+    
+    avail_images = Image.objects.filter(Q(owner=owner) | Q(public=True))
     if since:
-        avail_images = Image.objects.filter(owner=request.user,
-                                            updated__gte=since)
+        avail_images = avail_images.filter(updated__gte=since)
         if not avail_images:
             return HttpResponse(status=304)
-    else:
-        avail_images = Image.objects.filter(owner=request.user)
-
+    
     images = [image_to_dict(image, detail) for image in avail_images]
 
     if request.serialization == 'xml':

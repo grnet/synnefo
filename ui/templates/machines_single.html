@@ -204,7 +204,9 @@ $("#machinesview-single.single div.action_error .details").live('click', functio
 //confirm action
 $("#machinesview-single.single div.confirm_single .yes").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
-    console.info(serverID);
+    try {
+        console.info(serverID);
+    } catch(err) {}
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
         if (pending_actions[i][1]==serverID){
             action = pending_actions.splice(i,1)[0]; // extract action

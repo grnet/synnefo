@@ -103,8 +103,8 @@ function update_confirmations() {
     $('#machines-pane div.confirm_single').hide();
     $('#machines-pane div.confirm_multiple').hide();
     var action_type = [];
-    // standard view only
-    if ($.cookie("view") == '0') {
+    // standard view or single view
+    if ($.cookie("view") == '0' || $.cookie("view") == '2') {
         for (var i=0; i<pending_actions.length; i++) {
             // show single confirms
             if (pending_actions[i][0] == reboot) {
@@ -118,13 +118,8 @@ function update_confirmations() {
             } else {
                 action_type = "destroy";
             }
-            $("#machines-pane div.machine-container#" + pending_actions[i][1] +
-            " div.actions div.action-container." + action_type + " div.confirm_single").show();
-        }
-    } else if ($.cookie("view") == '2') {
-        for (var i=0; i<pending_actions.length; i++){
-            // show single confirms
-            $("#machines-pane div.single-container#"+pending_actions[i][1]+' .confirm_single').show();
+            $("#machines-pane #" + pending_actions[i][1] +
+            " div.action-container." + action_type + " div.confirm_single").show();
         }
     }
     // if more than one pending action show multiple confirm box
@@ -293,7 +288,7 @@ function update_vms(interval) {
                     servers = data.servers.values;
                     jQuery.parseJSON(data);
                     update_machines_view(data);
-                } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}          
+                } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
             } else if (jqXHR.status != 304){
                 try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -567,7 +562,7 @@ function update_flavors() {
             update_vms(UPDATE_INTERVAL);
         },
         success: function(data, textStatus, jqXHR) {
-            
+
             try {
                 flavors = data.flavors.values;
                 jQuery.parseJSON(data);

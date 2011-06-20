@@ -190,7 +190,7 @@ function display_failure(status, serverID, action, responseText) {
 // cancel action
 $("#machinesview-single.single div.confirm_single .no").live('click', function(){
     pending_actions = [];
-    $(".selected").removeClass("selected");
+    $('#machinesview-single').find('div.single-action').removeClass("selected");
     update_confirmations();
 });
 

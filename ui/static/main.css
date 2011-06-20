@@ -42,6 +42,7 @@ body {
     background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
     margin: 0 auto;
     width: 700px;
+    text-align: left;
 }
 
 #content {

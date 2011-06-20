@@ -7,9 +7,10 @@
     <script src="/static/jquery.cookie.js"></script>
     
     <style>
-        .center {text-align: center;}
-        .header {height: 10%;}
-        .frame  {width: 100%; height: 90%}
+        .center    {text-align: center;}
+        .header    {height: 10%;}
+        body, html {height: 90%}
+        iframe     {display:block; width:100%; border:none; height: 90%}
     </style>
 
     <script type="text/javascript">
@@ -105,6 +106,7 @@
                 $('#remtime').countdown.stop();
                 $('#countdown').css('display', 'none');
                 $('#go').attr('disabled', 'disabled');
+                $('#content').attr('src', '/');
             });
         });
 

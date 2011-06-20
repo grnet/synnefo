@@ -53,7 +53,9 @@ def get_users(request):
     #XXX: The following filter should change when the invitations app is removed
     invitations = Invitations.objects.filter(accepted = False)
     ids = map(lambda x: x.target.id, invitations)
-    users = SynnefoUser.objects.exclude(id__in = ids).order_by('realname')
+    users = SynnefoUser.objects.exclude(id__in = ids)\
+                               .exclude(type__exact = "HELPDESK")\
+                               .order_by('realname')
     result = []
 
     for user in users:

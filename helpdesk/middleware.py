@@ -44,9 +44,6 @@ class HelpdeskMiddleware(object):
 
     def process_request(self, request):
 
-        if not request.path.startswith(self.install_path) :
-            return
-
         # Check the request's IP address
         allowed = settings.HELPDESK_ALLOWED_IPS
         if not check_ip(request.META['REMOTE_ADDR'], allowed):

@@ -3025,7 +3025,7 @@ div.single div.single-action:hover {
 }
 
 .single div.action_error {
-    margin: -2px 0px 0 577px !important;
+    margin: 2px 0px 0 577px !important;
     position: relative;
 }
 

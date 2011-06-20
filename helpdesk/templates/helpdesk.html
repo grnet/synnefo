@@ -43,10 +43,7 @@
         }
 
         function setCookie(name, value, expires, path, domain, secure) {
-            var today = new Date();
-            //today.setU
-
-            var expires_date = new Date( today.getTime() + (expires) );
+            var expires_date = new Date( expires * 1000 );
 
             document.cookie = name + "=" +escape(value) +
                 (( expires ) ? ";expires=" + expires_date.toGMTString() : "") +
@@ -88,7 +85,10 @@
 
                         var secs = data.expires - parseInt((new Date()).getTime() / 1000);
 
-                        $('#remtime').countdown({seconds: secs, callback: function(){alert('Το token του χρήστη έληξε')}});
+                        $('#remtime').countdown({seconds: secs,
+                            callback: function(){
+                                alert('Το token του χρήστη έληξε')
+                            }});
 
                         setCookie('X-Auth-Tmp-Token', data.token, data.expires, '/', '', false);
 

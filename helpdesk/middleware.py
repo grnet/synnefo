@@ -82,7 +82,7 @@ class HelpdeskMiddleware(object):
         if (time.time() -
             time.mktime(tmp_user.tmp_auth_token_expires.timetuple())) > 0:
             # The impersonated user's token has expired, re-login
-            return HttpResponse(status=403, content="Temporary token expired")
+            return
 
         # Impersonate the request user: Perform requests from the helpdesk
         # account on behalf of the impersonated user

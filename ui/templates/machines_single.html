@@ -384,12 +384,12 @@ function update_machines_view(data){
                     // from an active state to an inactive one
                     log_server_status_change(existing, server.status);
                     existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-off.png');
-                    existing.find(".state-label").text(STATUSES[server.status]);
+                    $(".column1 .state-label").text(STATUSES[server.status]);
                     existing.find(".connect-border").hide();
                     existing.find(".connect-arrow").hide();
-                    existing.find(".spinner").hide();
+                    $(".column1 .state").find(".spinner").hide();
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                    existing.find(".state").removeClass().addClass("state terminated-state");
+                    $(".column1 .state").removeClass().addClass("state terminated-state");
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&
@@ -397,12 +397,12 @@ function update_machines_view(data){
                     // From an inactive state to an active one
                     log_server_status_change(existing, server.status);
                     existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-on.png');
-                    existing.find(".state-label").text(STATUSES[server.status]);
+                    $(".column1 .state-label").text(STATUSES[server.status]);
                     existing.find(".connect-border").show();
                     existing.find(".connect-arrow").show();
-                    existing.find(".spinner").hide();
+                    $(".column1 .state").find(".spinner").hide();
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                    existing.find(".state").removeClass().addClass("state running-state");
+                    $(".column1 .state").removeClass().addClass("state running-state");
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else {
@@ -414,17 +414,17 @@ function update_machines_view(data){
                              (STATUSES['BUILD'] == current_message && server.status == 'ACTIVE')) {
                         // if it has been rebooted or just created
                         log_server_status_change(existing, server.status);
-                        existing.find(".state-label").text(STATUSES[server.status]);
+                        $(".column1 .state-label").text(STATUSES[server.status]);
                         existing.find(".connect-border").show();
                         existing.find(".connect-arrow").show();
-                        existing.find(".spinner").hide();
-                        existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                        existing.find(".state").removeClass().addClass("state running-state");
+                        $(".column1 .state").find(".spinner").hide();
+                        $(".column1 .state").attr('src','static/icons/indicators/medium/wave.gif').show();
+                        $(".column1 .state").removeClass().addClass("state running-state");
                         setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                     }
                     else {
                         // in any other case just change the status and ignore spinners/waves
-                        existing.find(".state-label").text(STATUSES[server.status]);
+                        $(".column1 .state-label").text(STATUSES[server.status]);
                     }
                 }
             }
@@ -451,7 +451,7 @@ function update_machines_view(data){
             machine.find(".machine-details div.name").text(server.name.substring(0,100));
             machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
-            machine.find(".state-label").text(STATUSES[server.status]);
+            $(".column1 .state-label").text(STATUSES[server.status]);
             // find and display flavor parameters
             var flavor_params = get_flavor_params(server.flavorRef);
             machine.find(".machine-details div.cpus").text(flavor_params['cpus']);
@@ -470,21 +470,21 @@ function update_machines_view(data){
                     machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-off.png');
                     machine.find(".connect-border").hide();
                     machine.find(".connect-arrow").hide();
-                    machine.find(".state").removeClass().addClass("state terminated-state");
+                    $(".column1 .state").removeClass().addClass("state terminated-state");
             }
             //show spinner while machine is building or rebooting
             if (server.status == 'BUILD' ||
                 [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
-                machine.find('.spinner').show();
+                $(".column1 .state").find('.spinner').show();
                 machine.find(".connect-border").hide();
                 machine.find(".connect-arrow").hide();
-                machine.find('.state').removeClass().addClass('state build-state');
+                $(".column1 .state").removeClass().addClass('state build-state');
             }
             if (server.status == 'REBOOT') {
-                machine.find('.spinner').show();
+                $(".column1 .state").find('.spinner').show();
                 machine.find(".connect-border").hide();
                 machine.find(".connect-arrow").hide();
-                machine.find('.state').removeClass().addClass('state rebooting-state');
+                $(".column1 .state").removeClass().addClass('state rebooting-state');
             }
             machine.appendTo("#machinesview-single.single");
             //disable reboot and shutdown actions while machine is building

@@ -976,6 +976,7 @@ div.name:hover span.rename {
 
 .machine div.info {
     float:left;
+    margin-bottom: 5px;
 }
 
 .machine div.info div.info-header {
@@ -1494,7 +1495,7 @@ input.machine {
 }
 
 #metadata-wizard #add-meta-value {
-    margin-left: 10px;
+    margin-left: 25px;
     width: 150px;
 }
 
@@ -1644,7 +1645,7 @@ input.machine {
 
 #metadata-wizard .metatextbox {
     font-size: 90%;
-    height: 10px;
+    height: 18px;
     margin-top: -2px;
     color: black;
     width: 150px;
@@ -1735,13 +1736,13 @@ input.machine {
 }
 
 #metadata-wizard .textdropdown-btn {
-    width: 20px;
-    float: right;
-    background: url("./dropdown-arrow.gif") no-repeat center;
+    background: url("./dropdown-arrow.gif") no-repeat scroll center center transparent;
     cursor: pointer;
-    left: 147px;
+    float: right;
+    left: 126px;
     margin-top: 3px;
     position: absolute;
+    width: 20px;
 }
 
 #metadata-wizard ul {
@@ -1782,10 +1783,10 @@ input.machine {
 }
 
 #metadata-wizard #add-meta-key {
-    height: 12px;
+    height: 16px;
     margin-left: 5px;
     margin-top: 2px;
-    width: 108px !important;
+    width: 98px !important;
 }
 
 /* notification box */
@@ -2825,14 +2826,11 @@ h5.machine-connect span:hover {
 .info-content {
     clear: both;
     height: 95px;
-    margin-top: 70px;
     width: 512px;
 }
 
 .metadata-container {
     line-height: 12px;
-    margin-left: 2px;
-    margin-top: 2px;
     height: 85px;
     background-color: #84b7d0;
 }

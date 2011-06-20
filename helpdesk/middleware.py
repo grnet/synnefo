@@ -28,6 +28,7 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
+from synnefo.aai import middleware
 from synnefo.db.models import SynnefoUser
 from django.conf import settings
 from django.http import HttpResponse
@@ -36,8 +37,15 @@ import time
 class HelpdeskMiddleware(object):
 
     auth_tmp_token = "X-Auth-Tmp-Token"
+    install_path  = "/helpdesk"
+
+    def __init__(self):
+       middleware.add_url_exception(self.install_path)
 
     def process_request(self, request):
+
+        if not request.path.startswith(self.install_path) :
+            return
 
         # Check the request's IP address
         allowed = settings.HELPDESK_ALLOWED_IPS
@@ -45,11 +53,27 @@ class HelpdeskMiddleware(object):
             try:
                 proxy_ip = request.META['HTTP_X_FORWARDED_FOR']
             except Exception:
-                return HttpResponse(status=403, content="IP Address not allowed")
+                return HttpResponse(status=403,
+                                    content="IP Address not allowed")
             if not check_ip(proxy_ip, allowed):
-                return HttpResponse(status=403, content="IP Address not allowed")
+                return HttpResponse(status=403,
+                                    content="IP Address not allowed")
 
-        # Helpdesk application request, find the temp token
+        # Helpdesk application request, search for a valid helpdesk user
+        try:
+            hd_user_token = request.COOKIES['X-Auth-Token']
+            if hd_user_token:
+                hd_user = SynnefoUser.objects.get(auth_token=hd_user_token)
+                if not hd_user.type == 'HELPDESK':
+                    return HttpResponse(status=401,
+                                    content="Not a valid helpdesk user")
+            else:
+                return HttpResponse(status=401,
+                                    content="Not a valid helpdesk user")
+        except KeyError:
+            return
+
+        # Helpdesk application request, search for a valid tmp token
         tmp_token = None
         try:
             tmp_token = request.COOKIES['X-Auth-Tmp-Token']
@@ -63,6 +87,8 @@ class HelpdeskMiddleware(object):
             # The impersonated user's token has expired, re-login
             return HttpResponse(status=403, content="Temporary token expired")
 
+        # Impersonate the request user: Perform requests from the helpdesk
+        # account on behalf of the impersonated user
         request.user = tmp_user
 
 def check_ip(ip, allowed):

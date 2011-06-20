@@ -4,16 +4,16 @@ from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
 
+DONT_CHECK = ['/api/', '/invitations/login']
+
 class SynnefoAuthMiddleware(object):
     auth_token     = "X-Auth-Token"
     auth_user      = "X-Auth-User"
     auth_key       = "X-Auth-Key"
 
     def process_request(self, request):
-        if request.path.startswith('/api/') :
-            return
 
-        if request.path.startswith('/invitations/login') :
+        if request.path in DONT_CHECK:
             return
 
         # Special case for testing purposes, delivers the cookie for the
@@ -110,3 +110,9 @@ class SynnefoAuthMiddleware(object):
         response['Location'] = settings.APP_INSTALL_URL
         response.status_code = 302
         return response
+
+
+def add_url_exception(url):
+    if not url in DONT_CHECK:
+        DONT_CHECK.append(url)
+

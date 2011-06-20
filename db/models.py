@@ -11,7 +11,8 @@ class SynnefoUser(models.Model):
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
         ('PROFESSOR', 'Professor'),
-        ('USER', 'Generic User')
+        ('USER', 'Generic User'),
+        ('HELPDESK', 'Helpdesk User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')

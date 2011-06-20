@@ -86,4 +86,10 @@ def get_tmp_token(request):
     token['token'] = user.tmp_auth_token
     token['expires'] = int(time.mktime(user.tmp_auth_token_expires.timetuple()))
 
-    return HttpResponse(json.dumps(token))
+    response = HttpResponse(json.dumps(token))
+
+    expire_fmt = user.tmp_auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    response.set_cookie('X-Auth-Tmp-Token', value=user.tmp_auth_token,
+                            expires = expire_fmt,
+                            path='/')
+    return response

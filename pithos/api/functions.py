@@ -608,13 +608,15 @@ def object_update(request, v_account, v_container, v_object):
             raise ItemNotFound('Object does not exist')
     
     # A Content-Type or Content-Range header may indicate data updates.
-    if content_type and content_type.startswith('multipart/byteranges'):
+    if content_type is None:
+        return HttpResponse(status=202)
+    if content_type.startswith('multipart/byteranges'):
         # TODO: Support multiple update ranges.
         return HttpResponse(status=202)
     # Single range update. Range must be in Content-Range.
     # Based on: http://code.google.com/p/gears/wiki/ContentRangePostProposal
     # (with the addition that '*' is allowed for the range - will append).
-    if content_type and content_type != 'application/octet-stream':
+    if content_type != 'application/octet-stream':
         return HttpResponse(status=202)
     content_range = request.META.get('HTTP_CONTENT_RANGE')
     if not content_range:

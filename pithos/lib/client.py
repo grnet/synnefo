@@ -81,15 +81,13 @@ class Client(object):
                 print '%s: %s' % (key.capitalize(), val)
             print
         
-        data = resp.read()
+        length = hasattr(headers, 'Content-length') \
+        and headers['Content-length'] or None
+        
+        data = resp.read(length)
         if self.debug:
             print data
             print
-        
-        if data:
-            assert data[-1] == '\n'
-        #remove trailing enter
-        data = data and data[:-1] or data
         
         if int(resp.status) in ERROR_CODES.keys():
             raise Fault(data, int(resp.status))
@@ -133,15 +131,13 @@ class Client(object):
                 print '%s: %s' % (key.capitalize(), val)
             print
         
-        data = resp.read()
+        length = hasattr(headers, 'Content-length') \
+        and headers['Content-length'] or None
+        
+        data = resp.read(length)
         if self.debug:
             print data
             print
-        
-        if data:
-            assert data[-1] == '\n'
-        #remove trailing enter
-        data = data and data[:-1] or data
         
         if int(resp.status) in ERROR_CODES.keys():
             raise Fault(data, int(resp.status))

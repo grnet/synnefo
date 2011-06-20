@@ -302,7 +302,7 @@ $("#machinesview-icon.standard div.actions a.action-reboot").live('click', funct
     $(this).closest("div.machine").find('.action_error').hide();
     // if there is already a pending action for this server replace it
     for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1]==serverID) {
+        if (pending_actions[i][1] == serverID) {
             pending_actions[i][0] = reboot;
             found = true
         }
@@ -328,7 +328,7 @@ $("#machinesview-icon.standard div.actions a.action-shutdown").live('click', fun
     $(this).closest("div.machine").find('.action_error').hide();
     // if there is already a pending action for this server replace it
     for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1]==serverID) {
+        if (pending_actions[i][1] == serverID) {
             pending_actions[i][0] = shutdown;
             found = true
         }
@@ -353,7 +353,7 @@ $("#machinesview-icon.standard div.actions a.action-start").live('click', functi
     $(this).closest("div.machine").find('.action_error').hide();
     // if there is already a pending action for this server replace it
     for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1]==serverID) {
+        if (pending_actions[i][1] == serverID) {
             pending_actions[i][0] = start;
             found = true
         }
@@ -378,7 +378,7 @@ $("#machinesview-icon.standard div.actions a.action-console").live('click', func
     $(this).closest("div.machine").find('.action_error').hide();
     // if there is already a pending action for this server replace it
     for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1]==serverID) {
+        if (pending_actions[i][1] == serverID) {
             pending_actions[i][0] = open_console;
             found = true
         }
@@ -404,7 +404,7 @@ $("#machinesview-icon.standard div.actions a.action-destroy").live('click', func
     $(this).closest("div.machine").find('.action_error').hide();
     // if there is already a pending action for this server replace it
     for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1]==serverID) {
+        if (pending_actions[i][1] == serverID) {
             pending_actions[i][0] = destroy;
             found = true
         }
@@ -458,7 +458,7 @@ $("#machinesview-icon.standard div.confirm_single button.no").live('click', func
     $(this).closest('div.action-container').children('a').removeClass('selected');
     $(this).closest('div.actions').removeClass('display');
     for (i=0; i<pending_actions.length; i++) { // if there is a pending action for this server remove it
-        if (pending_actions[i][1]==serverID) {
+        if (pending_actions[i][1] == serverID) {
             pending_actions.splice(i,1);
         }
     }

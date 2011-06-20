@@ -217,9 +217,9 @@ div.css-panes {
 #beforecreate {
     background-color: #FF9955;
     float: left;
-    height: 32px;
+    height: 31px;
     margin-left: -20px;
-    margin-top: -8px;
+    margin-top: -6px;
     width: 20px;
 }
 
@@ -2386,7 +2386,7 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 
 #networks-pane #beforecreate {
     margin-left: -20px;
-    margin-top: -7px;
+    margin-top: -6px;
 }
 
 #networks-container {
@@ -2953,7 +2953,7 @@ div.machine a.manage-metadata:hover {
 
 .single .column1 {
     float: left;
-    margin-bottom: 25px;
+    margin: 1px 0 25px -12px;
     width: 140px;
 }
 
@@ -2986,7 +2986,7 @@ div.machine a.manage-metadata:hover {
 
 .single .single-actions {
     padding-bottom: 4px;
-    padding-left: 12px;
+    padding-left: 15px;
     width: 69px;
     float: left;
 }
@@ -3016,16 +3016,16 @@ div.machine a.manage-metadata:hover {
 
 div.single div.action-container.destroy {
     position: absolute;
-    top: 265px;
+    top: 268px;
 }
 
 .single div.confirm_single {
     font-size: 80%;
-    margin: -19px -111px 0 0;
+    margin: -19px -115px 0 0;
 }
 
 .single div.action-container.destroy div.confirm_single {
-    margin: -18px -130px 0 0;
+    margin: -18px -134px 0 0;
 }
 
 .single div.confirm_single button.no {
@@ -3046,7 +3046,7 @@ div.single div.action-container.destroy {
     float: left;
     font-size: 78%;
     line-height: 17px;
-    margin-bottom: 20px;
+    margin: 0 0 20px 5px;
     padding: 10px;
     width: 338px;
 }
@@ -3101,7 +3101,7 @@ div.single div.action-container.destroy {
 .single .column3 {
     background-color: #A1C8DB;
     height: 200px;
-    margin-left: 520px;
+    margin-left: 515px;
     position: absolute;
     top: 325px;
     width: 150px;

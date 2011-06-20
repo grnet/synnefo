@@ -873,8 +873,12 @@ div.connect-border {
     margin: 0;
 }
 
-div.ip, div.state {
+div.ip, div.ips {
     font-size: 75%;
+    position: relative;
+    top: 4px;
+    float: right;
+    right: 18px;
 }
 
 div.indicators {
@@ -2374,7 +2378,7 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     cursor: pointer;
     padding: 7px 24px;
     text-decoration: none;
-    width: 125px;
+    width: 155px;
 }
 
 #networkscreate:hover {
@@ -2387,18 +2391,19 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 #networks-container {
+    margin-top: 10px;
     min-height: 270px;
 }
 
 #networks-createcontainer {
-    margin-top: 17px;
-    padding-top: 30px;
+    position: absolute;
+    top: 155px;
 }
 
 #networks-pane .public-networks {
     background-color: white;
-    margin: -47px 0px 18px 0px;
-    padding: 70px 20px 15px 35px;
+    margin: 0 0 18px;
+    padding: 70px 0 15px 35px;
 }
 
 #networks-pane .private-networks {
@@ -2426,6 +2431,7 @@ div.network {
     margin: 5px 0 0 -30px;
     padding: 3px 20px 0 4px;
     width: 480px;
+    position: relative;
 }
 
 #private-template {
@@ -2457,6 +2463,7 @@ h5.network-machines, h5.machine-settings {
     position: absolute;
     right: 10px;
     top: 40px;
+    font-size: 75%;
 }
 
 div.network div.actions {
@@ -2713,7 +2720,7 @@ div.network-machine:hover {
 }
 
 .machines {
-    width: 410px;
+    width: 416px;
     background-color: #B3B3B3;
     margin-bottom: -8px;
     margin-top: 10px;

@@ -69,29 +69,6 @@ or implied, of GRNET S.A.
 
     <!-- public network template -->
     <div class="network" id="public-template">
-        <div class="actions">
-            {# Commented out the following until there is full public network support #}
-            {# <a href="#" class="action-add">{% trans "Add Machine" %}</a> #}
-        </div>
-        <div class="confirm_single">
-            <button class="yes">{% trans "Confirm" %}</button>
-            <button class="no">{% trans "Cancel" %}</button>
-        </div>
-        <div class="action_error" align="center">
-            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
-            <span class="code"></span>
-            <span class="message"></span>
-            <button class="details">{% trans "Details" %}</button>
-        </div>
-        <div class="state">
-            <div class="status">{% trans "Public Network" %}</div>
-            <div class="indicators network-indicator">
-                <div class="indicator1"></div>
-                <div class="indicator2"></div>
-                <div class="indicator3"></div>
-                <div class="indicator4"></div>
-            </div>
-        </div>
         <img class="network-logos" src="static/internet.png" />
         <div href="#" class="name-div">
             <h5 class="namecontainer">
@@ -118,6 +95,29 @@ or implied, of GRNET S.A.
             </div>
             <div class="network-contents-end-separator"></div>
         </div>
+        <div class="state">
+            <div class="status">{% trans "Public Network" %}</div>
+            <div class="indicators network-indicator">
+                <div class="indicator1"></div>
+                <div class="indicator2"></div>
+                <div class="indicator3"></div>
+                <div class="indicator4"></div>
+            </div>
+        </div>
+        <div class="actions">
+            {# Commented out the following until there is full public network support #}
+            {# <a href="#" class="action-add">{% trans "Add Machine" %}</a> #}
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
     </div>
 
     <!-- template for machines in public network -->
@@ -135,7 +135,7 @@ or implied, of GRNET S.A.
             <span class="message"></span>
             <button class="details">{% trans "Details" %}</button>
         </div>
-        <div class="state">
+        <div class="ips">
             <div class="ip4-container status">
                 <span class="discreet">{% trans "IPv4" %}: </span>
                 <span class="ip4">192.94.73.15</span>
@@ -221,8 +221,8 @@ or implied, of GRNET S.A.
                 <span class="name">{% trans "My Network 1" %}</span>
                 <span class="rename-network"></span>
                 <div class="editbuttons" style="display:none">
-                    <span class="save" />
-                    <span class="cancel" />
+                    <span class="save"></span>
+                    <span class="cancel"></span>
                 </div>
             </h5>
         </div>

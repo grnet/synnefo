@@ -772,10 +772,6 @@ div.machine div.actions a.shutdown-padding {
     margin-bottom: 22px;
 }
 
-div.machine div.actions a.destroy-padding {
-    margin-top: 52px;
-}
-
 div.actions a.enabled:hover{
     color: black !important;
     text-decoration: underline;
@@ -3009,12 +3005,18 @@ div.single div.single-action:hover {
     filter: alpha(opacity = 80);
 }
 
+div.single div.action-container.destroy {
+    position: absolute;
+    top: 265px;
+}
+
 .single div.confirm_single {
     font-size: 80%;
+    margin: -19px -111px 0 0;
 }
 
 .single div.action-container.destroy div.confirm_single {
-    margin-top: 0px;
+    margin: -18px -130px 0 0;
 }
 
 .single div.confirm_single button.no {

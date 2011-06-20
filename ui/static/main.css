@@ -261,7 +261,6 @@ div#footer-text a {
     text-decoration: none;
 }
 
-
 div#footer-text{
     clear: both;
     color: #FFFFFF;
@@ -686,6 +685,7 @@ div.image-container {
     color: #387693;
 }
 
+/* machines */
 .machine-container {
     min-height: 65px;
     margin: 2px 0 0 3px;
@@ -704,16 +704,17 @@ div.machine {
     width: 516px;
 }
 
+div.machine:hover {
+    background-color:#A1C8DB !important;
+}
+
+div.machine.light-background {
+    background-color:#aed2e3;
+}
+
 .machine a {
     font-weight: normal;
     text-decoration: none;
-}
-
-div.machine div.actions a:hover {
-    background-color:#A1C8DB;
-    width: 180px;
-    opacity: 0.8;
-    filter: alpha(opacity = 80);
 }
 
 div.machine-details {
@@ -745,6 +746,7 @@ div.machine-details {
     margin-right: 3px;
 }
 
+/* icon view actions */
 div.machine div.actions {
     float: right;
     font-size: 75%;
@@ -762,6 +764,21 @@ div.machine div.actions a {
     width: 180px;
     margin: 0 0 2px 8px;
     display: block;
+}
+
+div.machine div.actions a:hover {
+    background-color:#A1C8DB;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
+}
+
+div.machine div.actions a.selected {
+    color: #FF7F2A;
+    width: 50px;
+}
+
+div.machine div.actions a.selected:hover {
+    background-color:transparent;
 }
 
 div.machine div.actions a.action-shutdown {
@@ -788,10 +805,6 @@ div.machine div.display a{
     display: block;
 }
 
-div.machine div.actions a.selected:hover {
-    color: #FF7F2A;
-}
-
 div.running div.machine div.actions .disabled {
     display: none;
 }
@@ -808,14 +821,6 @@ div.terminated div.machine div.actions a.action-destroy {
 div.running div.machine div.actions a.action-destroy {
     position: absolute;
     bottom: 0;
-}
-
-div.machine:hover {
-    background-color:#A1C8DB!important;
-}
-
-div.machine.light-background {
-    background-color:#aed2e3;
 }
 
 div.connect-arrow {
@@ -1329,6 +1334,10 @@ div.list div.actions a {
     margin-bottom: 2px;
 }
 
+div.list div.actions a:hover {
+    background-color: transparent;
+}
+
 div.list div.actions a.enabled {
     color: #3D3D3D;
 }
@@ -1337,6 +1346,10 @@ div.list div.actions a.enabled:hover{
     cursor: pointer;
     color: black;
     text-decoration: underline;
+}
+
+div.list div.actions a.selected {
+    color: #FF7F2A !important;
 }
 
 input.machine {
@@ -2334,15 +2347,6 @@ div.list table thead .vmname {
 
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
     display:block !important;
-    color: #FF7F2A !important;
-}
-
-div.machine div.actions a.selected, div.machine div.actions a.selected:hover {
-    width:50px;
-}
-
-div.actions a.selected:hover {
-    background-color:transparent;
 }
 
 .action_error .message, .action_error .code {
@@ -2462,26 +2466,54 @@ div.network div.actions {
     font-weight: normal;
 }
 
-div.network div.actions a {
-    color: transparent;
+div.network div.machine-actions {
     text-decoration: none;
+    float: right;
+    width: 100px;
+    margin: -5px -100px 0 0;
+    font-weight: normal;
+    font-size: 75%;
+}
+
+div.network div.actions a, div.network div.machine-actions a {
+    text-decoration: none;
+    height: 15px;
+    color: transparent;
+    display: block;
+}
+
+div.network div.actions a {
+    margin: -2px 0 0 8px;
+}
+
+div.network div.machine-actions a {
     margin: 0 0 0 8px;
-    display: block;
 }
 
-div.actions a.enabled:hover{
-    color: black !important;
-    text-decoration: underline;
+div.network div.actions a:hover, div.network div.machine-actions a:hover {
     display: block;
+    background-color:#A1C8DB;
+    width: 200px;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
 }
 
-div.network:hover .actions a {
+div.network:hover div.actions a, div.network-machine:hover div.machine-actions a {
+    color: black;
+}
+
+div.network div.actions a.selected, div.network div.machine-actions a.selected {
+    color: #FF7F2A !important;
+    width: 50px !important;
+}
+
+div.network div.actions a.selected:hover, div.network div.machine-actions a.selected:hover {
+    background-color: transparent;
+}
+
+div.network div.display a {
     color: black;
     display: block;
-}
-
-div.network div.actions a.selected:hover {
-    color: #FF7F2A;
 }
 
 div.network-machine div.machine-actions a.action-details {
@@ -2629,15 +2661,6 @@ div.network:hover a.rename {
     margin-top: -4px;
 }
 
-div.network div.machine-actions {
-    float: right;
-    width: 100px;
-    color: black;
-    margin: -5px -100px 0 0;
-    font-weight: normal;
-    font-size: 75%;
-}
-
 .discreet {
     color: #969696;
 }
@@ -2731,33 +2754,6 @@ div.network-add-machine {
 
 .firewall-off {
     color: #F82E2E;
-}
-
-div.network div.machine-actions a {
-    color: transparent;
-    margin: 0 0 0 8px;
-    display: block;
-}
-
-div.network div.machine-actions a:hover {
-    color: black !important;
-    text-decoration: underline;
-    display: block;
-}
-
-div.network div.display a{
-    color: #3d3d3d;
-    display: block;
-}
-
-div.network div.display a:selected {
-    color: #3d3d3d !important;
-}
-
-div.network-machine:hover div.machine-actions a {
-    color: black;
-    text-decoration: none;
-    display: block;
 }
 
 .firewall-content {
@@ -2998,11 +2994,20 @@ div.machine a.manage-metadata:hover {
     cursor: pointer;
 }
 
-div.single div.single-action:hover {
+.single div.single-action:hover {
     background-color:#A1C8DB;
     width: 180px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
+}
+
+.single div.single-action.selected {
+    color: #FF7F2A !important;
+    width: 50px !important;
+}
+
+.single div.single-action.selected:hover {
+    background-color:transparent;
 }
 
 div.single div.action-container.destroy {

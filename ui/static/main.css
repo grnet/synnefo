@@ -793,7 +793,7 @@ div.machine div.display a{
 }
 
 div.machine div.actions a.selected:hover {
-    color: orange;
+    color: #FF7F2A;
 }
 
 div.running div.machine div.actions .disabled {
@@ -2340,7 +2340,7 @@ div.list table thead .vmname {
 
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
     display:block !important;
-    color: orange !important;
+    color: #FF7F2A !important;
 }
 
 div.machine div.actions a.selected, div.machine div.actions a.selected:hover {
@@ -2487,7 +2487,7 @@ div.network:hover .actions a {
 }
 
 div.network div.actions a.selected:hover {
-    color: orange;
+    color: #FF7F2A;
 }
 
 div.network-machine div.machine-actions a.action-details {

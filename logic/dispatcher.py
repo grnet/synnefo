@@ -44,21 +44,18 @@ import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 import synnefo.settings as settings
+from synnefo.logic import log
 
 setup_environ(settings)
 
 from amqplib import client_0_8 as amqp
 from signal import signal, SIGINT, SIGTERM
 
-import logging
-import logging.config
 import time
 import socket
 from daemon import pidfile, daemon
-import lockfile.pidlockfile
 
 from synnefo.logic import callbacks
-
 
 class Dispatcher:
 
@@ -68,9 +65,9 @@ class Dispatcher:
     clienttags = []
 
     def __init__(self, debug = False):
+        
         # Initialize logger
-        logging.config.fileConfig("/Volumes/Files/Developer/grnet/synnefo/logging.conf")
-        self.logger = logging.getLogger("synnefo.dispatcher")
+        self.logger = log.get_logger('synnefo.dispatcher')
 
         self.debug = debug
         self._init()
@@ -231,9 +228,7 @@ def main():
     global children, logger
     (opts, args) = parse_arguments(sys.argv[1:])
 
-    # Initialize logger
-    logging.config.fileConfig("logging.conf")
-    logger = logging.getLogger("synnefo.dispatcher")
+    logger = log.get_logger("synnefo.dispatcher")
 
     # Special case for the clean up queues action
     if opts.cleanup_queues:
@@ -292,7 +287,6 @@ def main():
         pidf.release()
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
     sys.exit(main())
 
 # vim: set sta sts=4 shiftwidth=4 sw=4 et ai :

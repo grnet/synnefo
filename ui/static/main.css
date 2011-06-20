@@ -1490,12 +1490,12 @@ input.machine {
 }
 
 #metadata-wizard .metadata-value {
-    width: 300px;
+    width: auto;
 }
 
 #metadata-wizard .metadata-add-template {
     background-color: #74AEC9;
-    width: 350px;
+    width: auto;
 }
 
 #metadata-wizard #add-meta-value {
@@ -1743,8 +1743,8 @@ input.machine {
     background: url("./dropdown-arrow.gif") no-repeat scroll center center transparent;
     cursor: pointer;
     float: right;
-    left: 126px;
-    margin-top: 3px;
+    left: 130px;
+    margin-top: 4px;
     position: absolute;
     width: 20px;
 }
@@ -1790,7 +1790,7 @@ input.machine {
     height: 16px;
     margin-left: 5px;
     margin-top: 2px;
-    width: 98px !important;
+    width: 105px !important;
 }
 
 /* notification box */

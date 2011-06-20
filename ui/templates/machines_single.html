@@ -90,18 +90,44 @@ or implied, of GRNET S.A.
                 </div>
             </div>
             <div class="single-actions">
-                <div class="single-action action-start">{% trans "Start" %}</a></div>
-                <div class="single-action action-reboot">{% trans "Reboot" %}</a></div>
-                <div class="single-action action-shutdown">{% trans "Shutdown" %}</a></div>
-                <div class="single-action action-console">{% trans "Console" %}</a></div>
-                <div class="single-action action-destroy">{% trans "Destroy" %}</a></div>
-            </div>
-            <div class="confirm_single">
-                <button class="yes">{% trans "Confirm" %}</button>
-                <button class="no">X</button>
+                <div class="action-container start">
+                    <div class="single-action action-start">{% trans "Start" %}</div>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container reboot">
+                    <div class="single-action action-reboot">{% trans "Reboot" %}</div>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container shutdown">
+                    <div class="single-action action-shutdown">{% trans "Shutdown" %}</div>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container console">
+                    <div class="single-action action-console">{% trans "Console" %}</div>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container destroy">
+                    <div class="single-action action-destroy">{% trans "Destroy" %}</div>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
             </div>
             <div class="action_error" align="center">
-                {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+                {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
                 <span class="code"></span>
                 <span class="message"></span>
                 <button class="details">{% trans "Details" %}</button>
@@ -129,16 +155,12 @@ or implied, of GRNET S.A.
     <div class="column3">
         <div class="controls">
             <div class="previous" style="display:none;">
-                <div class="prev-arrow">
-
-                </div>
+                <div class="prev-arrow"></div>
                 {% trans "previous" %}
             </div>
             <div class="next" style="display:none;">
                 {% trans "next" %}
-                <div class="next-arrow">
-
-                </div>
+                <div class="next-arrow"></div>
             </div>
         </div>
         <div class="separator">
@@ -180,7 +202,7 @@ $("#machinesview-single.single div.action_error .details").live('click', functio
 
 //confirm action
 $("#machinesview-single.single div.confirm_single .yes").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverID = $(this).closest(".single-container").attr("id");
     console.info(serverID);
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
         if (pending_actions[i][1]==serverID){
@@ -209,7 +231,6 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
     $(this).parent().hide();
     $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
     $(this).parent().parent().children('.state').children('.spinner').show()
-    $(this).parent().parent().children('div.actions').removeClass('display');
     update_confirmations();
     return false;
 });
@@ -217,12 +238,11 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
 
 // intercept start click
 $("#machinesview-single.single div.action-start").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var serverID = $(this).closest(".single-container").attr("id");
+    var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
     $(this).parent().parent().find('.action_error').hide();
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
@@ -239,12 +259,11 @@ $("#machinesview-single.single div.action-start").live('click', function(){
 
 // intercept shutdown click
 $("#machinesview-single.single div.action-shutdown").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var serverID = $(this).closest(".single-container").attr("id");
+    var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
     $(this).parent().parent().find('.action_error').hide();
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
@@ -261,13 +280,12 @@ $("#machinesview-single.single div.action-shutdown").live('click', function(){
 
 // intercept reboot click
 $("#machinesview-single.single div.action-reboot").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var serverID = $(this).closest(".single-container").attr("id");
+    var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
     var found = false;
 
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display');
     $(this).parent().parent().find('.action_error').hide();
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
@@ -283,13 +301,12 @@ $("#machinesview-single.single div.action-reboot").live('click', function(){
 
 // intercept destroy click
 $("#machinesview-single.single div.action-destroy").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var serverID = $(this).closest(".single-container").attr("id");
+    var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
     var found = false;
 
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
     $(this).parent().parent().find('.action_error').hide();
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
         if (pending_actions[i][1]==serverID){
@@ -305,12 +322,11 @@ $("#machinesview-single.single div.action-destroy").live('click', function(){
 
 // intercept console click
 $("#machinesview-single.single div.action-console").live('click', function(){
-    var serverID = $(this).parent().parent().parent().attr("id");
-    var serverName = $(this).parent().parent().parent().find(".machine-details div.name").text();
+    var serverID = $(this).closest(".single-container").attr("id");
+    var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
-    $(this).parent().addClass('display')
     $(this).parent().parent().find('.action_error').hide();
 
     for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it

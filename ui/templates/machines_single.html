@@ -450,45 +450,19 @@ function update_machines_view(data){
             machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
             machine.find(".state-label").text(STATUSES[server.status]);
+            // find and display flavor parameters
+            var flavor_params = get_flavor_params(server.flavorRef);
+            machine.find(".machine-details div.cpus").text(flavor_params['cpus']);
+            machine.find(".machine-details div.ram").text(flavor_params['ram']);
+            machine.find(".machine-details div.disk").text(flavor_params['disk']);
+            // find and display image parameters
+            var image_params = get_image_params(server.imageRef);
+            machine.find(".machine-details div.image-name").text(image_params['name'].substring(0,15));
+            machine.find(".machine-details div.image-size").text(image_params['size']);
             // find and display ips
             var ips = get_public_ips(server);
             machine.find(".machine-details div.ipv4").text(ips['ip4']);
             machine.find(".machine-details div.ipv6").text(ips['ip6']);
-            // find and display flavor parameters
-            var CPUs, RAM, disk, image_name, image_size;
-            if ( flavors.length > 0 ) {
-                var current_flavor = '';
-                for (i=0; i<flavors.length; i++) {
-                    if (flavors[i]['id'] == server.flavorRef) {
-                        current_flavor = flavors[i];
-                    }
-                }
-                CPUs = current_flavor['cpu'];
-                RAM = current_flavor['ram'];
-                disk = current_flavor['disk'];
-            } else {
-                CPUs = 0;
-                RAM = 0;
-                disk = 0;
-            }
-            if ( images.length > 0 ) {
-                var current_image = '';
-                for (i=0; i<images.length; i++) {
-                    if (images[i]['id'] == server.imageRef) {
-                        current_image = images[i];
-                    }
-                }
-                image_name = current_image['name'];
-                image_size = current_image['metadata']['values']['size'];
-            } else {
-                image_name = ''
-                image_size = ''
-            }
-            machine.find(".machine-details div.cpus").text(CPUs);
-            machine.find(".machine-details div.ram").text(RAM);
-            machine.find(".machine-details div.disk").text(disk);
-            machine.find(".machine-details div.image-name").text(image_name.substring(0,35));
-            machine.find(".machine-details div.image-size").text(image_size);
             //show off image if server is not active
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) < 0){
                     machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-off.png');

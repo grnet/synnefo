@@ -224,8 +224,8 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
                 $(".column1 .state").removeClass().addClass('state rebooting-state');
                 $(".column1 .state").find('.spinner').show();
             }  else if (action[0] == destroy) {
-                $(".column1 .state-label").find('.state-label').text(TRANSITIONS['Destroying']);
-                $(".column1 .state").find('.state').removeClass().addClass('state destroying-state');
+                $(".column1 .state-label").text(TRANSITIONS['Destroying']);
+                $(".column1 .state").removeClass().addClass('state destroying-state');
                 $(".column1 .state").find('.spinner').show();
             }
             action[0]([action[1]]); // execute action

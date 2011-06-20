@@ -232,6 +232,20 @@ $("#machinesview .list a.enabled#action-console").live('click', function() {
     return false;
 });
 
+$("#machinesview .list a.enabled#action-details").live('click', function() {
+    var checked = $("#machinesview .list table.list-machines tbody input[type='checkbox']:checked");
+    $("#machinesview .list .selected").removeClass('selected');
+    $(this).addClass('selected');
+    pending_actions = []; // reset pending actions
+    checked.each(function(i,c) {
+        serverID=c.id;
+    });
+    $.cookie('server', serverID);
+    $('a#single').click();
+    return false;
+});
+
+
 function update_machines_view(data){
     /*
     Go through the servers in the input data. Update existing entries, add
@@ -375,6 +389,7 @@ function update_machines_view(data){
     $('#machinesview .list .dataTables_scrollHeadInner th').attr('style','');
 
 }
+
 
 function display_success(serverID) {
     // do nothing

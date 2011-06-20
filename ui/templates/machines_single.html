@@ -241,21 +241,13 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
 $("#machinesview-single.single div.action-start").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
     var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
-    var found = false;
-    $(this).closest('div.single-actions').children('div.single-action').removeClass('selected');
+    $('#machinesview-single').find('div.single-action').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().parent().find('.action_error').hide();
-    // if there is already a pending action for this server replace it
-    for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1] == serverID) {
-            pending_actions[i][0] = start;
-            found = true
-        }
-    }
-    // no pending action for this server was found, so let's just add it to the list
-    if (!found)
-        pending_actions.push([start, serverID, serverName])
-    update_confirmations()
+    // reset pending actions so not to allow multiple actions in this view
+    pending_actions = [];
+    pending_actions.push([start, serverID, serverName]);
+    update_confirmations();
     return false;
 });
 
@@ -263,20 +255,12 @@ $("#machinesview-single.single div.action-start").live('click', function(){
 $("#machinesview-single.single div.action-shutdown").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
     var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
-    var found = false;
-    $(this).closest('div.single-actions').children('div.single-action').removeClass('selected');
+    $('#machinesview-single').find('div.single-action').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().parent().find('.action_error').hide();
-    // if there is already a pending action for this server replace it
-    for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1] == serverID) {
-            pending_actions[i][0] = shutdown;
-            found = true
-        }
-    }
-    // no pending action for this server was found, so let's just add it to the list
-    if (!found)
-        pending_actions.push([shutdown, serverID, serverName])
+    // reset pending actions so not to allow multiple actions in this view
+    pending_actions = [];
+    pending_actions.push([shutdown, serverID, serverName]);
     update_confirmations();
     return false;
 });
@@ -285,20 +269,12 @@ $("#machinesview-single.single div.action-shutdown").live('click', function(){
 $("#machinesview-single.single div.action-reboot").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
     var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
-    var found = false;
-    $(this).closest('div.single-actions').children('div.single-action').removeClass('selected');
+    $('#machinesview-single').find('div.single-action').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().parent().find('.action_error').hide();
-    // if there is already a pending action for this server replace it
-    for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1] == serverID) {
-            pending_actions[i][0] = reboot;
-            found = true
-        }
-    }
-    // no pending action for this server was found, so let's just add it to the list
-    if (!found)
-        pending_actions.push([reboot, serverID, serverName])
+    // reset pending actions so not to allow multiple actions in this view
+    pending_actions = [];
+    pending_actions.push([reboot, serverID, serverName]);
     update_confirmations();
     return false;
 });
@@ -307,19 +283,12 @@ $("#machinesview-single.single div.action-reboot").live('click', function(){
 $("#machinesview-single.single div.action-destroy").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
     var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
-    var found = false;
-    $(this).closest('div.single-actions').children('div.single-action').removeClass('selected');
+    $('#machinesview-single').find('div.single-action').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().parent().find('.action_error').hide();
-    // if there is already a pending action for this server replace it
-    for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1] == serverID) {
-            pending_actions[i][0] = destroy;
-            found = true
-        }
-    }
-    if (!found) // no pending action for this server was found, so let's just add it to the list
-        pending_actions.push([destroy, serverID, serverName])
+    // reset pending actions so not to allow multiple actions in this view
+    pending_actions = [];
+    pending_actions.push([destroy, serverID, serverName]);
     update_confirmations();
     return false;
 });
@@ -328,20 +297,12 @@ $("#machinesview-single.single div.action-destroy").live('click', function(){
 $("#machinesview-single.single div.action-console").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
     var serverName = $(this).closest("div.upper").find(".machine-details div.name").text();
-    var found = false;
-    $(this).closest('div.single-actions').children('div.single-action').removeClass('selected');
+    $('#machinesview-single').find('div.single-action').removeClass('selected');
     $(this).addClass('selected');
     $(this).parent().parent().find('.action_error').hide();
-    // if there is already a pending action for this server replace it
-    for (i=0; i<pending_actions.length; i++) {
-        if (pending_actions[i][1] == serverID) {
-            pending_actions[i][0] = open_console;
-            found = true
-        }
-    }
-    // no pending action for this server was found, so let's just add it to the list
-    if (!found)
-        pending_actions.push([open_console, serverID, serverName])
+    // reset pending actions so not to allow multiple actions in this view
+    pending_actions = [];
+    pending_actions.push([open_console, serverID, serverName]);
     update_confirmations();
     return false;
 });
@@ -634,7 +595,8 @@ function current_serverId() {
 }
 
 //enable prev-next buttons
-$("#machinesview-single.single .column3 .previous").live('click', function(){
+$("#machinesview-single.single .column3 .previous").live('click', function() {
+    // set behavior
     if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
         return false;
     } else {
@@ -651,7 +613,8 @@ $("#machinesview-single.single .column3 .previous").live('click', function(){
     }
 });
 
-$("#machinesview-single.single .column3 .next").live('click', function(){
+$("#machinesview-single.single .column3 .next").live('click', function() {
+    // set behavior
     if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
         return false;
         } else {

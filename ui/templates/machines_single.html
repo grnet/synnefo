@@ -212,21 +212,21 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
             action = pending_actions.splice(i,1)[0]; // extract action
             // change the status text in cases where no api state exists
             if (action[0] == start) {
-                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Starting']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state starting-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(".column1 .state-label").text(TRANSITIONS['Starting']);
+                $(".column1 .state").removeClass().addClass('state starting-state');
+                $(".column1 .state").find('.spinner').show();
             } else if (action[0] == shutdown) {
-                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Shutting down']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state shutting-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(".column1 .state-label").text(TRANSITIONS['Shutting down']);
+                $(".column1 .state").removeClass().addClass('state shutting-state');
+                $(".column1 .state").find('.spinner').show();
             } else if (action[0] == reboot) {
-                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Rebooting']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state rebooting-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(".column1 .state-label").text(TRANSITIONS['Rebooting']);
+                $(".column1 .state").removeClass().addClass('state rebooting-state');
+                $(".column1 .state").find('.spinner').show();
             }  else if (action[0] == destroy) {
-                $(this).parent().parent().find('.state-label').text(TRANSITIONS['Destroying']);
-                $(this).parent().parent().find('.state').removeClass().addClass('state destroying-state');
-                $(this).parent().parent().find('.spinner').show();
+                $(".column1 .state-label").find('.state-label').text(TRANSITIONS['Destroying']);
+                $(".column1 .state").find('.state').removeClass().addClass('state destroying-state');
+                $(".column1 .state").find('.spinner').show();
             }
             action[0]([action[1]]); // execute action
         }

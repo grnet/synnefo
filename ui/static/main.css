@@ -21,7 +21,6 @@ html {
 }
 
 body {
-    line-height: 1;
     background: url(./body-bg.png) repeat-x scroll 0 0 #FFFFFF;
     height: 100%;
     text-align:center;
@@ -2118,7 +2117,6 @@ div#user a.current_lang {
     background-color: #74AEC9;
     height: 10px;
     width: 700px;
-    margin: 0 0 0 -36px;
 }
 
 #disks.separator {

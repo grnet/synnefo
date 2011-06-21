@@ -748,3 +748,138 @@ Metadata Name                Value
 X-Object-Meta-Trash          Set to ``true`` if the object has been moved to the trash
 X-Object-Meta-*              Use for other tags that apply to the object
 ===========================  ==============================
+
+Recommended Practices and Examples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Assuming an authentication token is obtained (**TBD**), the following high-level operations are available - shown with ``curl``:
+
+* Get account information ::
+
+    curl -X HEAD -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user
+
+* List available containers ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user
+
+* Get container information ::
+
+    curl -X HEAD -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos
+
+* Add a new container ::
+
+    curl -X PUT -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/test
+
+* Delete a container ::
+
+    curl -X DELETE -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/test
+
+* List objects in a container ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos
+
+* List objects in a container (extended reply) ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos?format=json
+
+* List metadata keys used by objects in a container
+
+  Will be in the ``X-Container-Object-Meta`` reply header, included in container information or object list (``HEAD`` or ``GET``).
+
+* List objects in a container having a specific meta defined ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos?meta=trash
+
+  This is the recommended way of tagging/retrieving objects in trash.
+
+* Retrieve an object ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
+
+* Retrieve an object (specific ranges of data) ::
+
+    curl -X GET -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Range: bytes=0-9" \
+         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
+
+  This will return the first 10 bytes. To get the first 10, bytes 30-39 and the last 100 use ``Range: bytes=0-9,30-39,-100``.
+
+* Add a new object (folder type) (**TBD**) ::
+
+    curl -X PUT -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Type: application/folder" \
+         https://pithos.dev.grnet.gr/v1/user/pithos/folder
+
+* Add a new object ::
+
+    curl -X PUT -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Type: text/plain" \
+         -T EXAMPLE.txt
+         https://pithos.dev.grnet.gr/v1/user/pithos/folder/EXAMPLE.txt
+
+* Update an object ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Length: 10" \
+         -H "Content-Type: application/octet-stream" \
+         -H "Content-Range: bytes 10-19/*" \
+         -d "0123456789" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+  This will update bytes 10-19 with the data specified.
+
+* Update an object (append) ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "Content-Length: 10" \
+         -H "Content-Type: application/octet-stream" \
+         -H "Content-Range: bytes */*" \
+         -d "0123456789" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+* Add object metadata ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "X-Object-Meta-First: first_meta_value" \
+         -H "X-Object-Meta-Second: second_meta_value" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+* Delete object metadata ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "X-Object-Meta-First: first_meta_value" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+  Metadata can only be "set". To delete ``X-Object-Meta-Second``, reset all metadata.
+
+* Delete an object ::
+
+    curl -X DELETE -D - \
+         -H "X-Auth-Token: 0000" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+

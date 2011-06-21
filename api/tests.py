@@ -353,12 +353,12 @@ def create_flavors(n=1):
             disk=randint(1, 40))
 
 def create_images(n=1):
-    users = SynnefoUser.objects.all()
+    owner = SynnefoUser.objects.all()[0]
     for i in range(n):
         Image.objects.create(
             name='Image %d' % (i + 1),
             state='ACTIVE',
-            owner=choice(users))
+            owner=owner)
 
 def create_image_metadata(n=1):
     images = Image.objects.all()
@@ -369,13 +369,13 @@ def create_image_metadata(n=1):
             image = choice(images))
 
 def create_servers(n=1):
-    users = SynnefoUser.objects.all()
+    owner = SynnefoUser.objects.all()[0]
     flavors = Flavor.objects.all()
     images = Image.objects.all()
     for i in range(n):
         VirtualMachine.objects.create(
             name='Server %d' % (i + 1),
-            owner=choice(users),
+            owner=owner,
             sourceimage=choice(images),
             hostid=str(i),
             flavor=choice(flavors))

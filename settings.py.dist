@@ -302,6 +302,9 @@ GANETI_LINK_PREFIX = 'prv'
 # The number of private network links to use.
 GANETI_MAX_LINK_NUMBER = 100
 
+GANETI_FIREWALL_ENABLED_TAG = 'firewall_enabled'
+GANETI_FIREWALL_DISABLED_TAG = 'firewall_disabled'
+
 # A list of suggested server tags (server metadata keys)
 DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
 
@@ -309,4 +312,3 @@ DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
 IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
                "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
                "suse"]
-

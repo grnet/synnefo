@@ -9,7 +9,8 @@
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
             "backend_id": "debian_base",
-            "format": "dump"
+            "format": "dump",
+            "public": 1
         }
     },
     {
@@ -22,7 +23,8 @@
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
             "backend_id": "debian-6.0.1a",
-            "format": "dump"
+            "format": "dump",
+            "public": 1
         }
     },
     {
@@ -35,7 +37,8 @@
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
             "backend_id": "ubuntu_11.04_server",
-            "format": "dump"
+            "format": "dump",
+            "public": 1
         }
     },
     {
@@ -48,7 +51,8 @@
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
             "backend_id": "ubuntu_11.04_desktop",
-            "format": "dump"
+            "format": "dump",
+            "public": 1
         }
     },
     {
@@ -61,7 +65,8 @@
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE",
             "backend_id": "debian_base",
-            "format": "lvm"
+            "format": "lvm",
+            "public": 1
         }
     },
     {
@@ -74,7 +79,8 @@
             "updated": "2011-05-27 00:00:00",
             "state": "ACTIVE",
             "backend_id": "fedora-14-1",
-            "format": "dump"
+            "format": "dump",
+            "public": 1
         }
     },
     {
@@ -87,7 +93,8 @@
             "updated": "2011-05-30 00:00:00",
             "state": "ACTIVE",
             "backend_id": "fedora-15-1",
-            "format": "dump"
+            "format": "dump",
+            "public": 1
         }
     },
     {

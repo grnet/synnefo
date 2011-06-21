@@ -901,6 +901,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     padding-bottom: 15px;
     width: 699px;
     min-height: 50px;
+    padding-top: 60px;
 }
 
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
@@ -1370,7 +1371,7 @@ input.machine {
 
 /* metadata editing and add machines to network overlays */
 #metadata-wizard, #add-machines-wizard {
-    position:fixed;
+    position:absolute !important;
     overflow:hidden;
     width:450px;
     display:none;
@@ -3110,6 +3111,7 @@ div.single div.action-container.destroy {
     position: absolute;
     top: 325px;
     width: 150px;
+    overflow: visible;
 }
 
 .single .column3 .controls {
@@ -3128,21 +3130,33 @@ div.single div.action-container.destroy {
 .single .column3 .next {
     float: right;
     text-align: center;
-    width: 55px;
+    width: 60px;
+}
+
+.single .column3 .next-label {
+    float: right;
+    margin-right: 3px;
+    margin-top: -2px;
 }
 
 .single .column3 .next-arrow {
     float: right;
     height: 18px;
-    width: 12px;
+    width: 10px;
     background: url("./right-arrow.png") no-repeat scroll 3px 2px transparent;
+}
+
+.single .column3 .prev-label {
+    float: left;
+    margin-left: 3px;
+    margin-top: -2px;
 }
 
 .single .column3 .prev-arrow {
     background: url("./left-arrow.png") no-repeat scroll 3px 2px transparent;
     float: left;
     height: 18px;
-    width: 12px;
+    width: 10px;
 }
 
 .single .column3 .separator {
@@ -3167,13 +3181,15 @@ div.single div.action-container.destroy {
     padding-bottom: 2px;
 }
 
-div.single div.column3 div.server-name:hover, .single .column3 .selected {
+div.single div.column3 div.server-name:hover, .single .column3 .column3-selected {
     background-color: #84B7D0;
     color: white;
-    padding-right: 40px;
-    width: 130px;
     opacity: 0.8;
+    padding-left: 9px;
+    text-align: left;
+    width: 160px;
     filter: alpha(opacity = 80);
+    position: relative;
 }
 
 .single .toggler {

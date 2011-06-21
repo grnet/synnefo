@@ -1019,4 +1019,12 @@ if (flavors.length > 0) {
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
 
+//fix ie z-index bug by moving the overlays to the bottom
+$(document).ready(function() {
+    if ($.browser.msie) {
+        $("body").append($("#wizard"));
+        $("body").append($("#metadata-wizard"));
+    }
+});
+
 </script>

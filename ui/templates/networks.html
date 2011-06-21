@@ -956,4 +956,12 @@ var pubNet = $("#networks-pane #public-template").clone().attr("id", "pub").fade
 pubNet.appendTo("#networks-pane .public-networks");
 update_networks(UPDATE_INTERVAL);
 
+//fix ie z-index bug by moving the overlays to the bottom
+$(document).ready(function() {
+    if ($.browser.msie) {
+        $("body").append($("#networks-wizard"));
+        $("body").append($("#add-machines-wizard"));
+    }
+});
+
 </script>

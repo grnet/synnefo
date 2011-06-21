@@ -136,7 +136,7 @@ or implied, of GRNET S.A.
         <div class="lower">
             <div class="single-cpu">
                 <div class="cpu-usage">
-                    {% trans "CPU Usage" %}<span class="toggler">&#710;</span>
+                    {% trans "CPU Usage" %}
                 </div>
                 <div class="cpu-graph">
 
@@ -144,7 +144,7 @@ or implied, of GRNET S.A.
             </div>
             <div class="single-network">
                 <div class="network-usage">
-                    {% trans "Network Usage" %}<span class="toggler">&#710;</span>
+                    {% trans "Network Usage" %}
                 </div>
                 <div class="network-graph">
 
@@ -156,11 +156,15 @@ or implied, of GRNET S.A.
         <div class="controls">
             <div class="previous" style="display:none;">
                 <div class="prev-arrow"></div>
-                {% trans "previous" %}
+                <div class="prev-label">
+                    {% trans "previous" %}
+                </div>
             </div>
             <div class="next" style="display:none;">
-                {% trans "next" %}
                 <div class="next-arrow"></div>
+                <div class="next-label">
+                    {% trans "next" %}
+                </div>
             </div>
         </div>
         <div class="separator">
@@ -363,7 +367,7 @@ function update_machines_view(data){
                 //if the deleted vm is the displayed one, display the 1st vm
                 if (server.id == current_Id) {
                     $("#machinesview-single.single div.single-container:eq(1)").show()
-                    $('#machinesview-single.single .column3').find('.server-name:eq(1)').addClass('selected');
+                    $('#machinesview-single.single .column3').find('.server-name:eq(1)').addClass('column3-selected');
                 }
                 try {
                     console.info(existing.find(".machine-details div.name").text() + ' removed');
@@ -445,7 +449,7 @@ function update_machines_view(data){
             serverwidget.show();
             //find and hide the previously selected server
             $('.single').find('.single-container').hide();
-            $('.single .column3').find('.selected').removeClass('selected');
+            $('.single .column3').find('.column3-selected').removeClass('column3-selected');
             //create and select the new one
             var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
             machine.find(".machine-details div.name").text(server.name.substring(0,40));
@@ -507,7 +511,7 @@ function update_machines_view(data){
             }
             //show the first machine and select it in the widget
             $('.single-container:eq(1)').show();
-            $('.single .column3').find('.server-name:eq(1)').addClass('selected');
+            $('.single .column3').find('.server-name:eq(1)').addClass('column3-selected');
         }
     update_iconview_actions(server.id, server.status);
     });
@@ -526,15 +530,15 @@ function update_machines_view(data){
     $(".server-name").live('click', function() {
         $('.single').find('.single-container').hide()
         $('.single').find('#' + $(this).attr('id').substring(5)).show();
-        $('.single .column3').find('.selected').removeClass('selected');
-        $(this).addClass('selected');
+        $('.single .column3').find('.column3-selected').removeClass('column3-selected');
+        $(this).addClass('column3-selected');
         //show prev next links only if there are prev next servers
-        if ($("#machinesview-single.single .column3 .selected").attr("id") != $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") != $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
             $(".single .column3 .previous").show();
         } else {
             $(".single .column3 .previous").hide();
         }
-        if ($("#machinesview-single.single .column3 .selected").attr("id") != $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") != $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
             $(".single .column3 .next").show();
         } else {
             $(".single .column3 .next").hide();
@@ -547,14 +551,14 @@ function update_machines_view(data){
     }
 
     //if it is the last vm, hide the next button
-    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+    if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
         $("#machinesview-single.single .column3 .next").hide()
     } else {
         $("#machinesview-single.single .column3 .next").show()
     }
 
     //if it is the first vm, hide the prev button
-    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+    if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
         $("#machinesview-single.single .column3 .previous").hide()
     } else {
         $("#machinesview-single.single .column3 .previous").show()
@@ -569,15 +573,15 @@ function current_serverId() {
 //enable prev-next buttons
 $("#machinesview-single.single .column3 .previous").live('click', function() {
     // set behavior
-    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+    if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
         return false;
     } else {
-        current_server = $('#machinesview-single.single .column3').find('.selected').attr("id").substring(5);
+        current_server = $('#machinesview-single.single .column3').find('.column3-selected').attr("id").substring(5);
         $('#machinesview-single.single').find('#' + current_server).hide();
         $('#machinesview-single.single').find('#' + current_server).prev().show();
-        $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('selected');
-        $('#machinesview-single.single .column3').find('#link-' + current_server).prev().addClass('selected');
-        if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+        $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('column3-selected');
+        $('#machinesview-single.single .column3').find('#link-' + current_server).prev().addClass('column3-selected');
+        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
             $(this).hide()
         }
         $("#machinesview-single.single .column3 .next").show()
@@ -587,16 +591,16 @@ $("#machinesview-single.single .column3 .previous").live('click', function() {
 
 $("#machinesview-single.single .column3 .next").live('click', function() {
     // set behavior
-    if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+    if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
         return false;
         } else {
-        current_server = $('#machinesview-single.single .column3').find('.selected').attr("id").substring(5);
+        current_server = $('#machinesview-single.single .column3').find('.column3-selected').attr("id").substring(5);
         $('#machinesview-single.single').find('#' + current_server).hide();
         $('#machinesview-single.single').find('#' + current_server).next().show();
-        $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('selected');
-        $('#machinesview-single.single .column3').find('#link-' + current_server).next().addClass('selected');
+        $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('column3-selected');
+        $('#machinesview-single.single .column3').find('#link-' + current_server).next().addClass('column3-selected');
         //if it is the last vm, hide the next button
-        if ($("#machinesview-single.single .column3 .selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
             $(this).hide()
         }
         $("#machinesview-single.single .column3 .previous").show();

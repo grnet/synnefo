@@ -448,7 +448,7 @@ function update_machines_view(data){
             $('.single .column3').find('.selected').removeClass('selected');
             //create and select the new one
             var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
-            machine.find(".machine-details div.name").text(server.name.substring(0,100));
+            machine.find(".machine-details div.name").text(server.name.substring(0,40));
             machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
             machine.find(".column1 .state-label").text(STATUSES[server.status]);

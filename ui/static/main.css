@@ -238,7 +238,6 @@ div.css-panes {
     color: #000;
     cursor: pointer;
     padding: 7px 24px;
-    width: 155px;
     text-decoration: none;
     font-size:100%;
 }
@@ -2950,14 +2949,13 @@ div.machine a.manage-metadata:hover {
     color: #383838;
     margin-top: -76px;
     padding-bottom: 10px;
-    padding-left: 20px;
     padding-top: 77px;
     width: 679px;
 }
 
 .single .column1 {
     float: left;
-    margin: 1px 0 25px -12px;
+    margin: 1px 0 25px 17px;
     width: 140px;
 }
 
@@ -3019,8 +3017,6 @@ div.machine a.manage-metadata:hover {
 }
 
 div.single div.action-container.destroy {
-    position: absolute;
-    top: 268px;
 }
 
 .single div.confirm_single {
@@ -3051,21 +3047,24 @@ div.single div.action-container.destroy {
     font-size: 78%;
     line-height: 17px;
     margin: 0 0 20px 5px;
-    padding: 10px;
-    width: 338px;
+    width: 358px;
 }
 
 .single .column2 .machine-labels {
-    width: 120px;
-    float:left;
-    font-size: 95%;
+    float: left;
+    font-size: 90%;
+    margin-left: 10px;
+    margin-top: 10px;
+    width: 125px;
 }
 
 .single .column2 .machine-details {
     float: right;
     text-align: right;
-    font-size: 95%;
-    width: auto;
+    font-size: 90%;
+    width: 210px;
+    margin-right: 10px;
+    margin-top: 10px;
 }
 
 .single .column2 .name, .single .column2 .disk, .single .column2 .image-size, .single .column2 .ipv6 {
@@ -3074,6 +3073,8 @@ div.single div.action-container.destroy {
 
 .single .tags {
     clear: both;
+    margin-bottom: 10px;
+    margin-left: 10px;
 }
 
 .single .tags-label {
@@ -3105,7 +3106,7 @@ div.single div.action-container.destroy {
 .single .column3 {
     background-color: #A1C8DB;
     height: 200px;
-    margin-left: 515px;
+    margin-left: 535px;
     position: absolute;
     top: 325px;
     width: 150px;
@@ -3221,8 +3222,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .selected {
 .single div.lower {
     clear:both;
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
-    margin-left: -20px;
-    width: 699px;
+    width: 700px;
     height: 270px;
 }
 
@@ -3232,11 +3232,9 @@ div.single div.column3 div.server-name:hover, .single .column3 .selected {
     float: left;
     height: 330px;
     margin-bottom: 10px;
-    margin-left: -20px;
     margin-top: -75px;
-    padding-left: 29px;
     padding-top: 75px;
-    width: 670px;
+    width: 700px;
 }
 
 /* console css */

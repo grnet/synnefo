@@ -326,11 +326,16 @@ class PutObject(Command):
         parser.add_option('--touch', action='store_true',
                           dest='touch', default=False,
                           help='create object with zero data')
-    
+        parser.add_option('--sharing', action='store',
+                          dest='sharing', default=None,
+                          help='define sharing object policy')
+        
     def execute(self, path, srcpath='-', *args):
         headers = {}
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
+        if self.sharing:
+            headers['X_OBJECT_SHARING'] = self.sharing
         
         attrs = ['etag', 'content-encoding', 'content-disposition',
                  'content-type']
@@ -425,12 +430,18 @@ class UpdateObject(Command):
                           help='provide the presentation style of the object')
         parser.add_option('--manifest', action='store', type='str',
                           dest='manifest', default=None,
-                          help='use for large file support')
+                          help='use for large file support')        
+        parser.add_option('--sharing', action='store',
+                          dest='sharing', default=None,
+                          help='define sharing object policy')
+
     
     def execute(self, path, srcpath='-', *args):
         headers = {}
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
+        if self.sharing:
+            headers['X_OBJECT_SHARING'] = self.sharing
         
         if getattr(self, 'start'):
             headers['CONTENT_RANGE'] = 'bytes %s-/*' % getattr(self, 'start')
@@ -513,6 +524,23 @@ class TrashObject(Command):
         else:
             self.client.delete_account_metadata(meta)
 
+@cli_command('group')
+class SetGroup(Command):
+    syntax = 'key=val [key=val] [...]'
+    description = 'sets group account info'
+    
+    def execute(self, path='', **args):
+        if len(args) == 0:
+            args = list(args)
+            args.append(path)
+            args = tuple(args)
+            path = ''
+        groups = {}
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            groups[key] = val
+        self.client.set_account_groups(groups)
+
 def print_usage():
     cmd = Command([])
     parser = cmd.parser
@@ -576,12 +604,10 @@ def main():
     try:
         cmd.execute(*cmd.args)
     except TypeError, e:
-        print e
         cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
         cmd.parser.print_help()
         exit(1)
     except Fault, f:
-        print f.status, f.data
         status = f.status and '%s ' % f.status or ''
         print '%s%s' % (status, f.data)
 

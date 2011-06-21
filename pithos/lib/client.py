@@ -258,6 +258,12 @@ class Client(object):
     def delete_account_metadata(self, meta=[]):
         self._delete_metadata('', 'account', meta)
     
+    def set_account_groups(self, groups):
+        headers = {}
+        for key, val in groups.items():
+            headers['X-Account-Group-%s' % key.capitalize()] = val
+        self.post('', headers=headers)
+    
     # Storage Container Services
     
     def _filter(self, l, d):

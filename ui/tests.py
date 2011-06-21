@@ -3,7 +3,6 @@ from selenium import selenium
 from multiprocessing import Process
 from time import sleep
 
-
 class FunctionalCase(TestCase):
     """
     Functional tests for synnefo.ui using Selenium

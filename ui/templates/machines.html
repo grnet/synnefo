@@ -4,6 +4,7 @@
 
 <!-- the create button -->
 <div id="createcontainer">
+    <div id="beforecreate" style="display:none;"></div>
     <span id="createbody">{% trans "Start by creating a new Virtual Machine:" %}</span><br />
     <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
 </div>
@@ -12,7 +13,7 @@
 <div id="view-select">
     <a id="standard" href="/machines/standard"></a>
     <a id="list" href="/machines/list"></a>
-    <a id="single" href="#"></a>
+    <a id="single" href="/machines/single"></a>
 </div>
 
 <div id="emptymachineslist">
@@ -29,36 +30,38 @@
 
 <!-- the form -->
 <form action="#">
-	<!-- scrollable root element -->
-	<div class="modal" id="wizard">
-		<!-- status bar -->
-		<ul id="status">
-			<li class="active">
+    <!-- scrollable root element -->
+    <div class="modal" id="wizard">
+        <!-- status bar -->
+        <ul id="status">
+            <li class="active">
                 <span class="headernumber" class="first">1</span>
                 <div class="headerbody first">{% trans "Image" %}</div>
             </li>
-			<li>
+            <li>
                 <span class="headernumber">2</span>
                 <div class="headerbody">{% trans "Flavor" %}</div>
             </li>
-			<li class="third">
+            <li class="third">
                 <span class="headernumber">3</span>
                 <div class="headerbody">{% trans "Name" %}</div>
             </li>
-		</ul>
-		<!-- scrollable items -->
-		<div class="items">
-			<!-- pages -->
-			<div class="page">
+        </ul>
+        <!-- scrollable items -->
+        <div class="items">
+            <!-- pages -->
+            <div class="page">
                 <h2>{% trans "Select an OS" %}</h2>
                 <hr class="topruler" />
-                <ul class="tabs">
-                    <li><a href="#">{% trans "system images" %}</a></li>
-                    <li><a href="#">{% trans "custom images" %}</a></li>
-                </ul>
+                <div id="tabscontainer">
+                    <ul class="tabs">
+                        <li><a href="#">{% trans "system images" %}</a></li>
+                        <li><a href="#">{% trans "custom images" %}</a></li>
+                    </ul>
+                </div>
                 <div class="panes">
-		            <li id="image-template" style="display:none">
-			            <label for="image.id"> 
+                    <li id="image-template" style="display:none">
+                        <label for="image.id">
                             <a>
                                 <div class="image-container">
                                     <div class="image">
@@ -66,26 +69,28 @@
                                         <img src="" class="image-logo"/>
                                         <strong class="image-title">image.title</strong>
                                         <br />
-                                        <span class="description">image.description</span> 
-                                        <span id="size" class="size">?? MB</span><span class="size"> MB</span>                         
+                                        <div class="description-container">
+                                            <span class="description">image.description</span>
+                                            <span id="size" class="size">?? MB</span><span class="size"> MB</span>
+                                        </div>
                                     </div>
-                                </div>  
+                                </div>
                             </a>
-			            </label>
-		            </li>
+                        </label>
+                    </li>
                     <ul class="pane" id="standard-images">
-					    <!-- standard images -->
-				    </ul>
+                        <!-- standard images -->
+                    </ul>
                     <ul class="pane" id="custom-images">
-					    <!-- custom images -->
+                        <!-- custom images -->
                     </ul>
                 </div>
                 <hr class="bottomruler" />
-				<button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
-				<button type="button" class="next right">{% trans "Next" %}</button>
+                <button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
+                <button type="button" class="next right">{% trans "Next" %}</button>
             </div>
-			<div class="page">
-				<h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
+            <div class="page">
+                <h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
                 <hr class="topruler" />
                 <ul>
                     <li id="machinetype">
@@ -95,9 +100,9 @@
                                 <span class="typebody" id="small-body">{% trans "small" %}</span>
                             </label>
                         </div>
-                        <div class="machine-type">      
+                        <div class="machine-type">
                             <label for="medium" id="medium">
-                                <input type="radio" id="medium" name="machine-type" value="medium" />                  
+                                <input type="radio" id="medium" name="machine-type" value="medium" />
                                 <span class="typebody" id="medium-body">{% trans "medium" %}</span>
                             </label>
                         </div>
@@ -116,41 +121,41 @@
                     </li>
                     <div id="page2-container">
                         <li class="slider-container">
-			                <label><strong class="sliders">CPUs</strong></label>
+                            <label><strong class="sliders">{% trans "CPUs" %}</strong></label>
                             <input type="range" id="cpu" style="display:none" />
                             <input type="text" class="range" id="cpu-indicator" />
-			                <span class="units">cores</span>
+                            <span class="units">{% trans "cores" %}</span>
                         </li>
                         <li class="slider-container">
-			                <label><strong class="sliders">RAM</strong></label>
+                            <label><strong class="sliders">{% trans "RAM" %}</strong></label>
                             <input type="range" id="ram" style="display:none" />
                             <input type="text" class="range" id="ram-indicator" />
-			                <span class="units">MB</span>
+                            <span class="units">MB</span>
                         </li>
                         <li class="slider-container">
-		                    <label><strong class="sliders">Size</strong></label>
+                            <label><strong class="sliders">{% trans "Size" %}</strong></label>
                             <input type="range" id="storage" style="display:none" />
                             <input type="text" class="range" id="storage-indicator" />
-			                <span class="units">GB</span>
+                            <span class="units">GB</span>
                         </li>
                         <li>
                             <div class="cost">
-                                <span> {% trans "Your wallet:" %} 10,000 Credits </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" disabled="disabled" /> {% trans "C/hour" %}</span>
+                                <span> {% trans "Your wallet:" %} 10,000 {% trans "Credits" %} </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" disabled="disabled" /> {% trans "C/hour" %}</span>
                             </div>
                         </li>
                     </div>
                 </ul>
                 <hr class="bottomruler" />
-				<button type="button" class="prev">{% trans "Back" %}</button>
-				<button type="button" class="next right">{% trans "Next" %}</button>
+                <button type="button" class="prev">{% trans "Back" %}</button>
+                <button type="button" class="next right">{% trans "Next" %}</button>
             </div>
-			<div class="page">
-				<h2>{% trans "Confirm your settings" %}</h2>
+            <div class="page">
+                <h2>{% trans "Confirm your settings" %}</h2>
                 <hr class="topruler" />
                 <ul id="page3-container">
                     <li class="required" id="label-name">
                         <label>
-                            <strong>Name:</strong>
+                            <strong>{% trans "Name" %}:</strong>
                             <input type="text" class="text" name="machine_name" id="name" value="My Ubuntu 10.04 x86_64 server"/>
                         </label>
                     </li>
@@ -174,78 +179,64 @@
                     </li>
                 </ul>
                 <hr class="bottomruler" />
-				<button type="button" class="prev">{% trans "Back" %}</button>
-				<button type="button" class="next right" id="start">{% trans "Create VM" %}</button>        
+                <button type="button" class="prev">{% trans "Back" %}</button>
+                <button type="button" class="next right" id="start">{% trans "Create VM" %}</button>
             </div>
-		</div>
-	</div>
+        </div>
+        <div class="separator-end"></div>
+    </div>
 </form>
 
-<!-- base notification for error/success reporting -->
-<a id="notification" rel="#error-success" href="#"></a>
-
-<div class="modal" id="error-success">
-    <h3>{% trans "Error!/Success!" %}</h3>
-    <div><p>{% trans "More details about the result"%}</p></div>
-</div>
-
-<!-- metadata scrollable -->
+<!-- metadata overlay -->
 <div>
-    <!-- root element for scrollable -->
-    <div id="metadata-wizard">
-
-        <!-- root element for the items -->
-        <div class="items">
-            <div class="page" id="edit-dialog">
-                <div class='container'>
-                    <h3>
-                        <label>{% trans "Tags for machine:" %}</label>
-                        <span>Server name</span>
-                        <p style='display:none;'>hidden server id</p>
-                    </h3>
-                    <hr class="topruler" />
-                    <hr class="fatruler" />
-                    <div class="content">
-                        <ul class="meta-template" style="display:none">
-                            <li>
-                                <label>{% trans "Key" %}</label>
-                                <button type="button" class="remove">{% trans "remove x" %}</button>
-                                <hr class="meta-separator">
-                                <p>{% trans "Value" %}</p>
-                                <button type="button" class="edit">{% trans "edit" %}</button>
-                                <button type="button" class="cancel">{% trans "cancel" %}</button>
-                                <button type="button" class="save">{% trans "save" %}</button>
-                            </li>
-                        </ul>
-                        <ul class="meta-list">
-                        </ul>
+    <div id="metadata-wizard" class="modal">
+        <h3 class="popup-header">{% trans "Manage Tags" %}</h3>
+        <p style='display:none;'>hidden server id</p>
+        <div id="on-off" style='display:none;'>hidden server id</div>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="popup-title">{% trans "Create, edit and delete Tags for machine:" %}</div>
+                <div class="name-container">
+                    <img src="" class="machine-icon" />
+                    <div class="machine-name"></div>
+                </div>
+                <div class="popup-separator"></div>
+                <div class="large-spinner" style="display:none;"></div>
+                <div class="metadata-container">
+                    <!-- append metadata entries here -->
+                </div>
+                <div class="metadata-add-template" style="display:none;">
+                    <input type="text" id="add-meta-key" maxlength="15"></input>
+                    <ul>
+                        {% for o in default_keywords %}
+                            <li><span class="dropdownitem">{{o}}</span></li>
+                        {% endfor %}
+                    </ul>
+                    <input type="text" id="add-meta-value" maxlength="150" value="{% trans 'max 150 characters' %}"></input>
+                    <div class="addbuttons">
+                        <span class="save" />
+                        <span class="cancel" />
                     </div>
                 </div>
-                <button type="button" class="close">{% trans "Close" %}</button>
-                <button type="button" class="create next browse right">{% trans "Create New+" %}</button>
-                <div class="bottomruler"></div>
-            </div>
-            <div class="page" id="add-dialog">
-                <div class='container'>
-                    <h3>
-                        <label>{% trans "Tags for machine:" %}</label>
-                        <span>Server name</span>
-                        <p style='display:none;'>hidden server id</p>
-                    </h3>
-                    <hr class="topruler" />
-                    <hr class="fatruler" />
-                    <div class="content">
-                        <label class="meta-key">{% trans "Key:" %}</label>
-                        <input type="text" maxlength="15" class="key" value="{% trans 'max 15 characters' %}"/>
-                        <hr class="meta-separator">
-                        <label class="meta-value">{% trans "Value:" %}</label>
-                        <textarea class="value">{% trans "max 150 characters" %}</textarea>
+                <div class="metadata-pair-template" style="display:none;">
+                    <div class="metadata-key">{% trans "OS" %}</div>
+                    <div class="vertical-separator"></div>
+                    <div class="metadata-value">{% trans "Debian" %}</div>
+                    <div class="metadata-full-value" style="display:none;"></div>
+                    <div class="metadata-edit">
+                        <span class="edit" />
+                        <span class="remove" />
+                    </div>
+                    <div class="editbuttons" style="display:none;">
+                        <span class="save" />
+                        <span class="remove" />
                     </div>
                 </div>
-                <button type="button" class="cancel prev browse left">{% trans "Cancel" %}</button>
-                <button type="button" class="save">{% trans "Save" %}</button>
-                <div class="bottomruler"></div>
             </div>
+        </div>
+        <div class="buttons">
+            <button type="button" class="save" id="metadata-cancel">{% trans "Close" %}</button>
+            <button type="button" class="create" id="metadata-create">{% trans "Create New" %}</button>
         </div>
     </div>
 </div>
@@ -257,18 +248,16 @@
 <div class="confirm_multiple">
     <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
     <button class="yes">{% trans "Confirm All" %}</button>
-	<button class="no">{% trans "Cancel All" %}</button>
+    <button class="no">{% trans "Cancel All" %}</button>
 </div>
-
-<div id="machines" class="separator"></div>
 
 <script>
 
 //add hover to labels
-$('span.typebody').mouseover(function() {
+$('#machines-pane span.typebody').mouseover(function() {
     $(this).addClass('typehover');
 });
-$('span.typebody').mouseout(function() {
+$('#machines-pane span.typebody').mouseout(function() {
     $(this).removeClass('typehover');
 });
 
@@ -277,49 +266,60 @@ function os_icon(metadata) {
     if (!metadata) {
         return 'unknown';
     }
-
     if (metadata.values.OS == undefined || metadata.values.OS == '') {
         return 'unknown';
     } else {
-        if (UrlExists("static/machines/" + metadata.values.OS + '-on.png')) {
-            return metadata.values.OS;
-        } else {
+        if (os_icons.indexOf(metadata.values.OS) == -1) {
             return 'unknown';
+        } else {
+            return metadata.values.OS;
         }
     }
-} 
+}
 
-//helper function to check file existance
-function UrlExists(url)
-{
-    var http = new XMLHttpRequest();
-    http.open('HEAD', url, false);
-    http.send();
-    return http.status!=404;
+function os_icon_from_value(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+if (metadata == undefined || metadata == '') {
+        return 'unknown';
+    } else {
+        if (os_icons.indexOf(metadata) == -1) {
+            return 'unknown';
+        } else {
+            return metadata;
+        }
+    }
 }
 
 // switch to list view
-$("a#list").click(function(){
-    list_view(); 
+$("#machines-pane a#list").click(function(){
+    list_view();
     return false;
 });
 
 // switch to standard view
-$("a#standard").click(function(){
+$("#machines-pane a#standard").click(function(){
     standard_view();
     return false;
 });
 
+// switch to single view
+$("#machines-pane a#single").click(function(){
+    single_view();
+    return false;
+});
+
 // launch VM creation wizard
-$("a#create").click(function(){
+$("#machines-pane a#create").click(function(){
     // launch wizard only if images and flavors are found
     if (images.length > 0  && flavors.length > 0) {
         $("#wizard").scrollable().begin();
         $("#wizard").show();
-        $('a#create').data('overlay').load()   
+        $('#machines-pane a#create').data('overlay').load()
     } else if (images.length == 0 ) {
         ajax_error('NO_IMAGES');
-        return false;   
+        return false;
     } else if (flavors.length == 0) {
         ajax_error('NO_FLAVORS');
         return false;
@@ -327,42 +327,42 @@ $("a#create").click(function(){
 });
 
 // create wizard overlay
-$(function() { 
-    $("a#create").overlay({
-        mask: '#000', 
-        effect: 'default', 
-        top: '5%', 
+$(function() {
+    $("#machines-pane a#create").overlay({
+        mask: '#000',
+        effect: 'default',
+        top: '5%',
         oneInstance: false,
         closeOnClick: false
     });
 });
 
 // wizard
-$(function() {    
+$(function() {
     var root = $("#wizard").scrollable();
     var api = root.scrollable();
     // rangeinput with default configuration
     // validation logic is done inside the onBeforeSeek callback
     api.onBeforeSeek(function(event, i) {
-	    // we are going 1 step backwards so no need for validation
-	    if (api.getIndex() < i) {
+        // we are going 1 step backwards so no need for validation
+        if (api.getIndex() < i) {
              // 1. get current page
-		     var page = root.find(".page").eq(api.getIndex()),
-			 // 2. .. and all required fields inside the page
-			 inputs = page.find(".required :input").removeClass("error"),
-			 // 3. .. which are empty
-			 empty = inputs.filter(function() {
-				return $(this).val().replace(/\s*/g, '') == '';
-			 });
-		     // if there are empty fields, then
-		    if (empty.length) {
-			    // add a CSS class name "error" for empty & required fields
-			    empty.addClass("error");
-			    // cancel seeking of the scrollable by returning false
-			    return false;
-		    // everything is good
-		    } 
-	    } 
+             var page = root.find(".page").eq(api.getIndex()),
+             // 2. .. and all required fields inside the page
+             inputs = page.find(".required :input").removeClass("error"),
+             // 3. .. which are empty
+             empty = inputs.filter(function() {
+                return $(this).val().replace(/\s*/g, '') == '';
+             });
+             // if there are empty fields, then
+            if (empty.length) {
+                // add a CSS class name "error" for empty & required fields
+                empty.addClass("error");
+                // cancel seeking of the scrollable by returning false
+                return false;
+            // everything is good
+            }
+        }
         // update confirm step
         if (api.getIndex()==0) {
             var image = $("input[type=radio][name=image-id]:checked");
@@ -376,11 +376,11 @@ $(function() {
             $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
             $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
             $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
-        }   
+        }
     });
     api.onSeek(function(event, i) {
-	    // update status bar
-	    $("#status li").removeClass("active").eq(i).addClass("active");
+        // update status bar
+        $("#status li").removeClass("active").eq(i).addClass("active");
     });
     // if tab is pressed on the next button seek to next page
     $(root).live('keydown', function (e) {
@@ -393,12 +393,12 @@ $(function() {
     });
     //submit wizard by pressing enter on the name textbox
     $("#name").keypress(function (e) {
-		if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
-			$('#start').click();
-			return false;
-		} else {
-			return true;
-		}
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $('#start').click();
+            return false;
+        } else {
+            return true;
+        }
     });
 });
 
@@ -410,26 +410,28 @@ function disableSliders() {
 }
 
 //update radio button when clicking on text
-$("#small-body").live('click' ,function() { 
+$("#small-body").live('click' ,function() {
     $(this).parent().find("#small").click();
 });
-$("#medium-body").live('click' ,function() { 
+
+$("#medium-body").live('click' ,function() {
     $(this).parent().find("#medium").click();
 });
-$("#large-body").live('click' ,function() { 
+
+$("#large-body").live('click' ,function() {
     $(this).parent().find("#large").click();
 });
-$("#custom-body").live('click' ,function() { 
+
+$("#custom-body").live('click' ,function() {
     $(this).parent().find("#custom").click();
 });
 
 //select image div on radio button select
-$('.radio').live('click' ,function() {           
+$('#machines-pane .radio').live('click' ,function() {
     $(this).parents("div").find(".image").removeClass('selecteddiv');
     if($(this).is(':checked'))  {
         $(this).parent().addClass('selecteddiv');
     }
-    
 });
 
 // validate cpu input box
@@ -446,7 +448,7 @@ $("#cpu-indicator").live('change',function(){
         $("#cpu").data('rangeinput').setValue(j);
     } else {
         $("#cpu").data('rangeinput').setValue(i);
-    }   
+    }
     return false;
 });
 
@@ -464,7 +466,7 @@ $("#ram-indicator").live('change',function(){
         $("#ram").data('rangeinput').setValue(j);
     } else {
         $("#ram").data('rangeinput').setValue(i);
-    }   
+    }
     return false;
 });
 
@@ -482,7 +484,7 @@ $("#storage-indicator").live('change',function(){
         $("#storage").data('rangeinput').setValue(j);
     } else {
         $("#storage").data('rangeinput').setValue(i);
-    }   
+    }
     return false;
 });
 
@@ -495,9 +497,9 @@ $("#small").click(function(){
     $("#ram-indicator")[0].value = ram[0];
     $("#storage-indicator")[0].value = disks[0];
     $("#small").addClass("active");
-    $("#medium").removeClass("active");    
-    $("#large").removeClass("active");    
-    $("#custom").removeClass("active");    
+    $("#medium").removeClass("active");
+    $("#large").removeClass("active");
+    $("#custom").removeClass("active");
 });
 
 // selecting the medium size
@@ -507,11 +509,11 @@ $("#medium").click(function(){
     $("#storage").data('rangeinput').setValue(1);
     $("#cpu-indicator")[0].value = cpus[1];
     $("#ram-indicator")[0].value = ram[1];
-    $("#storage-indicator")[0].value = disks[1];  
-    $("#medium").addClass("active");  
-    $("#small").removeClass("active");    
-    $("#large").removeClass("active");    
-    $("#custom").removeClass("active");  
+    $("#storage-indicator")[0].value = disks[1];
+    $("#medium").addClass("active");
+    $("#small").removeClass("active");
+    $("#large").removeClass("active");
+    $("#custom").removeClass("active");
 });
 
 // selecting the large size
@@ -521,11 +523,11 @@ $("#large").click(function(){
     $("#storage").data('rangeinput').setValue(2);
     $("#cpu-indicator")[0].value = cpus[2];
     $("#ram-indicator")[0].value = ram[2];
-    $("#storage-indicator")[0].value = disks[2];   
-    $("#large").addClass("active"); 
-    $("#medium").removeClass("active");    
-    $("#small").removeClass("active");    
-    $("#custom").removeClass("active");  
+    $("#storage-indicator")[0].value = disks[2];
+    $("#large").addClass("active");
+    $("#medium").removeClass("active");
+    $("#small").removeClass("active");
+    $("#custom").removeClass("active");
 });
 
 // selecting the custom flavor enables the sliders
@@ -534,20 +536,22 @@ $("#custom").click(function(){
     $("#ram").attr('disabled',false);
     $("#storage").attr('disabled',false);
     $("strong.sliders").style = 'color: #778899;';
-    $("#custom input").attr('checked', 'checked');		
-    $("#custom").addClass("active"); 
-    $("#medium").removeClass("active");    
-    $("#large").removeClass("active");    
-    $("#small").removeClass("active");  
+    $("#custom input").attr('checked', 'checked');
+    $("#custom").addClass("active");
+    $("#medium").removeClass("active");
+    $("#large").removeClass("active");
+    $("#small").removeClass("active");
 });
 
 //when textbox gains focus, add selection in css
 $('#cpu-indicator').focus(function() {
     $(this).addClass('selectedrange');
 });
+
 $('#ram-indicator').focus(function() {
     $(this).addClass('selectedrange');
 });
+
 $('#storage-indicator').focus(function() {
     $(this).addClass('selectedrange');
 });
@@ -556,41 +560,41 @@ $('#storage-indicator').focus(function() {
 $('#cpu-indicator').blur(function() {
     $(this).removeClass('selectedrange');
 });
+
 $('#ram-indicator').blur(function() {
     $(this).removeClass('selectedrange');
 });
+
 $('#storage-indicator').blur(function() {
     $(this).removeClass('selectedrange');
 });
 
 // exit the wizard
 $("#cancel").click(function(){
-    $("a#create").overlay().close();
+    $("#machines-pane a#create").overlay().close();
 });
 
 // starting a new VM through the wizard
 $("#start").click(function(){
-    var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');   
+    var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');
     var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
     if (jQuery.trim(machineName) == ''){
         return false;
     }
-    create_vm(machineName, imageRef, flavorRef);
 
-    $('a#create').data('overlay').close();
+    //replace text 'create new' with progress indicator
+    $('#wizard #start').text('');
+    $('#wizard #start').html('<img src="/static/icons/indicators/medium/horizontal-progress.gif" / >');
+
+    create_vm(machineName, imageRef, flavorRef);
 
     try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
 
-    $("#wizard").hide();
 });
 
 // metadata wizard
 $(function() {
-	// initialize scrollable
-    $("#metadata-wizard").scrollable({
-        keyboard: false
-    });
     // create wizard overlay
     $("a#metadata-scrollable").overlay({
         mask: '#000',
@@ -602,51 +606,192 @@ $(function() {
         load: false,
         onClose: function(){
             // reset input areas
-            reset_metadata_input();
-            serverID = $("#edit-dialog h3 p").text();
-            get_metadata(serverID);
+            serverID = $("#metadata-wizard p:first").text();
+            $("#metadata-wizard div.metadata-container").empty();
+            get_metadata(serverID, true);
         }
     });
 });
 
-// bring up metadata scrollable
+// bring up metadata overlay
 function show_metadata_wizard() {
     // get metadata for current server and fill the dialog
-    serverID = $("#edit-dialog h3 p").text();
+    serverID = $("#metadata-wizard p:first").text();
     get_metadata(serverID);
-    $("#metadata-wizard").scrollable().begin();
     $("#metadata-wizard").show();
     $("a#metadata-scrollable").data('overlay').load();
-    return false; 
-}
-
-function reset_metadata_input() {
-    // reset input areas
-    $("#metadata-wizard input.key").removeClass("input-enabled");
-    $("#metadata-wizard input.key")[0].value = 'max 15 characters';
-    $("#metadata-wizard textarea.value").removeClass("input-enabled");
-    $("#metadata-wizard textarea.value")[0].value = 'max 150 characters';
+    $('#metadata-wizard .large-spinner').show();
+    return false;
 }
 
 // update metadata list
-function list_metadata(data) {    
+function list_metadata(data) {
     // empty the list if it already exists
-    $("#edit-dialog div.content ul.meta-list").empty();
+    $("#metadata-wizard div.metadata-container").empty();
     // get the values to show
     meta = data.metadata.values;
+    // set serve icon
+    var icon_name = os_icon(data.metadata);
+    $("#metadata-wizard .machine-icon").attr("src","static/icons/machines/small/" + icon_name + '-' + $("#metadata-wizard div#on-off").text() + '.png');
     // show values
     for (key in meta) {
-        pair = $("ul.meta-template li").clone();
+        pair = $("#metadata-wizard div.metadata-pair-template:last").clone();
         //truncate metadata
-        pair.find("label").text(key.substring(0,15));
+        pair.find("div.metadata-key").text(key.substring(0,15));
         if (meta[key].length > 25) {
-            pair.find("p").text(meta[key].substring(0,25) + "...");
+            pair.find("div.metadata-value").text(meta[key].substring(0,25) + "...");
         } else {
-            pair.find("p").text(meta[key]);            
+            pair.find("div.metadata-value").text(meta[key]);
         }
-        pair.appendTo("#edit-dialog div.content ul.meta-list").fadeIn();
+        //get the serverID
+        serverID = $("#metadata-wizard p:first").text();
+        //store the full metadata value on a hidden div
+        pair.find("div.metadata-full-value").text(meta[key]);
+        // show/hide edit-remove buttons on hover
+        pair.hover(function () {$(this).find('.metadata-edit').show();}, function () {$(this).find('.metadata-edit').hide();});
+        // add it to the list
+        pair.appendTo("#metadata-wizard div.metadata-container").fadeIn();
     }
 }
+
+// exit the metadata wizard
+$("#metadata-cancel").click(function(){
+    $("a#metadata-scrollable").overlay().close();
+});
+
+//intercept create new metadata click
+$("#metadata-wizard #metadata-create").click(function(){
+    pair = $("#metadata-wizard div.metadata-add-template:first").clone();
+    pair.prependTo("#metadata-wizard div.metadata-container").fadeIn();
+      with (pair.find('input#add-meta-key')) {
+        with (next('ul:first')) {
+          find('li').click(function() {
+            $(this).parent().prev('.textdropdown-outer').find('input:first').attr('value', $(this).find('.dropdownitem').html());
+            $(this).parent().hide();
+          });
+          hide();
+        }
+
+        keypress(function() {
+          $(this).parent().next('ul:first').hide();
+        });
+
+        change(function() {
+          $(this).parent().next('ul:first').hide();
+        });
+
+        wrap('<div class="textdropdown-outer" style="width: ' + width() + 'px; height: ' + (height() + 5) + 'px"></div>');
+        var btn = parent().prepend('<div class="textdropdown-btn">&nbsp;</div>').find('.textdropdown-btn');
+        width(width() - btn.width() - 5);
+        css("border", "0");
+
+        btn.click(function() {
+          var p = parent();
+          with (p.next('ul:first')) {
+            css('position', 'absolute');
+            css('width',    p.width());
+            css('left',     p.position().left + 4);
+            css('top',      p.position().top + p.height() + 1);
+            toggle();
+          }
+        });
+      }
+    pair.find('input#add-meta-key').focus();
+});
+
+//save new metadata
+$('#metadata-wizard .addbuttons .save').die('click');
+$('#metadata-wizard .addbuttons .save').live('click', function(){
+    keyValue = $(this).parent().parent().find('input#add-meta-key').val();
+    valValue = $(this).parent().parent().find('input#add-meta-value').val();
+    if ((keyValue == '{% trans 'max 15 characters' %}') || (valValue == '{% trans 'max 150 characters' %}')) {
+        return false;
+    } else {
+        serverID = $("#metadata-wizard p:first").text();
+        pair = $("#metadata-wizard div.metadata-pair-template:last").clone();
+        pair.find("div.metadata-key").text(keyValue.substring(0,15));
+        if (valValue.length > 25) {
+            pair.find("div.metadata-value").text(valValue.substring(0,25) + "...");
+        } else {
+            pair.find("div.metadata-value").text(valValue);
+        }
+        pair.find("div.metadata-full-value").text(valValue);
+        update_metadata(serverID, keyValue, valValue);
+        $(this).parent().parent().remove();
+        pair.hover(function () {$(this).find('.metadata-edit').show();}, function () {$(this).find('.metadata-edit').hide();});
+        // add it to the list
+        if ($("#metadata-wizard div.metadata-container").find("div.metadata-pair-template").length > 0) {
+            pair.insertBefore("#metadata-wizard div.metadata-container div.metadata-pair-template:first").fadeIn();
+        } else {
+            pair.prependTo("#metadata-wizard div.metadata-container").fadeIn();
+        }
+    }
+});
+
+//intercept cancel new metadata creation
+$("#metadata-wizard .addbuttons .cancel").die('click');
+$("#metadata-wizard .addbuttons .cancel").live('click',function(){
+    $(this).parent().parent().fadeOut('fast');
+    window.setTimeout(function(){$(this).parent().parent().remove();}, 400);
+});
+
+//metadata remove button
+$("#metadata-wizard .metadata-edit .remove").die('click')
+$("#metadata-wizard .metadata-edit .remove").live('click', function() {
+    $(this).parent().parent().fadeOut('slow');
+    serverID = $("#metadata-wizard p:first").text();
+    keyValue = $(this).parent().parent().find('div.metadata-key').text();
+    //update icons if deleting the OS metadata
+    if (keyValue == "OS") {
+        $("#metadata-wizard .machine-icon").attr("src","static/icons/machines/small/unknown-" + $("#metadata-wizard div#on-off").text() + '.png');
+        $("#machinesview-icon").find("div#" + serverID).find("img.logo").attr("src", "static/icons/machines/medium/unknown-" + $("#metadata-wizard div#on-off").text() + '.png');
+    }
+    delete_metadata(serverID, keyValue);
+});
+
+//metadata edit button
+$("#metadata-wizard .metadata-edit .edit").die('click');
+$("#metadata-wizard .metadata-edit .edit").live('click', function() {
+    $(this).parent().parent().find('div.metadata-value').html("<input id=\"value-edit\" maxlength=\"150\" type=\"text\" class=\"metatextbox\" value=\"" + $(this).parent().parent().find('.metadata-full-value').text() +
+                                    "\" / ><span class=\"oldValue\">" +
+                                    $(this).parent().parent().find('.metadata-full-value').text() + "</span>");
+    $(this).parent().hide();
+    $(this).parent().parent().unbind('mouseenter').unbind('mouseleave');
+    $(this).parent().parent().find('.editbuttons').show();
+});
+
+//metadata cancel edit button
+$("#metadata-wizard .editbuttons .remove").die('click');
+$("#metadata-wizard .editbuttons .remove").live('click', function() {
+    var oldValue = $(this).parent().parent().find('.oldValue').text();
+    if (oldValue.length > 25) {
+        oldValue = oldValue.substring(0,25) + "...";
+    }
+    $(this).parent().parent().find('div.metadata-value').html(oldValue);
+    $(this).parent().parent().hover(function () {$(this).find('.metadata-edit').show();}, function () {$(this).find('.metadata-edit').hide();});
+    $(this).parent().hide();
+});
+
+//metadata save edit button
+$("#metadata-wizard .editbuttons .save").die('click');
+$("#metadata-wizard .editbuttons .save").live('click', function() {
+    newValue = $(this).parent().parent().find('input.metatextbox').val();
+    keyValue = $(this).parent().parent().find('div.metadata-key').text();
+    oldValue = $(this).parent().parent().find('.oldValue').text();
+    if (!(newValue == oldValue)) {
+        update_metadata(serverID, keyValue, newValue);
+    }
+    if (newValue.length > 25) {
+        newValueSort = newValue.substring(0,25) + "...";
+    } else {
+        newValueSort = newValue
+    }
+    $(this).parent().parent().find('div.metadata-value').html(newValueSort);
+    $(this).parent().parent().find('div.metadata-full-value').html(newValue);
+    $(this).parent().parent().hover(function () {$(this).find('.metadata-edit').show();}, function () {$(this).find('.metadata-edit').hide();});
+    $(this).parent().hide();
+
+});
 
 // trapping keydown event
 jQuery.expr[':'].focus = function( elem ) {
@@ -656,129 +801,70 @@ jQuery.expr[':'].focus = function( elem ) {
     }
 };
 
-$('*').keydown(function (event){
-    if (event.keyCode == '9') {
-        event.preventDefault();
-        return false;
+// intercept create metadata key focus
+$("#metadata-wizard input#add-meta-key").live('focusin', function() {
+    if ($(this).parent().hasClass("div-enabled")) {
+    } else {
+        $(this).parent().addClass("div-enabled");
+        $(this).addClass("input-enabled");
+        if (this.value == '{% trans 'max 15 characters' %}') {
+            this.value = '';
+        }
     }
-    if ($('#add-dialog').is(":visible") && !$('#edit-dialog textarea').length && !($('input.key').is(':focus') || $('textarea.value').is(':focus'))){
-        $('input.key').focus();
-        $('input.key').focusin(); 
+    return false;
+});
+
+// intercept create metadata key focus out
+$("#metadata-wizard input#add-meta-key").live('focusout', function() {
+    $(this).parent().removeClass("div-enabled");
+    if (this.value == "") {
+        $(this).removeClass("input-enabled");
+        this.value = '{% trans 'max 15 characters' %}';
     }
-    return true;
-});
-
-// intercept click on remove button in metadata edit dialog
-$('#edit-dialog button.remove').live('click', function() { 
-    // get the server id and meta key needed for the ajax call   
-    var serverID = $(this).closest('div.container').find('h3 p').text();
-    var meta_key = $(this).parent().find('label').text();
-    // make the ajax call and list the new GET results
-    delete_metadata(serverID, meta_key);
     return false;
 });
 
-// intercept click on edit button in metadata edit dialog
-$('#edit-dialog button.edit').live('click', function(){
-    // show input form for tag value
-    $(this).parent().find('p').html("<textarea class=\"edit-meta-value\" l=\"3\">" +
-                                        $(this).parent().find('p').text() + 
-                                        "</textarea><p class=\"oldValue\">" + 
-                                        $(this).parent().find('p').text() + "</p>");
-    // show/hide the appropriate buttons
-    $(this).hide(); // this button (edit)
-    $(this).siblings().show(); // save and cancel buttons
 
-    return false;
-});
-
-// intercept click on cancel button in metadata edit dialog
-$('#edit-dialog button.cancel').live('click', function(){
-    // put the old value and close the forms
-    $(this).parent().find('p').html($(this).parent().find('p.oldValue').text());
-    // show/hide the appropriate buttons
-    $(this).hide(); // this button (cancel)
-    $(this).next().hide(); // the save button
-    $(this).prev().show(); // the edit button
-
-    return false;
-});
-
-// intercept click on save button in metadata edit dialog
-$('#edit-dialog button.save').live('click', function(){
-    // get the updated values and the old key
-    var oldKey = $(this).parent().find('label').text();
-    var newValue = $(this).parent().find('textarea.edit-meta-value').val().substring(0,150);
-    // put the new value and close the forms
-    $(this).parent().find('p').html(newValue);
-    // update meatadata pair
-    add_metadata(serverID, oldKey, newValue);
-
-    // show/hide the appropriate buttons
-    $(this).hide(); // this button (save)
-    $(this).prev().hide(); // the cancel button
-    $(this).prev().prev().show(); // the edit button
-
-    return false;
+// intercept metadata dropdown item click
+$(".metadata-add-template li").live('click', function() {
+    $(this).parent().parent().parent().find("input#add-meta-value").focus();
+    $(this).parent().parent().parent().find("input#add-meta-key").addClass("input-enabled");
 });
 
 // intercept create metadata key focus
-$("#metadata-wizard input.key").live('focusin', function() {
+$("#metadata-wizard input#add-meta-value").live('focusin', function() {
     if ($(this).hasClass("input-enabled")) {
     } else {
-        $("#metadata-wizard input.key").addClass("input-enabled"); 
-        $(this).addClass("input-enabled"); 
+        $(this).addClass("input-enabled");
         this.value = '';
     }
     return false;
 });
 
 // intercept create metadata key focus out
-$("#metadata-wizard input.key").live('focusout', function() {
+$("#metadata-wizard input#add-meta-value").live('focusout', function() {
     if (this.value == "") {
-        $(this).removeClass("input-enabled"); 
-        this.value = 'max 15 characters';
-    }
-    return false;
-});
-
-// intercept create metadata key focus
-$("#metadata-wizard textarea.value").live('focusin', function() {
-    if ($(this).hasClass("input-enabled")) {
-    } else {
-        $("#metadata-wizard textarea.value").addClass("input-enabled"); 
-        $(this).addClass("input-enabled"); 
-        this.value = '';
-    }
-    return false;
-});
-
-// intercept create metadata key focus out
-$("#metadata-wizard textarea.value").live('focusout', function() {
-    if (this.value == "") {
-        $(this).removeClass("input-enabled"); 
-        this.value = 'max 150 characters';
+        $(this).removeClass("input-enabled");
+        this.value = '{% trans 'max 150 characters' %}';
     }
     return false;
 });
 
 // intercept click on cancel button in metadata add dialog
 $('#add-dialog button.cancel').live('click', function() {
-    reset_metadata_input();
+
 });
 
 // intercept click on save button in metadata add dialog
 $('#add-dialog button.save').live('click', function() {
-    // if both fields are filled in     
+    // if both fields are filled in
     if ($('input.key').hasClass("input-enabled") && $('textarea.value').hasClass("input-enabled")) {
-        // get the server id, meta key and meta value needed for the ajax call     
+        // get the server id, meta key and meta value needed for the ajax call
         var serverID = $(this).parent().find('h3 p').text();
         var meta_key = $(this).parent().find('input.key').attr('value');
         var meta_value = $(this).parent().find('textarea.value')[0].value;
         // make the ajax call and list the new GET results
         add_metadata(serverID, meta_key, meta_value);
-        // reset input areas
-        reset_metadata_input();
         // go to previous step
         $('#add-dialog button.prev').click();
     } else {
@@ -795,47 +881,48 @@ $('#add-dialog button.save').live('click', function() {
 });
 
 // confirm all actions
-$("div.confirm_multiple .yes").live('click', function(){
+$("#machines-pane div.confirm_multiple .yes").live('click', function(){
     while(pending_actions.length > 0){ // if there is a pending action for this server execute it
         action = pending_actions.pop(); // extract action
         var serverID = action[1];
-        if ($.cookie("list") != '1') { // standard view
+        if ($.cookie("view") != '1') { // standard view
             $('#' + serverID + ' .selected').removeClass('selected');
             $('#' + serverID + ' .display').removeClass('display');
             if (action[0] == shutdown) {
-                $('#' + serverID + ' .status').text('Shutting down');
+                $('#' + serverID + ' .status').text(TRANSITIONS['Shutting down']);
             } else if (action[0] == start) {
-                $('#' + serverID + ' .status').text('Starting');
+                $('#' + serverID + ' .status').text(TRANSITIONS['Starting']);
             } else if (action[0] == reboot) {
-                $('#' + serverID + ' .status').text('Rebooting');
+                $('#' + serverID + ' .status').text(TRANSITIONS['Rebooting']);
             } else if (action[0] == destroy) {
-                $('#' + serverID + ' .status').text('Destroying');
+                $('#' + serverID + ' .status').text(TRANSITIONS['Destroying']);
             }
             $('#' + serverID + ' .spinner').show();
         } else { // list view
             osIcon = $('#'+serverID).parent().parent().find('.list-logo');
             osIcon.attr('os',osIcon.attr('src'));
-            osIcon.attr('src','static/progress.gif');
+            osIcon.attr('src','static/icons/indicators/small/progress.gif');
             if (action[0] == shutdown) {
-                $('#' + serverID).parent().parent().find('span.status').text('Shutting down');
+                $('#' + serverID).parent().parent().find('span.status').text(TRANSITIONS['Shutting down']);
             } else if (action[0] == start) {
-                $('#' + serverID).parent().parent().find('span.status').text('Starting');
+                $('#' + serverID).parent().parent().find('span.status').text(TRANSITIONS['Starting']);
             } else if (action[0] == reboot) {
-                $('#' + serverID).parent().parent().find('span.status').text('Rebooting');
+                $('#' + serverID).parent().parent().find('span.status').text(TRANSITIONS['Rebooting']);
             } else if (action[0] == destroy) {
-                $('#' + serverID).parent().parent().find('span.status').text('Destroying');
+                $('#' + serverID).parent().parent().find('span.status').text(TRANSITIONS['Destroying']);
             }
         }
         action[0]([serverID]); // execute action
     }
-    update_confirmations();    
+    update_confirmations();
 });
 
 // cancel all actions
-$("div.confirm_multiple .no").live('click', function(){
+$("#machines-pane div.confirm_multiple .no").live('click', function(){
     pending_actions = [];
-    $('.machine .selected').removeClass('selected');
-    $('.machine .display').removeClass('display');
+    $('#machines-pane .machine .selected').removeClass('selected');
+    $('#machinesview-list .actions .selected').removeClass('selected');
+    $('#machines-pane .machine .display').removeClass('display');
     update_confirmations();
 });
 
@@ -846,7 +933,7 @@ if (images.length > 0) {
 }
 if (flavors.length > 0) {
     // configure flavors
-    update_wizard_flavors(); 
+    update_wizard_flavors();
 }
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");

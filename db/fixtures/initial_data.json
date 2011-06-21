@@ -9,6 +9,7 @@
             "credit": 10,
             "auth_token": "46e427d657b20defe352804f0eb6f8a2",
             "auth_token_created": "2011-05-10",
+            "auth_token_expires": "2015-05-10",
             "type": "STUDENT",
             "created": "2011-05-10"
    	    }

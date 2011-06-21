@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 #
 # Unit Tests for logic
 #
@@ -160,3 +161,16 @@ class ProcessNetStatusTestCase(TestCase):
         vm = VirtualMachine.objects.get(pk=30000)
         backend.process_net_status(vm, msg['nics'])
         self.assertEquals(vm.nics.all()[0].ipv4, '')
+
+
+class UsersTestCase(TestCase):
+
+    def test_create_uname(self):
+        username = users.create_uname("Donald Knuth")
+        self.assertEquals(username, "knuthd")
+
+        username = users.create_uname("Nemichandra Siddhanta Chakravati")
+        self.assertEquals(username, "chakravn")
+
+        username = users.create_uname(u'Γεώργιος Παπαγεωργίου')
+        self.assertEquals(username, u'παπαγεωγ')

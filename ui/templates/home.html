@@ -1,41 +1,67 @@
 {% load i18n %}
 <!DOCTYPE html>
 <head>
-	<title>{{ project }}</title>
-	<!-- include the Tools -->
+    <title>{{ project }}</title>
+    <!-- include the Tools -->
     <!-- jquery tools minified for deployment-->
     <script src="static/jquery.tools.min.js"></script>
-    
-	<!-- jquery tools source for JS debugging -->
+    <!-- jquery tools source for JS debugging -->
     <!--
-    <script src="http://flowplayer.org/tools/download/1.2.5/jquery-1.4.2.js"></script>   
-	<script src="http://flowplayer.org/tools/download/1.2.5/tabs/tabs.js"></script>
-	<script src="http://flowplayer.org/tools/download/1.2.5/scrollable/scrollable.js"></script>
-	<script src="http://flowplayer.org/tools/download/1.2.5/overlay/overlay.js"></script>
-	<script src="http://flowplayer.org/tools/download/1.2.5/rangeinput/rangeinput.js"></script>
-	<script src="http://flowplayer.org/tools/download/1.2.5/toolbox/toolbox.expose.js"></script>
+    <script src="http://flowplayer.org/tools/download/1.2.5/jquery-1.4.2.js"></script>
+    <script src="http://flowplayer.org/tools/download/1.2.5/tabs/tabs.js"></script>
+    <script src="http://flowplayer.org/tools/download/1.2.5/scrollable/scrollable.js"></script>
+    <script src="http://flowplayer.org/tools/download/1.2.5/overlay/overlay.js"></script>
+    <script src="http://flowplayer.org/tools/download/1.2.5/rangeinput/rangeinput.js"></script>
+    <script src="http://flowplayer.org/tools/download/1.2.5/toolbox/toolbox.expose.js"></script>
     -->
-    
     <script src="static/jquery.cookie.js"></script>
-    <script src="static/jQueryRotate.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
     <script src="static/synnefo.js"></script>
-	<link rel="stylesheet" type="text/css" href="static/main.css"/>	
+    <link rel="stylesheet" type="text/css" href="static/main.css"/>
     <script>
+        //populate available image icons array
+        var os_icons = {{image_icons|safe}};
+
         // timeout value from settings.py
         var TIMEOUT = {{timeout}};
         var UPDATE_INTERVAL = {{5000}};
-        var STATUS_MESSAGES = {
+        var STATUSES = {
+            'UNKNOWN'   : '{% trans "Unknown" %}',
             'BUILD'     : '{% trans "Building" %}',
-            'REBOOT'     : '{% trans "Rebooting" %}',            
+            'REBOOT'    : '{% trans "Rebooting" %}',
             'STOPPED'   : '{% trans "Stopped" %}',
-            'ACTIVE'   : '{% trans "Running" %}',
-            'ERROR'   : '{% trans "Error" %}'
+            'ACTIVE'    : '{% trans "Running" %}',
+            'ERROR'     : '{% trans "Error" %}'
         };
-        
+
+        var TRANSITIONS = {
+            'Shutting down' : '{% trans "Shutting down" %}',
+            'Rebooting'     : '{% trans "Rebooting" %}',
+            'Starting'      : '{% trans "Starting" %}',
+            'Destroying'    : '{% trans "Destroying" %}'
+        };
+
+        // Statuses and transitions that should be displayed as active or inactive
+        var ACTIVE_STATES = [
+            '{% trans "Building" %}',
+            '{% trans "Rebooting" %}',
+            '{% trans "Running" %}',
+            '{% trans "Shutting down" %}',
+            '{% trans "Rebooting" %}',
+            '{% trans "Destroying" %}'
+        ];
+
+        var INACTIVE_STATES = [
+            '{% trans "Unknown" %}',
+            '{% trans "Stopped" %}',
+            '{% trans "Error" %}',
+            '{% trans "Starting" %}',
+            '{% trans "Destroying" %}'
+        ];
+
         var ERRORS = {
             // error message header
-            'HEADER' : '{% trans "Error!" %}',
+            'HEADER' : '{% trans "Error" %}',
             // default
             'DEFAULT' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
             // bad request
@@ -47,47 +73,65 @@
             // service unavailable
             '501' : '{% trans "This server has not been implemented yet." %}',
             // service unavailable
+            '502' : '{% trans "Bad Gateway error." %}',
+            // service unavailable
             '503' : '{% trans "This service is unavailable right now, please try again later." %}',
             // no server handshake
             '0' : '{% trans "Could not contact the server." %}',
             // no images found
             'NO_IMAGES' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
             // no flavors found
-            'NO_FLAVORS' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}'
+            'NO_FLAVORS' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}',
+            // error box title
+            'GENERIC_POPUP_HEADER' : '{% trans "Something seems to have gone wrong :( Here is what happened:" %}',
+            // no advanced details
+            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}'
         };
-        
+
         var SUCCESS = {
-            'HEADER' : '{% trans "Success!" %}',
+            'HEADER' : '{% trans "Success" %}',
             'DEFAULT' : '{% trans "Your request has been succefully executed." %}',
+            'PASSWORD' : '{% trans "Password:" %}',
             'CREATE_VM_SUCCESS' : '{% trans "Success!" %}',
-            'CREATE_VM_SUCCESS_ONE' : '{% trans "Your machine is now being built." %}',
-            'CREATE_VM_SUCCESS_TWO' : '{% trans "Please write down the following password:" %}',
-            'CREATE_VM_SUCCESS_THREE' : '{% trans "Do not lose this! You will need it to connect to your machine, once it is ready." %}'
+            'CREATE_VM_SUCCESS_ONE' : '{% trans "Your new machine is now buidling... (this might take a few minutes)" %}',
+            'CREATE_VM_SUCCESS_TWO' : '{% trans "Write down your password now!" %}',
+            'CREATE_VM_SUCCESS_THREE' : '{% trans "You will need this later to connect to your machine." %}',
+            'CREATE_VM_SUCCESS_FOUR' : '{% trans "After closing this window you will NOT be able to retrieve it again." %}'
         };
-        
-        // ajax error checking  
+
+        // ajax error checking
         function ajax_error(status, serverID, action, responseText) {
             var serverName = '';
-            
+
             if (serverID != undefined) {
                 // standard view
                 serverName = $("#"+serverID).find("span.name").text();
                 if (serverName == "") { // list view
-                    serverName = $("#"+serverID).parent().parent().find("span.name").text();                    
+                    serverName = $("#"+serverID).parent().parent().find("span.name").text();
                 }
             }
-            
+
             // prepare the error message
             $("#error-success h3").text(ERRORS['HEADER']);
             if (responseText != undefined){
-                var errors = parse_error(responseText), details = '';
+                var errors = parse_error(responseText, status), details = '';
                 if (serverName){
-                    serverName="<p><strong>Server:</strong> " + serverName + "</p>";
+                    serverName="<p>{% trans "Server" %}: " + serverName + "</p>";
                 }
-                if (errors[0].details != undefined) {
-                    details = "<p><strong>Details:</strong> " + errors[0].details +"</p>";
+                if ((errors[0].details == undefined) || (errors[0].details == "")) {
+                    details = ERRORS["NO_DETAILS"];
+                } else {
+                    details = errors[0].details;
                 }
-                $("#error-success div").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p><strong>Action:</strong> " + action + "</p><p><strong>Code</strong>: " + errors[0].code + "</p>" + details);
+
+                //$("#error-success div.popup-body-inner").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p><strong>{% trans "Action" %}:</strong> " + action + "</p><p><strong>{% trans "Code" %}:</strong> " + errors[0].code + "</p>" + details);
+                $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
+                $("#error-success .popup-header").addClass("popup-header-error");
+                $("#error-success").addClass("popup-border-error");
+                $("#error-success .password-container").hide();
+                $("#error-success .popup-details").addClass("popup-details-error");
+                $("#error-success .popup-separator").addClass("popup-separator-error");
+                $("#error-success .popup-details").html("<p>"+(errors[0].message || ERRORS[errors[0].code]) +"</p>"+serverName +"<p>{% trans "Action" %}: " + action + "</p><p>{% trans "Code" %}: " + errors[0].code + "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + details + "</div></p>");
             } else if (ERRORS[status] != undefined) {
                 if (serverID == undefined){
                     $("#error-success p").text(ERRORS[status]);
@@ -95,9 +139,27 @@
                     $("#error-success p").html("<b>" + serverName + "</b>" + ": " + ERRORS[status]);
                 }
             } else {
-                $("#error-success p").text(ERRORS['DEFAULT']);   
+                $("#error-success p").text(ERRORS['DEFAULT']);
             }
-            
+            $("#error-success p:first").css("padding-bottom","10px");
+            $("#error-success p:first").css("color","#800000");
+            $("#error-success div.more-details").hide();
+            $("#error-success a.expand-details").live('click', function() {
+                $(this).parent().parent().find("div.more-details").slideToggle(600);
+                return false;
+                });
+            //stop the progress icon and hide the wizard
+            if (action != undefined) {
+                if (action == 'Create VM') {
+                    $('#wizard #start').text('{% trans "Create VM" %}');
+                    $("#wizard").hide();
+                } else if (action == 'Create network') {
+                    $('#networks-wizard').hide();
+                } else if (action == 'Add server to network') {
+                    $('#add-machines-wizard').hide();
+                }
+            }
+
             // bring up error notification
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
@@ -118,28 +180,39 @@
             $("a#notification").data('overlay').load();
             return false;
         }
-        
+
         // ajax success checking
         function ajax_success(status, password) {
             // prepare the error message
             // bring up success notification
             if (status != undefined && SUCCESS[status]) {
                 if (password != undefined && status == "CREATE_VM_SUCCESS") {
+
+                    //stop the progress icon and hide the wizard
+                    $('#wizard #start').text('{% trans "Create VM" %}');
+                    $("#wizard").hide();
+
                     $("#error-success h3").text(SUCCESS[status]);
-                    var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_ONE"] + '<br />'
-                        + SUCCESS["CREATE_VM_SUCCESS_TWO"] + '<br /><br />' + '<b>' + password + '</b>'
-                        + '<br /><br />' + SUCCESS["CREATE_VM_SUCCESS_THREE"] ;
-                    $("#error-success div").html("<p>" + CREATE_VM_SUCCESS_MSG + "</p>");             
+                    var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_THREE"] + '<br / >'
+                        + SUCCESS["CREATE_VM_SUCCESS_FOUR"];
+                    $("#error-success div.machine-now-building").html(SUCCESS["CREATE_VM_SUCCESS_ONE"]);
+                    $("#error-success .popup-header").removeClass("popup-header-error");
+                    $("#error-success").removeClass("popup-border-error");
+                    $("#error-success .popup-details").removeClass("popup-details-error");
+                    $("#error-success .popup-separator").removeClass("popup-separator-error");
+                    $("#error-success .password-container").show();
+                    $("#error-success .popup-details").html("<div class=\"write-password\">"+ SUCCESS["CREATE_VM_SUCCESS_TWO"] + "</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG +"</div>");
+                    $("#error-success div.password").html(password);
+                    //$("#error-success div.write-password").html(SUCCESS["CREATE_VM_SUCCESS_TWO"]);
+                    //$("#error-success div.write-password-details").html(CREATE_VM_SUCCESS_MSG);
                 } else {
                     $("#error-success h3").text(SUCCESS['HEADER']);
-                    $("#error-success div").text("<p>" + SUCCESS[status] + "</p>");             
+                    $("#error-success div.popup-body-inner").text("<p>" + SUCCESS[status] + "</p>");
                 }
             } else {
                 $("#error-success h3").text(SUCCESS['HEADER']);
-                $("#error-success div").html("<p>" + SUCCESS['DEFAULT'] + "</p>");             
-
+                $("#error-success div.popup-body-inner").html("<p>" + SUCCESS['DEFAULT'] + "</p>");
             }
-
 
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
@@ -163,79 +236,93 @@
     </script>
 </head>
 <body>
-    <div id="wrapper">
-        <div id='user'>
-            <a href="#">{% trans "username" %}</a> &nbsp;|&nbsp; <a href="#">{% trans "settings" %}</a>
-            {% get_available_languages as LANGUAGES %}
-            {% for lang in LANGUAGES %}
-                &nbsp;|&nbsp;
-                <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a> 
-            {% endfor %}
-        </div>
+    <div id="container">
         <div id='header'>
-            <a href="/" class="logo">
-                <img src="static/nefo.png" alt="+nefo"/>
-            </a>
-            <div class='fatborder'></div>
+            <div id='user'>
+                <a href="#">{% trans "username" %}</a>
+                {% get_available_languages as LANGUAGES %}
+                {% for lang in LANGUAGES %}
+                    &nbsp;|&nbsp;
+                    <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
+                {% endfor %}
+            </div>
+            <div class="header-logo">
+                <a href="/">
+                    <img src="static/okeanos.png" alt="okeanos"/>
+                </a>
+            </div>
         </div>
-        <!-- tabs -->
-        <ul class="css-tabs">
-	        <li><a href="machines" title="{% trans "manage your virtual machines" %}" class="primary" id="machines">
-                {% trans "machines" %}</a></li>
-	        <li><a href="disks" title="{% trans "manage your storage volumes" %}" class="primary" id="disks">
-                {% trans "disks" %}</a></li>
-	        <li><a href="images" title="{% trans "manage boot images" %}" class="primary" id="images">
-                {% trans "images" %}</a></li>
-	        <li><a href="networks" title="{% trans "configure networking" %}" class="primary" id="networks">
-                {% trans "networks" %}</a></li>
-            <li><a href="files" title="{% trans "your files" %}" class="secondary" id="files">
-                {% trans "files" %}</a></li>
-	        <li><a href="desktops" title="{% trans "your desktops" %}" class="secondary" id="desktops">
-                {% trans "desktops" %}</a></li>
-	        <li><a href="apps" title="{% trans "your apps" %}" class="secondary" id="apps">
-                {% trans "apps" %}</a></li>
-        </ul>
-        <div class="more-tabs"><img src="static/arrow.png" id="arrow"></img></div>
-        <div class="css-panes">
-	        <div id="machines-pane" class="pane" style="display:block">{% include "machines.html" %}</div>
-	        <div id="disks-pane" class="pane"></div>
-	        <div id="images-pane" class="pane"></div>
-	        <div id="networks-pane" class="pane"></div>
-            <div id="files-pane" class="pane"></div>
-	        <div id="desktops-pane" class="pane"></div>
-	        <div id="apps-pane" class="pane"></div>
+        <div id="content">
+            <div id="wrapper">
+                <!-- tabs -->
+                <div class="tab-name">{% trans "machines" %}</div>
+                <div class="tab-separator"></div>
+                <ul class="css-tabs">
+                    <li><a href="machines" title="{% trans "manage your virtual machines" %}" class="primary" id="machines">
+                        <img src="static/machines-icon.png" /></a></li><div class="tab-separator"></div>
+                    <li><a href="networks" title="{% trans "configure networking" %}" class="primary" id="networks">
+                        <img src="static/networks-icon.png" /></a></li><div class="tab-separator"></div>
+                    <li><a href="disks" title="{% trans "manage your storage volumes" %}" class="primary" id="disks">
+                        <img src="static/disks-icon.png" /></a></li>
+                </ul>
+                <div class="css-panes">
+                    <div id="machines-pane" class="pane" style="display:block">{% include "machines.html" %}</div>
+                    <div id="networks-pane" class="pane"></div>
+                    <div id="disks-pane" class="pane"></div>
+                </div>
+                <!-- base notification for error/success reporting -->
+                <a id="notification" rel="#error-success" href="#"></a>
 
+                <div class="modal" id="error-success">
+                    <h3 class="popup-header">{% trans "Error!/Success!" %}</h3>
+                    <div class="popup-body">
+                        <div class="popup-body-inner">
+                            <div class="machine-now-building"></div>
+                            <div class="popup-separator"></div>
+                            <div class="password-container">
+                                <div class="password-header">{% trans "Password:" %}</div>
+                                <div class="password"></div>
+                            </div>
+                            <div class="popup-details">
+                                <div class="write-password"></div>
+                                <div class="write-password-details">{% trans "More details about the result"%}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        {% include "footer.html" %}
     </div>
+
     <!-- activate tabs with JavaScript -->
     <script>
-		$(function() {
-		    $('ul.css-tabs li').hover(function(){
-			    $(this).find('a:not(.current)').animate({top:'0px'},{queue:false,duration:150});
-            }, function(){
-                $('ul.css-tabs li a:not(.current)').animate({top:'9px'},{queue:false,duration:150});
-		    });
-		});
-		
+
         $(function() {
-	        $("ul.css-tabs").tabs("div.css-panes div.pane", {	
-		        onBeforeClick: function(event, i) {
-                    $('ul.css-tabs li a').animate({top:'9px'},{queue:false,duration:150});
-			        // get the pane to be opened
-			        var pane = this.getPanes().eq(i);
+            $("ul.css-tabs").tabs("div.css-panes div.pane", {
+                onBeforeClick: function(event, i) {
+                    // get the pane to be opened
+                    var pane = this.getPanes().eq(i);
                     pane.text('');
-			        // load it with a page specified in the tab's href attribute
-			        pane.load(this.getTabs().eq(i).attr("href"),function(){if (!i) {choose_view()}});
-		        }
-	        });
+                    //change the displaying title
+                    $(".tab-name").text(this.getTabs().eq(i).attr("href"));
+                    // load it with a page specified in the tab's href attribute
+                    pane.load(this.getTabs().eq(i).attr("href"),function(){if (!i) {choose_view()}});
+                }
+            });
         });
 
-        // toggle main menu
-        $("#arrow").click(function(event){
-        	toggleMenu();
-        });    
-        
+        //change menu title on hover
+        $("ul.css-tabs li").hover(
+            function () {
+                if ($(this).find("a.current").length == 0) {
+                    $(this).parent().parent().find(".tab-name").text($(this).find("a").attr("href"));
+                }
+            },
+            function () {
+                $(this).parent().parent().find(".tab-name").text($(this).parent().find("a.current").attr("href"));
+            }
+        );
     </script>
 </body>
 </html>
-

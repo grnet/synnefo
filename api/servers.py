@@ -214,7 +214,7 @@ def create_server(request):
         flavor=flavor)
     
     try:
-        create_instance(vm, flavor, password)
+        create_instance(vm, flavor, image, password)
     except GanetiApiError:
         vm.delete()
         raise ServiceUnavailable('Could not create server.')

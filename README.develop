@@ -1,213 +1,120 @@
-DEVELOP.txt - Information on how to setup a development environment. 
+DEVELOP.txt - Information on how to setup a development environment.
 
-Dependencies
-------------
+This file documents the installation of a development environment for Synnefo.
+It should be read alongside README.deploy.
 
-Synnefo is written in Python 2.6 and depends on the following Python modules
-[package versions confirmed to be compatible are in braces]
+It contains development-specific ammendments to the basic deployment steps
+outlined in README.deploy, and development-specific notes.
 
-- django 1.2 [Django==1.2.4]
-- simplejson [simplejson==2.1.3]
-- pycurl [pycurl==7.19.0]
-- python-dateutil  [python-dateutil==1.4.1]
-  WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work
-           with Python 2.6
-- south [south==0.7.1]
-- ampqlib [ampqlib==0.6.1]
 
-also, depending on the database engine of choice, on one of the following:
-- MySQL-python [MySQL-python==1.2.3]
-- psycopg2 [psycopg2==2.4]
+Installing the development environment
+======================================
 
-to run the user interface tests, selenium must be installed
-- selenium [?]
+For a basic development environment you need to follow steps 0-15
+of README.deploy, which should be read in its entirety *before* this document.
 
-Preparing the development environment
--------------------------------------
+Development-specific guidelines on each step:
 
-1. Prepare the system 
-The easiest method is to setup a working environment through virtualenv. 
-Alternatively, you can use your system's package manager to install
-the dependencies (e.g. Macports has them all).
 
-*On Snow Leopard and linux (64-bit), you have to set the following environment
-variable for pip to compile the dependencies correctly.
+0. Allocation of physical nodes:
+   Node types DB, APISERVER, LOGIC may all be run on the same physical machine,
+   usually, your development workstation.
 
-	$export ARCHFLAGS="-arch x86_64"
+   Nodes of type GANETI-MASTER, GANETI-NODES and QUEUE are already provided
+   by the development Ganeti backend. Access credentials are provided in
+   settings.py.dist.
 
-*On Ubuntu, a few more packages must be installed before installing the
-prerequisite Python libraries
 
-	$sudo aptitude install libcurl3-gnutls libcurl3-gnutls-dev uuid-dev 
+1. You do not need to install your own Ganeti installation.
+   Use the RAPI endpoint as contained in settings.py.dist.
 
-2. Checkout the code and install the Python prerequisites. This assumes
-that python is already installed on the host.
 
-    $ sudo easy_install virtualenv
-    $ git clone https://user@code.grnet.gr/git/synnefo synnefo
-    $ virtualenv --python=python2.6 synnefo --no-site-packages
-    ...
-    $ cd synnefo
-    $ ./bin/pip install <list_of_prerequisites>
+2. You do not need to setup your own RabbitMQ nodes, use the AMQP endpoints
+   contained in settings.py.dist. MAKE SURE to call fix_amqp_settings()
+   after settings a custom BACKEND_PREFIX_ID.
 
-3. At this point you should have all required dependencies installed. Now you
-have to select a database engine. The choices are: postgres, mysql and sqlite.
 
--SQLite
-The python sqlite driver is available by default with Python so no additional 
-configuration is required. Also, most self-respecting systems have the sqlite 
-library installed by default.   
+3. For development purposes, Django's own development server, ./manage.py runserver
+   will suffice.
 
--MySQL
-MySQL must be installed first
 
-*Ubuntu - Debian
-	$sudo apt-get install libmysqlclient-dev
+4. Use a virtual environment to install the Django project, or packages provided
+   by your distribution.
 
-*MacPorts
-	$sudo port install mysql5
 
-Install the MySQL python library
+5. Install a DB of your own, or use the PostgreSQL instance available on the
+   development backend.
 
-	$ bin/pip install MySQL-python
 
-Note: On MacOSX with Mysql install from MacPorts the above command will fail
-complaining that it cannot find the mysql_config command. Do the following and
-restart the installation
+6. As is.
 
-	$ echo "mysql_config = /opt/local/bin/mysql_config5" >> ./build/MySQL-python/site.cfg
 
-Configure a MySQL db/account for synnefo
-
-	$ mysql -u root -p
-
-	mysql> create database synnefo;
-	mysql> show databases;
-	mysql> GRANT ALL on synnefo.* TO username IDENTIFIED BY 'password';
- 
--Postgres
-
-#Ubuntu - Debian
-	$ sudo apt-get install postgresql-8.4 libpq-dev
-
-#MacPorts
-	$ sudo port install postgresql84
-
-Install the postgres Python library
-
-	$ bin/pip install psycopg2
-
-Configure a postgres db/account for synnefo
-	Become the postgres user, connect to PostgreSQL:
-	$ sudo su - postgres 
-	$ psql
-	
-	Run the following commands:
-	DROP DATABASE synnefo;
-	DROP USER username;
-	CREATE USER username WITH PASSWORD 'password';
-	CREATE DATABASE synnefo;
-	GRANT ALL PRIVILEGES ON DATABASE synnefo TO username;
-	ALTER DATABASE synnefo OWNER TO username;
-	ALTER USER username CREATEDB;
-
-The last line enables the newly created user to create own databases. This is
-needed for Django to create and drop the test_synnefo database for unit
-testing.
-	
-4. At this point you should have a working DB. Now configure Django to access it: 
-Copy the default configuration file 
-
-    $ cp settings.py.dist settings.py
-    
-and then copy/edit according to the database used:  
-    
--SQLite
-
-	PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
-
-	DATABASES = {
-	    'default': {
-		'ENGINE': 'django.db.backends.sqlite3',
-		'NAME': PROJECT_PATH + 'synnefo.db' #WARN: This must be an absolute path
-	    }
-	}
-
--MySQL
-	DATABASES = {
-	    'default': {
-		'ENGINE': 'django.db.backends.mysql', 
-		'NAME': 'synnefo',
-		'USER': 'USERNAME',
-		'PASSWORD': 'PASSWORD',
-		'HOST': 'HOST',
-		'PORT': 'PORT',
-		'OPTIONS': {
-		    'init_command': 'SET storage_engine=INNODB',
-		}
-	    }
-	}
-
--Postgres    
-
-    DATABASES = {
-	    'default': {
-		'ENGINE': 'django.db.backends.postgresql_psycopg2',
-		'NAME': 'DATABASE',
-		'USER': 'USERNAME',
-		'PASSWORD': 'PASSWORD',
-		'HOST': 'HOST',
-		'PORT': 'PORT',
-	    }
-	}
-
-5. Try it out. The following command will attempt to connect to the DB and 
-print out DDL statements. It should not fail.
-
-	$ ./bin/python manage.py sql db
-	
-6. Create the DB and (optionally) load test data
-    
-    $ ./bin/python manage.py syncdb
-	$ ./bin/python manage.py loaddata db/fixtures/flavors.json
-	$ ./bin/python manage.py loaddata db/fixtures/images.json
-
-The following fixtures can be loaded optionally depending on
-testing requirements:
+7. The following fixtures can be loaded optionally depending on
+   testing/development requirements, and are not needed in a production setup:
 
 	$ ./bin/python manage.py loaddata db/fixtures/vms.json
 	$ ./bin/python manage.py loaddata db/fixtures/disks.json
 
-7. Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
-   username in settings.py. Several functional conventions within the system
-   require this variable to include a dash at its end (e.g. snf-)
 
-8. Fix the AMQP-specific settings based on the selected BACKEND_PREFIX_ID.
-   The fix_amqp_settings() function is called once at the end of
-   settings.py.dist, you must call it again if you change BACKEND_PREFIX_ID
-   at some later point.
+8. MAKE SURE you setup a distinct BACKEND_PREFIX_ID, e.g., use your commit
+   username. Make sure you call fix_amqp_settings() to setup use of
+   individual queues on RabbiMQ.
 
-9. Start the system
-    $ ./bin/python logic/dispatcher.py  # DB synch daemon
-    $ ./bin/python manage.py runserver  # Django
 
-10. (Hopefully) Done
+9. The Ganeti monitoring daemon from the latest Synnefo release is already
+   running on the development Ganeti master. You may also run your own, on your
+   own Ganeti backend if you so wish.
+
+
+10.As is.
+
+11.The Synnefo Ganeti hook is already running on the development backend,
+   sending notifications over AMQP.
+
+
+12.The VNC authentication proxy is already running on the Ganeti development
+   backend. You *cannot* run your own, unless you install your own Ganeti backend,
+   because it needs direct access to the hypervisor's VNC port on GANETI-NODEs.
+
+
+13.The development Ganeti backend already has a number of OS Images available.
+
+
+14.The development Ganeti backend already has a number of pre-provisioned bridges
+   available, per each BACKEND_PREFIX_ID.
+
+   To setup simple NAT-based networking on a Ganeti backend on your own,
+   please see the provided patches under contrib/patches/.
+   You will need minor patches to the sample KVM ifup hook, kvm-vif-bridge,
+   and a small patch to NFDHCPD to enable it to work with bridged tap+ interfaces.
+   To support bridged tap interfaces you also need to patch the python-nfqueue
+   package, patches against python-nfqueue-0.3 [part of Debian Sid] are also
+   provided under contrib/patches/.
+
+
+15.As is.
+
+
+16.As is.
+
 
 South Database Migrations
-------------------------
+=========================
 
-*Initial Migration
+* Initial Migration
 
-First, remember to add the south app to settings.py (it is already included in the
-settings.py.dist).
+First, remember to add the south app to settings.py (it is already included in
+the settings.py.dist).
 
-To initialise south migrations in your database the following commands must be executed:
+To initialise south migrations in your database the following commands must be
+executed:
 
     $ ./bin/python manage.py syncdb       # Create / update the database with the south tables
     $ ./bin/python manage.py migrate db   # Perform migration in the database
 
-Note that syncdb will create the latest models that exist in the db app, so some migrations may fail.
-If you are sure a migration has already taken place you must use the "--fake" option, to apply it.
+Note that syncdb will create the latest models that exist in the db app, so
+some migrations may fail.  If you are sure a migration has already taken place
+you must use the "--fake" option, to apply it.
 
 For example:
 
@@ -219,21 +126,24 @@ To be sure that all migrations are applied type:
 
 All starred migrations are applied.
 
-Remember, the migration is performed mainly for the data, not for the database schema. If you do not want to migrate the
-data, a syncdb and fake migrations for all the migration versions will suffice.
+Remember, the migration is performed mainly for the data, not for the database
+schema. If you do not want to migrate the data, a syncdb and fake migrations
+for all the migration versions will suffice.
 
-*Schema migrations:
+* Schema migrations:
 
 Do not use the syncdb management command. It can only be used
-the first time and/or if you drop the database and must recreate it from scratch.
+the first time and/or if you drop the database and must recreate it from
+scratch.
 See "Initial Migration" section.
 
-Each time you make changes to the database and data migration is not required (WARNING: always
-perform this with extreme care):
+Every time you make changes to the database and data migration is not required
+(WARNING: always perform this with extreme care):
 
-    $ ./bin/python schemamigration db --auto
+    $ ./bin/python manage.py schemamigration db --auto
 
-The above will create the migration script. Now this must be applied to the live database.
+The above will create the migration script. Now this must be applied to the
+live database.
 
     $ ./bin/python migrate db
 
@@ -253,8 +163,9 @@ Consider this example (adding a field to the SynnefoUser model):
     Installing json fixture 'initial_data' from '/home/bkarak/devel/synnefo/../synnefo/db/fixtures'.
     Installed 1 object(s) from 1 fixture(s)
 
-South needs some extra definitions to the model to preserve and migrate the existing data, for example, if we add a field
-in a model, we should declare its default value. If not, South will propably fail, after indicating the error.
+South needs some extra definitions to the model to preserve and migrate the
+existing data, for example, if we add a field in a model, we should declare its
+default value. If not, South will propably fail, after indicating the error.
 
     $ ./bin/python manage.py schemamigration db --auto
      ? The field 'SynnefoUser.new_south_field_2' does not have a default specified, yet is NOT NULL.
@@ -264,12 +175,13 @@ in a model, we should declare its default value. If not, South will propably fai
      ?  2. Specify a one-off value to use for existing columns now
      ? Please select a choice: 1
 
-*Data migrations:
+* Data migrations:
 
-If we need to do data migration as well, for example rename a field, we use tha 'datamigration' management command.
+If we need to do data migration as well, for example rename a field, we use tha
+'datamigration' management command.
 
-In contrast with schemamigration, to perform complex data migration, we must write the script manually. The process is
-the following:
+In contrast with schemamigration, to perform complex data migration, we must
+write the script manually. The process is the following:
 
     1. Introduce the changes in the code and fixtures (initial data).
     2. Execute:
@@ -281,13 +193,15 @@ the following:
     $ ./bin/python manage.py datamigration db rename_credit_wallet
     Created 0003_rename_credit_wallet.py.
 
-    3. We edit the generated script. It contains two methods: forwards and backwards.
+    3. We edit the generated script. It contains two methods: forwards and
+    backwards.
 
-    For database operations (column additions, alter tables etc) we use the South database API
-    (http://south.aeracode.org/docs/databaseapi.html).
+    For database operations (column additions, alter tables etc) we use the
+    South database API (http://south.aeracode.org/docs/databaseapi.html).
 
-    To access the data, we use the database reference (orm) provided as parameter in forwards, backwards method declarations
-    in the migration script. For example:
+    To access the data, we use the database reference (orm) provided as
+    parameter in forwards, backwards method declarations in the migration
+    script. For example:
 
     class Migration(DataMigration):
 
@@ -311,9 +225,10 @@ More information and more thorough examples can be found in the South web site.
 
 http://south.aeracode.org/
 
+
 UI Testing
-----------
-The functional ui tests require the Selenium server and the synnefo app to 
+==========
+The functional ui tests require the Selenium server and the synnefo app to
 be running.
 
     $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
@@ -321,11 +236,12 @@ be running.
     $ ./bin/python manage.py runserver &
     $ ./bin/python manage.py test ui
 
+
 Test coverage
--------------
+=============
 
 In order to get code coverage reports you need to install django-test-coverage
-   
+
    $ ./bin/pip install django-test-coverage
 
 Then edit your settings.py and configure the test runner:

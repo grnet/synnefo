@@ -1,0 +1,583 @@
+{% load i18n %}
+
+<!-- the standard view -->
+<div id="machinesview-icon" class="standard">
+    <div class="large-spinner"></div>
+    <div class="machine-container" id="machine-container-template" style="display:none">
+        <div class="machine" id="machine-template" \>
+            <div class="actions">
+                <a href="#" class="action-start">{% trans "Start" %}</a>
+                <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
+                <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
+                <a href="#" class="action-console">{% trans "Console" %}</a>
+                <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
+            </div>
+            <div class="confirm_single">
+                <button class="yes">{% trans "Confirm" %}</button>
+                <button class="no">{% trans "Cancel" %}</button>
+            </div>
+            <div class="action_error" align="center">
+                {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+                <span class="code"></span>
+                <span class="message"></span>
+                <button class="details">{% trans "Details" %}</button>
+            </div>
+            <div class="state">
+                <div class="status">{% trans "Running" %}</div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
+                <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+            </div>
+            <img class="logo" src="" />
+            <div href="#" class="name">
+                <h5 class="namecontainer editable">
+                    {% trans "Name" %}: <span class="name">node.name</span><span class="rename"></span>
+                    <div class="editbuttons" style="display:none">
+                        <span class="save" />
+                        <span class="cancel" />
+                    </div>
+                </h5>
+            </div>
+            <a href="#" class="ip">
+                <h5>{% trans "IP" %}: <span class="public">node.public_ip</span></h5>
+            </a>
+            <h5 class="settings">
+                {% trans "Show" %}:
+                <a class="show-disks" href="#">{% trans "disks" %}</a> |
+                <a class="show-networks" href="#">{% trans "networks" %}</a> |
+                <a class="show-info" href="#">{% trans "more info" %}</a>
+            </h5>
+            <div class="info-content">
+                <div class="metadata-separator"></div>
+                <div class="metadata-container">
+                    <div class="vm-details metadata-column">
+                        {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
+                        {% trans "RAM" %}: <span class="ram-data">2048</span> (MB)<br />
+                        {% trans "System Disk" %}: <span class="disk-data">20</span> (GB) <br /><br />
+                        {% trans "Image" %}: <span class="image-data">Debian</span><br />
+                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
+                    </div>
+                    <div class="vm-stats metadata-column">
+                        {% trans "CPU" %} <img src="/static/cpu-bar.png" class="metadata-bar" /><br />
+                        {% trans "RAM" %} <img src="/static/ram-bar.png" class="metadata-bar" /><br />
+                        {% trans "S.Disk" %} <img src="/static/cpu-bar.png" class="metadata-bar" /><br />
+                        {% trans "Net" %} <img src="/static/net-bar.png" class="metadata-bar" /><br /><br />
+                        {% trans "details" %}
+                    </div>
+                    <div class="vm-labels metadata-column">
+                        <div class="metadata-left">
+                            {% trans "Labels" %} <br />
+                            (4)
+                        </div>
+                        <div class="metadata-keys-container">
+                            {% trans "debian" %}<br />
+                            {% trans "my_servers" %}<br />
+                            {% trans "critical" %}
+                        </div>
+                    </div>
+                    <div class="vm-metadata metadata-column">
+                        <div class="metadata-left">
+                            {% trans "Metadata" %}: <br />
+                            (<span class="metadata-count">0</span>)
+                        </div>
+                        <div class="metadata-keys-container">
+                            <div class="scrollable vertical">
+                                <div class="items">
+
+                                </div>
+                            </div>
+                            <div class="metadata-actions">
+                                <div class="prev"></div>
+                                <div class="next"></div>
+                            </div>
+                        </div>
+                        <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
+                    </div>
+                </div>
+                <div class="metadata-separator"></div>
+            </div>
+        </div>
+        <div class="separator"></div>
+    </div>
+    <div class="running"></div>
+    <div class="terminated" style="display:none;"></div>
+</div>
+
+<script>
+
+//hide the all of the info contents
+$("#machinesview-icon.standard .info-content").hide();
+//toggle the component with class info-content
+$("a.show-info").live('click', function() {
+    $(this).parent().parent().find(".info-content").slideToggle(600);
+    return false;
+});
+
+// intercept manage metadata click
+$("#machinesview-icon.standard a.manage-metadata").live('click', function() {
+    // get server name and server ID
+    var serverID = $(this).parent().parent().parent().parent().parent().attr("id");
+    var serverName = $(this).parent().parent().parent().parent().parent().find("span.name").text();
+    // set server name to all related metadata dialogs
+    $("#metadata-wizard div.machine-name").text(serverName);
+    if ($(this).parent().parent().parent().parent().parent().parent().hasClass('terminated')) {
+        $("#metadata-wizard div#on-off").text('off');
+    } else {
+        $("#metadata-wizard div#on-off").text('on');
+    }
+    // set server id to all related metadata dialogs
+    $("#metadata-wizard p").text(serverID);
+    show_metadata_wizard();
+    return false;
+});
+
+//initiate machine renaming
+$("#machinesview-icon.standard .rename, #machinesview-icon.standard h5.editable span.name").live('click', function() {
+    $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" +
+                                        $(this).parent().find('.name').text() +
+                                        "\" / ><span class=\"oldValue\">" +
+                                        $(this).parent().find('.name').text() + "</span>");
+    $(this).parent().find('.rename').hide();
+    $(this).parent().find(".editbuttons").fadeIn();
+    $(this).parent().find(".nametextbox").focus().select();
+    $(this).parent().removeClass('editable');
+
+    //submit wizard by pressing enter on the name textbox
+    $("#txtEdit").keydown(function (e) {
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('div.editbuttons span.save').click();
+            return false;
+        } else if ((e.which && e.which == 27) || (e.keyCode && e.keyCode == 27)) {
+            $(this).parent().parent().find('div.editbuttons span.cancel').click();
+            return true;
+        }
+    });
+    return false;
+});
+
+//rename machine
+$("#machinesview-icon.standard .editbuttons .save").live('click', function() {
+    serverID = $(this).closest('.machine-container').attr("id");
+    serverName = $(this).parent().parent().find('.name').find('.nametextbox').val();
+    if (serverName.trim() == ''){
+        return false;
+    }
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
+    $(this).parent().parent().find(".editbuttons").fadeOut("fast");
+    $(this).parent().parent().find(".rename").fadeIn("slow");
+    rename(serverID, serverName);
+    return false;
+});
+
+//cancel renaming
+$("#machinesview-icon.standard .editbuttons .cancel").live('click', function() {
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.oldValue').text());
+    $(this).parent().parent().find(".editbuttons").hide();
+    $(this).parent().parent().find(".rename").fadeIn();
+    $(this).parent().parent().addClass('editable');
+    return false;
+});
+
+// intercept reboot click
+$("#machinesview-icon.standard div.actions a.action-reboot").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display');
+    $(this).parent().parent().find('.action_error').hide();
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = reboot;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([reboot, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// intercept shutdown click
+$("#machinesview-icon.standard div.actions a.action-shutdown").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = shutdown;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([shutdown, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// intercept start click
+$("#machinesview-icon.standard div.actions a.action-start").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = start;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([start, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+// intercept console click
+$("#machinesview-icon.standard div.actions a.action-console").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = open_console;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([open_console, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+
+// intercept destroy click
+$("#machinesview-icon.standard div.actions a.action-destroy").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    var serverName = $(this).parent().prevAll("div.name").find("span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+
+    for (i=0;i<pending_actions.length;i++){ // if there is already a pending action for this server replace it
+        if (pending_actions[i][1]==serverID){
+            pending_actions[i][0] = destroy;
+            found = true
+        }
+    }
+    if (!found) // no pending action for this server was found, so let's just add it to the list
+        pending_actions.push([destroy, serverID, serverName])
+    update_confirmations();
+    return false;
+});
+
+$("#machinesview-icon.standard div.confirm_single .yes").live('click', function(){
+    var serverID = $(this).parent().parent().parent().attr("id");
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
+        if (pending_actions[i][1]==serverID){
+            action = pending_actions.splice(i,1)[0]; // extract action
+            // change the status text in cases where no api state exists
+            if (action[0] == start) {
+                $(this).parent().parent().find('.status').text(TRANSITIONS['Starting']);
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == shutdown) {
+                $(this).parent().parent().find('.status').text(TRANSITIONS['Shutting down']);
+                $(this).parent().parent().find('.spinner').show();
+            } else if (action[0] == reboot) {
+                $(this).parent().parent().find('.status').text(TRANSITIONS['Rebooting']);
+                $(this).parent().parent().find('.spinner').show();
+            }  else if (action[0] == destroy) {
+                $(this).parent().parent().find('.status').text(TRANSITIONS['Destroying']);
+                $(this).parent().parent().find('.spinner').show();
+            }
+            action[0]([action[1]]); // execute action
+        }
+    }
+    $(this).parent().hide();
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('.state').children('.spinner').show()
+    $(this).parent().parent().children('div.actions').removeClass('display');
+    update_confirmations();
+    return false;
+});
+
+$("#machinesview-icon.standard div.confirm_single .no").live('click', function(){
+    // remove the action from the pending list
+    var serverID = $(this).parent().parent().parent().attr("id");
+
+    $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
+    $(this).parent().parent().children('div.actions').removeClass('display');
+    for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server remove it
+        if (pending_actions[i][1]==serverID){
+            pending_actions.splice(i,1);
+        }
+    }
+    $(this).parent().hide();
+    update_confirmations();
+    return false;
+});
+
+$("#machinesview-icon.standard div.action_error .details").live('click', function(){
+    // remove the action from the pending list
+    ajax_error($(this).parent().children('.code').text(), undefined, $(this).parent().children('.action').text(), $(this).parent().children('.message').text());
+    $(this).parent().hide();
+});
+
+// TODO: This should be populated with more rules for all available states
+var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT'],
+                'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT'],
+                'console':       ['ACTIVE'],
+                'start':         ['UNKOWN', 'STOPPED'],
+                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD']
+               };
+
+// update the servers list
+function update_machines_view(data) {
+    /*
+    Go through the servers in the input data. Update existing entries, add
+    new ones to the list
+    */
+    $.each(data.servers.values, function(i,server) {
+        // get DOM element, if it exists
+        existing = $('#machinesview-icon.standard #' + server.id);
+        // get server OS, if it exists
+        if (!(server.metadata == undefined)) {
+            var server_image = os_icon(server.metadata);
+        } else {
+            var server_image = "unknown"
+        }
+        // get server status message, if it exists
+        var current_message = existing.find(".status").text();
+        // if multiple machines exist in the DOM, delete all but one
+        // defensive coding - that shouldn't happen normally
+        while (existing.length > 1){
+            existing.remove();
+        }
+        // if server already exists in DOM, update its values
+        if (existing.length){
+            //  if the status is deleted
+            if (server.status == 'DELETED') {
+                // delete server entry from the DOM
+                log_server_status_change(existing, 'DELETED');
+                existing.remove();
+            }
+            // if the status has changed
+            else if ( current_message != STATUSES[server.status]) {
+                /*
+                Here there are 4 possibilities:
+                    1. From an active state to an inactive one
+                    2. From an inactive state to an active one
+                    3. From an active state to a different active one
+                    4. From an inactive state to a different inactive one
+                The last two (3, 4) can be dealt with the same way
+                */
+                if (ACTIVE_STATES.indexOf(current_message) >= 0 &&
+                    INACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
+                    // from an active state to an inactive one
+                    log_server_status_change(existing, server.status);
+                    moved = existing.clone().appendTo("#machinesview-icon.standard .terminated");
+                    moved.find("img.logo").attr("src",'static/icons/machines/medium/' + server_image + '-off.png');
+                    existing.remove();
+                    existing = moved;
+                    existing.find(".status").text(STATUSES[server.status]);
+                    existing.find('.spinner').hide();
+                    existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                    setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
+                }
+                else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&
+                         ACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
+                    // From an inactive state to an active one
+                    log_server_status_change(existing, server.status);
+                    moved = existing.clone().appendTo("#machinesview-icon.standard .running");
+                    moved.find("img.logo").attr('src','static/icons/machines/medium/' + server_image + '-on.png');
+                    existing.remove();
+                    existing = moved;
+                    existing.find(".status").text(STATUSES[server.status]);
+                    existing.find('.spinner').hide();
+                    existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                    setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
+                }
+                else {
+                    // handling active to active or inactive to inactive changes
+                    if (TRANSITIONS[current_message] && TRANSITIONS[current_message] != 'Rebooting') {
+                        // don't do anything if it is still in transition
+                    }
+                    else if ((TRANSITIONS[current_message] == 'Rebooting' && server.status == 'ACTIVE') ||
+                             (STATUSES['BUILD'] == current_message && server.status == 'ACTIVE')) {
+                        // if it has been rebooted or just created
+                        log_server_status_change(existing, server.status);
+                        existing.find(".status").text(STATUSES[server.status]);
+                        existing.find('.spinner').hide();
+                        existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                        setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
+                    }
+                    else {
+                        // in any other case just change the status and ignore spinners/waves
+                        existing.find(".status").text(STATUSES[server.status]);
+                    }
+                }
+            }
+            // find and display ips
+            var ips = get_public_ips(server);
+            existing.find("a.ip span.public").text(ips['ip4']);
+        }
+        // if it doesn't exist and the server is not DELETED, make a new entry
+        else if ( server.status != 'DELETED') {
+            // clone the proper template and put basic values in
+            var machine = $("#machinesview-icon.standard #machine-container-template").clone().attr("id", server.id).fadeIn("slow");
+            machine.find(".scrollable").scrollable({vertical: true});
+            machine.find("div.name span.name").text(server.name.substring(0,100));
+            machine.find("span.imagetag").text(server_image);
+            machine.find(".status").text(STATUSES[server.status]);
+            // check server status to select where to append the new server to
+            if (ACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0 ) {
+                // append to running
+                machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-on.png');
+                machine.appendTo("#machinesview-icon.standard .running");
+            } else {
+                // append to terminated
+                machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-off.png');
+                machine.appendTo("#machinesview-icon.standard .terminated");
+            }
+            //show spinner if server is still building or rebooting
+            if (server.status == 'BUILD' || server.status == 'REBOOT' ) {
+                machine.find('.spinner').show();
+            }
+            // find and display flavor parameters
+            var flavor_params = get_flavor_params(server.flavorRef);
+            machine.find(".cpu-data").text(flavor_params['cpus']);
+            machine.find(".ram-data").text(flavor_params['ram']);
+            machine.find(".disk-data").text(flavor_params['disk']);
+            // find and display image parameters
+            var image_params = get_image_params(server.imageRef);
+            machine.find(".image-data").text(image_params['name'].substring(0,15));
+            machine.find(".image-size-data").text(image_params['size']);
+            // find and display ips
+            var ips = get_public_ips(server);
+            machine.find("a.ip span.public").text(ips['ip4']);
+        }
+        /*
+        Do some repeated actions that include:
+            1. Update actions
+            2. Metadata list updating
+        */
+        update_iconview_actions(server.id, server.status);
+        if (!(server.metadata == undefined)) {
+                list_metadata_keys(server.id, server.metadata.values);
+        }
+    });
+    /*
+    Do some standard stuff, repeated each time
+    FIXME: Can these be moved to a new function?
+    */
+    $("#machinesview-icon.standard > div.large-spinner").hide();
+    // show all separators and hide the last one
+    $("#machinesview-icon.standard div.machine-container div.separator").show();
+    $("#machinesview-icon.standard div.machine-container:last-child").find("div.separator").hide();
+    // the terminated div shows only when terminated machines are available
+    if ($("#machinesview-icon.standard .terminated div.name").length > 0) {
+        $("div.terminated").fadeIn("slow");
+    } else {
+        $("div.terminated").fadeOut("slow");
+    }
+    // show message in case user has no servers!
+    if ($('#machinesview-icon .machine-container').length < 2) {
+        showWelcome();
+    } else {
+        hideWelcome();
+    }
+    // set confirm box position
+    if (window.innerHeight - 335 < $('#machinesview-icon.standard').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+}
+
+// update metadata list
+function list_metadata_keys(serverID, keys) {
+    // empty the list if it already exists
+    $("#machinesview-icon.standard div.#" +serverID).find("div.items").empty();
+    //start counter
+    var i=0;
+    // show values
+    for (var key in keys) {
+        $("#machinesview-icon.standard div.#" +serverID).find(".items").append("<div class='item'>" + key + "</div>");
+        i++;
+    }
+    //hide the metadata controls if we have less than 3 metadata
+    if (i <= 3) {
+        $("#machinesview-icon.standard div.#" +serverID).find(".metadata-actions").hide();
+    }
+    //show the metadata controls if we have more than 3 metadata
+    if (i > 3) {
+        $("#machinesview-icon.standard div.#" +serverID).find(".metadata-actions").show();
+    }
+    $("#machinesview-icon.standard div.#" +serverID).find(".metadata-count").text(i);
+}
+
+// indicate that the requested action was succesfully completed
+function display_success(serverID) {
+
+}
+
+// indicate that the requested action was not completed
+function display_failure(status, serverID, action, responseText) {
+    $('#machinesview-icon.standard #'+serverID+ ' .spinner').hide();
+    $('#machinesview-icon.standard #'+serverID+ ' .action_error .action').text(action);
+    $('#machinesview-icon.standard #'+serverID+ ' .action_error .code').text(status);
+    $('#machinesview-icon.standard #'+serverID+ ' .action_error .message').text(responseText);
+    $('#machinesview-icon.standard #'+serverID+ ' .action_error').show();
+}
+
+// basic functions executed on page load
+if ( flavors.length == 0 && images.length == 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+    // populate image list
+    update_images();
+} else if ( flavors.length == 0 && images.length != 0 ) {
+    // configure flavors, this also calls update_vms(UPDATE_INTERVAL)
+    update_flavors();
+} else if ( flavors.length != 0 && images.length == 0 ) {
+    // populate image list
+    update_images();
+    update_vms(UPDATE_INTERVAL);
+} else {
+    // start updating vm list
+    update_vms(UPDATE_INTERVAL);
+}
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - 335 < $('#machinesview-icon').height())
+        $('.confirm_multiple').addClass('fixed');
+    else
+        $('.confirm_multiple').removeClass('fixed');
+});
+
+// set the label of the multiple buttons
+$('.confirm_multiple button.yes').text('Confirm All');
+$('.confirm_multiple button.no').text('Cancel All');
+
+</script>

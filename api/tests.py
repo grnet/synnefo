@@ -830,16 +830,6 @@ class AaiTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_auth_cookie(self):
-        user = SynnefoUser.objects.get(uniq = "test@synnefo.gr")
-        self.client.cookies['X-Auth-Token'] = user.auth_token
-        response = self.client.get('/index.html', {},
-                                   **{'X-Auth-Token': user.auth_token,
-                                      'TEST-AAI' : 'true'})
-        self.assertTrue(response.status_code, 200)
-        self.assertTrue('Vary' in response)
-        self.assertTrue('X-Auth-Token' in response['Vary'])
-
     def test_fail_oapi_auth(self):
         """ test authentication from not registered user using OpenAPI
         """

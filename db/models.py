@@ -10,7 +10,8 @@ class SynnefoUser(models.Model):
     #TODO: Amend this when we have groups
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
-        ('PROFESSOR', 'Professor')
+        ('PROFESSOR', 'Professor'),
+        ('USER', 'Generic User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')
@@ -18,7 +19,8 @@ class SynnefoUser(models.Model):
     uniq = models.CharField('External Unique ID', max_length=255,null=True)
     credit = models.IntegerField('Credit Balance')
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True)
+    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True, null = True)
+    auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True, null = True)
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
@@ -64,12 +66,21 @@ class Image(models.Model):
         ('DELETED', 'Deleted')
     )
 
+    # The list of supported Image formats
+    FORMATS = (
+        ('dump', 'ext2 dump'),
+        ('lvm', 'lvm snapshot')
+    )
+
     name = models.CharField('Image name', max_length=255)
-    state = models.CharField('Current Image State', choices=IMAGE_STATES, max_length=30)
+    state = models.CharField('Current Image State', choices=IMAGE_STATES,
+                                max_length=30)
     owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey("VirtualMachine", null=True)
+    backend_id = models.CharField(max_length=50, default='debian_base')
+    format = models.CharField(choices=FORMATS, max_length=30, default='dump')
     public = models.BooleanField(default=False)
 
     class Meta:
@@ -162,7 +173,9 @@ class FlavorCost(models.Model):
         verbose_name = u'Pricing history for flavors'
     
     def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (int(self.cost_active), int(self.cost_inactive), self.flavor.name, self.effective_from)
+        return u'Costs (up, down)=(%d, %d) for %s since %s' % \
+                (int(self.cost_active), int(self.cost_inactive),
+                 self.flavor.name, self.effective_from)
 
 
 class VirtualMachine(models.Model):
@@ -253,8 +266,10 @@ class VirtualMachine(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=30, null=True)
     operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
     backendjobid = models.PositiveIntegerField(null=True)
-    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30, null=True)
-    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30, null=True)
+    backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
+                                     null=True)
+    backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30,
+                                        null=True)
     backendlogmsg = models.TextField(null=True)
 
     # Error classes
@@ -269,7 +284,8 @@ class VirtualMachine(models.Model):
             self.opcode = opcode
             self.status = status
          def __str__(self):
-            return repr("<opcode: %s, status: %s>" % (str(self.opcode), str(self.status)))
+            return repr("<opcode: %s, status: %s>" % (str(self.opcode),
+                                                      str(self.status)))
 
     class InvalidActionError(Exception):
          def __init__(self, action):
@@ -351,7 +367,8 @@ class Debit(models.Model):
         verbose_name = u'Accounting log'
 
     def __unicode__(self):
-        return u'%s - %s - %s - %s' % ( self.user.id, self.vm.name, str(self.when), self.description)
+        return u'%s - %s - %s - %s' % (self.user.id, self.vm.name,
+                                       str(self.when), self.description)
 
 
 class Disk(models.Model):
@@ -385,6 +402,20 @@ class Network(models.Model):
     machines = models.ManyToManyField(VirtualMachine,
                                         through='NetworkInterface')
     
+    def __unicode__(self):
+        return self.name
+
+
+class Invitations(models.Model):
+    source = models.ForeignKey(SynnefoUser, related_name="source")
+    target = models.ForeignKey(SynnefoUser, related_name="target")
+    accepted = models.BooleanField('Is the invitation accepted?', default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = u'Invitation'
+
     def __unicode__(self):
         return self.name
 

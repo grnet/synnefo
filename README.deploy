@@ -1,150 +1,425 @@
-DEPLOYMENT notes   
-=================
+README.deploy -- Instructions for a basic deployment of Synnefo v0.4
 
-This document describes the services that comprise the Synnefo software
-infrastructure and the dependencies among them. This document applies
-to Synnefo v0.3.
+This document describes the basic steps to obtain a basic, working Synnefo
+deployment. It begins by examining the different node roles, then moves to the
+installation and setup of distinct software components.
 
-
-- Node types
-
-  Nodes in a Synnefo deployment belong in one of the following types:
-
-    * DB:
-      A node [or more than one nodes, if using an HA configuration],
-      running a DB engine supported by the Django ORM layer. The DB
-      is the single source of truth for the servicing of API requests by
-      Synnefo.
-      Services: PostgreSQL / MySQL
-
-    * WEBSERVER:
-      A node running the implementation of the OpenStack API, in Django.
-      Any number of WEBSERVERs can be used, in a load-balancing configuration,
-      without any special consideration. Access to a common DB ensures
-      consistency. 
-      Services: Web server, vncauthproxy
-
-    * QUEUE:
-      A node running the RabbitMQ software, which provides AMQP functionality.
-      More than one QUEUE nodes may be deployed, in an HA configuration. Such
-      deployments require shared storage, provided e.g., by DRBD.
-      Services: RabbitMQ [rabbitmq-server]
-
-    * LOGIC:
-      A node running the business logic of Synnefo, in Django. It dequeues
-      messages from QUEUE nodes, and provides the context in which business
-      logic functions run. It uses Django ORM to connect to the common DB and
-      update the state of the system, based on notifications received from the
-      rest of the infrastructure, over AMQP.
-      Services: the Synnefo logic dispatcher [/logic/dispatcher.py]
-
-    * GANETI-MASTER and GANETI-NODE:
-      A single GANETI-MASTER and a large number of GANETI-NODEs constitute the
-      Ganeti backend for Synnefo, which undertakes all VM management functions.
-      Any WEBSERVER can issue commands to the GANETI-MASTER, over RAPI, to effect
-      changes in the state of the VMs. The GANETI-MASTER runs the Ganeti request
-      queue.
-      Services: only on GANETI-MASTER:
-        the Synnefo Ganeti monitoring daemon [/ganeti/ganeti-eventd],
-        and the Synnefo Ganeti hook [/ganeti/snf-ganeti-hook.py].
-
-    As of v0.3, the Synnefo Django project needs to be installed on nodes
-    of type WEBSERVER, LOGIC and on the GANETI-MASTER, with a properly configured
-    settings.py. In later revisions, the specific parts of the Django project
-    which need to run on each node type will be identified.
-
-    The settings.py file for Django is derived by concatenating the
-    settings.py.dist file contained in the Synnefo distribution with a file
-    containing custom modifications. This is recommended to minimize the load
-    of reconstructing settings.py from scratch, since each release currently
-    brings heavy changes to settings.py.dist.
+It applies to Synnefo v0.4.
 
 
-- Service dependencies
+Node types
+===========
 
-    This section describes each of the required service dependencies.
+Nodes in a Synnefo deployment belong in one of the following types:
 
-    * RabbitMQ
+ * DB:
+   A node [or more than one nodes, if using an HA configuration],
+   running a DB engine supported by the Django ORM layer. The DB
+   is the single source of truth for the servicing of API requests by
+   Synnefo.
+   Services: PostgreSQL / MySQL
 
-      RabbitMQ is used as a generic message broker for the system. It should
-      be installed on two seperate machines (VMs should be enough for the
-      moment) in a high availability configuration as described here:
+ * APISERVER:
+   A node running the implementation of the OpenStack API, in Django.
+   Any number of APISERVERs can be used, in a load-balancing configuration,
+   without any special consideration. Access to a common DB ensures
+   consistency.
+   Services: Web server, vncauthproxy
 
-        http://www.rabbitmq.com/pacemaker.html
+ * QUEUE:
+   A node running the RabbitMQ software, which provides AMQP functionality.
+   More than one QUEUE nodes may be deployed, in an HA configuration. Such
+   deployments require shared storage, provided e.g., by DRBD.
+   Services: RabbitMQ [rabbitmq-server]
 
-      After installation, create a user and set its permissions
+ * LOGIC:
+   A node running the business logic of Synnefo, in Django. It dequeues
+   messages from QUEUE nodes, and provides the context in which business
+   logic functions run. It uses Django ORM to connect to the common DB and
+   update the state of the system, based on notifications received from the
+   rest of the infrastructure, over AMQP.
+   Services: the Synnefo logic dispatcher [/logic/dispatcher.py]
 
-        rabbitmqctl add_user okeanos 0k3@n0s
-        rabbitmqctl set_permissions -p / okeanos  "^.*" ".*" ".*"
+ * GANETI-MASTER and GANETI-NODE:
+   A single GANETI-MASTER and a large number of GANETI-NODEs constitute the
+   Ganeti backend for Synnefo, which undertakes all VM management functions.
+   Any APISERVER can issue commands to the GANETI-MASTER, over RAPI, to effect
+   changes in the state of the VMs. The GANETI-MASTER runs the Ganeti request
+   queue.
+   Services:
+   only on GANETI-MASTER:
+     the Synnefo Ganeti monitoring daemon [/ganeti/ganeti-eventd],
+     and the Synnefo Ganeti hook [/ganeti/snf-ganeti-hook.py].
+   on each GANETI_NODE:
+     a deployment-specific KVM ifup script
+     properly configured NFDHCPD
 
-      The values set for the user and password must be mirrored in the
-      RABBIT_* variables in settings.py
 
-    * /ganeti/ganeti-eventd: the Ganeti monitoring daemon
+Installation Process
+=====================
 
-      The Ganeti monitoring daemon must run on GANETI-MASTER.
+This section describes the installation process of the various node roles
+in a Synnefo deployment.
 
-      Override all relevant settings in settings.py.dist, GANETI_* variables.
-      Then start the server on the Ganeti master as root
 
-      # cd synnefo && python ./ganeti/ganeti-eventd
+0. Allocation of physical nodes:
+   Determine the role of every physical node in your deployment.
 
-      FIXME: The server must be started from the project root directory.
-      TBD: how to handle master migration.
 
-    * /logic/dispatcher.py: the dispatcher
+1. Ganeti installation:
+   Synnefo requires a working Ganeti installation at the backend. Installation
+   of Ganeti is not covered by this document, please refer to
+   http://docs.ganeti.org/ganeti/current/html for all the gory details. A
+   successful Ganeti installation concludes with a working GANETI-MASTER and a
+   number of GANETI-NODEs.
 
-      The dispatcher retrieves messages from the queue and calls the
-      appropriate handler function as defined in the queue configuration in
-      setttings.py. The default configuration should work directly without
-      any modifications.
 
-      The dispatcher must be run by hand:
+2. RabbitMQ installation:
+   RabbitMQ is used as a generic message broker for the system. It should
+   be installed on two seperate QUEUE nodes (VMs should be enough for the
+   moment) in a high availability configuration as described here:
+
+     http://www.rabbitmq.com/pacemaker.html
+
+   After installation, create a user and set its permissions
+     rabbitmqctl add_user okeanos 0k3@n0s
+     rabbitmqctl set_permissions -p / okeanos  "^.*" ".*" ".*"
+
+   The values set for the user and password must be mirrored in the
+   RABBIT_* variables in settings.py (see step 6)
+
+
+3. Web server installation:
+   A Web Server (e.g., Apache) needs to be installed on the APISERVERs,
+   and be configured to run the Synnefo Django project appropriately.
+   Selection and configuration of a Web server is outside the scope of this
+   document.
+
+   For testing or development purposes, Django's own development server,
+   ./manage.py runserver can be used.
+
+
+4. Installation of the Synnefo Django project:
+   As of v0.4, the Synnefo Django project needs to be installed on nodes
+   of type APISERVER, LOGIC and on the GANETI-MASTER, with a properly configured
+   settings.py. In later revisions, the specific parts of the Django project
+   which need to run on each node type will be identified.
+
+   Synnefo is written in Python 2.6 and depends on the following Python
+   modules: [package versions confirmed to be compatible are in braces]
+
+    * django 1.2 [Django==1.2.4]
+    * simplejson [simplejson==2.1.3]
+    * pycurl [pycurl==7.19.0]
+    * python-dateutil  [python-dateutil==1.4.1]
+      WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work
+               with Python 2.6
+    * south [south==0.7.1]
+      WARNING: not working with Debian squeeze's default south-0.7-1 package.
+    * amqplib [amqplib==0.6.1]
+
+   also, depending on the database engine of choice, on one of the following:
+    * MySQL-python [MySQL-python==1.2.3]
+    * psycopg2 [psycopg2==2.4]
+
+   if the invitations application is deployed, the following
+   dependencies should be installed:
+
+    * pycrypto==2.1.0
+
+   if you want to test the ganeti (FIXME)
+
+   to run the user interface tests, selenium must be installed
+    * selenium [?]
+
+   The easiest method for installation of the Django project is to setup a
+   working environment through virtualenv. Alternatively, you can use your
+   system's package manager to install the dependencies (e.g. Macports has them
+   all).
+
+   * On Snow Leopard and linux (64-bit), you have to set the following environment
+     variable for pip to compile the dependencies correctly.
+
+  	   $ export ARCHFLAGS="-arch x86_64"
+
+   * On Ubuntu, a few more packages must be installed before installing the
+     prerequisite Python libraries
+
+	   $ sudo aptitude install libcurl3-gnutls libcurl3-gnutls-dev uuid-dev
+
+   Checkout the code and install the Python prerequisites. This assumes
+   that python is already installed on the host.
+
+    $ sudo easy_install virtualenv
+    $ git clone https://user@code.grnet.gr/git/synnefo synnefo
+    $ virtualenv --python=python2.6 synnefo --no-site-packages
+    ...
+    $ cd synnefo
+    $ ./bin/pip install <list_of_dependencies>
+
+
+5. Database installation:
+   A database supported by the Django ORM layer must be installed on nodes
+   of type DB. The choices are: SQLIte, MySQL, PostgreSQL.
+
+   * SQLite:
+     The python sqlite driver is available by default with Python so no additional
+     configuration is required. Also, most self-respecting systems have the sqlite
+     library installed by default.
+
+   *  MySQL:
+      MySQL must be installed first:
+
+      * Ubuntu - Debian
+	      $ sudo apt-get install libmysqlclient-dev
+
+      * MacPorts
+	      $ sudo port install mysql5
+
+      Install the MySQL python library on servers running the Django project:
+
+	    $ bin/pip install MySQL-python
+
+      Note: On MacOSX with Mysql install from MacPorts the above command will fail
+      complaining that it cannot find the mysql_config command. Do the following and
+      restart the installation
+	    $ echo "mysql_config = /opt/local/bin/mysql_config5" >> ./build/MySQL-python/site.cfg
+
+      Configure a MySQL db/account for synnefo
+	    $ mysql -u root -p
+
+    	mysql> create database synnefo;
+	    mysql> show databases;
+	    mysql> GRANT ALL on synnefo.* TO username IDENTIFIED BY 'password';
+
+   * PostgreSQL
+     You need to install the PostgreSQL binaries:
+     * Ubuntu - Debian
+	     $ sudo apt-get install postgresql-8.4 libpq-dev
+
+     * MacPorts
+	     $ sudo port install postgresql84
+
+     Install the postgres Python library
+	    $ bin/pip install psycopg2
+
+     Configure a postgres db/account for synnefo:
+
+     Become the postgres user, connect to PostgreSQL:
+       $ sudo su - postgres
+       $ psql
+	
+	 Run the following commands:
+	   DROP DATABASE synnefo;
+	   DROP USER username;
+	   CREATE USER username WITH PASSWORD 'password';
+	   CREATE DATABASE synnefo;
+	   GRANT ALL PRIVILEGES ON DATABASE synnefo TO username;
+	   ALTER DATABASE synnefo OWNER TO username;
+	   ALTER USER username CREATEDB;
+
+     The last line enables the newly created user to create own databases. This is
+     needed for Django to create and drop the test_synnefo database for unit
+     testing.
+
+
+6. Setting up the Django project:
+   The settings.py file for Django may be derived by concatenating the
+   settings.py.dist file contained in the Synnefo distribution with a file
+   containing custom modifications, which shall override all settings deviating
+   from the supplied settings.py.dist. This is recommended to minimize the load
+   of reconstructing settings.py from scratch, since each release currently
+   brings heavy changes to settings.py.dist.
+
+   Add the following to your custom settings.py, depending on your choice of DB:
+   * SQLite
+
+	 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
+
+	 DATABASES = {
+	     'default': {
+		     'ENGINE': 'django.db.backends.sqlite3',
+		     'NAME': PROJECT_PATH + 'synnefo.db' #WARN: This must be an absolute path
+	     }
+	 }
+
+   * MySQL
+
+ 	 DATABASES = {
+	     'default': {
+             'ENGINE': 'django.db.backends.mysql',
+             'NAME': 'synnefo',
+             'USER': 'USERNAME',
+             'PASSWORD': 'PASSWORD',
+             'HOST': 'HOST',
+             'PORT': 'PORT',
+             'OPTIONS': {
+                 'init_command': 'SET storage_engine=INNODB',
+             }
+	    }
+	}
+
+   * PostgreSQL
+
+     DATABASES = {
+	     'default': {
+             'ENGINE': 'django.db.backends.postgresql_psycopg2',
+             'NAME': 'DATABASE',
+             'USER': 'USERNAME',
+             'PASSWORD': 'PASSWORD',
+             'HOST': 'HOST',
+             'PORT': 'PORT',
+	     }
+     }
+
+    Try it out. The following command will attempt to connect to the DB and
+    print out DDL statements. It should not fail.
+
+	$ ./bin/python manage.py sql db
+
+
+7. Initialization of Synnefo DB:
+   You need to initialize the Synnefo DB and load fixtures
+   db/fixtures/{flavors,images}.json, which make the API usable by end users by
+   defining a sample set of hardware configurations (flavors) and OS images.
+
+     $ ./bin/python manage.py syncdb
+     $ ./bin/python manage.py migrate db
+     $ ./bin/python manage.py loaddata db/fixtures/flavors.json
+     $ ./bin/python manage.py loaddata db/fixtures/images.json
+
+
+8. Finalization of settings.py:
+   Set the BACKEND_PREFIX_ID variable to some unique prefix, e.g. your commit
+   username in settings.py. Several functional conventions within the system
+   require this variable to include a dash at its end (e.g. snf-)
+
+   Fix the AMQP-specific settings based on the selected BACKEND_PREFIX_ID.
+   The fix_amqp_settings() function is called once at the end of
+   settings.py.dist, you must call it again if you change BACKEND_PREFIX_ID
+   at some later point.
+
+
+9. Installation of the Ganeti monitoring daemon, /ganeti/ganeti-eventd:
+   The Ganeti monitoring daemon is part of the Django project and must run on
+   GANETI-MASTER.
+
+   Override all relevant settings in settings.py.dist, GANETI_* variables.
+   Then start the server on the Ganeti master as root
+
+     # cd synnefo && python ./ganeti/ganeti-eventd
+
+   FIXME: The server must be started from the project root directory.
+   TBD: how to handle master migration.
+
+
+10. Installation of the Synnefo dispatcher, /logic/dispatcher.py:
+    The logic dispatcher is part of the Synnefo Django project and must run
+    on LOGIC nodes.
+
+    The dispatcher retrieves messages from the queue and calls the
+    appropriate handler function as defined in the queue configuration in
+    setttings.py. The default configuration should work directly without
+    any modifications.
+
+    For the time being The dispatcher must be run by hand:
       $ ./bin/python ./logic/dispatcher.py
 
-      The dispatcher should run in at least 2 instances to ensure high
-      (actually, increased) availability.
-
-    * /ganeti/snf-ganeti-hook.py: Ganeti hook for synnefo
-
-      The script ganeti/snf-ganeti-hook.py is the generic launcher for Synnefo
-      hooks in Ganeti.  It resides in the ganeti/ directory of the Synnefo
-      project root.
-
-      The hook needs to be enabled for the post-start phase, by *symlinking*
-      in  /etc/ganeti/hooks/instance-start-post.d on GANETI-MASTER:
-
-      root@ganeti-master:/etc/ganeti/hooks/instance-start-post.d# ls -l
-      lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/ganeti/snf-ganeti-hook.py*
-
-      IMPORTANT: The link name may only contain "upper and lower case, digits,
-      underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9_-]+$."
-      See http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming.
-
-      The script uses the location of the link target to determine the Synnefo
-      Project root, before passing control to the relevant Python code.
-
-      FIXME: Perhaps require a SYNNEFO_PROJECT_ROOT environment variable?
-
-    * vncauthproxy
-
-      To support OOB console access to the VMs over VNC, the vncauthproxy
-      daemon must be running on every node of type WEBSERVER.
-
-      Download and install vncauthproxy from its own repository,
-      at https://code.grnet.gr/git/vncauthproxy
-      (known good commit [FIXME for v0.3]: 48b1400e).
-
-      Edit default settings on top of vncauthproxy.py.
-      Set CTRL_SOCKET in util/vapclient.py to point to its control socket.
-
-      FIXME: The CTRL_SOCKET setting will be moved to settings.py as
-      VNCAUTHPROXY_CTRL_SOCKET.
+    The dispatcher should run in at least 2 instances to ensure high
+    (actually, increased) availability.
 
 
-- OS Specific instructions
+11. Installation of the Synnefo Ganeti hook:
+    The Python script ganeti/snf-ganeti-hook.py is the generic launcher for
+    Synnefo hooks in Ganeti.  It resides in the ganeti/ directory under the root
+    of Synnefo Django project root.
 
-    * Debian Squeeze
+    The hook needs to be enabled for phases
+    post-{add,modify,reboot,start,stop} by *symlinking*
+    in  /etc/ganeti/hooks/instance-{add,modify,reboot,start,stop}-post.d
+    on GANETI-MASTER, e.g.:
 
-      TBD.
+    root@ganeti-master:/etc/ganeti/hooks/instance-start-post.d# ls -l
+    lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/ganeti/snf-ganeti-hook.py*
+
+    IMPORTANT: The link name may only contain "upper and lower case, digits,
+    underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9_-]+$."
+    See http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming.
+
+    The script uses the location of the link target to determine the Synnefo
+    Project root, before passing control to the relevant Python code.
+
+    FIXME: Perhaps require a SYNNEFO_PROJECT_ROOT environment variable?
+
+
+12. Installation of the VNC authentication proxy, vncauthproxy:
+    To support OOB console access to the VMs over VNC, the vncauthproxy
+    daemon must be running on every node of type APISERVER.
+
+    Download and install vncauthproxy from its own repository,
+    at https://code.grnet.gr/git/vncauthproxy (known good commit: 8799ab6d6e).
+
+    Edit default settings on top of vncauthproxy.py.
+    Set CTRL_SOCKET in util/vapclient.py to point to its control socket.
+
+    FIXME: The CTRL_SOCKET setting will be moved to settings.py as
+    VNCAUTHPROXY_CTRL_SOCKET.
+
+    Create /var/log/vncauthproxy and set its permissions appropriately.
+
+
+13. Installation of the customized Ganeti Instance Image for image deployment:
+    For Synnefo to be able to launch VMs from specified Images, you need
+    the gnt-instance-image OS Provider installed on the Ganeti backend.
+
+    Download and install gnt-instance-image in all Ganeti nodes from its own
+    repository, at https://code.grnet.gr/git/gnt-instance-image.
+
+    After installing gnt-instance-image do the following:
+    1. root@ganeti-master:/path-to-repo# cp ./defaults /etc/default/ganeti-instance-image
+    2. Uncomment the following in /etc/default/ganeti-instance-image:
+       SWAP=no
+       ARCH="x86_64"
+    3. Add to /etc/default/ganeti-instance-image (so that make-dump makes no /boot partition):
+       KERNEL_PATH="True"
+    4. Change the path in make-dump line 22 according to your installation
+       (/usr/share/ganeti/os/image/common.sh --> /srv/ganeti/os/image/common.sh)
+    5. In common.sh, comment out the KERNEL_PATH variable initialization.
+       (#KERNEL_PATH="$INSTANCE_HV_kernel_path")
+    6. In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
+       run during instance creation process have execute permission. At least
+       `grub' and `root_passwd' should be triggered to make the instance
+       usable:
+         chmod +x /etc/ganeti/instance-image/hooks/{grub,root_passwd}
+
+    Your Custom Images should be stored in a dump format under /var/cache/ganeti-instance-image
+    and their filenames should have the following format:
+      {backend_id}-x86_64-root.dump
+    e.g., debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
+
+
+14. Setup Synnefo-specific networking on the Ganeti backend:
+    This part is deployment-specific and must be customized based on the
+    specific needs of the system administrators.
+
+    A reference installation will use a Synnefo-specific KVM ifup script,
+    NFDHCPD and pre-provisioned Linux bridges to support public and private
+    network functionality. For this:
+
+    Grab NFDHCPD from its own repository (https://code.grnet.gr/git/nfdhcpd),
+    install it, modify /etc/nfdhcpd/nfdhcpd.conf to reflect your network
+    configuration.
+
+    Install a custom KVM ifup script for use by Ganeti, as
+    /etc/ganeti/kvm-vif-bridge, on GANETI-NODEs. A sample implementation is
+    provided under /contrib/ganeti-hooks. Set NFDHCPD_STATE_DIR to point
+    to NFDHCPD's state directory, usually /var/lib/nfdhcpd.
+
+
+15. Create log file directories for Synnefo components, set appropriate
+    permissions. By default, logic/dispatcher.py and ganeti/ganeti-eventd.py
+    use /var/log/synnefo.
+
+
+16. (Hopefully) Done
 

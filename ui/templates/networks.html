@@ -1,23 +1,60 @@
 {% load i18n %}
 
-<div id="networks" class="separator"></div>
+<!-- the create button -->
+<div id="networks-createcontainer">
+    <div id="beforecreate"></div>
+    <a id="networkscreate" rel="#networks-wizard" href="#">{% trans "Create New +" %}</a>
+</div>
 
-<div id="networks-container">
-    <!-- the create button -->
-    <div id="networks-createcontainer">
-        <a id="networkscreate" rel="#networkswizard" href="#">{% trans "Create New +" %}</a>
+<!-- add new network overlay -->
+<div>
+    <div class="modal" id="networks-wizard">
+        <div class="header">
+        </div>
+        <h2>{% trans "Name your network" %}</h2>
+        <hr class="topruler" />
+        <div class="container">
+            <div class="name-input">
+                <label>{% trans "Name" %}:</label>
+                <input type="text" class="text" name="machine_name"></input>
+                <span class="help">{% trans "(* Required field)" %}</span>
+            </div>
+        </div>
+        <hr class="bottomruler" />
+        <button type="button" id="add-network-cancel" class="cancel">{% trans "Cancel" %}</button>
+        <button type="button" id="add-network-create" class="create">{% trans "Create Network" %}</button>
+        <hr class="separator-end"></hr>
     </div>
-    <div class="network" id="internet-template">
+</div>
+
+<!-- networks list -->
+<div id="networks-container">
+    <!-- spinner while loading list -->
+    <div class = "large-spinner"></div>
+
+    <!-- public network template -->
+    <div class="network" id="public-template">
         <div class="actions">
-            <a href="#" class="action-network-add">{% trans "Add Machine" %}</a>
-        </div>    
+            {# Commented out the following until there is full public network support #}
+            {# <a href="#" class="action-add">{% trans "Add Machine" %}</a> #}
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
         <div class="state">
             <div class="status">{% trans "Public Network" %}</div>
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
             <div class="indicator"></div>
-        </div>    
+        </div>
         <img class="network-logos" src="/static/internet.png" />
         <div href="#" class="name-div">
             <h5 class="namecontainer">
@@ -25,302 +62,795 @@
             </h5>
         </div>
         <h5 class="network-machines">
-            {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (2)</span>
+            {% trans "Show:" %} <span class="show-machines">{% trans "machines" %}</span>
+            (<span class="machines-count">1</span>)
         </h5>
         <div class="network-contents">
             <div class="network-placeholder">
                 <div class="network-contents-start-separator"></div>
-                <div class="network-machine" id="machine-template">
-                    <div class="machine-actions">
-                        <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                        <a href="#" class="action-details">{% trans "Details" %}</a>
-                    </div>        
-                    <div class="state">
-                        <div class="status"><span class="discreet">IPv4:</span> 192.94.73.15</div>
-                        <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                        <img class="spinner" style="display:none" src="/static/progress.gif" />
-                        <img class="wave" style="display:none" src="/static/wave.gif" />
-                    </div>
-                    <img class="logo" src="/static/machines/debian-on.png" />
-                    <div class='network-remove-machine'><span class="remove-icon">X</span></div>     
-                    <div href="#" class="machine-name-div">
-                        <h5 class="namecontainer editable">
-                            <span class="name">my desktop1</span><span class="rename"></span>
-                            <div class="editbuttons" style="display:none">
-                                <span class="save" />
-                                <span class="cancel" />
-                            </div>
-                        </h5>
-                    </div>
-                    <h5>
-                        <span class="ip">{% trans "IPs" %}</span> | 
-                        <span class="show-firewall">{% trans "Firewall" %}</span> 
-                        (<span class="firewall-on">{% trans "On" %}</span>)   
-                    </h5>
-                    <div class="firewall-content">
-                        <div class="firewall-contents-start-separator"></div>
-                        <input type="radio" class="checkboxes" name="image-id1" /> 
-                        <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
-                        <br />
-                        <input type="radio" class="checkboxes" name="image-id1" /> 
-                        <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
-                        <br />
-                        <input type="radio" class="checkboxes" name="image-id1" /> 
-                        <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
-                        <br />
-                        <input type="radio" class="checkboxes" name="image-id1" /> 
-                        <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
-                        <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
-                        <div class="firewall-contents-end-separator"></div>
+                <div class="machines-list">
+                <!-- append machines here -->
+                </div>
+                <div class="empty-network-slot" id="machine-template">
+                    <div class='network-add-machine'>
+                        {# Replace the following with the comment below for full public network functionality #}
+                        {# <span class="add-icon">+</span> #}
+                        <span>&nbsp;</span>
                     </div>
                 </div>
-                <div class="network-separator machines"></div>
-                <div class="network-machine" id="machine-template">
-                    <div class="machine-actions">
-                        <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                        <a href="#" class="action-details">{% trans "Details" %}</a>
-                    </div>        
-                    <div class="state">
-                        <div class="status"><span class="discreet">IPv4:</span> 192.94.73.18</div>
-                        <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                        <img class="spinner" style="display:none" src="/static/progress.gif" />
-                        <img class="wave" style="display:none" src="/static/wave.gif" />
-                    </div>
-                    <img class="logo" src="/static/machines/windows-off.png" />
-                    <div class='network-remove-machine'><span class="remove-icon">X</span></div>
-                    <div href="#" class="machine-name-div">
-                        <h5 class="namecontainer editable">
-                            <span class="name">my desktop1</span><span class="rename"></span>
-                            <div class="editbuttons" style="display:none">
-                                <span class="save" />
-                                <span class="cancel" />
-                            </div>
-                        </h5>
-                    </div>
-                    <h5>
-                        <span class="ip">{% trans "IPs" %}</span> | 
-                        <span class="show-firewall" href="#">{% trans "Firewall" %}</span> 
-                        (<span class="firewall-off">{% trans "Off" %}</span>)   
-                    </h5>  
-                    <div class="firewall-content">
-                        <div class="firewall-contents-start-separator"></div>
-                        <input type="radio" class="checkboxes" name="image-id2" /> 
-                        <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
-                        <br />
-                        <input type="radio" class="checkboxes" name="image-id2" /> 
-                        <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
-                        <br />
-                        <input type="radio" class="checkboxes" name="image-id2" /> 
-                        <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
-                        <br />
-                        <input type="radio" class="checkboxes" name="image-id2" /> 
-                        <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
-                        <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
-                        <div class="firewall-contents-end-separator"></div>
-                    </div>
+            </div>
+            <div class="network-contents-end-separator"></div>
+        </div>
+    </div>
+
+    <!-- template for machines in public network -->
+    <div class="network-machine" id="public-machine-template">
+        <div class="machine-actions">
+            <a href="#" class="action-details">{% trans "Details" %}</a>
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
+        <div class="state">
+            <div class="ip4-container status">
+                <span class="discreet">{% trans "IPv4" %}: </span>
+                <span class="ip4">192.94.73.15</span>
+            </div>
+            <div class="ip6-container status">
+                <span class="discreet">{% trans "IPv6" %}: </span>
+                <span class="ip6">vv</span>
+            </div>
+            <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
+            <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+        </div>
+        <img class="logo" src="/static/icons/machines/medium/debian-on.png" />
+        <div class='network-remove-machine'>
+            {# Replace the following with the comment below for full public network functionality #}
+            {# <span class="remove-icon">X</span> #}
+            <span>&nbsp;</span>
+        </div>
+        <div href="#" class="machine-name-div">
+            <h5 class="namecontainer">
+                <span class="name">my desktop1</span>
+            </h5>
+        </div>
+        <h5>
+            <span class="ip">{% trans "IPs" %}</span> |
+            <span class="show-firewall">{% trans "Firewall" %}</span>
+            (<span class="firewall-off">{% trans "Off" %}</span>)
+        </h5>
+        <div class="firewall-content">
+            <div class="firewall-contents-start-separator"></div>
+            <input type="radio" class="checkboxes" name="image-id1" />
+            <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
+            <br />
+            <input type="radio" class="checkboxes" name="image-id1" />
+            <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
+            <br />
+            <input type="radio" class="checkboxes" name="image-id1" />
+            <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
+            <br />
+            <input type="radio" class="checkboxes" name="image-id1" />
+            <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
+            <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
+            <div class="firewall-contents-end-separator"></div>
+        </div>
+        <div class="network-separator machines"></div>
+    </div>
+
+    <!-- private network template -->
+    <div class="network" id="private-template">
+        <div class="actions">
+            <a href="#" class="action-add">{% trans "Add Machine" %}</a>
+            <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
+        <div class="state">
+            <div class="status">{% trans "Private Network" %}</div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <div class="indicator"></div>
+            <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
+            <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+        </div>
+        <img class="network-logos" src="/static/network.png" />
+        <div href="#" class="name-div">
+            <h5 class="namecontainer editable">
+                <span class="name">{% trans "My Network 1" %}</span>
+                <span class="rename-network"></span>
+                <div class="editbuttons" style="display:none">
+                    <span class="save" />
+                    <span class="cancel" />
                 </div>
-                <div class="network-separator machines"></div>
+            </h5>
+        </div>
+        <h5 class="network-machines">
+            {% trans "Show:" %} <span class="show-machines">{% trans "machines" %}</span>
+            (<span class="machines-count">1</span>)
+        </h5>
+        <div class="network-contents">
+            <div class="network-placeholder">
+                <div class="network-contents-start-separator"></div>
+                <div class="machines-list">
+                <!-- append machines here -->
+                </div>
                 <div class="empty-network-slot" id="machine-template">
                     <div class='network-add-machine'><span class="add-icon">+</span></div>
                 </div>
             </div>
             <div class="network-contents-end-separator"></div>
         </div>
+        <div class="separator"></div>
     </div>
-    <div id="internet-separator"></div>
-    <div id="private-networks">
-        <div class="network" id="network-template">
-            <div class="actions">
-                <a href="#" class="action-add">{% trans "Add Machine" %}</a>
-                <a href="#" class="action-network-edit">{% trans "Edit" %}</a>
-                <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
-            </div>    
-            <div class="state">
-                <div class="status">{% trans "Private Network" %}</div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-            </div>    
-            <img class="network-logos" src="/static/network.png" />
-            <div href="#" class="name-div">
-                <h5 class="namecontainer">
-                    <span class="name">{% trans "My Network 1" %}</span><span class="rename-network"></span>
-                </h5>
-            </div>
-            <h5 class="network-machines">
-                {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (2)</span>
+
+    <!-- template for machines in private network -->
+    <div class="network-machine" id="private-machine-template">
+        <div class="machine-actions">
+            <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
+            <a href="#" class="action-details">{% trans "Details" %}</a>
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span class='orange'>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
+        <div class="state">
+            <img class="spinner" style="display:none" src="/static/icons/indicators/medium/progress.gif" />
+            <img class="wave" style="display:none" src="/static/icons/indicators/medium/wave.gif" />
+        </div>
+        <img class="logo" src="/static/icons/machines/medium/debian-on.png" />
+        <div class='network-remove-machine'><span class="remove-icon">X</span></div>
+        <div href="#" class="machine-name-div">
+            <h5 class="namecontainer editable">
+                <span class="name">my desktop1</span>
             </h5>
-            <div class="network-contents">
-                <div class="network-placeholder">
-                    <div class="network-contents-start-separator"></div>
-                    <div class="network-machine" id="machine-template">
-                        <div class="machine-actions">
-                            <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                            <a href="#" class="action-details">{% trans "Details" %}</a>
-                        </div>        
-                        <div class="state">
-                            <div class="status"><span class="discreet">IPv4:</span> 192.94.73.15</div>
-                            <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                            <img class="spinner" style="display:none" src="/static/progress.gif" />
-                            <img class="wave" style="display:none" src="/static/wave.gif" />
-                        </div>
-                        <img class="logo" src="/static/machines/debian-on.png" />
-                        <div class='network-remove-machine'><span class="remove-icon">X</span></div>     
-                        <div href="#" class="machine-name-div">
-                            <h5 class="namecontainer editable">
-                                <span class="name">my desktop1</span><span class="rename"></span>
-                                <div class="editbuttons" style="display:none">
-                                    <span class="save" />
-                                    <span class="cancel" />
-                                </div>
-                            </h5>
-                        </div>
-                        <h5>
-                            <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
-                        </h5>
-                        <div class="firewall-content">
-                            firewall content
-                        </div>
-                    </div>
-                    <div class="network-separator machines"></div>
-                    <div class="network-machine" id="machine-template">
-                        <div class="machine-actions">
-                            <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                            <a href="#" class="action-details">{% trans "Details" %}</a>
-                        </div>        
-                        <div class="state">
-                            <div class="status"><span class="discreet">IPv4:</span> 192.94.73.18</div>
-                            <div class="status"><span class="discreet">IPv6:</span> vv</div>
-                            <img class="spinner" style="display:none" src="/static/progress.gif" />
-                            <img class="wave" style="display:none" src="/static/wave.gif" />
-                        </div>
-                        <img class="logo" src="/static/machines/ubuntu-on.png" />
-                        <div class='network-remove-machine'><span class="remove-icon">X</span></div>     
-                        <div href="#" class="machine-name-div">
-                            <h5 class="namecontainer editable">
-                                <span class="name">my desktop1</span><span class="rename"></span>
-                                <div class="editbuttons" style="display:none">
-                                    <span class="save" />
-                                    <span class="cancel" />
-                                </div>
-                            </h5>
-                        </div>
-                        <h5>
-                            <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
-                        </h5>
-                    </div>
-                    <div class="network-separator machines"></div>
-                    <div class="empty-network-slot" id="machine-template">
-                        <div class='network-add-machine'><span class="add-icon">+</span></div>
+        </div>
+        <h5>
+            <span class="machine-connect">{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
+        </h5>
+        <div class="network-separator machines"></div>
+    </div>
+
+    <!-- the actual structure to be populated -->
+    <div class="public-networks"></div>
+    <div class="private-networks" style="display:none;"></div>
+</div>
+
+<!-- add servers to network overlay -->
+<div>
+    <div id="add-machines-wizard" class="modal">
+        <h3 class="popup-header">{% trans "Add machine" %}</h3>
+        <p style='display:none;'>hidden network id</p>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="popup-title">{% trans "Select machines to add to:" %}</div>
+                <div class="network-name"></div>
+                <div class="popup-separator"></div>
+                <div class="machines-container">
+                    <div class="large-spinner"></div>
+                    <div id='machine-entry-template' style="display:none;">
+                        <input type="checkbox" />
+                        <img class=list-logo src="/static/icons/machines/small/debian-on.png" title="debian"></img>
+                        <span class="machine-name">kati</span>
                     </div>
                 </div>
-                <div class="network-contents-end-separator"></div>
             </div>
         </div>
-        <div class="network-separator"></div>
-        <div class="network" id="network-template">
-            <div class="actions">
-                <a href="#" class="action-add">{% trans "Add Machine" %}</a>
-                <a href="#" class="action-network-edit">{% trans "Edit" %}</a>
-                <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
-            </div>    
-            <div class="state">
-                <div class="status">{% trans "Private Network" %}</div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-            </div>    
-            <img class="network-logos" src="/static/network.png" />
-            <div href="#" class="name-div">
-                <h5 class="namecontainer">
-                    <span class="name">{% trans "My Network 2" %}</span><span class="rename-network"></span>
-                </h5>
-            </div>
-            <h5 class="network-machines"> 
-                {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (0)</span>
-            </h5>
-            <div class="network-contents">
-                <div class="network-placeholder">
-                    <div class="network-contents-start-separator"></div>
-                    <div class="empty-network-slot" id="machine-template">
-                        <div class='network-add-machine'><span class="add-icon">+</span></div>
-                    </div>
-                </div>
-                <div class="network-contents-end-separator"></div>
-            </div>
-        </div>
-        <div class="network-separator"></div>
-        <div class="network" id="network-template">
-            <div class="actions">
-                <a href="#" class="action-add">{% trans "Add Machine" %}</a>
-                <a href="#" class="action-network-edit">{% trans "Edit" %}</a>
-                <a href="#" class="action-network-destroy">{% trans "Destroy" %}</a>
-            </div>    
-            <div class="state">
-                <div class="status">{% trans "Private Network" %}</div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-                <div class="indicator"></div>
-            </div>    
-            <img class="network-logos" src="/static/network.png" />
-            <div href="#" class="name-div">
-                <h5 class="namecontainer">
-                    <span class="name">{% trans "My Network 3" %}</span><span class="rename-network"></span>
-                </h5>
-            </div>
-            <h5 class="network-machines">
-                {% trans "Show:" %} <span class="show-machines">{% trans "machines" %} (0)</span>
-            </h5>
-            <div class="network-contents">
-                <div class="network-placeholder">
-                    <div class="network-contents-start-separator"></div>
-                    <div class="empty-network-slot" id="machine-template">
-                        <div class='network-add-machine'><span class="add-icon">+</span></div>
-                    </div>
-                </div>
-                <div class="network-contents-end-separator"></div>
-            </div>
+        <div class="buttons">
+            <button type="button" class="cancel" id="add-server-cancel">{% trans "Cancel" %}</button>
+            <button type="button" class="add" id="add-server-add">{% trans "Add" %}</button>
         </div>
     </div>
 </div>
-<div id="networks" class="separator"></div>
+
+<a id="add-machines-overlay" href="#" rel="#add-machines-wizard"></a>
+
+<!-- multiple confirmation dialog -->
+<div class="confirm_multiple">
+    <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "networks" %}</p>
+    <button class="yes">{% trans "Confirm All" %}</button>
+    <button class="no">{% trans "Cancel All" %}</button>
+</div>
 
 <script>
-// hide the all of the networks contents
-$(".network-contents").hide();
-// toggle the component with class network-contents
-$(".show-machines").click(function() {
-    $(this).parent().next(".network-contents").slideToggle(600);
-});
-// toggle the component with class network-contents
-$(".network-logos").click(function() {
-    $(this).siblings(".network-contents").slideToggle(600);
-});
-
-// intercept click to remove machine from network 
-$(".remove-icon").click(function() {
-    $(this).parent().parent().next('div.network-separator').fadeOut();
-    $(this).parent().parent().fadeOut();
+// add network wizard initialization
+$(function() {
+    // create wizard overlay
+    $("a#networkscreate").overlay({
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        closeOnEsc: true,
+        load: false
+    });
 });
 
-// intercept click to add machine to network
-$(".add-icon").click(function() {
-    //var newEntry = $(".network-machine")[0].clone();
-    //$(this).parent().parent().append(newEntry);
+// intercept click to create new private network
+$("#networkscreate").click(function() {
+    // reset and load wizard
+    $('#networks-wizard span.help').removeClass('red');
+    $('#networks-wizard input').val('');
+    $('#networks-wizard #add-network-create').text('{% trans 'Create Network' %}');
+    $("#networks-wizard").show();
+    $('#networks-wizard input').focus();
+    $("a#networkscreate").data('overlay').load();
+    return false;
 });
 
-// hide the all of the firewall contents
-$(".firewall-content").hide();
-// toggle the component with class firewall-contents
-$(".show-firewall").click(function() {
+// exit the add machine to network wizard
+$("#add-network-cancel").live('click', function() {
+    $("a#networkscreate").overlay().close();
+});
+
+// add selected machines to network
+$("#add-network-create").live('click', function() {
+    if ($('#networks-wizard input').val() == '') {
+        $('#networks-wizard input').focus();
+        $('#networks-wizard span.help').addClass('red');
+    } else {
+        $(this).text('');
+        $(this).html('<img src="/static/icons/indicators/medium/horizontal-progress.gif"></img>');
+        networkName = $('#networks-wizard input').val();
+        create_network(networkName);
+    }
+    return false;
+});
+
+// toggle component with class network-contents
+$("#networks-pane .show-machines").live('click', function() {
+    $(this).parent().next("#networks-pane .network-contents").slideToggle(600);
+    return false;
+});
+
+// toggle component with class network-contents
+$("#networks-pane .network-logos").live('click', function() {
+    $(this).siblings("#networks-pane .network-contents").slideToggle(600);
+    return false;
+});
+
+//initiate network renaming
+$("#networks-pane .name-div .rename-network, #networks-pane .name-div h5.editable span.name").live('click', function() {
+    $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" +
+                                        $(this).parent().find('.name').text() +
+                                        "\" / ><span class=\"oldValue\">" +
+                                        $(this).parent().find('.name').text() + "</span>");
+    $(this).parent().find('.rename-network').hide();
+    $(this).parent().find(".editbuttons").fadeIn();
+    $(this).parent().find(".nametextbox").focus().select();
+    $(this).parent().removeClass('editable');
+
+    //submit wizard by pressing enter on the name textbox
+    $("#txtEdit").keydown(function (e) {
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('div.editbuttons span.save').click();
+            return false;
+        } else if ((e.which && e.which == 27) || (e.keyCode && e.keyCode == 27)) {
+            $(this).parent().parent().find('div.editbuttons span.cancel').click();
+            return true;
+        }
+    });
+    return false;
+});
+
+//rename machine
+$("#networks-pane .name-div .editbuttons .save").live('click', function() {
+    networkID = $(this).closest('.network').attr("id").split('-').pop();
+    networkName = $(this).parent().parent().find('.nametextbox').val();
+    if (networkName.trim() == ''){
+        return false;
+    }
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
+    $(this).parent().parent().find(".editbuttons").fadeOut("fast");
+    $(this).parent().parent().find(".rename-network").fadeIn("slow");
+    rename_network(networkID, networkName);
+    return false;
+});
+
+//cancel renaming
+$("#networks-pane .name-div .editbuttons .cancel").live('click', function() {
+    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.oldValue').text());
+    $(this).parent().parent().find(".editbuttons").hide();
+    $(this).parent().parent().find(".rename-network").fadeIn();
+    $(this).parent().parent().addClass('editable');
+    return false;
+});
+
+// intercept click to delete network
+$("#networks-pane .action-network-destroy").live('click', function() {
+    var networkID = $(this).parent().parent().attr('id').split('-').pop();
+    var networkName = $(this).parent().parent().find(".name-div span.name").text();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+    for (i=0; i < pending_actions.length; i++){ // if there is already a pending action for this network replace it
+        if (pending_actions[i][0] == delete_network && pending_actions[i][1] == networkID){
+            pending_actions[i][0] = delete_network;
+            found = true
+        }
+    }
+    if (!found) {
+        // no pending action for this network was found, so let's just add it to the list
+        pending_actions.push([delete_network, networkID, networkName]);
+    }
+    update_network_confirmations();
+    return false;
+});
+
+// intercept click to remove machine from network
+$("#networks-pane .remove-icon").live('click', function() {
+    $(this).closest('.network-machine').find('.action-disconnect').click();
+    return false;
+});
+
+// intercept click to remove machine from network
+$("#networks-pane .action-disconnect").live('click', function() {
+    var serverID = $(this).parent().parent().attr('id').split('-').pop();
+    var networkID = $(this).closest('.network').attr('id').split('-').pop();
+    var found = false;
+    $(this).parent().children('a').removeClass('selected');
+    $(this).addClass('selected');
+    $(this).parent().addClass('display')
+    $(this).parent().parent().find('.action_error').hide();
+    for (i=0; i < pending_actions.length; i++){
+        // if there is already a pending action for this network replace it
+        if (pending_actions[i][0] == remove_server_from_network &&
+            pending_actions[i][1] == networkID &&
+            pending_actions[i][2] == serverID) {
+                pending_actions[i][0] = remove_server_from_network;
+                found = true
+        }
+    }
+    if (!found) {
+        // no pending action for this network was found, so let's just add it to the list
+        pending_actions.push([remove_server_from_network, networkID, serverID]);
+    }
+    update_network_confirmations();
+    return false;
+});
+
+$("#networks-pane .action-details").live('click', function() {
+    var serverID = $(this).parent().parent().attr('id').split('-').pop();
+    $.cookie('view', '2');
+    $.cookie('server', serverID);
+    $('a#machines').click();
+    return false
+});
+
+// add machines wizard initialization
+$(function() {
+    // create wizard overlay
+    $("a#add-machines-overlay").overlay({
+        mask: '#000',
+        effect: 'default',
+        top: '10%',
+        closeOnClick: false,
+        oneInstance: false,
+        closeOnEsc: true,
+        load: false
+    });
+});
+
+// intercept click to add machine to  network
+$("#networks-pane .action-add").live('click', function() {
+    // reset pre-existing values
+    $('#add-server-add').text('{% trans 'Add' %}');
+    $("#add-machines-wizard .network-name").text($(this).closest('.network').find('.name-div span.name').text());
+    $("#add-machines-wizard p").text($(this).closest('.network').attr('id').split('-').pop());
+    $("#add-machines-wizard .large-spinner").show();
+    $('[id^="list-entry-server-"]').remove();
+    // list new values
+    list_machines();
+    // load wizard
+    $("#add-machines-wizard").show();
+    $("a#add-machines-overlay").data('overlay').load();
+    return false;
+});
+
+//submit wizard by pressing enter on the name textbox
+$("#networks-wizard div.name-input input.text").keypress(function (e) {
+    if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+        $('#add-network-create').click();
+        return false;
+    } else {
+        return true;
+    }
+});
+
+// intercept click to bring up the add machine to network wizard
+$("#networks-pane .add-icon").live('click', function() {
+    $(this).closest('.network').find('.action-add').click();
+});
+
+// get machines in public network and list them in add server to network wizard
+function list_machines() {
+    var networkID = $("#add-machines-wizard p").text();
+    // get the list of servers from the UI
+    var all_machines = $("#networks-pane .public-networks .network-machine");
+
+    $.each(all_machines, function(i, machine) {
+        var currentID = machine.id.split('-').pop();
+        // if machine already exists in private network
+        if ( $('#net-' + networkID + '-server-' + currentID).length > 0 ) {
+            // do nothing
+        } else {
+            // put it in the list
+            var entry = $("#add-machines-wizard #machine-entry-template").clone().attr("id", "list-entry-server-" + currentID);
+            entry.find('input').attr("name", currentID);
+            entry.find('img').attr('src', '/static/icons/machines/small/' + $(machine).find('img.logo').attr('src').split('/').pop());
+            entry.find('.machine-name').text($(machine).find('span.name').text());
+            entry.appendTo("#add-machines-wizard .machines-container");
+        }
+    });
+    $("#add-machines-wizard .large-spinner").hide();
+    $('[id^="list-entry-server-"]').fadeIn("slow");
+    return false;
+}
+
+// exit the add machine to network wizard
+$("#add-server-cancel").live('click', function() {
+    $("a#add-machines-overlay").overlay().close();
+});
+
+// add selected machines to network
+$("#add-server-add").live('click', function() {
+    var selections = $("#add-machines-wizard :checkbox:checked");
+    var networkID = $("#add-machines-wizard p").text();
+    var serverIDs = [];
+    $.each(selections, function(i, selection) {
+        serverIDs.push(selection.name);
+    });
+    $(this).text('');
+    add_server_to_network(networkID, serverIDs);
+    $(this).html('<img src="/static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    return false;
+});
+
+// toggle component with class firewall-contents
+$("#networks-pane .show-firewall").live('click', function() {
     $(this).parent().next(".firewall-content").slideToggle(600);
 });
 
 //hide firewall content on apply click
-$(".firewall-apply").click(function() {
+$("#networks-pane .firewall-apply").live('click', function() {
     $(this).parent().slideToggle(600);
+    return false;
 });
+
+// confirm single action
+$("#networks-pane div.confirm_single .yes").live('click', function() {
+    // this works both for server and network actions
+    var serverID = [];
+    if ($(this).closest('.network-machine').attr('id')) {
+        serverID = $(this).closest('.network-machine').attr('id').split('-').pop();
+    }
+    var networkID = $(this).closest('.network').attr("id").split('-').pop();
+    // execute actions
+    for (i=0;i<pending_actions.length;i++){
+        // if there is a pending action for this server execute it
+        if (pending_actions[i][0] == delete_network &&
+            pending_actions[i][1] == networkID){
+                action = pending_actions.splice(i,1)[0];
+                $(this).parent().parent().find('.status').text(TRANSITIONS['Destroying']);
+                $(this).parent().parent().find('.spinner').show();
+                action[0]([action[1]]); // execute action
+        } else if ( pending_actions[i][0] == remove_server_from_network &&
+                    pending_actions[i][1] == networkID &&
+                    pending_actions[i][2] == serverID) {
+                        action = pending_actions.splice(i,1)[0];
+                        action[0]([action[1]], [action[2]]); // execute action
+        }
+    }
+    $(this).parent().hide();
+    $(this).parent().prev().children('a').removeClass('selected');
+    $(this).parent().prev().removeClass('display');
+    update_network_confirmations();
+    return false;
+});
+
+// cancel single action
+$("#networks-pane div.confirm_single .no").live('click', function(){
+    // this works both for server and network actions
+    var serverID = [];
+    if ($(this).closest('.network-machine').attr('id')) {
+        serverID = $(this).closest('.network-machine').attr('id').split('-').pop();
+    }
+    var networkID = $(this).closest('.network').attr("id").split('-').pop();
+    // remove the action from the pending list
+    $(this).parent().prev().children('a').removeClass('selected');
+    $(this).parent().prev().removeClass('display');
+    for (i=0; i < pending_actions.length; i++){ // if there is a pending action for this network remove it
+        if (pending_actions[i][0] == delete_network && pending_actions[i][1] == networkID){
+                pending_actions.splice(i,1);
+        } else if ( pending_actions[i][0] == remove_server_from_network &&
+                    pending_actions[i][1] == networkID &&
+                    pending_actions[i][2] == serverID) {
+                        pending_actions.splice(i,1);
+        }
+    }
+    $(this).parent().hide();
+    update_network_confirmations();
+    return false;
+});
+
+// show, single action, error details
+$("#networks-pane div.action_error .details").live('click', function(){
+    // remove the action from the pending list
+    ajax_error($(this).parent().children('.code').text(),
+                 undefined,
+                 $(this).parent().children('.action').text(),
+                 $(this).parent().children('.message').text());
+    $(this).parent().hide();
+    return false;
+});
+
+// confirm all actions
+$("#networks-pane div.confirm_multiple .yes").live('click', function(){
+    while(pending_actions.length > 0){ // if there is a pending action for this network execute it
+        action = pending_actions.pop(); // extract action
+        var networkID = action[1];
+        $('#networks-pane .selected').removeClass('selected');
+        $('#networks-pane .display').removeClass('display');
+        if (action[0] == delete_network) {
+            $('#networks-pane #net-' + networkID + ' .status').text(TRANSITIONS['Destroying']);
+            $('#networks-pane #net-' + networkID + ' .spinner').show();
+            action[0]([networkID]); // execute action
+        } else if (action[0] == remove_server_from_network) {
+            action[0]([action[1]], [action[2]]); // execute action
+        }
+    }
+    update_network_confirmations();
+    return false;
+});
+
+// cancel all actions
+$("#networks-pane div.confirm_multiple .no").live('click', function(){
+    pending_actions = [];
+    $('#networks-pane .selected').removeClass('selected');
+    $('#networks-pane .display').removeClass('display');
+    update_network_confirmations();
+    return false;
+});
+
+// update the networks list
+function update_networks_view(servers_data, networks_data){
+    /*
+    Go through the input data. Update existing entries, add
+    new ones to the list
+    */
+
+    // check for changes in networks
+    if (networks_data){
+        /*
+        Here we are interested in private networks only
+        and not for any server they might contain
+        */
+
+        // update private networks
+        $.each(networks_data.networks.values, function(i,network) {
+            // search DOM for this network
+            existing = $('#networks-pane #net-' + network.id);
+
+            // if multiple machines exist in the DOM, delete all but one
+            // defensive coding - that shouldn't happen normally
+            while (existing.length > 1){
+                existing.remove();
+            }
+            // If network already exists in DOM, update it
+            if (existing.length){
+                // network was deleted
+                if (network.status == 'DELETED') {
+                    existing.remove();
+                }
+
+                // network was renamed
+                if (existing.find('.name-div span.name').text() != network.name) {
+                    // set the new name
+                    existing.find('.name-div span.name').text(network.name);
+                }
+            }
+            // If network does not exist in DOM, create it, do not take into account public network
+            else if (network.id != 'public'){
+                var privNet = $("#networks-pane #private-template").clone().attr("id", "net-" + network.id);
+                privNet.find(".name-div span.name").text(network.name).fadeIn("slow");
+                privNet.appendTo("#networks-pane .private-networks");
+            }
+        });
+    }
+
+    // check for changes in servers
+    if (servers_data) {
+        /*
+        Here we are interested in any server contained
+        either in a public network or a private one
+        */
+        $.each(servers_data.servers.values, function(i,server) {
+            /*
+            First update the public network
+            */
+
+            // search public network's DOM for this server
+            existing_public = $('#networks-pane #net-pub-server-' + server.id);
+            // get the server's OS icon
+            var server_image = os_icon(server.metadata);
+
+            // if multiple servers exist in public network, delete all but one
+            // defensive coding - that shouldn't happen normally
+            while (existing_public.length > 1){
+                existing_public.remove();
+            }
+
+            // server was deleted
+            if (server.status == 'DELETED') {
+                existing_public.remove();
+            }
+
+            // If server already exists in public network, update it
+            if (existing_public.length){
+                // server was renamed
+                if (server.name != existing_public.find('span.name').text()) {
+                    existing_public.find('span.name').text(server.name);
+                }
+                // server has changed state
+                if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
+                    existing_public.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
+                } else {
+                    existing_public.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
+                }
+                // server has new ips
+                var old_ip4 = existing_public.find('span.ip4').text();
+                var old_ip6 = existing_public.find('span.ip6').text();
+                // the following are valid because the public ips always come in this order from the api
+                var new_ips = get_public_ips(server);
+                var new_ip4 = new_ips['ip4'];
+                var new_ip6 = new_ips['ip6'];
+                if (old_ip4 != new_ip4) {
+                    if (new_ips['ip4'] == undefined) {
+                        existing_public.find(".ip4-container").hide();
+                    } else {
+                        existing_public.find('span.ip4').text(new_ip4);
+                    }
+                }
+                if (old_ip6 != new_ip6) {
+                    if (new_ip6 == undefined) {
+                        existing_public.find(".ip6-container").hide();
+                    } else {
+                        existing_public.find('span.ip6').text(new_ip6);
+                    }
+                }
+                //TODO: server has changed OS
+            }
+            // If server does not exist in public network, create it
+            else {
+                var machine = $("#networks-pane #public-machine-template").clone().attr("id", "net-pub-server-" + server.id).fadeIn("slow");
+                machine.find('span.name').text(server.name);
+                // find and display ips
+                var ips = get_public_ips(server);
+                if (ips['ip4'] == undefined) {
+                    machine.find(".ip4-container").hide();
+                } else {
+                    machine.find("span.ip4").text(ips['ip4']);
+                }
+                if (ips['ip6'] == undefined) {
+                    machine.find(".ip6-container").hide();
+                } else {
+                    machine.find("span.ip6").text(ips['ip6']);
+                }
+                // add the proper icon
+                if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
+                    machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
+                } else {
+                    machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
+                }
+                machine.appendTo("#networks-pane .public-networks .machines-list");
+            }
+            /*
+            Now update all private networks
+            Since one server may belong to more than one private networks,
+            we follow a different approach.
+            We check each server and add, update or leave it as it is accordingly
+            */
+            try {
+                $.each(server.addresses.values, function(i,server_net) {
+                    // find in which private networks it belongs
+                    if (server_net.id != "public") {
+                        var existing_private = $("#networks-pane .private-networks #net-" + server_net.id + "-server-" + server.id);
+                        // add new server
+                        if (!existing_private.length) {
+                            var machine = $("#networks-pane #private-machine-template").clone().attr("id", "net-" + server_net.id + "-server-" + server.id).fadeIn("slow");
+                            machine.find('span.name').text(server.name);
+                            if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
+                                machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
+                            } else {
+                                machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
+                            }
+                            machine.appendTo("#networks-pane .private-networks #net-" + server_net.id + " .machines-list");
+                        }
+                        // server was deleted
+                        if (server.status == 'DELETED') {
+                            existing_private.remove();
+                        }
+                        // server was renamed
+                        if (server.name != existing_private.find('span.name').text()) {
+                            existing_private.find('span.name').text(server.name);
+                        }
+                        // server has changed state
+                        if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
+                            existing_private.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
+                        } else {
+                            existing_private.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
+                        }
+                        //TODO: server has changed OS
+                    }
+                });
+            } catch (err) {
+                try{console.info('Server ' + server.id + ' has no network addresses')}catch(err){};
+            }
+        });
+    }
+
+    $("#networks-pane #networks-container > .large-spinner").hide();
+
+    // show all separators and hide the last one
+    $("div.private-networks div.network div.separator").show();
+    $("div.private-networks div.network div.separator:last").hide();
+    // update the counters of servers in each network
+    var nets = $('#networks-pane .network');
+    $.each(nets, function(i,net) {
+        $(net).find('span.machines-count').text($(net).find('.network-machine').length);
+    });
+
+    // the private div shows only when private networks are available
+    if ($("div.private-networks div.network").length > 0) {
+        $("div.private-networks").fadeIn("slow");
+    } else {
+        $("div.private-networks").fadeOut("slow");
+    }
+}
+
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    if (this.innerHeight - 220 < $('#networks-pane #networks-container').height())
+        $('#networks-pane .confirm_multiple').addClass('fixed');
+    else
+        $('#networks-pane .confirm_multiple').removeClass('fixed');
+});
+
+// basic functions executed on page load
+// hide the all of the networks contents
+$("#networks-pane .network-contents").hide();
+// hide the all of the firewall contents
+$("#networks-pane .firewall-content").hide();
+changes_since = 0; // to reload full list of servers
+networks_changes_since= 0; // to reload full list of networks
+// there is alway one public network to render
+var pubNet = $("#networks-pane #public-template").clone().attr("id", "pub").fadeIn("slow");
+pubNet.appendTo("#networks-pane .public-networks");
+update_networks(UPDATE_INTERVAL);
+
 </script>

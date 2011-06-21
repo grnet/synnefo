@@ -44,8 +44,9 @@ class HelpdeskMiddleware(object):
 
     def process_request(self, request):
 
-        if not request.path.startswith(self.install_path):
-            return
+        if not request.path.startswith('/helpdesk'):
+            if not 'X-Auth-Tmp-Token' in request.COOKIES:
+                return 
 
         # Check the request's IP address
         allowed = settings.HELPDESK_ALLOWED_IPS
@@ -63,7 +64,12 @@ class HelpdeskMiddleware(object):
         try:
             hd_user_token = request.COOKIES['X-Auth-Token']
             if hd_user_token:
-                hd_user = SynnefoUser.objects.get(auth_token=hd_user_token)
+                try:
+                    hd_user = SynnefoUser.objects.get(auth_token=hd_user_token)
+                except Exception:
+                    return HttpResponse(status=401,
+                                        content="Not a valid helpdesk user")
+
                 if not hd_user.type == 'HELPDESK':
                     return HttpResponse(status=401,
                                     content="Not a valid helpdesk user")
@@ -74,13 +80,15 @@ class HelpdeskMiddleware(object):
             return
 
         # Helpdesk application request, search for a valid tmp token
-        tmp_token = None
-        try:
-            tmp_token = request.COOKIES['X-Auth-Tmp-Token']
-        except KeyError:
+        if not 'X-Auth-Tmp-Token' in request.COOKIES:
             return
 
-        tmp_user = SynnefoUser.objects.get(tmp_auth_token=tmp_token)
+        tmp_token = request.COOKIES['X-Auth-Tmp-Token']
+
+        try:
+            tmp_user = SynnefoUser.objects.get(tmp_auth_token=tmp_token)
+        except Exception:
+            return HttpResponse(status=401, content="Not a valid helpdesk user")
 
         if (time.time() -
             time.mktime(tmp_user.tmp_auth_token_expires.timetuple())) > 0:

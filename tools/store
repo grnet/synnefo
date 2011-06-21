@@ -57,10 +57,10 @@ class Command(object):
         
         self.parser = parser
         self.args = args
-
+        
     def add_options(self, parser):
         pass
-
+    
     def execute(self, *args):
         pass
 
@@ -99,13 +99,13 @@ class List(Command):
                           default=False, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
-
+    
     def execute(self, container=None):
         if container:
             self.list_objects(container)
         else:
             self.list_containers()
-
+    
     def list_containers(self):
         params = {'limit':self.limit, 'marker':self.marker}
         headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
@@ -117,7 +117,7 @@ class List(Command):
         
         l = self.client.list_containers(self.detail, params, headers)
         print_list(l)
-
+    
     def list_objects(self, container):
         params = {'limit':self.limit, 'marker':self.marker,
                   'prefix':self.prefix, 'delimiter':self.delimiter,
@@ -150,7 +150,7 @@ class Meta(Command):
         parser.add_option('--version', action='store', dest='version',
                           default=None, help='show specific version \
                                   (applies only for objects)')
-
+    
     def execute(self, path=''):
         container, sep, object = path.partition('/')
         if self.until:
@@ -228,7 +228,7 @@ class GetObject(Command):
         parser.add_option('--versionlist', action='store_true',
                           dest='versionlist', default=False,
                           help='get the full object version list')
-
+    
     def execute(self, path):
         headers = {}
         if self.range:
@@ -255,11 +255,20 @@ class GetObject(Command):
             f.write(data)
         f.close()
 
+@cli_command('mkdir')
+class PutMarker(Command):
+    syntax = '<container>/<directory marker>'
+    description = 'create a directory marker'
+    
+    def execute(self, path):
+        container, sep, object = path.partition('/')
+        self.client.create_directory_marker(container, object)
+
 @cli_command('put')
 class PutObject(Command):
     syntax = '<container>/<object> <path> [key=val] [...]'
     description = 'create/override object with path contents or standard input'
-
+    
     def add_options(self, parser):
         parser.add_option('--chunked', action='store_true', dest='chunked',
                           default=False, help='set chunked transfer mode')
@@ -274,16 +283,22 @@ class PutObject(Command):
         parser.add_option('--manifest', action='store', type='str',
                           dest='manifest', default=None,
                           help='use for large file support')
+        parser.add_option('--type', action='store',
+                          dest='content-type', default=False,
+                          help='create object with specific content type')
         parser.add_option('--touch', action='store_true',
                           dest='touch', default=False,
                           help='create object with zero data')
-
+    
     def execute(self, path, srcpath='-', *args):
         headers = {}
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
             
         attrs = ['etag', 'content-encoding', 'content-disposition']
+        
+        attrs = ['etag', 'content-encoding', 'content-disposition',
+                 'content-type']
         attrs = [a for a in attrs if getattr(self, a)]
         for a in attrs:
             headers[a.replace('-', '_').upper()] = getattr(self, a)
@@ -314,7 +329,7 @@ class CopyObject(Command):
         parser.add_option('--version', action='store',
                           dest='version', default=False,
                           help='copy specific version')
-
+    
     def execute(self, src, dst):
         src_container, sep, src_object = src.partition('/')
         dst_container, sep, dst_object = dst.partition('/')
@@ -376,7 +391,7 @@ class UpdateObject(Command):
         parser.add_option('--manifest', action='store', type='str',
                           dest='manifest', default=None,
                           help='use for large file support')
-
+    
     def execute(self, path, srcpath='-', *args):
         headers = {}
         if self.manifest:
@@ -428,6 +443,49 @@ class MoveObject(Command):
             headers['X_SOURCE_VERSION'] = version 
         self.client.move_object(src_container, src_object, dst_container,
                                 dst_object, headers)
+
+@cli_command('remove', 'rm')
+class TrashObject(Command):
+    syntax = '<container>/<object>'
+    description = 'trashes an object'
+    
+    def execute(self, src):
+        src_container, sep, src_object = src.partition('/')
+        
+        self.client.trash_object(src_container, src_object)
+
+@cli_command('restore')
+class TrashObject(Command):
+    syntax = '<container>/<object>'
+    description = 'trashes an object'
+    
+    def execute(self, src):
+        src_container, sep, src_object = src.partition('/')
+        
+        self.client.restore_object(src_container, src_object)
+
+@cli_command('unset')
+class TrashObject(Command):
+    syntax = '<container>/[<object>] key [key] [...]'
+    description = 'deletes metadata info'
+    
+    def execute(self, path, *args):
+        #in case of account fix the args
+        if path.find('=') != -1:
+            args = list(args)
+            args.append(path)
+            args = tuple(args)
+            path = ''
+        meta = []
+        for key in args:
+            meta.append(key)
+        container, sep, object = path.partition('/')
+        if object:
+            self.client.delete_object_metadata(container, object, meta)
+        elif container:
+            self.client.delete_container_metadata(container, meta)
+        else:
+            self.client.delete_account_metadata(meta)
 
 def print_usage():
     cmd = Command([])
@@ -497,6 +555,8 @@ def main():
         exit(1)
     except Fault, f:
         print f.status, f.data
+        status = f.status and '%s ' % f.status or ''
+        print '%s%s' % (status, f.data)
 
 if __name__ == '__main__':
     main()

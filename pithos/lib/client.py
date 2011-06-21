@@ -34,7 +34,7 @@ class Client(object):
         self.api = api
         self.verbose = verbose or debug
         self.debug = debug
-
+    
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024):
         http = HTTPConnection(self.host)
@@ -81,9 +81,7 @@ class Client(object):
                 print '%s: %s' % (key.capitalize(), val)
             print
         
-        length = hasattr(headers, 'Content-length') \
-        and headers['Content-length'] or None
-        
+        length = resp.getheader('Content-length', None)
         data = resp.read(length)
         if self.debug:
             print data
@@ -92,8 +90,9 @@ class Client(object):
         if int(resp.status) in ERROR_CODES.keys():
             raise Fault(data, int(resp.status))
         
+        #print '*',  resp.status, headers, data
         return resp.status, headers, data
-
+    
     def req(self, method, path, body=None, headers=None, format='text',
             params=None):
         full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path,
@@ -131,9 +130,7 @@ class Client(object):
                 print '%s: %s' % (key.capitalize(), val)
             print
         
-        length = hasattr(headers, 'Content-length') \
-        and headers['Content-length'] or None
-        
+        length = resp.getheader('Content-length', None)
         data = resp.read(length)
         if self.debug:
             print data
@@ -144,23 +141,23 @@ class Client(object):
         
         #print '*',  resp.status, headers, data
         return resp.status, headers, data
-
+    
     def delete(self, path, format='text'):
         return self.req('DELETE', path, format=format)
-
+    
     def get(self, path, format='text', headers=None, params=None):
         return self.req('GET', path, headers=headers, format=format,
                         params=params)
-
+    
     def head(self, path, format='text', params=None):
         return self.req('HEAD', path, format=format, params=params)
-
+    
     def post(self, path, body=None, format='text', headers=None):
         return self.req('POST', path, body, headers=headers, format=format)
-
+    
     def put(self, path, body=None, format='text', headers=None):
         return self.req('PUT', path, body, headers=headers, format=format)
-
+    
     def _list(self, path, detail=False, params=None, headers=None):
         format = 'json' if detail else 'text'
         status, headers, data = self.get(path, format=format, headers=headers,
@@ -170,10 +167,10 @@ class Client(object):
         else:
             data = data.strip().split('\n')
         return data
-
+    
     def _get_metadata(self, path, prefix=None, params=None):
         status, headers, data = self.head(path, params=params)
-        prefixlen = prefix and len(prefix) or 0
+        prefixlen = len(prefix) if prefix else 0
         meta = {}
         for key, val in headers.items():
             if prefix and not key.startswith(prefix):
@@ -182,32 +179,55 @@ class Client(object):
                 key = key[prefixlen:]
             meta[key] = val
         return meta
-
-    def _set_metadata(self, path, entity, **meta):
-        headers = {}
+    
+    def _update_metadata(self, path, entity, **meta):
+        """
+         adds new and updates the values of previously set metadata
+        """
         for key, val in meta.items():
-            http_key = 'X-%s-Meta-%s' %(entity.capitalize(), key.capitalize())
+            meta.pop(key)
+            meta['X-%s-Meta-%s' %(entity.capitalize(), key.capitalize())] = val
+        prev_meta = self._get_metadata(path)
+        prev_meta.update(meta)
+        headers = {}
+        for key, val in prev_meta.items():
+            headers[key.capitalize()] = val
+        self.post(path, headers=headers)
+    
+    def _delete_metadata(self, path, entity, meta=[]):
+        """
+        delete previously set metadata
+        """
+        prev_meta = self._get_metadata(path)
+        headers = {}
+        for key, val in prev_meta.items():
+            if key.split('-')[-1] in meta:
+                continue
+            http_key = key.capitalize()
             headers[http_key] = val
         self.post(path, headers=headers)
-
+    
     # Storage Account Services
-
+    
     def list_containers(self, detail=False, params=None, headers=None):
         return self._list('', detail, params, headers)
-
+    
     def account_metadata(self, restricted=False, until=None):
-        prefix = restricted and 'x-account-meta-' or None
-        params = until and {'until':until} or None
+        prefix = 'x-account-meta-' if restricted else None
+        params = {'until':until} if until else None
         return self._get_metadata('', prefix, params=params)
-
+    
     def update_account_metadata(self, **meta):
-        self._set_metadata('', 'account', **meta)
-
+        self._update_metadata('', 'account', **meta)
+        
+    def delete_account_metadata(self, meta=[]):
+        self._delete_metadata('', 'account', meta)
+    
     # Storage Container Services
-
+    
     def list_objects(self, container, detail=False, params=None, headers=None):
         return self._list('/' + container, detail, params, headers)
-
+    
     def create_container(self, container, headers=None):
         status, header, data = self.put('/' + container, headers=headers)
         if status == 202:
@@ -215,29 +235,39 @@ class Client(object):
         elif status != 201:
             raise Fault(data, int(status))
         return True
-
+    
     def delete_container(self, container):
         self.delete('/' + container)
-
+    
     def retrieve_container_metadata(self, container, restricted=False,
                                     until=None):
-        prefix = restricted and 'x-container-meta-' or None
-        params = until and {'until':until} or None
+        prefix = 'x-container-meta-' if restricted else None
+        params = {'until':until} if until else None
         return self._get_metadata('/%s' % container, prefix, params=params)
-
+    
     def update_container_metadata(self, container, **meta):
-        self._set_metadata('/' + container, 'container', **meta)
-
+        self._update_metadata('/' + container, 'container', **meta)
+        
+    def delete_container_metadata(self, container, meta=[]):
+        path = '/%s' % (container)
+        self._delete_metadata(path, 'container', meta)
+    
     # Storage Object Services
-
+    
     def retrieve_object(self, container, object, detail=False, headers=None,
                         version=None):
         path = '/%s/%s' % (container, object)
         format = 'json' if detail else 'text'
-        params = version and {'version':version} or None 
+        params = {'version':version} if version else None 
         status, headers, data = self.get(path, format, headers, params)
         return data
-
+    
+    def create_directory_marker(self, container, object):
+        if not object:
+            raise Fault('Directory markers have to be nested in a container')
+        h = {'Content-Type':'application/directory'}
+        self.create_object(container, object, f=None, headers=h)
+    
     def create_object(self, container, object, f=stdin, chunked=False,
                       blocksize=1024, headers=None):
         """
@@ -247,12 +277,12 @@ class Client(object):
         """
         path = '/%s/%s' % (container, object)
         if not chunked and f != stdin:
-            data = f and f.read() or None
+            data = f.read() if f else None
             return self.put(path, data, headers=headers)
         else:
             return self._chunked_transfer(path, 'PUT', f, headers=headers,
                                    blocksize=1024)
-
+    
     def update_object(self, container, object, f=stdin, chunked=False,
                       blocksize=1024, headers=None):
         if not f:
@@ -264,7 +294,7 @@ class Client(object):
         else:
             self._chunked_transfer(path, 'POST', f, headers=headers,
                                    blocksize=1024)
-
+    
     def _change_obj_location(self, src_container, src_object, dst_container,
                              dst_object, remove=False, headers=None):
         path = '/%s/%s' % (dst_container, dst_object)
@@ -276,28 +306,49 @@ class Client(object):
             headers['X-Copy-From'] = '/%s/%s' % (src_container, src_object)
         headers['Content-Length'] = 0
         self.put(path, headers=headers)
-
+    
     def copy_object(self, src_container, src_object, dst_container,
                              dst_object, headers=None):
         self._change_obj_location(src_container, src_object,
                                    dst_container, dst_object,
                                    headers=headers)
-
+    
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, headers=None):
         self._change_obj_location(src_container, src_object,
                                    dst_container, dst_object, True, headers)
-
+    
     def delete_object(self, container, object):
         self.delete('/%s/%s' % (container, object))
-
+    
     def retrieve_object_metadata(self, container, object, restricted=False,
                                  version=None):
         path = '/%s/%s' % (container, object)
-        prefix = restricted and 'x-object-meta-' or None
-        params = version and {'version':version} or None
+        prefix = 'x-object-meta-' if restricted else None
+        params = {'version':version} if version else None
         return self._get_metadata(path, prefix, params=params)
-
+    
     def update_object_metadata(self, container, object, **meta):
         path = '/%s/%s' % (container, object)
-        self._set_metadata(path, 'object', **meta)
+        self._update_metadata(path, 'object', **meta)
+    
+    def delete_object_metadata(self, container, object, meta=[]):
+        path = '/%s/%s' % (container, object)
+        self._delete_metadata(path, 'object', meta)
+    
+    def trash_object(self, container, object):
+        """
+        trashes an object
+        actually resets all object metadata with trash = true 
+        """
+        path = '/%s/%s' % (container, object)
+        meta = {'trash':'true'}
+        self._update_metadata(path, 'object', **meta)
+    
+    def restore_object(self, container, object):
+        """
+        restores a trashed object
+        actualy just resets all object metadata except trash
+        """
+        self.delete_object_metadata(container, object, ['trash'])
+

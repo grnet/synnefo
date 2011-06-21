@@ -343,6 +343,8 @@ $("#networkscreate").click(function() {
     $("#networks-wizard").show();
     $('#networks-wizard input').focus();
     $("a#networkscreate").data('overlay').load();
+    // enable submit button
+    $("#networks-wizard #add-network-create").removeAttr('disabled');
     return false;
 });
 
@@ -357,8 +359,12 @@ $("#add-network-create").live('click', function() {
         $('#networks-wizard input').focus();
         $('#networks-wizard span.help').addClass('red');
     } else {
+        // disable submit button to prevent multiple calls
+        $(this).attr("disabled", true);
+        // load progress bar
         $(this).text('');
         $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+        // make the call
         networkName = $('#networks-wizard input').val();
         create_network(networkName);
     }

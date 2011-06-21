@@ -639,8 +639,8 @@ $("#networks-pane div.confirm_single .no").live('click', function(){
     $(this).parent().parent().children('div.actions').children('a').removeClass('selected');
     $(this).parent().parent().children('div.actions').removeClass('display');
 
-    for (i=0; i < pending_actions.length; i++){ // if there is a pending action for this network remove it
-        if (pending_actions[i][0] == delete_network && pending_actions[i][1] == networkID){
+    for (i=0; i < pending_actions.length; i++) { // if there is a pending action for this network remove it
+        if (pending_actions[i][0] == delete_network && pending_actions[i][1] == networkID) {
                 pending_actions.splice(i,1);
         } else if ( pending_actions[i][0] == remove_server_from_network &&
                     pending_actions[i][1] == networkID &&
@@ -694,6 +694,7 @@ $("#networks-pane div.confirm_multiple .no").live('click', function(){
     return false;
 });
 
+var test = [];
 // update the networks list
 function update_networks_view(servers_data, networks_data){
     /*
@@ -708,12 +709,25 @@ function update_networks_view(servers_data, networks_data){
         and not for any server they might contain
         */
 
-        if ($('#add-network-create').children().length > 0)
-            $("a#networkscreate").overlay().close();
+        // if we wait for a new network to be created
+        if ($('#add-network-create').children().length > 0) {
+            var response_objects = networks_data.networks.values;
+            // check all objects in the response
+            for (i=0; i < response_objects.length; i++) {
+                // if it contains the network we want to create
+                var networkName = $('#networks-wizard input').val();
+                if ( response_objects[i]['name'] == networkName) {
+                    // close the wizard
+                    $("a#networkscreate").overlay().close();
+                    // and the network will be inserted in the DOM
+                    // during the coming update loop
+                }
+            }
+        }
 
         if ($('#add-server-add').children().length > 0)
             $("a#add-machines-overlay").overlay().close();
-        
+
         // update private networks
         $.each(networks_data.networks.values, function(i,network) {
             // search DOM for this network

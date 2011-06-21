@@ -1133,9 +1133,15 @@ function create_network(networkName){
                 try {
                     console.info('created network ' + networkName);
                 } catch(err) {}
-                // update_networks(UPDATE_INTERVAL);
-                // $("a#networkscreate").overlay().close();
+                /*
+                On success of this call nothing happens.
+                When the UI gets the first update containing the created server,
+                the creation wizard is closed and the new network is inserted
+                to the DOM. This is done in update_networks_view()
+                */
             } else {
+                // close the wizard and bring up the error
+                $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             }
         }

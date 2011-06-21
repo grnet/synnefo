@@ -2118,6 +2118,8 @@ div#user a.current_lang {
     background-color: #74AEC9;
     height: 10px;
     width: 700px;
+    font-size: 1px;
+    line-height: 0px;
 }
 
 #disks.separator {
@@ -2143,6 +2145,8 @@ div#user a.current_lang {
     margin-top: 2px;
     background-color: #5CA1C0;
     margin-left: 13px;
+    font-size: 1px;
+    font-weight: normal;
 }
 
 .machine h5 {
@@ -2381,7 +2385,6 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     cursor: pointer;
     padding: 7px 24px;
     text-decoration: none;
-    width: 155px;
 }
 
 #networkscreate:hover {
@@ -2638,6 +2641,8 @@ div.network:hover a.rename {
     height: 1px;
     margin: 2px 0 0 -5px;
     width: 480px;
+    font-size: 4px;
+    line-height: 1px;
 }
 
 .network-contents {
@@ -2681,6 +2686,7 @@ div.network:hover a.rename {
     background-color: #87AADE;
     margin-left: 39px;
     width: 410px;
+    font-size: 3px;
 }
 
 .network-contents-end-separator {
@@ -2689,6 +2695,7 @@ div.network:hover a.rename {
     margin-top: 7px;
     margin-left: 13px;
     width: 473px;
+    font-size: 3px;
 }
 
 .network .separator {
@@ -2950,7 +2957,6 @@ div.machine a.manage-metadata:hover {
     color: #383838;
     margin-top: -76px;
     padding-bottom: 10px;
-    padding-top: 77px;
     width: 679px;
 }
 
@@ -3038,7 +3044,7 @@ div.single div.action-container.destroy {
 }
 
 .single div.action_error {
-    margin: 2px 0px 0 577px !important;
+    margin: 2px 0px 0 605px !important;
     position: relative;
 }
 
@@ -3244,12 +3250,9 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
-    clear: both;
-    float: left;
-    height: 330px;
+    height: 400px;
     margin-bottom: 10px;
-    margin-top: -75px;
-    padding-top: 75px;
+    padding-top: 60px;
     width: 700px;
 }
 

@@ -79,6 +79,9 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists hashmaps (
                     version_id integer, pos integer, block_id text, primary key (version_id, pos))'''
         self.con.execute(sql)
+        sql = '''create table if not exists permissions (
+                    name text, read text, write text, primary key (name))'''
+        self.con.execute(sql)
         self.con.commit()
     
     def delete_account(self, user, account):
@@ -227,6 +230,21 @@ class SimpleBackend(BaseBackend):
         path, version_id, mtime, size = self._get_objectinfo(account, container, name)
         self._put_metadata(path, meta, replace)
     
+    def get_object_permissions(self, user, account, container, name):
+        """Return a dictionary with the object permissions."""
+        
+        logger.debug("get_object_permissions: %s %s %s", account, container, name)
+        path = self._get_objectinfo(account, container, name)[0]
+        return self._get_permissions(path)
+    
+    def update_object_permissions(self, user, account, container, name, permissions):
+        """Update the permissions associated with the object."""
+        
+        logger.debug("update_object_permissions: %s %s %s %s", account, container, name, permissions)
+        path = self._get_objectinfo(account, container, name)[0]
+        r, w = self._check_permissions(path, permissions)
+        self._put_permissions(path, r, w)
+    
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
         
@@ -237,12 +255,14 @@ class SimpleBackend(BaseBackend):
         hashmap = [x[0] for x in c.fetchall()]
         return size, hashmap
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions={}):
         """Create/update an object with the specified size and partial hashes."""
         
         logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
         path = self._get_containerinfo(account, container)[0]
         path = os.path.join(path, name)
+        if permissions:
+            r, w = self._check_permissions(path, permissions)
         src_version_id, dest_version_id = self._copy_version(path, path, not replace_meta, False)
         sql = 'update versions set size = ? where version_id = ?'
         self.con.execute(sql, (size, dest_version_id))
@@ -253,12 +273,15 @@ class SimpleBackend(BaseBackend):
         for k, v in meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
+        if permissions:
+            sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
+            self.con.execute(sql, (path, r, w))
         self.con.commit()
     
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}, src_version=None):
         """Copy an object's data and metadata."""
         
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, src_version)
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
         self._get_containerinfo(account, src_container)
         if src_version is None:
             src_path = self._get_objectinfo(account, src_container, src_name)[0]
@@ -266,17 +289,22 @@ class SimpleBackend(BaseBackend):
             src_path = os.path.join(account, src_container, src_name)
         dest_path = self._get_containerinfo(account, dest_container)[0]
         dest_path = os.path.join(dest_path, dest_name)
+        if permissions:
+            r, w = self._check_permissions(dest_path, permissions)
         src_version_id, dest_version_id = self._copy_version(src_path, dest_path, not replace_meta, True, src_version)
         for k, v in dest_meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
+        if permissions:
+            sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
+            self.con.execute(sql, (dest_path, r, w))
         self.con.commit()
     
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta)
-        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, None)
+        logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
+        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
         self.delete_object(user, account, src_container, src_name)
     
     def delete_object(self, user, account, container, name):
@@ -285,6 +313,9 @@ class SimpleBackend(BaseBackend):
         logger.debug("delete_object: %s %s %s", account, container, name)
         path, version_id, mtime, size = self._get_objectinfo(account, container, name)
         self._put_version(path, 0, 1)
+        sql = 'delete from permissions where name = ?'
+        self.con.execute(sql, (path,))
+        self.con.commit()
     
     def list_versions(self, user, account, container, name):
         """Return a list of all (version, version_timestamp) tuples for an object."""
@@ -449,6 +480,61 @@ class SimpleBackend(BaseBackend):
             self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
+    def _can_read(self, user, path):
+        return True
+    
+    def _can_write(self, user, path):
+        return True
+    
+    def _check_permissions(self, path, permissions):
+        # Check for existing permissions.
+        sql = '''select name from permissions
+                    where name != ? and (name like ? or ? like name || ?)'''
+        c = self.con.execute(sql, (path, path + '%', path, '%'))
+        if c.fetchall() is not None:
+            raise AttributeError('Permissions already set')
+        
+        # Format given permissions set.
+        r = permissions.get('read', [])
+        w = permissions.get('write', [])
+        if True in [False or '*' in x or ',' in x for x in r]:
+            raise ValueError('Bad characters in read permissions')
+        if True in [False or '*' in x or ',' in x for x in w]:
+            raise ValueError('Bad characters in write permissions')
+        r = ','.join(r)
+        w = ','.join(w)
+        if 'public' in permissions:
+            r = '*'
+        if 'private' in permissions:
+            r = ''
+            w = ''
+        return r, w
+    
+    def _get_permissions(self, path):
+        sql = 'select read, write from permissions where name = ?'
+        c = self.con.execute(sql, (path,))
+        row = c.fetchone()
+        if not row:
+            return {}
+        
+        r, w = row
+        if r == '' and w == '':
+            return {'private': True}
+        ret = {}
+        if w != '':
+            ret['write'] = w.split(',')
+        if r != '':
+            if r == '*':
+                ret['public'] = True
+            else:
+                ret['read'] = r.split(',')        
+        return ret
+    
+    def _put_permissions(self, path, r, w):
+        sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
+        self.con.execute(sql, (path, r, w))
+        self.con.commit()
+    
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         cont_prefix = path + '/'
         if keys and len(keys) > 0:
@@ -502,4 +588,6 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql, (path,))
         sql = '''delete from versions where name = ?'''
         self.con.execute(sql, (path,))
+        sql = '''delete from permissions where name like ?'''
+        self.con.execute(sql, (path + '%',)) # Redundant.
         self.con.commit()

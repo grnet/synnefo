@@ -215,7 +215,7 @@ class BaseTestCase(TestCase):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.head(path)
         response.content = response.content
-        self.assert_status(response, 204)
+        self.assert_status(response, 200)
         return response
 
     def get_object(self, account, container, name, format='', **headers):
@@ -1423,7 +1423,7 @@ class ObjectCopy(BaseTestCase):
             #assert src object still exists
             r = self.get_object_meta(self.account, self.containers[0],
                                      self.obj['name'])
-            self.assertEqual(r.status_code, 204)
+            self.assertEqual(r.status_code, 200)
 
     def test_copy_from_different_container(self):
         with AssertInvariant(self.get_object_meta,
@@ -1449,7 +1449,7 @@ class ObjectCopy(BaseTestCase):
             #assert src object still exists
             r = self.get_object_meta(self.account, self.containers[0],
                                      self.obj['name'])
-            self.assertEqual(r.status_code, 204)
+            self.assertEqual(r.status_code, 200)
 
     def test_copy_invalid(self):
         #copy from invalid object

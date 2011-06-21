@@ -44,10 +44,10 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
     put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
-    update_manifest_meta, validate_modification_preconditions, validate_matching_preconditions,
-    split_container_object_string, copy_or_move_object, get_int_parameter, get_content_length,
-    get_content_range, raw_input_socket, socket_read_iterator, object_data_response,
-    put_object_block, hashmap_hash, api_method)
+    update_manifest_meta, format_permissions, validate_modification_preconditions,
+    validate_matching_preconditions, split_container_object_string, copy_or_move_object,
+    get_int_parameter, get_content_length, get_content_range, get_sharing, raw_input_socket,
+    socket_read_iterator, object_data_response, put_object_block, hashmap_hash, api_method)
 from pithos.backends import backend
 
 
@@ -348,9 +348,12 @@ def object_list(request, v_account, v_container):
         else:
             try:
                 meta = backend.get_object_meta(request.user, v_account, v_container, x[0], x[1])
-                object_meta.append(printable_meta_dict(meta))
+                permissions = backend.get_object_permissions(request.user, v_account, v_container, x[0])
             except NameError:
                 pass
+            if permissions:
+                meta['X-Object-Sharing'] = format_permissions(permissions)
+            object_meta.append(printable_meta_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':
@@ -370,11 +373,14 @@ def object_meta(request, v_account, v_container, v_object):
     version = get_int_parameter(request, 'version')
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
+        permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
         raise ItemNotFound('Version does not exist')
     
+    if permissions:
+        meta['X-Object-Sharing'] = format_permissions(permissions)
     update_manifest_meta(request, v_account, meta)
     
     response = HttpResponse(status=200)
@@ -398,11 +404,14 @@ def object_read(request, v_account, v_container, v_object):
         version_list = True
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
+        permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
         raise ItemNotFound('Version does not exist')
     
+    if permissions:
+        meta['X-Object-Sharing'] = format_permissions(permissions)
     update_manifest_meta(request, v_account, meta)
     
     # Evaluate conditions.
@@ -485,6 +494,7 @@ def object_write(request, v_account, v_container, v_object):
     # Error Response Codes: serviceUnavailable (503),
     #                       unprocessableEntity (422),
     #                       lengthRequired (411),
+    #                       conflict (409),
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
@@ -510,6 +520,7 @@ def object_write(request, v_account, v_container, v_object):
         return HttpResponse(status=201)
     
     meta = get_object_meta(request)
+    permissions = get_sharing(request)
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
         content_length = get_content_length(request)
@@ -534,9 +545,13 @@ def object_write(request, v_account, v_container, v_object):
         raise UnprocessableEntity('Object ETag does not match')
     
     try:
-        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True)
+        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True, permissions)
     except NameError:
         raise ItemNotFound('Container does not exist')
+    except ValueError:
+        raise BadRequest('Invalid sharing header')
+    except AttributeError:
+        raise Conflict('Sharing already set above or below this path in the hierarchy')
     
     response = HttpResponse(status=201)
     response['ETag'] = meta['hash']
@@ -582,11 +597,13 @@ def object_move(request, v_account, v_container, v_object):
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
     # Error Response Codes: serviceUnavailable (503),
+    #                       conflict (409),
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
     
     meta = get_object_meta(request)
+    permissions = get_sharing(request)
     content_type = meta.get('Content-Type')
     if content_type:
         del(meta['Content-Type']) # Do not allow changing the Content-Type.
@@ -606,6 +623,19 @@ def object_update(request, v_account, v_container, v_object):
             backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace=True)
         except NameError:
             raise ItemNotFound('Object does not exist')
+    
+    # Handle permission changes.
+    if permissions:
+        try:
+            backend.update_object_permissions(request.user, v_account, v_container, v_object, permissions)
+        except NameError:
+            raise ItemNotFound('Object does not exist')
+        except ValueError:
+            raise BadRequest('Invalid sharing header')
+        except AttributeError:
+            raise Conflict('Sharing already set above or below this path in the hierarchy')
+    
+    # TODO: Merge above functions with updating the hashmap if there is data in the request.
     
     # A Content-Type or Content-Range header may indicate data updates.
     if content_type is None:
@@ -665,7 +695,11 @@ def object_update(request, v_account, v_container, v_object):
         backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, False)
     except NameError:
         raise ItemNotFound('Container does not exist')
-        
+    except ValueError:
+        raise BadRequest('Invalid sharing header')
+    except AttributeError:
+        raise Conflict('Sharing already set above or below this path in the hierarchy')
+    
     response = HttpResponse(status=204)
     response['ETag'] = meta['hash']
     return response

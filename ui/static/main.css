@@ -1327,7 +1327,7 @@ div.list div.actions {
     margin-right: 15px;
     margin-top: 37px;
     text-align: right;
-    width: 150px;
+    width: 120px;
 }
 
 div.list div.actions a {
@@ -2224,11 +2224,15 @@ div.editbuttons div.cancel:hover {
 div.list div.dataTables_filter {
     font-size: 75%;
     display: none;
+    margin-bottom: 12px;
 }
 
 div.list div.dataTables_filter input{
     font-size: 100%;
-    margin-bottom: 12px;
+}
+
+.dataTables_wrapper {
+    width: 515px;
 }
 
 div.list table {

@@ -217,27 +217,29 @@ class Client(object):
         """
          adds new and updates the values of previously set metadata
         """
-        for key, val in meta.items():
-            meta.pop(key)
-            meta['X-%s-Meta-%s' %(entity.capitalize(), key.capitalize())] = val
-        prev_meta = self._get_metadata(path)
+        prefix = 'x-%s-meta-' % entity
+        prev_meta = self._get_metadata(path, prefix)
         prev_meta.update(meta)
         headers = {}
         for key, val in prev_meta.items():
-            headers[key.capitalize()] = val
+            key = '%s%s' % (prefix, key)
+            key = '-'.join(elem.capitalize() for elem in key.split('-'))
+            headers[key] = val
         self.post(path, headers=headers)
     
     def _delete_metadata(self, path, entity, meta=[]):
         """
         delete previously set metadata
         """
-        prev_meta = self._get_metadata(path)
+        prefix = 'x-%s-meta-' % entity
+        prev_meta = self._get_metadata(path, prefix)
         headers = {}
         for key, val in prev_meta.items():
-            if key.split('-')[-1] in meta:
+            if key in meta:
                 continue
-            http_key = key.capitalize()
-            headers[http_key] = val
+            key = '%s%s' % (prefix, key)
+            key = '-'.join(elem.capitalize() for elem in key.split('-'))
+            headers[key] = val
         self.post(path, headers=headers)
     
     # Storage Account Services
@@ -402,7 +404,7 @@ class Client(object):
     def restore_object(self, container, object):
         """
         restores a trashed object
-        actualy just resets all object metadata except trash
+        actualy removes trash object metadata info
         """
         self.delete_object_metadata(container, object, ['trash'])
 

@@ -314,9 +314,12 @@ class PutObject(Command):
         parser.add_option('--content-disposition', action='store', type='str',
                           dest='content-disposition', default=None,
                           help='provide the presentation style of the object')
-        parser.add_option('--manifest', action='store', type='str',
-                          dest='manifest', default=None,
+        parser.add_option('-S', action='store',
+                          dest='segment-size', default=False,
                           help='use for large file support')
+        parser.add_option('--manifest', action='store_true',
+                          dest='manifest', default=None,
+                          help='upload a manifestation file')
         parser.add_option('--type', action='store',
                           dest='content-type', default=False,
                           help='create object with specific content type')
@@ -494,7 +497,7 @@ class TrashObject(Command):
     
     def execute(self, path, *args):
         #in case of account fix the args
-        if path.find('=') != -1:
+        if len(args) == 0:
             args = list(args)
             args.append(path)
             args = tuple(args)

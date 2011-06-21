@@ -622,10 +622,8 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
         }
     }
     $(this).parent().hide();
-    $(this).parent().prev().prev().removeClass('selected');
-    $(this).closest('div.actions').find('a').removeClass('selected');
+    $(this).closest("div.network").find('a.selected').removeClass('selected');
     $(this).closest("div.network").children('div.actions').removeClass('display');
-    $(this).closest("div.network").children('div.actions').removeClass('selected');
     update_network_confirmations();
     return false;
 });

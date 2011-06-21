@@ -182,6 +182,36 @@ class BaseBackend(object):
         """
         return
     
+    def get_object_permissions(self, user, account, container, name):
+        """Return a dictionary with the object permissions.
+        
+        The keys are:
+            'public': The object is readable by all and available at a public URL
+            'private': No permissions set
+            'read': The object is readable by the users/groups in the list
+            'write': The object is writable by the users/groups in the list
+        
+        Raises:
+            NameError: Container/object does not exist
+        """
+        return {}
+    
+    def update_object_permissions(self, user, account, container, name, permissions):
+        """Update the permissions associated with the object.
+        
+        Parameters:
+            'permissions': Dictionary with permissions to update
+        
+        Raises:
+            NameError: Container/object does not exist
+            ValueError: Invalid users/groups in permissions
+            AttributeError: Can not set permissions, as this object\
+                is already shared/private by another object higher\
+                in the hierarchy, or setting permissions here will\
+                invalidate other permissions deeper in the hierarchy
+        """
+        return
+    
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes.
         
@@ -191,37 +221,50 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions={}):
         """Create/update an object with the specified size and partial hashes.
+        
+        Parameters:
+            'dest_meta': Dictionary with metadata to change
+            'replace_meta': Replace metadata instead of update
+            'permissions': Updated object permissions
         
         Raises:
             NameError: Container does not exist
+            ValueError: Invalid users/groups in permissions
+            AttributeError: Can not set permissions
         """
         return
     
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, src_version=None):
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}, src_version=None):
         """Copy an object's data and metadata.
         
         Parameters:
-            'dest_meta': Dictionary with metadata to changes from source to destination
+            'dest_meta': Dictionary with metadata to change from source to destination
             'replace_meta': Replace metadata instead of update
-            'src_version': Copy from the version provided.
+            'permissions': New object permissions
+            'src_version': Copy from the version provided
         
         Raises:
             NameError: Container/object does not exist
             IndexError: Version does not exist
+            ValueError: Invalid users/groups in permissions
+            AttributeError: Can not set permissions
         """
         return
     
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}):
         """Move an object's data and metadata.
         
         Parameters:
-            'dest_meta': Dictionary with metadata to changes from source to destination
+            'dest_meta': Dictionary with metadata to change from source to destination
             'replace_meta': Replace metadata instead of update
+            'permissions': New object permissions
         
         Raises:
             NameError: Container/object does not exist
+            ValueError: Invalid users/groups in permissions
+            AttributeError: Can not set permissions
         """
         return
     

@@ -522,6 +522,8 @@ $("#networks-pane .action-add").live('click', function() {
     // load wizard
     $("#add-machines-wizard").show();
     $("a#add-machines-overlay").data('overlay').load();
+    // enable submit button
+    $("#add-machines-wizard #add-server-add").removeAttr('disabled');
     return false;
 });
 
@@ -584,9 +586,13 @@ $("#add-server-add").live('click', function() {
         $.each(selections, function(i, selection) {
             serverIDs.push(selection.name);
         });
+        // disable submit button to prevent multiple calls
+        $(this).attr("disabled", true);
+        // load progress bar
         $(this).text('');
-        add_server_to_network(networkID, serverIDs);
         $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+        // make the call
+        add_server_to_network(networkID, serverIDs);
     }
     return false;
 });

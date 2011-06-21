@@ -156,11 +156,6 @@ $("#machinesview .list tbody input[type='checkbox']").live('change', function() 
     return false;
 });
 
-$("div.confirm_multiple button").click(function() {
-    $(".selected").removeClass('selected');
-    return false;
-});
-
 // destroy action
 $("#machinesview .list a.enabled#action-destroy").live('click', function() {
     var checked = $("#machinesview .list table.list-machines tbody input[type='checkbox']:checked");
@@ -389,7 +384,6 @@ function update_machines_view(data){
     $('#machinesview .list .dataTables_scrollHeadInner th').attr('style','');
 
 }
-
 
 function display_success(serverID) {
     // do nothing

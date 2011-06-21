@@ -991,11 +991,12 @@ $("#machines-pane div.confirm_multiple .yes").live('click', function(){
 });
 
 // cancel all actions
-$("#machines-pane div.confirm_multiple .no").live('click', function(){
+$("#machines-pane div.confirm_multiple button.no").live('click', function(){
     pending_actions = [];
     $('#machines-pane .machine .selected').removeClass('selected');
     $('#machinesview-list .actions .selected').removeClass('selected');
     $('#machines-pane .machine .display').removeClass('display');
+
     update_confirmations();
     return false;
 });

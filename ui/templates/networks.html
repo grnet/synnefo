@@ -567,14 +567,21 @@ $("#add-server-cancel").live('click', function() {
 // add selected machines to network
 $("#add-server-add").live('click', function() {
     var selections = $("#add-machines-wizard :checkbox:checked");
-    var networkID = $("#add-machines-wizard p").text();
-    var serverIDs = [];
-    $.each(selections, function(i, selection) {
-        serverIDs.push(selection.name);
-    });
-    $(this).text('');
-    add_server_to_network(networkID, serverIDs);
-    $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    // if there are no selections simply close the wizard
+    if (selections.length == 0 ) {
+        $("a#add-machines-overlay").overlay().close();
+    }
+    // if there are servers selected make the proper call
+    else {
+        var networkID = $("#add-machines-wizard p").text();
+        var serverIDs = [];
+        $.each(selections, function(i, selection) {
+            serverIDs.push(selection.name);
+        });
+        $(this).text('');
+        add_server_to_network(networkID, serverIDs);
+        $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    }
     return false;
 });
 
@@ -694,7 +701,6 @@ $("#networks-pane div.confirm_multiple .no").live('click', function(){
     return false;
 });
 
-var test = [];
 // update the networks list
 function update_networks_view(servers_data, networks_data){
     /*

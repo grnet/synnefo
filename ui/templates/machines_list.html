@@ -253,14 +253,14 @@ function update_machines_view(data){
         // check server status to select the appropriate OS icon, defaults to on state
         osTag = os_icon(server.metadata);
         var osIcon = osTag + "-on.png", imgStr, imgSrc;
-
         // check if the server already exists in the datatable
-        tableData.forEach(function(row,index){
-
-            if (row[0].split(' ')[2].replace('id=','') == server.id){
-                current = index;
-            }
-        });
+        if (tableData.length > 0) {
+            tableData.forEach(function(row,index){
+                if (row[0].split(' ')[2].replace('id=','') == server.id){
+                    current = index;
+                }
+            });
+        }
         if (current != -1) { // if it's there, update the values
             // get current status description, including non api states
             var server_row = $('#machinesview .list #' + server.id).parent().parent();
@@ -382,7 +382,6 @@ function update_machines_view(data){
 
     $('#machinesview .list .dataTables_scrollHeadInner table').attr('style','');
     $('#machinesview .list .dataTables_scrollHeadInner th').attr('style','');
-
 }
 
 function display_success(serverID) {
@@ -438,6 +437,6 @@ $(window).resize(function(){
 });
 
 // set the label of the multiple buttons
-$('.confirm_multiple button.yes').text({% trans 'Confirm' %});
-$('.confirm_multiple button.no').text({% trans 'Cancel' %});
+$('.confirm_multiple button.yes').text(VARIOUS["CONFIRM"]);
+$('.confirm_multiple button.no').text(VARIOUS["CANCEL"]);
 </script>

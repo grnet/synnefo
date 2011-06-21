@@ -902,7 +902,6 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     padding-bottom: 15px;
     width: 699px;
     min-height: 50px;
-    padding-top: 60px;
 }
 
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
@@ -1809,6 +1808,7 @@ input.machine {
     border-bottom: 5px solid #4085A5;
     min-height: 150px;
     top: 120px !important;
+    position: absolute !important;
 }
 
 #error-success p {
@@ -2024,7 +2024,7 @@ div.confirm_multiple {
     position: absolute;
     width: 698px;
     height: 28px;
-    margin: 15px 0 10px -35px;
+    margin-top: 15px;
 }
 
 div.confirm_multiple p {

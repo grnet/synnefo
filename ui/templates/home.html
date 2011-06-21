@@ -136,6 +136,11 @@ or implied, of GRNET S.A.
             'CREATE_VM_SUCCESS_FOUR' : '{% trans "After closing this window you will NOT be able to retrieve it again." %}'
         };
 
+        var VARIOUS = {
+            'CONFIRM' : '{% trans "Confirm" %}',
+            'CANCEL' : '{% trans "Cancel" %}'
+        };
+
         // ajax error checking
         function ajax_error(status, serverID, action, responseText) {
             $('#error-success').addClass('error');
@@ -330,28 +335,6 @@ or implied, of GRNET S.A.
                     <div id="networks-pane" class="pane"></div>
                     <div id="disks-pane" class="pane"></div>
                 </div>
-                <!-- base notification for error/success reporting -->
-                <a id="notification" rel="#error-success" href="#"></a>
-
-                <div class="modal" id="error-success">
-                    <h3 class="popup-header">
-                        <span class="header-box"></span>
-                    </h3>
-                    <div class="popup-body">
-                        <div class="popup-body-inner">
-                            <div class="machine-now-building"></div>
-                            <div class="popup-separator"></div>
-                            <div class="password-container">
-                                <div class="password-header"></div>
-                                <div class="password"></div>
-                            </div>
-                            <div class="popup-details">
-                                <div class="write-password"></div>
-                                <div class="write-password-details">{% trans "More details about the result"%}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         {% include "footer.html" %}
@@ -397,5 +380,27 @@ or implied, of GRNET S.A.
         );
         
     </script>
+    <!-- base notification for error/success reporting -->
+    <a id="notification" rel="#error-success" href="#"></a>
+
+    <div class="modal" id="error-success">
+        <h3 class="popup-header">
+            <span class="header-box"></span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="machine-now-building"></div>
+                <div class="popup-separator"></div>
+                <div class="password-container">
+                    <div class="password-header"></div>
+                    <div class="password"></div>
+                </div>
+                <div class="popup-details">
+                    <div class="write-password"></div>
+                    <div class="write-password-details">{% trans "More details about the result"%}</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

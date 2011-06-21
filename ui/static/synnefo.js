@@ -467,7 +467,7 @@ function update_images() {
         success: function(data, textStatus, jqXHR) {
             try {
                 images = data.images.values;
-				jQuery.parseJSON(data);
+                jQuery.parseJSON(data);
                 update_wizard_images();
             } catch(err){
                 ajax_error("NO_IMAGES");
@@ -732,12 +732,16 @@ function create_vm(machineName, imageRef, flavorRef){
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
     error: function(jqXHR, textStatus, errorThrown) {
+                // close wizard and show error box
+                $('#machines-pane a#create').data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
                     ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);
                 } else {
+                    // close wizard and show error box
+                    $('#machines-pane a#create').data('overlay').close();
                     ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                 }
             }
@@ -971,8 +975,10 @@ function open_console(serverIDs){
                             console.info('got_console ' + serverID);
                         } catch(err) {}
                         // indicate that the action succeeded
-                        //show_vnc_console(serverID, serverName, serverIP, data.console.host,data.console.port,data.console.password);
-show_vnc_console(serverID, serverName, serverIP, data.console.host,data.console.port,data.console.password);
+                        // show_vnc_console(serverID, serverName, serverIP,
+                        // data.console.host,data.console.port,data.console.password);
+                        show_vnc_console(serverID, serverName, serverIP,
+                                         data.console.host,data.console.port,data.console.password);
                         display_success(serverID);
                         // hide spinner
                         $('#' + serverID + ' .spinner').hide();
@@ -1032,6 +1038,8 @@ function get_metadata(serverID, keys_only) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -1062,13 +1070,15 @@ function delete_metadata(serverID, meta_key) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
             }
         },
         success: function(data, textStatus, jqXHR) {
-            // success: Do nothing, the UI is already updated
+                    // success: Do nothing, the UI is already updated
         }
     });
     return false;
@@ -1091,6 +1101,8 @@ function update_metadata(serverID, meta_key, meta_value) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'add metadata', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -1123,6 +1135,8 @@ function create_network(networkName){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -1140,7 +1154,7 @@ function create_network(networkName){
                 to the DOM. This is done in update_networks_view()
                 */
             } else {
-                // close the wizard and bring up the error
+                // close wizard and show error box
                 $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             }
@@ -1249,6 +1263,8 @@ function add_server_to_network(networkID, serverIDs) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -1262,6 +1278,8 @@ function add_server_to_network(networkID, serverIDs) {
                 // continue with the rest of the servers
                 add_server_to_network(networkID, serverIDs);
             } else {
+                // close wizard and show error box
+                $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             }
         }

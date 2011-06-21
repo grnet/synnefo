@@ -650,11 +650,11 @@ function get_machine(serverID) {
 function update_iconview_actions(serverID, server_status) {
     if ($.cookie("view")=='2') {
         // remove .disable from all actions to begin with
-        $('#machinesview-single.single #' + serverID + ' div.single-actions').children().show();
+        $('#machinesview-single #' + serverID + ' div.single-action').show();
         // decide which actions should be disabled
         for (current_action in actions) {
             if (actions[current_action].indexOf(server_status) == -1 ) {
-                $('#machinesview-single.single #' + serverID + ' div.action-' + current_action).hide();
+                $('#machinesview-single #' + serverID + ' div.action-' + current_action).hide();
             }
         }
     } else {

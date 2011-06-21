@@ -986,6 +986,7 @@ $("#machines-pane div.confirm_multiple .yes").live('click', function(){
         }
         action[0]([serverID]); // execute action
     }
+    $('#machinesview-list .actions .selected').removeClass('selected');
     update_confirmations();
     return false;
 });

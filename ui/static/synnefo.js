@@ -1133,8 +1133,8 @@ function create_network(networkName){
                 try {
                     console.info('created network ' + networkName);
                 } catch(err) {}
-                update_networks(UPDATE_INTERVAL);
-                $("a#networkscreate").overlay().close();
+                // update_networks(UPDATE_INTERVAL);
+                // $("a#networkscreate").overlay().close();
             } else {
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             }
@@ -1223,8 +1223,8 @@ function delete_network(networkIDs){
 function add_server_to_network(networkID, serverIDs) {
     if (!serverIDs.length){
         //ajax_success('DEFAULT');
-        update_networks(UPDATE_INTERVAL);
-        $("a#add-machines-overlay").overlay().close();
+        //update_networks(UPDATE_INTERVAL);
+        //$("a#add-machines-overlay").overlay().close();
         return false;
     }
     // get a server

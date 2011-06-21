@@ -1,5 +1,38 @@
 #!/usr/bin/env python
 
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 from getpass import getuser
 from optparse import OptionParser
 from os.path import basename
@@ -132,8 +165,9 @@ class List(Command):
             t = _time.strptime(self.until, self.format)
             params['until'] = int(_time.mktime(t))
         
-        l = self.client.list_objects(container, self.detail, params, headers)
-        print_list(l)
+        detail = 'json'
+        l = self.client.list_objects(container, detail, params, headers)
+        print_list(l, detail=self.detail)
 
 @cli_command('meta')
 class Meta(Command):
@@ -294,8 +328,6 @@ class PutObject(Command):
         headers = {}
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
-            
-        attrs = ['etag', 'content-encoding', 'content-disposition']
         
         attrs = ['etag', 'content-encoding', 'content-disposition',
                  'content-type']
@@ -425,11 +457,6 @@ class MoveObject(Command):
     syntax = '<src container>/<src object> [<dst container>/]<dst object>'
     description = 'moves an object to a different location'
     
-    def add_options(self, parser):
-        parser.add_option('--version', action='store',
-                          dest='version', default=False,
-                          help='move specific version')
-
     def execute(self, src, dst):
         src_container, sep, src_object = src.partition('/')
         dst_container, sep, dst_object = dst.partition('/')
@@ -437,10 +464,6 @@ class MoveObject(Command):
             dst_container = src_container
             dst_object = dst
         
-        version = getattr(self, 'version')
-        if version:
-            headers = {}
-            headers['X_SOURCE_VERSION'] = version 
         self.client.move_object(src_container, src_object, dst_container,
                                 dst_object, headers)
 
@@ -500,27 +523,28 @@ def print_usage():
         commands.append('  %s %s' % (name.ljust(12), description))
     print '\nCommands:\n' + '\n'.join(sorted(commands))
 
-def print_dict(d, header='name', f=stdout):
+def print_dict(d, header='name', f=stdout, detail=True):
     header = header in d and header or 'subdir'
     if header and header in d:
         f.write('%s\n' %d.pop(header))
-    patterns = ['^x_(account|container|object)_meta_(\w+)$']
-    patterns.append(patterns[0].replace('_', '-'))
-    for key, val in sorted(d.items()):
-        for p in patterns:
-            p = re.compile(p)
-            m = p.match(key)
-            if m:
-                key = m.group(2)
-        f.write('%s: %s\n' % (key.rjust(30), val))
+    if detail:
+        patterns = ['^x_(account|container|object)_meta_(\w+)$']
+        patterns.append(patterns[0].replace('_', '-'))
+        for key, val in sorted(d.items()):
+            for p in patterns:
+                p = re.compile(p)
+                m = p.match(key)
+                if m:
+                    key = m.group(2)
+            f.write('%s: %s\n' % (key.rjust(30), val))
 
-def print_list(l, verbose=False, f=stdout):
+def print_list(l, verbose=False, f=stdout, detail=True):
     for elem in l:
         #if it's empty string continue
         if not elem:
             continue
         if type(elem) == types.DictionaryType:
-            print_dict(elem, f=f)
+            print_dict(elem, f=f, detail=detail)
         elif type(elem) == types.StringType:
             if not verbose:
                 elem = elem.split('Traceback')[0]

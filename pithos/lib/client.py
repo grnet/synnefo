@@ -1,3 +1,36 @@
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 from httplib import HTTPConnection, HTTP
 from sys import stdin
 
@@ -225,8 +258,29 @@ class Client(object):
     
     # Storage Container Services
     
-    def list_objects(self, container, detail=False, params=None, headers=None):
-        return self._list('/' + container, detail, params, headers)
+    def _filter(self, l, d):
+        """
+        filter out from l elements having the metadata values provided
+        """
+        ll = l
+        for elem in l:
+            if type(elem) == types.DictionaryType:
+                for key in d.keys():
+                    k = 'x_object_meta_%s' % key
+                    if k in elem.keys() and elem[k] == d[key]:
+                        ll.remove(elem)
+                        break
+        return ll
+    
+    def _filter_trashed(self, l):
+        return self._filter(l, {'trash':'true'})
+    
+    def list_objects(self, container, detail=False, params=None, headers=None,
+                     include_trashed=False):
+        l = self._list('/' + container, detail, params, headers)
+        if not include_trashed:
+            l = self._filter_trashed(l)
+        return l
     
     def create_container(self, container, headers=None):
         status, header, data = self.put('/' + container, headers=headers)

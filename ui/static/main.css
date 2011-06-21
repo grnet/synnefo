@@ -2734,7 +2734,7 @@ div.network-remove-machine, div.network-add-machine {
     color: #bc4b00;
     width:90px;
     float:left;
-    margin:41px 0 0 -100px;
+    margin:40px 0 0 -100px;
 }
 
 span.remove-icon {
@@ -2752,7 +2752,7 @@ span.remove-icon:hover, span.add-icon:hover {
 }
 
 div.network-add-machine {
-    margin:44px 0 0 0;
+    margin:39px 0 0 0;
 }
 
 .firewall-on {

@@ -13,8 +13,9 @@ class SynnefoAuthMiddleware(object):
 
     def process_request(self, request):
 
-        if request.path in DONT_CHECK:
-            return
+        for path in DONT_CHECK:
+            if request.path.startswith(path):
+                return
 
         # Special case for testing purposes, delivers the cookie for the
         # test user on first access

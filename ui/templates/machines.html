@@ -352,6 +352,8 @@ $("#machines-pane a#create").click(function(){
         $("#wizard").scrollable().begin();
         $("#wizard").show();
         $('#machines-pane a#create').data('overlay').load();
+        // enable submit button
+        $("#wizard #start").removeAttr('disabled');
     } else if (images.length == 0 ) {
         ajax_error('NO_IMAGES');
         return false;
@@ -609,12 +611,12 @@ $('#storage-indicator').blur(function() {
 });
 
 // exit the wizard
-$("#cancel").click(function(){
+$("#cancel").click(function() {
     $("#machines-pane a#create").overlay().close();
 });
 
 // starting a new VM through the wizard
-$("#start").click(function(){
+$("#start").click(function() {
     var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');
     var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
@@ -622,13 +624,17 @@ $("#start").click(function(){
         return false;
     }
 
-    //replace text 'create new' with progress indicator
-    $('#wizard #start').text('');
-    $('#wizard #start').html('<img src="static/icons/indicators/medium/horizontal-progress.gif" / >');
+    // replace text 'create new' with progress indicator
+    $(this).text('');
+    $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif" / >');
+    // disable submit button to prevent multiple calls
+    $(this).attr("disabled", true);
 
     create_vm(machineName, imageRef, flavorRef);
 
-    try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
+    try {
+        console.warn('creating ' + $("input[name=machine_name]")[0].value);
+    } catch(err){}
 
 });
 
@@ -643,7 +649,7 @@ $(function() {
         oneInstance: false,
         closeOnEsc: false,
         load: false,
-        onClose: function(){
+        onClose: function() {
             // reset input areas
             serverID = $("#metadata-wizard p:first").text();
             $("#metadata-wizard div.metadata-container").empty();

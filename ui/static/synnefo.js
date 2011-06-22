@@ -1320,7 +1320,7 @@ function remove_server_from_network(networkIDs, serverIDs) {
                     console.info('deleted server ' + serverID + ' from network ' + networkID);
                 } catch(err) {}
                 // remove it from DOM
-                $('#net-' + networkID + '-server-' + serverID).fadeOut('slow').remove();
+                // $('#net-' + networkID + '-server-' + serverID).fadeOut('slow').remove();
                 // continue with the rest of the servers
                 remove_server_form_network(networkIDs, serverIDs);
             } else {

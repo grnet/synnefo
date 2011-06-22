@@ -217,7 +217,7 @@ class SimpleBackend(BaseBackend):
         if version is None:
             modified = mtime
         else:
-            modified = self._get_version(path)[1] # Overall last modification
+            modified = self._get_version(path, version)[1] # Overall last modification
         
         meta = self._get_metadata(path, version_id)
         meta.update({'name': name, 'bytes': size, 'version': version_id, 'version_timestamp': mtime, 'modified': modified})
@@ -323,7 +323,7 @@ class SimpleBackend(BaseBackend):
         logger.debug("list_versions: %s %s %s", account, container, name)
         # This will even show deleted versions.
         path = os.path.join(account, container, name)
-        sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ?'''
+        sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ? and hide = 0'''
         c = self.con.execute(sql, (path,))
         return [(int(x[0]), int(x[1])) for x in c.fetchall()]
     
@@ -491,20 +491,19 @@ class SimpleBackend(BaseBackend):
         sql = '''select name from permissions
                     where name != ? and (name like ? or ? like name || ?)'''
         c = self.con.execute(sql, (path, path + '%', path, '%'))
-        if c.fetchall() is not None:
+        rows = c.fetchall()
+        if rows:
             raise AttributeError('Permissions already set')
         
         # Format given permissions set.
         r = permissions.get('read', [])
         w = permissions.get('write', [])
-        if True in [False or '*' in x or ',' in x for x in r]:
+        if True in [False or ',' in x for x in r]:
             raise ValueError('Bad characters in read permissions')
-        if True in [False or '*' in x or ',' in x for x in w]:
+        if True in [False or ',' in x for x in w]:
             raise ValueError('Bad characters in write permissions')
         r = ','.join(r)
         w = ','.join(w)
-        if 'public' in permissions:
-            r = '*'
         if 'private' in permissions:
             r = ''
             w = ''
@@ -524,10 +523,7 @@ class SimpleBackend(BaseBackend):
         if w != '':
             ret['write'] = w.split(',')
         if r != '':
-            if r == '*':
-                ret['public'] = True
-            else:
-                ret['read'] = r.split(',')        
+            ret['read'] = r.split(',')        
         return ret
     
     def _put_permissions(self, path, r, w):

@@ -348,7 +348,10 @@ def object_list(request, v_account, v_container):
         else:
             try:
                 meta = backend.get_object_meta(request.user, v_account, v_container, x[0], x[1])
-                permissions = backend.get_object_permissions(request.user, v_account, v_container, x[0])
+                if until is None:
+                    permissions = backend.get_object_permissions(request.user, v_account, v_container, x[0])
+                else:
+                    permissions = None
             except NameError:
                 pass
             if permissions:
@@ -373,7 +376,10 @@ def object_meta(request, v_account, v_container, v_object):
     version = get_int_parameter(request, 'version')
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
-        permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+        if version is None:
+            permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+        else:
+            permissions = None
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -399,12 +405,29 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     version = get_int_parameter(request, 'version')
-    version_list = False
+    
+    # Reply with the version list. Do this first, as the object may be deleted.
     if version is None and request.GET.get('version') == 'list':
-        version_list = True
+        if request.serialization == 'text':
+            raise BadRequest('No format specified for version list.')
+        
+        d = {'versions': backend.list_versions(request.user, v_account, v_container, v_object)}
+        if request.serialization == 'xml':
+            d['object'] = v_object
+            data = render_to_string('versions.xml', d)
+        elif request.serialization  == 'json':
+            data = json.dumps(d)
+        
+        response = HttpResponse(data, status=200)
+        response['Content-Length'] = len(data)
+        return response
+    
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
-        permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+        if version is None:
+            permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+        else:
+            permissions = None
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -421,23 +444,6 @@ def object_read(request, v_account, v_container, v_object):
     except NotModified:
         response = HttpResponse(status=304)
         response['ETag'] = meta['hash']
-        return response
-    
-    # Reply with the version list.
-    if version_list:
-        if request.serialization == 'text':
-            raise BadRequest('No format specified for version list.')
-        
-        d = {'versions': backend.list_versions(request.user, v_account, v_container, v_object)}
-        if request.serialization == 'xml':
-            d['object'] = v_object
-            data = render_to_string('versions.xml', d)
-        elif request.serialization  == 'json':
-            data = json.dumps(d)
-        
-        response = HttpResponse(data, status=200)
-        put_object_meta(response, meta)
-        response['Content-Length'] = len(data)
         return response
     
     sizes = []

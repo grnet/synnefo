@@ -3183,6 +3183,8 @@ div.single div.action-container.destroy {
     line-height: 15px;
     padding-top: 10px;
     text-align: right;
+    overflow: visible;
+    position: relative;
 }
 
 .single .column3 .server-name {

@@ -628,4 +628,16 @@ if ( flavors.length == 0 && images.length == 0 ) {
     // start updating vm list
     update_vms(UPDATE_INTERVAL);
 }
+
+//IE specific fixes
+if ($.browser.msie) {
+    //IE fix for green arrow hover
+    $("div.connect-arrow").live("mouseenter", function () {
+        $(this).addClass("connect-arrow-ie");
+    });
+    $("div.connect-arrow").live("mouseleave", function () {
+        $(this).removeClass("connect-arrow-ie");
+    });
+}
+
 </script>

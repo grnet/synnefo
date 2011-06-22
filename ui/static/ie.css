@@ -24,3 +24,35 @@ div.action_error button.details {
     padding-left: 0;
     padding-right: 0;
 }
+
+div.single div.column3 div.server-name:hover, .single .column3 .column3-selected {
+    width: 145px;
+}
+
+.single .column3 .separator {
+    margin: 4px 0 0 7px;
+}
+
+.single div.action-container {
+    width: 165px;
+    overflow: visible;
+}
+
+.single div.upper {
+    overflow: visible;
+}
+
+div.single-actions {
+    overflow: visible;
+    width: 170px;
+}
+
+.single div.confirm_single {
+    margin-right: -19px;
+}
+
+.single div.action_error {
+    position: absolute;
+    top: 190px;
+    margin-left: -95px !important;
+}

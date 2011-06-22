@@ -723,7 +723,7 @@ if ( flavors.length == 0 && images.length == 0 ) {
 $('.confirm_multiple button.yes').text('Confirm All');
 $('.confirm_multiple button.no').text('Cancel All');
 
-
+//IE specific fixes
 if ($.browser.msie) {
     //IE fix for machine div hover
     $("div.machine").live("mouseenter", function () {

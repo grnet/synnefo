@@ -174,8 +174,6 @@ def update_manifest_meta(request, v_account, meta):
 
 def format_permissions(permissions):
     ret = []
-    if 'public' in permissions:
-        ret.append('public')
     if 'private' in permissions:
         ret.append('private')
     r = ','.join(permissions.get('read', []))
@@ -234,11 +232,17 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
     
     meta = get_object_meta(request)
     permissions = get_sharing(request)
-    # Keep previous values of 'Content-Type' (if a new one is absent) and 'hash'.
+    src_version = request.META.get('HTTP_X_SOURCE_VERSION')
+    
     try:
-        src_meta = backend.get_object_meta(request.user, v_account, src_container, src_name)
-    except NameError:
+        if move:
+            src_meta = backend.get_object_meta(request.user, v_account, src_container, src_name)
+        else:
+            src_meta = backend.get_object_meta(request.user, v_account, src_container, src_name, src_version)
+    except NameError, IndexError:
         raise ItemNotFound('Container or object does not exist')
+    
+    # Keep previous values of 'Content-Type' (if a new one is absent) and 'hash'.
     if 'Content-Type' in meta and 'Content-Type' in src_meta:
         del(src_meta['Content-Type'])
     for k in ('Content-Type', 'hash'):
@@ -249,9 +253,8 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         if move:
             backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, permissions)
         else:
-            src_version = request.META.get('HTTP_X_SOURCE_VERSION')
             backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, permissions, src_version)
-    except NameError:
+    except NameError, IndexError:
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
@@ -370,22 +373,28 @@ def get_sharing(request):
     
     ret = {}
     for perm in (x.replace(' ','') for x in permissions.split(';')):
-        if perm == 'public':
-            ret['public'] = True
-            continue
-        elif perm == 'private':
+        if perm == 'private':
             ret['private'] = True
             continue
         elif perm.startswith('read='):
             ret['read'] = [v.replace(' ','') for v in perm[5:].split(',')]
+            if '*' in ret['read']:
+                ret['read'] = ['*']
             if len(ret['read']) == 0:
                 raise BadRequest('Bad X-Object-Sharing header value')
         elif perm.startswith('write='):
             ret['write'] = [v.replace(' ','') for v in perm[6:].split(',')]
+            if '*' in ret['write']:
+                ret['write'] = ['*']
             if len(ret['write']) == 0:
                 raise BadRequest('Bad X-Object-Sharing header value')
         else:
             raise BadRequest('Bad X-Object-Sharing header value')
+    if 'private' in ret:
+        if 'read' in ret:
+            del(ret['read'])
+        if 'write' in ret:
+            del(ret['write'])
     return ret
 
 def raw_input_socket(request):

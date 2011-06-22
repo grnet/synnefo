@@ -1242,9 +1242,8 @@ function delete_network(networkIDs){
 
 function add_server_to_network(networkID, serverIDs) {
     if (!serverIDs.length){
-        //ajax_success('DEFAULT');
-        //update_networks(UPDATE_INTERVAL);
-        //$("a#add-machines-overlay").overlay().close();
+        // close the overlay when all the calls are made
+        $("a#add-machines-overlay").overlay().close();
         return false;
     }
     // get a server

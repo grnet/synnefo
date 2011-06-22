@@ -499,15 +499,7 @@ $(function() {
         closeOnClick: false,
         oneInstance: false,
         closeOnEsc: true,
-        load: false,
-        onClose: function() {
-            // hide the proper spinner and show the wave
-            networkID = $("#add-machines-wizard p").text();
-            $('#net-' + networkID + '.network div.status').text(NET_STATES['default']);
-            $('#net-' + networkID + '.network img.spinner').hide();
-            $('#net-' + networkID + '.network img.wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-            setTimeout("$('#net-" + networkID +".network img.wave').attr('src','').hide()", 3000);
-        }
+        load: false
     });
 });
 
@@ -626,7 +618,7 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
     for (i=0;i<pending_actions.length;i++){
         // if there is a pending action for this server execute it
         if (pending_actions[i][0] == delete_network &&
-            pending_actions[i][1] == networkID){
+            pending_actions[i][1] == networkID) {
                 action = pending_actions.splice(i,1)[0];
                 $(this).closest('div.network').find('div.status').text(NET_STATES['Destroying']);
                 $(this).closest('div.network').find('img.spinner').show();
@@ -724,7 +716,7 @@ function update_networks_view(servers_data, networks_data){
     if (networks_data){
         /*
         Here we are interested in private networks only
-        and not for any server they might contain
+        and for servers disconnected from them
         */
 
         // if we wait for a new network to be created
@@ -738,7 +730,7 @@ function update_networks_view(servers_data, networks_data){
                     // close the wizard
                     $("a#networkscreate").overlay().close();
                     // and the network will be inserted in the DOM
-                    // during the coming update loop
+                    // during this update loop
                 }
             }
         }
@@ -748,23 +740,41 @@ function update_networks_view(servers_data, networks_data){
             // search DOM for this network
             existing = $('#networks-pane #net-' + network.id);
 
-            // if in the DOM exist multiple networks with the same id,
+            // If in the DOM exist multiple networks with the same id,
             // delete all but one.
             // Defensive coding - that shouldn't happen normally
             while (existing.length > 1) {
                 existing.remove();
             }
+
             // If network already exists in DOM, update it
-            if (existing.length){
+            if (existing.length) {
                 // network was deleted
                 if (network.status == 'DELETED') {
                     existing.remove();
                 }
-
                 // network was renamed
                 if (existing.find('.name-div span.name').text() != network.name) {
                     // set the new name
                     existing.find('.name-div span.name').text(network.name);
+                }
+                // a server was disconnected
+                // search DOM for all machines
+                existing_machines = $('div.private-networks div.network-machine');
+                // check if the mahcines in the DOM exist in the response
+                for (i=0; i<existing_machines.length; i++) {
+                    // get the existing server id
+                    var serverID = existing_machines[i].id.split('-')[3];
+                    // if a server exists in DOM, but not in the response it has
+                    // been disconnected
+                    if ( network.servers.values.indexOf( parseInt(serverID) ) == -1 ) {
+                        // so remove it from DOM and reset all spinners
+                        $("#" + existing_machines[i].id).remove();
+                        $('#net-' + network.id + '.network div.status').text(NET_STATES['ACTIVE']);
+                        $('#net-' + network.id + '.network img.spinner').hide();
+                        //$('#net-' + network.id + '.network img.wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                        //setTimeout("$('#net-" + network.id +".network img.wave').attr('src','').hide()", 3000);
+                    }
                 }
             }
             // If network does not exist in DOM, create it, do not take into account public network
@@ -789,6 +799,7 @@ function update_networks_view(servers_data, networks_data){
 
             // search public network's DOM for this server
             existing_public = $('#networks-pane #net-pub-server-' + server.id);
+
             // get the server's OS icon
             var server_image = os_icon(server.metadata);
             if (!(server.metadata == undefined)) {
@@ -863,7 +874,8 @@ function update_networks_view(servers_data, networks_data){
             }
 
             /*
-            Now update all private networks
+            Now update all private networks, this does NOT check for
+            disconnetcted servers (see above in updating private networks).
             Since one server may belong to more than one private networks,
             we follow a different approach.
             We check each server and add, update or leave it as it is accordingly
@@ -883,6 +895,11 @@ function update_networks_view(servers_data, networks_data){
                                 machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
                             }
                             machine.appendTo("#networks-pane .private-networks #net-" + server_net.id + " .machines-list");
+                        // hide spinners
+                        $('#net-' + server_net.id + '.network div.status').text(NET_STATES['ACTIVE']);
+                        $('#net-' + server_net.id + '.network img.spinner').hide();
+                        //$('#net-' + server_net.id + '.network img.wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+                        //setTimeout("$('#net-" + server_net.id +".network img.wave').attr('src','').hide()", 3000);
                         }
                         // server was deleted
                         if (server.status == 'DELETED') {

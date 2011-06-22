@@ -618,48 +618,43 @@ def object_update(request, v_account, v_container, v_object):
         prev_meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
     except NameError:
         raise ItemNotFound('Object does not exist')
-    
-    # Handle metadata changes.
-    if len(meta) != 0:
-        # Keep previous values of 'Content-Type' and 'hash'.
+    # If replacing, keep previous values of 'Content-Type' and 'hash'.
+    replace = True
+    if 'update' in request.GET:
+        replace = False
+    if replace:
         for k in ('Content-Type', 'hash'):
             if k in prev_meta:
                 meta[k] = prev_meta[k]
+    
+    # A Content-Type header indicates data updates.
+    if not content_type or content_type != 'application/octet-stream':
+        # Handle metadata changes.
         try:
-            backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace=True)
+            backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
         except NameError:
-            raise ItemNotFound('Object does not exist')
-    
-    # Handle permission changes.
-    if permissions:
-        try:
-            backend.update_object_permissions(request.user, v_account, v_container, v_object, permissions)
-        except NameError:
-            raise ItemNotFound('Object does not exist')
-        except ValueError:
-            raise BadRequest('Invalid sharing header')
-        except AttributeError:
-            raise Conflict('Sharing already set above or below this path in the hierarchy')
-    
-    # TODO: Merge above functions with updating the hashmap if there is data in the request.
-    
-    # A Content-Type or Content-Range header may indicate data updates.
-    if content_type is None:
+            raise ItemNotFound('Object does not exist')    
+        # Handle permission changes.
+        if permissions:
+            try:
+                backend.update_object_permissions(request.user, v_account, v_container, v_object, permissions)
+            except NameError:
+                raise ItemNotFound('Object does not exist')
+            except ValueError:
+                raise BadRequest('Invalid sharing header')
+            except AttributeError:
+                raise Conflict('Sharing already set above or below this path in the hierarchy')
         return HttpResponse(status=202)
-    if content_type.startswith('multipart/byteranges'):
-        # TODO: Support multiple update ranges.
-        return HttpResponse(status=202)
+    
     # Single range update. Range must be in Content-Range.
     # Based on: http://code.google.com/p/gears/wiki/ContentRangePostProposal
     # (with the addition that '*' is allowed for the range - will append).
-    if content_type != 'application/octet-stream':
-        return HttpResponse(status=202)
     content_range = request.META.get('HTTP_CONTENT_RANGE')
     if not content_range:
-        return HttpResponse(status=202)
+        raise BadRequest('Missing Content-Range header')
     ranges = get_content_range(request)
     if not ranges:
-        return HttpResponse(status=202)
+        raise RangeNotSatisfiable('Invalid Content-Range header')
     # Require either a Content-Length, or 'chunked' Transfer-Encoding.
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
@@ -696,9 +691,9 @@ def object_update(request, v_account, v_container, v_object):
     
     if offset > size:
         size = offset
-    meta = {'hash': hashmap_hash(hashmap)} # Update ETag.
+    meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
     try:
-        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, False)
+        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, replace, permissions)
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:

@@ -1559,7 +1559,7 @@ class ObjectPost(BaseTestCase):
                                 **more)
         
         if partial < 0 or (instance_length and l <= last_byte_pos):
-            self.assertEqual(r.status_code, 202)    
+            self.assertEqual(r.status_code, 416)    
         elif content_length and content_length != partial:
             self.assertEqual(r.status_code, 400)
         else:

@@ -1,11 +1,26 @@
 div.machine div.actions a {
-    width: auto;
+    width: 180px;
 }
 
 div.machine div.actions {
-    right: -93px;
+    right: -183px;
+    width: 120px;
 }
 
 div.machine {
     width: 528px;
+}
+
+div.confirm_single {
+    margin-right: -71px;
+}
+
+div.action_error {
+    margin-left: 465px;
+}
+
+div.action_error button.details {
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
 }

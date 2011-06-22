@@ -788,6 +788,10 @@ div.machine div.actions a.shutdown-padding {
     margin-bottom: 22px;
 }
 
+div.action-container {
+    overflow: visible;
+}
+
 div.actions a.enabled:hover{
     color: black !important;
     text-decoration: underline;
@@ -1999,7 +2003,7 @@ div.confirm_single button {
 }
 
 div.confirm_single button.yes {
-    width: 80px;
+    width: 90px;
     background-color:#FF7F2A;
 }
 

@@ -1,0 +1,11 @@
+div.machine div.actions a {
+    width: auto;
+}
+
+div.machine div.actions {
+    right: -93px;
+}
+
+div.machine {
+    width: 528px;
+}

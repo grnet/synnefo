@@ -772,7 +772,7 @@ div.machine div.actions a:hover {
 }
 
 div.machine div.actions a.selected {
-    color: #FF7F2A;
+    color: #FF7F2A !important;
     width: 50px;
 }
 

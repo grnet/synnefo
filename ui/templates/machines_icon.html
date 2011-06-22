@@ -723,4 +723,16 @@ if ( flavors.length == 0 && images.length == 0 ) {
 $('.confirm_multiple button.yes').text('Confirm All');
 $('.confirm_multiple button.no').text('Cancel All');
 
+
+if ($.browser.msie) {
+    //IE fix for div hover
+    $("div.machine").live("mouseenter", function () {
+        $(this).css("background-color","#A1C8DB");
+        $(this).find(".actions a").css("color","black");
+    });
+    $("div.machine").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+        $(this).find(".actions a").css("color","transparent");
+    });
+}
 </script>

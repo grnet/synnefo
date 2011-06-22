@@ -379,7 +379,16 @@ or implied, of GRNET S.A.
                 $(this).parent().parent().find(".tab-name").text($(this).parent().find("a.current").attr("href"));
             }
         );
-        
+
+        //load IE css fixes
+        if ($.browser.msie) {
+            $("<link/>", {
+               rel: "stylesheet",
+               type: "text/css",
+               href: "static/ie.css"
+            }).appendTo("head");
+        }
+
     </script>
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>

@@ -77,7 +77,7 @@ def get_meta_prefix(request, prefix):
     """Get all prefix-* request headers in a dict. Reformat keys with format_meta_key()."""
     
     prefix = 'HTTP_' + prefix.upper().replace('-', '_')
-    return dict([(format_meta_key(k[5:]), v) for k, v in request.META.iteritems() if k.startswith(prefix)])
+    return dict([(format_meta_key(k[5:]), v) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
 
 def get_account_meta(request):
     """Get metadata from an account request."""
@@ -232,28 +232,12 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
     
     meta = get_object_meta(request)
     permissions = get_sharing(request)
-    src_version = request.META.get('HTTP_X_SOURCE_VERSION')
-    
+    src_version = request.META.get('HTTP_X_SOURCE_VERSION')    
     try:
         if move:
-            src_meta = backend.get_object_meta(request.user, v_account, src_container, src_name)
+            backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions)
         else:
-            src_meta = backend.get_object_meta(request.user, v_account, src_container, src_name, src_version)
-    except NameError, IndexError:
-        raise ItemNotFound('Container or object does not exist')
-    
-    # Keep previous values of 'Content-Type' (if a new one is absent) and 'hash'.
-    if 'Content-Type' in meta and 'Content-Type' in src_meta:
-        del(src_meta['Content-Type'])
-    for k in ('Content-Type', 'hash'):
-        if k in src_meta:
-            meta[k] = src_meta[k]
-    
-    try:
-        if move:
-            backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, permissions)
-        else:
-            backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, True, permissions, src_version)
+            backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions, src_version)
     except NameError, IndexError:
         raise ItemNotFound('Container or object does not exist')
     except ValueError:

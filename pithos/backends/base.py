@@ -39,6 +39,8 @@ class BaseBackend(object):
     
     Note that the account level is always valid as it is checked from another subsystem.
     
+    When not replacing metadata, keys with empty values should be deleted.
+    
     The following variables should be available:
         'hash_algorithm': Suggested is 'sha256'
         'block_size': Suggested is 4MB
@@ -174,7 +176,7 @@ class BaseBackend(object):
         """Update the metadata associated with the object.
         
         Parameters:
-            'meta': Dictionary with metadata to update.
+            'meta': Dictionary with metadata to update
             'replace': Replace instead of update
         
         Raises:

@@ -235,7 +235,10 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("get_object_permissions: %s %s %s", account, container, name)
         path = self._get_objectinfo(account, container, name)[0]
-        return self._get_permissions(path)
+        perm_path, perms = self._get_permissions(path)
+        if path == perm_path:
+            return perms
+        return {}
     
     def update_object_permissions(self, user, account, container, name, permissions):
         """Update the permissions associated with the object."""
@@ -476,8 +479,12 @@ class SimpleBackend(BaseBackend):
         
         src_version_id, dest_version_id = self._copy_version(path, path, not replace, True)
         for k, v in meta.iteritems():
-            sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
-            self.con.execute(sql, (dest_version_id, k, v))
+            if not replace and v == '':
+                sql = 'delete from metadata where version_id = ? and key = ?'
+                self.con.execute(sql, (dest_version_id, k))
+            else:
+                sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
+                self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
     def _can_read(self, user, path):
@@ -510,13 +517,14 @@ class SimpleBackend(BaseBackend):
         return r, w
     
     def _get_permissions(self, path):
-        sql = 'select read, write from permissions where name = ?'
-        c = self.con.execute(sql, (path,))
+        # Check for permissions at path or above.
+        sql = 'select name, read, write from permissions where ? like name || ?'
+        c = self.con.execute(sql, (path, '%'))
         row = c.fetchone()
         if not row:
-            return {}
+            return path, {}
         
-        r, w = row
+        name, r, w = row
         if r == '' and w == '':
             return {'private': True}
         ret = {}
@@ -524,7 +532,7 @@ class SimpleBackend(BaseBackend):
             ret['write'] = w.split(',')
         if r != '':
             ret['read'] = r.split(',')        
-        return ret
+        return name, ret
     
     def _put_permissions(self, path, r, w):
         sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'

@@ -25,10 +25,11 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.4 (June 22, 2011)        Support updating/deleting individual metadata with ``POST``.
 0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
 \                          Allow for publicly available objects via ``https://hostname/public``.
 \                          Support time-variant account/container listings. 
-\                          Add source version when duplicating with PUT/COPY/MOVE.
+\                          Add source version when duplicating with PUT/COPY.
 \                          Request version in object HEAD/GET requests (list versions with GET).
 0.2 (May 31, 2011)         Add object meta listing and filtering in containers.
 \                          Include underlying storage characteristics in container meta.
@@ -183,6 +184,14 @@ Will use a ``200`` return code if the reply is of type json/xml.
 POST
 """"
 
+======================  ============================================
+Request Parameter Name  Value
+======================  ============================================
+update                  Do not replace metadata (no value parameter)
+======================  ============================================
+
+|
+
 ====================  ===========================
 Request Header Name   Value
 ====================  ===========================
@@ -191,7 +200,7 @@ X-Account-Meta-*      Optional user defined metadata
 
 No reply content/headers.
 
-The update operation will overwrite all user defined metadata.
+The operation will overwrite all user defined metadata, except if ``update`` is defined.
 
 ================  ===============================
 Return Code       Description
@@ -340,6 +349,14 @@ Return Code       Description
 POST
 """"
 
+======================  ============================================
+Request Parameter Name  Value
+======================  ============================================
+update                  Do not replace metadata (no value parameter)
+======================  ============================================
+
+|
+
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
@@ -348,7 +365,7 @@ X-Container-Meta-*    Optional user defined metadata
 
 No reply content/headers.
 
-The update operation will overwrite all user defined metadata.
+The operation will overwrite all user defined metadata, except if ``update`` is defined.
 
 ================  ===============================
 Return Code       Description
@@ -574,6 +591,8 @@ X-Object-Public       Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
+Refer to ``POST`` for a description of request headers. Metadata is also copied, updated with any values defined.
+
 No reply content/headers.
 
 ===========================  ==============================
@@ -592,6 +611,14 @@ Same as ``COPY``, without the ``X-Source-Version`` request header. The ``MOVE`` 
 POST
 """"
 
+======================  ============================================
+Request Parameter Name  Value
+======================  ============================================
+update                  Do not replace metadata (no value parameter)
+======================  ============================================
+
+|
+
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
@@ -606,12 +633,12 @@ X-Object-Public       Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**) and ``X-Object-Meta-*`` headers are considered to be user defined metadata. The update operation will overwrite all previous values and remove any keys not supplied.
+The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**) and ``X-Object-Meta-*`` headers are considered to be user defined metadata. An operation without the ``update`` parameter will overwrite all previous values and remove any keys not supplied. When using ``update`` any metadata with an empty value will be deleted.
 
-To update an object:
+To update an object's data:
 
+* Set ``Content-Type`` to ``application/octet-stream``. If ``Content-Type`` has some other value, it will be ignored and only the metadata will be updated.
 * Supply ``Content-Length`` (except if using chunked transfers), ``Content-Type`` and ``Content-Range`` headers.
-* Set ``Content-Type`` to ``application/octet-stream``.
 * Set ``Content-Range`` as specified in RFC2616, with the following differences:
 
   * Client software MAY omit ``last-byte-pos`` of if the length of the range being transferred is unknown or difficult to determine.
@@ -636,7 +663,7 @@ Return Code                  Description
 202 (Accepted)               The request has been accepted (not a data update)
 204 (No Content)             The request succeeded (data updated)
 411 (Length Required)        Missing ``Content-Length`` in the request
-416 (Range Not Satisfiable)  The supplied range is out of limits or invalid size
+416 (Range Not Satisfiable)  The supplied range is invalid
 ===========================  ==============================
 
 
@@ -682,7 +709,7 @@ List of differences from the OOS API:
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
-* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**). These are all replaced with every update operation.
+* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**). These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object GET support as outlined in RFC2616.
 * Object hashmap retrieval through GET and the ``format`` parameter.
 * Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers.
@@ -702,6 +729,7 @@ Clarifications/suggestions:
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
 * In headers, dates are formatted according to RFC 1123. In extended information listings, dates are formatted according to ISO 8601.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
+* A copy/move using ``PUT``/``COPY``/``MOVE`` will always update metadata, keeping all old values except the ones redefined in the request headers.
 * A ``HEAD`` or ``GET`` for an ``X-Object-Manifest`` object, will include modified ``Content-Length`` and ``ETag`` headers, according to the characteristics of the objects under the specified prefix. The ``Etag`` will be the MD5 hash of the corresponding ETags concatenated. In extended container listings there is no metadata processing.
 
 The Pithos Client
@@ -795,6 +823,8 @@ Assuming an authentication token is obtained (**TBD**), the following high-level
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
          https://pithos.dev.grnet.gr/v1/user/pithos?format=json
+
+  It is recommended that extended replies are cached and subsequent requests utilize the ``If-Modified-Since`` header.
 
 * List metadata keys used by objects in a container
 

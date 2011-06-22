@@ -139,8 +139,11 @@ def account_update(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_account_meta(request)    
-    backend.update_account_meta(request.user, v_account, meta, replace=True)
+    meta = get_account_meta(request)
+    replace = True
+    if 'update' in request.GET:
+        replace = False
+    backend.update_account_meta(request.user, v_account, meta, replace)
     return HttpResponse(status=202)
 
 @api_method('GET', format_allowed=True)
@@ -248,8 +251,11 @@ def container_update(request, v_account, v_container):
     #                       badRequest (400)
     
     meta = get_container_meta(request)
+    replace = True
+    if 'update' in request.GET:
+        replace = False
     try:
-        backend.update_container_meta(request.user, v_account, v_container, meta, replace=True)
+        backend.update_container_meta(request.user, v_account, v_container, meta, replace)
     except NameError:
         raise ItemNotFound('Container does not exist')
     return HttpResponse(status=202)

@@ -63,6 +63,8 @@ def class_for_cli_command(name):
     return _cli_commands[name]
 
 class Command(object):
+    syntax = ''
+    
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
         parser.add_option('--host', dest='host', metavar='HOST',
@@ -439,9 +441,7 @@ class UpdateObject(Command):
                           help='define sharing object policy')
         parser.add_option('--touch', action='store_true',
                           dest='touch', default=False,
-                          help='change file properties')
-        
-
+                          help='change object properties')
     
     def execute(self, path, srcpath='-', *args):
         headers = {}
@@ -553,7 +553,7 @@ class SetGroup(Command):
         self.client.set_account_groups(groups)
 
 def print_usage():
-    cmd = Command([])
+    cmd = Command('', [])
     parser = cmd.parser
     parser.usage = '%prog <command> [options]'
     parser.print_help()

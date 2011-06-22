@@ -1,7 +1,6 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Message strings translations english <-> greek
+# Copyright (C) 2011 GRNET S.A.
 # This file is distributed under the same license as the PACKAGE package.
-# Markos Gogoulos <mgogoulos@unweb.me>, 2011
 #
 msgid ""
 msgstr ""
@@ -9,7 +8,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2011-05-16 15:38+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Panos Louridas <louridas@grnet.gr>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -48,13 +47,13 @@ msgstr "Όνομα: "
 
 #: kati.html:27 ui/templates/machines_icon.html:45
 msgid "IP: "
-msgstr ""
+msgstr "IP: "
 
 #: kati.html:30 ui/templates/machines_icon.html:48
 #: ui/templates/networks.html:29 ui/templates/networks.html.py:153
 #: ui/templates/networks.html:243 ui/templates/networks.html.py:276
 msgid "Show:"
-msgstr "Δείξε:"
+msgstr "Εμφάνιση:"
 
 #: kati.html:31 ui/templates/home.html:192 ui/templates/machines_icon.html:49
 msgid "disks"
@@ -66,16 +65,16 @@ msgstr "δίκτυα"
 
 #: kati.html:33 ui/templates/machines_list.html:43
 msgid "group"
-msgstr "γκρουπ"
+msgstr "ομάδα"
 
 #: kati.html:34
 msgid "metadata"
-msgstr ""
+msgstr "μεταδεδομένα"
 
 #: kati.html:37 ui/templates/machines_icon.html:16
 #: ui/templates/machines_list.html:376
 msgid "Confirm"
-msgstr "Επιβεβαιώστε"
+msgstr "Επιβεβαίωση"
 
 #: kati.html:38 ui/templates/machines.html:84
 #: ui/templates/machines.html.py:244 ui/templates/machines_icon.html:17
@@ -85,7 +84,7 @@ msgstr "Άκυρο"
 
 #: kati.html:41 ui/templates/machines_icon.html:20
 msgid "<span class='orange'>Error</span> on"
-msgstr ""
+msgstr "<span class='orange'>Σφάλμα</span>:"
 
 #: kati.html:41 ui/templates/machines_icon.html:20
 msgid "error action"
@@ -111,11 +110,11 @@ msgstr "Υπό επανεκκίνηση"
 
 #: ui/templates/home.html:30
 msgid "Stopped"
-msgstr "Σταματημένο"
+msgstr "Σταματημένη"
 
 #: ui/templates/home.html:32
 msgid "Error"
-msgstr "Σφάλμα!"
+msgstr "Σφάλμα"
 
 #: ui/templates/home.html:36
 msgid "Shutting down"
@@ -134,43 +133,42 @@ msgid ""
 "Could not contact the service. Please check your network connectivity and "
 "try again."
 msgstr ""
-"Δεν μπόρεσα να επικοινωνήσω με την υπηρεσία. Παρακαλώ επιβεβαιώστε οτι η "
-"σύνδεση σας με το δίκτυο δεν έχει προβλήματα και ξαναπροσπαθήστε."
+"Αδυναμία επικοινωνίας με την υπηρεσία. Παρακαλούμε ελέγξτε τη "
+"σύνδεση σας με το δίκτυο και ξαναπροσπαθήστε."
 
 #: ui/templates/home.html:48
 msgid "Malformed request."
-msgstr ""
+msgstr "Λανθασμένη αίτηση."
 
 #: ui/templates/home.html:50
 msgid "Your request has failed. Resource not found."
-msgstr "Η αίτηση σας δεν μπόρεσε να πραγματοποιηθεί."
+msgstr "Η αίτηση σας απέτυχε. Ο πόρος που ζητήσατε δεν βρέθηκε."
 
 #: ui/templates/home.html:52
-msgid ""
-"There has been an Internal Error. Our administrators have been notified."
-msgstr "Υπήρξε εσωτερικό λάθος. Οι διαχειριστές έχουν ήδη ειδοποιηθεί."
+msgid "There has been an Internal Error. Our administrators have been notified."
+msgstr "Εσωτερικό σφάλμα. Οι διαχειριστές μας έχουν ήδη ειδοποιηθεί."
 
 #: ui/templates/home.html:54
 msgid "This server has not been implemented yet."
-msgstr ""
+msgstr "Αυτός ο εξυπηρετητής δεν έχει υλοποιηθεί ακόμα."
 
 #: ui/templates/home.html:56
 msgid "This service is unavailable right now, please try again later."
-msgstr "Η υπηρεσία αυτή δεν είναι διαθέσιμη τώρα, παρακαλώ προσπαθήστε ξανά."
+msgstr "Η υπηρεσία αυτή δεν είναι διαθέσιμη αυτή τη στιγμή, παρακαλούμε προσπαθήστε ξανά αργότερα."
 
 #: ui/templates/home.html:58
 msgid "Could not contact the server."
-msgstr ""
+msgstr "Αδυναμία επικοινωνίας με τον εξυπηρετητή."
 
 #: ui/templates/home.html:60
 msgid "Cannot show the Create machine wizard: No images found."
-msgstr ""
-"Δεν μπορώ να δείξω τον wizard για τη δημιουργία μηχνήματος: δεν βρέθηκαν "
-"images."
+msgstr "Αδυναμία εμφάνισης του οδηγού δημιουργίας μηχανής: δεν βρέθηκαν "
+"μήτρες."
 
 #: ui/templates/home.html:62
 msgid "Cannot show the Create machine wizard: No machine configurations found."
-msgstr ""
+msgstr "Αδυναμία εμφάνισης του οδηγού δημιουργίας μηχανής: δεν βρέθηκαν "
+" συνθέσεις."
 
 #: ui/templates/home.html:66 ui/templates/home.html.py:68
 msgid "Success!"
@@ -178,29 +176,30 @@ msgstr "Επιτυχία!"
 
 #: ui/templates/home.html:67
 msgid "Your request has been succefully executed."
-msgstr "Η αίτηση σας δεν μπόρεσε να πραγματοποιηθεί."
+msgstr "Η αίτηση σας εκτελέστηκε με επιτυχία."
 
 #: ui/templates/home.html:69
 msgid "Your machine is now being built."
-msgstr "Το μηχάνημα σας είναι υπό κατασκευή."
+msgstr "Η μηχανή σας είναι υπό κατασκευή."
 
 #: ui/templates/home.html:70
 msgid "Please write down the following password:"
-msgstr "Παρακαλώ σημειώστε τον κωδικό:"
+msgstr "Παρακαλώ σημειώστε τον ακόλουθο κωδικό:"
 
 #: ui/templates/home.html:71
 msgid ""
 "Do not lose this! You will need it to connect to your machine, once it is "
 "ready."
-msgstr ""
+msgstr "Μην τον χάσετε! Θα τον χρειαστείτε για να συνδεθείτε με τη μηχανή σας"
+" μόλις ετοιμαστεί."
 
 #: ui/templates/home.html:91
 msgid "Server"
-msgstr "Εξυπηρέτης"
+msgstr "Εξυπηρετητής"
 
 #: ui/templates/home.html:96
 msgid "Action"
-msgstr ""
+msgstr "Ενέργεια"
 
 #: ui/templates/home.html:96
 msgid "Code"
@@ -217,7 +216,7 @@ msgstr "ρυθμίσεις"
 
 #: ui/templates/home.html:189
 msgid "manage your virtual machines"
-msgstr "διαχειριστείτε τις εικονικές μηχανές σας"
+msgstr "διαχείριση εικονικών μηχανών"
 
 #: ui/templates/home.html:190 ui/templates/machines.html:257
 #: ui/templates/networks.html:29 ui/templates/networks.html.py:153
@@ -227,19 +226,19 @@ msgstr "μηχανές"
 
 #: ui/templates/home.html:191
 msgid "manage your storage volumes"
-msgstr "διαχειριστείτε το χώρο σας"
+msgstr "διαχείριση αποθηκευτικού χώρου"
 
 #: ui/templates/home.html:193
 msgid "manage boot images"
-msgstr ""
+msgstr "διαχείριση μητρών εκκίνησης"
 
 #: ui/templates/home.html:194
 msgid "images"
-msgstr ""
+msgstr "μήτρες"
 
 #: ui/templates/home.html:195
 msgid "configure networking"
-msgstr ""
+msgstr "διαμόρφωση δικτύων"
 
 #: ui/templates/home.html:197
 msgid "your files"
@@ -251,52 +250,55 @@ msgstr "αρχεία"
 
 #: ui/templates/home.html:199
 msgid "your desktops"
-msgstr ""
+msgstr "οι επιφάνειες εργασίας σας"
 
 #: ui/templates/home.html:200
 msgid "desktops"
-msgstr "δίσκοι"
+msgstr "επιφάνειες εργασίας"
 
 #: ui/templates/home.html:201
 msgid "your apps"
-msgstr ""
+msgstr "οι εφαρμογές σας"
 
 #: ui/templates/home.html:202
 msgid "apps"
-msgstr ""
+msgstr "εφαρμογές"
 
 #: ui/templates/machines.html:7
 msgid "Start by creating a new Virtual Machine:"
-msgstr "Ξεκινήστε με τη δημιουργία ενός Εικονικού Μηχανήματος:"
+msgstr "Ξεκινήστε με τη δημιουργία εικονικής μηχανής:"
 
 #: ui/templates/machines.html:8 ui/templates/networks.html:7
 msgid "Create New +"
-msgstr "Δημιουργία +"
+msgstr "Δημιουργία νέας +"
 
 #: ui/templates/machines.html:19
-msgid "Welcome to the ocean!"
-msgstr "Καλωσήρθατε στον ωκεανό!"
+msgid "Welcome to Οkeanos!"
+msgstr "Καλωσήρθατε στον Ωκεανό!"
 
 #: ui/templates/machines.html:21
 msgid ""
 "From this panel you will be able to manage your Virtual Machines (VMs). If "
 "you don't know what a VM is: take the "
-msgstr ""
+msgstr "Από εδώ μπορείτε να διαχειριστείτε τις εικονικές μηχανές σας. "
+" Αν δεν ξέρετε τι είναι μια εικονική μηχανή: ακολουθείστε τον "
 
 #: ui/templates/machines.html:21
 msgid "tour"
-msgstr ""
+msgstr "οδηγό"
 
 #: ui/templates/machines.html:24
 msgid ""
 "The panel is currently empty, because you don't have any VMs yet. You can "
 "start by creating your new VM by clicking the blue button on the right. The "
 "wizard will guide you through the whole process."
-msgstr ""
+msgstr "Αυτή τη στιγμή δεν έχετε εικονικές μηχανές. Μπορείτε "
+"να δημιουργήσετε μια νέα εικονική μηχανή πατώντας το μπλε κουμπί στα δεξιά. "
+"Ο οδηγός θα σας καθοδηγήσει σε όλη τη διαδικασία."
 
 #: ui/templates/machines.html:27
 msgid "For more information or help, click "
-msgstr "Για περισσότερες πληροφορίες, πατήστε"
+msgstr "Για περισσότερες πληροφορίες, πατήστε "
 
 #: ui/templates/machines.html:27
 msgid "here"
@@ -304,7 +306,7 @@ msgstr "εδώ"
 
 #: ui/templates/machines.html:38
 msgid "Image"
-msgstr ""
+msgstr "Μήτρα"
 
 #: ui/templates/machines.html:42 ui/templates/machines_list.html:33
 msgid "Flavor"
@@ -317,47 +319,47 @@ msgstr "Όνομα"
 
 #: ui/templates/machines.html:53
 msgid "Select an OS"
-msgstr "Επιλέξτε το Λειτουργικό"
+msgstr "Επιλέξτε λειτουργικό"
 
 #: ui/templates/machines.html:56
 msgid "system images"
-msgstr ""
+msgstr "μήτρες συστήματος"
 
 #: ui/templates/machines.html:57
 msgid "custom images"
-msgstr ""
+msgstr "τροποποιημένες μήτρες"
 
 #: ui/templates/machines.html:85 ui/templates/machines.html.py:145
 msgid "Next"
-msgstr "Επόμενο"
+msgstr "Συνέχεια"
 
 #: ui/templates/machines.html:88
 msgid "Select CPUs, RAM and Disk Size"
-msgstr "Επιλέξτε CPU, μνήμη και αποθηκευτικό χώρο"
+msgstr "Επιλέξτε μονάδα επεξεργασίας, μνήμη και αποθηκευτικό χώρο"
 
 #: ui/templates/machines.html:95
 msgid "small"
-msgstr "μικρό"
+msgstr "μικρή"
 
 #: ui/templates/machines.html:101
 msgid "medium"
-msgstr "μεσαίο"
+msgstr "μεσαία"
 
 #: ui/templates/machines.html:107
 msgid "large"
-msgstr "μεγάλο"
+msgstr "μεγάλη"
 
 #: ui/templates/machines.html:113
 msgid "custom"
-msgstr "τροποποιημένο"
+msgstr "τροποποιημένη"
 
 #: ui/templates/machines.html:119 ui/templates/machines_single.html:23
 msgid "CPUs"
-msgstr ""
+msgstr "Μονάδες επεξεργασίας"
 
 #: ui/templates/machines.html:122 ui/templates/machines.html.py:161
 msgid "cores"
-msgstr "μονάδες"
+msgstr "πυρήνες"
 
 #: ui/templates/machines.html:125
 msgid "RAM"
@@ -377,35 +379,35 @@ msgstr "μονάδες"
 
 #: ui/templates/machines.html:138
 msgid "This setup will cost you:"
-msgstr "Θα σας κοστίσει:"
+msgstr "Αυτή η σύνθεση Θα σας κοστίσει:"
 
 #: ui/templates/machines.html:138
 msgid "C/hour"
-msgstr ""
+msgstr "μονάδες/ώρα"
 
 #: ui/templates/machines.html:144 ui/templates/machines.html.py:177
 msgid "Back"
-msgstr "Πίσω"
+msgstr "Επιστροφή"
 
 #: ui/templates/machines.html:148
 msgid "Confirm your settings"
-msgstr "Επιβεβαιώστε τις ρυθμίσεις"
+msgstr "Επιβεβαίωση των ρυθμίσεων"
 
 #: ui/templates/machines.html:158
 msgid "Image:"
-msgstr ""
+msgstr "Μήτρα:"
 
 #: ui/templates/machines.html:161
 msgid "CPUs:"
-msgstr ""
+msgstr "Μονάδες επεξεργασίας:"
 
 #: ui/templates/machines.html:164
 msgid "RAM:"
-msgstr ""
+msgstr "Μνήμη:"
 
 #: ui/templates/machines.html:167
 msgid "System Disk:"
-msgstr ""
+msgstr "Δίσκος συστήματος:"
 
 #: ui/templates/machines.html:170
 msgid "Cost per Hour:"
@@ -421,23 +423,23 @@ msgstr "Μονάδες στο πορτοφόλι:"
 
 #: ui/templates/machines.html:178
 msgid "Create VM"
-msgstr "Δημιουργία VM"
+msgstr "Δημιουργία μηχανής"
 
 #: ui/templates/machines.html:188
 msgid "Error!/Success!"
-msgstr ""
+msgstr "Σφάλμα!/Επιτυχία!"
 
 #: ui/templates/machines.html:189
 msgid "More details about the result"
-msgstr "Περισσότερα για αυτό το αποτέλεσμα"
+msgstr "Περισσότερες πληροφορίες"
 
 #: ui/templates/machines.html:201 ui/templates/machines.html.py:230
 msgid "Tags for machine:"
-msgstr "Tags για το μηχάνημα:"
+msgstr "Ετικέττες για το μηχάνημα:"
 
 #: ui/templates/machines.html:202 ui/templates/machines.html.py:231
 msgid "Server name"
-msgstr "Εξυπηρέτης"
+msgstr "Όνομα εξυπηρετητή"
 
 #: ui/templates/machines.html:210
 msgid "Key"
@@ -453,11 +455,11 @@ msgstr "Τιμή"
 
 #: ui/templates/machines.html:214
 msgid "edit"
-msgstr "μονάδες"
+msgstr "τροποποίηση"
 
 #: ui/templates/machines.html:215
 msgid "cancel"
-msgstr "Άκυρο"
+msgstr "άκυρο"
 
 #: ui/templates/machines.html:216
 msgid "save"
@@ -469,7 +471,7 @@ msgstr "Κλείσιμο"
 
 #: ui/templates/machines.html:224
 msgid "Create New+"
-msgstr "Δημιουργία +"
+msgstr "Δημιουργία Νέας+"
 
 #: ui/templates/machines.html:237
 msgid "Key:"
@@ -478,7 +480,7 @@ msgstr "Κλειδί:"
 #: ui/templates/machines.html:238 ui/templates/machines.html.py:628
 #: ui/templates/machines.html:738
 msgid "max 15 characters"
-msgstr "15 χαρακτήρες όριο"
+msgstr "όριο 15 χαρακτήρες"
 
 #: ui/templates/machines.html:240
 msgid "Value:"
@@ -487,7 +489,7 @@ msgstr "Τιμή:"
 #: ui/templates/machines.html:241 ui/templates/machines.html.py:630
 #: ui/templates/machines.html:758
 msgid "max 150 characters"
-msgstr "150 χαρακτήρες όριο"
+msgstr "όριο 150 χαρακτήρες"
 
 #: ui/templates/machines.html:245
 msgid "Save"
@@ -495,15 +497,15 @@ msgstr "Αποθήκευση"
 
 #: ui/templates/machines.html:257
 msgid "Your actions will affect"
-msgstr ""
+msgstr "Οι επιλογές σας θα επηρεάσουν"
 
 #: ui/templates/machines.html:258
 msgid "Confirm All"
-msgstr "Επιβεβαιώστε"
+msgstr "Επιβεβαίωση όλων"
 
 #: ui/templates/machines.html:259
 msgid "Cancel All"
-msgstr "Άκυρο"
+msgstr "Ακύρωση όλων"
 
 #: ui/templates/machines_icon.html:12 ui/templates/machines_list.html:16
 #: ui/templates/machines_single.html:14
@@ -512,7 +514,7 @@ msgstr "Κονσόλα"
 
 #: ui/templates/machines_icon.html:51
 msgid "more info"
-msgstr "πληροφορίες"
+msgstr "περισσότερες πληροφορίες"
 
 #: ui/templates/machines_list.html:13
 msgid "Show Details"
@@ -520,15 +522,15 @@ msgstr "Λεπτομέρειες"
 
 #: ui/templates/machines_list.html:14
 msgid "Add to group"
-msgstr ""
+msgstr "Προσθήκη σε ομάδα"
 
 #: ui/templates/machines_list.html:18
 msgid "Attach disk"
-msgstr ""
+msgstr "Προσάρτηση δίσκου"
 
 #: ui/templates/machines_list.html:19
 msgid "Detach disk"
-msgstr ""
+msgstr "Απόσπαση δίσκου"
 
 #: ui/templates/machines_list.html:21
 msgid "Connect to network"
@@ -544,7 +546,7 @@ msgstr "ΛΣ"
 
 #: ui/templates/machines_list.html:34
 msgid "Group"
-msgstr "Γκρουπ"
+msgstr "Ομάδα"
 
 #: ui/templates/machines_list.html:35
 msgid "Status"
@@ -552,127 +554,127 @@ msgstr "Κατάσταση"
 
 #: ui/templates/machines_list.html:41
 msgid "all"
-msgstr "μικρό"
+msgstr "όλα"
 
 #: ui/templates/machines_list.html:42
 msgid "none"
-msgstr ""
+msgstr "τίποτε"
 
 #: ui/templates/machines_single.html:24
 msgid "RAM (MB)"
-msgstr ""
+msgstr "Μνήμη (ΜΒ)"
 
 #: ui/templates/machines_single.html:25
 msgid "System Disk (GB)"
-msgstr ""
+msgstr "Δίσκος συστήματος (GB)"
 
 #: ui/templates/machines_single.html:26
 msgid "Image Name"
-msgstr ""
+msgstr "Όνομα μήτρας"
 
 #: ui/templates/machines_single.html:27
 msgid "Image Size (GB)"
-msgstr ""
+msgstr "Μέγεθος μήτρας (GB)"
 
 #: ui/templates/machines_single.html:28
 msgid "Public IPv4"
-msgstr ""
+msgstr "Δημόσια διεύθυνση IPv4"
 
 #: ui/templates/machines_single.html:29
 msgid "Public IPv6"
-msgstr ""
+msgstr "Δημόσια διεύθυνση IPv6"
 
 #: ui/templates/machines_single.html:30
 msgid "Groups"
-msgstr "γκρουπ"
+msgstr "Ομάδες"
 
 #: ui/templates/networks.html:13 ui/templates/networks.html.py:135
 #: ui/templates/networks.html:225 ui/templates/networks.html.py:258
 msgid "Add Machine"
-msgstr "Μηχανές"
+msgstr "Προσθήκη μηχανής"
 
 #: ui/templates/networks.html:16
 msgid "Public Network"
-msgstr ""
+msgstr "Δημόσιο δίκτυο"
 
 #: ui/templates/networks.html:25
 msgid "Internet"
-msgstr ""
+msgstr "Διαδίκτυο"
 
 #: ui/templates/networks.html:36 ui/templates/networks.html.py:81
 #: ui/templates/networks.html:160 ui/templates/networks.html.py:190
 msgid "Disconnect"
-msgstr ""
+msgstr "Αποσύνδεση"
 
 #: ui/templates/networks.html:57 ui/templates/networks.html.py:102
 msgid "IPs"
-msgstr ""
+msgstr "Διευθύνσεις"
 
 #: ui/templates/networks.html:58 ui/templates/networks.html.py:103
 msgid "Firewall"
-msgstr ""
+msgstr "Τοίχος ασφαλείας"
 
 #: ui/templates/networks.html:59
 msgid "On"
-msgstr ""
+msgstr "Ενεργό"
 
 #: ui/templates/networks.html:64 ui/templates/networks.html.py:109
 msgid "Unprotected mode (Firewall off)"
-msgstr ""
+msgstr "Απροστάτευτη λειτουργία (απενεργοποιημένος τοίχος προστασίας)"
 
 #: ui/templates/networks.html:67 ui/templates/networks.html.py:112
 msgid "Fully protected mode (Firewall on)"
-msgstr ""
+msgstr "Υψηλό επίπεδο ασφάλειας (ενεργοποιημένος τοίχος προστασίας)"
 
 #: ui/templates/networks.html:70 ui/templates/networks.html.py:115
 msgid "Basically protected mode (Firewall on)"
-msgstr ""
+msgstr "Χαμηλό επίπεδο ασφάλειας (ενεργοποιημένος τοίχος προστασίας)"
 
 #: ui/templates/networks.html:73 ui/templates/networks.html.py:118
 msgid "Custom protection"
-msgstr ""
+msgstr "Προσαρμοσμένο επίπεδο ασφάλειας"
 
 #: ui/templates/networks.html:73 ui/templates/networks.html.py:118
 msgid "(Advanced users only)"
-msgstr ""
+msgstr "(Προχωρημένοι χρήστες)"
 
 #: ui/templates/networks.html:74 ui/templates/networks.html.py:119
 msgid "Apply"
-msgstr ""
+msgstr "Εφαρμογή"
 
 #: ui/templates/networks.html:104
 msgid "Off"
-msgstr ""
+msgstr "Απενεργοποίηση"
 
 #: ui/templates/networks.html:136 ui/templates/networks.html.py:226
 #: ui/templates/networks.html:259
 msgid "Edit"
-msgstr ""
+msgstr "Τροποποίηση"
 
 #: ui/templates/networks.html:140 ui/templates/networks.html.py:230
 #: ui/templates/networks.html:263
 msgid "Private Network"
-msgstr ""
+msgstr "Ιδιωτικό δίκτυο"
 
 #: ui/templates/networks.html:149
 msgid "My Network 1"
-msgstr "δίκτυα"
+msgstr "Δίκτυο 1"
 
 #: ui/templates/networks.html:181 ui/templates/networks.html.py:211
 msgid "Connect"
-msgstr ""
+msgstr "Σύνδεση"
 
 #: ui/templates/networks.html:181 ui/templates/networks.html.py:211
 msgid "to manage private IPs"
-msgstr ""
+msgstr "διαχείριση ιδιωτικών διευθύνσεων"
 
 #: ui/templates/networks.html:239
 msgid "My Network 2"
-msgstr "δίκτυα"
+msgstr "Δίκτυο 2"
 
 #: ui/templates/networks.html:272
 msgid "My Network 3"
-msgstr "δίκτυα"
+msgstr "Δίκτυο 3"
 
 #~ msgid "more &hellip;"
 #~ msgstr "περισσότερα"
@@ -693,4 +695,4 @@ msgstr "δίκτυα"
 #~ msgstr "Η αίτηση είναι λανθασμένη."
 
 #~ msgid "An Error has happened. Our administrators have been notified."
-#~ msgstr "Συνέβη κάποιο λάθος. Οι διαχειριστές μας έχουν ειδοποιηθεί."
+#~ msgstr "Συνέβη κάποιο σφάλμα. Οι διαχειριστές μας έχουν ειδοποιηθεί."

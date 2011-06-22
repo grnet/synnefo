@@ -103,7 +103,8 @@ or implied, of GRNET S.A.
 
         // Network statuses and transitions
         var NET_STATES = {
-            'default'       : '{% trans "Private network" %}',
+            'ACTIVE'        : '{% trans "Private network" %}',  // this comes from the API
+            'DELETED'       : '{% trans "Deleted" %}',          // this comes from the API
             'Destroying'    : '{% trans "Destroying" %}',
             'Connecting'    : '{% trans "Connecting" %}',
             'Disconnecting' : '{% trans "Disconnecting" %}'

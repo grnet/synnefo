@@ -63,8 +63,8 @@ def class_for_cli_command(name):
     return _cli_commands[name]
 
 class Command(object):
-    def __init__(self, argv):
-        parser = OptionParser()
+    def __init__(self, name, argv):
+        parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
         parser.add_option('--host', dest='host', metavar='HOST',
                           default=DEFAULT_HOST, help='use server HOST')
         parser.add_option('--user', dest='user', metavar='USERNAME',
@@ -166,7 +166,10 @@ class List(Command):
             params['until'] = int(_time.mktime(t))
         
         detail = 'json'
-        l = self.client.list_objects(container, detail, params, headers)
+        #if request with meta quering disable trash filtering
+        show_trashed = True if self.meta else False
+        l = self.client.list_objects(container, detail, params, headers,
+                                     include_trashed = show_trashed)
         print_list(l, detail=self.detail)
 
 @cli_command('meta')
@@ -417,7 +420,7 @@ class UpdateObject(Command):
                           default=True, help='append data')
         parser.add_option('--start', action='store',
                           dest='start',
-                          default=None, help='range of data to be updated')
+                          default=None, help='starting offest to be updated')
         parser.add_option('--range', action='store', dest='content-range',
                           default=None, help='range of data to be updated')
         parser.add_option('--chunked', action='store_true', dest='chunked',
@@ -434,6 +437,10 @@ class UpdateObject(Command):
         parser.add_option('--sharing', action='store',
                           dest='sharing', default=None,
                           help='define sharing object policy')
+        parser.add_option('--touch', action='store_true',
+                          dest='touch', default=False,
+                          help='change file properties')
+        
 
     
     def execute(self, path, srcpath='-', *args):
@@ -460,11 +467,15 @@ class UpdateObject(Command):
         
         container, sep, object = path.partition('/')
         
-        f = srcpath != '-' and open(srcpath) or stdin
-        chunked = (self.chunked or f == stdin) and True or False
+        f = None
+        chunked = False
+        if not self.touch:
+            f = srcpath != '-' and open(srcpath) or stdin
+            chunked = (self.chunked or f == stdin) and True or False
         self.client.update_object(container, object, f, chunked=chunked,
                                   headers=headers)
-        f.close()
+        if f:
+            f.close()
 
 @cli_command('move', 'mv')
 class MoveObject(Command):
@@ -481,7 +492,7 @@ class MoveObject(Command):
         self.client.move_object(src_container, src_object, dst_container,
                                 dst_object, headers)
 
-@cli_command('remove', 'rm')
+@cli_command('remove')
 class TrashObject(Command):
     syntax = '<container>/<object>'
     description = 'trashes an object'
@@ -599,12 +610,11 @@ def main():
         print_usage()
         exit(1)
     
-    cmd = cls(argv[2:])
+    cmd = cls(name, argv[2:])
     
     try:
         cmd.execute(*cmd.args)
     except TypeError, e:
-        cmd.parser.usage = '%%prog %s [options] %s' % (name, cmd.syntax)
         cmd.parser.print_help()
         exit(1)
     except Fault, f:

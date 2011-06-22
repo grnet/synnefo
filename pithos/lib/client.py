@@ -347,11 +347,9 @@ class Client(object):
     
     def update_object(self, container, object, f=stdin, chunked=False,
                       blocksize=1024, headers=None):
-        if not f:
-            return
         path = '/%s/%s' % (container, object)
         if not chunked and f != stdin:
-            data = f.read()
+            data = f.read() if f else None
             self.post(path, data, headers=headers)
         else:
             self._chunked_transfer(path, 'POST', f, headers=headers,

@@ -499,7 +499,15 @@ $(function() {
         closeOnClick: false,
         oneInstance: false,
         closeOnEsc: true,
-        load: false
+        load: false,
+        onClose: function() {
+            // hide the proper spinner and show the wave
+            networkID = $("#add-machines-wizard p").text();
+            $('#net-' + networkID + '.network div.status').text(NET_STATES['default']);
+            $('#net-' + networkID + '.network img.spinner').hide();
+            $('#net-' + networkID + '.network img.wave').attr('src','static/icons/indicators/medium/wave.gif').show();
+            setTimeout("$('#net-" + networkID +".network img.wave').attr('src','').hide()", 3000);
+        }
     });
 });
 
@@ -585,7 +593,10 @@ $("#add-server-add").live('click', function() {
         // load progress bar
         $(this).text('');
         $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
-        // make the call
+        // show the proper spinner
+        $('#net-' + networkID + '.network div.status').text(NET_STATES['Connecting']);
+        $('#net-' + networkID + '.network img.spinner').show();
+        // make the calls
         add_server_to_network(networkID, serverIDs);
     }
     return false;
@@ -617,15 +628,16 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
         if (pending_actions[i][0] == delete_network &&
             pending_actions[i][1] == networkID){
                 action = pending_actions.splice(i,1)[0];
-                $(this).parent().parent().find('.status').text(TRANSITIONS['Destroying']);
-                $(this).parent().parent().find('.spinner').show();
+                $(this).closest('div.network').find('div.status').text(NET_STATES['Destroying']);
+                $(this).closest('div.network').find('img.spinner').show();
                 action[0]([action[1]]); // execute action
         } else if ( pending_actions[i][0] == remove_server_from_network &&
-                    pending_actions[i][1] == networkID &&
-                    pending_actions[i][2] == serverID) {
+                    pending_actions[i][1] == networkID ) {
+                        $(this).closest('div.network').find('div.status').text(NET_STATES['Disconnecting']);
+                        $(this).closest('div.network').find('img.spinner').show();
                         action = pending_actions.splice(i,1)[0];
                         action[0]([action[1]], [action[2]]); // execute action
-        }
+        } // for adding servers to a network look in $("#add-server-add").live('click', function() {...});
     }
     $(this).parent().hide();
     $(this).closest("div.network").find('a.selected').removeClass('selected');
@@ -680,7 +692,7 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
         $('#networks-pane .display').removeClass('display');
         $('#networks-pane .confirm_single').hide();
         if (action[0] == delete_network) {
-            $('#networks-pane #net-' + networkID + ' .status').text(TRANSITIONS['Destroying']);
+            $('#networks-pane #net-' + networkID + ' .status').text(NET_STATES['Destroying']);
             $('#networks-pane #net-' + networkID + ' .spinner').show();
             action[0]([networkID]); // execute action
         } else if (action[0] == remove_server_from_network) {

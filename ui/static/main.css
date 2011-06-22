@@ -836,7 +836,7 @@ div.connect-arrow {
     top: 9px;
 }
 
-div.connect-arrow:hover, div.connect-arrow.border-hover {
+div.connect-arrow:hover, div.connect-arrow.border-hover, div.connect-arrow-ie, div.connect-arrow.border-ie {
     cursor: pointer;
     background: url(/static/connect-arrow-hover.png) no-repeat;
     height: 28px;
@@ -1451,6 +1451,7 @@ input.machine {
     width: 402px;
     margin-bottom: 30px;
     clear: left;
+    font-size: 1px;
 }
 
 #metadata-wizard .metadata-pair-template {

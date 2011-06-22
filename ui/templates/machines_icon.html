@@ -725,7 +725,7 @@ $('.confirm_multiple button.no').text('Cancel All');
 
 
 if ($.browser.msie) {
-    //IE fix for div hover
+    //IE fix for machine div hover
     $("div.machine").live("mouseenter", function () {
         $(this).css("background-color","#A1C8DB");
         $(this).find(".actions a").css("color","black");
@@ -733,6 +733,13 @@ if ($.browser.msie) {
     $("div.machine").live("mouseleave", function () {
         $(this).css("background-color","transparent");
         $(this).find(".actions a").css("color","transparent");
+    });
+    //IE fix for green arrow hover
+    $("div.connect-arrow").live("mouseenter", function () {
+        $(this).addClass("connect-arrow-ie");
+    });
+    $("div.connect-arrow").live("mouseleave", function () {
+        $(this).removeClass("connect-arrow-ie");
     });
 }
 </script>

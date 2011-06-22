@@ -63,6 +63,8 @@ or implied, of GRNET S.A.
         // timeout value from settings.py
         var TIMEOUT = {{timeout}};
         var UPDATE_INTERVAL = {{update_interval}};
+
+        // server statuses and transitions
         var STATUSES = {
             'UNKNOWN'   : '{% trans "Unknown" %}',
             'BUILD'     : '{% trans "Building" %}',
@@ -76,12 +78,12 @@ or implied, of GRNET S.A.
             'Shutting down' : '{% trans "Shutting down" %}',
             'Rebooting'     : '{% trans "Rebooting" %}',
             'Starting'      : '{% trans "Starting" %}',
-            'Destroying'    : '{% trans "Destroying" %}',   // used in machines and networks
+            'Destroying'    : '{% trans "Destroying" %}',
             'Connecting'    : '{% trans "Connecting" %}',   // used only in networks
             'Disconnecting' : '{% trans "Disconnecting" %}' // used only in networks
         };
 
-        // Statuses and transitions that should be displayed as active or inactive
+        // Server statuses and transitions that should be displayed as active or inactive
         var ACTIVE_STATES = [
             '{% trans "Building" %}',
             '{% trans "Rebooting" %}',
@@ -98,6 +100,14 @@ or implied, of GRNET S.A.
             '{% trans "Starting" %}',
             '{% trans "Destroying" %}'
         ];
+
+        // Network statuses and transitions
+        var NET_STATES = {
+            'default'       : '{% trans "Private network" %}',
+            'Destroying'    : '{% trans "Destroying" %}',
+            'Connecting'    : '{% trans "Connecting" %}',
+            'Disconnecting' : '{% trans "Disconnecting" %}'
+        };
 
         var ERRORS = {
             // error message header

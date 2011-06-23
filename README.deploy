@@ -382,10 +382,12 @@ Synnefo deployment.
        run during instance creation process have execute permission.
        For linux you will need at lease `grub' and `root_passwd' to make the
        instance usable:
-         chmod +x /etc/ganeti/instance-image/hooks/{grub,root_passwd}
-       For windows you will need `mbr' and `admin_passwd'
+         chmod +x /etc/ganeti/instance-image/hooks/linux/{grub,root_passwd}
+       For windows you will need `mbr' and `admin_passwd':
+         chmod +x /etc/ganeti/instance-image/hooks/windows/{mbr,admin_passwd}
        For both architectures it is also highly recommended to enable
-       `hostname' hook too.
+       `hostname' hook too:
+         chmod +x /et/ganeti/instance-image/hooks/{linux,windows}/hostname
 
     Your Custom Images should be stored in a dump format under
     /var/cache/ganeti-instance-image and their filenames should have the

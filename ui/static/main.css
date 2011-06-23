@@ -2252,7 +2252,7 @@ div.list div.dataTables_filter input{
     padding-bottom: 40px;
 }
 
-div.list table thead .sorting {
+div.list table thead .sorting, div.list table thead .sorting_desc, div.list table thead .sorting_asc {
     padding-right: 15px !important;
 }
 

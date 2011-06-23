@@ -308,7 +308,7 @@ or implied, of GRNET S.A.
 
 <!-- multiple confirmation dialog -->
 <div class="confirm_multiple">
-    <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "networks" %}</p>
+    <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "networks or machines" %}</p>
     <button class="yes">{% trans "Confirm All" %}</button>
     <button class="no">{% trans "Cancel All" %}</button>
 </div>
@@ -688,8 +688,10 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
             $('#networks-pane #net-' + networkID + ' .spinner').show();
             action[0]([networkID]); // execute action
         } else if (action[0] == remove_server_from_network) {
+            $('div.network#net-'+networkID).find('div.status').text(NET_STATES['Disconnecting']);
+            $('div.network#net-'+networkID).find('img.spinner').show();            
             action[0]([action[1]], [action[2]]); // execute action
-        }
+        }    
     }
     update_network_confirmations();
     return false;

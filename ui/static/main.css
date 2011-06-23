@@ -2037,6 +2037,10 @@ div.confirm_multiple p {
     margin: 7px 0 0 200px;
 }
 
+#networks-pane div.confirm_multiple p {
+    margin: 7px 0 0 100px;
+}
+
 div.confirm_multiple button {
     float: right;
     background-color: transparent;

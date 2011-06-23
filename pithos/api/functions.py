@@ -411,7 +411,7 @@ def object_meta(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    version = get_int_parameter(request, 'version')
+    version = request.GET.get('version')
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
         if version is None:
@@ -443,10 +443,10 @@ def object_read(request, v_account, v_container, v_object):
     #                       badRequest (400),
     #                       notModified (304)
     
-    version = get_int_parameter(request, 'version')
+    version = request.GET.get('version')
     
     # Reply with the version list. Do this first, as the object may be deleted.
-    if version is None and request.GET.get('version') == 'list':
+    if version == 'list':
         if request.serialization == 'text':
             raise BadRequest('No format specified for version list.')
         

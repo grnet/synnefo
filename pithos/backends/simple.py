@@ -66,6 +66,7 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists versions (
                     version_id integer primary key,
                     name text,
+                    user text,
                     tstamp datetime default current_timestamp,
                     size integer default 0,
                     hide integer default 0)'''
@@ -137,7 +138,7 @@ class SimpleBackend(BaseBackend):
         logger.debug("update_account_meta: %s %s %s", account, meta, replace)
         if user != account:
             raise NotAllowedError
-        self._put_metadata(account, meta, replace)
+        self._put_metadata(user, account, meta, replace)
     
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of containers existing under an account."""
@@ -157,7 +158,7 @@ class SimpleBackend(BaseBackend):
             path, version_id, mtime = self._get_containerinfo(account, container)
         except NameError:
             path = os.path.join(account, container)
-            version_id = self._put_version(path)
+            version_id = self._put_version(path, user)
         else:
             raise NameError('Container already exists')
     
@@ -172,7 +173,7 @@ class SimpleBackend(BaseBackend):
         if count > 0:
             raise IndexError('Container is not empty')
         self._del_path(path) # Point of no return.
-        self._copy_version(account, account, True, True) # New account version.
+        self._copy_version(user, account, account, True, True) # New account version.
     
     def get_container_meta(self, user, account, container, until=None):
         """Return a dictionary with the container metadata."""
@@ -204,7 +205,7 @@ class SimpleBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container)
-        self._put_metadata(path, meta, replace)
+        self._put_metadata(user, path, meta, replace)
     
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
@@ -233,14 +234,16 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("get_object_meta: %s %s %s %s", account, container, name, version)
         self._can_read(user, account, container, name)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name, version)
+        path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name, version)
         if version is None:
             modified = mtime
         else:
-            modified = self._get_version(path, version)[1] # Overall last modification
+            modified = self._get_version(path, version)[2] # Overall last modification
         
         meta = self._get_metadata(path, version_id)
-        meta.update({'name': name, 'bytes': size, 'version': version_id, 'version_timestamp': mtime, 'modified': modified})
+        meta.update({'name': name, 'bytes': size})
+        meta.update({'version': version_id, 'version_timestamp': mtime})
+        meta.update({'modified': modified, 'modified_by': muser})
         return meta
     
     def update_object_meta(self, user, account, container, name, meta, replace=False):
@@ -248,8 +251,8 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
         self._can_write(user, account, container, name)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name)
-        self._put_metadata(path, meta, replace)
+        path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name)
+        self._put_metadata(user, path, meta, replace)
     
     def get_object_permissions(self, user, account, container, name):
         """Return the path from which this object gets its permissions from,\
@@ -275,7 +278,7 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("get_object_hashmap: %s %s %s %s", account, container, name, version)
         self._can_read(user, account, container, name)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name, version)
+        path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name, version)
         sql = 'select block_id from hashmaps where version_id = ? order by pos asc'
         c = self.con.execute(sql, (version_id,))
         hashmap = [x[0] for x in c.fetchall()]
@@ -292,7 +295,7 @@ class SimpleBackend(BaseBackend):
         path = os.path.join(path, name)
         if permissions is not None:
             r, w = self._check_permissions(path, permissions)
-        src_version_id, dest_version_id = self._copy_version(path, path, not replace_meta, False)
+        src_version_id, dest_version_id = self._copy_version(user, path, path, not replace_meta, False)
         sql = 'update versions set size = ? where version_id = ?'
         self.con.execute(sql, (size, dest_version_id))
         # TODO: Check for block_id existence.
@@ -324,7 +327,7 @@ class SimpleBackend(BaseBackend):
         dest_path = os.path.join(dest_path, dest_name)
         if permissions is not None:
             r, w = self._check_permissions(dest_path, permissions)
-        src_version_id, dest_version_id = self._copy_version(src_path, dest_path, not replace_meta, True, src_version)
+        src_version_id, dest_version_id = self._copy_version(user, src_path, dest_path, not replace_meta, True, src_version)
         for k, v in dest_meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
@@ -346,8 +349,8 @@ class SimpleBackend(BaseBackend):
         logger.debug("delete_object: %s %s %s", account, container, name)
         if user != account:
             raise NotAllowedError
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name)
-        self._put_version(path, 0, 1)
+        path = self._get_objectinfo(account, container, name)[0]
+        self._put_version(path, user, 0, 1)
         sql = 'delete from permissions where name = ?'
         self.con.execute(sql, (path,))
         self.con.commit()
@@ -421,40 +424,41 @@ class SimpleBackend(BaseBackend):
     
     def _get_version(self, path, version=None):
         if version is None:
-            sql = '''select version_id, strftime('%s', tstamp), size, hide from versions where name = ?
+            sql = '''select version_id, user, strftime('%s', tstamp), size, hide from versions where name = ?
                         order by version_id desc limit 1'''
             c = self.con.execute(sql, (path,))
             row = c.fetchone()
-            if not row or int(row[3]):
+            if not row or int(row[4]):
                 raise NameError('Object does not exist')
         else:
-            sql = '''select version_id, strftime('%s', tstamp), size from versions where name = ?
+            # The database (sqlite) will not complain if the version is not an integer.
+            sql = '''select version_id, user, strftime('%s', tstamp), size from versions where name = ?
                         and version_id = ?'''
             c = self.con.execute(sql, (path, version))
             row = c.fetchone()
             if not row:
                 raise IndexError('Version does not exist')
-        return str(row[0]), int(row[1]), int(row[2])
+        return str(row[0]), str(row[1]), int(row[2]), int(row[3])
     
-    def _put_version(self, path, size=0, hide=0):
-        sql = 'insert into versions (name, size, hide) values (?, ?, ?)'
-        id = self.con.execute(sql, (path, size, hide)).lastrowid
+    def _put_version(self, path, user, size=0, hide=0):
+        sql = 'insert into versions (name, user, size, hide) values (?, ?, ?, ?)'
+        id = self.con.execute(sql, (path, user, size, hide)).lastrowid
         self.con.commit()
         return str(id)
     
-    def _copy_version(self, src_path, dest_path, copy_meta=True, copy_data=True, src_version=None):
+    def _copy_version(self, user, src_path, dest_path, copy_meta=True, copy_data=True, src_version=None):
         if src_version is not None:
-            src_version_id, mtime, size = self._get_version(src_path, src_version)
+            src_version_id, muser, mtime, size = self._get_version(src_path, src_version)
         else:
             # Latest or create from scratch.
             try:
-                src_version_id, mtime, size = self._get_version(src_path)
+                src_version_id, muser, mtime, size = self._get_version(src_path)
             except NameError:
                 src_version_id = None
                 size = 0
         if not copy_data:
             size = 0
-        dest_version_id = self._put_version(dest_path, size)
+        dest_version_id = self._put_version(dest_path, user, size)
         if copy_meta and src_version_id is not None:
             sql = 'insert into metadata select %s, key, value from metadata where version_id = ?'
             sql = sql % dest_version_id
@@ -499,18 +503,18 @@ class SimpleBackend(BaseBackend):
     
     def _get_objectinfo(self, account, container, name, version=None):
         path = os.path.join(account, container, name)
-        version_id, mtime, size = self._get_version(path, version)
-        return path, version_id, mtime, size
+        version_id, muser, mtime, size = self._get_version(path, version)
+        return path, version_id, muser, mtime, size
     
     def _get_metadata(self, path, version):
         sql = 'select key, value from metadata where version_id = ?'
         c = self.con.execute(sql, (version,))
         return dict(c.fetchall())
     
-    def _put_metadata(self, path, meta, replace=False):
+    def _put_metadata(self, user, path, meta, replace=False):
         """Create a new version and store metadata."""
         
-        src_version_id, dest_version_id = self._copy_version(path, path, not replace, True)
+        src_version_id, dest_version_id = self._copy_version(user, path, path, not replace, True)
         for k, v in meta.iteritems():
             if not replace and v == '':
                 sql = 'delete from metadata where version_id = ? and key = ?'

@@ -83,6 +83,7 @@ class BaseTestCase(TestCase):
                 'Date',
                 'X-Object-Manifest',
                 'Content-Range',
+                'X-Object-Modified-By',
                 'X-Object-Version',
                 'X-Object-Version-Timestamp',)}
         self.contentTypes = {'xml':'application/xml',

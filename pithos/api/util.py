@@ -140,8 +140,9 @@ def put_object_meta(response, meta, public=False):
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     if not public:
+        response['X-Object-Modified-By'] = meta['modified_by']
         response['X-Object-Version'] = meta['version']
-        response['X-Object-Version-Timestamp'] = meta['version_timestamp']
+        response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
             response[k.encode('utf-8')] = meta[k].encode('utf-8')
         for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By'):

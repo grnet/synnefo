@@ -182,6 +182,7 @@ class BaseBackend(object):
             'name': The object name
             'bytes': The total data size
             'modified': Last modification timestamp (overall)
+            'modified_by': The user that committed the object (version requested)
             'version': The version identifier
             'version_timestamp': The version's modification timestamp
         

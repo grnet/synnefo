@@ -954,14 +954,12 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .terminated {
-    background-color: white;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin-bottom: 17px;
     margin-top: 15px;
     padding-bottom: 15px;
     padding-top: 15px;
     width: 699px;
-    opacity: 0.8;
-    filter: alpha(opacity = 80);
 }
 
 span.rename {
@@ -1170,7 +1168,7 @@ div.machine-type {
 }
 
 #machinesview-list.list {
-    background-color: white;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin-top: -76px;
     padding-left: 15px;
     padding-top: 76px;
@@ -1895,7 +1893,7 @@ input.machine {
 }
 
 #error-success .popup-body-inner {
-    background-image: url("./popup-inner-bg.png");
+    background: url("./popup-inner-bg.png") repeat-x scroll 0 0 transparent;
     font-size: 80%;
     min-height: 120px;
     margin-left: 20px;
@@ -2264,7 +2262,6 @@ div.list table {
 div.list table tbody td {
     color: #3D3D3D;
     padding:6px;
-    background-color: #FFF;
     vertical-align: middle;
 }
 
@@ -2274,7 +2271,7 @@ div.list table thead tr th {
     background-repeat: no-repeat;
     background-position: right 11px;
     font-weight: normal;
-    border: 1px solid #FFF;
+    border: 1px solid transparent;
     border-bottom: none;
     padding: 4px;
     text-align: left;
@@ -2423,13 +2420,13 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 #networks-pane .public-networks {
-    background-color: white;
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
     margin: 0 0 18px;
     padding: 70px 0 15px 35px;
 }
 
 #networks-pane .private-networks {
-    background-color: white;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     padding: 15px 20px 20px 35px;
 }
 
@@ -2747,7 +2744,6 @@ div.network-machine:hover {
 
 .machines {
     width: 416px;
-    background-color: #B3B3B3;
     margin-bottom: -8px;
     margin-top: 10px;
 }

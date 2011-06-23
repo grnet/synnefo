@@ -1,3 +1,7 @@
 #wizard .right {
     margin-top: -23px;
 }
+
+#metadata-wizard .addbuttons {
+    margin-top: -17px;
+}

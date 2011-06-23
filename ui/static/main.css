@@ -1175,6 +1175,7 @@ div.machine-type {
     padding-left: 15px;
     padding-top: 76px;
     width: 683px;
+    min-height: 270px;
 }
 
 #machinesview_content {
@@ -2248,6 +2249,11 @@ div.list div.dataTables_filter input{
 
 .dataTables_wrapper {
     width: 515px;
+    padding-bottom: 40px;
+}
+
+div.list table thead .sorting {
+    padding-right: 15px !important;
 }
 
 div.list table {

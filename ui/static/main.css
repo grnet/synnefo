@@ -3117,12 +3117,12 @@ div.single div.action-container.destroy {
 
 .single .column3 {
     background-color: #A1C8DB;
-    height: 200px;
     margin-left: 535px;
     position: absolute;
     top: 280px;
     width: 150px;
     overflow: visible;
+    padding-bottom: 10px;
 }
 
 .single .column3 .controls {

@@ -3335,9 +3335,9 @@ applet {
 #networks-wizard .separator-end {
     background-color: #387693;
     height: 6px;
-    width: 478px;
-    margin-left: -12px;
-    margin-top: 9px;
+    width: 479px;
+    margin-left: -13px;
+    margin-top: 5px;
 }
 
 .red {

@@ -98,6 +98,7 @@ class HelpdeskMiddleware(object):
         # Impersonate the request user: Perform requests from the helpdesk
         # account on behalf of the impersonated user
         request.user = tmp_user
+        request.readonly = True
 
 def check_ip(ip, allowed):
     for addr in allowed:

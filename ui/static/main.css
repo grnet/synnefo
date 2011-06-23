@@ -3120,7 +3120,7 @@ div.single div.action-container.destroy {
     height: 200px;
     margin-left: 535px;
     position: absolute;
-    top: 325px;
+    top: 280px;
     width: 150px;
     overflow: visible;
 }
@@ -3257,7 +3257,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
-    height: 400px;
+    height: 300px;
     margin-bottom: 10px;
     padding-top: 60px;
     width: 700px;

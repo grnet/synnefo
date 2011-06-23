@@ -218,9 +218,9 @@ div.css-panes {
     background-color: #FF9955;
     float: left;
     height: 31px;
-    margin-left: -20px;
+    margin-left: -13px;
     margin-top: -6px;
-    width: 20px;
+    width: 13px;
 }
 
 #ie-fix {
@@ -2402,7 +2402,7 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 #networks-pane #beforecreate {
-    margin-left: -20px;
+    margin-left: -13px;
     margin-top: -6px;
 }
 

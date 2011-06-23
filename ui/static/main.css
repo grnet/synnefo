@@ -309,7 +309,7 @@ div#footer-text{
 
 /* single item */
 #wizard .page, #networks-wizard div.container {
-    padding: 15px 40px 20px 15px;
+    padding: 0px 40px 20px 15px;
     width:447px;
     float:left;
     display:block;
@@ -331,7 +331,7 @@ div#footer-text{
     font-style: italic;
     font-weight: bold;
     padding-left: 37px;
-    padding-top: 2px;
+    padding-top: 17px;
 }
 
 #networks-wizard h2 {
@@ -447,7 +447,6 @@ div#footer-text{
 #wizard #status {
     height: 50px;
     background: #4085A5;
-    width: 450px;
 }
 
 #wizard .headernumber {
@@ -585,7 +584,7 @@ div#footer-text{
 #status li {
     float: left;
     color: #387693;
-    padding: 0px 0px 0 33px;
+    padding: 0 1px 0 37px;
     bottom: 0px;
 }
 

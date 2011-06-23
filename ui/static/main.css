@@ -2383,7 +2383,6 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 .fixed {
-    margin: 0 0 0 -35px !important;
     bottom: 0;
     position: fixed !important;
 }

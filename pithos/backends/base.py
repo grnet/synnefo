@@ -31,6 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+class NotAllowedError(Exception):
+    pass
+
 class BaseBackend(object):
     """Abstract backend class that serves as a reference for actual implementations.
     
@@ -50,6 +53,7 @@ class BaseBackend(object):
         """Delete the account with the given name.
         
         Raises:
+            NotAllowedError: Operation not permitted
             IndexError: Account is not empty
         """
         return
@@ -63,6 +67,9 @@ class BaseBackend(object):
             'bytes': The total data size (or 0)
             'modified': Last modification timestamp (overall)
             'until_timestamp': Last modification until the timestamp provided
+        
+        Raises:
+            NotAllowedError: Operation not permitted
         """
         return {}
     
@@ -72,6 +79,9 @@ class BaseBackend(object):
         Parameters:
             'meta': Dictionary with metadata to update
             'replace': Replace instead of update
+        
+        Raises:
+            NotAllowedError: Operation not permitted
         """
         return
     
@@ -81,6 +91,9 @@ class BaseBackend(object):
         Parameters:
             'marker': Start list from the next item after 'marker'
             'limit': Number of containers to return
+        
+        Raises:
+            NotAllowedError: Operation not permitted
         """
         return []
     
@@ -88,6 +101,7 @@ class BaseBackend(object):
         """Create a new container with the given name.
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container already exists
         """
         return
@@ -96,6 +110,7 @@ class BaseBackend(object):
         """Delete the container with the given name.
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container does not exist
             IndexError: Container is not empty
         """
@@ -112,6 +127,7 @@ class BaseBackend(object):
             'until_timestamp': Last modification until the timestamp provided
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container does not exist
         """
         return {}
@@ -124,6 +140,7 @@ class BaseBackend(object):
             'replace': Replace instead of update
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container does not exist
         """
         return
@@ -144,6 +161,7 @@ class BaseBackend(object):
             'keys': Include objects that have meta with the keys in the list
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container does not exist
         """
         return []
@@ -152,6 +170,7 @@ class BaseBackend(object):
         """Return a list with all the container's object meta keys.
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container does not exist
         """
         return []
@@ -167,6 +186,7 @@ class BaseBackend(object):
             'version_timestamp': The version's modification timestamp
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
             IndexError: Version does not exist
         """
@@ -180,20 +200,21 @@ class BaseBackend(object):
             'replace': Replace instead of update
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
         """
         return
     
     def get_object_permissions(self, user, account, container, name):
-        """Return a dictionary with the object permissions.
+        """Return the path from which this object gets its permissions from,\
+        along with a dictionary containing the permissions.
         
         The keys are:
-            'public': The object is readable by all and available at a public URL
-            'private': No permissions set
             'read': The object is readable by the users/groups in the list
             'write': The object is writable by the users/groups in the list
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
         """
         return {}
@@ -205,6 +226,7 @@ class BaseBackend(object):
             'permissions': Dictionary with permissions to update
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
             ValueError: Invalid users/groups in permissions
             AttributeError: Can not set permissions, as this object\
@@ -218,12 +240,13 @@ class BaseBackend(object):
         """Return the object's size and a list with partial hashes.
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
             IndexError: Version does not exist
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions={}):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes.
         
         Parameters:
@@ -232,13 +255,14 @@ class BaseBackend(object):
             'permissions': Updated object permissions
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container does not exist
             ValueError: Invalid users/groups in permissions
             AttributeError: Can not set permissions
         """
         return
     
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}, src_version=None):
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata.
         
         Parameters:
@@ -248,6 +272,7 @@ class BaseBackend(object):
             'src_version': Copy from the version provided
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
             IndexError: Version does not exist
             ValueError: Invalid users/groups in permissions
@@ -255,7 +280,7 @@ class BaseBackend(object):
         """
         return
     
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata.
         
         Parameters:
@@ -264,6 +289,7 @@ class BaseBackend(object):
             'permissions': New object permissions
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
             ValueError: Invalid users/groups in permissions
             AttributeError: Can not set permissions
@@ -274,12 +300,17 @@ class BaseBackend(object):
         """Delete an object.
         
         Raises:
+            NotAllowedError: Operation not permitted
             NameError: Container/object does not exist
         """
         return
     
     def list_versions(self, user, account, container, name):
-        """Return a list of all (version, version_timestamp) tuples for an object."""
+        """Return a list of all (version, version_timestamp) tuples for an object.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
         return []
     
     def get_block(self, hash):

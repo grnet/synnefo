@@ -45,6 +45,7 @@ from pithos.api.compat import parse_http_date_safe
 from pithos.api.faults import (Fault, NotModified, BadRequest, ItemNotFound, LengthRequired,
                                 PreconditionFailed, RangeNotSatisfiable, ServiceUnavailable)
 from pithos.backends import backend
+from pithos.backends.base import NotAllowedError
 
 import datetime
 import logging
@@ -143,7 +144,7 @@ def put_object_meta(response, meta, public=False):
         response['X-Object-Version-Timestamp'] = meta['version_timestamp']
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
             response[k.encode('utf-8')] = meta[k].encode('utf-8')
-        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing'):
+        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By'):
             if k in meta:
                 response[k] = meta[k]
     else:
@@ -172,17 +173,22 @@ def update_manifest_meta(request, v_account, meta):
         md5.update(hash)
         meta['hash'] = md5.hexdigest().lower()
 
-def format_permissions(permissions):
+def update_sharing_meta(permissions, v_account, v_container, v_object, meta):
+    if permissions is None:
+        return
+    perm_path, perms = permissions
+    if len(perms) == 0:
+        return
     ret = []
-    if 'private' in permissions:
-        ret.append('private')
-    r = ','.join(permissions.get('read', []))
+    r = ','.join(perms.get('read', []))
     if r:
         ret.append('read=' + r)
-    w = ','.join(permissions.get('write', []))
+    w = ','.join(perms.get('write', []))
     if w:
         ret.append('write=' + w)
-    return '; '.join(ret)
+    meta['X-Object-Sharing'] = '; '.join(ret)
+    if '/'.join((v_account, v_container, v_object)) != perm_path:
+        meta['X-Object-Shared-By'] = perm_path
 
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set."""
@@ -238,6 +244,8 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
             backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions)
         else:
             backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions, src_version)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError, IndexError:
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
@@ -352,33 +360,30 @@ def get_sharing(request):
     """
     
     permissions = request.META.get('HTTP_X_OBJECT_SHARING')
-    if permissions is None or permissions == '':
+    if permissions is None:
         return None
     
     ret = {}
-    for perm in (x.replace(' ','') for x in permissions.split(';')):
-        if perm == 'private':
-            ret['private'] = True
-            continue
-        elif perm.startswith('read='):
+    permissions = permissions.replace(' ', '')
+    if permissions == '':
+        return ret
+    for perm in (x for x in permissions.split(';')):
+        if perm.startswith('read='):
             ret['read'] = [v.replace(' ','') for v in perm[5:].split(',')]
+            ret['read'].remove('')
             if '*' in ret['read']:
                 ret['read'] = ['*']
             if len(ret['read']) == 0:
                 raise BadRequest('Bad X-Object-Sharing header value')
         elif perm.startswith('write='):
             ret['write'] = [v.replace(' ','') for v in perm[6:].split(',')]
+            ret['write'].remove('')
             if '*' in ret['write']:
                 ret['write'] = ['*']
             if len(ret['write']) == 0:
                 raise BadRequest('Bad X-Object-Sharing header value')
         else:
             raise BadRequest('Bad X-Object-Sharing header value')
-    if 'private' in ret:
-        if 'read' in ret:
-            del(ret['read'])
-        if 'write' in ret:
-            del(ret['write'])
     return ret
 
 def raw_input_socket(request):

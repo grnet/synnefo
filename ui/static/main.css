@@ -949,11 +949,11 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .build-state .indicator1, .build-state .indicator2, .build-state .indicator3, .build-state .indicator4 {
-    background-color: #87AADE;
+    background-color: #5CA1C0;
 }
 
 .network-indicator .indicator1, .network-indicator .indicator2, .network-indicator .indicator3, .network-indicator .indicator4 {
-    background-color: #87AADE;
+    background-color: #5CA1C0;
 }
 
 .terminated {

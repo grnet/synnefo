@@ -2168,6 +2168,8 @@ div#user a.current_lang {
     padding-top: 2px;
     float: right;
     cursor: pointer;
+    position: relative;
+    z-index: 1000;
 }
 
 div.editbuttons div.save:hover, div.editbuttons div.cancel:hover {

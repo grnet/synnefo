@@ -98,6 +98,13 @@ if (!Array.prototype.indexOf) {
   };
 }
 
+// trim prototype for IE
+if(typeof String.prototype.trim !== 'function') {
+    String.prototype.trim = function() {
+        return this.replace(/^\s+|\s+$/g, ''); 
+    }
+}
+
 function update_confirmations() {
     // hide all confirm boxes to begin with
     $('#machines-pane div.confirm_single').hide();
@@ -1014,7 +1021,7 @@ function rename(serverID, serverName){
                     display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
                     },
         success: function(data, textStatus, jqXHR) {
-                    if ( jqXHR.status == '204') {
+                    if ( jqXHR.status == '204' || jqXHR.status == '1223') {
                         try {
                             console.info('renamed ' + serverID);
                         } catch(err) {}

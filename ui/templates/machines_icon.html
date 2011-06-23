@@ -244,7 +244,7 @@ $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
 
 //initiate machine renaming
 $("#machinesview-icon.standard .rename, #machinesview-icon.standard h5.editable span.name").live('click', function() {
-    $(this).parent().find('.name').html("<input id=\"txtEdit\" type=\"text\" class=\"nametextbox\" value=\"" +
+    $(this).parent().find('.name').html("<input type=\"text\" class=\"nametextbox\" value=\"" +
                                         $(this).parent().find('.name').text() +
                                         "\" / ><span class=\"oldValue\">" +
                                         $(this).parent().find('.name').text() + "</span>");
@@ -254,12 +254,12 @@ $("#machinesview-icon.standard .rename, #machinesview-icon.standard h5.editable 
     $(this).parent().removeClass('editable');
 
     //submit wizard by pressing enter on the name textbox
-    $("#txtEdit").keydown(function (e) {
+    $(".nametextbox").keydown(function (e) {
         if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
-            $(this).parent().parent().find('div.editbuttons span.save').click();
+            $(this).parent().parent().find('div.editbuttons div.save').click();
             return false;
         } else if ((e.which && e.which == 27) || (e.keyCode && e.keyCode == 27)) {
-            $(this).parent().parent().find('div.editbuttons span.cancel').click();
+            $(this).parent().parent().find('div.editbuttons div.cancel').click();
             return true;
         }
     });
@@ -276,6 +276,7 @@ $("#machinesview-icon.standard .editbuttons .save").live('click', function() {
     $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
     $(this).parent().parent().find(".editbuttons").fadeOut("fast");
     $(this).parent().parent().find(".rename").fadeIn("slow");
+    $(this).parent().parent().addClass('editable');
     rename(serverID, serverName);
     return false;
 });

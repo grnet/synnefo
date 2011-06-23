@@ -401,6 +401,15 @@ or implied, of GRNET S.A.
                href: "static/ie.css"
             }).appendTo("head");
         }
+
+        //load opera css fixes
+        if ($.browser.opera) {
+            $("<link/>", {
+               rel: "stylesheet",
+               type: "text/css",
+               href: "static/opera.css"
+            }).appendTo("head");
+        }
     </script>
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>

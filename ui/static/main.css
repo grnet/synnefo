@@ -451,7 +451,7 @@ div#footer-text{
 }
 
 #wizard .headernumber {
-    font-size: 470%;
+    font-size: 410%;
 }
 
 #wizard .headerbody {
@@ -528,11 +528,13 @@ div#footer-text{
 #wizard .img-next {
     margin-right: -4px;
     padding-left: 8px;
+    margin-bottom: -1px;
 }
 
 #wizard .img-prev {
     margin-left: -4px;
     padding-right: 8px;
+    margin-bottom: -1px;
 }
 
 #networks-wizard .create {
@@ -565,7 +567,6 @@ div#footer-text{
 #wizard #tabscontainer {
     background-color: #CDE2EC;
     height: 20px;
-    margin-top: -3px;
     width: 448px;
 }
 
@@ -604,15 +605,16 @@ div.image-container {
 
 #page2-container {
     background-color: #ECF4F8;
+    height: 193px;
+    margin-top: 3px;
     padding-top: 25px;
-    height: 180px;
 }
 
 #page3-container {
     background-color: #ECF4F8;
-    padding-left: 50px;
-    height: 244px;
+    height: 245px;
     margin-bottom: 32px;
+    padding-left: 50px;
 }
 
 /* slider root element */
@@ -663,13 +665,13 @@ div.image-container {
 
 /* the input field */
 .range {
+    border: 1px solid #387693;
     float: left;
     font-size: 100%;
     margin: -3px 0 0 15px;
-    padding: 2px 10px 2px 0;
+    padding: 2px 5px 2px 0;
     text-align: right;
-    width: 40px;
-    border: 1px solid #387693;
+    width: 50px;
 }
 
 .selectedrange {
@@ -1266,9 +1268,9 @@ div.list .stopped {
 }
 
 #wizard div.panes {
-    height: 250px;
-    margin-bottom: 6px;
+    height: 247px;
     clear:both;
+    margin-top: 3px;
 }
 
 .typebody {
@@ -1283,7 +1285,7 @@ div.list .stopped {
 }
 
 #label-name {
-    margin-top: 15px;
+    margin-top: 10px;
 }
 
 /* single tab */
@@ -1296,7 +1298,7 @@ div.list .stopped {
 /* link inside the tab. uses a background image */
 #wizard ul.tabs a {
     display:block;
-    padding: 0.3em 0.5em 0.5em 0.4em;
+    padding: 0.2em 0.5em 0.1em 0.4em;
     text-decoration:none;
     color: #FFFFFF;
     position:relative;
@@ -1306,6 +1308,7 @@ div.list .stopped {
     text-align: center;
     width: 100px;
     white-space: nowrap;
+    height: 17px;
 }
 
 #wizard ul.tabs a:hover {
@@ -1371,6 +1374,10 @@ input.machine {
     display: inline-block;
     position: relative;
     width: 300px;
+}
+
+#wizard .button-container {
+    height: 20px;
 }
 
 /* metadata editing and add machines to network overlays */

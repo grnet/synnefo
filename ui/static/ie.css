@@ -66,6 +66,6 @@ div.single-actions {
     height: 80px;
 }
 
-.editbuttons .cancel, .editbuttons .save {
-    margin-top: -10px;
+.editbuttons {
+    margin-top: -19px !important; 
 }

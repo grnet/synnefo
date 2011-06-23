@@ -56,6 +56,7 @@ or implied, of GRNET S.A.
     <script src="static/jquery.dataTables.min.js"></script>
     <script src="static/synnefo.js"></script>
     <link rel="stylesheet" type="text/css" href="static/main.css"/>
+    <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->    
     <script>
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
@@ -392,15 +393,6 @@ or implied, of GRNET S.A.
                 $(this).parent().parent().find(".tab-name").text($(this).parent().find("a.current").attr("href"));
             }
         );
-
-        //load IE css fixes
-        if ($.browser.msie) {
-            $("<link/>", {
-               rel: "stylesheet",
-               type: "text/css",
-               href: "static/ie.css"
-            }).appendTo("head");
-        }
 
         //load opera css fixes
         if ($.browser.opera) {

@@ -3048,6 +3048,8 @@ div.single div.action-container.destroy {
 
 .single div.action-container.destroy div.confirm_single {
     margin: -18px -116px 0 0;
+    position: relative;
+    left: 0px;
 }
 
 .single div.confirm_single button.no {
@@ -3256,6 +3258,11 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     font-size: 100%;
     height: 15px;
     padding-top: 2px;
+}
+
+.single .column3 .disabled {
+    opacity: 0.5;
+    filter: alpha(opacity = 50);
 }
 
 .single div.lower {

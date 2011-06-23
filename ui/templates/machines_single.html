@@ -154,13 +154,13 @@ or implied, of GRNET S.A.
     </div>
     <div class="column3">
         <div class="controls">
-            <div class="previous" style="display:none;">
+            <div class="previous" style="display:block;">
                 <div class="prev-arrow"></div>
                 <div class="prev-label">
                     {% trans "previous" %}
                 </div>
             </div>
-            <div class="next" style="display:none;">
+            <div class="next" style="display:block;">
                 <div class="next-arrow"></div>
                 <div class="next-label">
                     {% trans "next" %}
@@ -337,11 +337,6 @@ function update_machines_view(data){
         existing = $('#machinesview-single.single #' + server.id);
         existing_link = $('#machinesview-single div.column3 #link-' + server.id);
         var current_Id = current_serverId();
-
-        //hide next button if there is only one vm
-        if (data.servers.values.length == 1) {
-            $("#machinesview-single.single .column3 .next").hide();
-        }
 
         // if multiple machines exist in the DOM, delete all but one
         // defensive coding - that shouldn't happen normally
@@ -532,17 +527,7 @@ function update_machines_view(data){
         $('.single').find('#' + $(this).attr('id').substring(5)).show();
         $('.single .column3').find('.column3-selected').removeClass('column3-selected');
         $(this).addClass('column3-selected');
-        //show prev next links only if there are prev next servers
-        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") != $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
-            $(".single .column3 .previous").show();
-        } else {
-            $(".single .column3 .previous").hide();
-        }
-        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") != $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
-            $(".single .column3 .next").show();
-        } else {
-            $(".single .column3 .next").hide();
-        }
+        update_prev_next()
     });
 
     if ($.cookie('server')) {
@@ -550,18 +535,14 @@ function update_machines_view(data){
         $.cookie('server', null);
     }
 
-    //if it is the last vm, hide the next button
+    //if it is the last vm, disable the next button
     if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
-        $("#machinesview-single.single .column3 .next").hide()
-    } else {
-        $("#machinesview-single.single .column3 .next").show()
+        $("#machinesview-single.single .column3 .next").addClass('disabled');
     }
 
-    //if it is the first vm, hide the prev button
+    //if it is the first vm, disable the prev button
     if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
-        $("#machinesview-single.single .column3 .previous").hide()
-    } else {
-        $("#machinesview-single.single .column3 .previous").show()
+        $("#machinesview-single.single .column3 .previous").addClass('disabled');
     }
 }
 
@@ -581,10 +562,7 @@ $("#machinesview-single.single .column3 .previous").live('click', function() {
         $('#machinesview-single.single').find('#' + current_server).prev().show();
         $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('column3-selected');
         $('#machinesview-single.single .column3').find('#link-' + current_server).prev().addClass('column3-selected');
-        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
-            $(this).hide()
-        }
-        $("#machinesview-single.single .column3 .next").show()
+        update_prev_next()
         return false;
     }
 });
@@ -599,17 +577,27 @@ $("#machinesview-single.single .column3 .next").live('click', function() {
         $('#machinesview-single.single').find('#' + current_server).next().show();
         $('#machinesview-single.single .column3').find('#link-' + current_server).removeClass('column3-selected');
         $('#machinesview-single.single .column3').find('#link-' + current_server).next().addClass('column3-selected');
-        //if it is the last vm, hide the next button
-        if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
-            $(this).hide()
-        }
-        $("#machinesview-single.single .column3 .previous").show();
+        update_prev_next()
         return false;
     }
 });
 
-//hide prev button on startup
-$("#machinesview-single.single .column3 .previous").hide()
+
+//enables-disables previous/next buttons accordingly
+function update_prev_next() {
+    if ($("#machinesview-single.single .column3 .column3-selected").attr("id") != $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
+        $(".single .column3 .previous").removeClass('disabled');
+    } else {
+        //disable class
+        $(".single .column3 .previous").addClass('disabled');
+    }
+    if ($("#machinesview-single.single .column3 .column3-selected").attr("id") != $("#machinesview-single.single .column3 .server-name:last").attr("id")) {
+        $(".single .column3 .next").removeClass('disabled');
+    } else {
+        //disable class
+        $(".single .column3 .next").addClass('disabled');
+    }
+}
 
 // basic functions executed on page load
 if ( flavors.length == 0 && images.length == 0 ) {

@@ -257,7 +257,10 @@ INVITATION_ENCR_KEY = '8d342f6e7a0366c632978a80257019af'
 INVITATION_VALID_DAYS = 30
 
 # SMTP server to use when sending out emails
-SMTP_SERVER="127.0.0.1"
+EMAIL_HOST = "127.0.0.1"
+EMAIL_HOST_USER = ""
+EMAIL_HOST_PASSWORD = ""
+DEFAULT_CHARSET = 'utf-8'
 
 # The address to use in the From: field when sending out emails
 SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
@@ -279,9 +282,6 @@ HELPDESK_TOKEN_DURATION_MIN = 30
 
 # IP addresses of the machines allowed to connect as help desk
 HELPDESK_ALLOWED_IPS = ("127.0.0.1",)
-
-# Helpdesk auth token
-HELPDESK_AUTH_TOKEN = "0xdeadbabe"
 
 #
 # Network Configuration

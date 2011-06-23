@@ -56,3 +56,7 @@ div.single-actions {
     top: 190px;
     margin-left: -95px !important;
 }
+
+.running {
+    height: 80px;
+}

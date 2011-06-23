@@ -1506,7 +1506,7 @@ input.machine {
 
 #metadata-wizard .metadata-add-template {
     background-color: #74AEC9;
-    width: auto;
+    width: 350px;
 }
 
 #metadata-wizard #add-meta-value {
@@ -1613,12 +1613,12 @@ input.machine {
 
 #metadata-wizard .metadata-edit .edit {
     background-image: url("./meta-edit.png");
-    margin-left: 3px;
+    margin-left: 2px;
 }
 
 #metadata-wizard .metadata-edit .remove, #metadata-wizard .editbuttons .remove {
     background-image: url("./meta-remove.png");
-    margin-left: 1px;
+    margin-left: 4px;
     background-repeat: no-repeat;
     color: transparent;
     font-size: 75%;

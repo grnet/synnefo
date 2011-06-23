@@ -669,8 +669,6 @@ def api_method(http_method=None, format_allowed=False):
                 
                 # Fill in custom request variables.
                 request.serialization = request_serialization(request, format_allowed)
-                # TODO: Authenticate.
-                request.user = "test"
                 
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)

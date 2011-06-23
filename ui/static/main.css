@@ -1071,17 +1071,12 @@ div.image {
     padding: 5px;
 }
 
-#ie-fix-view-select {
-    position: relative;
-    z-index: 1000;
-}
-
 div#view-select {
     float: right;
     clear: both;
     color: white;
     position: relative;
-    right: 10px;
+    right: 5px;
     top: -35px;
     display: none;
     z-index: 1000;
@@ -1172,7 +1167,6 @@ div.machine-type {
     margin-top: -76px;
     padding-left: 15px;
     padding-top: 76px;
-    width: 683px;
     min-height: 270px;
 }
 

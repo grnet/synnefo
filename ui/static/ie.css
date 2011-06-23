@@ -56,3 +56,8 @@ div.single-actions {
     top: 190px;
     margin-left: -95px !important;
 }
+
+#ie-fix-view-select {
+    position: relative;
+    z-index: 1000;
+}

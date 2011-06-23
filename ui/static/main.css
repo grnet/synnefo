@@ -218,9 +218,9 @@ div.css-panes {
     background-color: #FF9955;
     float: left;
     height: 31px;
-    margin-left: -20px;
+    margin-left: -13px;
     margin-top: -6px;
-    width: 20px;
+    width: 13px;
 }
 
 #ie-fix {
@@ -905,7 +905,6 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     margin-top: -76px;
     padding-bottom: 15px;
     width: 699px;
-    min-height: 50px;
     padding-top: 60px;
 }
 
@@ -1329,7 +1328,7 @@ div.list div.actions {
 
 div.list div.actions a {
     clear: left;
-    color: #D3D3D3;
+    color: #A1A1A1;
     display: block;
     font-size:75%;
     margin-bottom: 2px;
@@ -2397,7 +2396,7 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 #networks-pane #beforecreate {
-    margin-left: -20px;
+    margin-left: -13px;
     margin-top: -6px;
 }
 

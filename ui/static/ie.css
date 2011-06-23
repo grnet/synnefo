@@ -61,3 +61,8 @@ div.single-actions {
     position: relative;
     z-index: 1000;
 }
+
+.running {
+    height: 80px;
+}
+

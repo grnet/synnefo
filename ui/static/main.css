@@ -1975,7 +1975,9 @@ div.confirm_single, div.confirm_multiple, div.action_error {
 }
 
 div.action-container.destroy div.confirm_single {
-    margin-top: -5px;
+    bottom: 0;
+    position: absolute;
+    left: 83px;
 }
 
 div.terminated div.action-container.destroy div.confirm_single {

@@ -5,3 +5,7 @@
 #metadata-wizard .addbuttons {
     margin-top: -17px;
 }
+
+div#view-select {
+    top: -15px;
+}

@@ -45,7 +45,9 @@ class ApiAuthMiddleware(object):
             return
 
         #A Rackspace API authentication request
-        if self.auth_user in request.META and self.auth_key in request.META and 'GET' == request.method:
+        if self.auth_user in request.META and \
+           self.auth_key in request.META and \
+           'GET' == request.method:
             # This is here merely for compatibility with the Openstack API.
             # All normal users should authenticate through Sibbolleth. Admin
             # users or other selected users could use this as a bypass

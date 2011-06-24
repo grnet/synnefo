@@ -215,6 +215,7 @@ div.css-panes {
 }
 
 #beforecreate {
+    position:relative;
     background-color: #FF9955;
     float: left;
     height: 31px;

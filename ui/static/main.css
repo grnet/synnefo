@@ -330,8 +330,8 @@ div#footer-text{
     font-size: 100%;
     font-style: italic;
     font-weight: bold;
-    padding-left: 37px;
-    padding-top: 17px;
+    margin-left: 37px;
+    margin-top: 17px;
 }
 
 #networks-wizard h2 {
@@ -446,7 +446,7 @@ div#footer-text{
 
 #wizard #status {
     height: 50px;
-    background: #4085A5;
+    background-color: #4085A5;
 }
 
 #wizard .headernumber {
@@ -542,6 +542,7 @@ div#footer-text{
 }
 
 #wizard .separator-end {
+    position: absolute;
     background-color: #387693;
     height: 5px;
     margin-left: -14px;

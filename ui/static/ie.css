@@ -11,6 +11,35 @@ div.machine {
     width: 528px;
 }
 
+#status li {
+    margin-bottom: 0px;
+}
+
+#wizard .topruler {
+    width: 426px;
+    margin-top: -2px;
+    margin-bottom: 0px;
+}
+
+#wizard #tabscontainer {
+    width: 426px;
+}
+
+div.image {
+    padding: 0px;
+    margin-bottom:0px;
+}
+
+.description-container {
+    width: 390px;
+    top: -10px;
+    left: 83px;
+}
+
+#wizard .bottomruler {
+    width:426px;
+}
+
 div.confirm_single {
     margin-right: -71px;
 }
@@ -67,5 +96,5 @@ div.single-actions {
 }
 
 .editbuttons {
-    margin-top: -19px !important; 
+    margin-top: -19px !important;
 }

@@ -3143,12 +3143,14 @@ div.single div.action-container.destroy {
     cursor: pointer;
     height: 16px;
     width: 55px;
-    margin-bottom: 10px;
 }
 
 .single .tags-content {
-    height: 65px;
+    background-color: #84B7D0;
     clear: both;
+    height: 65px;
+    padding-bottom: 5px;
+    width: 100px;
 }
 
 .single .column3 {

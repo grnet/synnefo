@@ -196,3 +196,7 @@ div.single-actions {
 #networks-wizard .separator-end {
     margin-top: 5px;
 }
+
+.private-networks .state div {
+    margin: 5px 1px 4px;
+}

@@ -737,7 +737,6 @@ div.machine-details {
 }
 
 .state {
-    float: right;
     margin-top: -40px;
 }
 
@@ -2527,10 +2526,13 @@ h5.network-machines, h5.machine-settings {
 
 div.network div.actions {
     float: right;
-    width: 100px;
     font-size: 75%;
-    margin:0px -120px 0 0;
     font-weight: normal;
+    height: 70px;
+    width: 100px;
+    position: absolute;
+    right: -100px;
+    top: 0;
 }
 
 div.network div.machine-actions {

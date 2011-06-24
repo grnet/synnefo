@@ -1445,3 +1445,18 @@ function get_public_ips(server) {
 function get_private_ips(server) {
 
 }
+
+function close_all_overlays() {
+	try {
+		$("a#networkscreate").overlay().close();
+	} catch(err) {}
+	try {
+		$('a#create').overlay().close();
+	} catch(err) {}
+	try {
+		$("a#add-machines-overlay").overlay().close();
+	} catch(err) {}
+	try {
+		$("a#metadata-scrollable").overlay().close();
+	} catch(err) {}	
+}

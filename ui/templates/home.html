@@ -158,9 +158,14 @@ or implied, of GRNET S.A.
 
         // ajax error checking
         function ajax_error(status, serverID, action, responseText) {
+             // close existing overlays to begin with
+            close_all_overlays();       
+            // clear old deferred calls (stops all auto-updates)
+            clearTimeout(deferred);
+            
             $('#error-success').addClass('error');
             $('#error-success').removeClass('success');
-
+            
             var serverName = '';
 
             if (serverID !== undefined) {
@@ -240,21 +245,19 @@ or implied, of GRNET S.A.
             // bring up error notification
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
-                mask: {
-                    color: '#ebecff',
-                    opacity: '0.9'
-                },
+                mask: '#666',
                 top: 'center',
                 closeOnClick: false,
                 oneInstance: false,
                 load: false,
                 onClose: function () {
-                    // With partial refresh working properly,
-                    // it is no longer necessary to refresh the whole page
-                    // choose_view();
+                    // refresh the whole page
+                    location.reload();
                 }
             });
-            $("a#notification").data('overlay').load();
+            
+            // we need to give the browser some time to close the old overlays before opening the new one
+            setTimeout("$('a#notification').data('overlay').load()",400);
             return false;
         }
 
@@ -296,10 +299,7 @@ or implied, of GRNET S.A.
 
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
-                mask: {
-                    color: '#ebecff',
-                    opacity: '0.9'
-                },
+                mask: '#666',
                 top: 'center',
                 closeOnClick: false,
                 oneInstance: false,

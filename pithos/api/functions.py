@@ -597,7 +597,7 @@ def object_write(request, v_account, v_container, v_object):
         except KeyError:
             raise BadRequest('Invalid data formatting')
         meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
-    elif request.rerialization == 'xml':
+    elif request.serialization == 'xml':
         #TODO support for xml
         raise BadRequest('Format xml is not supported')
     else:

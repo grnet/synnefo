@@ -2468,8 +2468,37 @@ div.network {
 }
 
 div.network-placeholder {
-    border-left: 3px solid #FB822F;
     margin-left: 33px;
+}
+
+div.network-cable {
+    border-left: 3px solid #FB822F;    
+    float: left;
+    margin-left: -40px;
+    margin-top: -40px;
+    height: 185px;
+    overflow: hidden;
+}
+
+.last div.network-cable {
+    height:80px !important;
+}
+
+.first div.network-cable {
+    height:165px;
+    margin-top:-20px;
+}
+
+div.firewall-cable {
+    border-left: 3px solid #FB822F;    
+    float: left;
+    margin-left: -100px;
+    margin-top: -20px;
+    height: 110px;    
+}
+
+.last div.firewall-cable {
+    display:none;
 }
 
 div.network a:hover, span.show-machines:hover, span.ip:hover, span.show-firewall:hover {
@@ -3385,14 +3414,6 @@ applet {
 
 .css-panes {
     clear: both;
-}
-
-.last .network-separator {
-    background-color: white;
-    height: 10px;
-    margin-left: -50px;
-    margin-top: -12px;
-    width: 20px;
 }
 
 .last .firewall-content {

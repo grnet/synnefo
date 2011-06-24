@@ -122,6 +122,7 @@ or implied, of GRNET S.A.
 
     <!-- template for machines in public network -->
     <div class="network-machine" id="public-machine-template">
+        <div class="network-cable"></div>
         <div class="machine-actions">
             <a href="#" class="action-details">{% trans "Details" %}</a>
         </div>
@@ -162,6 +163,7 @@ or implied, of GRNET S.A.
             (<span class="firewall-off">{% trans "Off" %}</span>)
         </h5>
         <div class="firewall-content">
+            <div class="firewall-cable"></div>
             <div class="firewall-contents-start-separator"></div>
             <input type="radio" class="checkboxes" name="image-id1" />
             <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
@@ -486,7 +488,7 @@ $("#networks-pane .action-details").live('click', function() {
     $.cookie('view', '2');
     $.cookie('server', serverID);
     $('a#machines').click();
-    return false
+    return false;
 });
 
 // add machines wizard initialization
@@ -944,7 +946,9 @@ function update_networks_view(servers_data, networks_data){
         $("div.private-networks").fadeOut("slow");
     }
 
-    // tag the last seperator for better styling
+    // tag the first and last seperators for better styling
+    $("#pub .network-machine").removeClass('first');
+    $("#pub .network-machine").first().addClass('first');    
     $("#pub .network-machine").removeClass('last');
     $("#pub .network-machine").last().addClass('last');
 }

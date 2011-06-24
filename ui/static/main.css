@@ -440,7 +440,7 @@ div#footer-text{
     color: #79A4C1;
     margin-top: 40px;
     clear:both;
-    padding-left: 15px;
+    margin-left: 15px;
     font-size: 95%;
 }
 
@@ -2473,7 +2473,7 @@ div.network-placeholder {
 }
 
 div.network-cable {
-    border-left: 3px solid #FB822F;    
+    border-left: 3px solid #FB822F;
     float: left;
     margin-left: -40px;
     margin-top: -40px;
@@ -2491,11 +2491,11 @@ div.network-cable {
 }
 
 div.firewall-cable {
-    border-left: 3px solid #FB822F;    
+    border-left: 3px solid #FB822F;
     float: left;
     margin-left: -100px;
     margin-top: -20px;
-    height: 110px;    
+    height: 110px;
 }
 
 .last div.firewall-cable {

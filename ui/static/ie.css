@@ -11,8 +11,8 @@ div.machine {
     width: 528px;
 }
 
-#status li {
-    margin-bottom: 0px;
+#wizard, #networks-wizard {
+    height: 450px;
 }
 
 #wizard .topruler {
@@ -36,8 +36,81 @@ div.image {
     left: 83px;
 }
 
+#machinetype {
+    width: 426px;
+}
+
+#page2-container {
+    width: 426px;
+}
+
+.typebody {
+    top: -2px;
+}
+
+.slider-container {
+    padding: 0px;
+}
+
+#page2-container label {
+    float:left;
+    margin-top: -3px;
+}
+
+.slider {
+    margin: 5px 0 20px 0px;
+}
+
+.progress {
+    font-size: 2%;
+}
+
+.handle {
+    margin-top: -9px;
+}
+
+.range {
+    margin: -3px -5px 0 15px;
+}
+
+.units {
+    padding:0px;
+}
+
+#wizard .cost {
+    margin-top: 55px;
+    margin-left:0px;
+}
+
+#credits-indicator {
+    width: 30px;
+    margin-left: 3px;
+}
+
+#page3-container {
+    width: 426px;
+    margin-bottom: 25px;
+}
+
+#wizard .text {
+    padding: 0px;
+}
+
 #wizard .bottomruler {
     width:426px;
+}
+
+#wizard button.next {
+    margin-top: -23px;
+}
+
+#wizard button.prev {
+    margin-top: -3px;
+}
+
+#wizard .separator-end {
+    font-size: 2%;
+    margin-top: 374px;
 }
 
 div.confirm_single {

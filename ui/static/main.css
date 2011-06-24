@@ -2930,7 +2930,6 @@ h5.machine-connect span:hover {
 .single .metadata-keys-container {
     float: none;
     height: 50px;
-    margin-top: 5px;
 }
 
 .single a.manage-metadata {
@@ -3150,6 +3149,7 @@ div.single div.action-container.destroy {
     clear: both;
     height: 65px;
     padding-bottom: 5px;
+    padding-top: 5px;
     width: 100px;
 }
 

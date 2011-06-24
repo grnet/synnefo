@@ -482,8 +482,9 @@ div#footer-text{
     margin-left: 2px;
 }
 
-#wizard .topruler, #networks-wizard .topruler {
+#wizard .topruler, #networks-wizard .topruler, #wizard .bottomruler, #networks-wizard .bottomruler {
     background-color: #CDE2EC;
+    color: #CDE2EC;
     border: 0 none;
     height: 4px;
     margin-left: -1px;
@@ -493,12 +494,6 @@ div#footer-text{
 }
 
 #wizard .bottomruler, #networks-wizard .bottomruler {
-    background-color: #CDE2EC;
-    border: 0 none;
-    height: 4px;
-    margin-left: -1px;
-    width: 447px;
-    margin-bottom:6px;
     margin-top:6px;
 }
 

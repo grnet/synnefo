@@ -35,7 +35,7 @@
 
 from getpass import getuser
 from optparse import OptionParser
-from os.path import basename
+from os import environ
 from sys import argv, exit, stdin, stdout
 from pithos.lib.client import Client, Fault
 from datetime import datetime
@@ -45,6 +45,7 @@ import logging
 import types
 import re
 import time as _time
+import os
 
 DEFAULT_HOST = 'pithos.dev.grnet.gr'
 DEFAULT_API = 'v1'
@@ -70,7 +71,11 @@ class Command(object):
         parser.add_option('--host', dest='host', metavar='HOST',
                           default=DEFAULT_HOST, help='use server HOST')
         parser.add_option('--user', dest='user', metavar='USERNAME',
-                          default=getuser(), help='use account USERNAME')
+                          default=_get_user(),
+                          help='use account USERNAME')
+        parser.add_option('--token', dest='token', metavar='AUTH',
+                          default=_get_auth(),
+                          help='use account AUTH')
         parser.add_option('--api', dest='api', metavar='API',
                           default=DEFAULT_API, help='use api API')
         parser.add_option('-v', action='store_true', dest='verbose',
@@ -87,7 +92,7 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
         
-        self.client = Client(self.host, self.user, self.api, self.verbose,
+        self.client = Client(self.host, self.token, self.user, self.api, self.verbose,
                              self.debug)
         
         self.parser = parser
@@ -154,24 +159,27 @@ class List(Command):
         print_list(l)
     
     def list_objects(self, container):
-        params = {'limit':self.limit, 'marker':self.marker,
-                  'prefix':self.prefix, 'delimiter':self.delimiter,
-                  'path':self.path, 'meta':self.meta}
+        #prepate params
+        params = {}
+        attrs = ['limit', 'marker', 'prefix', 'delimiter', 'path', 'meta']
+        for a in [a for a in attrs if getattr(self, a)]:
+            params[a] = getattr(self, a)
+        
+        if self.until:
+            t = _time.strptime(self.until, self.format)
+            params['until'] = int(_time.mktime(t))
+        
         headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
                    'IF_UNMODIFIED_SINCE':self.if_unmodified_since}
         container, sep, object = container.partition('/')
         if object:
             return
         
-        if self.until:
-            t = _time.strptime(self.until, self.format)
-            params['until'] = int(_time.mktime(t))
-        
         detail = 'json'
         #if request with meta quering disable trash filtering
         show_trashed = True if self.meta else False
-        l = self.client.list_objects(container, detail, params, headers,
-                                     include_trashed = show_trashed)
+        l = self.client.list_objects(container, detail, headers,
+                                     include_trashed = show_trashed, **params)
         print_list(l, detail=self.detail)
 
 @cli_command('meta')
@@ -217,10 +225,11 @@ class CreateContainer(Command):
     
     def execute(self, container, *args):
         headers = {}
+        meta = {}
         for arg in args:
             key, sep, val = arg.partition('=')
-            headers['X_CONTAINER_META_%s' %key.strip().upper()] = val.strip()
-        ret = self.client.create_container(container, headers)
+            meta[key] = val
+        ret = self.client.create_container(container, headers, **meta)
         if not ret:
             print 'Container already exists'
 
@@ -257,7 +266,7 @@ class GetObject(Command):
         parser.add_option('--if-unmodified-since', action='store', type='str',
                           dest='if-unmodified-since', default=None,
                           help='show output if not modified since then')
-        parser.add_option('-f', action='store', type='str',
+        parser.add_option('-o', action='store', type='str',
                           dest='file', default=None,
                           help='save output in file')
         parser.add_option('--version', action='store', type='str',
@@ -309,6 +318,8 @@ class PutObject(Command):
     description = 'create/override object with path contents or standard input'
     
     def add_options(self, parser):
+        parser.add_option('--use_hashes', action='store_true', dest='use_hashes',
+                          default=False, help='provide hashmap instead of data')
         parser.add_option('--chunked', action='store_true', dest='chunked',
                           default=False, help='set chunked transfer mode')
         parser.add_option('--etag', action='store', dest='etag',
@@ -328,17 +339,33 @@ class PutObject(Command):
         parser.add_option('--type', action='store',
                           dest='content-type', default=False,
                           help='create object with specific content type')
-        parser.add_option('--touch', action='store_true',
-                          dest='touch', default=False,
-                          help='create object with zero data')
+        #parser.add_option('--touch', action='store_true',
+        #                  dest='touch', default=False,
+        #                  help='create object with zero data')
         parser.add_option('--sharing', action='store',
                           dest='sharing', default=None,
                           help='define sharing object policy')
+        parser.add_option('-f', action='store',
+                          dest='srcpath', default=None,
+                          help='file descriptor to read from: pass - for standard input')
         
-    def execute(self, path, srcpath='-', *args):
+    def execute(self, path, *args):
+        if path.find('=') != -1:
+            raise Fault('Missing path argument')
+        
+        #prepare user defined meta
+        meta = {}
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            meta[key] = val
+        
         headers = {}
-        if self.manifest:
-            headers['X_OBJECT_MANIFEST'] = self.manifest
+        manifest = getattr(self, 'manifest')
+        if manifest:
+            # if it's manifestation file
+            # send zero-byte data with X-Object-Manifest header
+            self.touch = True
+            headers['X_OBJECT_MANIFEST'] = manifest
         if self.sharing:
             headers['X_OBJECT_SHARING'] = self.sharing
         
@@ -348,20 +375,18 @@ class PutObject(Command):
         for a in attrs:
             headers[a.replace('-', '_').upper()] = getattr(self, a)
         
-        #prepare user defined meta
-        for arg in args:
-            key, sep, val = arg.partition('=')
-            headers['X_OBJECT_META_%s' %key.strip().upper()] = val.strip()
-        
         container, sep, object = path.partition('/')
         
         f = None
-        chunked = False
-        if not self.touch:
-            f = srcpath != '-' and open(srcpath) or stdin
-            chunked = (self.chunked or f == stdin) and True or False
-        self.client.create_object(container, object, f, chunked=chunked,
-                                  headers=headers)
+        if self.srcpath:
+            f = open(self.srcpath) if self.srcpath != '-' else stdin
+        
+        if self.use_hashes and not f:
+            raise Fault('Illegal option combination')
+        
+        self.client.create_object(container, object, f, chunked=self.chunked,
+                                  headers=headers, use_hashes=self.use_hashes,
+                                  **meta)
         if f:
             f.close()
 
@@ -420,8 +445,8 @@ class UpdateObject(Command):
     def add_options(self, parser):
         parser.add_option('-a', action='store_true', dest='append',
                           default=True, help='append data')
-        parser.add_option('--start', action='store',
-                          dest='start',
+        parser.add_option('--offset', action='store',
+                          dest='offset',
                           default=None, help='starting offest to be updated')
         parser.add_option('--range', action='store', dest='content-range',
                           default=None, help='range of data to be updated')
@@ -439,21 +464,25 @@ class UpdateObject(Command):
         parser.add_option('--sharing', action='store',
                           dest='sharing', default=None,
                           help='define sharing object policy')
-        parser.add_option('--touch', action='store_true',
-                          dest='touch', default=False,
-                          help='change object properties')
+        parser.add_option('--nosharing', action='store_true',
+                          dest='no_sharing', default=None,
+                          help='clear object sharing policy')
+        parser.add_option('-f', action='store',
+                          dest='srcpath', default=None,
+                          help='file descriptor to read from: pass - for standard input')
     
-    def execute(self, path, srcpath='-', *args):
+    def execute(self, path, *args):
+        if path.find('=') != -1:
+            raise Fault('Missing path argument')
+        
         headers = {}
         if self.manifest:
             headers['X_OBJECT_MANIFEST'] = self.manifest
         if self.sharing:
             headers['X_OBJECT_SHARING'] = self.sharing
         
-        if getattr(self, 'start'):
-            headers['CONTENT_RANGE'] = 'bytes %s-/*' % getattr(self, 'start')
-        elif self.append:
-            headers['CONTENT_RANGE'] = 'bytes */*'
+        if self.no_sharing:
+            headers['X_OBJECT_SHARING'] = ''
         
         attrs = ['content-encoding', 'content-disposition']
         attrs = [a for a in attrs if getattr(self, a)]
@@ -461,19 +490,21 @@ class UpdateObject(Command):
             headers[a.replace('-', '_').upper()] = getattr(self, a)
         
         #prepare user defined meta
+        meta = {}
         for arg in args:
             key, sep, val = arg.partition('=')
-            headers['X_OBJECT_META_%s' %key.strip().upper()] = val.strip()
+            meta[key] = val
         
         container, sep, object = path.partition('/')
         
         f = None
         chunked = False
-        if not self.touch:
-            f = srcpath != '-' and open(srcpath) or stdin
-            chunked = (self.chunked or f == stdin) and True or False
+        if self.srcpath:
+            f = self.srcpath != '-' and open(self.srcpath) or stdin
+        if f:
+            chunked = True if (self.chunked or f == stdin) else False
         self.client.update_object(container, object, f, chunked=chunked,
-                                  headers=headers)
+                                  headers=headers, offset=self.offset, **meta)
         if f:
             f.close()
 
@@ -513,7 +544,7 @@ class TrashObject(Command):
         self.client.restore_object(src_container, src_object)
 
 @cli_command('unset')
-class TrashObject(Command):
+class UnsetObject(Command):
     syntax = '<container>/[<object>] key [key] [...]'
     description = 'deletes metadata info'
     
@@ -538,19 +569,35 @@ class TrashObject(Command):
 @cli_command('group')
 class SetGroup(Command):
     syntax = 'key=val [key=val] [...]'
-    description = 'sets group account info'
+    description = 'set group account info'
     
-    def execute(self, path='', **args):
-        if len(args) == 0:
-            args = list(args)
-            args.append(path)
-            args = tuple(args)
-            path = ''
+    def execute(self, *args):
         groups = {}
         for arg in args:
             key, sep, val = arg.partition('=')
             groups[key] = val
-        self.client.set_account_groups(groups)
+        self.client.set_account_groups(**groups)
+
+@cli_command('policy')
+class SetPolicy(Command):
+    syntax = 'container key=val [key=val] [...]'
+    description = 'set contianer policies'
+    
+    def execute(self, path, *args):
+        if path.find('=') != -1:
+            raise Fault('Missing container argument')
+        
+        container, sep, object = path.partition('/')
+        
+        if object:
+            raise Fault('Only containers have policies')
+        
+        policies = {}
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            policies[key] = val
+        
+        self.client.set_container_policies(container, **policies)
 
 def print_usage():
     cmd = Command('', [])
@@ -601,6 +648,19 @@ def print_versions(data, f=stdout):
     f.write('versions:\n')
     for id, t in data['versions']:
         f.write('%s @ %s\n' % (str(id).rjust(30), datetime.fromtimestamp(t)))
+
+def _get_user():
+        try:
+            return os.environ['PITHOS_USER']
+        except KeyError:
+            return getuser()
+
+def _get_auth():
+        try:
+            return os.environ['PITHOS_AUTH']
+        except KeyError:
+            return '0000'
+    
 
 def main():
     try:

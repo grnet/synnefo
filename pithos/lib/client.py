@@ -59,7 +59,7 @@ class Fault(Exception):
         self.status = status
 
 class Client(object):
-    def __init__(self, host, account, api='v1', verbose=False, debug=False):
+    def __init__(self, host, token, account, api='v1', verbose=False, debug=False):
         """`host` can also include a port, e.g '127.0.0.1:8000'."""
         
         self.host = host
@@ -67,6 +67,7 @@ class Client(object):
         self.api = api
         self.verbose = verbose or debug
         self.debug = debug
+        self.token = token
     
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024):
@@ -75,6 +76,7 @@ class Client(object):
         # write header
         path = '/%s/%s%s' % (self.api, self.account, path)
         http.putrequest(method, path)
+        http.putheader('X-Auth-Token', self.token)
         http.putheader('Content-Type', 'application/octet-stream')
         http.putheader('Transfer-Encoding', 'chunked')
         if headers:
@@ -141,14 +143,14 @@ class Client(object):
         
         kwargs = {}
         kwargs['headers'] = headers or {}
+        kwargs['headers']['X-Auth-Token'] = self.token
         if not headers or \
         'Transfer-Encoding' not in headers \
         or headers['Transfer-Encoding'] != 'chunked':
             kwargs['headers']['Content-Length'] = len(body) if body else 0
         if body:
             kwargs['body'] = body
-            kwargs['headers']['Content-Type'] = 'application/octet-stream'
-        #print '****', method, full_path, kwargs
+        kwargs['headers'].setdefault('Content-Type', 'application/octet-stream')
         try:
             conn.request(method, full_path, **kwargs)
         except socket.error, e:
@@ -196,7 +198,7 @@ class Client(object):
         status, headers, data = self.get(path, format=format, headers=headers,
                                          params=params)
         if detail:
-            data = json.loads(data)
+            data = json.loads(data) if data else ''
         else:
             data = data.strip().split('\n')
         return data
@@ -258,7 +260,7 @@ class Client(object):
     def delete_account_metadata(self, meta=[]):
         self._delete_metadata('', 'account', meta)
     
-    def set_account_groups(self, groups):
+    def set_account_groups(self, **groups):
         headers = {}
         for key, val in groups.items():
             headers['X-Account-Group-%s' % key.capitalize()] = val
@@ -283,14 +285,16 @@ class Client(object):
     def _filter_trashed(self, l):
         return self._filter(l, {'trash':'true'})
     
-    def list_objects(self, container, detail=False, params=None, headers=None,
-                     include_trashed=False):
+    def list_objects(self, container, detail=False, headers=None,
+                     include_trashed=False, **params):
         l = self._list('/' + container, detail, params, headers)
         if not include_trashed:
             l = self._filter_trashed(l)
         return l
     
-    def create_container(self, container, headers=None):
+    def create_container(self, container, headers=None, **meta):
+        for k,v in meta.items():
+            headers['X_CONTAINER_META_%s' %k.strip().upper()] = v.strip()
         status, header, data = self.put('/' + container, headers=headers)
         if status == 202:
             return False
@@ -314,6 +318,14 @@ class Client(object):
         path = '/%s' % (container)
         self._delete_metadata(path, 'container', meta)
     
+    def set_container_policies(self, container, **policies):
+        path = '/%s' % (container)
+        headers = {}
+        print ''
+        for key, val in policies.items():
+            headers['X-Container-Policy-%s' % key.capitalize()] = val
+        self.post(path, headers=headers)
+    
     # Storage Object Services
     
     def retrieve_object(self, container, object, detail=False, headers=None,
@@ -331,23 +343,37 @@ class Client(object):
         self.create_object(container, object, f=None, headers=h)
     
     def create_object(self, container, object, f=stdin, chunked=False,
-                      blocksize=1024, headers=None):
+                      blocksize=1024, headers=None, use_hashes=False, **meta):
         """
         creates an object
         if f is None then creates a zero length object
         if f is stdin or chunked is set then performs chunked transfer 
         """
         path = '/%s/%s' % (container, object)
-        if not chunked and f != stdin:
+        for k,v in meta.items():
+            headers['X_OBJECT_META_%s' %k.strip().upper()] = v.strip()
+        if not chunked:
+            format = 'json' if use_hashes else 'text'
             data = f.read() if f else None
-            return self.put(path, data, headers=headers)
+            if data:
+                if format == 'json':
+                    data = eval(data)
+                    data = json.dumps(data)
+            return self.put(path, data, headers=headers, format=format)
         else:
             return self._chunked_transfer(path, 'PUT', f, headers=headers,
                                    blocksize=1024)
     
     def update_object(self, container, object, f=stdin, chunked=False,
-                      blocksize=1024, headers=None):
+                      blocksize=1024, headers=None, offset=None, **meta):
         path = '/%s/%s' % (container, object)
+        for k,v in meta.items():
+            headers['X_OBJECT_META_%s' %k.strip().upper()] = v.strip()
+        if offset:
+            headers['Content-Range'] = 'bytes %s-/*' % offset
+        else:
+            headers['Content-Range'] = 'bytes */*'
+        
         if not chunked and f != stdin:
             data = f.read() if f else None
             self.post(path, data, headers=headers)

@@ -900,7 +900,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .running {
-    background: url("./running-bg.png") repeat scroll 0 0 transparent;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin-top: -76px;
     padding-bottom: 15px;
     width: 699px;
@@ -956,7 +956,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .terminated {
-    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
     margin-bottom: 17px;
     margin-top: 15px;
     padding-bottom: 15px;
@@ -2430,13 +2430,13 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 #networks-pane .public-networks {
-    background: url("./running-bg.png") repeat scroll 0 0 transparent;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin: 0 0 18px;
     padding: 70px 0 15px 35px;
 }
 
 #networks-pane .private-networks {
-    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
     padding: 15px 20px 20px 35px;
 }
 
@@ -3319,13 +3319,13 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.lower {
     clear:both;
-    background: url("./running-bg.png") repeat scroll 0 0 transparent;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     width: 700px;
     height: 270px;
 }
 
 .single div.upper {
-    background: url("./running-bg.png") repeat scroll 0 0 transparent;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     height: 310px;
     margin-bottom: 10px;
     padding-top: 60px;

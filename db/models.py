@@ -423,7 +423,8 @@ class Invitations(models.Model):
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
         ('ENABLED', 'Enabled'),
-        ('DISABLED', 'Disabled')
+        ('DISABLED', 'Disabled'),
+        ('PROTECTED', 'Protected')
     )
     
     machine = models.ForeignKey(VirtualMachine, related_name='nics')

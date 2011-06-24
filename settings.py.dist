@@ -286,8 +286,9 @@ GANETI_LINK_PREFIX = 'prv'
 # The number of private network links to use.
 GANETI_MAX_LINK_NUMBER = 100
 
-GANETI_FIREWALL_ENABLED_TAG = 'firewall_enabled'
-GANETI_FIREWALL_DISABLED_TAG = 'firewall_disabled'
+GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:enabled'
+GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:disabled'
+GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:protected'
 
 # A list of suggested server tags (server metadata keys)
 DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]

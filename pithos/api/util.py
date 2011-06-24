@@ -42,8 +42,9 @@ from django.http import HttpResponse
 from django.utils.http import http_date, parse_etags
 
 from pithos.api.compat import parse_http_date_safe
-from pithos.api.faults import (Fault, NotModified, BadRequest, ItemNotFound, LengthRequired,
-                                PreconditionFailed, RangeNotSatisfiable, ServiceUnavailable)
+from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound,
+                                LengthRequired, PreconditionFailed, RangeNotSatisfiable,
+                                ServiceUnavailable)
 from pithos.backends import backend
 from pithos.backends.base import NotAllowedError
 
@@ -57,7 +58,7 @@ import uuid
 logger = logging.getLogger(__name__)
 
 
-def printable_meta_dict(d):
+def printable_header_dict(d):
     """Format a meta dictionary for printing out json/xml.
     
     Convert all keys to lower case and replace dashes to underscores.
@@ -69,26 +70,30 @@ def printable_meta_dict(d):
         del(d['modified'])
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
-def format_meta_key(k):
+def format_header_key(k):
     """Convert underscores to dashes and capitalize intra-dash strings."""
     
     return '-'.join([x.capitalize() for x in k.replace('_', '-').split('-')])
 
-def get_meta_prefix(request, prefix):
-    """Get all prefix-* request headers in a dict. Reformat keys with format_meta_key()."""
+def get_header_prefix(request, prefix):
+    """Get all prefix-* request headers in a dict. Reformat keys with format_header_key()."""
     
     prefix = 'HTTP_' + prefix.upper().replace('-', '_')
-    return dict([(format_meta_key(k[5:]), v) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
+    return dict([(format_header_key(k[5:]), v.replace('_', '')) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
 
-def get_account_meta(request):
-    """Get metadata from an account request."""
-    
-    meta = get_meta_prefix(request, 'X-Account-Meta-')    
-    return meta
+def get_account_headers(request):
+    meta = get_header_prefix(request, 'X-Account-Meta-')
+    groups = {}
+    for k, v in get_header_prefix(request, 'X-Account-Group-').iteritems():
+        n = k[16:].lower()
+        if '-' in n or '_' in n:
+            raise BadRequest('Bad characters in group name')
+        groups[n] = v.replace(' ', '').split(',')
+        if '' in groups[n]:
+            groups[n].remove('')
+    return meta, groups
 
-def put_account_meta(response, meta):
-    """Put metadata in an account response."""
-    
+def put_account_headers(response, meta, groups):
     response['X-Account-Container-Count'] = meta['count']
     response['X-Account-Bytes-Used'] = meta['bytes']
     if 'modified' in meta:
@@ -97,16 +102,14 @@ def put_account_meta(response, meta):
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
     if 'until_timestamp' in meta:
         response['X-Account-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
+    for k, v in groups.iteritems():
+        response[format_header_key('X-Account-Group-' + k).encode('utf-8')] = (','.join(v)).encode('utf-8')
 
-def get_container_meta(request):
-    """Get metadata from a container request."""
-    
-    meta = get_meta_prefix(request, 'X-Container-Meta-')
+def get_container_headers(request):
+    meta = get_header_prefix(request, 'X-Container-Meta-')
     return meta
 
-def put_container_meta(response, meta):
-    """Put metadata in a container response."""
-    
+def put_container_headers(response, meta):
     response['X-Container-Object-Count'] = meta['count']
     response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
@@ -118,10 +121,8 @@ def put_container_meta(response, meta):
     if 'until_timestamp' in meta:
         response['X-Container-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
 
-def get_object_meta(request):
-    """Get metadata from an object request."""
-    
-    meta = get_meta_prefix(request, 'X-Object-Meta-')
+def get_object_headers(request):
+    meta = get_header_prefix(request, 'X-Object-Meta-')
     if request.META.get('CONTENT_TYPE'):
         meta['Content-Type'] = request.META['CONTENT_TYPE']
     if request.META.get('HTTP_CONTENT_ENCODING'):
@@ -132,9 +133,7 @@ def get_object_meta(request):
         meta['X-Object-Manifest'] = request.META['HTTP_X_OBJECT_MANIFEST']
     return meta
 
-def put_object_meta(response, meta, public=False):
-    """Put metadata in an object response."""
-    
+def put_object_headers(response, meta, public=False):
     response['ETag'] = meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
@@ -237,7 +236,7 @@ def split_container_object_string(s):
 def copy_or_move_object(request, v_account, src_container, src_name, dest_container, dest_name, move=False):
     """Copy or move an object."""
     
-    meta = get_object_meta(request)
+    meta = get_object_headers(request)
     permissions = get_sharing(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')    
     try:
@@ -370,15 +369,17 @@ def get_sharing(request):
         return ret
     for perm in (x for x in permissions.split(';')):
         if perm.startswith('read='):
-            ret['read'] = [v.replace(' ','') for v in perm[5:].split(',')]
-            ret['read'].remove('')
+            ret['read'] = [v.replace(' ','').lower() for v in perm[5:].split(',')]
+            if '' in ret['read']:
+                ret['read'].remove('')
             if '*' in ret['read']:
                 ret['read'] = ['*']
             if len(ret['read']) == 0:
                 raise BadRequest('Bad X-Object-Sharing header value')
         elif perm.startswith('write='):
-            ret['write'] = [v.replace(' ','') for v in perm[6:].split(',')]
-            ret['write'].remove('')
+            ret['write'] = [v.replace(' ','').lower() for v in perm[6:].split(',')]
+            if '' in ret['write']:
+                ret['write'].remove('')
             if '*' in ret['write']:
                 ret['write'] = ['*']
             if len(ret['write']) == 0:
@@ -562,7 +563,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = ''
     wrapper = ObjectWrapper(ranges, sizes, hashmaps, boundary)
     response = HttpResponse(wrapper, status=ret)
-    put_object_meta(response, meta, public)
+    put_object_headers(response, meta, public)
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]

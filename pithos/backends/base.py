@@ -42,21 +42,12 @@ class BaseBackend(object):
     
     Note that the account level is always valid as it is checked from another subsystem.
     
-    When not replacing metadata, keys with empty values should be deleted.
+    When not replacing metadata/groups/policy, keys with empty values should be deleted.
     
     The following variables should be available:
         'hash_algorithm': Suggested is 'sha256'
         'block_size': Suggested is 4MB
     """
-    
-    def delete_account(self, user, account):
-        """Delete the account with the given name.
-        
-        Raises:
-            NotAllowedError: Operation not permitted
-            IndexError: Account is not empty
-        """
-        return
     
     def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata.
@@ -85,6 +76,32 @@ class BaseBackend(object):
         """
         return
     
+    def get_account_groups(self, user, account):
+        """Return a dictionary with the user groups defined for this account.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
+        return {}
+    
+    def update_account_groups(self, user, account, groups, replace=False):
+        """Update the groups associated with the account.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            ValueError: Invalid data in groups
+        """
+        return
+    
+    def delete_account(self, user, account):
+        """Delete the account with the given name.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            IndexError: Account is not empty
+        """
+        return
+    
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of container (name, version_id) tuples existing under an account.
         
@@ -96,25 +113,6 @@ class BaseBackend(object):
             NotAllowedError: Operation not permitted
         """
         return []
-    
-    def put_container(self, user, account, container):
-        """Create a new container with the given name.
-        
-        Raises:
-            NotAllowedError: Operation not permitted
-            NameError: Container already exists
-        """
-        return
-    
-    def delete_container(self, user, account, container):
-        """Delete the container with the given name.
-        
-        Raises:
-            NotAllowedError: Operation not permitted
-            NameError: Container does not exist
-            IndexError: Container is not empty
-        """
-        return
     
     def get_container_meta(self, user, account, container, until=None):
         """Return a dictionary with the container metadata.
@@ -142,6 +140,49 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
             NameError: Container does not exist
+        """
+        return
+    
+    def get_container_policy(self, user, account, container):
+        """Return a dictionary with the container policy.
+        
+        The keys returned are:
+            'quota': The maximum bytes allowed (default is 0 - unlimited)
+            'versioning': Can be 'auto', 'manual' or 'none' (default is 'manual')
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Container does not exist
+        """
+        return {}
+    
+    def update_container_policy(self, user, account, container, policy, replace=False):
+        """Update the policy associated with the account.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Container does not exist
+            ValueError: Invalid policy defined
+        """
+        return
+    
+    def put_container(self, user, account, container, policy=None):
+        """Create a new container with the given name.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Container already exists
+            ValueError: Invalid policy defined
+        """
+        return
+    
+    def delete_container(self, user, account, container):
+        """Delete the container with the given name.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Container does not exist
+            IndexError: Container is not empty
         """
         return
     
@@ -234,6 +275,27 @@ class BaseBackend(object):
                 is already shared/private by another object higher\
                 in the hierarchy, or setting permissions here will\
                 invalidate other permissions deeper in the hierarchy
+        """
+        return
+    
+    def get_object_public(self, user, account, container, name):
+        """Return the public URL of the object if applicable.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Container/object does not exist
+        """
+        return None
+    
+    def update_object_public(self, user, account, container, name, public):
+        """Update the public status of the object.
+        
+        Parameters:
+            'public': Boolean value
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Container/object does not exist
         """
         return
     

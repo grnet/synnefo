@@ -42,8 +42,8 @@ from django.utils.http import parse_etags
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
-from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
-    put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
+from pithos.api.util import (format_header_key, printable_header_dict, get_account_headers,
+    put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
     update_manifest_meta, update_sharing_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, get_sharing, raw_input_socket,
@@ -129,11 +129,12 @@ def account_meta(request, v_account):
     until = get_int_parameter(request, 'until')
     try:
         meta = backend.get_account_meta(request.user, v_account, until)
+        groups = backend.get_account_groups(request.user, v_account)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     
     response = HttpResponse(status=204)
-    put_account_meta(response, meta)
+    put_account_headers(response, meta, groups)
     return response
 
 @api_method('POST')
@@ -143,10 +144,17 @@ def account_update(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_account_meta(request)
+    meta, groups = get_account_headers(request)
     replace = True
     if 'update' in request.GET:
-        replace = False
+        replace = False    
+    if groups:
+        try:
+            backend.update_account_groups(request.user, v_account, groups, replace)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except ValueError:
+            raise BadRequest('Invalid groups header')
     try:
         backend.update_account_meta(request.user, v_account, meta, replace)
     except NotAllowedError:
@@ -164,13 +172,14 @@ def container_list(request, v_account):
     until = get_int_parameter(request, 'until')
     try:
         meta = backend.get_account_meta(request.user, v_account, until)
+        groups = backend.get_account_groups(request.user, v_account)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_account_meta(response, meta)
+    put_account_headers(response, meta, groups)
     
     marker = request.GET.get('marker')
     limit = request.GET.get('limit')
@@ -203,7 +212,7 @@ def container_list(request, v_account):
         if x[1] is not None:
             try:
                 meta = backend.get_container_meta(request.user, v_account, x[0], until)
-                container_meta.append(printable_meta_dict(meta))
+                container_meta.append(printable_header_dict(meta))
             except NotAllowedError:
                 raise Unauthorized('Access denied')
             except NameError:
@@ -234,7 +243,7 @@ def container_meta(request, v_account, v_container):
         raise ItemNotFound('Container does not exist')
     
     response = HttpResponse(status=204)
-    put_container_meta(response, meta)
+    put_container_headers(response, meta)
     return response
 
 @api_method('PUT')
@@ -245,7 +254,7 @@ def container_create(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_container_meta(request)
+    meta = get_container_headers(request)
     
     try:
         backend.put_container(request.user, v_account, v_container)
@@ -273,7 +282,7 @@ def container_update(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_container_meta(request)
+    meta = get_container_headers(request)
     replace = True
     if 'update' in request.GET:
         replace = False
@@ -324,7 +333,7 @@ def object_list(request, v_account, v_container):
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_container_meta(response, meta)
+    put_container_headers(response, meta)
     
     path = request.GET.get('path')
     prefix = request.GET.get('prefix')
@@ -357,7 +366,7 @@ def object_list(request, v_account, v_container):
     keys = request.GET.get('meta')
     if keys:
         keys = keys.split(',')
-        keys = [format_meta_key('X-Object-Meta-' + x.strip()) for x in keys if x.strip() != '']
+        keys = [format_header_key('X-Object-Meta-' + x.strip()) for x in keys if x.strip() != '']
     else:
         keys = []
     
@@ -394,7 +403,7 @@ def object_list(request, v_account, v_container):
             except NameError:
                 pass
             update_sharing_meta(permissions, v_account, v_container, x[0], meta)
-            object_meta.append(printable_meta_dict(meta))
+            object_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':
@@ -429,7 +438,7 @@ def object_meta(request, v_account, v_container, v_object):
     update_sharing_meta(permissions, v_account, v_container, v_object, meta)
     
     response = HttpResponse(status=200)
-    put_object_meta(response, meta)
+    put_object_headers(response, meta)
     return response
 
 @api_method('GET', format_allowed=True)
@@ -538,7 +547,7 @@ def object_read(request, v_account, v_container, v_object):
             data = json.dumps(d)
         
         response = HttpResponse(data, status=200)
-        put_object_meta(response, meta)
+        put_object_headers(response, meta)
         response['Content-Length'] = len(data)
         return response
     
@@ -574,7 +583,7 @@ def object_write(request, v_account, v_container, v_object):
             copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
         return HttpResponse(status=201)
     
-    meta = get_object_meta(request)
+    meta = get_object_headers(request)
     permissions = get_sharing(request)
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
@@ -682,7 +691,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_object_meta(request)
+    meta = get_object_headers(request)
     permissions = get_sharing(request)
     content_type = meta.get('Content-Type')
     if content_type:

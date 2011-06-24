@@ -80,21 +80,16 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists hashmaps (
                     version_id integer, pos integer, block_id text, primary key (version_id, pos))'''
         self.con.execute(sql)
+        sql = '''create table if not exists groups (
+                    account text, name text, users text, primary key (account, name))'''
+        self.con.execute(sql)
         sql = '''create table if not exists permissions (
                     name text, read text, write text, primary key (name))'''
         self.con.execute(sql)
+        sql = '''create table if not exists policy (
+                    name text, key text, value text, primary key (name, key))'''
+        self.con.execute(sql)
         self.con.commit()
-    
-    def delete_account(self, user, account):
-        """Delete the account with the given name."""
-        
-        logger.debug("delete_account: %s", account)
-        if user != account:
-            raise NotAllowedError
-        count, bytes, tstamp = self._get_pathstats(account)
-        if count > 0:
-            raise IndexError('Account is not empty')
-        self._del_path(account) # Point of no return.
     
     def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata."""
@@ -140,6 +135,47 @@ class SimpleBackend(BaseBackend):
             raise NotAllowedError
         self._put_metadata(user, account, meta, replace)
     
+    def get_account_groups(self, user, account):
+        """Return a dictionary with the user groups defined for this account."""
+        
+        logger.debug("get_account_groups: %s", account)
+        if user != account:
+            raise NotAllowedError
+        return self._get_groups(account)
+    
+    def update_account_groups(self, user, account, groups, replace=False):
+        """Update the groups associated with the account."""
+        
+        logger.debug("update_account_groups: %s %s %s", account, groups, replace)
+        if user != account:
+            raise NotAllowedError
+        for k, v in groups.iteritems():
+            if True in [False or ',' in x for x in v]:
+                raise ValueError('Bad characters in groups')
+        if replace:
+            sql = 'delete from groups where account = ?'
+            self.con.execute(sql, (account,))
+        for k, v in groups.iteritems():
+            if len(v) == 0:
+                if not replace:
+                    sql = 'delete from groups where account = ? and name = ?'
+                    self.con.execute(sql, (account, k))
+            else:
+                sql = 'insert or replace into groups (account, name, users) values (?, ?, ?)'
+                self.con.execute(sql, (account, k, ','.join(v)))
+        self.con.commit()
+    
+    def delete_account(self, user, account):
+        """Delete the account with the given name."""
+        
+        logger.debug("delete_account: %s", account)
+        if user != account:
+            raise NotAllowedError
+        count, bytes, tstamp = self._get_pathstats(account)
+        if count > 0:
+            raise IndexError('Account is not empty')
+        self._del_path(account) # Point of no return.
+    
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of containers existing under an account."""
         
@@ -147,33 +183,6 @@ class SimpleBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         return self._list_objects(account, '', '/', marker, limit, False, [], until)
-    
-    def put_container(self, user, account, container):
-        """Create a new container with the given name."""
-        
-        logger.debug("put_container: %s %s", account, container)
-        if user != account:
-            raise NotAllowedError
-        try:
-            path, version_id, mtime = self._get_containerinfo(account, container)
-        except NameError:
-            path = os.path.join(account, container)
-            version_id = self._put_version(path, user)
-        else:
-            raise NameError('Container already exists')
-    
-    def delete_container(self, user, account, container):
-        """Delete the container with the given name."""
-        
-        logger.debug("delete_container: %s %s", account, container)
-        if user != account:
-            raise NotAllowedError
-        path, version_id, mtime = self._get_containerinfo(account, container)
-        count, bytes, tstamp = self._get_pathstats(path)
-        if count > 0:
-            raise IndexError('Container is not empty')
-        self._del_path(path) # Point of no return.
-        self._copy_version(user, account, account, True, True) # New account version.
     
     def get_container_meta(self, user, account, container, until=None):
         """Return a dictionary with the container metadata."""
@@ -206,6 +215,45 @@ class SimpleBackend(BaseBackend):
             raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container)
         self._put_metadata(user, path, meta, replace)
+    
+    def get_container_policy(self, user, account, container):
+        """Return a dictionary with the container policy."""
+        
+        logger.debug("get_container_policy: %s %s", account, container)
+        return {}
+    
+    def update_container_policy(self, user, account, container, policy, replace=False):
+        """Update the policy associated with the account."""
+        
+        logger.debug("update_container_policy: %s %s %s %s", account, container, policy, replace)
+        return
+    
+    def put_container(self, user, account, container, policy=None):
+        """Create a new container with the given name."""
+        
+        logger.debug("put_container: %s %s %s", account, container, policy)
+        if user != account:
+            raise NotAllowedError
+        try:
+            path, version_id, mtime = self._get_containerinfo(account, container)
+        except NameError:
+            path = os.path.join(account, container)
+            version_id = self._put_version(path, user)
+        else:
+            raise NameError('Container already exists')
+    
+    def delete_container(self, user, account, container):
+        """Delete the container with the given name."""
+        
+        logger.debug("delete_container: %s %s", account, container)
+        if user != account:
+            raise NotAllowedError
+        path, version_id, mtime = self._get_containerinfo(account, container)
+        count, bytes, tstamp = self._get_pathstats(path)
+        if count > 0:
+            raise IndexError('Container is not empty')
+        self._del_path(path) # Point of no return.
+        self._copy_version(user, account, account, True, True) # New account version.
     
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
@@ -272,6 +320,18 @@ class SimpleBackend(BaseBackend):
         path = self._get_objectinfo(account, container, name)[0]
         r, w = self._check_permissions(path, permissions)
         self._put_permissions(path, r, w)
+    
+    def get_object_public(self, user, account, container, name):
+        """Return the public URL of the object if applicable."""
+        
+        logger.debug("get_object_public: %s %s %s", account, container, name)
+        return None
+    
+    def update_object_public(self, user, account, container, name, public):
+        """Update the public status of the object."""
+        
+        logger.debug("update_object_public: %s %s %s %s", account, container, name, public)
+        return
     
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
@@ -534,11 +594,30 @@ class SimpleBackend(BaseBackend):
                 self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
+    def _get_groups(self, account):
+        sql = 'select name, users from groups where account = ?'
+        c = self.con.execute(sql, (account,))
+        return dict([(x[0], x[1].split(',')) for x in c.fetchall()])
+    
     def _is_allowed(self, user, account, container, name, op='read'):
         if user == account:
             return True
         path = os.path.join(account, container, name)
         perm_path, perms = self._get_permissions(path)
+        
+        # Expand groups.
+        for x in ('read', 'write'):
+            g_perms = []
+            for y in perms.get(x, []):
+                if ':' in y:
+                    g_account, g_name = y.split(':', 1)
+                    groups = self._get_groups(g_account)
+                    if g_name in groups:
+                        g_perms += groups[g_name]
+                else:
+                    g_perms.append(y)
+            perms[x] = g_perms
+        
         if op == 'read' and user in perms.get('read', []):
             return True
         if user in perms.get('write', []):

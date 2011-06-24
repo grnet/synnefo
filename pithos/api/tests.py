@@ -50,7 +50,7 @@ DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
 
 class AaiClient(Client):
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = '46e427d657b20defe352804f0eb6f8a2'
+        request['HTTP_X_AUTH_TOKEN'] = '0000'
         return super(AaiClient, self).request(**request)
 
 class BaseTestCase(TestCase):

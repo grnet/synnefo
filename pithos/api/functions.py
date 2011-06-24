@@ -544,7 +544,7 @@ def object_read(request, v_account, v_container, v_object):
     
     return object_data_response(request, sizes, hashmaps, meta)
 
-@api_method('PUT')
+@api_method('PUT', format_allowed=True)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: serviceUnavailable (503),
@@ -554,7 +554,6 @@ def object_write(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
-    
     copy_from = request.META.get('HTTP_X_COPY_FROM')
     move_from = request.META.get('HTTP_X_MOVE_FROM')
     if copy_from or move_from:
@@ -584,26 +583,49 @@ def object_write(request, v_account, v_container, v_object):
     if 'Content-Type' not in meta:
         raise LengthRequired('Missing Content-Type header')
     
-    md5 = hashlib.md5()
-    size = 0
-    hashmap = []
-    sock = raw_input_socket(request)
-    for data in socket_read_iterator(sock, content_length, backend.block_size):
-        # TODO: Raise 408 (Request Timeout) if this takes too long.
-        # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
-        size += len(data)
-        hashmap.append(backend.put_block(data))
-        md5.update(data)
+    if request.serialization == 'json':
+        data = ''
+        sock = raw_input_socket(request)
+        for block in socket_read_iterator(sock, content_length, backend.block_size):
+            data = '%s%s' % (data, block)
+        d = json.loads(data)
+        if not hasattr(d, '__getitem__'):
+            raise BadRequest('Invalid data formating')
+        try:
+            hashmap = d['hashes']
+            size = d['bytes']
+        except KeyError:
+            raise BadRequest('Invalid data formatting')
+        meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
+    elif request.rerialization == 'xml':
+        #TODO support for xml
+        raise BadRequest('Format xml is not supported')
+    else:
+        md5 = hashlib.md5()
+        size = 0
+        hashmap = []
+        sock = raw_input_socket(request)
+        for data in socket_read_iterator(sock, content_length, backend.block_size):
+            # TODO: Raise 408 (Request Timeout) if this takes too long.
+            # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+            size += len(data)
+            hashmap.append(backend.put_block(data))
+            md5.update(data)
+        
+        meta['hash'] = md5.hexdigest().lower()
+        etag = request.META.get('HTTP_ETAG')
+        if etag and parse_etags(etag)[0].lower() != meta['hash']:
+            raise UnprocessableEntity('Object ETag does not match')
     
-    meta['hash'] = md5.hexdigest().lower()
-    etag = request.META.get('HTTP_ETAG')
-    if etag and parse_etags(etag)[0].lower() != meta['hash']:
-        raise UnprocessableEntity('Object ETag does not match')
-    
+    payload = ''
+    code = 201
     try:
         backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True, permissions)
     except NotAllowedError:
         raise Unauthorized('Access denied')
+    except IndexError, e:
+        payload = json.dumps(e.data)
+        code = 409
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
@@ -611,7 +633,7 @@ def object_write(request, v_account, v_container, v_object):
     except AttributeError:
         raise Conflict('Sharing already set above or below this path in the hierarchy')
     
-    response = HttpResponse(status=201)
+    response = HttpResponse(content=payload, status=code)
     response['ETag'] = meta['hash']
     return response
 

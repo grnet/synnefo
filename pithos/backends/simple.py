@@ -291,6 +291,16 @@ class SimpleBackend(BaseBackend):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
+        missing = []
+        for i in range(len(hashmap)):
+            sql = 'select count(*) from blocks where block_id = ?'
+            c = self.con.execute(sql, (hashmap[i],))
+            if c.fetchone()[0] == 0:
+                missing.append(hashmap[i])
+        if missing:
+            ie = IndexError()
+            ie.data = missing
+            raise ie
         path = self._get_containerinfo(account, container)[0]
         path = os.path.join(path, name)
         if permissions is not None:

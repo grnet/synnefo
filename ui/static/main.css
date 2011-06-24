@@ -1512,6 +1512,8 @@ input.machine {
 #metadata-wizard .metadata-add-template {
     background-color: #74AEC9;
     width: 350px;
+    position: relative;
+    overflow: visible;
 }
 
 #metadata-wizard #add-meta-value {
@@ -1759,7 +1761,7 @@ input.machine {
     background: url("./dropdown-arrow.gif") no-repeat scroll center center transparent;
     cursor: pointer;
     float: right;
-    left: 130px;
+    left: 90px;
     margin-top: 4px;
     position: absolute;
     width: 20px;

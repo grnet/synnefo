@@ -11,11 +11,11 @@ div.machine {
     width: 528px;
 }
 
-#wizard, #networks-wizard {
+#wizard {
     height: 450px;
 }
 
-#wizard .topruler {
+#wizard .topruler, #networks-wizard .topruler {
     width: 426px;
     margin-top: -2px;
     margin-bottom: 0px;
@@ -96,7 +96,7 @@ div.image {
     padding: 0px;
 }
 
-#wizard .bottomruler {
+#wizard .bottomruler, #networks-wizard .bottomruler {
     width:426px;
 }
 
@@ -170,4 +170,29 @@ div.single-actions {
 
 .editbuttons {
     margin-top: -19px !important;
+}
+
+#networks-wizard h2 {
+    margin-bottom:5px;
+}
+
+#networks-wizard div.container {
+    width: 426px;
+    margin-top:-6px;
+}
+
+#networks-wizard div.name-input {
+    margin-left:45px;
+}
+
+#networks-wizard .cancel {
+    margin-top:-12px;
+}
+
+#networks-wizard .create {
+    margin-top:-24px;
+}
+
+#networks-wizard .separator-end {
+    margin-top: 5px;
 }

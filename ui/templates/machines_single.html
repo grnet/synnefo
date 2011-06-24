@@ -79,13 +79,21 @@ or implied, of GRNET S.A.
                 </div>
                 <div class="tags">
                     <div class="tags-header">
-                        <div class="tags-label">
-                            {% trans "Tags" %}
-                        </div>
-                        <div class="tags-down-arrow">
-                        </div>
+                        <div class="tags-label">{% trans "Tags" %}</div>
+                        <div class="toggler down"></div>
                     </div>
                     <div class="tags-content">
+                        <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
+                        <div class="metadata-keys-container">
+                            <div class="scrollable vertical">
+                                <div class="items">
+                                </div>
+                            </div>
+                            <div class="metadata-actions">
+                                <div class="prev"></div>
+                                <div class="next"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -177,10 +185,25 @@ or implied, of GRNET S.A.
 
 <script>
 
-//hide the all of the info contents
-$("#machinesview-single.single .disks-content").hide();
-$("#machinesview-single.single .networks-content").hide();
-$("#machinesview-single.single .stats-content").hide();
+//hide the all of the tags contents
+$("#machinesview-single.single .tags-content").hide();
+
+//toggle the component with class tags-content
+$("#machinesview-single.single div.tags-header").live('click', function() {
+    if ($(this).find('.toggler').hasClass('up')) {
+        $(this).find('.toggler').removeClass('up');
+        $(this).find('.toggler').addClass('down');
+        $(this).find('.tags-label').removeClass('darker');
+        $(this).parent().parent().removeClass('light-background');
+    } else {
+        $(this).find('.toggler').removeClass('down');
+        $(this).find('.toggler').addClass('up');
+        $(this).find('.tags-label').addClass('darker');
+        $(this).parent().parent().addClass('light-background');
+    }
+    $(this).parent().parent().find(".tags-content").slideToggle(600);
+    return false;
+});
 
 // indicate that the requested action was not completed
 function display_failure(status, serverID, action, responseText) {
@@ -198,6 +221,28 @@ $("#machinesview-single.single div.confirm_single .no").live('click', function()
     update_confirmations();
 });
 
+// update metadata list
+function list_metadata_keys(serverID, keys) {
+    // empty the list if it already exists
+    $("#machinesview-single.single div.#" +serverID).find("div.items").empty();
+    //start counter
+    var i=0;
+    // show values
+    for (var key in keys) {
+        $("#machinesview-single.single div.#" +serverID).find(".items").append("<div class='item'>" + key + "</div>");
+        i++;
+    }
+    //hide the metadata controls if we have less than 3 metadata
+    if (i <= 3) {
+        $("#machinesview-single.single div.#" +serverID).find(".metadata-actions").hide();
+    }
+    //show the metadata controls if we have more than 3 metadata
+    if (i > 3) {
+        $("#machinesview-single.single div.#" +serverID).find(".metadata-actions").show();
+    }
+    $("#machinesview-single.single div.#" +serverID).find(".metadata-count").text(i);
+}
+
 //show error popup box
 $("#machinesview-single.single div.action_error .details").live('click', function(){
     // remove the action from the pending list
@@ -208,9 +253,6 @@ $("#machinesview-single.single div.action_error .details").live('click', functio
 //confirm action
 $("#machinesview-single.single div.confirm_single .yes").live('click', function(){
     var serverID = $(this).closest(".single-container").attr("id");
-    try {
-        console.info(serverID);
-    } catch(err) {}
     for (i=0;i<pending_actions.length;i++){ // if there is a pending action for this server execute it
         if (pending_actions[i][1]==serverID){
             action = pending_actions.splice(i,1)[0]; // extract action
@@ -242,6 +284,23 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
     return false;
 });
 
+// intercept manage metadata click
+$("#machinesview-single.single a.manage-metadata").live('click', function() {
+    // get server name and server ID
+    var serverID = $(this).parent().parent().parent().parent().parent().attr("id");
+    var serverName = $(this).closest('.machine-container').find("div.machine-details div.name").text();
+    if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf($(this).parent().parent().parent().parent().parent().find(".status").text()) < 0) {
+        $("#metadata-wizard div#on-off").text('on');
+    } else {
+        $("#metadata-wizard div#on-off").text('off');
+    }
+    // set server name to all related metadata dialogs
+    $("#metadata-wizard div.machine-name").text(serverName);
+    // set server id to all related metadata dialogs
+    $("#metadata-wizard p").text(serverID);
+    show_metadata_wizard();
+    return false;
+});
 
 // intercept start click
 $("#machinesview-single.single div.action-start").live('click', function(){
@@ -447,6 +506,7 @@ function update_machines_view(data){
             $('.single .column3').find('.column3-selected').removeClass('column3-selected');
             //create and select the new one
             var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
+            machine.find(".scrollable").scrollable({vertical: true});
             machine.find(".machine-details div.name").text(server.name.substring(0,40));
             machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
@@ -508,7 +568,10 @@ function update_machines_view(data){
             $('.single-container:eq(1)').show();
             $('.single .column3').find('.server-name:eq(1)').addClass('column3-selected');
         }
-    update_iconview_actions(server.id, server.status);
+        update_iconview_actions(server.id, server.status);
+        if (!(server.metadata == undefined)) {
+                list_metadata_keys(server.id, server.metadata.values);
+        }
     });
 
     // hide pane spinner

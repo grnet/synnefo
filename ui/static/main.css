@@ -712,6 +712,10 @@ div.machine.light-background {
     background-color:#aed2e3;
 }
 
+.single .light-background {
+    background-color:#aed2e3;
+}
+
 .machine a {
     font-weight: normal;
     text-decoration: none;
@@ -1000,7 +1004,7 @@ div.machine:hover div.info-header, div.machine:hover div.toggler div.down {
     background-color: #84b7d0;
 }
 
-div.machine div.info-label.darker {
+div.machine div.info-label.darker, .single div.tags-label.darker {
     background-color: #5CA1C0;
 }
 
@@ -1011,7 +1015,7 @@ div.machine div.info-label.darker {
     padding: 1px 0 0 5px;
 }
 
-.machine div.info div.toggler {
+.machine div.info div.toggler, .single div.tags div.toggler {
     position: relative;
     width:15px;
     height:17px;
@@ -1023,8 +1027,16 @@ div.machine div.info-label.darker {
     background: url(/static/down-arrow.png) no-repeat scroll 1px 0;
 }
 
+.single div.tags div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+}
+
 .machine div.info div.up {
     background: url(/static/up-arrow.png) no-repeat scroll 1px 0;
+}
+
+.single div.tags div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
 }
 
 button {
@@ -2919,6 +2931,17 @@ h5.machine-connect span:hover {
     float: left;
 }
 
+.single .metadata-keys-container {
+    float: none;
+    height: 50px;
+    margin-top: 5px;
+}
+
+.single a.manage-metadata {
+    font-size: 80%;
+    margin-left:4px;
+}
+
 a.manage-metadata {
     font-size: 100%;
     color: black;
@@ -2932,6 +2955,11 @@ div.machine a.manage-metadata:hover {
 
 .metadata-actions, .scrollable {
     padding-left: 5px;
+}
+
+.singe .metadata-actions, .single .scrollable {
+    font-size: 80%;
+    line-height: 12px;
 }
 
 .metadata-actions .prev,  .metadata-actions .next{
@@ -3103,8 +3131,6 @@ div.single div.action-container.destroy {
 
 .single .tags-label {
     float: left;
-    height: 14px;
-    margin-top: -2px;
     padding: 0 5px;
     width: 30px;
 }
@@ -3121,10 +3147,12 @@ div.single div.action-container.destroy {
     cursor: pointer;
     height: 16px;
     width: 55px;
+    margin-bottom: 10px;
 }
 
 .single .tags-content {
-
+    height: 65px;
+    clear: both;
 }
 
 .single .column3 {
@@ -3221,8 +3249,6 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     color: #FFFFFF;
     float: right;
     font-size: 140%;
-    padding-right: 7px;
-    padding-top: 7px;
 }
 
 .single .single-cpu, .single .single-network {
@@ -3274,7 +3300,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     background: url("./running-bg.png") repeat scroll 0 0 transparent;
-    height: 300px;
+    height: 310px;
     margin-bottom: 10px;
     padding-top: 60px;
     width: 700px;

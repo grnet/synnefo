@@ -303,6 +303,7 @@ content-disposition         The presentation style of the object (optional)
 last_modified               The last object modification date (regardless of version)
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
+x_object_modified_by        The user that committed the object's version
 x_object_manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 x_object_public             Object is publicly accessible (optional) (**TBD**)
 x_object_meta_*             Optional user defined metadata
@@ -429,6 +430,7 @@ Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
+X-Object-Modified-By        The user that comitted the object's version
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public             Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*             Optional user defined metadata
@@ -485,7 +487,7 @@ Example ``format=xml`` reply:
     <hash>...</hash>
   </object>
 
-Version lists include the version identifier and timestamp for each available object version. Version identifiers are integers, with the only requirement that newer versions have a larger identifier than previous ones.
+Version lists include the version identifier and timestamp for each available object version. Version identifiers can be arbitrary strings, so use the timestamp to find newer versions.
 
 Example ``format=json`` reply:
 
@@ -518,6 +520,7 @@ Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
+X-Object-Modified-By        The user that comitted the object's version
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Public             Object is publicly accessible (optional) (**TBD**)
 X-Object-Meta-*             Optional user defined metadata
@@ -718,6 +721,7 @@ List of differences from the OOS API:
 * Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY.
 * Publicly accessible objects via ``https://hostname/public``. Control with ``X-Object-Public`` (**TBD**).
 * Large object support with ``X-Object-Manifest``.
+* Trace the user that created/modified an object with ``X-Object-Modified-By``.
 
 Clarifications/suggestions:
 

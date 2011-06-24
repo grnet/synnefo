@@ -43,7 +43,7 @@ class TestAccount(unittest.TestCase):
     def setUp(self):
         self.basepath = './test/content'
         self.b = SimpleBackend(self.basepath)
-        self.account = 'account1'
+        self.account = 'test'
     
     def tearDown(self):
         containers = [x[0] for x in self.b.list_containers('test', self.account)]
@@ -82,7 +82,7 @@ class TestAccount(unittest.TestCase):
     
     def test_get_account_meta(self):
         meta = {
-            "name": "account1",
+            "name": "test",
             "username": "aaitest@uth.gr",
             "email": "aaitest@uth.gr",
             "fileroot": "http://hostname/gss/rest/aaitest@uth.gr/files",
@@ -100,12 +100,12 @@ class TestAccount(unittest.TestCase):
             self.assertEquals(unicode(v), d[k])
     
     def test_get_non_existing_account_meta(self):
-        meta = self.b.get_account_meta('test', 'account2')
-        self.assertEquals(meta, {'name': 'account2', 'count': 0, 'bytes': 0})
+        meta = self.b.get_account_meta('account1', 'account1')
+        self.assertEquals(meta, {'name': 'account1', 'count': 0, 'bytes': 0})
     
     def test_update_account_meta(self):
         meta = {
-            "name": "account1",
+            "name": "test",
             "username": "aaitest@uth.gr",
             "email": "aaitest@uth.gr",
             "fileroot": "http://hostname/gss/rest/aaitest@uth.gr/files",
@@ -130,7 +130,7 @@ class TestContainer(unittest.TestCase):
     def setUp(self):
         self.basepath = './test/content'
         self.b = SimpleBackend(self.basepath)
-        self.account = 'account1'
+        self.account = 'test'
     
     def tearDown(self):
         containers = [x[0] for x in self.b.list_containers('test', self.account)]
@@ -143,7 +143,7 @@ class TestContainer(unittest.TestCase):
                 self.b.delete_container('test', self.account, container)
     
     def test_list_non_existing_account_objects(self):
-        self.assertRaises(NameError, self.b.list_objects, 'test', 'account2', 'container1')
+        self.assertRaises(NameError, self.b.list_objects, 'test', 'test', 'container1')
     
     def test_list_objects(self):
         self.b.put_container('test', self.account, 'container1')
@@ -245,7 +245,7 @@ class TestObject(unittest.TestCase):
     def setUp(self):
         self.basepath = './test/content'
         self.b = SimpleBackend(self.basepath)
-        self.account = 'account1'
+        self.account = 'test'
     
     def tearDown(self):
         containers = [x[0] for x in self.b.list_containers('test', self.account)]
@@ -292,7 +292,7 @@ class TestObject(unittest.TestCase):
         self.assertRaises(NameError,
                           self.b.copy_object,
                           'test',
-                          'account',
+                          'test',
                           src_cname,
                           src_obj,
                           dest_cname,

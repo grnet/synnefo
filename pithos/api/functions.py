@@ -42,13 +42,14 @@ from django.utils.http import parse_etags
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
-from pithos.api.util import (format_meta_key, printable_meta_dict, get_account_meta,
-    put_account_meta, get_container_meta, put_container_meta, get_object_meta, put_object_meta,
-    update_manifest_meta, format_permissions, validate_modification_preconditions,
+from pithos.api.util import (format_header_key, printable_header_dict, get_account_headers,
+    put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
+    update_manifest_meta, update_sharing_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, get_sharing, raw_input_socket,
     socket_read_iterator, object_data_response, put_object_block, hashmap_hash, api_method)
 from pithos.backends import backend
+from pithos.backends.base import NotAllowedError
 
 
 logger = logging.getLogger(__name__)
@@ -126,10 +127,14 @@ def account_meta(request, v_account):
     #                       badRequest (400)
     
     until = get_int_parameter(request, 'until')
-    meta = backend.get_account_meta(request.user, v_account, until)
+    try:
+        meta = backend.get_account_meta(request.user, v_account, until)
+        groups = backend.get_account_groups(request.user, v_account)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     
     response = HttpResponse(status=204)
-    put_account_meta(response, meta)
+    put_account_headers(response, meta, groups)
     return response
 
 @api_method('POST')
@@ -139,11 +144,21 @@ def account_update(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_account_meta(request)
+    meta, groups = get_account_headers(request)
     replace = True
     if 'update' in request.GET:
-        replace = False
-    backend.update_account_meta(request.user, v_account, meta, replace)
+        replace = False    
+    if groups:
+        try:
+            backend.update_account_groups(request.user, v_account, groups, replace)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except ValueError:
+            raise BadRequest('Invalid groups header')
+    try:
+        backend.update_account_meta(request.user, v_account, meta, replace)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     return HttpResponse(status=202)
 
 @api_method('GET', format_allowed=True)
@@ -155,12 +170,16 @@ def container_list(request, v_account):
     #                       badRequest (400)
     
     until = get_int_parameter(request, 'until')
-    meta = backend.get_account_meta(request.user, v_account, until)
+    try:
+        meta = backend.get_account_meta(request.user, v_account, until)
+        groups = backend.get_account_groups(request.user, v_account)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_account_meta(response, meta)
+    put_account_headers(response, meta, groups)
     
     marker = request.GET.get('marker')
     limit = request.GET.get('limit')
@@ -174,6 +193,8 @@ def container_list(request, v_account):
     
     try:
         containers = backend.list_containers(request.user, v_account, marker, limit, until)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         containers = []
     
@@ -191,7 +212,9 @@ def container_list(request, v_account):
         if x[1] is not None:
             try:
                 meta = backend.get_container_meta(request.user, v_account, x[0], until)
-                container_meta.append(printable_meta_dict(meta))
+                container_meta.append(printable_header_dict(meta))
+            except NotAllowedError:
+                raise Unauthorized('Access denied')
             except NameError:
                 pass
     if request.serialization == 'xml':
@@ -214,11 +237,13 @@ def container_meta(request, v_account, v_container):
     try:
         meta = backend.get_container_meta(request.user, v_account, v_container, until)
         meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
     response = HttpResponse(status=204)
-    put_container_meta(response, meta)
+    put_container_headers(response, meta)
     return response
 
 @api_method('PUT')
@@ -229,16 +254,23 @@ def container_create(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_container_meta(request)
+    meta = get_container_headers(request)
     
     try:
         backend.put_container(request.user, v_account, v_container)
         ret = 201
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         ret = 202
     
     if len(meta) > 0:
-        backend.update_container_meta(request.user, v_account, v_container, meta, replace=True)
+        try:
+            backend.update_container_meta(request.user, v_account, v_container, meta, replace=True)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Container does not exist')
     
     return HttpResponse(status=ret)
 
@@ -250,12 +282,14 @@ def container_update(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_container_meta(request)
+    meta = get_container_headers(request)
     replace = True
     if 'update' in request.GET:
         replace = False
     try:
         backend.update_container_meta(request.user, v_account, v_container, meta, replace)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     return HttpResponse(status=202)
@@ -271,6 +305,8 @@ def container_delete(request, v_account, v_container):
     
     try:
         backend.delete_container(request.user, v_account, v_container)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except IndexError:
@@ -289,13 +325,15 @@ def object_list(request, v_account, v_container):
     try:
         meta = backend.get_container_meta(request.user, v_account, v_container, until)
         meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_container_meta(response, meta)
+    put_container_headers(response, meta)
     
     path = request.GET.get('path')
     prefix = request.GET.get('prefix')
@@ -328,12 +366,14 @@ def object_list(request, v_account, v_container):
     keys = request.GET.get('meta')
     if keys:
         keys = keys.split(',')
-        keys = [format_meta_key('X-Object-Meta-' + x.strip()) for x in keys if x.strip() != '']
+        keys = [format_header_key('X-Object-Meta-' + x.strip()) for x in keys if x.strip() != '']
     else:
         keys = []
     
     try:
         objects = backend.list_objects(request.user, v_account, v_container, prefix, delimiter, marker, limit, virtual, keys, until)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -358,11 +398,12 @@ def object_list(request, v_account, v_container):
                     permissions = backend.get_object_permissions(request.user, v_account, v_container, x[0])
                 else:
                     permissions = None
+            except NotAllowedError:
+                raise Unauthorized('Access denied')
             except NameError:
                 pass
-            if permissions:
-                meta['X-Object-Sharing'] = format_permissions(permissions)
-            object_meta.append(printable_meta_dict(meta))
+            update_sharing_meta(permissions, v_account, v_container, x[0], meta)
+            object_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':
@@ -379,24 +420,25 @@ def object_meta(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    version = get_int_parameter(request, 'version')
+    version = request.GET.get('version')
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
         if version is None:
             permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
         else:
             permissions = None
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
         raise ItemNotFound('Version does not exist')
     
-    if permissions:
-        meta['X-Object-Sharing'] = format_permissions(permissions)
     update_manifest_meta(request, v_account, meta)
+    update_sharing_meta(permissions, v_account, v_container, v_object, meta)
     
     response = HttpResponse(status=200)
-    put_object_meta(response, meta)
+    put_object_headers(response, meta)
     return response
 
 @api_method('GET', format_allowed=True)
@@ -410,14 +452,18 @@ def object_read(request, v_account, v_container, v_object):
     #                       badRequest (400),
     #                       notModified (304)
     
-    version = get_int_parameter(request, 'version')
+    version = request.GET.get('version')
     
     # Reply with the version list. Do this first, as the object may be deleted.
-    if version is None and request.GET.get('version') == 'list':
+    if version == 'list':
         if request.serialization == 'text':
             raise BadRequest('No format specified for version list.')
         
-        d = {'versions': backend.list_versions(request.user, v_account, v_container, v_object)}
+        try:
+            v = backend.list_versions(request.user, v_account, v_container, v_object)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        d = {'versions': v}
         if request.serialization == 'xml':
             d['object'] = v_object
             data = render_to_string('versions.xml', d)
@@ -434,14 +480,15 @@ def object_read(request, v_account, v_container, v_object):
             permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
         else:
             permissions = None
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
         raise ItemNotFound('Version does not exist')
     
-    if permissions:
-        meta['X-Object-Sharing'] = format_permissions(permissions)
     update_manifest_meta(request, v_account, meta)
+    update_sharing_meta(permissions, v_account, v_container, v_object, meta)
     
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
@@ -458,6 +505,8 @@ def object_read(request, v_account, v_container, v_object):
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
             objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
         except ValueError:
             raise BadRequest('Invalid X-Object-Manifest header')
         except NameError:
@@ -468,6 +517,8 @@ def object_read(request, v_account, v_container, v_object):
                 s, h = backend.get_object_hashmap(request.user, v_account, src_container, x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Object does not exist')
         except IndexError:
@@ -477,6 +528,8 @@ def object_read(request, v_account, v_container, v_object):
             s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
             sizes.append(s)
             hashmaps.append(h)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Object does not exist')
         except IndexError:
@@ -494,7 +547,7 @@ def object_read(request, v_account, v_container, v_object):
             data = json.dumps(d)
         
         response = HttpResponse(data, status=200)
-        put_object_meta(response, meta)
+        put_object_headers(response, meta)
         response['Content-Length'] = len(data)
         return response
     
@@ -531,7 +584,7 @@ def object_write(request, v_account, v_container, v_object):
             copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
         return HttpResponse(status=201)
     
-    meta = get_object_meta(request)
+    meta = get_object_headers(request)
     permissions = get_sharing(request)
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
@@ -558,6 +611,8 @@ def object_write(request, v_account, v_container, v_object):
     
     try:
         backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True, permissions)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
@@ -614,7 +669,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_object_meta(request)
+    meta = get_object_headers(request)
     permissions = get_sharing(request)
     content_type = meta.get('Content-Type')
     if content_type:
@@ -622,6 +677,8 @@ def object_update(request, v_account, v_container, v_object):
     
     try:
         prev_meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Object does not exist')
     # If replacing, keep previous values of 'Content-Type' and 'hash'.
@@ -635,21 +692,24 @@ def object_update(request, v_account, v_container, v_object):
     
     # A Content-Type header indicates data updates.
     if not content_type or content_type != 'application/octet-stream':
-        # Handle metadata changes.
-        try:
-            backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
-        except NameError:
-            raise ItemNotFound('Object does not exist')    
-        # Handle permission changes.
-        if permissions:
+        # Do permissions first, as it may fail easier.
+        if permissions is not None:
             try:
                 backend.update_object_permissions(request.user, v_account, v_container, v_object, permissions)
+            except NotAllowedError:
+                raise Unauthorized('Access denied')
             except NameError:
                 raise ItemNotFound('Object does not exist')
             except ValueError:
                 raise BadRequest('Invalid sharing header')
             except AttributeError:
                 raise Conflict('Sharing already set above or below this path in the hierarchy')
+        try:
+            backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Object does not exist')
         return HttpResponse(status=202)
     
     # Single range update. Range must be in Content-Range.
@@ -668,6 +728,8 @@ def object_update(request, v_account, v_container, v_object):
     
     try:
         size, hashmap = backend.get_object_hashmap(request.user, v_account, v_container, v_object)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -700,6 +762,8 @@ def object_update(request, v_account, v_container, v_object):
     meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
     try:
         backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, replace, permissions)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
@@ -721,6 +785,8 @@ def object_delete(request, v_account, v_container, v_object):
     
     try:
         backend.delete_object(request.user, v_account, v_container, v_object)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Object does not exist')
     return HttpResponse(status=204)

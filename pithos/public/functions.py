@@ -66,9 +66,10 @@ def object_meta(request, v_account, v_container, v_object):
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
         permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
-    except NameError:
+    except:
         raise ItemNotFound('Object does not exist')
     
+    # TODO: Fix public indicator.
     if 'public' not in permissions:
         raise ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
@@ -91,9 +92,10 @@ def object_read(request, v_account, v_container, v_object):
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
         permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
-    except NameError:
+    except:
         raise ItemNotFound('Object does not exist')
     
+    # TODO: Fix public indicator.
     if 'public' not in permissions:
         raise ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
@@ -113,9 +115,7 @@ def object_read(request, v_account, v_container, v_object):
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
             objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
-        except ValueError:
-            raise ItemNotFound('Object does not exist')
-        except NameError:
+        except:
             raise ItemNotFound('Object does not exist')
         
         try:
@@ -123,14 +123,14 @@ def object_read(request, v_account, v_container, v_object):
                 s, h = backend.get_object_hashmap(request.user, v_account, src_container, x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
-        except NameError:
+        except:
             raise ItemNotFound('Object does not exist')
     else:
         try:
             s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
             sizes.append(s)
             hashmaps.append(h)
-        except NameError:
+        except:
             raise ItemNotFound('Object does not exist')
     
     return object_data_response(request, sizes, hashmaps, meta, True)

@@ -40,7 +40,7 @@ import hashlib
 import shutil
 import pickle
 
-from base import BaseBackend
+from base import NotAllowedError, BaseBackend
 
 
 logger = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists versions (
                     version_id integer primary key,
                     name text,
+                    user text,
                     tstamp datetime default current_timestamp,
                     size integer default 0,
                     hide integer default 0)'''
@@ -79,24 +80,23 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists hashmaps (
                     version_id integer, pos integer, block_id text, primary key (version_id, pos))'''
         self.con.execute(sql)
+        sql = '''create table if not exists groups (
+                    account text, name text, users text, primary key (account, name))'''
+        self.con.execute(sql)
         sql = '''create table if not exists permissions (
                     name text, read text, write text, primary key (name))'''
         self.con.execute(sql)
+        sql = '''create table if not exists policy (
+                    name text, key text, value text, primary key (name, key))'''
+        self.con.execute(sql)
         self.con.commit()
-    
-    def delete_account(self, user, account):
-        """Delete the account with the given name."""
-        
-        logger.debug("delete_account: %s", account)
-        count, bytes, tstamp = self._get_pathstats(account)
-        if count > 0:
-            raise IndexError('Account is not empty')
-        self._del_path(account) # Point of no return.
     
     def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata."""
         
         logger.debug("get_account_meta: %s %s", account, until)
+        if user != account:
+            raise NotAllowedError
         try:
             version_id, mtime = self._get_accountinfo(account, until)
         except NameError:
@@ -131,42 +131,65 @@ class SimpleBackend(BaseBackend):
         """Update the metadata associated with the account."""
         
         logger.debug("update_account_meta: %s %s %s", account, meta, replace)
-        self._put_metadata(account, meta, replace)
+        if user != account:
+            raise NotAllowedError
+        self._put_metadata(user, account, meta, replace)
+    
+    def get_account_groups(self, user, account):
+        """Return a dictionary with the user groups defined for this account."""
+        
+        logger.debug("get_account_groups: %s", account)
+        if user != account:
+            raise NotAllowedError
+        return self._get_groups(account)
+    
+    def update_account_groups(self, user, account, groups, replace=False):
+        """Update the groups associated with the account."""
+        
+        logger.debug("update_account_groups: %s %s %s", account, groups, replace)
+        if user != account:
+            raise NotAllowedError
+        for k, v in groups.iteritems():
+            if True in [False or ',' in x for x in v]:
+                raise ValueError('Bad characters in groups')
+        if replace:
+            sql = 'delete from groups where account = ?'
+            self.con.execute(sql, (account,))
+        for k, v in groups.iteritems():
+            if len(v) == 0:
+                if not replace:
+                    sql = 'delete from groups where account = ? and name = ?'
+                    self.con.execute(sql, (account, k))
+            else:
+                sql = 'insert or replace into groups (account, name, users) values (?, ?, ?)'
+                self.con.execute(sql, (account, k, ','.join(v)))
+        self.con.commit()
+    
+    def delete_account(self, user, account):
+        """Delete the account with the given name."""
+        
+        logger.debug("delete_account: %s", account)
+        if user != account:
+            raise NotAllowedError
+        count, bytes, tstamp = self._get_pathstats(account)
+        if count > 0:
+            raise IndexError('Account is not empty')
+        self._del_path(account) # Point of no return.
     
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of containers existing under an account."""
         
         logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
+        if user != account:
+            raise NotAllowedError
         return self._list_objects(account, '', '/', marker, limit, False, [], until)
-    
-    def put_container(self, user, account, container):
-        """Create a new container with the given name."""
-        
-        logger.debug("put_container: %s %s", account, container)
-        try:
-            path, version_id, mtime = self._get_containerinfo(account, container)
-        except NameError:
-            path = os.path.join(account, container)
-            version_id = self._put_version(path)
-        else:
-            raise NameError('Container already exists')
-    
-    def delete_container(self, user, account, container):
-        """Delete the container with the given name."""
-        
-        logger.debug("delete_container: %s %s", account, container)
-        path, version_id, mtime = self._get_containerinfo(account, container)
-        count, bytes, tstamp = self._get_pathstats(path)
-        if count > 0:
-            raise IndexError('Container is not empty')
-        self._del_path(path) # Point of no return.
-        self._copy_version(account, account, True, True) # New account version.
     
     def get_container_meta(self, user, account, container, until=None):
         """Return a dictionary with the container metadata."""
         
         logger.debug("get_container_meta: %s %s %s", account, container, until)
-        
+        if user != account:
+            raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         count, bytes, tstamp = self._get_pathstats(path, until)
         if mtime > tstamp:
@@ -188,13 +211,56 @@ class SimpleBackend(BaseBackend):
         """Update the metadata associated with the container."""
         
         logger.debug("update_container_meta: %s %s %s %s", account, container, meta, replace)
+        if user != account:
+            raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container)
-        self._put_metadata(path, meta, replace)
+        self._put_metadata(user, path, meta, replace)
+    
+    def get_container_policy(self, user, account, container):
+        """Return a dictionary with the container policy."""
+        
+        logger.debug("get_container_policy: %s %s", account, container)
+        return {}
+    
+    def update_container_policy(self, user, account, container, policy, replace=False):
+        """Update the policy associated with the account."""
+        
+        logger.debug("update_container_policy: %s %s %s %s", account, container, policy, replace)
+        return
+    
+    def put_container(self, user, account, container, policy=None):
+        """Create a new container with the given name."""
+        
+        logger.debug("put_container: %s %s %s", account, container, policy)
+        if user != account:
+            raise NotAllowedError
+        try:
+            path, version_id, mtime = self._get_containerinfo(account, container)
+        except NameError:
+            path = os.path.join(account, container)
+            version_id = self._put_version(path, user)
+        else:
+            raise NameError('Container already exists')
+    
+    def delete_container(self, user, account, container):
+        """Delete the container with the given name."""
+        
+        logger.debug("delete_container: %s %s", account, container)
+        if user != account:
+            raise NotAllowedError
+        path, version_id, mtime = self._get_containerinfo(account, container)
+        count, bytes, tstamp = self._get_pathstats(path)
+        if count > 0:
+            raise IndexError('Container is not empty')
+        self._del_path(path) # Point of no return.
+        self._copy_version(user, account, account, True, True) # New account version.
     
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
         
         logger.debug("list_objects: %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, until)
+        if user != account:
+            raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until)
     
@@ -202,6 +268,8 @@ class SimpleBackend(BaseBackend):
         """Return a list with all the container's object meta keys."""
         
         logger.debug("list_object_meta: %s %s %s", account, container, until)
+        if user != account:
+            raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         sql = '''select distinct m.key from (%s) o, metadata m
                     where m.version_id = o.version_id and o.name like ?'''
@@ -213,60 +281,81 @@ class SimpleBackend(BaseBackend):
         """Return a dictionary with the object metadata."""
         
         logger.debug("get_object_meta: %s %s %s %s", account, container, name, version)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name, version)
+        self._can_read(user, account, container, name)
+        path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name, version)
         if version is None:
             modified = mtime
         else:
-            modified = self._get_version(path, version)[1] # Overall last modification
+            modified = self._get_version(path, version)[2] # Overall last modification
         
         meta = self._get_metadata(path, version_id)
-        meta.update({'name': name, 'bytes': size, 'version': version_id, 'version_timestamp': mtime, 'modified': modified})
+        meta.update({'name': name, 'bytes': size})
+        meta.update({'version': version_id, 'version_timestamp': mtime})
+        meta.update({'modified': modified, 'modified_by': muser})
         return meta
     
     def update_object_meta(self, user, account, container, name, meta, replace=False):
         """Update the metadata associated with the object."""
         
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name)
-        self._put_metadata(path, meta, replace)
+        self._can_write(user, account, container, name)
+        path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name)
+        self._put_metadata(user, path, meta, replace)
     
     def get_object_permissions(self, user, account, container, name):
-        """Return a dictionary with the object permissions."""
+        """Return the path from which this object gets its permissions from,\
+        along with a dictionary containing the permissions."""
         
         logger.debug("get_object_permissions: %s %s %s", account, container, name)
+        self._can_read(user, account, container, name)
         path = self._get_objectinfo(account, container, name)[0]
-        perm_path, perms = self._get_permissions(path)
-        if path == perm_path:
-            return perms
-        return {}
+        return self._get_permissions(path)
     
     def update_object_permissions(self, user, account, container, name, permissions):
         """Update the permissions associated with the object."""
         
         logger.debug("update_object_permissions: %s %s %s %s", account, container, name, permissions)
+        if user != account:
+            raise NotAllowedError
         path = self._get_objectinfo(account, container, name)[0]
         r, w = self._check_permissions(path, permissions)
         self._put_permissions(path, r, w)
+    
+    def get_object_public(self, user, account, container, name):
+        """Return the public URL of the object if applicable."""
+        
+        logger.debug("get_object_public: %s %s %s", account, container, name)
+        return None
+    
+    def update_object_public(self, user, account, container, name, public):
+        """Update the public status of the object."""
+        
+        logger.debug("update_object_public: %s %s %s %s", account, container, name, public)
+        return
     
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
         
         logger.debug("get_object_hashmap: %s %s %s %s", account, container, name, version)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name, version)
+        self._can_read(user, account, container, name)
+        path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name, version)
         sql = 'select block_id from hashmaps where version_id = ? order by pos asc'
         c = self.con.execute(sql, (version_id,))
         hashmap = [x[0] for x in c.fetchall()]
         return size, hashmap
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions={}):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes."""
         
         logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
+        if permissions is not None and user != account:
+            raise NotAllowedError
+        self._can_write(user, account, container, name)
         path = self._get_containerinfo(account, container)[0]
         path = os.path.join(path, name)
-        if permissions:
+        if permissions is not None:
             r, w = self._check_permissions(path, permissions)
-        src_version_id, dest_version_id = self._copy_version(path, path, not replace_meta, False)
+        src_version_id, dest_version_id = self._copy_version(user, path, path, not replace_meta, False)
         sql = 'update versions set size = ? where version_id = ?'
         self.con.execute(sql, (size, dest_version_id))
         # TODO: Check for block_id existence.
@@ -276,15 +365,19 @@ class SimpleBackend(BaseBackend):
         for k, v in meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
-        if permissions:
+        if permissions is not None:
             sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
             self.con.execute(sql, (path, r, w))
         self.con.commit()
     
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}, src_version=None):
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata."""
         
         logger.debug("copy_object: %s %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+        if permissions is not None and user != account:
+            raise NotAllowedError
+        self._can_read(user, account, src_container, src_name)
+        self._can_write(user, account, dest_container, dest_name)
         self._get_containerinfo(account, src_container)
         if src_version is None:
             src_path = self._get_objectinfo(account, src_container, src_name)[0]
@@ -292,18 +385,18 @@ class SimpleBackend(BaseBackend):
             src_path = os.path.join(account, src_container, src_name)
         dest_path = self._get_containerinfo(account, dest_container)[0]
         dest_path = os.path.join(dest_path, dest_name)
-        if permissions:
+        if permissions is not None:
             r, w = self._check_permissions(dest_path, permissions)
-        src_version_id, dest_version_id = self._copy_version(src_path, dest_path, not replace_meta, True, src_version)
+        src_version_id, dest_version_id = self._copy_version(user, src_path, dest_path, not replace_meta, True, src_version)
         for k, v in dest_meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
-        if permissions:
+        if permissions is not None:
             sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
             self.con.execute(sql, (dest_path, r, w))
         self.con.commit()
     
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions={}):
+    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
         logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
@@ -314,8 +407,10 @@ class SimpleBackend(BaseBackend):
         """Delete an object."""
         
         logger.debug("delete_object: %s %s %s", account, container, name)
-        path, version_id, mtime, size = self._get_objectinfo(account, container, name)
-        self._put_version(path, 0, 1)
+        if user != account:
+            raise NotAllowedError
+        path = self._get_objectinfo(account, container, name)[0]
+        self._put_version(path, user, 0, 1)
         sql = 'delete from permissions where name = ?'
         self.con.execute(sql, (path,))
         self.con.commit()
@@ -324,6 +419,7 @@ class SimpleBackend(BaseBackend):
         """Return a list of all (version, version_timestamp) tuples for an object."""
         
         logger.debug("list_versions: %s %s %s", account, container, name)
+        self._can_read(user, account, container, name)
         # This will even show deleted versions.
         path = os.path.join(account, container, name)
         sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ? and hide = 0'''
@@ -388,40 +484,41 @@ class SimpleBackend(BaseBackend):
     
     def _get_version(self, path, version=None):
         if version is None:
-            sql = '''select version_id, strftime('%s', tstamp), size, hide from versions where name = ?
+            sql = '''select version_id, user, strftime('%s', tstamp), size, hide from versions where name = ?
                         order by version_id desc limit 1'''
             c = self.con.execute(sql, (path,))
             row = c.fetchone()
-            if not row or int(row[3]):
+            if not row or int(row[4]):
                 raise NameError('Object does not exist')
         else:
-            sql = '''select version_id, strftime('%s', tstamp), size from versions where name = ?
+            # The database (sqlite) will not complain if the version is not an integer.
+            sql = '''select version_id, user, strftime('%s', tstamp), size from versions where name = ?
                         and version_id = ?'''
             c = self.con.execute(sql, (path, version))
             row = c.fetchone()
             if not row:
                 raise IndexError('Version does not exist')
-        return str(row[0]), int(row[1]), int(row[2])
+        return str(row[0]), str(row[1]), int(row[2]), int(row[3])
     
-    def _put_version(self, path, size=0, hide=0):
-        sql = 'insert into versions (name, size, hide) values (?, ?, ?)'
-        id = self.con.execute(sql, (path, size, hide)).lastrowid
+    def _put_version(self, path, user, size=0, hide=0):
+        sql = 'insert into versions (name, user, size, hide) values (?, ?, ?, ?)'
+        id = self.con.execute(sql, (path, user, size, hide)).lastrowid
         self.con.commit()
         return str(id)
     
-    def _copy_version(self, src_path, dest_path, copy_meta=True, copy_data=True, src_version=None):
+    def _copy_version(self, user, src_path, dest_path, copy_meta=True, copy_data=True, src_version=None):
         if src_version is not None:
-            src_version_id, mtime, size = self._get_version(src_path, src_version)
+            src_version_id, muser, mtime, size = self._get_version(src_path, src_version)
         else:
             # Latest or create from scratch.
             try:
-                src_version_id, mtime, size = self._get_version(src_path)
+                src_version_id, muser, mtime, size = self._get_version(src_path)
             except NameError:
                 src_version_id = None
                 size = 0
         if not copy_data:
             size = 0
-        dest_version_id = self._put_version(dest_path, size)
+        dest_version_id = self._put_version(dest_path, user, size)
         if copy_meta and src_version_id is not None:
             sql = 'insert into metadata select %s, key, value from metadata where version_id = ?'
             sql = sql % dest_version_id
@@ -466,18 +563,18 @@ class SimpleBackend(BaseBackend):
     
     def _get_objectinfo(self, account, container, name, version=None):
         path = os.path.join(account, container, name)
-        version_id, mtime, size = self._get_version(path, version)
-        return path, version_id, mtime, size
+        version_id, muser, mtime, size = self._get_version(path, version)
+        return path, version_id, muser, mtime, size
     
     def _get_metadata(self, path, version):
         sql = 'select key, value from metadata where version_id = ?'
         c = self.con.execute(sql, (version,))
         return dict(c.fetchall())
     
-    def _put_metadata(self, path, meta, replace=False):
+    def _put_metadata(self, user, path, meta, replace=False):
         """Create a new version and store metadata."""
         
-        src_version_id, dest_version_id = self._copy_version(path, path, not replace, True)
+        src_version_id, dest_version_id = self._copy_version(user, path, path, not replace, True)
         for k, v in meta.iteritems():
             if not replace and v == '':
                 sql = 'delete from metadata where version_id = ? and key = ?'
@@ -487,11 +584,43 @@ class SimpleBackend(BaseBackend):
                 self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
-    def _can_read(self, user, path):
-        return True
+    def _get_groups(self, account):
+        sql = 'select name, users from groups where account = ?'
+        c = self.con.execute(sql, (account,))
+        return dict([(x[0], x[1].split(',')) for x in c.fetchall()])
     
-    def _can_write(self, user, path):
-        return True
+    def _is_allowed(self, user, account, container, name, op='read'):
+        if user == account:
+            return True
+        path = os.path.join(account, container, name)
+        perm_path, perms = self._get_permissions(path)
+        
+        # Expand groups.
+        for x in ('read', 'write'):
+            g_perms = []
+            for y in perms.get(x, []):
+                if ':' in y:
+                    g_account, g_name = y.split(':', 1)
+                    groups = self._get_groups(g_account)
+                    if g_name in groups:
+                        g_perms += groups[g_name]
+                else:
+                    g_perms.append(y)
+            perms[x] = g_perms
+        
+        if op == 'read' and user in perms.get('read', []):
+            return True
+        if user in perms.get('write', []):
+            return True
+        return False
+    
+    def _can_read(self, user, account, container, name):
+        if not self._is_allowed(user, account, container, name, 'read'):
+            raise NotAllowedError
+    
+    def _can_write(self, user, account, container, name):
+        if not self._is_allowed(user, account, container, name, 'write'):
+            raise NotAllowedError
     
     def _check_permissions(self, path, permissions):
         # Check for existing permissions.
@@ -502,19 +631,16 @@ class SimpleBackend(BaseBackend):
         if rows:
             raise AttributeError('Permissions already set')
         
-        # Format given permissions set.
+        # Format given permissions.
+        if len(permissions) == 0:
+            return '', ''
         r = permissions.get('read', [])
         w = permissions.get('write', [])
         if True in [False or ',' in x for x in r]:
             raise ValueError('Bad characters in read permissions')
         if True in [False or ',' in x for x in w]:
             raise ValueError('Bad characters in write permissions')
-        r = ','.join(r)
-        w = ','.join(w)
-        if 'private' in permissions:
-            r = ''
-            w = ''
-        return r, w
+        return ','.join(r), ','.join(w)
     
     def _get_permissions(self, path):
         # Check for permissions at path or above.
@@ -525,18 +651,20 @@ class SimpleBackend(BaseBackend):
             return path, {}
         
         name, r, w = row
-        if r == '' and w == '':
-            return {'private': True}
         ret = {}
         if w != '':
             ret['write'] = w.split(',')
         if r != '':
-            ret['read'] = r.split(',')        
+            ret['read'] = r.split(',')
         return name, ret
     
     def _put_permissions(self, path, r, w):
-        sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
-        self.con.execute(sql, (path, r, w))
+        if r == '' and w == '':
+            sql = 'delete from permissions where name = ?'
+            self.con.execute(sql, (path,))
+        else:
+            sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
+            self.con.execute(sql, (path, r, w))
         self.con.commit()
     
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):

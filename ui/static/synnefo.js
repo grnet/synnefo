@@ -1039,6 +1039,7 @@ function rename(serverID, serverName){
 function get_metadata(serverID, keys_only) {
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/meta',
+        cache: false,
         type: "GET",
         //async: false,
         dataType: "json",

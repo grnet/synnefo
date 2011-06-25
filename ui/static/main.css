@@ -2966,6 +2966,7 @@ h5.machine-connect span:hover {
 .single a.manage-metadata {
     font-size: 80%;
     margin-left:4px;
+    color: #383838;
 }
 
 a.manage-metadata {
@@ -2986,6 +2987,7 @@ div.machine a.manage-metadata:hover {
 .singe .metadata-actions, .single .scrollable {
     font-size: 80%;
     line-height: 12px;
+    width: 300px;
 }
 
 .metadata-actions .prev,  .metadata-actions .next{
@@ -3181,7 +3183,7 @@ div.single div.action-container.destroy {
     height: 65px;
     padding-bottom: 5px;
     padding-top: 5px;
-    width: 100px;
+    width: 300px;
 }
 
 .single .column3 {
@@ -3329,10 +3331,11 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
-    height: 310px;
+    min-height: 310px;
     margin-bottom: 10px;
     padding-top: 60px;
     width: 700px;
+    overflow: auto;
 }
 
 /* console css */

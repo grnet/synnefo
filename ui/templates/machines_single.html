@@ -229,7 +229,7 @@ function list_metadata_keys(serverID, keys) {
     var i=0;
     // show values
     for (var key in keys) {
-        $("#machinesview-single.single div.#" +serverID).find(".items").append("<div class='item'>" + key + "</div>");
+        $("#machinesview-single.single div.#" +serverID).find(".items").append("<div class='item'>" + key + ": " + keys[key].substring(0,40) + "</div>");
         i++;
     }
     //hide the metadata controls if we have less than 3 metadata
@@ -507,7 +507,7 @@ function update_machines_view(data){
             //create and select the new one
             var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
             machine.find(".scrollable").scrollable({vertical: true});
-            machine.find(".machine-details div.name").text(server.name.substring(0,40));
+            machine.find(".machine-details div.name").text(server.name.substring(0,30));
             machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
             machine.find("span.imagetag").text(server_image);
             machine.find(".column1 .state-label").text(STATUSES[server.status]);

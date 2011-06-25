@@ -2172,7 +2172,7 @@ div#user a.current_lang {
 }
 
 .machine h5.namecontainer {
-    margin-top: 5px;
+    margin-top: 1px;
 }
 
 .editbuttons {
@@ -2370,7 +2370,7 @@ div.list table thead .vmname {
 .spinner, .wave {
     clear: right;
     float:right !important;
-    margin: 1px 16px 0 15px !important;
+    margin: 10px 16px 0 15px !important;
 }
 
 #networks-pane .spinner {
@@ -2629,7 +2629,7 @@ div.network:hover {
 
 .state div {
     text-align: right;
-    margin: 5px 1px 4px;
+    margin: 5px 1px -4px;
 }
 
 .public-networks .state div {

@@ -967,12 +967,16 @@ $("#machines-pane div.confirm_multiple .yes").live('click', function(){
             $('#' + serverID + ' .display').removeClass('display');
             if (action[0] == shutdown) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Shutting down']);
+                $('#' + serverID + ' .state').removeClass().addClass('state shutting-state');
             } else if (action[0] == start) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Starting']);
+                $('#' + serverID + ' .state').removeClass().addClass('state starting-state');
             } else if (action[0] == reboot) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Rebooting']);
+                $('#' + serverID + ' .state').removeClass().addClass('state rebooting-state');
             } else if (action[0] == destroy) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Destroying']);
+                $('#' + serverID + ' .state').removeClass().addClass('state destroying-state');
             }
             $('#' + serverID + ' .spinner').show();
         } else { // list view

@@ -704,7 +704,7 @@ div.machine:hover {
     background-color:#A1C8DB !important;
 }
 
-div.machine.light-background {
+div.machine.light-background, div.network.light-background {
     background-color:#aed2e3;
 }
 
@@ -999,7 +999,7 @@ div.machine:hover div.info-header, div.machine:hover div.toggler div.down {
     background-color: #84b7d0;
 }
 
-div.machine div.info-label.darker, .single div.tags-label.darker {
+div.machine div.info-label.darker, .single div.tags-label.darker, div.network .darker {
     background-color: #5CA1C0;
 }
 
@@ -1010,12 +1010,16 @@ div.machine div.info-label.darker, .single div.tags-label.darker {
     padding: 1px 0 0 5px;
 }
 
-.machine div.info div.toggler, .single div.tags div.toggler {
+.machine div.info div.toggler, .single div.tags div.toggler, div.network div.toggler {
     position: relative;
     width:15px;
     height:17px;
     margin-top: -11px;
     margin-left: 37px;
+}
+
+div.network div.toggler {
+    margin-left: 87px;
 }
 
 .machine div.info div.down {
@@ -1026,11 +1030,27 @@ div.machine div.info-label.darker, .single div.tags-label.darker {
     background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
 }
 
+.network div.network-machines div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machine div.firewall div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+}
+
 .machine div.info div.up {
     background: url(/static/up-arrow.png) no-repeat scroll 1px 0;
 }
 
 .single div.tags div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machines div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machine div.firewall div.up {
     background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
 }
 
@@ -1955,7 +1975,6 @@ input.machine {
     margin-bottom: 14px !important;
 }
 
-
 #error-success .write-password {
     margin-bottom: 5px;
     padding-left: 30px;
@@ -2150,13 +2169,9 @@ div#user a.current_lang {
     background-color: #6c535d;
 }
 
-#networks-pane .public-networks .namecontainer {
-    margin-top: 4px !important;
-}
-
 .network-machine h5 {
-    margin-bottom: 15px;
-    margin-top: 5px;
+    margin-bottom: 26px;
+    margin-top:0px;
 }
 
 .machine-container .separator {
@@ -2457,8 +2472,8 @@ div.network a.action-network-destroy {
 div.network {
     clear: both;
     min-height: 65px;
-    margin: 5px 0 0 -30px;
-    padding: 3px 20px 0 4px;
+    margin: 5px 0 0 -35px;
+    padding: 3px 20px 0;
     width: 480px;
     position: relative;
 }
@@ -2472,11 +2487,11 @@ div.network-placeholder {
 }
 
 div.private-networks div.network-placeholder {
-    border-left: 3px solid #FB822F;
+    border-left: 3px solid #FF7F2A;
 }
 
 div.network-cable {
-    border-left: 3px solid #FB822F;
+    border-left: 3px solid #FF7F2A;
     float: left;
     margin-left: -40px;
     margin-top: -40px;
@@ -2489,12 +2504,12 @@ div.network-cable {
 }
 
 .first div.network-cable {
-    height:165px;
-    margin-top:-20px;
+    height:155px;
+    margin-top:-14px;
 }
 
 div.firewall-cable {
-    border-left: 3px solid #FB822F;
+    border-left: 3px solid #FF7F2A;
     float: left;
     margin-left: -100px;
     margin-top: -20px;
@@ -2512,21 +2527,45 @@ div.network a:hover {
 
 #networks-container .name {
     font-size: 75%;
-    margin-bottom: 25px;
-    margin-top: -4px;
 }
 
 div.network-machines, div.firewall {
     font-size: 75%;
+    margin-left: 70px;
+}
+
+div.firewall {
+    margin-left: 60px;
 }
 
 div.machines-header, div.firewall-header {
+    background-color: #A1C8DB;
+    color: white;
     cursor: pointer;
+    height: 17px;
+    width: 100px;
 }
 
-div.network-machines {
-    margin-bottom: 0px;
-    margin-top: -4px;
+ div.private-networks div.machines-header {
+    margin-top: -5px;
+}
+
+div.firewall-header {
+
+}
+
+div.network:hover div.machines-header, div.network:hover div.firewall-header {
+    background-color: #84b7d0;
+}
+
+div.network-machine:hover div.firewall-header {
+    background-color: #5CA1C0;
+}
+
+div.machines-label, div.firewall-label {
+    width: 83px;
+    padding-bottom:1px;
+    padding-left: 3px;
 }
 
 .state {
@@ -2552,7 +2591,7 @@ div.network div.machine-actions {
     text-decoration: none;
     float: right;
     width: 100px;
-    margin: -5px -100px 0 0;
+    margin: -7px -100px 0 0;
     font-weight: normal;
     font-size: 75%;
 }
@@ -2603,15 +2642,7 @@ div.network-machine div.machine-actions a.action-details {
 }
 
 div.network:hover {
-    background-color: #CDE2EC;
-}
-
-#internet-separator {
-    width: 510px;
-    height: 5px;
-    background-color: #6C535D;
-    margin-left: -36px;
-    margin-top: 20px;
+    background-color: #A1C8DB !important;
 }
 
 .network-logos {
@@ -2621,23 +2652,6 @@ div.network:hover {
 
 .network-logos:hover {
     cursor: pointer;
-}
-
-#networks-container .settings {
-    color: #000000;
-}
-
-#networks-container .network-type {
-    float: right;
-    margin-top: -4px;
-    margin-right: 15px;
-}
-
-#networks-container .indicator {
-    background-color: #87AADE;
-    border-color: white;
-    border-style: solid;
-    border-width: 2px 3px 2px 2px;
 }
 
 .state div {
@@ -2652,6 +2666,11 @@ div.network:hover {
 .private-networks .state div {
     margin-top: 9px;
     margin-bottom: -12px;
+}
+
+.public-networks .name-div {
+    margin-top:-7px;
+    margin-bottom: 23px;
 }
 
 div.indicator {
@@ -2705,7 +2724,7 @@ div.network:hover a.rename {
 }
 
 .network-separator {
-    background-color: #DCDCDC;
+    background-color: #5CA1C0;
     height: 1px;
     margin: 2px 0 0 -5px;
     width: 480px;
@@ -2725,7 +2744,7 @@ div.network:hover a.rename {
 }
 
 .network-machine {
-    margin-left: 34px;
+    margin-left: 35px;
     padding-bottom: 5px;
     padding-left: 5px;
     padding-top: 10px;
@@ -2749,25 +2768,8 @@ div.network:hover a.rename {
     color: #969696;
 }
 
-.network-contents-start-separator {
-    height: 3px;
-    background-color: #87AADE;
-    margin-left: 39px;
-    width: 410px;
-    font-size: 3px;
-}
-
-.network-contents-end-separator {
-    height: 3px;
-    background-color: #87AADE;
-    margin-top: 7px;
-    margin-left: 13px;
-    width: 473px;
-    font-size: 3px;
-}
-
 .network .separator {
-    background-color: #DCDCDC;
+    background-color: #5CA1C0;
     height: 1px;
     margin-left: 5px;
     margin-top: 5px;
@@ -2794,7 +2796,7 @@ div.network:hover a.rename {
 }
 
 div.network-machine:hover {
-    background-color: #5CA1C0;
+    background-color: #84B7D0;
 }
 
 .machines {
@@ -2860,6 +2862,7 @@ div.network-add-machine {
 
 h5.machine-connect {
     font-size: 75%;
+    margin-bottom: 3px;
 }
 
 .machine-connect span {
@@ -2868,21 +2871,6 @@ h5.machine-connect {
 
 h5.machine-connect span:hover {
     cursor: pointer;
-}
-
-.firewall-contents-start-separator {
-    background-color: #808080;
-    height: 2px;
-    margin-bottom: 5px;
-    width: 365px;
-}
-
-.firewall-contents-end-separator {
-    background-color: #808080;
-    height: 2px;
-    margin-left: -60px;
-    margin-top: 5px;
-    width: 425px;
 }
 
 .firewall-apply {
@@ -3441,8 +3429,8 @@ applet {
     margin-bottom:13px;
 }
 
-#pub:hover .last .network-separator {
-    background-color: #CDE2EC;
+#pub .last .network-separator {
+    display:none;
 }
 
 .public-networks .empty-network-slot {

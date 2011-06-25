@@ -85,7 +85,6 @@ or implied, of GRNET S.A.
         </div>
         <div class="network-contents">
             <div class="network-placeholder">
-                <div class="network-contents-start-separator"></div>
                 <div class="machines-list">
                 <!-- append machines here -->
                 </div>
@@ -97,7 +96,6 @@ or implied, of GRNET S.A.
                 </div>
                 -->
             </div>
-            <div class="network-contents-end-separator"></div>
         </div>
         <div class="state">
             <div class="status">{% trans "Public Network" %}</div>
@@ -143,11 +141,11 @@ or implied, of GRNET S.A.
         </div>
         <div class="ips">
             <div class="ip4-container status">
-                <span class="discreet">{% trans "IPv4" %}: </span>
+                {% trans "IPv4" %}:
                 <span class="ip4">192.94.73.15</span>
             </div>
             <div class="ip6-container status">
-                <span class="discreet">{% trans "IPv6" %}: </span>
+                {% trans "IPv6" %}:
                 <span class="ip6">vv</span>
             </div>
         </div>
@@ -173,7 +171,6 @@ or implied, of GRNET S.A.
         </div>
         <div class="firewall-content">
             <div class="firewall-cable"></div>
-            <div class="firewall-contents-start-separator"></div>
             <input type="radio" class="checkboxes" name="image-id1" />
             <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
             <br />
@@ -186,7 +183,6 @@ or implied, of GRNET S.A.
             <input type="radio" class="checkboxes" name="image-id1" />
             <span class="checkbox-legends">{% trans "Custom protection" %} <a href="#" class="firewall-settings">{% trans "settings" %}</a> {% trans "(Advanced users only)" %}</span>
             <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
-            <div class="firewall-contents-end-separator"></div>
         </div>
         <div class="network-separator machines"></div>
     </div>
@@ -245,7 +241,6 @@ or implied, of GRNET S.A.
         </div>
         <div class="network-contents">
             <div class="network-placeholder">
-                <div class="network-contents-start-separator"></div>
                 <div class="machines-list">
                 <!-- append machines here -->
                 </div>
@@ -253,7 +248,6 @@ or implied, of GRNET S.A.
                     <div class='network-add-machine'><span class="add-icon">+</span></div>
                 </div>
             </div>
-            <div class="network-contents-end-separator"></div>
         </div>
         <div class="separator"></div>
     </div>
@@ -380,11 +374,26 @@ $("#add-network-create").live('click', function() {
     return false;
 });
 
+// set the toogle arrow up or down
+function set_arrow(header_element) {
+    if (header_element.find('.toggler').hasClass('up')) {
+        header_element.find('.toggler').removeClass('up');
+        header_element.find('.toggler').addClass('down');
+        header_element.find('.machines-label').removeClass('darker');
+        header_element.parent().parent().removeClass('light-background');
+    } else {
+        header_element.find('.toggler').removeClass('down');
+        header_element.find('.toggler').addClass('up');
+        header_element.find('.machines-label').addClass('darker');
+        header_element.parent().parent().addClass('light-background');
+    }
+    return false;
+}
+
 // toggle component with class network-contents
 $("#networks-pane div.machines-header").live('click', function() {
-    if ($('#networks-pane .network-contents .network-machine').length > 0) {
-        $(this).parent().next("#networks-pane .network-contents").slideToggle(600);
-    }
+    set_arrow($(this));
+    $(this).parent().next("#networks-pane .network-contents").slideToggle(600);
     return false;
 });
 

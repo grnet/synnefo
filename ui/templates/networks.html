@@ -85,13 +85,13 @@ or implied, of GRNET S.A.
                 <div class="machines-list">
                 <!-- append machines here -->
                 </div>
+                <!-- The following is not supported in 0.5
                 <div class="empty-network-slot" id="machine-template">
                     <div class='network-add-machine'>
-                        {# Replace the following with the comment below for full public network functionality #}
-                        {# <span class="add-icon">+</span> #}
-                        <span>&nbsp;</span>
+                        <span class="add-icon">+</span>
                     </div>
                 </div>
+                -->
             </div>
             <div class="network-contents-end-separator"></div>
         </div>
@@ -691,9 +691,9 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
             action[0]([networkID]); // execute action
         } else if (action[0] == remove_server_from_network) {
             $('div.network#net-'+networkID).find('div.status').text(NET_STATES['Disconnecting']);
-            $('div.network#net-'+networkID).find('img.spinner').show();            
+            $('div.network#net-'+networkID).find('img.spinner').show();
             action[0]([action[1]], [action[2]]); // execute action
-        }    
+        }
     }
     update_network_confirmations();
     return false;
@@ -948,7 +948,7 @@ function update_networks_view(servers_data, networks_data){
 
     // tag the first and last seperators for better styling
     $("#pub .network-machine").removeClass('first');
-    $("#pub .network-machine").first().addClass('first');    
+    $("#pub .network-machine").first().addClass('first');
     $("#pub .network-machine").removeClass('last');
     $("#pub .network-machine").last().addClass('last');
 }

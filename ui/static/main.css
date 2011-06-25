@@ -2471,6 +2471,10 @@ div.network-placeholder {
     margin-left: 33px;
 }
 
+div.private-networks div.network-placeholder {
+    border-left: 3px solid #FB822F;
+}
+
 div.network-cable {
     border-left: 3px solid #FB822F;
     float: left;
@@ -2514,6 +2518,11 @@ div.network a:hover, span.show-machines:hover, span.ip:hover, span.show-firewall
 
 h5.network-machines, h5.machine-settings {
     font-size: 75%;
+}
+
+h5.network-machines {
+    margin-bottom: 0px;
+    margin-top: -4px;
 }
 
 .state {

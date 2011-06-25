@@ -2505,7 +2505,7 @@ div.firewall-cable {
     display:none;
 }
 
-div.network a:hover, span.show-machines:hover, span.ip:hover, span.show-firewall:hover {
+div.network a:hover {
     text-decoration: underline;
     cursor: pointer;
 }
@@ -2516,11 +2516,15 @@ div.network a:hover, span.show-machines:hover, span.ip:hover, span.show-firewall
     margin-top: -4px;
 }
 
-h5.network-machines, h5.machine-settings {
+div.network-machines, div.firewall {
     font-size: 75%;
 }
 
-h5.network-machines {
+div.machines-header, div.firewall-header {
+    cursor: pointer;
+}
+
+div.network-machines {
     margin-bottom: 0px;
     margin-top: -4px;
 }

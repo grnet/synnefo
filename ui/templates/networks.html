@@ -75,17 +75,21 @@ or implied, of GRNET S.A.
                 <span class="name">{% trans "Internet" %}</span>
             </h5>
         </div>
-        <h5 class="network-machines">
-            {% trans "Show:" %} <span class="show-machines">{% trans "machines" %}</span>
-            (<span class="machines-count">0</span>)
-        </h5>
+        <div class="network-machines">
+            <div class="machines-header">
+                <div class="machines-label">{% trans "machines" %}
+                    (<span class="machines-count">0</span>)
+                </div>
+                <div class="toggler down"></div>
+            </div>
+        </div>
         <div class="network-contents">
             <div class="network-placeholder">
                 <div class="network-contents-start-separator"></div>
                 <div class="machines-list">
                 <!-- append machines here -->
                 </div>
-                <!-- The following is not supported in 0.5
+                <!-- Adding servers to public network is not supported in 0.5
                 <div class="empty-network-slot" id="machine-template">
                     <div class='network-add-machine'>
                         <span class="add-icon">+</span>
@@ -105,8 +109,9 @@ or implied, of GRNET S.A.
             </div>
         </div>
         <div class="actions">
-            {# Commented out the following until there is full public network support #}
-            {# <a href="#" class="action-add">{% trans "Add Machine" %}</a> #}
+             <!-- Adding servers to public network is not supported in 0.5
+            <a href="#" class="action-add">{% trans "Add Machine" %}</a>
+            -->
         </div>
         <div class="confirm_single">
             <button class="yes">{% trans "Confirm" %}</button>
@@ -148,8 +153,9 @@ or implied, of GRNET S.A.
         </div>
         <img class="logo" src="static/icons/machines/medium/debian-on.png" />
         <div class='network-remove-machine'>
-            {# Replace the following with the comment below for full public network functionality #}
-            {# <span class="remove-icon">X</span> #}
+            <!-- Removing servers from public network is not supported in 0.5
+            <span class="remove-icon">X</span>
+            -->
             <span>&nbsp;</span>
         </div>
         <div href="#" class="machine-name-div">
@@ -157,11 +163,14 @@ or implied, of GRNET S.A.
                 <span class="name">my desktop1</span>
             </h5>
         </div>
-        <h5 class="machine-settings">
-            <span class="ip">{% trans "IPs" %}</span> |
-            <span class="show-firewall">{% trans "Firewall" %}</span>
-            (<span class="firewall-off">{% trans "Off" %}</span>)
-        </h5>
+        <div class="firewall">
+            <div class="firewall-header">
+                <div class="firewall-label">{% trans "Firewall" %}
+                    (<span class="firewall-off">{% trans "Off" %}</span>)
+                </div>
+                <div class="toggler down"></div>
+            </div>
+        </div>
         <div class="firewall-content">
             <div class="firewall-cable"></div>
             <div class="firewall-contents-start-separator"></div>
@@ -226,10 +235,14 @@ or implied, of GRNET S.A.
                 </div>
             </h5>
         </div>
-        <h5 class="network-machines">
-            {% trans "Show:" %} <span class="show-machines">{% trans "machines" %}</span>
-            (<span class="machines-count">0</span>)
-        </h5>
+        <div class="network-machines">
+            <div class="machines-header">
+                <div class="machines-label">{% trans "machines" %}
+                    (<span class="machines-count">0</span>)
+                </div>
+                <div class="toggler down"></div>
+            </div>
+        </div>
         <div class="network-contents">
             <div class="network-placeholder">
                 <div class="network-contents-start-separator"></div>
@@ -368,7 +381,7 @@ $("#add-network-create").live('click', function() {
 });
 
 // toggle component with class network-contents
-$("#networks-pane .show-machines").live('click', function() {
+$("#networks-pane div.machines-header").live('click', function() {
     if ($('#networks-pane .network-contents .network-machine').length > 0) {
         $(this).parent().next("#networks-pane .network-contents").slideToggle(600);
     }
@@ -597,7 +610,7 @@ $("#add-server-add").live('click', function() {
 });
 
 // toggle component with class firewall-contents
-$("#networks-pane .show-firewall").live('click', function() {
+$("#networks-pane div.firewall-header").live('click', function() {
     $(this).parent().next(".firewall-content").slideToggle(600);
     return false;
 });

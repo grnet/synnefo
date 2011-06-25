@@ -3331,11 +3331,12 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
-    min-height: 310px;
     margin-bottom: 10px;
+    min-height: 310px;
+    overflow-x: visible;
+    overflow-y: auto;
     padding-top: 60px;
     width: 700px;
-    overflow: auto;
 }
 
 /* console css */

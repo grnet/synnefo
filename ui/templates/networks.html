@@ -315,6 +315,16 @@ or implied, of GRNET S.A.
 
 <a id="add-machines-overlay" href="#" rel="#add-machines-wizard"></a>
 
+<!-- reboot dialog -->
+<div class="reboot-dialog">
+    <p>{% trans "For the network changes to take effect you need to reboot all affected machines:" %}</p>
+    <button class="reboot-all">{% trans "Reboot All" %}</button>
+    <div class="reboot-machine-template">
+        <div class="name">my debian server</div>
+        <button class="reboot-single">{% trans "Reboot" %}</button>
+    </div>
+</div>
+
 <!-- multiple confirmation dialog -->
 <div class="confirm_multiple">
     <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "networks or machines" %}</p>

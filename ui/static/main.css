@@ -2764,10 +2764,6 @@ div.network:hover a.rename {
     margin-top: -4px;
 }
 
-.discreet {
-    color: #969696;
-}
-
 .network .separator {
     background-color: #5CA1C0;
     height: 1px;
@@ -2894,8 +2890,47 @@ h5.machine-connect span:hover {
     margin-left: 60px;
 }
 
-/* Metadata */
+div.reboot-dialog {
+    display: none;
+    color: black;
+    background-color: #4085A5;
+    font-size: 75%;
+    margin-top: 15px;
+    width: 698px;
+}
 
+div.reboot-machine-template {
+    display: none;
+    padding: 0 0 10px 10px;
+    width: 300px;
+}
+
+div.reboot-dialog p {
+    color: #FF7F2A;
+    padding: 10px 0 10px 10px;
+}
+
+div.reboot-dialog button {
+    float:right;
+    border: 1px solid #FF7F2A;
+    background-color: transparent;
+    font-size:100%;
+}
+
+div.reboot-dialog button:hover {
+    background-color: #FF7F2A;
+}
+
+div.reboot-dialog button.reboot-all {
+    margin: -30px 35px 0 0;
+}
+
+div.reboot-dialog button.reboot-single {
+    color: black;
+    margin-top: -20px;
+}
+
+/* Metadata */
 .info-content {
     clear: both;
     height: 95px;
@@ -3094,9 +3129,6 @@ div.machine a.manage-metadata:hover {
 
 .single div.single-action.selected:hover {
     background-color:transparent;
-}
-
-div.single div.action-container.destroy {
 }
 
 .single div.confirm_single {

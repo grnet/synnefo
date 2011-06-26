@@ -798,8 +798,6 @@ function update_networks_view(servers_data, networks_data){
                         $("#" + existing_machines[i].id).remove();
                         $('#net-' + network.id + '.network div.status').text(NET_STATES['ACTIVE']);
                         $('#net-' + network.id + '.network img.spinner').hide();
-                        //$('#net-' + network.id + '.network img.wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                        //setTimeout("$('#net-" + network.id +".network img.wave').attr('src','').hide()", 3000);
                     }
                 }
             }
@@ -854,7 +852,6 @@ function update_networks_view(servers_data, networks_data){
                 // server has new ips
                 var old_ip4 = existing_public.find('span.ip4').text();
                 var old_ip6 = existing_public.find('span.ip6').text();
-                // the following are valid because the public ips always come in this order from the api
                 var new_ips = get_public_ips(server);
                 var new_ip4 = new_ips['ip4'];
                 var new_ip6 = new_ips['ip6'];
@@ -924,8 +921,6 @@ function update_networks_view(servers_data, networks_data){
                         // hide spinners
                         $('#net-' + server_net.id + '.network div.status').text(NET_STATES['ACTIVE']);
                         $('#net-' + server_net.id + '.network img.spinner').hide();
-                        //$('#net-' + server_net.id + '.network img.wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                        //setTimeout("$('#net-" + server_net.id +".network img.wave').attr('src','').hide()", 3000);
                         }
                         // server was deleted
                         if (server.status == 'DELETED') {
@@ -984,7 +979,6 @@ function display_failure(status, networkID, action, responseText) {
     $('#networks-container #net-'+networkID+ ' .action_error').show();
 }
 
-
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){
     if (this.innerHeight - 220 < $('#networks-pane #networks-container').height())
@@ -1000,7 +994,7 @@ $("#networks-pane .network-contents").hide();
 $("#networks-pane .firewall-content").hide();
 changes_since = 0; // to reload full list of servers
 networks_changes_since= 0; // to reload full list of networks
-// there is alway one public network to render
+// there is always one public network to render
 var pubNet = $("#networks-pane #public-template").clone().attr("id", "pub").fadeIn("slow");
 pubNet.appendTo("#networks-pane .public-networks");
 update_networks(UPDATE_INTERVAL);

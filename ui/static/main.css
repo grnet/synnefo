@@ -2899,7 +2899,7 @@ div.reboot-dialog {
     width: 698px;
 }
 
-div.reboot-machine-template {
+div#reboot-machine-template, div.reboot-machine-entry {
     display: none;
     padding: 0 0 10px 10px;
     width: 300px;

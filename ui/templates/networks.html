@@ -319,10 +319,11 @@ or implied, of GRNET S.A.
 <div class="reboot-dialog">
     <p>{% trans "For the network changes to take effect you need to reboot all affected machines:" %}</p>
     <button class="reboot-all">{% trans "Reboot All" %}</button>
-    <div class="reboot-machine-template">
+    <div id="reboot-machine-template" class='reboot-machine-entry'>
         <div class="name">my debian server</div>
         <button class="reboot-single">{% trans "Reboot" %}</button>
     </div>
+    <div class="reboot-list"></div>
 </div>
 
 <!-- multiple confirmation dialog -->
@@ -741,6 +742,7 @@ $("#networks-pane div.confirm_multiple .no").live('click', function(){
     return false;
 });
 
+var test = [];
 // update the networks list
 function update_networks_view(servers_data, networks_data){
     /*
@@ -797,17 +799,27 @@ function update_networks_view(servers_data, networks_data){
                 // a server was disconnected
                 // search DOM for all machines
                 existing_machines = $('div.private-networks div.network-machine');
-                // check if the mahcines in the DOM exist in the response
+                // check if the machines in the DOM exist in the response
                 for (i=0; i<existing_machines.length; i++) {
                     // get the existing server id
                     var serverID = existing_machines[i].id.split('-')[3];
                     // if a server exists in DOM, but not in the response it has
                     // been disconnected
                     if ( network.servers.values.indexOf( parseInt(serverID) ) == -1 ) {
-                        // so remove it from DOM and reset all spinners
-                        $("#" + existing_machines[i].id).remove();
+                        // get it's name
+                        var server_name = $('#' + existing_machines[i].id).find('span.name').text();
+                        // remove it from DOM and reset all spinners
+                        $('#' + existing_machines[i].id).remove();
                         $('#net-' + network.id + '.network div.status').text(NET_STATES['ACTIVE']);
                         $('#net-' + network.id + '.network img.spinner').hide();
+                        // finally put it in the reboot list if it is not already there
+                        var existing_reboot = $("div.reboot-list div#server-" + serverID);
+                        if ( !existing_reboot.length ) {
+                            $('div.reboot-dialog').fadeIn("slow");
+                            var reboot_entry = $('div#reboot-machine-template').clone().attr("id", "server-" + serverID);
+                            reboot_entry.find('div.name').text(server_name);
+                            reboot_entry.appendTo('div.reboot-list').show();
+                        }
                     }
                 }
             }
@@ -908,7 +920,7 @@ function update_networks_view(servers_data, networks_data){
 
             /*
             Now update all private networks, this does NOT check for
-            disconnetcted servers (see above in updating private networks).
+            disconnected servers (see above in updating private networks).
             Since one server may belong to more than one private networks,
             we follow a different approach.
             We check each server and add, update or leave it as it is accordingly

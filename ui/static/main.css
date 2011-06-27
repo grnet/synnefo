@@ -2771,11 +2771,8 @@ div.network:hover a.rename {
 .network .separator {
     background-color: #5CA1C0;
     height: 1px;
-    margin-left: 5px;
-    margin-top: 5px;
-    margin-bottom: -3px;
-    position: absolute;
-    width: 473px;
+    margin: 11px 0 -5px 5px;
+    width: 485px;
 }
 
 .network-machine .state {

@@ -204,3 +204,7 @@ div.single-actions {
 #metadata-wizard .addbuttons {
     margin-top: -16.5px;
 }
+
+#metadata-wizard .dropdown-container {
+    position: absolute;
+}

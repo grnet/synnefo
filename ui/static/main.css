@@ -1771,6 +1771,7 @@ input.machine {
 }
 #metadata-wizard .textdropdown-outer {
     float: left;
+    overflow: visible;
 }
 
 #metadata-wizard .textdropdown-btn {
@@ -1792,6 +1793,7 @@ input.machine {
     height: auto !important;
     padding-left: 5px;
     width: 103px !important;
+    position: relative;
 }
 
 #metadata-wizard ul li {

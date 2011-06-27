@@ -1024,7 +1024,7 @@ div.network div.toggler {
 }
 
 .machine div.info div.down {
-    background: url(/static/down-arrow.png) no-repeat scroll 1px 0;
+    background: url(/static/down-arrow.png) no-repeat scroll 1px 1px;
 }
 
 .single div.tags div.down {
@@ -2554,10 +2554,6 @@ div.machines-header, div.firewall-header {
     margin-top: -5px;
 }
 
-div.firewall-header {
-
-}
-
 div.network:hover div.machines-header, div.network:hover div.firewall-header {
     background-color: #84b7d0;
 }
@@ -2570,6 +2566,10 @@ div.machines-label, div.firewall-label {
     width: 83px;
     padding-bottom:1px;
     padding-left: 3px;
+}
+
+div.firewall-label.darker {
+    background-color: #4085a5;
 }
 
 .state {
@@ -2874,7 +2874,7 @@ h5.machine-connect span:hover {
 }
 
 .firewall-apply {
-    background-color: #666666;
+    background-color: #4085a5;
     border: medium none;
     float: right;
     font-size: 105%;

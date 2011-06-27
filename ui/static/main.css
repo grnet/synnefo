@@ -984,7 +984,8 @@ div.name:hover span.rename {
 
 .machine div.info {
     float:left;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    margin-top:3px;
 }
 
 .machine div.info div.info-header {
@@ -2186,7 +2187,7 @@ div#user a.current_lang {
 }
 
 .machine h5 {
-    margin: -1px 0px 4px 0px;
+    margin: -3px 0px 4px 0px;
 }
 
 .machine h5.namecontainer {
@@ -2659,7 +2660,7 @@ div.network:hover {
 
 .state div {
     text-align: right;
-    margin: 5px 1px -4px;
+    margin: 4px 1px -4px;
 }
 
 .public-networks .state div {

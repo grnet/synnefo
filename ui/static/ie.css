@@ -200,3 +200,7 @@ div.single-actions {
 .private-networks .state div {
     margin: 5px 1px 4px;
 }
+
+#metadata-wizard .addbuttons {
+    margin-top: -16.5px;
+}

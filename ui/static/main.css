@@ -2880,6 +2880,10 @@ h5.machine-connect span:hover {
     width: 75px;
 }
 
+.firewall-apply:hover {
+    background-color:#5CA1C0;
+}
+
 .name-div {
     margin-left: 70px;
     margin-bottom: 20px;

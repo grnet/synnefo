@@ -879,8 +879,8 @@ div.connect-border {
 div.ip, div.ips {
     font-size: 75%;
     position: relative;
-    top: 4px;
     float: right;
+    top:1px;
     right: 18px;
 }
 
@@ -2642,7 +2642,7 @@ div.network div.display a {
 }
 
 div.network-machine div.machine-actions a.action-details {
-    margin-top: 10px;
+    margin-top: 7px;
 }
 
 div.network:hover {

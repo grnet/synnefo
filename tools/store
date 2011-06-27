@@ -315,7 +315,7 @@ class PutMarker(Command):
 @cli_command('put')
 class PutObject(Command):
     syntax = '<container>/<object> <path> [key=val] [...]'
-    description = 'create/override object with path contents or standard input'
+    description = 'create/override object'
     
     def add_options(self, parser):
         parser.add_option('--use_hashes', action='store_true', dest='use_hashes',
@@ -339,16 +339,16 @@ class PutObject(Command):
         parser.add_option('--type', action='store',
                           dest='content-type', default=False,
                           help='create object with specific content type')
-        #parser.add_option('--touch', action='store_true',
-        #                  dest='touch', default=False,
-        #                  help='create object with zero data')
         parser.add_option('--sharing', action='store',
                           dest='sharing', default=None,
                           help='define sharing object policy')
         parser.add_option('-f', action='store',
                           dest='srcpath', default=None,
-                          help='file descriptor to read from: pass - for standard input')
-        
+                          help='file descriptor to read from (pass - for standard input)')
+        parser.add_option('--public', action='store',
+                          dest='public', default=None,
+                          help='make object publicly accessible (\'True\'/\'False\')')
+    
     def execute(self, path, *args):
         if path.find('=') != -1:
             raise Fault('Missing path argument')
@@ -383,22 +383,27 @@ class PutObject(Command):
         
         if self.use_hashes and not f:
             raise Fault('Illegal option combination')
-        
+        if self.public not in ['True', 'False', None]:
+            raise Fault('Not acceptable value for public')
+        public = eval(self.public) if self.public else None
         self.client.create_object(container, object, f, chunked=self.chunked,
                                   headers=headers, use_hashes=self.use_hashes,
-                                  **meta)
+                                  public=public, **meta)
         if f:
             f.close()
 
 @cli_command('copy', 'cp')
 class CopyObject(Command):
     syntax = '<src container>/<src object> [<dst container>/]<dst object>'
-    description = 'copies an object to a different location'
+    description = 'copy an object to a different location'
     
     def add_options(self, parser):
         parser.add_option('--version', action='store',
                           dest='version', default=False,
                           help='copy specific version')
+        parser.add_option('--public', action='store',
+                          dest='public', default=None,
+                          help='publish/unpublish object (\'True\'/\'False\')')
     
     def execute(self, src, dst):
         src_container, sep, src_object = src.partition('/')
@@ -410,8 +415,13 @@ class CopyObject(Command):
         if version:
             headers = {}
             headers['X_SOURCE_VERSION'] = version
+        if self.public and self.nopublic:
+            raise Fault('Conflicting options')
+        if self.public not in ['True', 'False', None]:
+            raise Fault('Not acceptable value for public')
+        public = eval(self.public) if self.public else None
         self.client.copy_object(src_container, src_object, dst_container,
-                                dst_object, headers)
+                                dst_object, public, headers)
 
 @cli_command('set')
 class SetMeta(Command):
@@ -470,6 +480,9 @@ class UpdateObject(Command):
         parser.add_option('-f', action='store',
                           dest='srcpath', default=None,
                           help='file descriptor to read from: pass - for standard input')
+        parser.add_option('--public', action='store',
+                          dest='public', default=None,
+                          help='publish/unpublish object (\'True\'/\'False\')')
     
     def execute(self, path, *args):
         if path.find('=') != -1:
@@ -503,15 +516,24 @@ class UpdateObject(Command):
             f = self.srcpath != '-' and open(self.srcpath) or stdin
         if f:
             chunked = True if (self.chunked or f == stdin) else False
+        if self.public not in ['True', 'False', None]:
+            raise Fault('Not acceptable value for public')
+        public = eval(self.public) if self.public else None
         self.client.update_object(container, object, f, chunked=chunked,
-                                  headers=headers, offset=self.offset, **meta)
+                                  headers=headers, offset=self.offset,
+                                  public=public, **meta)
         if f:
             f.close()
 
 @cli_command('move', 'mv')
 class MoveObject(Command):
     syntax = '<src container>/<src object> [<dst container>/]<dst object>'
-    description = 'moves an object to a different location'
+    description = 'move an object to a different location'
+    
+    def add_options(self, parser):
+        parser.add_option('--public', action='store',
+                          dest='public', default=None,
+                          help='publish/unpublish object (\'True\'/\'False\')')
     
     def execute(self, src, dst):
         src_container, sep, src_object = src.partition('/')
@@ -519,14 +541,16 @@ class MoveObject(Command):
         if not sep:
             dst_container = src_container
             dst_object = dst
-        
+        if self.public not in ['True', 'False', None]:
+            raise Fault('Not acceptable value for public')
+        public = eval(self.public) if self.public else None
         self.client.move_object(src_container, src_object, dst_container,
-                                dst_object, headers)
+                                dst_object, public, headers)
 
 @cli_command('remove')
 class TrashObject(Command):
     syntax = '<container>/<object>'
-    description = 'trashes an object'
+    description = 'trash an object'
     
     def execute(self, src):
         src_container, sep, src_object = src.partition('/')
@@ -534,9 +558,9 @@ class TrashObject(Command):
         self.client.trash_object(src_container, src_object)
 
 @cli_command('restore')
-class TrashObject(Command):
+class RestoreObject(Command):
     syntax = '<container>/<object>'
-    description = 'trashes an object'
+    description = 'restore a trashed object'
     
     def execute(self, src):
         src_container, sep, src_object = src.partition('/')
@@ -546,7 +570,7 @@ class TrashObject(Command):
 @cli_command('unset')
 class UnsetObject(Command):
     syntax = '<container>/[<object>] key [key] [...]'
-    description = 'deletes metadata info'
+    description = 'delete metadata info'
     
     def execute(self, path, *args):
         #in case of account fix the args
@@ -581,7 +605,7 @@ class SetGroup(Command):
 @cli_command('policy')
 class SetPolicy(Command):
     syntax = 'container key=val [key=val] [...]'
-    description = 'set contianer policies'
+    description = 'set container policies'
     
     def execute(self, path, *args):
         if path.find('=') != -1:
@@ -598,6 +622,26 @@ class SetPolicy(Command):
             policies[key] = val
         
         self.client.set_container_policies(container, **policies)
+
+@cli_command('publish')
+class PublishObject(Command):
+    syntax = '<container>/<object>'
+    description = 'publish an object'
+    
+    def execute(self, src):
+        src_container, sep, src_object = src.partition('/')
+        
+        self.client.publish_object(src_container, src_object)
+
+@cli_command('unpublish')
+class UnpublishObject(Command):
+    syntax = '<container>/<object>'
+    description = 'unpublish an object'
+    
+    def execute(self, src):
+        src_container, sep, src_object = src.partition('/')
+        
+        self.client.unpublish_object(src_container, src_object)
 
 def print_usage():
     cmd = Command('', [])

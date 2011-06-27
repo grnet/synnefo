@@ -294,7 +294,7 @@ class Client(object):
     
     def create_container(self, container, headers=None, **meta):
         for k,v in meta.items():
-            headers['X_CONTAINER_META_%s' %k.strip().upper()] = v.strip()
+            headers['X-Container-Meta-%s' %k.strip().upper()] = v.strip()
         status, header, data = self.put('/' + container, headers=headers)
         if status == 202:
             return False
@@ -342,8 +342,20 @@ class Client(object):
         h = {'Content-Type':'application/directory'}
         self.create_object(container, object, f=None, headers=h)
     
+    def _set_public(self, headers, public=False):
+        """
+        sets the public header
+        """
+        if public == None:
+            return
+        elif public:
+            headers['X-Object-Public'] = public
+        else:
+            headers['X-Object-Public'] = ''
+    
     def create_object(self, container, object, f=stdin, chunked=False,
-                      blocksize=1024, headers=None, use_hashes=False, **meta):
+                      blocksize=1024, headers={}, use_hashes=False,
+                      public=None, **meta):
         """
         creates an object
         if f is None then creates a zero length object
@@ -351,7 +363,9 @@ class Client(object):
         """
         path = '/%s/%s' % (container, object)
         for k,v in meta.items():
-            headers['X_OBJECT_META_%s' %k.strip().upper()] = v.strip()
+            headers['X-Object-Meta-%s' %k.strip().upper()] = v.strip()
+        self._set_public(headers, public)
+        headers = headers if headers else None
         if not chunked:
             format = 'json' if use_hashes else 'text'
             data = f.read() if f else None
@@ -365,15 +379,18 @@ class Client(object):
                                    blocksize=1024)
     
     def update_object(self, container, object, f=stdin, chunked=False,
-                      blocksize=1024, headers=None, offset=None, **meta):
+                      blocksize=1024, headers={}, offset=None, public=None,
+                      **meta):
+        print locals()
         path = '/%s/%s' % (container, object)
         for k,v in meta.items():
-            headers['X_OBJECT_META_%s' %k.strip().upper()] = v.strip()
+            headers['X-Object-Meta-%s' %k.strip().upper()] = v.strip()
         if offset:
             headers['Content-Range'] = 'bytes %s-/*' % offset
         else:
             headers['Content-Range'] = 'bytes */*'
-        
+        self._set_public(headers, public)
+        headers = headers if headers else None
         if not chunked and f != stdin:
             data = f.read() if f else None
             self.post(path, data, headers=headers)
@@ -382,7 +399,7 @@ class Client(object):
                                    blocksize=1024)
     
     def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False, headers=None):
+                             dst_object, remove=False, public=None, headers={}):
         path = '/%s/%s' % (dst_container, dst_object)
         if not headers:
             headers = {}
@@ -390,19 +407,22 @@ class Client(object):
             headers['X-Move-From'] = '/%s/%s' % (src_container, src_object)
         else:
             headers['X-Copy-From'] = '/%s/%s' % (src_container, src_object)
+        self._set_public(headers, public)
+        self.headers = headers if headers else None
         headers['Content-Length'] = 0
         self.put(path, headers=headers)
     
     def copy_object(self, src_container, src_object, dst_container,
-                             dst_object, headers=None):
+                             dst_object, public=False, headers=None):
         self._change_obj_location(src_container, src_object,
                                    dst_container, dst_object,
-                                   headers=headers)
+                                   public, headers)
     
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, headers=None):
         self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, True, headers)
+                                   dst_container, dst_object, True,
+                                   public, headers)
     
     def delete_object(self, container, object):
         self.delete('/%s/%s' % (container, object))
@@ -437,4 +457,23 @@ class Client(object):
         actualy removes trash object metadata info
         """
         self.delete_object_metadata(container, object, ['trash'])
-
+    
+    def publish_object(self, container, object):
+        """
+        sets a previously created object publicly accessible
+        """
+        path = '/%s/%s' % (container, object)
+        headers = {}
+        headers['Content-Range'] = 'bytes */*'
+        self._set_public(headers, public=True)
+        self.post(path, headers=headers)
+    
+    def unpublish_object(self, container, object):
+        """
+        unpublish an object
+        """
+        path = '/%s/%s' % (container, object)
+        headers = {}
+        headers['Content-Range'] = 'bytes */*'
+        self._set_public(headers, public=False)
+        self.post(path, headers=headers)

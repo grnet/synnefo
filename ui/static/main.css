@@ -3409,7 +3409,7 @@ div.console-container {
 
 applet {
     width: 100%;
-    height:75%;
+    height:auto;
 }
 
 .console-footer #footer-text{

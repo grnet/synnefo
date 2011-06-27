@@ -580,7 +580,7 @@ function update_machines_view(data) {
             // clone the proper template and put basic values in
             var machine = $("#machinesview-icon.standard #machine-container-template").clone().attr("id", server.id).fadeIn("slow");
             machine.find(".scrollable").scrollable({vertical: true});
-            machine.find("div.name span.name").text(server.name.substring(0,100));
+            machine.find("div.name span.name").text(server.name.substring(0,50));
             machine.find("span.imagetag").text(server_image);
             machine.find(".status").text(STATUSES[server.status]);
             // check server status to select where to append the new server to

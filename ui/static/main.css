@@ -1911,7 +1911,7 @@ input.machine {
 }
 
 #error-success .popup-body {
-    background-image: url("./popup-bg.png");
+    background: url("./popup-bg.png") repeat-x scroll 0 0 transparent;
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 1px;

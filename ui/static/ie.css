@@ -208,3 +208,16 @@ div.single-actions {
 #metadata-wizard .dropdown-container {
     position: absolute;
 }
+
+#wizard button.next {
+    margin-right: -32px;
+    padding-right: 5px;
+}
+
+#wizard div.panes {
+    width: 426px;
+}
+
+#status li {
+    margin-bottom: -10px;
+}

@@ -2751,7 +2751,8 @@ div.network:hover a.rename {
     margin-left: 35px;
     padding-bottom: 5px;
     padding-left: 5px;
-    padding-top: 10px;
+    padding-top: 5px;
+    margin-top: 5px;
 }
 
 .network-machine .logo {

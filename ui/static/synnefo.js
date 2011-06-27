@@ -309,7 +309,7 @@ function update_vms(interval) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
             } catch(err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Update VMs', jqXHR.responseText);
             }
             return false;
             },
@@ -371,7 +371,7 @@ function update_networks(interval) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
             } catch(err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Update networks', jqXHR.responseText);
             }
             return false;
             },
@@ -435,7 +435,7 @@ function update_network_names(servers_data) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
             } catch(err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Update network names', jqXHR.responseText);
             }
             return false;
             },
@@ -484,7 +484,7 @@ function update_images() {
                     try {
                         ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(err);
+                        ajax_error(0, undefined, 'Update Images', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -760,8 +760,7 @@ function create_vm(machineName, imageRef, flavorRef){
                     try {
                         display_failure(jqXHR.status, serverID, 'Create VM', jqXHR.responseText);
                     } catch(err) {
-                        //if jqXHR.status is throwing an exception, the server has timed out
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Create VM', jqXHR.responseText);
                     }
            },
     success: function(data, textStatus, jqXHR) {
@@ -801,7 +800,7 @@ function reboot(serverIDs){
                         display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
                     } catch(err) {
                         //if jqXHR.status is throwing an exception, the server has timed out
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Reboot', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -845,7 +844,7 @@ function shutdown(serverIDs) {
                     try {
                         display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Shutdown', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -887,7 +886,7 @@ function destroy(serverIDs) {
                     try {
                         display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Destroy', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -931,7 +930,7 @@ function start(serverIDs){
                     try {
                         display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Start', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -1015,7 +1014,7 @@ function open_console(serverIDs){
                     try {
                         display_failure(jqXHR.status, serverID, 'Console', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Console', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -1063,7 +1062,7 @@ function rename(serverID, serverName){
                     try {
                         display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(err);
+                        display_failure(0, serverID, 'Rename', jqXHR.responseText);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -1239,7 +1238,7 @@ function rename_network(networkID, networkName){
             try {
                 ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Rename network', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1276,7 +1275,7 @@ function delete_network(networkIDs){
             try {
                 display_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
             } catch (err) {
-                ajax_error(err);
+                display_failure(0, networkID, 'Delete', jqXHR.responseText)
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1320,7 +1319,7 @@ function add_server_to_network(networkID, serverIDs) {
                 $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Add server to network', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1364,7 +1363,7 @@ function remove_server_from_network(networkIDs, serverIDs) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Remove server form network', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {

@@ -28,10 +28,10 @@ class AaiTestCase(TestCase):
         """test request that should succeed and register a user
         """
         response = self.client.get('/index.html', {},
-                                   **{Tokens.SIB_NAME: 'Jimmy',
-                                      Tokens.SIB_EPPN: 'jh@gmail.com',
-                                      Tokens.SIB_CN: 'Jimmy Hendrix',
-                                      Tokens.SIB_SESSION_ID: '123321',
+                                   **{Tokens.SHIB_NAME: 'Jimmy',
+                                      Tokens.SHIB_EPPN: 'jh@gmail.com',
+                                      Tokens.SHIB_CN: 'Jimmy Hendrix',
+                                      Tokens.SHIB_SESSION_ID: '123321',
                                       'TEST-AAI' : 'true'})
         user = None
         try:
@@ -49,8 +49,8 @@ class AaiTestCase(TestCase):
         """test a request with no unique field
         """
         response = self.client.get('/index.html', {},
-                               **{Tokens.SIB_NAME: 'Jimmy',
-                                  Tokens.SIB_CN: 'Jimmy Hendrix',
+                               **{Tokens.SHIB_NAME: 'Jimmy',
+                                  Tokens.SHIB_CN: 'Jimmy Hendrix',
                                   'TEST-AAI': 'true'})
         self._test_redirect(response)
 

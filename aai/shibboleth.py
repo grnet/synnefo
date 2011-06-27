@@ -1,5 +1,5 @@
 #
-# Business Logic for working with sibbolleth users
+# Business Logic for working with Shibboleth users
 #
 # Copyright 2010 Greek Research and Technology Network
 #
@@ -8,15 +8,15 @@ from synnefo.logic import users
 
 
 class Tokens:
-    SIB_NAME = "Shib-InetOrgPerson-givenName"
-    SIB_SURNAME = "Shib-Person-surname"
-    SIB_CN = "Shib-Person-commonName"
-    SIB_DISPLAY_NAME = "displayName"
-    SIB_EPPN = "eppn"
-    SIB_EDU_PERSON_AFFILIATION = "shib_ep_primaryaffiliation"
-    SIB_SCHAC_PERSONAL_UNIQUE_CODE = "schacPersonalUniqueCode"
-    SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
-    SIB_SESSION_ID = "Shib-Session-ID"
+    SHIB_NAME = "Shib-InetOrgPerson-givenName"
+    SHIB_SURNAME = "Shib-Person-surname"
+    SHIB_CN = "Shib-Person-commonName"
+    SHIB_DISPLAY_NAME = "displayName"
+    SHIB_EPPN = "eppn"
+    SHIB_EDU_PERSON_AFFILIATION = "shib_ep_primaryaffiliation"
+    SHIB_SCHAC_PERSONAL_UNIQUE_CODE = "schacPersonalUniqueCode"
+    SHIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
+    SHIB_SESSION_ID = "Shib-Session-ID"
 
 class NoUniqueToken(BaseException):
 
@@ -29,27 +29,27 @@ class NoRealName(BaseException):
         self.msg = msg
 
 def register_shibboleth_user(tokens):
-    """Registers a sibbolleth user using the input hash as a source for data.
+    """Registers a Shibboleth user using the input hash as a source for data.
        The token requirements are described in:
        http://aai.grnet.gr/policy
     """
     realname = None
 
-    if Tokens.SIB_SURNAME in tokens:
-        realname = tokens[Tokens.SIB_SURNAME]
+    if Tokens.SHIB_SURNAME in tokens:
+        realname = tokens[Tokens.SHIB_SURNAME]
     else:
         realname = ''
 
-    if Tokens.SIB_NAME in tokens:
-        realname = tokens[Tokens.SIB_NAME] + ' ' + realname
+    if Tokens.SHIB_NAME in tokens:
+        realname = tokens[Tokens.SHIB_NAME] + ' ' + realname
 
-    if Tokens.SIB_CN in tokens:
-        realname = tokens[Tokens.SIB_CN]
+    if Tokens.SHIB_CN in tokens:
+        realname = tokens[Tokens.SHIB_CN]
 
-    is_student = Tokens.SIB_SCHAC_PERSONAL_UNIQUE_CODE in tokens or \
-                 Tokens.SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH in tokens
+    is_student = Tokens.SHIB_SCHAC_PERSONAL_UNIQUE_CODE in tokens or \
+                 Tokens.SHIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH in tokens
 
-    unq = tokens.get(Tokens.SIB_EPPN)
+    unq = tokens.get(Tokens.SHIB_EPPN)
 
     if unq is None:
         raise NoUniqueToken("Authentication does not return a unique token")

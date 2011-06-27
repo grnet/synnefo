@@ -54,11 +54,11 @@ class SynnefoAuthMiddleware(object):
             return
 
         #A user authenticated by Shibboleth, must include a uniq id
-        if Tokens.SIB_EPPN in request.META and Tokens.SIB_SESSION_ID in request.META:
+        if Tokens.SHIB_EPPN in request.META and Tokens.SHIB_SESSION_ID in request.META:
             user = None
             try:
                 user = SynnefoUser.objects.get(
-                    uniq = request.META[Tokens.SIB_EPPN])
+                    uniq = request.META[Tokens.SHIB_EPPN])
             except SynnefoUser.DoesNotExist:
                 pass
 
@@ -67,7 +67,7 @@ class SynnefoAuthMiddleware(object):
                 #Attempt to register the incoming user
                 if register_shibboleth_user(request.META):
                     user = SynnefoUser.objects.get(
-                        uniq = request.META[Tokens.SIB_EPPN])
+                        uniq = request.META[Tokens.SHIB_EPPN])
                     return self._redirect_shib_auth_user(user)
                 else:
                     return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)

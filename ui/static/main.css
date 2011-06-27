@@ -2844,6 +2844,7 @@ div.network-add-machine {
     color: black;
     font-size: 60%;
     margin-left: 60px;
+    height: 55px;
 }
 
 .firewall-content .checkbox-legends {

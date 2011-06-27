@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.cache import patch_vary_headers
 from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
@@ -72,7 +73,7 @@ class SynnefoAuthMiddleware(object):
     def process_response(self, request, response):
         # Tell proxies and other interested parties that the request varies
         # based on X-Auth-Token, to avoid caching of results
-        response['Vary'] = 'X-Auth-Token'
+        patch_vary_headers(response, ('X-Auth-Token',))
         return response
 
     def _redirect_shib_auth_user(self, user):

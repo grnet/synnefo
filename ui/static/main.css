@@ -2936,6 +2936,10 @@ div.reboot-dialog button.reboot-single {
     margin-top: -20px;
 }
 
+div.reboot-dialog div.reboot-error {
+    display:none;
+}
+
 /* Metadata */
 .info-content {
     clear: both;

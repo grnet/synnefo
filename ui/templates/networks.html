@@ -319,6 +319,12 @@ or implied, of GRNET S.A.
     <div id="reboot-machine-template" class='reboot-machine-entry'>
         <div class="name">my debian server</div>
         <button class="reboot-single">{% trans "Reboot" %}</button>
+        <div class="reboot-error">
+            <div class="code"></div>
+            <div class="action"></div>
+            <div class="message"></div>
+            <button class="details">{% trans "Error!" %}</button>
+        </div>
     </div>
     <div class="reboot-list"></div>
 </div>
@@ -667,6 +673,19 @@ $("div.reboot-dialog button.reboot-all").live('click', function() {
     return false;
 });
 
+// intercept error on reboot click
+$("div.reboot-dialog button.details").live('click', function() {
+    $(this).closest('.reboot-machine-entry').remove();
+    ajax_error( $(this).parent().children('.code').text(),
+                undefined,
+                $(this).parent().children('.action').text(),
+                $(this).parent().children('.message').text());
+    if ( !$('div.reboot-list').children().length ) {
+        $('div.reboot-dialog').hide();
+    }
+    return false;
+});
+
 // after reboot success
 function display_success(serverID) {
     // remove server from the list
@@ -675,6 +694,17 @@ function display_success(serverID) {
     if ( !$('div.reboot-list').children().length ) {
         $('div.reboot-dialog').hide();
     }
+    return false;
+}
+
+// after reboot error
+function display_failure(status, serverID, action, responseText) {
+    $('div.reboot-list #server-' + serverID + ' button.reboot-single').hide();
+    $('div.reboot-list #server-' + serverID + ' div.code').text(status);
+    $('div.reboot-list #server-' + serverID + ' div.action').text(action);
+    $('div.reboot-list #server-' + serverID + ' div.message').text(responseText);
+    $('div.reboot-list #server-' + serverID + ' button.details').show();
+    return false;
 }
 
 // confirm single action

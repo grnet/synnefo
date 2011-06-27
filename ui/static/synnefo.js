@@ -101,7 +101,7 @@ if (!Array.prototype.indexOf) {
 // trim prototype for IE
 if(typeof String.prototype.trim !== 'function') {
     String.prototype.trim = function() {
-        return this.replace(/^\s+|\s+$/g, ''); 
+        return this.replace(/^\s+|\s+$/g, '');
     }
 }
 
@@ -1293,7 +1293,7 @@ function delete_network(networkIDs){
     return false;
 }
 
-function add_server_to_network(networkID, serverIDs) {
+function add_server_to_network(networkID, serverIDs, serverNames) {
     if (!serverIDs.length){
         // close the overlay when all the calls are made
         $("a#add-machines-overlay").overlay().close();
@@ -1301,6 +1301,7 @@ function add_server_to_network(networkID, serverIDs) {
     }
     // get a server
     var serverID = serverIDs.pop();
+    var serverName = serverNames.pop();
     // prepare payload
     var payload = {
             "add": { "serverRef": serverID }
@@ -1327,8 +1328,16 @@ function add_server_to_network(networkID, serverIDs) {
                 try {
                     console.info('added server ' + serverID + ' to network ' + networkID);
                 } catch(err) {}
+                // toggle the reboot dialog
+                var existing_reboot = $("div.reboot-list div#server-" + serverID);
+                if ( !existing_reboot.length ) {
+                    $('div.reboot-dialog').fadeIn("slow");
+                    var reboot_entry = $('div#reboot-machine-template').clone().attr("id", "server-" + serverID);
+                    reboot_entry.find('div.name').text(serverName);
+                    reboot_entry.appendTo('div.reboot-list').show();
+                }
                 // continue with the rest of the servers
-                add_server_to_network(networkID, serverIDs);
+                add_server_to_network(networkID, serverIDs, serverNames);
             } else {
                 // close wizard and show error box
                 $("a#add-machines-overlay").data('overlay').close();
@@ -1339,7 +1348,7 @@ function add_server_to_network(networkID, serverIDs) {
     return false;
 }
 
-function remove_server_from_network(networkIDs, serverIDs) {
+function remove_server_from_network(networkIDs, serverIDs, serverNames) {
     if (!networkIDs.length){
         //ajax_success('DEFAULT');
         return false;
@@ -1347,6 +1356,7 @@ function remove_server_from_network(networkIDs, serverIDs) {
     // get a network and a server
     var networkID = networkIDs.pop();
     var serverID = serverIDs.pop();
+    var serverName = serverNames.pop();
     // prepare payload
     var payload = {
             "remove": { "serverRef": serverID }
@@ -1371,10 +1381,16 @@ function remove_server_from_network(networkIDs, serverIDs) {
                 try {
                     console.info('deleted server ' + serverID + ' from network ' + networkID);
                 } catch(err) {}
-                // remove it from DOM
-                // $('#net-' + networkID + '-server-' + serverID).fadeOut('slow').remove();
+                // toggle the reboot dialog
+                var existing_reboot = $("div.reboot-list div#server-" + serverID);
+                if ( !existing_reboot.length ) {
+                    $('div.reboot-dialog').fadeIn("slow");
+                    var reboot_entry = $('div#reboot-machine-template').clone().attr("id", "server-" + serverID);
+                    reboot_entry.find('div.name').text(serverName);
+                    reboot_entry.appendTo('div.reboot-list').show();
+                }
                 // continue with the rest of the servers
-                remove_server_form_network(networkIDs, serverIDs);
+                remove_server_form_network(networkIDs, serverIDs, serverNames);
             } else {
                 ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
             }
@@ -1504,5 +1520,5 @@ function close_all_overlays() {
 	} catch(err) {}
 	try {
 		$("a#metadata-scrollable").overlay().close();
-	} catch(err) {}	
+	} catch(err) {}
 }

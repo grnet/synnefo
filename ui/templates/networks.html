@@ -484,6 +484,7 @@ $("#networks-pane .remove-icon").live('click', function() {
 // intercept click to remove machine from network
 $("#networks-pane .action-disconnect").live('click', function() {
     var serverID = $(this).parent().parent().attr('id').split('-').pop();
+    var serverName = $(this).closest('.network-machine').find('span.name').text();
     var networkID = $(this).closest('.network').attr('id').split('-').pop();
     var found = false;
     $(this).parent().children('a').removeClass('selected');
@@ -501,7 +502,7 @@ $("#networks-pane .action-disconnect").live('click', function() {
     }
     if (!found) {
         // no pending action for this network was found, so let's just add it to the list
-        pending_actions.push([remove_server_from_network, networkID, serverID]);
+        pending_actions.push([remove_server_from_network, networkID, serverID, serverName]);
     }
     update_network_confirmations();
     return false;
@@ -603,8 +604,10 @@ $("#add-server-add").live('click', function() {
     else {
         var networkID = $("#add-machines-wizard p").text();
         var serverIDs = [];
+        var serverNames = [];
         $.each(selections, function(i, selection) {
             serverIDs.push(selection.name);
+            serverNames.push($("#list-entry-server-" + selection.name + " span.machine-name").text());
         });
         // disable submit button to prevent multiple calls
         $(this).attr("disabled", true);
@@ -615,7 +618,7 @@ $("#add-server-add").live('click', function() {
         $('#net-' + networkID + '.network div.status').text(NET_STATES['Connecting']);
         $('#net-' + networkID + '.network img.spinner').show();
         // make the calls
-        add_server_to_network(networkID, serverIDs);
+        add_server_to_network(networkID, serverIDs, serverNames);
     }
     return false;
 });
@@ -663,7 +666,7 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
                         $(this).closest('div.network').find('div.status').text(NET_STATES['Disconnecting']);
                         $(this).closest('div.network').find('img.spinner').show();
                         action = pending_actions.splice(i,1)[0];
-                        action[0]([action[1]], [action[2]]); // execute action
+                        action[0]([action[1]], [action[2]], [action[3]]); // execute action
         } // for adding servers to a network look in $("#add-server-add").live('click', function() {...});
     }
     $(this).parent().hide();
@@ -742,7 +745,6 @@ $("#networks-pane div.confirm_multiple .no").live('click', function(){
     return false;
 });
 
-var test = [];
 // update the networks list
 function update_networks_view(servers_data, networks_data){
     /*
@@ -806,20 +808,10 @@ function update_networks_view(servers_data, networks_data){
                     // if a server exists in DOM, but not in the response it has
                     // been disconnected
                     if ( network.servers.values.indexOf( parseInt(serverID) ) == -1 ) {
-                        // get it's name
-                        var server_name = $('#' + existing_machines[i].id).find('span.name').text();
                         // remove it from DOM and reset all spinners
                         $('#' + existing_machines[i].id).remove();
                         $('#net-' + network.id + '.network div.status').text(NET_STATES['ACTIVE']);
                         $('#net-' + network.id + '.network img.spinner').hide();
-                        // finally put it in the reboot list if it is not already there
-                        var existing_reboot = $("div.reboot-list div#server-" + serverID);
-                        if ( !existing_reboot.length ) {
-                            $('div.reboot-dialog').fadeIn("slow");
-                            var reboot_entry = $('div#reboot-machine-template').clone().attr("id", "server-" + serverID);
-                            reboot_entry.find('div.name').text(server_name);
-                            reboot_entry.appendTo('div.reboot-list').show();
-                        }
                     }
                 }
             }

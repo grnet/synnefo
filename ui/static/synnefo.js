@@ -306,7 +306,11 @@ function update_vms(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-            ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+            try {
+                ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(err);
+            }
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -364,7 +368,11 @@ function update_networks(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
-            ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
+            try {
+                ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(err);
+            }
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -424,7 +432,11 @@ function update_network_names(servers_data) {
             try {
                 console.info('update_network names errback:' + jqXHR.status )
             } catch(err) {}
-            ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
+            try {
+                ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(err);
+            }
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -469,8 +481,12 @@ function update_images() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
-                    },
+                    try {
+                        ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(err);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
             try {
                 images = data.images.values;
@@ -741,7 +757,12 @@ function create_vm(machineName, imageRef, flavorRef){
     error: function(jqXHR, textStatus, errorThrown) {
                 // close wizard and show error box
                 $('#machines-pane a#create').data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Create VM', jqXHR.responseText);
+                    } catch(err) {
+                        //if jqXHR.status is throwing an exception, the server has timed out
+                        ajax_error(err);
+                    }
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
@@ -776,7 +797,12 @@ function reboot(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText)
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
+                    } catch(err) {
+                        //if jqXHR.status is throwing an exception, the server has timed out
+                        ajax_error(err);
+                    }
                 },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -816,8 +842,12 @@ function shutdown(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(err);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
                         try {
@@ -854,8 +884,12 @@ function destroy(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(err);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '204') {
                         try {
@@ -894,8 +928,12 @@ function start(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(err);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
                         try {
@@ -974,8 +1012,12 @@ function open_console(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Console', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Console', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(err);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '200') {
                         try {
@@ -1018,8 +1060,12 @@ function rename(serverID, serverName){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(err);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '204' || jqXHR.status == '1223') {
                         try {

@@ -728,7 +728,7 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
         } else if (action[0] == remove_server_from_network) {
             $('div.network#net-'+networkID).find('div.status').text(NET_STATES['Disconnecting']);
             $('div.network#net-'+networkID).find('img.spinner').show();
-            action[0]([action[1]], [action[2]]); // execute action
+            action[0]([action[1]], [action[2]], [action[3]]); // execute action
         }
     }
     update_network_confirmations();

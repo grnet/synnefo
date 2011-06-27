@@ -644,6 +644,39 @@ $("#networks-pane .firewall-apply").live('click', function() {
     return false;
 });
 
+// intercept single reboot click
+$("div.reboot-dialog button.reboot-single").live('click', function() {
+    var serverID = $(this).parent().attr('id').split('-')[1];
+    reboot([serverID]);
+    // load progress bar
+    $(this).text('');
+    $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    return false;
+});
+
+// intercept multiple reboot click
+$("div.reboot-dialog button.reboot-all").live('click', function() {
+    var serverIDs = [];
+    $.each($(this).parent().find('div.reboot-list').children(), function(i,server) {
+        serverIDs.push(server.id.split('-')[1]);
+    });
+    reboot(serverIDs);
+    // load progress bar for all buttons
+    $(this).parent().find('button').text('');
+    $(this).parent().find('button').html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    return false;
+});
+
+// after reboot success
+function display_success(serverID) {
+    // remove server from the list
+    $('div.reboot-list #server-' + serverID).remove();
+    // if there are no other servers on the list, hide the reboot dialog
+    if ( !$('div.reboot-list').children().length ) {
+        $('div.reboot-dialog').hide();
+    }
+}
+
 // confirm single action
 $("#networks-pane div.confirm_single .yes").live('click', function() {
     // this works both for server and network actions

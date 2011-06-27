@@ -9,7 +9,7 @@ and Ganeti VM state notifications to the ganeti exchange
 
 """
 
-from django.core.management import setup_environ
+#from django.core.management import setup_environ
 
 import sys
 import os
@@ -17,7 +17,7 @@ path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 import synnefo.settings as settings
 
-setup_environ(settings)
+#setup_environ(settings)
 
 import time
 import json
@@ -44,9 +44,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
     def open_channel(self):
         conn = None
         while conn == None:
-            handler_logger.info("Attempting to connect to %s", settings.RABBIT_HOST)
+            handler_logger.info("Attempting to connect to %s",
+                settings.RABBIT_HOST)
             try:
-                conn = amqp.Connection( host=settings.RABBIT_HOST,
+                conn = amqp.Connection(host=settings.RABBIT_HOST,
                      userid=settings.RABBIT_USERNAME,
                      password=settings.RABBIT_PASSWORD,
                      virtual_host=settings.RABBIT_VHOST)
@@ -127,7 +128,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
                     self.logger.exception("Server went away, reconnecting...")
                     self.chan = self.open_channel()
                 except Exception:
-                    self.logger.exception("Caught unexpected exception (msg: %s)", msg)
+                    self.logger.exception("Caught unexpected exception, msg: ",
+                                          msg)
                     raise
 
 handler_logger = None
@@ -169,8 +171,9 @@ def main():
     lvl = logging.DEBUG if opts.debug else logging.INFO
     logger = logging.getLogger("ganeti.eventd")
     logger.setLevel(lvl)
-    formatter = logging.Formatter("%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
-            "%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter(
+        "%(asctime)s %(module)s[%(process)d] %(levelname)s: %(message)s",
+        "%Y-%m-%d %H:%M:%S")
     handler = logging.FileHandler(opts.log_file)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -204,7 +207,7 @@ def main():
         # Fail if adding the inotify() watch fails for any reason
         res = wm.add_watch(constants.QUEUE_DIR, mask)
         if res[constants.QUEUE_DIR] < 0:
-            raise Exception("pyinotify add_watch returned negative watch descriptor")
+            raise Exception("pyinotify add_watch returned negative descriptor")
 
         logger.info("Now watching %s" % constants.QUEUE_DIR)
 

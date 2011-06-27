@@ -48,7 +48,7 @@ Nodes in a Synnefo deployment belong in one of the following types:
    queue.
    Services:
    only on GANETI-MASTER:
-     the Synnefo Ganeti monitoring daemon [/ganeti/ganeti-eventd],
+     the Synnefo Ganeti monitoring daemon [/ganeti/snf-ganeti-eventd],
      and the Synnefo Ganeti hook [/ganeti/snf-ganeti-hook.py].
    on each GANETI_NODE:
      a deployment-specific KVM ifup script
@@ -101,9 +101,9 @@ in a Synnefo deployment.
 
 4. Installation of the Synnefo Django project:
    As of v0.4, the Synnefo Django project needs to be installed on nodes
-   of type APISERVER, LOGIC and on the GANETI-MASTER, with a properly configured
-   settings.py. In later revisions, the specific parts of the Django project
-   which need to run on each node type will be identified.
+   of type APISERVER, LOGIC and on the GANETI-MASTER, with a properly
+   configured settings.py. In later revisions, the specific parts of the Django
+   project which need to run on each node type will be identified.
 
    Synnefo is written in Python 2.6 and depends on the following Python
    modules: [package versions confirmed to be compatible are in braces]
@@ -112,8 +112,8 @@ in a Synnefo deployment.
     * simplejson [simplejson==2.1.3]
     * pycurl [pycurl==7.19.0]
     * python-dateutil  [python-dateutil==1.4.1]
-      WARNING: version python-dateutil==2.0 downloaded by pip known *not* to work
-               with Python 2.6
+      WARNING: version python-dateutil==2.0 downloaded by pip known *not* to
+               work with Python 2.6
     * south [south==0.7.1]
       WARNING: not working with Debian squeeze's default south-0.7-1 package.
     * amqplib [amqplib==0.6.1]
@@ -137,8 +137,8 @@ in a Synnefo deployment.
    system's package manager to install the dependencies (e.g. Macports has them
    all).
 
-   * On Snow Leopard and linux (64-bit), you have to set the following environment
-     variable for pip to compile the dependencies correctly.
+   * On Snow Leopard and linux (64-bit), you have to set the following
+     environment variable for pip to compile the dependencies correctly.
 
   	   $ export ARCHFLAGS="-arch x86_64"
 
@@ -163,9 +163,9 @@ in a Synnefo deployment.
    of type DB. The choices are: SQLIte, MySQL, PostgreSQL.
 
    * SQLite:
-     The python sqlite driver is available by default with Python so no additional
-     configuration is required. Also, most self-respecting systems have the sqlite
-     library installed by default.
+     The python sqlite driver is available by default with Python so no
+     additional configuration is required. Also, most self-respecting systems
+     have the sqlite library installed by default.
 
    *  MySQL:
       MySQL must be installed first:
@@ -180,9 +180,9 @@ in a Synnefo deployment.
 
 	    $ bin/pip install MySQL-python
 
-      Note: On MacOSX with Mysql install from MacPorts the above command will fail
-      complaining that it cannot find the mysql_config command. Do the following and
-      restart the installation
+      Note: On MacOSX with Mysql install from MacPorts the above command will
+      fail complaining that it cannot find the mysql_config command. Do the
+      following and restart the installation
 	    $ echo "mysql_config = /opt/local/bin/mysql_config5" >> ./build/MySQL-python/site.cfg
 
       Configure a MySQL db/account for synnefo
@@ -218,8 +218,8 @@ in a Synnefo deployment.
 	   ALTER DATABASE synnefo OWNER TO username;
 	   ALTER USER username CREATEDB;
 
-     The last line enables the newly created user to create own databases. This is
-     needed for Django to create and drop the test_synnefo database for unit
+     The last line enables the newly created user to create own databases. This
+     is needed for Django to create and drop the test_synnefo database for unit
      testing.
 
 
@@ -231,7 +231,8 @@ in a Synnefo deployment.
    of reconstructing settings.py from scratch, since each release currently
    brings heavy changes to settings.py.dist.
 
-   Add the following to your custom settings.py, depending on your choice of DB:
+   Add the following to your custom settings.py, depending on your choice
+   of DB:
    * SQLite
 
 	 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
@@ -239,7 +240,7 @@ in a Synnefo deployment.
 	 DATABASES = {
 	     'default': {
 		     'ENGINE': 'django.db.backends.sqlite3',
-		     'NAME': PROJECT_PATH + 'synnefo.db' #WARN: This must be an absolute path
+		     'NAME': PROJECT_PATH + 'synnefo.db' # WARN: This must be an absolute path
 	     }
 	 }
 
@@ -300,16 +301,18 @@ in a Synnefo deployment.
    at some later point.
 
 
-9. Installation of the Ganeti monitoring daemon, /ganeti/ganeti-eventd:
-   The Ganeti monitoring daemon is part of the Django project and must run on
-   GANETI-MASTER.
+9. Installation of the Ganeti monitoring daemon, /ganeti/snf-ganeti-eventd:
+   The Ganeti monitoring daemon must run on GANETI-MASTER.
+   The Ganeti monitoring daemon has no dependency on Django.
+   
+   Override all relevant settings in settings.d/99-snf-ganeti-eventd.conf,
+   GANETI_* variables.
+   Then, make sure PYTHONPATH contains the parent of the Django project,
+   and start the server on the Ganeti master as root.
 
-   Override all relevant settings in settings.py.dist, GANETI_* variables.
-   Then start the server on the Ganeti master as root
+     root:~# export PYTHONPATH=$PYTHONPATH:/opt
+     root:~# /opt/synnefo/ganeti/snf-ganeti-eventd.py
 
-     # cd synnefo && python ./ganeti/ganeti-eventd
-
-   FIXME: The server must be started from the project root directory.
    TBD: how to handle master migration.
 
 
@@ -331,8 +334,8 @@ in a Synnefo deployment.
 
 11. Installation of the Synnefo Ganeti hook:
     The Python script ganeti/snf-ganeti-hook.py is the generic launcher for
-    Synnefo hooks in Ganeti.  It resides in the ganeti/ directory under the root
-    of Synnefo Django project root.
+    Synnefo hooks in Ganeti.  It resides in the ganeti/ directory under the
+    root of the Synnefo Django project.
 
     The hook needs to be enabled for phases
     post-{add,modify,reboot,start,stop} by *symlinking*
@@ -380,7 +383,8 @@ in a Synnefo deployment.
     2. Uncomment the following in /etc/default/ganeti-instance-image:
        SWAP=no
        ARCH="x86_64"
-    3. Add to /etc/default/ganeti-instance-image (so that make-dump makes no /boot partition):
+    3. Add to /etc/default/ganeti-instance-image, so that make-dump makes
+       no /boot partition:
        KERNEL_PATH="True"
     4. Change the path in make-dump line 22 according to your installation
        (/usr/share/ganeti/os/image/common.sh --> /srv/ganeti/os/image/common.sh)
@@ -392,7 +396,8 @@ in a Synnefo deployment.
        usable:
          chmod +x /etc/ganeti/instance-image/hooks/{grub,root_passwd}
 
-    Your Custom Images should be stored in a dump format under /var/cache/ganeti-instance-image
+    Your custom mmages should be stored in a dump format under
+    /var/cache/ganeti-instance-image
     and their filenames should have the following format:
       {backend_id}-x86_64-root.dump
     e.g., debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
@@ -417,7 +422,7 @@ in a Synnefo deployment.
 
 
 15. Create log file directories for Synnefo components, set appropriate
-    permissions. By default, logic/dispatcher.py and ganeti/ganeti-eventd.py
+    permissions. By default logic/dispatcher.py and ganeti/snf-ganeti-eventd.py
     use /var/log/synnefo.
 
 

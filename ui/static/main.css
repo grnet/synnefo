@@ -2498,7 +2498,7 @@ div.network-cable {
     border-left: 3px solid #FF7F2A;
     float: left;
     margin-left: -40px;
-    margin-top: -40px;
+    margin-top: -45px;
     height: 185px;
     overflow: hidden;
 }
@@ -2509,7 +2509,7 @@ div.network-cable {
 
 .first div.network-cable {
     height:155px;
-    margin-top:-14px;
+    margin-top:-11px;
 }
 
 div.firewall-cable {
@@ -2752,7 +2752,6 @@ div.network:hover a.rename {
     padding-bottom: 5px;
     padding-left: 5px;
     padding-top: 10px;
-    margin-top: 5px;
 }
 
 .network-machine .logo {

@@ -650,6 +650,21 @@ $("#networks-pane .firewall-apply").live('click', function() {
     return false;
 });
 
+function display_reboot_dialog(networkID, serverID, serverName) {
+    // check if the server already exists in the list
+    var existing_reboot = $("div.reboot-list div#server-" + serverID);
+    // check if the server is active
+    var server_active =$("#net-" + networkID + "-server-" + serverID + " img.logo").attr('src').split('-')[1];
+    server_active = server_active.split('.')[0];
+    if ( !existing_reboot.length && server_active != 'off') {
+        $('div.reboot-dialog').fadeIn("slow");
+        var reboot_entry = $('div#reboot-machine-template').clone().attr("id", "server-" + serverID);
+        reboot_entry.find('div.name').text(serverName);
+        reboot_entry.appendTo('div.reboot-list').show();
+    }
+    return false;
+}
+
 // intercept single reboot click
 $("div.reboot-dialog button.reboot-single").live('click', function() {
     var serverID = $(this).parent().attr('id').split('-')[1];
@@ -1050,7 +1065,6 @@ function update_networks_view(servers_data, networks_data){
     $("#pub .network-machine").first().addClass('first');
     $("#pub .network-machine").removeClass('last');
     $("#pub .network-machine").last().addClass('last');
-
 
     //remove top margin from the first machine of each private network
     $(".private-networks").find(".network-contents .network-machine:first-child").css("margin-top","0");

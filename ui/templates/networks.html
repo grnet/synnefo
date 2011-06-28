@@ -712,6 +712,10 @@ function display_reboot_success(serverID) {
     // if there are no other servers on the list, hide the reboot dialog
     if ( !$('div.reboot-list').children().length ) {
         $('div.reboot-dialog').hide();
+        $("div.reboot-dialog button.reboot-all").html('');
+        $("div.reboot-dialog button.reboot-all").text('{% trans 'Reboot All' %}');
+        $("div.reboot-dialog button.reboot-single").html('');
+        $("div.reboot-dialog button.reboot-single").text('{% trans 'Reboot' %}');
     }
     return false;
 }

@@ -1,6 +1,35 @@
-#
-# Copyright (c) 2010 Greek Research and Technology Network
-#
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
 
 from socket import getfqdn
 
@@ -11,6 +40,7 @@ from django.utils import simplejson as json
 
 from synnefo.api.faults import BadRequest, ServiceUnavailable
 from synnefo.api.util import random_password, get_vm
+from synnefo.db.models import NetworkInterface
 from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
 from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
@@ -234,6 +264,24 @@ def get_console(request, vm, args):
         data = json.dumps({'console': console})
 
     return HttpResponse(data, mimetype=mimetype, status=200)
+
+@server_action('firewallProfile')
+def set_firewall_profile(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+    
+    profile = args.get('profile', '')
+    if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
+        raise BadRequest("Unsupported firewall profile")
+    backend.set_firewall_profile(vm, profile)
+    return HttpResponse(status=202)
 
 
 @network_action('add')

@@ -1,8 +1,38 @@
-#
-# Copyright (c) 2010 Greek Research and Technology Network
-#
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -88,19 +118,19 @@ def list_images(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    user_images = Image.objects.filter(Q(owner=request.user) | Q(public=True))
     since = util.isoparse(request.GET.get('changes-since'))
-
+    
     if since:
-        avail_images = Image.objects.filter(owner=request.user,
-                                            updated__gte=since)
-        if not avail_images:
+        user_images = user_images.filter(updated__gte=since)
+        if not user_images:
             return HttpResponse(status=304)
     else:
-        avail_images = Image.objects.filter(owner=request.user)
-
-    images = [image_to_dict(image, detail) for image in avail_images]
-
+        user_images = user_images.exclude(state='DELETED')
+    
+    images = [image_to_dict(image, detail) for image in user_images]
+    
     if request.serialization == 'xml':
         data = render_to_string('list_images.xml', {
             'images': images,
@@ -176,7 +206,8 @@ def delete_image(request, image_id):
     #                       overLimit (413)
 
     image = util.get_image(image_id, request.user)
-    image.delete()
+    image.state = 'DELETED'
+    image.save()
     return HttpResponse(status=204)
 
 @util.api_method('GET')

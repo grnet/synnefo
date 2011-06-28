@@ -1,297 +1,41 @@
-# -*- coding: utf-8 -*-
-
-# Django settings for synnefo project.
-import os
-
-PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
-
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
-
-# A quick-n-dirty way to know if we're running unit tests
-import sys
-TEST = False
-if len(sys.argv) >= 2:
-    if os.path.basename(sys.argv[0]) == 'manage.py' and \
-        (sys.argv[1] == 'test' or sys.argv[1] == 'hudson'):
-            TEST = True
-
-ADMINS = (
-    # ('Your Name', 'your_email@domain.com'),
-)
-
-MANAGERS = ADMINS
-
-DATABASES = {
-    'default': {
-        # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
-        'ENGINE': 'sqlite3',
-         # ATTENTION: This *must* be the absolute path if using sqlite3.
-         # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
-        'NAME': PROJECT_PATH + 'database.sqlite',
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        # Set to empty string for localhost. Not used with sqlite3.
-        'HOST': '',
-        # Set to empty string for default. Not used with sqlite3.
-        'PORT': '',
-    }
-}
-
-if DATABASES['default']['ENGINE'].endswith('mysql'):
-    DATABASES['default']['OPTIONS'] = {
-        'init_command': 'SET storage_engine=INNODB',
-    }
-
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-
-# Local time zone for this installation. Choices can be found here:
-# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
-# although not all choices may be available on all operating systems.
-# On Unix systems, a value of None will cause Django to use the same
-# timezone as the operating system.
-# If running in a Windows environment this must be set to the same as your
-# system time zone.
-TIME_ZONE = 'UTC'   # Warning: API depends on the TIME_ZONE being UTC
-
-# Language code for this installation. All choices can be found here:
-# http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en-us'
-
-SITE_ID = 1
-
-# If you set this to False, Django will make some optimizations so as not
-# to load the internationalization machinery.
-USE_I18N = True
-
-# If you set this to False, Django will not format dates, numbers and
-# calendars according to the current locale
-USE_L10N = True
-
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
-
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash if there is a path component (optional in other cases).
-# Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = ''
-
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
-
-# our REST API would prefer to be explicit about trailing slashes
-APPEND_SLASH = False
-
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'ly6)mw6a7x%n)-e#zzk4jo6f2=uqu!1o%)2-(7lo+f9yd^k^bg'
-
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
-)
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.core.context_processors.request',
-    'django.core.context_processors.i18n',
-    'django.contrib.auth.context_processors.auth',
-)
-
-MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'synnefo.aai.middleware.SynnefoAuthMiddleware',
-    'synnefo.api.middleware.ApiAuthMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware'
-)
-
-ROOT_URLCONF = 'synnefo.urls'
-
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates"
-    # or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-)
-
-INSTALLED_APPS = (
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.admin',
-    # 'django.contrib.admindocs',
-    'synnefo.aai',
-    'synnefo.api',
-    'synnefo.ui',
-    'synnefo.db',
-    'synnefo.ganeti',
-    'synnefo.logic',
-    'synnefo.invitations',
-    'south'
-)
-
-# The RAPI endpoint and associated credentials to use
-# for talking to the Ganeti backend.
-GANETI_MASTER_IP = "62.217.120.78"
-GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "synnefo", "ocean!")
-
-# This prefix gets used when determining the instance names
-# of Synnefo VMs at the Ganeti backend.
-# The dash must always appear in the name!
-BACKEND_PREFIX_ID = "snf-"
-
-LANGUAGES = (
-  ('el', u'Ελληνικά'),
-  ('en', 'English'),
-)
-
-# needed for django. this is the class that implements the User system.
-# We use this to allow users to add stuff for themselves (about, image etc)
-#http://docs.djangoproject.com/en/dev/topics/auth/#auth-profiles
-AUTH_PROFILE_MODULE = 'synnefo.OceanUser'
-
-# API requests from the GUI time out after that many seconds.
-TIMEOUT = 10 * 1000
-
-# The API will return HTTP Bad Request if the ?changes-since
-# parameter refers to a point in time more than POLL_LIMIT seconds ago.
-POLL_LIMIT = 3600
-
-# Configuration for ganeti-eventd, the Ganeti notification daemon
-GANETI_EVENTD_LOG_FILE = "/var/log/synnefo/ganeti-eventd.log"
-GANETI_EVENTD_PID_FILE = "/var/run/synnefo/ganeti-eventd.pid"
-
-# Rabbit work queue endpoint
-RABBIT_HOST = "62.217.120.67:5672"
-RABBIT_USERNAME = "okeanos"
-RABBIT_PASSWORD = "0k3@n0s"
-RABBIT_VHOST = "/"
-
+# Copyright 2011 GRNET S.A. All rights reserved.
 #
-# Queues, exchanges and bindings for AMQP
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
 #
-EXCHANGE_GANETI = "ganeti"  # Messages from Ganeti
-EXCHANGE_CRON = "cron"      # Messages from periodically triggered tasks
-EXCHANGE_API = "api"        # Messages from the Rest API
-EXCHANGES = (EXCHANGE_GANETI, EXCHANGE_CRON, EXCHANGE_API)
-
-QUEUE_GANETI_EVENTS = "events"
-QUEUE_CRON_CREDITS = "credits"
-QUEUE_EMAIL = "email"
-QUEUE_RECONC = "reconciliation"
-QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
-QUEUES = (QUEUE_GANETI_EVENTS, QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC)
-
-BINDINGS_DEBUG = [
-    # Queue         # Exchange          # RouteKey  # Handler
-    (QUEUE_DEBUG,   EXCHANGE_GANETI,    '#',        'dummy_proc'),
-    (QUEUE_DEBUG,   EXCHANGE_CRON,      '#',        'dummy_proc'),
-    (QUEUE_DEBUG,   EXCHANGE_API,       '#',        'dummy_proc'),
-]
-
-BINDINGS = [
-    # Queue                 # Exchange          # RouteKey            #Handler
-    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*.event.op',  'update_db'),
-    (QUEUE_GANETI_EVENTS,   EXCHANGE_GANETI,    'ganeti.*.event.net', 'update_net'),
-    (QUEUE_CRON_CREDITS,    EXCHANGE_CRON,      '*.credits.*',        'update_credits'),
-    (QUEUE_EMAIL,           EXCHANGE_API,       '*.email.*',          'send_email'),
-    (QUEUE_EMAIL,           EXCHANGE_CRON,      '*.email.*',          'send_email'),
-    (QUEUE_RECONC,          EXCHANGE_CRON,      'reconciliation.*',   'trigger_status_update'),
-]
-
-def fix_amqp_settings(backend_prefix):
-    """Configure AMQP-specific settings
-
-    Configure AMQP-specific settings based on backend_prefix.
-    This function *must* be called later in settings.py, with
-    BACKEND_PREFIX_ID as argument.
-
-    """
-    global DB_HANDLER_KEY_OP, DB_HANDLER_KEY_NET, BINDINGS, QUEUES
-
-    prefix = backend_prefix.split('-')[0]
-    DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix    # notifications of type "ganeti-op-status"
-    DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix  # notifications of type "ganeti-net-status"
-    BINDINGS[0] = ("events-%s-op" % prefix, EXCHANGE_GANETI, DB_HANDLER_KEY_OP, 'update_db')
-    BINDINGS[1] = ("events-%s-net" % prefix, EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net')
-    QUEUES += ("events-%s-op" % prefix, "events-%s-net" % prefix)
-
-# Fix up the AMQP-specific settings based on BACKEND_PREFIX_ID
-# Make sure to call it again, if you modify it at some later point
-fix_amqp_settings(BACKEND_PREFIX_ID)
-
-# Logic dispatcher settings
-DISPATCHER_LOG_FILE = "/var/log/synnefo/dispatcher.log"
-
-# The API implementation needs to accept and return absolute references
-# to its resources. Thus, it needs to know its public URL.
-API_ROOT_URL = 'http://127.0.0.1:8000/api/'
-
-APP_INSTALL_URL = "https://login.okeanos.grnet.gr/okeanos"
-
-LOGIN_PATH = "/login"
-
-# Number of hours during which a user token is active
-# ACHTUNG: The test token distributed in db/initial_data.json will cease to
-#          work after this many hours after 2011/05/10
-AUTH_TOKEN_DURATION = 30 * 24
-
-# Minutes between reconciliations
-RECONCILIATION_MIN = 30
-
-# Max number of invitations allowed per user
-MAX_INVITATIONS = 20
-
-# Key to encrypt X-Auth-Token with when sending invitations
-INVITATION_ENCR_KEY = '8d342f6e7a0366c632978a80257019af'
-
-# Days for which an invitation is active
-INVITATION_VALID_DAYS = 30
-
-# SMTP server to use when sending out emails
-SMTP_SERVER="127.0.0.1"
-
-# The address to use in the From: field when sending out emails
-SYSTEM_EMAIL_ADDR="noreply@grnet.gr"
-
-# Enable receiving a temporary auth token (using the ?test URL parameter) that
-# bypasses the authentication mechanism
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
 #
-# WARNING, ACHTUNG, README, etc: DO NOT ENABLE THIS ON DEPLOYED VERSIONS!
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
 #
-BYPASS_AUTHENTICATION = True
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
 
-#
-# Network Configuration
-#
-# Synnefo assigns this link id to NICs connected on the public network.
-# An IP pool should be associated with this link by the Ganeti administrator.
-GANETI_PUBLIC_LINK = 'snf_public'
-# This link id is assigned to NICs that should be isolated from anything else
-# (e.g., right before the NIC gets deleted).
-# This value is also hardcoded in a fixture in db/fixtures/initial_data.json.
-GANETI_NULL_LINK = 'snf_null'
-#
-# The pool of private network links to use is
-# $GANETI_LINK_PREFIX{1..$GANETI_MAX_LINK_NUMBER}.
-#
-# The prefix to use for private network links.
-GANETI_LINK_PREFIX = 'prv'
-# The number of private network links to use.
-GANETI_MAX_LINK_NUMBER = 100
+import os.path
+import glob
 
-# A list of suggested server tags (server metadata keys)
-DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
-
-# A list of allowed icons for OS Images
-IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
-               "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
-               "suse"]
-
-UPDATE_INTERVAL = 5000
+conffiles = glob.glob(os.path.join(os.path.dirname(__file__),
+                      'settings.d', '*.conf'))
+conffiles.sort()
+for f in conffiles:
+    execfile(os.path.abspath(f))

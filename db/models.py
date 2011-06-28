@@ -73,13 +73,15 @@ class Image(models.Model):
     )
 
     name = models.CharField('Image name', max_length=255)
-    state = models.CharField('Current Image State', choices=IMAGE_STATES, max_length=30)
+    state = models.CharField('Current Image State', choices=IMAGE_STATES,
+                                max_length=30)
     owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey("VirtualMachine", null=True)
     backend_id = models.CharField(max_length=50, default='debian_base')
     format = models.CharField(choices=FORMATS, max_length=30, default='dump')
+    public = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = u'Image'
@@ -421,7 +423,8 @@ class Invitations(models.Model):
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
         ('ENABLED', 'Enabled'),
-        ('DISABLED', 'Disabled')
+        ('DISABLED', 'Disabled'),
+        ('PROTECTED', 'Protected')
     )
     
     machine = models.ForeignKey(VirtualMachine, related_name='nics')
@@ -434,6 +437,9 @@ class NetworkInterface(models.Model):
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
+    
+    def __unicode__(self):
+        return '%s@%s' % (self.machine.name, self.network.name)
 
 
 class NetworkLink(models.Model):
@@ -441,3 +447,6 @@ class NetworkLink(models.Model):
     index = models.IntegerField()
     name = models.CharField(max_length=255)
     available = models.BooleanField(default=True)
+    
+    def __unicode__(self):
+        return self.name

@@ -758,9 +758,9 @@ function create_vm(machineName, imageRef, flavorRef){
                 // close wizard and show error box
                 $('#machines-pane a#create').data('overlay').close();
                     try {
-                        display_failure(jqXHR.status, serverID, 'Create VM', jqXHR.responseText);
+                        ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                     } catch(err) {
-                        display_failure(0, serverID, 'Create VM', jqXHR.responseText);
+                        ajax_error(0, undefined, 'Create VM', jqXHR.responseText);
                     }
            },
     success: function(data, textStatus, jqXHR) {

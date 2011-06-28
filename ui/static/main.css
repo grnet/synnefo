@@ -260,6 +260,7 @@ div.css-panes {
 
 #console-header {
     height: 67px;
+    margin-bottom:10px;
     background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
 
@@ -866,6 +867,10 @@ div.connect-border {
     height:28px;
     width: 12px;
     position: absolute;
+}
+
+div.connect-border:hover {
+    cursor: pointer;
 }
 
 .machine div.connect-border {
@@ -3424,9 +3429,11 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 #console-header div.help-text {
     font-size: 75%;
+    font-weight:bold;
     color:#FF7F2A;
     float:left;
-    margin: 5px 0 0 30px;
+    position: absolute;
+    margin: 40px 0 0 30px;
 }
 
 div.console-container {

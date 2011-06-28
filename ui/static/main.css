@@ -66,8 +66,15 @@ div#wrapper {
 }
 
 #footer div.grnet-sign {
-    color: #72ADC8;
     margin-top:10px;
+}
+
+#footer div.grnet-sign a{
+    color: #72ADC8;
+}
+
+#footer div.grnet-sign a:hover {
+    color: #FFFFFF;
 }
 
 ol, ul {

@@ -1,65 +1,58 @@
 #
-# Business Logic for working with sibbolleth users
+# Business Logic for working with Shibboleth users
 #
-# Copyright 2010 Greek Research and Technology Network
+# Copyright 2010-2011 Greek Research and Technology Network
 #
 
 from synnefo.logic import users
 
-
 class Tokens:
-    SIB_NAME = "Shib-InetOrgPerson-givenName"
-    SIB_SURNAME = "Shib-Person-surname"
-    SIB_CN = "Shib-Person-commonName"
-    SIB_DISPLAY_NAME = "displayName"
-    SIB_EPPN = "eppn"
-    SIB_EDU_PERSON_AFFILIATION = "shib_ep_primaryaffiliation"
-    SIB_SCHAC_PERSONAL_UNIQUE_CODE = "schacPersonalUniqueCode"
-    SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH = "grEduPersonUndergraduateBranch"
-    SIB_SESSION_ID = "Shib-Session-ID"
+    # these are mapped by the Shibboleth SP software
+    SHIB_EPPN = "eppn" # eduPersonPrincipalName
+    SHIB_NAME = "Shib-InetOrgPerson-givenName"
+    SHIB_SURNAME = "Shib-Person-surname"
+    SHIB_CN = "Shib-Person-commonName"
+    SHIB_DISPLAYNAME = "Shib-InetOrgPerson-displayName"
+    SHIB_EP_AFFILIATION = "Shib-EP-Affiliation"
+    SHIB_SESSION_ID = "Shib-Session-ID"
+
 
 class NoUniqueToken(BaseException):
-
     def __init__(self, msg):
         self.msg = msg
+
 
 class NoRealName(BaseException):
-
     def __init__(self, msg):
         self.msg = msg
 
+
 def register_shibboleth_user(tokens):
-    """Registers a sibbolleth user using the input hash as a source for data.
-       The token requirements are described in:
-       http://aai.grnet.gr/policy
-    """
-    realname = None
+    """Registers a Shibboleth user using the input hash as a source for data."""
 
-    if Tokens.SIB_SURNAME in tokens:
-        realname = tokens[Tokens.SIB_SURNAME]
+    if Tokens.SHIB_DISPLAYNAME in tokens:
+        realname = tokens[Tokens.SHIB_DISPLAYNAME]
+    elif Tokens.SHIB_CN in tokens:
+        realname = tokens[Tokens.SHIB_CN]
+    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
     else:
-        realname = ''
-
-    if Tokens.SIB_NAME in tokens:
-        realname = tokens[Tokens.SIB_NAME] + ' ' + realname
-
-    if Tokens.SIB_CN in tokens:
-        realname = tokens[Tokens.SIB_CN]
-
-    is_student = Tokens.SIB_SCHAC_PERSONAL_UNIQUE_CODE in tokens or \
-                 Tokens.SIB_GR_EDU_PERSON_UNDERGRADUATE_BRANCH in tokens
-
-    unq = tokens.get(Tokens.SIB_EPPN)
-
-    if unq is None:
-        raise NoUniqueToken("Authentication does not return a unique token")
-
-    if realname is None:
         raise NoRealName("Authentication does not return the user's name")
 
-    if is_student:
-        users.register_student(realname, '' , unq)
+    try:
+        affiliation = tokens[Tokens.SHIB_EP_AFFILIATION]
+    except KeyError:
+        affiliation = 'member'
+
+    try:
+        eppn = tokens[Tokens.SHIB_EPPN]
+    except KeyError:
+        raise NoUniqueToken("Authentication does not return a unique token")
+
+    if affiliation == 'student':
+        users.register_student(realname, '' , eppn)
     else:
-        users.register_professor(realname, '' , unq)
+        # this includes faculty but also staff, alumni, member, other, ...
+        users.register_professor(realname, '' , eppn)
 
     return True

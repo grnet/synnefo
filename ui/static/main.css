@@ -3410,6 +3410,13 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     position: fixed;
 }
 
+#console-header div.help-text {
+    font-size: 75%;
+    color:#FF7F2A;
+    float:left;
+    margin: 5px 0 0 30px;
+}
+
 div.console-container {
     margin: 0 0em;
     height: auto;

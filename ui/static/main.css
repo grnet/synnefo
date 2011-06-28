@@ -260,7 +260,7 @@ div.css-panes {
 
 #console-header {
     height: 67px;
-    margin-bottom:10px;
+    margin-bottom:15px;
     background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
 
@@ -3433,7 +3433,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     color:#FF7F2A;
     float:left;
     position: absolute;
-    margin: 40px 0 0 30px;
+    margin: 45px 0 0 2px;
 }
 
 div.console-container {

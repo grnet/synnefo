@@ -2389,7 +2389,7 @@ div.list table thead .vmname {
 .spinner, .wave {
     clear: right;
     float:right !important;
-    margin: 10px 16px 0 15px !important;
+    margin: 10px 6px 0 15px !important;
 }
 
 #networks-pane .spinner {
@@ -3167,7 +3167,7 @@ div.machine a.manage-metadata:hover {
 }
 
 .single .spinner, .single .wave {
-    margin: 5px 50px 0 0px !important
+    margin: 15px 45px 0 0px !important
 }
 
 .single div.action_error {

@@ -33,15 +33,15 @@
 
 import logging
 
+from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import util
+from synnefo.api import faults, util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
@@ -199,11 +199,15 @@ def create_server(request):
         image_id = server['imageRef']
         flavor_id = server['flavorRef']
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
     
     image = util.get_image(image_id, owner)
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()
+    
+    count = VirtualMachine.objects.filter(owner=owner, deleted=False).count()
+    if count >= settings.MAX_VMS_PER_USER:
+        raise faults.OverLimit("Maximum number of servers reached")
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
@@ -216,7 +220,7 @@ def create_server(request):
         create_instance(vm, flavor, image, password)
     except GanetiApiError:
         vm.delete()
-        raise ServiceUnavailable('Could not create server.')
+        raise faults.ServiceUnavailable("Could not create server")
 
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(
@@ -263,7 +267,7 @@ def update_server_name(request, server_id):
     try:
         name = req['server']['name']
     except (TypeError, KeyError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
 
     vm = util.get_vm(server_id, request.user)
     vm.name = name
@@ -291,7 +295,7 @@ def server_action(request, server_id):
     vm = util.get_vm(server_id, request.user)
     req = util.get_request_dict(request)
     if len(req) != 1:
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
 
     key = req.keys()[0]
     val = req[key]
@@ -300,9 +304,9 @@ def server_action(request, server_id):
         assert isinstance(val, dict)
         return server_actions[key](request, vm, req[key])
     except KeyError:
-        raise BadRequest('Unknown action.')
+        raise faults.BadRequest("Unknown action")
     except AssertionError:
-        raise BadRequest('Invalid argument.')
+        raise faults.BadRequest("Invalid argument")
 
 @util.api_method('GET')
 def list_addresses(request, server_id):
@@ -376,7 +380,7 @@ def update_metadata(request, server_id):
         metadata = req['metadata']
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
 
     updated = {}
 
@@ -428,7 +432,7 @@ def create_metadata_item(request, server_id, key):
         assert len(metadict) == 1
         assert key in metadict
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
     
     meta, created = VirtualMachineMetadata.objects.get_or_create(
         meta_key=key,

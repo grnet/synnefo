@@ -27,6 +27,8 @@ class SynnefoUser(models.Model):
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
+    max_invitations = models.IntegerField('Max number of invitations',
+                                          null=True)
 
     class Meta:
         verbose_name = u'Synnefo User'

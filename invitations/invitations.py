@@ -102,6 +102,7 @@ def inv_demux(request):
     else:
         method_not_allowed(request)
 
+
 def login(request):
 
     if not request.method == 'GET':
@@ -211,13 +212,13 @@ def send_invitation(invitation):
 def add_invitation(source, name, email):
     """
         Adds an invitation, if the source user has not gone over his/her
-        invitation count or the target user has not been invited already
+        invitation limit or the target user has not been invited already
     """
     num_inv = Invitations.objects.filter(source = source).count()
 
-    if num_inv >= settings.MAX_INVITATIONS:
+    if num_inv >= source.max_invitations:
         raise TooManyInvitations("User invitation limit (%d) exhausted" %
-                                 settings.MAX_INVITATIONS)
+                                 source.max_invitations)
 
     target = SynnefoUser.objects.filter(uniq = email)
 

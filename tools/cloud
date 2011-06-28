@@ -63,6 +63,8 @@ def print_addresses(networks):
             addr = '[%s]' % ' '.join(ip['addr'] for ip in net['values'])
         
         val = '%s/%s %s %s' % (net['id'], net['name'], net['mac'], addr)
+        if 'firewallProfile' in net:
+            val += ' - %s' % net['firewallProfile']
         print '%s %s' % (key, val)
 
 def print_dict(d, show_empty=True):

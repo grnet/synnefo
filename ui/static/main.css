@@ -3422,6 +3422,11 @@ applet {
     height:100%;
 }
 
+div.console-footer {
+    /* this is for version 0.5*/
+    display: none;
+}
+
 .console-footer #footer-text{
     float:left;
     left: auto;

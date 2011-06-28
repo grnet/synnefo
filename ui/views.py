@@ -52,7 +52,7 @@ def template(name, context):
 
 def home(request):
     context = {'timeout': TIMEOUT,
-               'project': '~okeanos',
+               'project': '+nefo',
                'request': request,
                'current_lang': get_language() or 'en',
                'update_interval': UPDATE_INTERVAL,

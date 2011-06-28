@@ -38,7 +38,7 @@ or implied, of GRNET S.A.
 {% load i18n %}
 <!DOCTYPE html>
 <head>
-    <title>{{ project }}</title>
+    <title>~okeanos</title>
     <!-- include the Tools -->
     <!-- jquery tools minified for deployment-->
     <script src="static/jquery.tools.min.js"></script>
@@ -56,7 +56,7 @@ or implied, of GRNET S.A.
     <script src="static/jquery.dataTables.min.js"></script>
     <script src="static/synnefo.js"></script>
     <link rel="stylesheet" type="text/css" href="static/main.css"/>
-    <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->    
+    <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->
     <script>
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
@@ -159,13 +159,13 @@ or implied, of GRNET S.A.
         // ajax error checking
         function ajax_error(status, serverID, action, responseText) {
              // close existing overlays to begin with
-            close_all_overlays();       
+            close_all_overlays();
             // clear old deferred calls (stops all auto-updates)
             clearTimeout(deferred);
-            
+
             $('#error-success').addClass('error');
             $('#error-success').removeClass('success');
-            
+
             var serverName = '';
 
             if (serverID !== undefined) {
@@ -255,7 +255,7 @@ or implied, of GRNET S.A.
                     location.reload();
                 }
             });
-            
+
             // we need to give the browser some time to close the old overlays before opening the new one
             setTimeout("$('a#notification').data('overlay').load()",400);
             return false;

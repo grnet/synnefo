@@ -676,19 +676,19 @@ $("div.reboot-dialog button.reboot-single").live('click', function() {
     // load progress bar
     $(this).text('');
     $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    // disable submit button to prevent multiple calls
+    $(this).attr("disabled", true);
     return false;
 });
 
 // intercept multiple reboot click
 $("div.reboot-dialog button.reboot-all").live('click', function() {
-    var serverIDs = [];
-    $.each($(this).parent().find('div.reboot-list').children(), function(i,server) {
-        serverIDs.push(server.id.split('-')[1]);
-    });
-    reboot(serverIDs);
+    $(this).parent().find('div.reboot-list button.reboot-single').click();
     // load progress bar for all buttons
     $(this).parent().find('button').text('');
     $(this).parent().find('button').html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    // disable submit button to prevent multiple calls
+    $(this).attr("disabled", true);
     return false;
 });
 
@@ -712,10 +712,13 @@ function display_reboot_success(serverID) {
     // if there are no other servers on the list, hide the reboot dialog
     if ( !$('div.reboot-list').children().length ) {
         $('div.reboot-dialog').hide();
+        // reset all buttons
         $("div.reboot-dialog button.reboot-all").html('');
         $("div.reboot-dialog button.reboot-all").text('{% trans 'Reboot All' %}');
         $("div.reboot-dialog button.reboot-single").html('');
         $("div.reboot-dialog button.reboot-single").text('{% trans 'Reboot' %}');
+        // enable submit button
+        $("#div.reboot-dialog button.reboot-all").removeAttr('disabled');
     }
     return false;
 }
@@ -795,7 +798,6 @@ function display_net_failure(status, networkID, action, responseText) {
 
 // show, single action, error details
 $("#networks-pane div.action_error .details").live('click', function(){
-    // remove the action from the pending list
     $(this).parent().hide();
     ajax_error($(this).parent().children('.code').text(),
                  undefined,

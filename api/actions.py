@@ -40,6 +40,7 @@ from django.utils import simplejson as json
 
 from synnefo.api.faults import BadRequest, ServiceUnavailable
 from synnefo.api.util import random_password, get_vm
+from synnefo.db.models import NetworkInterface
 from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
 from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
@@ -266,8 +267,18 @@ def get_console(request, vm, args):
 
 @server_action('firewallProfile')
 def set_firewall_profile(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+    
     profile = args.get('profile', '')
-    if profile not in ('ENABLED', 'DISABLED'):
+    if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
         raise BadRequest("Unsupported firewall profile")
     backend.set_firewall_profile(vm, profile)
     return HttpResponse(status=202)

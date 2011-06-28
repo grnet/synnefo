@@ -42,9 +42,11 @@ def process_form(request):
 
         except Exception as e:
             try :
-                errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.messages[0])]
+                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
+                           (name, email, e.messages[0])]
             except:
-                errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.message)]
+                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
+                           (name, email, e.message)]
 
     respose = None
     if errors:
@@ -214,7 +216,8 @@ def add_invitation(source, name, email):
     num_inv = Invitations.objects.filter(source = source).count()
 
     if num_inv >= settings.MAX_INVITATIONS:
-        raise TooManyInvitations("User invitation limit (%d) exhausted" % settings.MAX_INVITATIONS)
+        raise TooManyInvitations("User invitation limit (%d) exhausted" %
+                                 settings.MAX_INVITATIONS)
 
     target = SynnefoUser.objects.filter(uniq = email)
 

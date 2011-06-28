@@ -154,17 +154,16 @@ def list_servers(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    user_vms = VirtualMachine.objects.filter(owner=request.user)
     since = util.isoparse(request.GET.get('changes-since'))
-
+    
     if since:
-        user_vms = VirtualMachine.objects.filter(owner=request.user,
-                                                updated__gte=since)
+        user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:
-        user_vms = VirtualMachine.objects.filter(owner=request.user,
-                                                deleted=False)
+        user_vms = user_vms.filter(deleted=False)
     
     servers = [vm_to_dict(server, detail) for server in user_vms]
 

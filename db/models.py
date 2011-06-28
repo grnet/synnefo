@@ -437,6 +437,9 @@ class NetworkInterface(models.Model):
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
+    
+    def __unicode__(self):
+        return '%s@%s' % (self.machine.name, self.network.name)
 
 
 class NetworkLink(models.Model):
@@ -444,3 +447,6 @@ class NetworkLink(models.Model):
     index = models.IntegerField()
     name = models.CharField(max_length=255)
     available = models.BooleanField(default=True)
+    
+    def __unicode__(self):
+        return self.name

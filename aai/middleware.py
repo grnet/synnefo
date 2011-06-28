@@ -5,7 +5,7 @@ from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
 
-DONT_CHECK = ['/api/', '/invitations/login']
+DONT_CHECK = ['/invitations/login']
 
 class SynnefoAuthMiddleware(object):
 
@@ -44,7 +44,8 @@ class SynnefoAuthMiddleware(object):
             if (time.time() -
                 time.mktime(user.auth_token_expires.timetuple())) > 0:
                 # the user's token has expired, prompt to re-login
-                return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+                return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                            settings.LOGIN_PATH)
 
             request.user = user
             return
@@ -64,14 +65,16 @@ class SynnefoAuthMiddleware(object):
                                                 settings.LOGIN_PATH)
 
         if settings.TEST and 'TEST-AAI' in request.META:
-            return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+            return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                        settings.LOGIN_PATH)
 
         if request.path.endswith(settings.LOGIN_PATH):
             # avoid redirect loops
             return
         else:
             # no authentication info found in headers, redirect back
-            return HttpResponseRedirect(settings.APP_INSTALL_URL + settings.LOGIN_PATH)
+            return HttpResponseRedirect(settings.APP_INSTALL_URL +
+                                        settings.LOGIN_PATH)
 
     def process_response(self, request, response):
         # Tell proxies and other interested parties that the request varies
@@ -83,7 +86,8 @@ class SynnefoAuthMiddleware(object):
         expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
 
         response = HttpResponse()
-        response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
+        response.set_cookie('X-Auth-Token', value=user.auth_token,
+                            expires=expire_fmt, path='/')
         response['X-Auth-Token'] = user.auth_token
         response['Location'] = settings.APP_INSTALL_URL
         response.status_code = 302

@@ -2908,7 +2908,7 @@ div.reboot-dialog {
 
 div#reboot-machine-template, div.reboot-machine-entry {
     display: none;
-    padding: 0 0 10px 10px;
+    padding: 0 0 10px 35px;
     width: 300px;
 }
 

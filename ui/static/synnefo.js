@@ -1290,9 +1290,9 @@ function delete_network(networkIDs){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
+                display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText);
             } catch (err) {
-                display_net_failure(0, networkID, 'Delete', jqXHR.responseText)
+                display_net_failure(0, networkID, 'Delete', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1304,9 +1304,9 @@ function delete_network(networkIDs){
                 delete_network(networkIDs);
             } else {
                 try {
-                    display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
+                    display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText);
                 } catch (err) {
-                    display_net_failure(0, networkID, 'Delete', jqXHR.responseText)
+                    display_net_failure(0, networkID, 'Delete', jqXHR.responseText);
                 }
             }
         }

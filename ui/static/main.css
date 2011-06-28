@@ -2903,6 +2903,8 @@ div.reboot-dialog {
     font-size: 75%;
     margin-top: 15px;
     width: 698px;
+    z-index: 1;
+
 }
 
 div#reboot-machine-template, div.reboot-machine-entry {

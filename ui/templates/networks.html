@@ -1067,10 +1067,13 @@ function display_failure(status, networkID, action, responseText) {
 
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){
-    if (this.innerHeight - 220 < $('#networks-pane #networks-container').height())
+    if (this.innerHeight - 220 < $('#networks-pane #networks-container').height()) {
         $('#networks-pane .confirm_multiple').addClass('fixed');
-    else
+        $('div.reboot-dialog').addClass('fixed');
+    } else {
         $('#networks-pane .confirm_multiple').removeClass('fixed');
+        $('div.reboot-dialog').removeClass('fixed');
+    }
 });
 
 // basic functions executed on page load

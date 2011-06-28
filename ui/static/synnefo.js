@@ -1314,7 +1314,7 @@ function delete_network(networkIDs){
     return false;
 }
 
-function add_server_to_network(networkID, serverIDs, serverNames) {
+function add_server_to_network(networkID, serverIDs, serverNames, serverStates) {
     if (!serverIDs.length){
         // close the overlay when all the calls are made
         $("a#add-machines-overlay").overlay().close();
@@ -1323,6 +1323,7 @@ function add_server_to_network(networkID, serverIDs, serverNames) {
     // get a server
     var serverID = serverIDs.pop();
     var serverName = serverNames.pop();
+    var serverState = serverStates.pop();
     // prepare payload
     var payload = {
             "add": { "serverRef": serverID }
@@ -1350,9 +1351,9 @@ function add_server_to_network(networkID, serverIDs, serverNames) {
                     console.info('added server ' + serverID + ' to network ' + networkID);
                 } catch(err) {}
                 // toggle the reboot dialog
-                display_reboot_dialog(networkID, serverID, serverName);
+                display_reboot_dialog(networkID, serverID, serverName, serverState);
                 // continue with the rest of the servers
-                add_server_to_network(networkID, serverIDs, serverNames);
+                add_server_to_network(networkID, serverIDs, serverNames, serverStates);
             } else {
                 // close wizard and show error box
                 $("a#add-machines-overlay").data('overlay').close();
@@ -1363,7 +1364,7 @@ function add_server_to_network(networkID, serverIDs, serverNames) {
     return false;
 }
 
-function remove_server_from_network(networkIDs, serverIDs, serverNames) {
+function remove_server_from_network(networkIDs, serverIDs, serverNames, serverStates) {
     if (!networkIDs.length){
         //ajax_success('DEFAULT');
         return false;
@@ -1372,6 +1373,7 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames) {
     var networkID = networkIDs.pop();
     var serverID = serverIDs.pop();
     var serverName = serverNames.pop();
+    var serverState = serverStates.pop();
     // prepare payload
     var payload = {
             "remove": { "serverRef": serverID }
@@ -1397,9 +1399,9 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames) {
                     console.info('deleted server ' + serverID + ' from network ' + networkID);
                 } catch(err) {}
                 // toggle the reboot dialog
-                display_reboot_dialog(networkID, serverID, serverName);
+                display_reboot_dialog(networkID, serverID, serverName, serverState);
                 // continue with the rest of the servers
-                remove_server_form_network(networkIDs, serverIDs, serverNames);
+                remove_server_form_network(networkIDs, serverIDs, serverNames, serverStates);
             } else {
                 ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
             }

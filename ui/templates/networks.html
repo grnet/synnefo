@@ -492,6 +492,8 @@ $("#networks-pane .action-disconnect").live('click', function() {
     var serverID = $(this).parent().parent().attr('id').split('-').pop();
     var serverName = $(this).closest('.network-machine').find('span.name').text();
     var networkID = $(this).closest('.network').attr('id').split('-').pop();
+    var serverState = $(this).closest('.network-machine').find('img.logo').attr('src').split('-')[1];
+    serverState = serverState.split('.')[0];
     var found = false;
     $(this).parent().children('a').removeClass('selected');
     $(this).addClass('selected');
@@ -508,7 +510,7 @@ $("#networks-pane .action-disconnect").live('click', function() {
     }
     if (!found) {
         // no pending action for this network was found, so let's just add it to the list
-        pending_actions.push([remove_server_from_network, networkID, serverID, serverName]);
+        pending_actions.push([remove_server_from_network, networkID, serverID, serverName, serverState]);
     }
     update_network_confirmations();
     return false;
@@ -611,9 +613,14 @@ $("#add-server-add").live('click', function() {
         var networkID = $("#add-machines-wizard p").text();
         var serverIDs = [];
         var serverNames = [];
+        var serverState = [];
+        var serverStates = [];
         $.each(selections, function(i, selection) {
             serverIDs.push(selection.name);
             serverNames.push($("#list-entry-server-" + selection.name + " span.machine-name").text());
+            serverState = $("#list-entry-server-" + selection.name + " img.list-logo").attr('src').split('-')[1];
+            serverState = serverState.split('.')[0];
+            serverStates.push(serverState);
         });
         // disable submit button to prevent multiple calls
         $(this).attr("disabled", true);
@@ -624,7 +631,7 @@ $("#add-server-add").live('click', function() {
         $('#net-' + networkID + '.network div.status').text(NET_STATES['Connecting']);
         $('#net-' + networkID + '.network img.spinner').show();
         // make the calls
-        add_server_to_network(networkID, serverIDs, serverNames);
+        add_server_to_network(networkID, serverIDs, serverNames, serverStates);
     }
     return false;
 });
@@ -650,13 +657,10 @@ $("#networks-pane .firewall-apply").live('click', function() {
     return false;
 });
 
-function display_reboot_dialog(networkID, serverID, serverName) {
+function display_reboot_dialog(networkID, serverID, serverName, serverState) {
     // check if the server already exists in the list
     var existing_reboot = $("div.reboot-list div#server-" + serverID);
-    // check if the server is active
-    var server_active =$("#net-" + networkID + "-server-" + serverID + " img.logo").attr('src').split('-')[1];
-    server_active = server_active.split('.')[0];
-    if ( !existing_reboot.length && server_active != 'off') {
+    if ( !existing_reboot.length && serverState != 'off') {
         $('div.reboot-dialog').fadeIn("slow");
         var reboot_entry = $('div#reboot-machine-template').clone().attr("id", "server-" + serverID);
         reboot_entry.find('div.name').text(serverName);
@@ -744,7 +748,7 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
                         $(this).closest('div.network').find('div.status').text(NET_STATES['Disconnecting']);
                         $(this).closest('div.network').find('img.spinner').show();
                         action = pending_actions.splice(i,1)[0];
-                        action[0]([action[1]], [action[2]], [action[3]]); // execute action
+                        action[0]([action[1]], [action[2]], [action[3]], [action[4]]); // execute action
         } // for adding servers to a network look in $("#add-server-add").live('click', function() {...});
     }
     $(this).parent().hide();
@@ -811,7 +815,7 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
         } else if (action[0] == remove_server_from_network) {
             $('div.network#net-'+networkID).find('div.status').text(NET_STATES['Disconnecting']);
             $('div.network#net-'+networkID).find('img.spinner').show();
-            action[0]([action[1]], [action[2]], [action[3]]); // execute action
+            action[0]([action[1]], [action[2]], [action[3]], [action[4]]); // execute action
         }
     }
     update_network_confirmations();

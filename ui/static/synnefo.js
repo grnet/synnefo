@@ -796,11 +796,21 @@ function reboot(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    try {
-                        display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
-                    } catch(err) {
-                        //if jqXHR.status is throwing an exception, the server has timed out
-                        display_failure(0, serverID, 'Reboot', jqXHR.responseText);
+                    // in machine views
+                    if ( $.cookie("pane") == 0) {
+                        try {
+                            display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
+                        } catch (err) {
+                            display_failure(0, serverID, 'Reboot', jqXHR.responseText);
+                        }
+                    }
+                    // in network view
+                    else {
+                        try {
+                            display_reboot_failure(jqXHR.status, serverID, jqXHR.responseText);
+                        } catch (err) {
+                            display_reboot_failure(0, serverID, jqXHR.responseText);
+                        }
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -809,7 +819,14 @@ function reboot(serverIDs){
                             console.info('rebooted ' + serverID);
                         } catch(err) {}
                         // indicate that the action succeeded
-                        display_success(serverID);
+                        // in machine views
+                        if ( $.cookie("pane") == 0) {
+                            display_success(serverID);
+                        }
+                        // in network view
+                        else {
+                            display_reboot_success(serverID);
+                        }
                         // continue with the rest of the servers
                         reboot(serverIDs);
                     } else {
@@ -1273,9 +1290,9 @@ function delete_network(networkIDs){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                display_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
+                display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
             } catch (err) {
-                display_failure(0, networkID, 'Delete', jqXHR.responseText)
+                display_net_failure(0, networkID, 'Delete', jqXHR.responseText)
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1286,7 +1303,11 @@ function delete_network(networkIDs){
                 // continue with the rest of the servers
                 delete_network(networkIDs);
             } else {
-                ajax_error(jqXHR.status, undefined, 'Delete network', jqXHR.responseText);
+                try {
+                    display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText)
+                } catch (err) {
+                    display_net_failure(0, networkID, 'Delete', jqXHR.responseText)
+                }
             }
         }
     });

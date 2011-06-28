@@ -687,7 +687,7 @@ $("div.reboot-dialog button.details").live('click', function() {
 });
 
 // after reboot success
-function display_success(serverID) {
+function display_reboot_success(serverID) {
     // remove server from the list
     $('div.reboot-list #server-' + serverID).remove();
     // if there are no other servers on the list, hide the reboot dialog
@@ -698,10 +698,10 @@ function display_success(serverID) {
 }
 
 // after reboot error
-function display_failure(status, serverID, action, responseText) {
+function display_reboot_failure(status, serverID, responseText) {
     $('div.reboot-list #server-' + serverID + ' button.reboot-single').hide();
     $('div.reboot-list #server-' + serverID + ' div.code').text(status);
-    $('div.reboot-list #server-' + serverID + ' div.action').text(action);
+    $('div.reboot-list #server-' + serverID + ' div.action').text('Reboot');
     $('div.reboot-list #server-' + serverID + ' div.message').text(responseText);
     $('div.reboot-list #server-' + serverID + ' button.details').show();
     return false;
@@ -764,6 +764,11 @@ $("#networks-pane div.confirm_single .no").live('click', function(){
     update_network_confirmations();
     return false;
 });
+
+// after single action call error
+function display_net_failure(status, networkID, action, responseText) {
+    return false;
+}
 
 // show, single action, error details
 $("#networks-pane div.action_error .details").live('click', function(){

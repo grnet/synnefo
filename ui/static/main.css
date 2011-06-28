@@ -2936,8 +2936,17 @@ div.reboot-dialog button.reboot-single {
     margin-top: -20px;
 }
 
-div.reboot-dialog div.reboot-error {
+div.reboot-dialog div.code, div.reboot-dialog div.action, div.reboot-dialog div.message, div.reboot-dialog button.details {
     display:none;
+}
+
+div.reboot-dialog button.details {
+    border-color: #800000;
+    margin-top: -20px;
+}
+
+div.reboot-dialog button.details:hover {
+    background-color: #800000;
 }
 
 /* Metadata */

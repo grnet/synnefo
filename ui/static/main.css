@@ -813,8 +813,7 @@ div.machine:hover .actions a {
 }
 
 div.machine div.display a{
-    color: black;
-    display: block;
+    visibility: visible;
 }
 
 div.running div.machine div.actions .disabled {
@@ -2657,8 +2656,7 @@ div.network div.actions a.selected:hover, div.network div.machine-actions a.sele
 }
 
 div.network div.display a {
-    color: black;
-    display: block;
+    visibility: visible;
 }
 
 div.network-machine div.machine-actions a.action-details {

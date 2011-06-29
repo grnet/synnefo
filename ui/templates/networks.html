@@ -768,8 +768,8 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
         } // for adding servers to a network look in $("#add-server-add").live('click', function() {...});
     }
     $(this).parent().hide();
-    $(this).closest("div.network").find('a.selected').removeClass('selected');
-    $(this).closest("div.network").children('div.actions').removeClass('display');
+    $(this).parent().parent().find('a.selected').removeClass('selected');
+    $(this).parent().parent().children('div.actions').removeClass('display');
     update_network_confirmations();
     return false;
 });
@@ -796,8 +796,8 @@ $("#networks-pane div.confirm_single .no").live('click', function(){
         }
     }
     $(this).parent().hide();
-    $(this).closest("div.network").find('a.selected').removeClass('selected');
-    $(this).closest("div.network").children('div.actions').removeClass('display');
+    $(this).parent().parent().find('a.selected').removeClass('selected');
+    $(this).parent().parent().children('div.actions').removeClass('display');
     update_network_confirmations();
     return false;
 });

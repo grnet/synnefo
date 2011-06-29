@@ -2495,7 +2495,7 @@ div.network a.action-network-add {
 }
 
 div.network a.action-network-destroy {
-    margin-top: 38px !important;
+    margin-top: 32px !important;
     width: 50px;
     display: none;
 }
@@ -2721,7 +2721,7 @@ div.indicator {
 }
 
 .private-networks div.confirm_single {
-    margin: 46px -231px 0 0;
+    margin: 43px -219px 0 0;
     font-size: 80%;
 }
 

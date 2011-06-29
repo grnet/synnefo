@@ -1607,52 +1607,106 @@ function init_action_indicator_handlers(machines_view)
         return;
     }
     
-    var has_active_indicators = function(el)
-    {
-        return ($("img.spinner:visible", el.parent().parent()).length >= 1) || ($("img.wave:visible", el.parent().parent()).length >= 1) 
-    }
-
-    // action indicators
-    $(".action-container").live('mouseover', function(evn){
-        var el = $(evn.currentTarget);
-        // we dont need the single-action class
-        var action_class = el.attr("class").replace("action-container","");
-        // pass the hovered element action related class to the indicator image
-        $("div.action-indicator", el.parent().parent()).attr("class", "action-indicator " + action_class);
-
-        // spinner || wave indicators already visible. dont show action image to avoid clutter
-        if (has_active_indicators(el))
-        {
-            return;
+    function update_action_icon_indicators(force)
+    {   
+        function show(el, action) {
+            $(".action-indicator", $(el)).attr("class", "action-indicator " + action);
+            $(".action-indicator", $(el)).show();
         }
-        $("div.action-indicator", el.parent().parent()).show();
-    });
 
-    // hide action indicator image on mouse out, spinner appear, wave appear
-    $(".action-container").live("mouseout", function(evn){
-        var el = $(evn.currentTarget);
-        $("div.action-indicator").hide();
+        function hide(el) {   
+            $(".action-indicator", $(el)).hide();
+        }
         
-        var pending_for_confirm_action = $(".confirm_single:visible", el.parent().parent());
-        // if we mouse out and another action is in confirmation mode
-        if (!has_active_indicators(el))
-        {
-            // no actions pending
-            if (pending_for_confirm_action.length == 0)
-            {
+        function get_pending_actions(el) {
+            return $(".confirm_single:visible", $(el));
+        }
+        
+        function other_indicators(el) {
+           return $("img.wave:visible, img.spinner:visible", $(el))
+        }
+        
+        $("div.machine:visible, div.single-container").each(function(index, el){
+            var el = $(el);
+            var pending = get_pending_actions(el);
+            var other = other_indicators(el);
+            var action = undefined;
+            var force_action = force;
+            var visible = $(el).css("display") == "block";
+
+            if (force_action !==undefined && force_action.el !== el[0]) {
+                // force action for other vm
+                // skipping force action
+                force_action = undefined;
+            }
+             
+            if (force_action !==undefined && force_action.el === el[0]) {
+                action = force_action.action;
+            }
+
+            if (other.length >= 1) {
                 return;
             }
 
-            // find action pending and show icon
-            var action_container = $($(pending_for_confirm_action[0]).parent());
-            var action_class = action_container.attr("class").replace("action-container","");
-            $("div.action-indicator", action_container.parent().parent()).attr("class", "action-indicator " + action_class);
-            $("div.action-indicator").show();
-        }
-        
+            if (pending.length >= 1 && force_action === undefined) {      
+                action = $(pending.parent()).attr("class").replace("action-container","");
+            }
+            
+            if (action in {'console':''}) {
+                return;
+            }
+            
+            if (action !== undefined) {
+                show(el, action);
+            } else {
+                try {   
+                    if (el.attr('id') == pending_actions[0][1])
+                    {
+                        return;   
+                    }
+                } catch (err) {
+                }
+                hide(el);
+            }
+
+        });
+    }
+
+    // action indicators
+    $(".action-container").live('mouseover', function(evn) {
+        force_action = {'el': $(evn.currentTarget).parent().parent()[0], 'action':$(evn.currentTarget).attr("class").replace("action-container","")};
+        // single view
+        if ($(force_action.el).attr("class") == "upper")
+        {
+            force_action.el = $(evn.currentTarget).parent().parent().parent()[0]
+        };
+        update_action_icon_indicators(force_action);
+    });
+
+    // register events where icons should get updated
+
+    // hide action indicator image on mouse out, spinner appear, wave appear
+    $(".action-container").live("mouseout", function(evn){
+        update_action_icon_indicators();
+    });
+
+    $(".confirm_single").live("click", function(evn){
+        update_action_icon_indicators();
     });
 
     $("img.spinner, img.wave").live('show', function(){
+        $("div.action-indicator").hide();
+    });
+
+    $(".confirm_single button.no").live('click', function(evn){
+        $("div.action-indicator", $(evn.currentTarget).parent().parent()).hide();
+    });
+
+    $(".confirm_multiple button.no").click(function(){
+        $("div.action-indicator").hide();
+    });
+
+    $(".confirm_multiple button.yes").click(function(){
         $("div.action-indicator").hide();
     });
 }
@@ -1721,6 +1775,8 @@ function init_action_indicator_list_handlers()
         update_action_indicator_icons(action_class, false);
     });
     
+
+    // register events where icons should get updated
     $(".actions a.enabled").live("click", function(evn) {
         // clear previous selections
         $("a.selected").removeClass("selected");

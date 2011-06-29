@@ -51,11 +51,16 @@ var networks = [], networks_changes_since = 0;
     });
 
 
-// jquery hide event
+// jquery show/hide events
 var _oldshow = $.fn.show;
 $.fn.show = function(speed, callback) {
     $(this).trigger('show');
     return _oldshow.apply(this,arguments);
+}
+var _oldhide = $.fn.hide;
+$.fn.hide = function(speed, callback) {
+    $(this).trigger('hide');
+    return _oldhide.apply(this,arguments);
 }
 
 function ISODateString(d){
@@ -1600,6 +1605,18 @@ function close_all_overlays() {
 // action indicators
 function init_action_indicator_handlers(machines_view)
 {
+    // init once for each view
+    if (window.ACTION_ICON_HANDLERS == undefined)
+    {
+        window.ACTION_ICON_HANDLERS = {};
+    }
+
+    if (machines_view in window.ACTION_ICON_HANDLERS)
+    {
+        return;
+    }
+    window.ACTION_ICON_HANDLERS[machines_view] = 1;
+    
     if (machines_view == "list")
     {   
         // totally different logic for list view
@@ -1675,7 +1692,7 @@ function init_action_indicator_handlers(machines_view)
     // action indicators
     $(".action-container").live('mouseover', function(evn) {
         force_action = {'el': $(evn.currentTarget).parent().parent()[0], 'action':$(evn.currentTarget).attr("class").replace("action-container","")};
-        // single view
+        // single view case
         if ($(force_action.el).attr("class") == "upper")
         {
             force_action.el = $(evn.currentTarget).parent().parent().parent()[0]
@@ -1683,6 +1700,9 @@ function init_action_indicator_handlers(machines_view)
         update_action_icon_indicators(force_action);
     });
 
+    $("img.spinner, img.wave").live('hide', function(){
+        update_action_icon_indicators();
+    });
     // register events where icons should get updated
 
     // hide action indicator image on mouse out, spinner appear, wave appear

@@ -2531,7 +2531,7 @@ div.network-cable {
 }
 
 .first div.network-cable {
-    height:145px;
+    height:143px;
     margin-top:-6px;
 }
 
@@ -2841,7 +2841,7 @@ div.network-remove-machine, div.network-add-machine {
     background-color: #FB822F;
     color: #bc4b00;
     width:90px;
-    height:21px;
+    height:18px;
     float:left;
     margin:40px 0 0 -100px;
 }
@@ -2851,8 +2851,10 @@ span.remove-icon {
     margin-left: 15px;
 }
 
-span.add-icon {
+div.add-icon {
     margin-left: 15px;
+    margin-top: -3px;
+    cursor: pointer;
 }
 
 span.remove-icon:hover, span.add-icon:hover {

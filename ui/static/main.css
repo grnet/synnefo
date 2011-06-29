@@ -2915,6 +2915,10 @@ h5.machine-connect span:hover {
     width: 75px;
 }
 
+.first .firewall-apply {
+    margin-top: -1px;
+}
+
 .firewall-apply:hover {
     background-color:#5CA1C0;
 }

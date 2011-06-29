@@ -367,6 +367,7 @@ or implied, of GRNET S.A.
             $("ul.css-tabs").tabs("div.css-panes div.pane", {
                 initialIndex: initial,
                 onBeforeClick: function(event, i) {
+                    this.getPanes().children().remove();
                     // get the pane to be opened
                     var pane = this.getPanes().eq(i);
                     //change the displaying title

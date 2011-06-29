@@ -110,7 +110,7 @@ div.image {
 
 #wizard .separator-end {
     font-size: 2%;
-    margin-top: 374px;
+    margin-top: 383px;
 }
 
 div.confirm_single {
@@ -232,4 +232,3 @@ div.single-actions {
 *+html .clearfix{
   min-height: 1%;
 }
-

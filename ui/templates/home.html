@@ -322,7 +322,7 @@ or implied, of GRNET S.A.
     <div id="container">
         <div id='header'>
             <div id='user'>
-                <a href="#">{% trans "username" %}</a>
+                {{ request.user.uniq  }}
                 {% get_available_languages as LANGUAGES %}
                 {% for lang in LANGUAGES %}
                     &nbsp;|&nbsp;

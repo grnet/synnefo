@@ -2266,18 +2266,22 @@ div.editbuttons div.cancel:hover {
 .large-spinner {
     background: url("./icons/indicators/large/progress.gif");
     margin-left: 298px;
-    margin-top: 20px;
+    margin-top: 0px;
     height: 31px;
     width: 31px;
     position: absolute;
 }
 
 .list .large-spinner {
-    margin-top:-50px;
+    margin-top:-30px;
 }
 
 .single .large-spinner {
-    margin-top:-45px;
+    margin-top: 50px;
+}
+
+div#networks-container .large-spinner {
+    margin-top: 50px;
 }
 
 /* tables in list view */

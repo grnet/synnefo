@@ -6,7 +6,7 @@
             "name": "Debian base",
             "owner": 1,
             "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
+            "updated": "2011-06-29 13:14:00",
             "state": "ACTIVE",
             "backend_id": "debian_base",
             "format": "dump"
@@ -117,7 +117,7 @@
         "pk": 2,
         "fields": {
             "meta_key": "kernel",
-            "meta_value": "2.6.37",
+            "meta_value": "2.6.32",
             "image": 3
         }
     },
@@ -207,7 +207,7 @@
         "pk": 12,
         "fields": {
             "meta_key": "size",
-            "meta_value": "2000",
+            "meta_value": "473",
             "image": 3
         }
     },

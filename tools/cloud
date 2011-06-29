@@ -610,6 +610,18 @@ class RemoveNetwork(Command):
         body = json.dumps({'remove': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 
+@command_name('stats')
+class ServerStats(Command):
+    description = 'get server stats'
+    syntax = '<server id>'
+
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d/stats' % (self.api, int(server_id))
+        reply = self.http_get(path)
+        stats = reply['stats']
+        stats.pop('serverRef')
+        print_dict(stats)
+
 
 def print_usage():
     print 'Usage: %s <command>' % basename(argv[0])

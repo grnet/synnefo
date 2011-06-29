@@ -57,6 +57,7 @@ urlpatterns = patterns('synnefo.api.servers',
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
     (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
     (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
+    (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
 )
 
 
@@ -460,3 +461,31 @@ def delete_metadata_item(request, server_id, key):
     meta.delete()
     vm.save()
     return HttpResponse(status=204)
+
+@util.api_method('GET')
+def server_stats(request, server_id):
+    # Normal Response Codes: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
+    vm = util.get_vm(server_id, request.user)
+    secret = util.encrypt(vm.backend_id)
+    cpu = settings.CPU_GRAPH_URL_TEMPLATE % secret
+    net = settings.NET_GRAPH_URL_TEMPLATE % secret
+    
+    stats = {
+        'serverRef': vm.id,
+        'refresh': settings.STATS_REFRESH_PERIOD,
+        'cpu': cpu,
+        'net': net}
+    
+    if request.serialization == 'xml':
+        data = render_to_string('server_stats.xml', stats)
+    else:
+        data = json.dumps({'stats': stats})
+
+    return HttpResponse(data, status=200)

@@ -2724,6 +2724,10 @@ div.indicator {
     top: 35px;
 }
 
+.private-networks div.machines-list {
+    padding-top: 3px;
+}
+
 span.rename-network, span.configure {
     background-repeat: no-repeat;
     color: transparent;

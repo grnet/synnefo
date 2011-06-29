@@ -653,8 +653,8 @@ $("#networks-pane div.firewall-header").live('click', function() {
 
 //hide firewall content on apply click
 $("#networks-pane .firewall-apply").live('click', function() {
-    var serverID = $(this).parent().parent().attr("id").split('-').pop(); 
-    var networkID = $(this).parent().parent().parent().parent().parent().parent().attr("id").split('-').pop();
+    var serverID = $(this).closest('.network-machine').attr("id").split('-').pop();
+    var networkID = $(this).closest('.network-machine').attr("id").split('-')[1];
     var profile = $(this).parent().find('input:checked').attr('value');
     if (profile != undefined) {
         set_firewall(networkID, serverID, profile);

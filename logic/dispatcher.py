@@ -27,7 +27,7 @@ import logging
 import time
 import socket
 
-from synnefo.logic import dispatcher_callbacks
+from synnefo.logic import callbacks
 
 
 class Dispatcher:
@@ -97,7 +97,7 @@ class Dispatcher:
         # Bind queues to handler methods
         for binding in bindings:
             try:
-                callback = getattr(dispatcher_callbacks, binding[3])
+                callback = getattr(callbacks, binding[3])
             except AttributeError:
                 self.logger.error("Cannot find callback %s" % binding[3])
                 continue

@@ -172,6 +172,14 @@ div.single-actions {
     margin-top: -19px !important;
 }
 
+#networkscreate {
+    height:20px;
+}
+
+#networks-pane #beforecreate {
+    margin-top:0;
+}
+
 #networks-wizard h2 {
     margin-bottom:5px;
 }

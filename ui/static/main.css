@@ -2792,10 +2792,10 @@ div.network:hover a.rename {
     margin-top: -4px;
 }
 
-.network .separator {
+.private-networks .separator {
     background-color: #5CA1C0;
     height: 1px;
-    margin: 11px 0 -5px 5px;
+    margin: 3px 0 -2px -10px;
     width: 485px;
 }
 

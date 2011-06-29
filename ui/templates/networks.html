@@ -184,6 +184,8 @@ or implied, of GRNET S.A.
         <div class="network-separator machines"></div>
     </div>
 
+    <div class="separator" style="display:none;"></div>
+
     <!-- private network template -->
     <div class="network" id="private-template">
         <div class="actions">
@@ -246,7 +248,6 @@ or implied, of GRNET S.A.
                 </div>
             </div>
         </div>
-        <div class="separator"></div>
     </div>
 
     <!-- template for machines in private network -->
@@ -920,6 +921,7 @@ function update_networks_view(servers_data, networks_data){
                 var privNet = $("#networks-pane #private-template").clone().attr("id", "net-" + network.id);
                 privNet.find(".name-div span.name").text(network.name).fadeIn("slow");
                 privNet.appendTo("#networks-pane .private-networks");
+                $('div.separator:last').clone().appendTo("#networks-pane .private-networks");
             }
         });
     }
@@ -1062,8 +1064,8 @@ function update_networks_view(servers_data, networks_data){
     $("#networks-pane #networks-container > .large-spinner").hide();
 
     // show all separators and hide the last one
-    $("div.private-networks div.network div.separator").show();
-    $("div.private-networks div.network div.separator:last").hide();
+    $("div.private-networks div.separator").show();
+    $("div.private-networks div.separator:last").hide();
     // update the counters of servers in each network
     var nets = $('#networks-pane .network');
     $.each(nets, function(i,net) {

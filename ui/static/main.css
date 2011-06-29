@@ -3207,7 +3207,7 @@ div.machine a.manage-metadata:hover {
     float: left;
     font-size: 78%;
     line-height: 17px;
-    margin: 0 0 20px 5px;
+    margin: 0 0 10px 5px;
     width: 358px;
 }
 
@@ -3414,8 +3414,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin-bottom: 10px;
     min-height: 310px;
-    overflow-x: visible;
-    overflow-y: auto;
+    overflow: visible;
     padding-top: 60px;
     width: 700px;
 }

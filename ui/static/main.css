@@ -2526,13 +2526,13 @@ div.network-cable {
     overflow: hidden;
 }
 
-.last div.network-cable {
-    height:80px !important;
+.first div.network-cable {
+    height:150px;
+    margin-top:-11px;
 }
 
-.first div.network-cable {
-    height:155px;
-    margin-top:-11px;
+.last div.network-cable {
+    height:85px;
 }
 
 div.firewall-cable {

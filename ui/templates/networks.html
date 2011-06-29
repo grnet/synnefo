@@ -756,6 +756,7 @@ $("#networks-pane div.confirm_single .yes").live('click', function() {
             pending_actions[i][1] == networkID) {
                 action = pending_actions.splice(i,1)[0];
                 $(this).closest('div.network').find('div.status').text(NET_STATES['Destroying']);
+                $(this).closest("div.network").find('div.state').addClass('destroying-state');
                 $(this).closest('div.network').find('img.spinner').show();
                 action[0]([action[1]]); // execute action
         } else if ( pending_actions[i][0] == remove_server_from_network &&
@@ -892,6 +893,7 @@ function update_networks_view(servers_data, networks_data){
             if (existing.length) {
                 // network was deleted
                 if (network.status == 'DELETED') {
+                    existing.next().remove(); // to delete its separator
                     existing.remove();
                 }
                 // network was renamed

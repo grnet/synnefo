@@ -2748,7 +2748,7 @@ div.network:hover a.rename {
     height: 1px;
     margin: 2px 0 0 -5px;
     width: 480px;
-    font-size: 4px;
+    font-size: 1%;
     line-height: 1px;
 }
 

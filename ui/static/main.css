@@ -2397,7 +2397,7 @@ div.list table thead .vmname {
     margin: 10px 6px 0 15px !important;
 }
 .action-indicator {
-    margin-right: 18px !important; 
+    margin-right: 18px !important;
 }
 
 .wave {
@@ -2628,12 +2628,11 @@ div.network div.actions a, div.network div.machine-actions a {
 }
 
 div.network div.actions a {
-    margin: -2px 0 0 8px;
+    margin: 4px 0 0 8px;
 }
 
 div.network div.machine-actions a {
-
-    margin: 0 0 0 8px;
+    margin: 8px 0 0 8px;
 }
 
 div.network div.actions a:hover, div.network div.machine-actions a:hover {
@@ -2715,12 +2714,16 @@ div.indicator {
 }
 
 .private-networks div.confirm_single {
-    margin: 43px -219px 0 0;
+    margin: 45px -219px 0 0;
     font-size: 80%;
 }
 
 .private-networks .network-machine div.confirm_single {
-    margin: -8px -199px 0 0;
+    margin: 0 -199px 0 0;
+}
+
+.private-networks .state {
+    top: 35px;
 }
 
 span.rename-network, span.configure {
@@ -2911,8 +2914,7 @@ h5.machine-connect span:hover {
 }
 
 .name-div {
-    margin-left: 70px;
-    margin-bottom: 20px;
+    margin: -10px 0 30px 70px;
 }
 
 .machine-name-div {
@@ -3567,4 +3569,3 @@ div.action-indicator.reboot {
 div.action-indicator.shutdown {
     background-image: url("./icons/actions/medium/shutdown.png");
 }
-

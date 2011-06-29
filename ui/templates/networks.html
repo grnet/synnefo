@@ -171,13 +171,13 @@ or implied, of GRNET S.A.
         </div>
         <div class="firewall-content">
             <div class="firewall-cable"></div>
-            <input type="radio" class="checkboxes" name="image-id1" />
+            <input type="radio" class="checkboxes" value="DISABLED" name="firewall" />
             <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
             <br />
-            <input type="radio" class="checkboxes" name="image-id1" />
+            <input type="radio" class="checkboxes" value="ENABLED" name="firewall" />
             <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
             <br />
-            <input type="radio" class="checkboxes" name="image-id1" />
+            <input type="radio" class="checkboxes" value="PROTECTED" name="firewall" />
             <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
             <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
         </div>
@@ -653,7 +653,14 @@ $("#networks-pane div.firewall-header").live('click', function() {
 
 //hide firewall content on apply click
 $("#networks-pane .firewall-apply").live('click', function() {
-    $(this).parent().slideToggle(600);
+    var serverID = $(this).parent().parent().attr("id").split('-').pop(); 
+    var networkID = $(this).parent().parent().parent().parent().parent().parent().attr("id").split('-').pop();
+    var profile = $(this).parent().find('input:checked').attr('value');
+    if (profile != undefined) {
+        set_firewall(networkID, serverID, profile);
+        $(this).attr("disabled", true);
+        $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+    }
     return false;
 });
 

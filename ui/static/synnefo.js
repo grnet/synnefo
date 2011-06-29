@@ -1438,8 +1438,16 @@ function set_firewall(networkID, serverID, profile) {
                 try {
                     console.info('for server ' + serverID + ' set firewall profile to ' + profile);
                 } catch(err) {}
+                //remove progress gif and toggle the content
+                $('button.firewall-apply').html(VARIOUS["APPLY"]);
+                $('button.firewall-apply').attr("disabled", false);
+                $('div#net-pub-server-' + serverID + ' div.firewall-header').click();
                 // toggle the reboot dialog
-                //display_reboot_dialog(networkID, serverID, serverName, serverState);
+                var serverName = $('div#net-pub-server-' + serverID).find('div.machine-name-div span.name').text(); 
+                var serverState = $('div#net-pub-server-' + serverID).find('img.logo').attr('src').split('-')[1];
+                serverState = serverState.split('.')[0];
+                var networkID = $('div#net-pub-server-' + serverID).parent().parent().parent().parent().attr("id").split('-').pop();
+                display_reboot_dialog(networkID, serverID, serverName, serverState);
             } else {
                 ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
             }

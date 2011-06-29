@@ -901,7 +901,7 @@ div.indicators {
     margin-right: 2px !important;
 }
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
-    background-color: #447821;
+    background-color: #63cf1c;
     width:10px;
     height:11px;
     clear: none;
@@ -921,51 +921,39 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
-    background-color: #447821;
+    background-color: #63cf1c;
 }
 
 .rebooting-state .indicator1, .rebooting-state .indicator2, .rebooting-state .indicator3, .rebooting-state .indicator4 {
     background-color: #d4aa00;
 }
 
-.terminated-state .indicator1, .terminated-state .indicator2, .terminated-state .indicator3, .terminated-state .indicator4 {
-    background-color: #666666;
-}
-
-.starting-state .indicator1, .starting-state .indicator3 {
-    background-color: #447821;
-}
-
-.starting-state .indicator2, .starting-state .indicator4 {
-    background-color: #666666;
-}
-
-.shutting-state .indicator1, .shutting-state .indicator3 {
-    background-color: #666666;
-}
-
-.shutting-state .indicator2, .shutting-state .indicator4 {
-    background-color: #447821;
-}
-
-.destroying-state .indicator1, .destroying-state .indicator3 {
-    background-color: #800000;
-}
-
-.destroying-state .indicator2, .destroying-state .indicator4 {
-    background-color: #666666;
-}
-
 .error-state .indicator1, .error-state .indicator2, .error-state .indicator3, .error-state .indicator4 {
-    background-color: #800000;
+    background-color: #ff0000;
+}
+
+.terminated-state .indicator1, .terminated-state .indicator2, .terminated-state .indicator3, .terminated-state .indicator4 {
+    background-color: #5e1616;
 }
 
 .build-state .indicator1, .build-state .indicator2, .build-state .indicator3, .build-state .indicator4 {
-    background-color: #5CA1C0;
+    background-color: #FF7F2A;
+}
+
+.destroying-state .indicator1, .destroying-state .indicator3, .destroying-state .indicator2, .destroying-state .indicator4 {
+    background-color: #4085a5;
+}
+
+.shutting-state .indicator1, .shutting-state .indicator3, .shutting-state .indicator2, .shutting-state .indicator4 {
+    background-color: #940606;
+}
+
+.starting-state .indicator1, .starting-state .indicator2, .starting-state .indicator3, .starting-state .indicator4 {
+    background-color: #9ed976;
 }
 
 .network-indicator .indicator1, .network-indicator .indicator2, .network-indicator .indicator3, .network-indicator .indicator4 {
-    background-color: #5CA1C0;
+    background-color: #63cf1c;
 }
 
 .terminated {

@@ -2712,7 +2712,7 @@ div.indicator {
 }
 
 .private-networks div.confirm_single {
-    margin: 45px -219px 0 0;
+    margin: 45px -219px -5px 0;
     font-size: 80%;
 }
 

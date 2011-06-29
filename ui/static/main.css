@@ -714,7 +714,7 @@ div.machine:hover {
 }
 
 div.machine.light-background, div.network.light-background {
-    background-color:#aed2e3;
+    background-color:#aed2e3 !important;
 }
 
 .single .light-background {

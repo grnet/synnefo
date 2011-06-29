@@ -732,10 +732,14 @@ if ($.browser.msie) {
     //IE fix for machine div hover
     $("div.machine").live("mouseenter", function () {
         $(this).css("background-color","#A1C8DB");
+        $(this).find("div.info-header").css("background-color","#84b7d0");
+        $(this).find("div.toggler div.down").css("background-color","#84b7d0");
         $(this).find(".actions a").css("visibility","visible");
     });
     $("div.machine").live("mouseleave", function () {
         $(this).css("background-color","transparent");
+        $(this).find("div.info-header").css("background-color","#A1C8DB");
+        $(this).find("div.toggler div.down").css("background-color","#A1C8DB");
         $(this).find(".actions a").css("visibility","hidden");
     });
     //IE fix for green arrow hover

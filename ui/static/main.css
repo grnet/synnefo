@@ -1945,6 +1945,7 @@ input.machine {
 #error-success .popup-separator {
     background-color: #74AEC9;
     height: 1px;
+    font-size:1%;
     width: 442px;
     margin-bottom: 30px;
 }

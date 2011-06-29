@@ -2571,6 +2571,7 @@ div.network-machines, div.firewall {
 
 div.firewall {
     margin-left: 60px;
+    margin-bottom: 3px;
 }
 
 div.machines-header, div.firewall-header {
@@ -2879,6 +2880,7 @@ div.network-add-machine {
     font-size: 60%;
     margin-left: 60px;
     height: 55px;
+    margin-bottom: 17px;
 }
 
 .firewall-content .checkbox-legends {
@@ -2913,10 +2915,6 @@ h5.machine-connect span:hover {
     margin-right: 5px;
     margin-top: 3px;
     width: 75px;
-}
-
-.first .firewall-apply {
-    margin-top: -1px;
 }
 
 .firewall-apply:hover {

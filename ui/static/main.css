@@ -2514,7 +2514,7 @@ div.network {
 }
 
 div.network-placeholder {
-    margin-left: 33px;
+    margin-left: 35px;
 }
 
 div.private-networks div.network-placeholder {
@@ -3550,4 +3550,3 @@ div.console-footer {
   visibility: hidden;
   font-size: 0;
 }
-

@@ -767,7 +767,8 @@ div.machine div.actions {
 }
 
 div.machine div.actions a {
-    color: transparent;
+    color: black;
+    visibility: hidden;
     height: 15px;
     width: 180px;
     margin: 0 0 2px 8px;
@@ -808,8 +809,7 @@ div.actions a.enabled:hover{
 }
 
 div.machine:hover .actions a {
-    color: black;
-    display: block;
+    visibility: visible;
 }
 
 div.machine div.display a{

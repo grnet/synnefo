@@ -2619,7 +2619,8 @@ div.network div.machine-actions {
 div.network div.actions a, div.network div.machine-actions a {
     text-decoration: none;
     height: 15px;
-    color: transparent;
+    color: black;
+    visibility: hidden;
     display: block;
 }
 
@@ -2640,7 +2641,7 @@ div.network div.actions a:hover, div.network div.machine-actions a:hover {
 }
 
 div.network:hover div.actions a, div.network-machine:hover div.machine-actions a {
-    color: black;
+    visibility: visible;
 }
 
 div.network div.actions a.selected, div.network div.machine-actions a.selected {

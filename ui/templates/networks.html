@@ -1131,4 +1131,16 @@ $(document).ready(function() {
     }
 });
 
+//IE specific fixes
+if ($.browser.msie) {
+    //IE fix for network div hover
+    $("div.network").live("mouseenter", function () {
+        $(this).css("background-color","#A1C8DB");
+        $(this).find(".actions a").css("visibility","visible");
+    });
+    $("div.network").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+        $(this).find(".actions a").css("visibility","hidden");
+    });
+}
 </script>

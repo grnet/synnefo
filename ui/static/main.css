@@ -3532,3 +3532,14 @@ div.console-footer {
 .public-networks .empty-network-slot {
     display: none;
 }
+
+/* float clearing for all browsers except the devil one */
+.clearfix:after{
+  clear: both;
+  content: ".";
+  display: block;
+  height: 0;
+  visibility: hidden;
+  font-size: 0;
+}
+

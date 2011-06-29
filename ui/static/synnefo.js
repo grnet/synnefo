@@ -1721,7 +1721,10 @@ function init_action_indicator_list_handlers()
         update_action_indicator_icons(action_class, false);
     });
     
-    $(".actions a").live("click", function(evn) {
+    $(".actions a.enabled").live("click", function(evn) {
+        // clear previous selections
+        $("a.selected").removeClass("selected");
+
         var el = $(evn.currentTarget);
         el.addClass("selected");
         update_action_indicator_icons(undefined, false);

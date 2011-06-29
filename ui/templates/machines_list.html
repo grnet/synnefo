@@ -92,29 +92,15 @@ or implied, of GRNET S.A.
 init_action_indicator_handlers('list');
 
 // select/deselect all from checkbox widget of table headers
-if ($.browser.msie) {
-    $("#machinesview .list table thead tr th.selection input:checkbox").click( function() {
-        if ( $(this).is(":checked") ) {
-            $(":checkbox").attr("checked", true);
-        }
-        else {
-            $(":checkbox").attr("checked", false);
-        }
-        update_listview_actions();
-    });
-} else {
-    $("#machinesview .list table thead tr th.selection :checkbox").live('change', function() {
-    alert('change');
-        if ( $(this).is(":checked") ) {
-            $(":checkbox").attr("checked", true);
-        }
-        else {
-            $(":checkbox").attr("checked", false);
-        }
-        update_listview_actions();
-        return false;
-    });
-}
+$("#machinesview .list table thead tr th.selection input:checkbox").click( function() {
+    if ( $(this).is(":checked") ) {
+        $(":checkbox").attr("checked", true);
+    }
+    else {
+        $(":checkbox").attr("checked", false);
+    }
+    update_listview_actions();
+});
 
 /* Drop down selector is commented out for v0.5
 // select all from drop down menu
@@ -164,11 +150,10 @@ var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
                };
 
 // on checkbox click, update the actions
-$("#machinesview .list tbody input[type='checkbox']").live('change', function() {
+$("#machinesview .list tbody input[type='checkbox']").live('click', function() {
     update_listview_actions();
     pending_actions = [];
     $(".selected").removeClass('selected');
-    return false;
 });
 
 // destroy action

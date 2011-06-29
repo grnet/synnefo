@@ -106,6 +106,7 @@ div.image {
 
 #wizard button.prev {
     margin-top: -3px;
+    padding-left: 5px;
 }
 
 #wizard .separator-end {

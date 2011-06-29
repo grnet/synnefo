@@ -141,7 +141,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 }
 
 .single div.upper {
-    overflow: visible;
+    height: 380px;
 }
 
 div.single-actions {

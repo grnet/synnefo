@@ -2531,8 +2531,12 @@ div.network-cable {
 }
 
 .first div.network-cable {
-    height:150px;
-    margin-top:-11px;
+    height:145px;
+    margin-top:-6px;
+}
+
+div.network-contents div.machines-list div.first {
+    margin-top:0;
 }
 
 .last div.network-cable {

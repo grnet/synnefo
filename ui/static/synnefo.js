@@ -1410,6 +1410,44 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
     return false;
 }
 
+function set_firewall(networkID, serverID, profile) {
+    if (!networkID.length || !serverID.length || !profile.length){
+        return false;
+    }
+    // prepare payload
+    var payload = {
+            "firewallProfile": { "profile": profile }
+        };
+    // prepare ajax call
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/action',
+        type: "POST",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) {
+            try {
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
+            } catch (err) {
+                ajax_error(0, undefined, 'Set firewall profile', jqXHR.responseText);
+            }
+        },
+        success: function(data, textStatus, jqXHR) {
+            if ( jqXHR.status == '202') {
+                try {
+                    console.info('for server ' + serverID + ' set firewall profile to ' + profile);
+                } catch(err) {}
+                // toggle the reboot dialog
+                //display_reboot_dialog(networkID, serverID, serverName, serverState);
+            } else {
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
+            }
+        }
+    });
+    return false;
+}
+
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");

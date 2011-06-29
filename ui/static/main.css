@@ -2391,10 +2391,13 @@ div.list table thead .vmname {
     width: 70px !important;
 }
 
-.spinner {
+.spinner, .action-indicator {
     clear: right;
     float:right !important;
     margin: 10px 6px 0 15px !important;
+}
+.action-indicator {
+    margin-right: 18px !important; 
 }
 
 .wave {
@@ -3187,8 +3190,12 @@ div.machine a.manage-metadata:hover {
     margin-left: -5px;
 }
 
-.single .spinner {
+.single .spinner, .single .action-indicator {
     margin: 15px 45px 0 0px !important
+}
+
+.single .action-indicator {
+    margin-right: 55px !important;
 }
 
 .single .wave {
@@ -3536,3 +3543,28 @@ div.console-footer {
   visibility: hidden;
   font-size: 0;
 }
+
+#machinesview-list div.action-indicator {
+    margin:0 !important;
+    float: none !important;
+}
+
+div.action-indicator {
+    width: 15px;
+    height: 20px;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+div.action-indicator.destroy {
+    background-image: url("./icons/actions/medium/destroy.png");
+}
+div.action-indicator.start {
+    background-image: url("./icons/actions/medium/start.png");
+}
+div.action-indicator.reboot {
+    background-image: url("./icons/actions/medium/reboot.png");
+}
+div.action-indicator.shutdown {
+    background-image: url("./icons/actions/medium/shutdown.png");
+}
+

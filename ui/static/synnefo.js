@@ -50,6 +50,14 @@ var networks = [], networks_changes_since = 0;
         }
     });
 
+
+// jquery hide event
+var _oldshow = $.fn.show;
+$.fn.show = function(speed, callback) {
+    $(this).trigger('show');
+    return _oldshow.apply(this,arguments);
+}
+
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC.
     //do not include time zone info (Z) at the end
@@ -1588,3 +1596,173 @@ function close_all_overlays() {
 		$("a#metadata-scrollable").overlay().close();
 	} catch(err) {}
 }
+
+// action indicators
+function init_action_indicator_handlers(machines_view)
+{
+    if (machines_view == "list")
+    {   
+        // totally different logic for list view
+        init_action_indicator_list_handlers();
+        return;
+    }
+    
+    var has_active_indicators = function(el)
+    {
+        return ($("img.spinner:visible", el.parent().parent()).length >= 1) || ($("img.wave:visible", el.parent().parent()).length >= 1) 
+    }
+
+    // action indicators
+    $(".action-container").live('mouseover', function(evn){
+        var el = $(evn.currentTarget);
+        // we dont need the single-action class
+        var action_class = el.attr("class").replace("action-container","");
+        // pass the hovered element action related class to the indicator image
+        $("div.action-indicator", el.parent().parent()).attr("class", "action-indicator " + action_class);
+
+        // spinner || wave indicators already visible. dont show action image to avoid clutter
+        if (has_active_indicators(el))
+        {
+            return;
+        }
+        $("div.action-indicator", el.parent().parent()).show();
+    });
+
+    // hide action indicator image on mouse out, spinner appear, wave appear
+    $(".action-container").live("mouseout", function(evn){
+        var el = $(evn.currentTarget);
+        $("div.action-indicator").hide();
+        
+        var pending_for_confirm_action = $(".confirm_single:visible", el.parent().parent());
+        // if we mouse out and another action is in confirmation mode
+        if (!has_active_indicators(el))
+        {
+            // no actions pending
+            if (pending_for_confirm_action.length == 0)
+            {
+                return;
+            }
+
+            // find action pending and show icon
+            var action_container = $($(pending_for_confirm_action[0]).parent());
+            var action_class = action_container.attr("class").replace("action-container","");
+            $("div.action-indicator", action_container.parent().parent()).attr("class", "action-indicator " + action_class);
+            $("div.action-indicator").show();
+        }
+        
+    });
+
+    $("img.spinner, img.wave").live('show', function(){
+        $("div.action-indicator").hide();
+    });
+}
+
+function init_action_indicator_list_handlers()
+{   
+    var skip_actions = { 'console':'','connect':'','details':'' };
+
+    var has_pending_confirmation = function()
+    {
+        return $(".confirm_multiple:visible").length >= 1
+    }
+    
+    function update_action_indicator_icons(force_action, skip_pending)
+    {   
+        // pending action based on the element class
+        var pending_action = $(".selected", $(".actions"))[0];
+        var selected = get_list_view_selected_machine_rows();
+
+        // reset previous state
+        list_view_hide_action_indicators();
+        
+        if (pending_action == undefined && !force_action)
+        {
+            // no action selected
+            return;
+        }
+        
+        if (force_action != undefined)
+        {
+            // user forced action choice
+            var action_class = force_action;
+        } else {
+            // retrieve action name (reboot, stop, etc..)
+            var action_class = $(pending_action).attr("id").replace("action-","");
+        }
+
+        selected.each(function(index, el) {
+            if (has_pending_confirmation() && skip_pending)
+            {
+                return;
+            }
+            var el = $(el);
+            var logo = $("img.list-logo", el);
+            $(".action-indicator", el).remove();
+            var cls = "action-indicator " + action_class;
+            // add icon div
+            logo.after('<div class="' + cls + '"></div>');
+            // hide os logo
+            $("img.list-logo", el).hide();
+        });
+    }  
+    
+    // on mouseover we force the images to the hovered action
+    $(".actions a").live("mouseover", function(evn) {
+        var el = $(evn.currentTarget);
+        if (!el.hasClass("enabled"))
+        {   
+            return;
+        }
+        var action_class = el.attr("id").replace("action-","");
+        if (action_class in skip_actions)
+        {
+            return;
+        }
+        update_action_indicator_icons(action_class, false);
+    });
+    
+    $(".actions a").live("click", function(evn) {
+        var el = $(evn.currentTarget);
+        el.addClass("selected");
+        update_action_indicator_icons(undefined, false);
+    });
+
+    $(".actions a").live("mouseout", function(evn) {
+        update_action_indicator_icons(undefined, false);
+    });
+    
+    $(".confirm_multiple button.no").click(function(){
+        list_view_hide_action_indicators();
+    });
+
+    $(".confirm_multiple button.yes").click(function(){
+        list_view_hide_action_indicators();
+    });
+    
+    $("input[type=checkbox]").live('change', function(){
+        // pending_actions will become empty on every checkbox click/change
+        // line 154 machines_list.html
+        pending_actions = [];
+        if (pending_actions.length == 0)
+        {
+            $(".confirm_multiple").hide();
+            $("a.selected").each(function(index, el){$(el).removeClass("selected")});        
+        }
+        update_action_indicator_icons(undefined, false);
+    });
+    
+}
+
+function list_view_hide_action_indicators()
+{
+    $("tr td .action-indicator").remove();
+    $("tr td img.list-logo").show();
+}
+
+function get_list_view_selected_machine_rows()
+{   
+    var table = $("table.list-machines");
+    var rows = $("tr:has(input[type=checkbox]:checked)",table);
+    return rows;
+}
+

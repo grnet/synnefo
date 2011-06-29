@@ -52,6 +52,7 @@ or implied, of GRNET S.A.
                         <div class="indicator3"></div>
                         <div class="indicator4"></div>
                     </div>
+                    <div class="action-indicator" style="display:none"></div>
                     <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
                     <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
                 </div>
@@ -184,6 +185,8 @@ or implied, of GRNET S.A.
 </div>
 
 <script>
+
+init_action_indicator_handlers('single');
 
 //hide the all of the tags contents
 $("#machinesview-single.single .tags-content").hide();

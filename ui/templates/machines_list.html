@@ -89,6 +89,8 @@ or implied, of GRNET S.A.
 
 <script>
 
+init_action_indicator_handlers('list');
+
 // select/deselect all from checkbox widget of table headers
 $("#machinesview .list table thead tr th.selection :checkbox").live('change', function() {
     if ( $(this).is(":checked") ) {

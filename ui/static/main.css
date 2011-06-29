@@ -1013,7 +1013,6 @@ div.machine div.info-label.darker, .single div.tags-label.darker, div.network .d
 }
 
 .machine div.info div.toggler, .single div.tags div.toggler, div.network div.toggler {
-    position: relative;
     width:15px;
     height:17px;
     margin-top: -11px;

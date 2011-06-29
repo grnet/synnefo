@@ -13,3 +13,7 @@ div#view-select {
 #networks-wizard .create {
     margin-top: -23px;
 }
+
+div.machine-details .editbuttons {
+    margin-top: -20px;
+}

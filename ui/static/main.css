@@ -533,15 +533,11 @@ div#footer-text{
 }
 
 #wizard .img-next {
-    margin-right: -4px;
-    padding-left: 8px;
-    margin-bottom: -1px;
+    margin: 0 -4px -1px 8px;
 }
 
 #wizard .img-prev {
-    margin-left: -4px;
-    padding-right: 8px;
-    margin-bottom: -1px;
+    margin: 0 8px -1px -4px;
 }
 
 #networks-wizard .create {

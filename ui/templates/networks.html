@@ -825,6 +825,7 @@ $("#networks-pane div.confirm_multiple .yes").live('click', function(){
         $('#networks-pane .confirm_single').hide();
         if (action[0] == delete_network) {
             $('#networks-pane #net-' + networkID + ' .status').text(NET_STATES['Destroying']);
+            $('#networks-pane #net-' + networkID + ' .state').addClass('destroying-state');
             $('#networks-pane #net-' + networkID + ' .spinner').show();
             action[0]([networkID]); // execute action
         } else if (action[0] == remove_server_from_network) {

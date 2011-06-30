@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -102,14 +102,14 @@ def random_password(length=8):
 def zeropad(s):
     """Add zeros at the end of a string in order to make its length
        a multiple of 16."""
-    
+
     npad = 16 - len(s) % 16
     return s + '\x00' * npad
 
 def encrypt(plaintext):
     # Make sure key is 32 bytes long
     key = sha256(settings.SECRET_KEY).digest()
-    
+
     aes = AES.new(key)
     enc = aes.encrypt(zeropad(plaintext))
     return b64encode(enc)
@@ -279,8 +279,7 @@ def api_method(http_method=None, atom_allowed=False):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            if request.user:
-                u = request.user.uniq
+            u = request.user.uniq if request.user else ''
             logger = log.get_logger("synnefo.api")
             logger.debug("%s <%s>" % (request.path, u))
             try:

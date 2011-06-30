@@ -73,9 +73,9 @@ or implied, of GRNET S.A.
                     </div>
                     <div class="vm-stats metadata-column">
                         {% trans "CPU" %} <br />
-                        <img src="http://stats.okeanos.grnet.gr/test/cpu-bar.png" class="metadata-bar" />
+                        <img src="http://stats.okeanos.grnet.gr/test/cpu-bar.png" class="cpu metadata-bar" />
                         {% trans "Net" %} <br />
-                         <img src="http://stats.okeanos.grnet.gr/test/net-bar.png" class="metadata-bar" /><br />
+                         <img src="http://stats.okeanos.grnet.gr/test/net-bar.png" class="net metadata-bar" /><br />
                     </div>
                     <div class="vm-metadata metadata-column">
                         <div class="metadata-left">
@@ -212,11 +212,16 @@ $("#machinesview-icon.standard .info-content").hide();
 //toggle the component with class info-content
 $("#machinesview-icon.standard div.info-header").live('click', function() {
     if ($(this).find('.toggler').hasClass('up')) {
+        // toggle drop-down pane
         $(this).find('.toggler').removeClass('up');
         $(this).find('.toggler').addClass('down');
         $(this).find('.info-label').removeClass('darker');
         $(this).parent().parent().removeClass('light-background');
     } else {
+        // make the get stats call
+        var serverID = $(this).closest('.machine-container').attr('id');
+        get_server_stats(serverID);
+        // toggle drop-down pane
         $(this).find('.toggler').removeClass('down');
         $(this).find('.toggler').addClass('up');
         $(this).find('.info-label').addClass('darker');

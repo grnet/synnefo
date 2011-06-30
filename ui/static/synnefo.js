@@ -1201,6 +1201,38 @@ function update_metadata(serverID, meta_key, meta_value) {
     });
     return false;
 }
+var test=[];
+// get stats
+function get_server_stats(serverID) {
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/stats',
+        cache: false,
+        type: "GET",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) {
+            try {
+                ajax_error(jqXHR.status, undefined, 'Get stats', jqXHR.responseText);
+            } catch (err) {
+                ajax_error(err);
+            }
+        },
+        success: function(data, textStatus, jqXHR) {
+            // in icon view
+            if ( $.cookie('view') == 0 ) {
+                $('#' + serverID + ' img.cpu').attr("src", data.stats.cpuBar);
+                $('#' + serverID + ' img.net').attr("src", data.stats.netBar);
+            }
+            // in single view
+            else if ( $.cookie('view') == 2 ) {
+                $('#' + serverID + ' div.cpu-graph img.stats').attr("src", data.stats.cpuTimeSeries);
+                $('#' + serverID + ' div.net-graph img.stats').attr("src", data.stats.netTimeSeries);
+            }
+        }
+    });
+    return false;
+}
 
 // create network
 function create_network(networkName){
@@ -1622,33 +1654,33 @@ function init_action_indicator_handlers(machines_view)
         return;
     }
     window.ACTION_ICON_HANDLERS[machines_view] = 1;
-    
+
     if (machines_view == "list")
-    {   
+    {
         // totally different logic for list view
         init_action_indicator_list_handlers();
         return;
     }
-    
+
     function update_action_icon_indicators(force)
-    {   
+    {
         function show(el, action) {
             $(".action-indicator", $(el)).attr("class", "action-indicator " + action);
             $(".action-indicator", $(el)).show();
         }
 
-        function hide(el) {   
+        function hide(el) {
             $(".action-indicator", $(el)).hide();
         }
-        
+
         function get_pending_actions(el) {
             return $(".confirm_single:visible", $(el));
         }
-        
+
         function other_indicators(el) {
            return $("img.wave:visible, img.spinner:visible", $(el))
         }
-        
+
         $("div.machine:visible, div.single-container").each(function(index, el){
             var el = $(el);
             var pending = get_pending_actions(el);
@@ -1662,7 +1694,7 @@ function init_action_indicator_handlers(machines_view)
                 // skipping force action
                 force_action = undefined;
             }
-             
+
             if (force_action !==undefined && force_action.el === el[0]) {
                 action = force_action.action;
             }
@@ -1671,21 +1703,21 @@ function init_action_indicator_handlers(machines_view)
                 return;
             }
 
-            if (pending.length >= 1 && force_action === undefined) {      
+            if (pending.length >= 1 && force_action === undefined) {
                 action = $(pending.parent()).attr("class").replace("action-container","");
             }
-            
+
             if (action in {'console':''}) {
                 return;
             }
-            
+
             if (action !== undefined) {
                 show(el, action);
             } else {
-                try {   
+                try {
                     if (el.attr('id') == pending_actions[0][1])
                     {
-                        return;   
+                        return;
                     }
                 } catch (err) {
                 }
@@ -1738,29 +1770,29 @@ function init_action_indicator_handlers(machines_view)
 }
 
 function init_action_indicator_list_handlers()
-{   
+{
     var skip_actions = { 'console':'','connect':'','details':'' };
 
     var has_pending_confirmation = function()
     {
         return $(".confirm_multiple:visible").length >= 1
     }
-    
+
     function update_action_indicator_icons(force_action, skip_pending)
-    {   
+    {
         // pending action based on the element class
         var pending_action = $(".selected", $(".actions"))[0];
         var selected = get_list_view_selected_machine_rows();
 
         // reset previous state
         list_view_hide_action_indicators();
-        
+
         if (pending_action == undefined && !force_action)
         {
             // no action selected
             return;
         }
-        
+
         if (force_action != undefined)
         {
             // user forced action choice
@@ -1784,13 +1816,13 @@ function init_action_indicator_list_handlers()
             // hide os logo
             $("img.list-logo", el).hide();
         });
-    }  
-    
+    }
+
     // on mouseover we force the images to the hovered action
     $(".actions a").live("mouseover", function(evn) {
         var el = $(evn.currentTarget);
         if (!el.hasClass("enabled"))
-        {   
+        {
             return;
         }
         var action_class = el.attr("id").replace("action-","");
@@ -1800,7 +1832,7 @@ function init_action_indicator_list_handlers()
         }
         update_action_indicator_icons(action_class, false);
     });
-    
+
 
     // register events where icons should get updated
     $(".actions a.enabled").live("click", function(evn) {
@@ -1815,7 +1847,7 @@ function init_action_indicator_list_handlers()
     $(".actions a").live("mouseout", function(evn) {
         update_action_indicator_icons(undefined, false);
     });
-    
+
     $(".confirm_multiple button.no").click(function(){
         list_view_hide_action_indicators();
     });
@@ -1823,7 +1855,7 @@ function init_action_indicator_list_handlers()
     $(".confirm_multiple button.yes").click(function(){
         list_view_hide_action_indicators();
     });
-    
+
     $("input[type=checkbox]").live('change', function(){
         // pending_actions will become empty on every checkbox click/change
         // line 154 machines_list.html
@@ -1831,11 +1863,11 @@ function init_action_indicator_list_handlers()
         if (pending_actions.length == 0)
         {
             $(".confirm_multiple").hide();
-            $("a.selected").each(function(index, el){$(el).removeClass("selected")});        
+            $("a.selected").each(function(index, el){$(el).removeClass("selected")});
         }
         update_action_indicator_icons(undefined, false);
     });
-    
+
 }
 
 function list_view_hide_action_indicators()
@@ -1845,9 +1877,8 @@ function list_view_hide_action_indicators()
 }
 
 function get_list_view_selected_machine_rows()
-{   
+{
     var table = $("table.list-machines");
     var rows = $("tr:has(input[type=checkbox]:checked)",table);
     return rows;
 }
-

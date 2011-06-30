@@ -154,7 +154,10 @@ def create_instance(vm, flavor, image, password):
         os='image+default',
         ip_check=False,
         name_check=False,
-        pnode=rapi.GetNodes()[0],   #TODO: use a Ganeti iallocator instead
+        # Do not specific a node explicitly, have
+        # Ganeti use an iallocator instead
+        #
+        # pnode=rapi.GetNodes()[0]
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
         osparams=dict(img_id=image.backend_id, img_passwd=password,

@@ -755,5 +755,19 @@ if ($.browser.msie) {
     $("button.details").live("mouseleave", function () {
         $(this).css("background-color","transparent");
     });
+    //IE fix for multiple conf yes button
+    $("div.confirm_multiple button.yes").live("mouseenter", function () {
+        $(this).css("background-color","#FF7F2A");
+    });
+    $("div.confirm_multiple button.yes").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+    });
+    //IE fix for multiple conf no button
+    $("div.confirm_multiple button.no").live("mouseenter", function () {
+        $(this).css("background-color","#5CA1C0");
+    });
+    $("div.confirm_multiple button.no").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+    });
 }
 </script>

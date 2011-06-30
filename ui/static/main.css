@@ -3106,23 +3106,23 @@ div.reboot-dialog button.details:hover {
 .vm-stats {
     padding-left: 10px;
     padding-right: 5px;
-    width: 217px;
+    width: 220px;
 }
 
 .vm-details {
-    width: 120px;
+    width: 130px;
     margin-left:17px;
 }
 
 .vm-metadata {
     padding-left: 10px;
-    width: 129px;
+    width: 100px;
     border: none;
 }
 
 .metadata-left {
     float:left;
-    width: 50px;
+    width: 30px;
     height: 60px;
 }
 

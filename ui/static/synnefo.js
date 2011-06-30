@@ -1233,7 +1233,7 @@ function update_metadata(serverID, meta_key, meta_value) {
     });
     return false;
 }
-var test=[];
+
 // get stats
 function get_server_stats(serverID) {
     $.ajax({

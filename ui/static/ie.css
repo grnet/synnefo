@@ -173,6 +173,17 @@ div.single-actions {
     margin-left: -95px !important;
 }
 
+.single div.confirm_single button.no {
+    margin-left: 0;
+    position: relative;
+}
+
+.single div.destroy div.confirm_single {
+    margin: 0;
+    margin-right: -19px;
+    margin-top: -18px;
+}
+
 #ie-fix-view-select {
     position: relative;
     z-index: 1000;

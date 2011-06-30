@@ -1414,6 +1414,7 @@ input.machine {
 
 #metadata-wizard .close, #add-machines-wizard .close  {
     background-image: url("./close-popup.png");
+    background-repeat: no-repeat
     cursor: pointer;
     height: 13px;
     position: absolute;
@@ -1858,6 +1859,7 @@ input.machine {
 
 #error-success .close {
     background-image: url("./close-popup.png");
+    background-repeat: no-repeat;
     cursor: pointer;
     height: 13px;
     position: absolute;
@@ -1872,6 +1874,7 @@ input.machine {
 
 .popup-border-error {
     border-color: #800000 !important;
+    width:auto;
 }
 
 .popup-details-error {
@@ -1894,6 +1897,7 @@ input.machine {
     padding-left: 30px;
     padding-top: 10px;
     width: 482px;
+    margin-right:-16px;
 }
 
 

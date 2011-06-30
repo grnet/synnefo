@@ -6,6 +6,10 @@ div.machine div.actions a {
     width: 180px;
 }
 
+#error-success .popup-body-inner {
+    margin-left: 12px;
+}
+
 div.machine div.actions {
     right: -183px;
     width: 120px;

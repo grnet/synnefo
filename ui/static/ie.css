@@ -317,3 +317,20 @@ div.private-networks div.network-placeholder {
 div.network {
     width: 540px;
 }
+
+.private-networks div.confirm_single {
+    position:relative;
+}
+
+div.network div.actions a {
+    position: relative;
+}
+
+div.network div.actions {
+    overflow: visible;
+    left: 540px;
+}
+
+div.network {
+    overflow: visible;
+}

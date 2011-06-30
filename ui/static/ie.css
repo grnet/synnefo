@@ -354,9 +354,9 @@ div#user {
 }
 
 div#user .usermenu {
-    height: 29px;
+    height: 26px;
     position: relative;
-    width: 200px;
+    width: 190px;
 }
 
 div#user .username {
@@ -365,5 +365,5 @@ div#user .username {
 
 div#user .usermenu .useractions {
     background-color: #fff;
-    margin-top:8px;
+    margin-top:5px;
 }

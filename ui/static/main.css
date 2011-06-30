@@ -2150,7 +2150,7 @@ div#user{
     clear: both;
     color: #FFFFFF;
     font-size: 75%;
-    margin-top: 35px;
+    margin-top: 38px;
     padding-bottom: 10px;
     z-index: 400;
 }
@@ -2178,7 +2178,7 @@ div#user .username {
     margin-right: 10px;
     padding-right: 18px;
     padding-left: 4em;
-    height: 23px;
+    height: 20px;
     background: url("./down-arrow-light.png") no-repeat right;
     background-position: right 6px;
     font-weight: bold;

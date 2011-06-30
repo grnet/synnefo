@@ -53,7 +53,8 @@ from signal import signal, SIGINT, SIGTERM
 
 import time
 import socket
-from daemon import pidfile, daemon
+from daemon import daemon
+from lockfile import pidlockfile
 
 from synnefo.logic import callbacks
 

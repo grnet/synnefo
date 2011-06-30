@@ -473,15 +473,16 @@ def server_stats(request, server_id):
     #                       overLimit (413)
     
     vm = util.get_vm(server_id, request.user)
-    secret = util.encrypt(vm.backend_id)
-    cpu = settings.CPU_GRAPH_URL_TEMPLATE % secret
-    net = settings.NET_GRAPH_URL_TEMPLATE % secret
+    #secret = util.encrypt(vm.backend_id)
+    secret = vm.backend_id      # XXX disable backend id encryption
     
     stats = {
         'serverRef': vm.id,
         'refresh': settings.STATS_REFRESH_PERIOD,
-        'cpu': cpu,
-        'net': net}
+        'cpuBar': settings.CPU_BAR_GRAPH_URL % secret,
+        'cpuTimeSeries': settings.CPU_TIMESERIES_GRAPH_URL % secret,
+        'netBar': settings.NET_BAR_GRAPH_URL % secret,
+        'netTimeSeries': settings.NET_TIMESERIES_GRAPH_URL % secret}
     
     if request.serialization == 'xml':
         data = render_to_string('server_stats.xml', stats)

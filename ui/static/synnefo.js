@@ -1602,6 +1602,12 @@ function close_all_overlays() {
 	} catch(err) {}
 }
 
+// logout
+function user_session_logout() {
+    $.cookie("X-Auth-Token", null);
+    location.reload();
+}
+
 // action indicators
 function init_action_indicator_handlers(machines_view)
 {

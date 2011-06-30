@@ -383,3 +383,7 @@ div.network div.actions {
 div.network {
     overflow: visible;
 }
+
+.machine-container {
+    margin: 2px 0 0 1px;
+}

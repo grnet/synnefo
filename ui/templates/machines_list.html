@@ -71,7 +71,9 @@ or implied, of GRNET S.A.
                     <th class="vmos">{% trans "OS" %}</th>
                     <th class="vmname">{% trans "Name" %}</th>
                     <th class="vmflavor">{% trans "Flavor" %}</th>
+                    <!--  Group column is commented out for v0.5
                     <th class="vmgroup">{% trans "Group" %}</th>
+                    -->
                     <th class="vmstatus">{% trans "Status" %}</th>
                 </tr>
             </thead>
@@ -296,7 +298,7 @@ function update_machines_view(data){
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
                     tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
-                    tableData[current][5] = "<span class=status>" + STATUSES[server.status] + "</span>";
+                    tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osTag + "-off.png')", 1600);
                 } else if ( STATUSES[server.status] == server_row.find('span.status').text()) {
@@ -309,7 +311,7 @@ function update_machines_view(data){
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
                     tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
-                    tableData[current][5] = "<span class=status>" + STATUSES[server.status] + "</span>";
+                    tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osIcon + "')", 1600);
                 }
@@ -351,7 +353,7 @@ function update_machines_view(data){
                     " title=" + osTag + ">",
                 "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>",
                 "<a class=flavor><span>"+ flavorLabel + "</span></a>",
-                "group",
+                //"group",
                 "<span class=status>" + STATUSES[server.status] + "</span>"
             ]);
         }

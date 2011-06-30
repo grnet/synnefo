@@ -2378,16 +2378,18 @@ div.list table thead .vmflavor {
     width: 100px !important;
 }
 
+/* group column commented out for v0.5
 div.list table thead .vmgroup {
     width: 40px !important;
 }
+*/
 
 div.list table thead .vmstatus {
     width: 50px !important;
 }
 
 div.list table thead .vmname {
-    width: 70px !important;
+    width: 110px !important;
 }
 
 .spinner, .action-indicator {

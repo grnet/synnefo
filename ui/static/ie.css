@@ -15,6 +15,11 @@ div.machine {
     width: 528px;
 }
 
+.machine div.info div.toggler, .single div.tags div.toggler, div.network div.toggler {
+    font-size:1%;
+    height:10px;
+}
+
 #wizard {
     height: 450px;
 }

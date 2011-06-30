@@ -321,13 +321,20 @@ or implied, of GRNET S.A.
 <body>
     <div id="container">
         <div id='header'>
-            <div id='user'>
-                {{ request.user.uniq  }}
+            <div id='user' class="clearfix">
+                <div class="usermenu">
+                    <div class="username">{{ request.user.uniq  }}</div>
+                    <ul class="useractions">
+                        <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
+                    </ul>
+                </div>
+                <div class="langmenu">
                 {% get_available_languages as LANGUAGES %}
                 {% for lang in LANGUAGES %}
-                    &nbsp;|&nbsp;
                     <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
-                {% endfor %}
+                    {% if not forloop.last %}<span class="sep">~</span>{% endif %}
+                    {% endfor %}
+                </div>
             </div>
             <div class="header-logo">
                 <a href="/">
@@ -406,6 +413,21 @@ or implied, of GRNET S.A.
                href: "static/opera.css"
             }).appendTo("head");
         }
+
+        // user menu interaction
+        $(document).ready(function(){
+            var resetUserMenu = function() {
+                $(this).removeClass("hovered");
+                $(this).removeClass("active");
+            }
+            $(".usermenu").live("click", function(){
+                $(this).addClass("active");
+            });
+            $(".usermenu").bind('mouseleave', resetUserMenu);
+            $(".usermenu").live("mouseover", function(){
+                $(this).addClass("hovered");
+            });
+        });
     </script>
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>

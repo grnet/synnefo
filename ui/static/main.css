@@ -3113,6 +3113,8 @@ div.machine a.manage-metadata:hover {
 .metadata-bar {
     float: right !important;
     margin: 1px 7px 0 !important;
+    padding:1px;
+    background-color:white;
 }
 
 /* single view */

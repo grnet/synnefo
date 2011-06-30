@@ -54,7 +54,10 @@ class GanetiHookTestCase(TestCase):
             'type': 'ganeti-net-status',
             'instance': 'instance2.example.com',
             'nics': [
-                { 'ip': '147.102.3.1', 'mac': '00:01:de:ad:be:ef', 'link': 'xen-br0' },
+                {
+                    'ip': '147.102.3.1', 'mac': '00:01:de:ad:be:ef',
+                    'link': 'xen-br0', 'ipv6': '2001:db8::201:deff:fead:beef'
+                },
                 { 'mac': '00:01:de:ad:ba:be' },
                 { 'ip': '147.102.3.98', 'mac': '00:01:02:03:04:05' }
             ]

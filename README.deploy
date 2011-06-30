@@ -114,6 +114,7 @@ in a Synnefo deployment.
     * python-dateutil  [python-dateutil==1.4.1]
       WARNING: version python-dateutil==2.0 downloaded by pip known *not* to
                work with Python 2.6
+    * python-ipy [IPy==0.72]
     * south [south==0.7.1]
       WARNING: not working with Debian squeeze's default south-0.7-1 package.
     * amqplib [amqplib==0.6.1]
@@ -127,9 +128,7 @@ in a Synnefo deployment.
 
     * pycrypto==2.1.0
 
-   if you want to test the ganeti (FIXME)
-
-   to run the user interface tests, selenium must be installed
+   To run the user interface tests, selenium must be installed
     * selenium [?]
 
    The easiest method for installation of the Django project is to setup a

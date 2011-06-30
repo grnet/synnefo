@@ -107,7 +107,8 @@ def process_net_status(vm, nics):
             network=net,
             index=i,
             mac=nic.get('mac', ''),
-            ipv4=nic.get('ip', ''))
+            ipv4=nic.get('ip', ''),
+            ipv6=nic.get('ipv6',''))
     vm.save()
 
 

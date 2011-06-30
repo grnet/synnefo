@@ -72,10 +72,17 @@ or implied, of GRNET S.A.
                         {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
                     </div>
                     <div class="vm-stats metadata-column">
-                        {% trans "CPU" %} <br />
-                        <img src="http://stats.okeanos.grnet.gr/test/cpu-bar.png" class="cpu metadata-bar" />
-                        {% trans "Net" %} <br />
-                         <img src="http://stats.okeanos.grnet.gr/test/net-bar.png" class="net metadata-bar" /><br />
+                        <div class='stat-label'>{% trans "CPU" %}</div>
+                        <div class='stat-content'>
+                            <img src="./static/icons/indicators/small/progress.gif" class="cpu busy" />
+                            <div class='stat-error'>{% trans "Could not fetch CPU stats." %}</div>
+                        </div>
+                        <div class='stat-label'>{% trans "Net" %}</div>
+                        <div class='stat-content'>
+                            <img src="./static/icons/indicators/small/progress.gif" class="net busy" />
+                            <div class='stat-error'>{% trans "Could not fetch Net stats." %}</div>
+                        </div>
+                        <a href="#" class="stats-report">{% trans "Full report" %}</a>
                     </div>
                     <div class="vm-metadata metadata-column">
                         <div class="metadata-left">
@@ -218,7 +225,11 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
         $(this).find('.info-label').removeClass('darker');
         $(this).parent().parent().removeClass('light-background');
     } else {
-        // make the get stats call
+        // reset stats
+        $(this).closest('.machine-container').find('.vm-stats div.stat-error').hide();
+        $(this).closest('.machine-container').find('.vm-stats img.cpu').attr('src', './static/icons/indicators/small/progress.gif').addClass('busy').show();
+        $(this).closest('.machine-container').find('.vm-stats img.net').attr('src', './static/icons/indicators/small/progress.gif').addClass('busy').show();
+        // get new stats
         var serverID = $(this).closest('.machine-container').attr('id');
         get_server_stats(serverID);
         // toggle drop-down pane

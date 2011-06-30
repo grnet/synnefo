@@ -1212,15 +1212,14 @@ function get_server_stats(serverID) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Get stats', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(err);
-            }
+                // report error as text inline
+                $('#' + serverID + ' img.busy').hide();
+                $('#' + serverID + ' div.stat-error').show();
         },
         success: function(data, textStatus, jqXHR) {
             // in icon view
             if ( $.cookie('view') == 0 ) {
+                $('#' + serverID + ' img.busy').removeClass('busy');
                 $('#' + serverID + ' img.cpu').attr("src", data.stats.cpuBar);
                 $('#' + serverID + ' img.net').attr("src", data.stats.netBar);
             }

@@ -43,6 +43,7 @@ body {
     margin: 0 auto;
     width: 700px;
     text-align: left;
+    position: relative;
 }
 
 #content {
@@ -2151,7 +2152,6 @@ div#user{
     font-size: 75%;
     margin-top: 35px;
     padding-bottom: 10px;
-    position: relative;
     z-index: 400;
 }
 
@@ -2167,7 +2167,6 @@ div#user a.current_lang {
 div#user .usermenu {
     float: left;
     cursor: pointer;
-    height: 23px;
     overflow: hidden;
     padding-top: 5px;
     margin-top: -5px;
@@ -2179,13 +2178,16 @@ div#user .username {
     margin-right: 10px;
     padding-right: 18px;
     padding-left: 4em;
+    height: 23px;
     background: url("./down-arrow-light.png") no-repeat right;
+    background-position: right 6px;
     font-weight: bold;
 }
 
 div#user .usermenu.hovered {
     background: #599EBD;
     overflow: visible;
+    border-bottom: 1px solid #C7DFE9;
 }
 
 div#user .usermenu.hovered .username {
@@ -2208,21 +2210,22 @@ div#user .useractions {
 div#user .active .useractions {
     display: block;
     text-align: right;
-    margin-top: 7px;
     color: #4085A5;
     background-color: #D0E3ED;
-    margin-top:9px;
+    margin-top:-1px;
     border-top:1px solid #fff;
     position: relative;
-    z-index: 400;
+    top: 1px;
 }
 
-div#user .active .useractions li {
-    padding: 10px;
+div#user .useractions li {
+    padding: 5px 10px;
     border-bottom: 1px solid #efefef;
+    text-align: right;
+    display: block;
 }
 
-div#user .active .useractions li a {
+div#user .useractions li a {
     color: #4085A5;
     display: inline-block;
     padding:5px 0;
@@ -2232,11 +2235,11 @@ div#user .active .useractions li a {
     background-position: center left;
 }
 
-div#user .active .useractions li:hover {
+div#user .useractions li:hover {
     background-color: #E1EFF6;
 }
 
-div#user .active .useractions li.last {
+div#user .useractions li.last {
     border-bottom: none;
 }
 

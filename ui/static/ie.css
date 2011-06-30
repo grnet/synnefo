@@ -11,9 +11,8 @@ div.machine div.actions a {
 }
 
 div.machine div.actions {
-    right: 0px;
+    right: -183px;
     width: 120px;
-    left: 530px;
 }
 
 div.machine {
@@ -129,12 +128,7 @@ div.image {
 }
 
 div.confirm_single {
-    margin-right: -66px;
-    position: relative;
-}
-
-div.destroy div.confirm_single {
-    width: 150px;
+    margin-right: -73px;
 }
 
 div.action_error {
@@ -179,17 +173,6 @@ div.single-actions {
     margin-left: -95px !important;
 }
 
-.single div.confirm_single button.no {
-    margin-left: 0;
-    position: relative;
-}
-
-.single div.destroy div.confirm_single {
-    margin: 0;
-    margin-right: -60px;
-    margin-top: -18px;
-}
-
 #ie-fix-view-select {
     position: relative;
     z-index: 1000;
@@ -201,10 +184,6 @@ div.single-actions {
 
 .editbuttons {
     margin-top: -19px !important;
-}
-
-#metadata-wizard .editbuttons {
-    padding-top: 1px;
 }
 
 #networkscreate {
@@ -244,20 +223,8 @@ div.single-actions {
     margin: 5px 1px 4px;
 }
 
-.private-networks .separator {
-    width: 505px;
-}
-
-div.network-placeholder {
-    margin-left:36px;
-}
-
-div.network div.machine-actions a {
-    margin-left:5px;
-}
-
 #metadata-wizard .addbuttons {
-    margin-top: -17px;
+    margin-top: -16.5px;
 }
 
 #metadata-wizard .dropdown-container {
@@ -267,22 +234,6 @@ div.network div.machine-actions a {
 #wizard button.next {
     margin-right: -32px;
     padding-right: 5px;
-}
-
-#metadata-wizard .machine-name {
-    padding-top: 1px;
-}
-
-#metadata-wizard #add-meta-key {
-    height: 14px;
-}
-
-#metadata-wizard #add-meta-value {
-    height: 16px;
-}
-
-#metadata-wizard .metadata-edit {
-    margin-top: -13px;
 }
 
 #wizard div.panes {
@@ -395,4 +346,24 @@ div.network {
 
 .private-networks div.network-indicator {
     margin-top:0px;
+}
+
+div#user {
+    position: absolute;
+    right:0;
+}
+
+div#user .usermenu {
+    height: 29px;
+    position: relative;
+    width: 200px;
+}
+
+div#user .username {
+    height: auto;
+}
+
+div#user .usermenu .useractions {
+    background-color: #fff;
+    margin-top:8px;
 }

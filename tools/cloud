@@ -45,6 +45,7 @@ DEFAULT_API = 'v1.1'
 
 TOKEN = '46e427d657b20defe352804f0eb6f8a2'
 
+MARGIN = 14
 
 commands = {}
 
@@ -57,7 +58,7 @@ def command_name(name):
 
 def print_addresses(networks):
     for i, net in enumerate(networks):
-        key = 'addresses:'.rjust(13) if i == 0 else ' ' * 13
+        key = 'addresses:'.rjust(MARGIN + 1) if i == 0 else ' ' * (MARGIN + 1)
         addr = ''
         if 'values' in net:
             addr = '[%s]' % ' '.join(ip['addr'] for ip in net['values'])
@@ -77,7 +78,7 @@ def print_dict(d, show_empty=True):
         elif key == 'servers':
             val = ', '.join(str(server_id) for server_id in val['values'])
         if val or show_empty:
-            print '%s: %s' % (key.rjust(12), val)
+            print '%s: %s' % (key.rjust(MARGIN), val)
 
 
 class Command(object):

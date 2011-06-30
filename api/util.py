@@ -279,8 +279,7 @@ def api_method(http_method=None, atom_allowed=False):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            if request.user:
-                u = request.user.uniq
+            u = request.user.uniq if request.user else ''
             logger = log.get_logger("synnefo.api")
             logger.debug("%s <%s>" % (request.path, u))
             try:

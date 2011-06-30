@@ -29,6 +29,7 @@ class GanetiHookTestCase(TestCase):
             'GANETI_INSTANCE_DISK_COUNT': '1',
             'GANETI_INSTANCE_DISK_TEMPLATE': 'drbd',
             'GANETI_INSTANCE_MEMORY': '128',
+            'GANETI_INSTANCE_TAGS': 'tag1 synnefo:network:0:protected tag2',
             'GANETI_INSTANCE_NAME': 'instance2.example.com',
             'GANETI_INSTANCE_NIC0_BRIDGE': 'xen-br0',
             'GANETI_INSTANCE_NIC0_IP': '147.102.3.1',
@@ -56,7 +57,8 @@ class GanetiHookTestCase(TestCase):
             'nics': [
                 {
                     'ip': '147.102.3.1', 'mac': '00:01:de:ad:be:ef',
-                    'link': 'xen-br0', 'ipv6': '2001:db8::201:deff:fead:beef'
+                    'link': 'xen-br0', 'ipv6': '2001:db8::201:deff:fead:beef',
+                    'firewall': 'protected'
                 },
                 { 'mac': '00:01:de:ad:ba:be' },
                 { 'ip': '147.102.3.98', 'mac': '00:01:02:03:04:05' }

@@ -57,6 +57,23 @@ def ganeti_net_status(logger, environ):
                     nics[0]['ipv6'] = mac2eui64(nics[0]['mac'],
                                                 settings.PUBLIC_IPV6_PREFIX)
 
+    # Amend notification with firewall settings
+    tags = environ.get('GANETI_INSTANCE_TAGS', '')
+    for tag in tags.split(' '):
+        t = tag.split(':')
+        if t[0:2] == ['synnefo', 'network']:
+            if len(t) != 4:
+                logger.error("Malformed synnefo tag %s", tag)
+                continue
+            try:
+                index = int(t[2])
+                nics[index]['firewall'] = t[3]
+            except ValueError:
+                logger.error("Malformed synnefo tag %s", tag)
+            except KeyError:
+                logger.error("Found tag %s for non-existent NIC %d",
+                             tag, index)
+
     # Verify our findings are consistent with the Ganeti environment
     indexes = list(nics.keys())
     ganeti_nic_count = int(environ['GANETI_INSTANCE_NIC_COUNT'])

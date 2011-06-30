@@ -3561,15 +3561,15 @@ div.action-indicator {
     background-repeat: no-repeat;
     background-position: 0 0;
 }
-div.state .destroy {
+div.state .destroy, tbody.machines .destroy {
     background-image: url("./icons/actions/medium/destroy.png");
 }
-div.state .start {
+div.state .start, tbody.machines .start {
     background-image: url("./icons/actions/medium/start.png");
 }
-div.state .reboot {
+div.state .reboot, tbody.machines .reboot {
     background-image: url("./icons/actions/medium/reboot.png");
 }
-div.state .shutdown {
+div.state .shutdown, tbody.machines .shutdown {
     background-image: url("./icons/actions/medium/shutdown.png");
 }

@@ -3561,6 +3561,11 @@ div.action-indicator {
     background-repeat: no-repeat;
     background-position: 0 0;
 }
+
+tbody.machines div.action-indicator {
+    position: relative;
+    top: -2px;
+}
 div.state .destroy, tbody.machines .destroy {
     background-image: url("./icons/actions/medium/destroy.png");
 }

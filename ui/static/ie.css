@@ -243,9 +243,10 @@ div.single-actions {
 }
 
 div.network-remove-machine {
-    position: relative;
+    position: absolute;
     z-index: -1;
-    margin-left: -96px;
+    margin-left: 0px;
+    left: -38px;
 }
 
 div.network div.machine-actions {
@@ -261,16 +262,21 @@ div.network div.machine-actions {
 }
 
 .last div.network-cable {
-    position: relative;
+    position: absolute;
+    left: 5px;
 }
 
 div.firewall-cable {
-    position: relative;
-    margin-left: -103px;
+    position: absolute;
+    left: -35px;
+    height: 93px;
+    margin-left:0;
 }
 
 .first div.network-cable {
     height: 93px;
+    position: absolute;
+    left: 5px;
 }
 
 .firewall-content {
@@ -289,4 +295,8 @@ div.private-networks .network-contents {
 div.private-networks div.network-placeholder {
     position: relative;
     z-index: -1;
+}
+
+div.network {
+    width: 540px;
 }

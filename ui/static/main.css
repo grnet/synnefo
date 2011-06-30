@@ -3471,6 +3471,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     padding-top: 15px;
     margin-bottom: 5px;
     font-size: 90%;
+    font-weight: bold;
 }
 
 .single .cpu-graph, .single .network-graph {

@@ -250,6 +250,9 @@ div.network-remove-machine {
 
 .network-machine {
     position: relative;
+    overflow: visible;
+    padding-bottom: 0;
+    margin-top: 10px;
 }
 
 .last div.network-cable {
@@ -259,4 +262,26 @@ div.network-remove-machine {
 div.firewall-cable {
     position: relative;
     margin-left: -103px;
+}
+
+.first div.network-cable {
+    height: 93px;
+}
+
+.firewall-content {
+    margin-bottom: 0px;
+    height: 90px;
+}
+
+.machines {
+    margin-top: 15px;
+    position: relative;
+}
+div.private-networks .network-contents {
+    margin-top: -6px;
+}
+
+div.private-networks div.network-placeholder {
+    position: relative;
+    z-index: -1;
 }

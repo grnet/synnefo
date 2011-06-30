@@ -33,7 +33,6 @@
 
 import datetime
 import dateutil.parser
-import logging
 
 from base64 import b64encode
 from datetime import timedelta, tzinfo
@@ -57,7 +56,7 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
-
+from synnefo.logic import log
 
 class UTC(tzinfo):
     def utcoffset(self, dt):
@@ -280,7 +279,12 @@ def api_method(http_method=None, atom_allowed=False):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
+            if request.user:
+                u = request.user.uniq
+            logger = log.get_logger("synnefo.api")
+            logger.debug("%s <%s>" % (request.path, u))
             try:
+
                 request.serialization = request_serialization(
                     request,
                     atom_allowed)
@@ -301,7 +305,7 @@ def api_method(http_method=None, atom_allowed=False):
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
-                logging.exception('Unexpected error: %s', e)
+                logger.exception('Unexpected error: %s', e)
                 fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
         return wrapper

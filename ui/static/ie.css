@@ -227,6 +227,18 @@ div.single-actions {
     margin: 5px 1px 4px;
 }
 
+.private-networks .separator {
+    width: 505px;
+}
+
+div.network-placeholder {
+    margin-left:36px;
+}
+
+div.network div.machine-actions a {
+    margin-left:5px;
+}
+
 #metadata-wizard .addbuttons {
     margin-top: -17px;
 }

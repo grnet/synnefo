@@ -990,6 +990,18 @@ function update_networks_view(servers_data, networks_data){
                         existing_public.find('span.ip6').text(new_ip6);
                     }
                 }
+                //update firewall setting
+                if (server.addresses.values[0].firewallProfile) {
+                    existing_public.find("input[value=" + server.addresses.values[0].firewallProfile + "]").attr('checked',true);
+                    existing_public.find(".firewall-label span").removeClass('firewall-off firewall-on');
+                    if (server.addresses.values[0].firewallProfile == 'DISABLED') {
+                        existing_public.find('.firewall-label span').addClass('firewall-off');
+                        existing_public.find('.firewall-label span').html(VARIOUS["OFF"]);
+                    } else {
+                        existing_public.find('.firewall-label span').addClass('firewall-on');
+                        existing_public.find('.firewall-label span').html(VARIOUS["ON"]);
+                    }
+                 }
                 //TODO: server has changed OS
             }
             // If server does not exist in public network, create it
@@ -1015,6 +1027,18 @@ function update_networks_view(servers_data, networks_data){
                     machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
                 }
                 machine.appendTo("#networks-pane .public-networks .machines-list");
+                //update firewall setting
+                if (server.addresses.values[0].firewallProfile) {
+                    machine.find("input[value=" + server.addresses.values[0].firewallProfile + "]").attr('checked',true);
+                    machine.find(".firewall-label span").removeClass('firewall-off firewall-on');
+                    if (server.addresses.values[0].firewallProfile == 'DISABLED') {
+                        machine.find('.firewall-label span').addClass('firewall-off');
+                        machine.find('.firewall-label span').html(VARIOUS["OFF"]);
+                    } else {
+                        machine.find('.firewall-label span').addClass('firewall-on');
+                        machine.find('.firewall-label span').html(VARIOUS["ON"]);
+                    }
+                 }
             }
 
             /*

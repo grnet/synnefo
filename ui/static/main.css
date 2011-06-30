@@ -895,6 +895,7 @@ div.ip, div.ips {
     float: right;
     top:1px;
     right: 18px;
+    text-align: right;
 }
 
 div.indicators {

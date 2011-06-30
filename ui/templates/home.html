@@ -428,6 +428,9 @@ or implied, of GRNET S.A.
                 $(this).addClass("hovered");
             });
 
+            $(".usermenu li").mouseenter(function(){$(this).addClass("hovered")})
+            $(".usermenu li").mouseleave(function(){$(this).removeClass("hovered")});
+
             // bind menu actions
             $(".usermenu .logout").click(function() {
                 user_session_logout();

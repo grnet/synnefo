@@ -2146,13 +2146,14 @@ div#aboutuser{
 }
 
 div#user{
-    float:right;
     clear: both;
     color: #FFFFFF;
     font-size: 75%;
     margin-top: 38px;
     padding-bottom: 10px;
     z-index: 400;
+    position: absolute;
+    right:0;
 }
 
 div#user a{
@@ -2184,13 +2185,13 @@ div#user .username {
     font-weight: bold;
 }
 
-div#user .usermenu.hovered {
+div#user .hovered {
     background: #599EBD;
     overflow: visible;
     border-bottom: 1px solid #C7DFE9;
 }
 
-div#user .usermenu.hovered .username {
+div#user .hovered .username {
     background-image: url("./down-arrow-lighter.png");
 }
 
@@ -2198,7 +2199,7 @@ div#user .active {
     background-color: #BED5E0 !important;
 }
 
-div#user .usermenu.active .username {
+div#user .active .username {
     color: #599EBD;
     background-image: url("./down-arrow-lighter.png");
 }
@@ -2223,6 +2224,7 @@ div#user .useractions li {
     border-bottom: 1px solid #efefef;
     text-align: right;
     display: block;
+    background-color: transparent;
 }
 
 div#user .useractions li a {
@@ -2235,7 +2237,7 @@ div#user .useractions li a {
     background-position: center left;
 }
 
-div#user .useractions li:hover {
+div#user .useractions li.hovered {
     background-color: #E1EFF6;
 }
 

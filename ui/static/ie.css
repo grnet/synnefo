@@ -370,8 +370,12 @@ div#user .username {
 }
 
 div#user .usermenu .useractions {
-    background-color: #fff;
     margin-top:5px;
+}
+
+div#user .usermenu .useractions li {
+    display: block;
+    height: 1%;
 }
 
 div.reboot-dialog button.reboot-single {

@@ -248,6 +248,11 @@ div.network-remove-machine {
     margin-left: -96px;
 }
 
+div.network div.machine-actions {
+    position: absolute;
+    left: 453px;
+}
+
 .network-machine {
     position: relative;
     overflow: visible;

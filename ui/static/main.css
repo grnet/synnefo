@@ -1019,7 +1019,7 @@ div.machine div.info-label.darker, .single div.tags-label.darker, div.network .d
 }
 
 div.network div.toggler {
-    margin-left: 87px;
+    margin-left: 90px;
 }
 
 .machine div.info div.down {
@@ -2565,7 +2565,7 @@ div.machines-header, div.firewall-header {
     color: white;
     cursor: pointer;
     height: 17px;
-    width: 100px;
+    width: 103px;
 }
 
  div.private-networks div.machines-header {
@@ -2581,7 +2581,7 @@ div.network-machine:hover div.firewall-header {
 }
 
 div.machines-label, div.firewall-label {
-    width: 83px;
+    width: 100%;
     padding-bottom:1px;
     padding-left: 3px;
 }

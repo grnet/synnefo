@@ -210,7 +210,9 @@ $("#machinesview-icon.standard .running div.connect-arrow").live('click', functi
 
 // open console on connect arrow border click
 $("#machinesview-icon.standard .running div.connect-border").live('click', function(){
-    $(this).parent().parent().find("a.action-console").click();
+    var serverID = $(this).parent().parent().attr("id");
+    machine_connect([machine_connect, serverID]);
+    return false;
     return false;
 });
 

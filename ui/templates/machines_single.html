@@ -381,9 +381,10 @@ $("#machinesview-single.single div.connect-arrow").live('click', function(){
     return false;
 });
 
-// open console on connect arrow border click
+// connect to machine on connect arrow border click
 $("#machinesview-single.single div.connect-border").live('click', function(){
-    $(this).parent().parent().find("div.action-console").click();
+    var serverID = $(this).closest(".single-container").attr("id");
+    machine_connect([machine_connect, serverID]);
     return false;
 });
 

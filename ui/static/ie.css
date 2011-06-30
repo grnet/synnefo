@@ -241,3 +241,21 @@ div.single-actions {
 *+html .clearfix{
   min-height: 1%;
 }
+
+div.network-remove-machine, div.network-add-machine {
+    position: relative;
+    z-index: -1;
+}
+
+.network-machine {
+    position: relative;
+}
+
+.last div.network-cable {
+    position: relative;
+}
+
+div.firewall-cable {
+    position: relative;
+    margin-left: -103px;
+}

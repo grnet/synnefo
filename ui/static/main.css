@@ -2519,6 +2519,8 @@ div.network-cable {
 .first div.network-cable {
     height:143px;
     margin-top:-6px;
+    z-index: 2000;
+    position: relative;
 }
 
 div.network-contents div.machines-list div.first {

@@ -1163,5 +1163,12 @@ if ($.browser.msie) {
         $(this).css("background-color","transparent");
         $(this).find("div.machine-actions a").css("visibility","hidden");
     });
+    //IE fix for network machine hover
+    $("button.reboot-single").live("mouseenter", function () {
+        $(this).css("background-color","#FF7F2A");
+    });
+    $("button.reboot-single").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+    });
 }
 </script>

@@ -373,3 +373,7 @@ div#user .usermenu .useractions {
     background-color: #fff;
     margin-top:5px;
 }
+
+div.reboot-dialog button.reboot-single {
+    position: relative;
+}

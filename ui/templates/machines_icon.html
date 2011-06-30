@@ -748,5 +748,12 @@ if ($.browser.msie) {
     $("div.connect-arrow").live("mouseleave", function () {
         $(this).removeClass("connect-arrow-ie");
     });
+    //IE fix for details button
+    $("button.details").live("mouseenter", function () {
+        $(this).css("background-color","#FF7F2A");
+    });
+    $("button.details").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+    });
 }
 </script>

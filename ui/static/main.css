@@ -2171,6 +2171,7 @@ div#user .usermenu {
     overflow: hidden;
     padding-top: 5px;
     margin-top: -5px;
+    position: relative;
 }
 
 div#user .username {
@@ -2208,9 +2209,12 @@ div#user .active .useractions {
     display: block;
     text-align: right;
     margin-top: 7px;
-    padding: 5px;
     color: #4085A5;
     background-color: #D0E3ED;
+    margin-top:9px;
+    border-top:1px solid #fff;
+    position: relative;
+    z-index: 400;
 }
 
 div#user .active .useractions li {
@@ -2221,8 +2225,11 @@ div#user .active .useractions li {
 div#user .active .useractions li a {
     color: #4085A5;
     display: inline-block;
+    padding:5px 0;
     padding-left: 30px;
+    padding-bottom: 6px;
     background-repeat: no-repeat;
+    background-position: center left;
 }
 
 div#user .active .useractions li:hover {
@@ -2246,6 +2253,7 @@ div#user .langmenu {
 
 div#user .langmenu .sep {
     display: inline-block;
+    color: #72ADC8;
 }
 
 .separator {

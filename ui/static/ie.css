@@ -387,3 +387,12 @@ div.network {
 .machine-container {
     margin: 2px 0 0 1px;
 }
+
+.private-networks div.status {
+    margin-bottom: 0px;
+    margin-top: 10px;
+}
+
+.private-networks div.network-indicator {
+    margin-top:0px;
+}

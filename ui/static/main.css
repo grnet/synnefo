@@ -3480,6 +3480,10 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     width: 660px;
 }
 
+.single .network-graph {
+    height: 238px;
+}
+
 .single div.lower img.stats {
     margin-left: 82px;
     margin-top: 31px;
@@ -3509,6 +3513,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     clear:both;
     background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     width: 700px;
+    padding-bottom: 30px;
 }
 
 .single div.upper {

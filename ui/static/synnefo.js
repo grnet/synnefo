@@ -1031,7 +1031,9 @@ function open_console(serverIDs){
 
     var machine = get_machine(serverID);
     var serverName = machine.name;
-    var serverIP = machine.addresses.values[0].values[0].addr;
+    try {
+        var serverIP = machine.addresses.values[0].values[0].addr;
+    } catch(err) { var serverIP = 'undefined'; }
 
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/action',
@@ -1080,7 +1082,9 @@ function machine_connect(serverIDs){
 
     var machine = get_machine(serverID);
     var serverName = machine.name;
-    var serverIP = machine.addresses.values[0].values[0].addr;
+    try {
+        var serverIP = machine.addresses.values[0].values[0].addr;
+    } catch(err) { var serverIP = 'undefined'; }
 
     var params_url = '?ip_address=' + serverIP;
 

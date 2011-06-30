@@ -3466,15 +3466,9 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     font-size: 140%;
 }
 
-.single .single-cpu, .single .single-network {
-    float: left;
-    height: 100px;
-    width: 48%;
-}
-
 .single .cpu-usage, .single .network-usage {
-    padding-bottom: 15px;
-    padding-left: 20px;
+    margin-bottom: 15px;
+    margin-left: 20px;
     padding-top: 15px;
     font-size: 90%;
 }
@@ -3483,7 +3477,12 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     background-color: #A1C8DB;
     height: 210px;
     margin-left: 20px;
-    width: 300px;
+    width: 660px;
+}
+
+.single div.lower img.stats {
+    margin-left: 82px;
+    margin-top: 31px;
 }
 
 .single .single-image {
@@ -3510,7 +3509,6 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     clear:both;
     background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     width: 700px;
-    height: 270px;
 }
 
 .single div.upper {

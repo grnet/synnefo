@@ -1070,6 +1070,30 @@ function open_console(serverIDs){
     return false;
 }
 
+// connect to machine action
+function machine_connect(serverIDs){
+    if (!serverIDs.length){
+        //ajax_success('DEFAULT');
+        return false;
+    }
+    var serverID = serverIDs.pop();
+
+    var machine = get_machine(serverID);
+    var serverName = machine.name;
+    var serverIP = machine.addresses.values[0].values[0].addr;
+
+    var params_url = '?ip_address=' + serverIP;
+
+    window.open('machines/connect' + params_url);
+
+    // Restore os icon in list view
+    osIcon = $('#'+serverID).parent().parent().find('.list-logo');
+    osIcon.attr('src',osIcon.attr('os'));
+
+    return false;
+}
+
+
 // rename server
 function rename(serverID, serverName){
     if (!serverID.length){

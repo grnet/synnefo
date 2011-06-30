@@ -85,6 +85,20 @@ def machines_console(request):
     context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip}
     return template('machines_console', context)
 
+def machines_connect(request):
+    ip_address = request.GET.get('ip_address','')
+    TODO = True
+    if TODO: # TODO: check if we are on windows
+        rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
+        connect_data = open(rdp_file, 'r').read()
+        connect_data = connect_data + 'full address:s:' + ip_address + '\n'
+        response = HttpResponse(connect_data, mimetype='application/x-rdp')
+        response['Content-Disposition'] = 'attachment; filename=synnefo-windows.rdp'
+    else:
+        pass #no windows, no rdp
+    return response
+
+
 def images(request):
     context = {}
     return template('images', context)

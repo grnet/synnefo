@@ -229,6 +229,21 @@ $("#machinesview .list a.enabled#action-console").live('click', function() {
     return false;
 });
 
+$("#machinesview .list a.enabled#action-connect").live('click', function() {
+    var checked = $("#machinesview .list table.list-machines tbody input[type='checkbox']:checked");
+    $("#machinesview .list .selected").removeClass('selected');
+    $(this).addClass('selected');
+    pending_actions = []; // reset pending actions
+    checked.each(function(i,c) {
+        serverID=c.id;
+        serverName = $('#machinesview .list #'+serverID+' span.name').text();
+        pending_actions.push([machine_connect, serverID]);
+    });
+    update_confirmations();
+    return false;
+});
+
+
 $("#machinesview .list a.enabled#action-details").live('click', function() {
     var checked = $("#machinesview .list table.list-machines tbody input[type='checkbox']:checked");
     $("#machinesview .list .selected").removeClass('selected');

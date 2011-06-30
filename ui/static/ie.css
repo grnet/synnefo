@@ -1,3 +1,7 @@
+ul.css-tabs a, .tab-name {
+    height:31px;
+}
+
 div.machine div.actions a {
     width: 180px;
 }

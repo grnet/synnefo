@@ -42,6 +42,13 @@ from synnefo.util.rapi import GanetiRapiClient
 
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
+_firewall_tags = {
+    'ENABLED': settings.GANETI_FIREWALL_ENABLED_TAG,
+    'DISABLED': settings.GANETI_FIREWALL_DISABLED_TAG,
+    'PROTECTED': settings.GANETI_FIREWALL_PROTECTED_TAG}
+
+_reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
+
 
 def process_op_status(vm, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
@@ -103,12 +110,17 @@ def process_net_status(vm, nics):
                     "associated with an existing Network instance." %
                     nic['link'])
 
+        firewall_profile=''
+        if 'firewall' in nic:
+            firewall_profile = _reverse_tags.get(nic['firewall'], '')
+        
         vm.nics.create(
             network=net,
             index=i,
             mac=nic.get('mac', ''),
             ipv4=nic.get('ip', ''),
-            ipv6=nic.get('ipv6',''))
+            ipv6=nic.get('ipv6',''),
+            firewall_profile=firewall_profile)
     vm.save()
 
 
@@ -266,12 +278,6 @@ def disconnect_from_network(vm, net):
             'link': nic.network.link.name}))
     rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)
 
-
-_firewall_tags = {
-    'ENABLED': settings.GANETI_FIREWALL_ENABLED_TAG,
-    'DISABLED': settings.GANETI_FIREWALL_DISABLED_TAG,
-    'PROTECTED': settings.GANETI_FIREWALL_PROTECTED_TAG}
-
 def set_firewall_profile(vm, profile):
     try:
         tag = _firewall_tags[profile]
@@ -279,7 +285,7 @@ def set_firewall_profile(vm, profile):
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
     
     # Delete all firewall tags
-    rapi.DeleteInstanceTags(vm.backend_id, _firewall_tags.values(),
-                            dry_run=settings.TEST)
+    for t in _firewall_tags.values():
+        rapi.DeleteInstanceTags(vm.backend_id, [t], dry_run=settings.TEST)
     
     rapi.AddInstanceTags(vm.backend_id, [tag], dry_run=settings.TEST)

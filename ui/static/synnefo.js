@@ -1086,7 +1086,11 @@ function machine_connect(serverIDs){
         var serverIP = machine.addresses.values[0].values[0].addr;
     } catch(err) { var serverIP = 'undefined'; }
 
-    var params_url = '?ip_address=' + serverIP;
+    try {
+        var os = machine.metadata.values.OS;
+    } catch(err) { var os = 'undefined'; }
+
+    var params_url = '?ip_address=' + serverIP + '&os=' + os;
 
     window.open('machines/connect' + params_url);
 

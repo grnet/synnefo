@@ -87,15 +87,15 @@ def machines_console(request):
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
-    TODO = True
-    if TODO: # TODO: check if we are on windows
+    operating_system = request.GET.get('os','')
+    if operating_system == 'windows': #check if we are on windows
         rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
         connect_data = open(rdp_file, 'r').read()
         connect_data = connect_data + 'full address:s:' + ip_address + '\n'
         response = HttpResponse(connect_data, mimetype='application/x-rdp')
         response['Content-Disposition'] = 'attachment; filename=synnefo-windows.rdp'
     else:
-        pass #no windows, no rdp
+        response = HttpResponse("Try ssh maybe")  #no windows, no rdp
     return response
 
 

@@ -3559,15 +3559,15 @@ div.action-indicator {
     background-repeat: no-repeat;
     background-position: 0 0;
 }
-div.action-indicator.destroy {
+div.state .destroy {
     background-image: url("./icons/actions/medium/destroy.png");
 }
-div.action-indicator.start {
+div.state .start {
     background-image: url("./icons/actions/medium/start.png");
 }
-div.action-indicator.reboot {
+div.state .reboot {
     background-image: url("./icons/actions/medium/reboot.png");
 }
-div.action-indicator.shutdown {
+div.state .shutdown {
     background-image: url("./icons/actions/medium/shutdown.png");
 }

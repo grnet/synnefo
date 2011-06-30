@@ -245,6 +245,7 @@ div.single-actions {
 div.network-remove-machine, div.network-add-machine {
     position: relative;
     z-index: -1;
+    margin-left: -96px;
 }
 
 .network-machine {

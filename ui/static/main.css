@@ -1414,7 +1414,7 @@ input.machine {
 
 #metadata-wizard .close, #add-machines-wizard .close  {
     background-image: url("./close-popup.png");
-    background-repeat: no-repeat
+    background-repeat: no-repeat;
     cursor: pointer;
     height: 13px;
     position: absolute;

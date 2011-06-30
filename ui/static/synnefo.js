@@ -1518,16 +1518,6 @@ function set_firewall(networkID, serverID, profile) {
                 $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').html(VARIOUS["APPLY"]);
                 $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').attr("disabled", false);
                 $('div#net-' + networkID + '-server-' + serverID + ' div.firewall-header').click();
-                // change on/off
-                $('div#net-' + networkID + '-server-' + serverID + ' .firewall-label span').removeClass();
-                if ( profile == 'DISABLED' ) {
-                    $('div#net-' + networkID + '-server-' + serverID + ' .firewall-label span').addClass('firewall-off');
-                    $('div#net-' + networkID + '-server-' + serverID + ' .firewall-label span').html(VARIOUS["OFF"]);
-                }
-                else {
-                    $('div#net-' + networkID + '-server-' + serverID + ' .firewall-label span').addClass('firewall-on');
-                    $('div#net-' + networkID + '-server-' + serverID + ' .firewall-label span').html(VARIOUS["ON"]);
-                }
                 // toggle the reboot dialog
                 var serverName = $('div#net-' + networkID + '-server-' + serverID + ' div.machine-name-div span.name').text();
                 var serverState = $('div#net-' + networkID + '-server-' + serverID + ' img.logo').attr('src').split('-')[1];

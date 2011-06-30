@@ -319,7 +319,13 @@ div.network {
 }
 
 .private-networks div.confirm_single {
-    position:relative;
+    position: absolute;
+    left: 613px;
+    width: 150px;
+}
+
+.private-networks div.machines-list div.confirm_single {
+    left: 527px;
 }
 
 div.network div.actions a {

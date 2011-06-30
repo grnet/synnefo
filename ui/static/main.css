@@ -3467,26 +3467,20 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 }
 
 .single .cpu-usage, .single .network-usage {
-    margin-bottom: 15px;
-    margin-left: 20px;
+    text-align: center;
     padding-top: 15px;
+    margin-bottom: 5px;
     font-size: 90%;
 }
 
 .single .cpu-graph, .single .network-graph {
-    background-color: #A1C8DB;
-    height: 210px;
     margin-left: 20px;
+    margin-bottom:30px;
     width: 660px;
-}
-
-.single .network-graph {
-    height: 238px;
 }
 
 .single div.lower img.stats {
     margin-left: 82px;
-    margin-top: 31px;
 }
 
 .single .single-image {
@@ -3513,7 +3507,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     clear:both;
     background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     width: 700px;
-    padding-bottom: 30px;
+    padding-bottom: 15px;
 }
 
 .single div.upper {

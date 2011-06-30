@@ -109,9 +109,10 @@ def process_net_status(vm, nics):
                     "associated with an existing Network instance." %
                     nic['link'])
 
-        firewall_profile=''
-        if 'firewall' in nic:
-            firewall_profile = _reverse_tags.get(nic['firewall'], '')
+        firewall = nic.get('firewall', '')
+        firewall_profile = _reverse_tags.get(firewall, '')
+        if not firewall_profile and net.public:
+            firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
         vm.nics.create(
             network=net,

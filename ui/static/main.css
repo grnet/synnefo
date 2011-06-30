@@ -3011,11 +3011,11 @@ div.reboot-dialog button.details:hover {
 .vm-stats {
     padding-left: 10px;
     padding-right: 5px;
-    width: 119px;
+    width: 217px;
 }
 
 .vm-details {
-    width: 169px;
+    width: 120px;
     margin-left:17px;
 }
 

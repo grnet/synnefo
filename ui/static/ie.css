@@ -186,6 +186,10 @@ div.single-actions {
     margin-top: -19px !important;
 }
 
+#metadata-wizard .editbuttons {
+    padding-top: 1px;
+}
+
 #networkscreate {
     height:20px;
 }
@@ -224,7 +228,7 @@ div.single-actions {
 }
 
 #metadata-wizard .addbuttons {
-    margin-top: -16.5px;
+    margin-top: -17px;
 }
 
 #metadata-wizard .dropdown-container {
@@ -234,6 +238,22 @@ div.single-actions {
 #wizard button.next {
     margin-right: -32px;
     padding-right: 5px;
+}
+
+#metadata-wizard .machine-name {
+    padding-top: 1px;
+}
+
+#metadata-wizard #add-meta-key {
+    height: 14px;
+}
+
+#metadata-wizard #add-meta-value {
+    height: 16px;
+}
+
+#metadata-wizard .metadata-edit {
+    margin-top: -13px;
 }
 
 #wizard div.panes {

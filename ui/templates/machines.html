@@ -1048,6 +1048,13 @@ if ($.browser.msie) {
         $(this).css("background-color","transparent");
         $(this).css("cursor","default");
     });
+    //IE fix for metadata wizard hover
+    $("#metadata-wizard div.metadata-pair-template").live("mouseenter", function () {
+        $(this).css("background-color","#74aec9");
+    });
+    $("#metadata-wizard ul li").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+    });
 }
 
 </script>

@@ -242,7 +242,7 @@ div.single-actions {
   min-height: 1%;
 }
 
-div.network-remove-machine, div.network-add-machine {
+div.network-remove-machine {
     position: relative;
     z-index: -1;
     margin-left: -96px;

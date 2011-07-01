@@ -38,6 +38,7 @@ import socket
 import urllib
 import threading
 import pycurl
+import synnefo
 
 try:
   import simplejson as json
@@ -248,7 +249,8 @@ class GanetiRapiClient(object): # pylint: disable-msg=R0904
   _json_encoder = json.JSONEncoder(sort_keys=True)
 
   def __init__(self, host, port=GANETI_RAPI_PORT,
-               username=None, password=None, logger=logging,
+               username=None, password=None,
+               logger=synnefo.logic.log.get_logger("rapi"),
                curl_config_fn=None, curl_factory=None):
     """Initializes this class.
 

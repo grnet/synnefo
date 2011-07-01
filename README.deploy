@@ -158,6 +158,9 @@ in a Synnefo deployment.
     $ cd synnefo
     $ ./bin/pip install <list_of_dependencies>
 
+    [WARNING]: The software must be checked out in a directory named synnefo,
+    otherwise python imports will not work. Therefore, do not change the
+    or rename the checkout path.
 
 5. Database installation:
    A database supported by the Django ORM layer must be installed on nodes

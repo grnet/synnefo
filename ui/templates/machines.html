@@ -1,28 +1,66 @@
+<!--
+Copyright 2011 GRNET S.A. All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the following
+conditions are met:
+
+  1. Redistributions of source code must retain the above
+     copyright notice, this list of conditions and the following
+     disclaimer.
+
+  2. Redistributions in binary form must reproduce the above
+     copyright notice, this list of conditions and the following
+     disclaimer in the documentation and/or other materials
+     provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and
+documentation are those of the authors and should not be
+interpreted as representing official policies, either expressed
+or implied, of GRNET S.A.
+-->
+
 {% load i18n %}
 
 <div id="machines" class="separator"></div>
 
 <!-- the create button -->
-<div id="createcontainer">
-    <div id="beforecreate" style="display:none;"></div>
-    <span id="createbody">{% trans "Start by creating a new Virtual Machine:" %}</span><br />
-    <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
+<div id="ie-fix">
+    <div id="createcontainer">
+        <div id="beforecreate" style="display:inline;"></div>
+        <a id="create" rel="#wizard" href="#">{% trans "Create New +" %}</a>
+    </div>
 </div>
 
 <!-- changing between standard/list view -->
-<div id="view-select">
-    <a id="standard" href="/machines/standard"></a>
-    <a id="list" href="/machines/list"></a>
-    <a id="single" href="/machines/single"></a>
+<div id="ie-fix-view-select">
+    <div id="view-select">
+        <a id="standard" href="{% url machines-standard %}"></a>
+        <a id="list" href="{% url machines-list %}"></a>
+        <a id="single" href="{% url machines-single %}"></a>
+    </div>
 </div>
 
 <div id="emptymachineslist">
-    <h1 id="welcomeheader">{% trans "Welcome to the ocean!" %}</h1>
+    <h1 id="welcomeheader">{% trans "Welcome to ~okeanos !" %}</h1>
     <br />
-    <span class="welcomebody">{% trans "From this panel you will be able to manage your Virtual Machines (VMs). If you don't know what a VM is: take the " %}<a href="#">{% trans "tour" %}</a>.</span>
+    <span class="welcomebody">{% trans "From this panel you will be able to manage your Virtual Machines (VMs). If you don't know what a VM is: " %}<br /><a href="#">{% trans "take the tour" %}</a>.</span>
     <br />
     <br />
-    <span class="welcomebody">{% trans "The panel is currently empty, because you don't have any VMs yet. You can start by creating your new VM by clicking the blue button on the right. The wizard will guide you through the whole process." %}</span>
+    <span class="welcomebody">{% trans "The panel is currently empty, because you don't have any VMs yet. Start by clicking the orange button on the top left. The wizard will guide you through the whole process." %}</span>
     <br />
     <br />
     <span class="welcomefooter">{% trans "For more information or help, click " %}<a href="#">{% trans "here" %}</a>.</span>
@@ -34,15 +72,17 @@
     <div class="modal" id="wizard">
         <!-- status bar -->
         <ul id="status">
-            <li class="active">
+            <li class="active li-0">
                 <span class="headernumber" class="first">1</span>
                 <div class="headerbody first">{% trans "Image" %}</div>
+                <img src="static/check.png" class="img-check" style="visibility:hidden;" />
             </li>
-            <li>
+            <li class="li-1">
                 <span class="headernumber">2</span>
                 <div class="headerbody">{% trans "Flavor" %}</div>
+                <img src="static/check.png" class="img-check" style="visibility:hidden;" />
             </li>
-            <li class="third">
+            <li class="li-2">
                 <span class="headernumber">3</span>
                 <div class="headerbody">{% trans "Name" %}</div>
             </li>
@@ -50,7 +90,7 @@
         <!-- scrollable items -->
         <div class="items">
             <!-- pages -->
-            <div class="page">
+            <div class="page page1">
                 <h2>{% trans "Select an OS" %}</h2>
                 <hr class="topruler" />
                 <div id="tabscontainer">
@@ -60,7 +100,7 @@
                     </ul>
                 </div>
                 <div class="panes">
-                    <li id="image-template" style="display:none">
+                    <li id="image-template" style="display:none;">
                         <label for="image.id">
                             <a>
                                 <div class="image-container">
@@ -87,9 +127,9 @@
                 </div>
                 <hr class="bottomruler" />
                 <button type="button" class="prev" id="cancel">{% trans "Cancel" %}</button>
-                <button type="button" class="next right">{% trans "Next" %}</button>
+                <button type="button" class="next right">{% trans "Next" %}<img src="static/next.png" class="img-next" /></button>
             </div>
-            <div class="page">
+            <div class="page page2">
                 <h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
                 <hr class="topruler" />
                 <ul>
@@ -140,16 +180,16 @@
                         </li>
                         <li>
                             <div class="cost">
-                                <span> {% trans "Your wallet:" %} 10,000 {% trans "Credits" %} </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="20" class="range" disabled="disabled" /> {% trans "C/hour" %}</span>
+                                <span> {% trans "Your wallet:" %} 10,000 {% trans "Credits" %} </span> | <span>{% trans "This setup will cost you:" %}<input type="text" id="credits-indicator" value="0" class="range" disabled="disabled" /> {% trans "C/hour" %}</span>
                             </div>
                         </li>
                     </div>
                 </ul>
                 <hr class="bottomruler" />
-                <button type="button" class="prev">{% trans "Back" %}</button>
-                <button type="button" class="next right">{% trans "Next" %}</button>
+                <button type="button" class="prev"><img src="static/prev.png" class="img-prev" />{% trans "Back" %}</button>
+                <button type="button" class="next right">{% trans "Next" %}<img src="static/next.png" class="img-next" /></button>
             </div>
-            <div class="page">
+            <div class="page page3">
                 <h2>{% trans "Confirm your settings" %}</h2>
                 <hr class="topruler" />
                 <ul id="page3-container">
@@ -179,7 +219,7 @@
                     </li>
                 </ul>
                 <hr class="bottomruler" />
-                <button type="button" class="prev">{% trans "Back" %}</button>
+                <button type="button" class="prev"><img src="static/prev.png" class="img-prev" />{% trans "Back" %}</button>
                 <button type="button" class="next right" id="start">{% trans "Create VM" %}</button>
             </div>
         </div>
@@ -207,15 +247,15 @@
                 </div>
                 <div class="metadata-add-template" style="display:none;">
                     <input type="text" id="add-meta-key" maxlength="15"></input>
-                    <ul>
+                    <ul style="display:none;" class="dropdown-container">
                         {% for o in default_keywords %}
                             <li><span class="dropdownitem">{{o}}</span></li>
                         {% endfor %}
                     </ul>
                     <input type="text" id="add-meta-value" maxlength="150" value="{% trans 'max 150 characters' %}"></input>
                     <div class="addbuttons">
-                        <span class="save" />
-                        <span class="cancel" />
+                        <div class="save"></div>
+                        <div class="cancel"></div>
                     </div>
                 </div>
                 <div class="metadata-pair-template" style="display:none;">
@@ -224,12 +264,12 @@
                     <div class="metadata-value">{% trans "Debian" %}</div>
                     <div class="metadata-full-value" style="display:none;"></div>
                     <div class="metadata-edit">
-                        <span class="edit" />
-                        <span class="remove" />
+                        <div class="edit"></div>
+                        <div class="remove"></div>
                     </div>
                     <div class="editbuttons" style="display:none;">
-                        <span class="save" />
-                        <span class="remove" />
+                        <div class="save"></div>
+                        <div class="remove"></div>
                     </div>
                 </div>
             </div>
@@ -253,6 +293,31 @@
 
 <script>
 
+// TODO: This should be populated with more rules for all available states
+var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT'],
+                'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT'],
+                'console':       ['ACTIVE'],
+                'start':         ['UNKOWN', 'STOPPED'],
+                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD']
+               };
+
+
+//change hover icon on prev,next buttons
+$("#wizard button.next").hover(function() {
+        $(this).find(".img-next").attr("src","static/next-hover.png");
+    },
+    function() {
+        $(this).find(".img-next").attr("src","static/next.png");
+    }
+);
+$("#wizard button.prev").hover(function() {
+        $(this).find(".img-prev").attr("src","static/prev-hover.png");
+    },
+    function() {
+        $(this).find(".img-prev").attr("src","static/prev.png");
+    }
+);
+
 //add hover to labels
 $('#machines-pane span.typebody').mouseover(function() {
     $(this).addClass('typehover');
@@ -260,37 +325,6 @@ $('#machines-pane span.typebody').mouseover(function() {
 $('#machines-pane span.typebody').mouseout(function() {
     $(this).removeClass('typehover');
 });
-
-// return value from metadata key "OS", if it exists
-function os_icon(metadata) {
-    if (!metadata) {
-        return 'unknown';
-    }
-    if (metadata.values.OS == undefined || metadata.values.OS == '') {
-        return 'unknown';
-    } else {
-        if (os_icons.indexOf(metadata.values.OS) == -1) {
-            return 'unknown';
-        } else {
-            return metadata.values.OS;
-        }
-    }
-}
-
-function os_icon_from_value(metadata) {
-    if (!metadata) {
-        return 'unknown';
-    }
-if (metadata == undefined || metadata == '') {
-        return 'unknown';
-    } else {
-        if (os_icons.indexOf(metadata) == -1) {
-            return 'unknown';
-        } else {
-            return metadata;
-        }
-    }
-}
 
 // switch to list view
 $("#machines-pane a#list").click(function(){
@@ -314,9 +348,12 @@ $("#machines-pane a#single").click(function(){
 $("#machines-pane a#create").click(function(){
     // launch wizard only if images and flavors are found
     if (images.length > 0  && flavors.length > 0) {
+        $('#machines-pane a#create').data('overlay').close();
         $("#wizard").scrollable().begin();
         $("#wizard").show();
-        $('#machines-pane a#create').data('overlay').load()
+        $('#machines-pane a#create').data('overlay').load();
+        // enable submit button
+        $("#wizard #start").removeAttr('disabled');
     } else if (images.length == 0 ) {
         ajax_error('NO_IMAGES');
         return false;
@@ -329,7 +366,7 @@ $("#machines-pane a#create").click(function(){
 // create wizard overlay
 $(function() {
     $("#machines-pane a#create").overlay({
-        mask: '#000',
+        mask: '#666',
         effect: 'default',
         top: '5%',
         oneInstance: false,
@@ -344,8 +381,16 @@ $(function() {
     // rangeinput with default configuration
     // validation logic is done inside the onBeforeSeek callback
     api.onBeforeSeek(function(event, i) {
+        // update status bar
+        $("#status li").removeClass("active").eq(i).addClass("active");
         // we are going 1 step backwards so no need for validation
+        if (api.getIndex() > i) {
+            $("#wizard .li-" + i).removeClass("checked");
+            $("#wizard .li-" + i).find(".img-check").css("visibility","hidden");
+        }
         if (api.getIndex() < i) {
+            $("#wizard .li-" + api.getIndex()).addClass("checked");
+            $("#wizard .li-" + api.getIndex()).find(".img-check").css("visibility","visible");
              // 1. get current page
              var page = root.find(".page").eq(api.getIndex()),
              // 2. .. and all required fields inside the page
@@ -377,10 +422,6 @@ $(function() {
             $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
             $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
         }
-    });
-    api.onSeek(function(event, i) {
-        // update status bar
-        $("#status li").removeClass("active").eq(i).addClass("active");
     });
     // if tab is pressed on the next button seek to next page
     $(root).live('keydown', function (e) {
@@ -570,12 +611,12 @@ $('#storage-indicator').blur(function() {
 });
 
 // exit the wizard
-$("#cancel").click(function(){
+$("#cancel").click(function() {
     $("#machines-pane a#create").overlay().close();
 });
 
 // starting a new VM through the wizard
-$("#start").click(function(){
+$("#start").click(function() {
     var imageRef = $('input[type=radio][name=image-id]:checked')[0].id.replace('img-radio-','');
     var flavorRef = identify_flavor($("#cpu-indicator")[0].value, $("#storage-indicator")[0].value, $("#ram-indicator")[0].value);
     var machineName = $('input[name=machine_name]')[0].value;
@@ -583,13 +624,17 @@ $("#start").click(function(){
         return false;
     }
 
-    //replace text 'create new' with progress indicator
-    $('#wizard #start').text('');
-    $('#wizard #start').html('<img src="/static/icons/indicators/medium/horizontal-progress.gif" / >');
+    // replace text 'create new' with progress indicator
+    $(this).text('');
+    $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif" / >');
+    // disable submit button to prevent multiple calls
+    $(this).attr("disabled", true);
 
     create_vm(machineName, imageRef, flavorRef);
 
-    try{console.warn('creating ' + $("input[name=machine_name]")[0].value)} catch(err){}
+    try {
+        console.warn('creating ' + $("input[name=machine_name]")[0].value);
+    } catch(err){}
 
 });
 
@@ -597,14 +642,14 @@ $("#start").click(function(){
 $(function() {
     // create wizard overlay
     $("a#metadata-scrollable").overlay({
-        mask: '#000',
+        mask: '#666',
         effect: 'default',
         top: '10%',
         closeOnClick: false,
         oneInstance: false,
-        closeOnEsc: true,
+        closeOnEsc: false,
         load: false,
-        onClose: function(){
+        onClose: function() {
             // reset input areas
             serverID = $("#metadata-wizard p:first").text();
             $("#metadata-wizard div.metadata-container").empty();
@@ -664,9 +709,9 @@ $("#metadata-wizard #metadata-create").click(function(){
     pair = $("#metadata-wizard div.metadata-add-template:first").clone();
     pair.prependTo("#metadata-wizard div.metadata-container").fadeIn();
       with (pair.find('input#add-meta-key')) {
-        with (next('ul:first')) {
+        with (pair.find('ul:first')) {
           find('li').click(function() {
-            $(this).parent().prev('.textdropdown-outer').find('input:first').attr('value', $(this).find('.dropdownitem').html());
+            $(this).parent().parent().find('.textdropdown-outer').find('input:first').attr('value', $(this).find('.dropdownitem').html());
             $(this).parent().hide();
           });
           hide();
@@ -686,17 +731,32 @@ $("#metadata-wizard #metadata-create").click(function(){
         css("border", "0");
 
         btn.click(function() {
-          var p = parent();
+          var p = $(this).parent();
           with (p.next('ul:first')) {
-            css('position', 'absolute');
-            css('width',    p.width());
-            css('left',     p.position().left + 4);
-            css('top',      p.position().top + p.height() + 1);
-            toggle();
+            $(this).parent().parent().find('ul:first').css('position', 'absolute');
+            $(this).parent().parent().find('ul:first').css('width',    p.width());
+            $(this).parent().parent().find('ul:first').css('left',     p.position().left + 4);
+            $(this).parent().parent().find('ul:first').css('top',      p.position().top + p.height() + 1);
+            var elem = $(this).parent().parent().find('ul:first')[0];
+            if(elem.style.display == 'none') {
+                 $(this).parent().parent().find('ul:first').show();
+            } else {
+                 $(this).parent().parent().find('ul:first').hide();
+            }
+
           }
         });
       }
     pair.find('input#add-meta-key').focus();
+    //submit keyword by pressing enter on the textbox
+    $(this).parent().parent().find('input#add-meta-value').keypress(function (e) {
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('.addbuttons .save').click();
+            return false;
+        } else {
+            return true;
+        }
+    });
 });
 
 //save new metadata
@@ -731,8 +791,7 @@ $('#metadata-wizard .addbuttons .save').live('click', function(){
 //intercept cancel new metadata creation
 $("#metadata-wizard .addbuttons .cancel").die('click');
 $("#metadata-wizard .addbuttons .cancel").live('click',function(){
-    $(this).parent().parent().fadeOut('fast');
-    window.setTimeout(function(){$(this).parent().parent().remove();}, 400);
+    $(this).parent().parent().fadeOut('fast', function() { $(this).remove(); });
 });
 
 //metadata remove button
@@ -755,10 +814,41 @@ $("#metadata-wizard .metadata-edit .edit").live('click', function() {
     $(this).parent().parent().find('div.metadata-value').html("<input id=\"value-edit\" maxlength=\"150\" type=\"text\" class=\"metatextbox\" value=\"" + $(this).parent().parent().find('.metadata-full-value').text() +
                                     "\" / ><span class=\"oldValue\">" +
                                     $(this).parent().parent().find('.metadata-full-value').text() + "</span>");
+    //submit keyword by pressing enter on the textbox
+    $(this).parent().parent().find('input.metatextbox').keypress(function (e) {
+        if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+            $(this).parent().parent().find('.editbuttons .save').click();
+            return false;
+        } else {
+            return true;
+        }
+    });
+    $(this).parent().parent().find('input.metatextbox').select()
     $(this).parent().hide();
     $(this).parent().parent().unbind('mouseenter').unbind('mouseleave');
     $(this).parent().parent().find('.editbuttons').show();
 });
+
+//capture Esc key
+bar = {};
+bar.keydown = function(e) {
+    if (e.keyCode == 27) {
+        //if we are inside an add or edit textbox, cancel editing
+        if ($('input.metatextbox:focus').length > 0) {
+            $('input.metatextbox:focus').parent().parent().find('.editbuttons .remove').click();
+        } else if ($('input#add-meta-key:focus').length > 0)  {
+            $('input#add-meta-key:focus').parent().parent().find('.addbuttons .cancel').click();
+        } else if ($('input#add-meta-value:focus').length > 0) {
+            $('input#add-meta-value:focus').parent().parent().find('.addbuttons .cancel').click();
+        } else {
+            //else close the metadata wizard
+            $("a#metadata-scrollable").overlay().close();
+        }
+        e.preventDefault();
+        e.stopPropagation();
+    }
+};
+document.keydown = bar.keydown;
 
 //metadata cancel edit button
 $("#metadata-wizard .editbuttons .remove").die('click');
@@ -771,6 +861,7 @@ $("#metadata-wizard .editbuttons .remove").live('click', function() {
     $(this).parent().parent().hover(function () {$(this).find('.metadata-edit').show();}, function () {$(this).find('.metadata-edit').hide();});
     $(this).parent().hide();
 });
+
 
 //metadata save edit button
 $("#metadata-wizard .editbuttons .save").die('click');
@@ -792,14 +883,6 @@ $("#metadata-wizard .editbuttons .save").live('click', function() {
     $(this).parent().hide();
 
 });
-
-// trapping keydown event
-jQuery.expr[':'].focus = function( elem ) {
-    var api = $("#metadata-wizard").data("scrollable");
-    if (api.getIndex() == 1) {
-      return elem === document.activeElement && ( elem.type || elem.href );
-    }
-};
 
 // intercept create metadata key focus
 $("#metadata-wizard input#add-meta-key").live('focusin', function() {
@@ -890,12 +973,16 @@ $("#machines-pane div.confirm_multiple .yes").live('click', function(){
             $('#' + serverID + ' .display').removeClass('display');
             if (action[0] == shutdown) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Shutting down']);
+                $('#' + serverID + ' .state').removeClass().addClass('state shutting-state');
             } else if (action[0] == start) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Starting']);
+                $('#' + serverID + ' .state').removeClass().addClass('state starting-state');
             } else if (action[0] == reboot) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Rebooting']);
+                $('#' + serverID + ' .state').removeClass().addClass('state rebooting-state');
             } else if (action[0] == destroy) {
                 $('#' + serverID + ' .status').text(TRANSITIONS['Destroying']);
+                $('#' + serverID + ' .state').removeClass().addClass('state destroying-state');
             }
             $('#' + serverID + ' .spinner').show();
         } else { // list view
@@ -914,16 +1001,20 @@ $("#machines-pane div.confirm_multiple .yes").live('click', function(){
         }
         action[0]([serverID]); // execute action
     }
+    $('#machinesview-list .actions .selected').removeClass('selected');
     update_confirmations();
+    return false;
 });
 
 // cancel all actions
-$("#machines-pane div.confirm_multiple .no").live('click', function(){
+$("#machines-pane div.confirm_multiple button.no").live('click', function(){
     pending_actions = [];
     $('#machines-pane .machine .selected').removeClass('selected');
     $('#machinesview-list .actions .selected').removeClass('selected');
     $('#machines-pane .machine .display').removeClass('display');
+
     update_confirmations();
+    return false;
 });
 
 // basic functions executed on page load
@@ -937,5 +1028,33 @@ if (flavors.length > 0) {
 }
 // create tabs for main menu
 $("ul.tabs").tabs("div.panes ul");
+
+//fix ie z-index bug by moving the overlays to the bottom
+$(document).ready(function() {
+    if ($.browser.msie) {
+        $("body").append($("#wizard"));
+        $("body").append($("#metadata-wizard"));
+    }
+});
+
+//IE specific fixes
+if ($.browser.msie) {
+    //IE fix for dropdown li hover
+    $("#metadata-wizard ul li").live("mouseenter", function () {
+        $(this).css("background-color","#efefef");
+        $(this).css("cursor","pointer");
+    });
+    $("#metadata-wizard ul li").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+        $(this).css("cursor","default");
+    });
+    //IE fix for metadata wizard hover
+    $("#metadata-wizard div.metadata-pair-template").live("mouseenter", function () {
+        $(this).css("background-color","#74aec9");
+    });
+    $("#metadata-wizard ul li").live("mouseleave", function () {
+        $(this).css("background-color","transparent");
+    });
+}
 
 </script>

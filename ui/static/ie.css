@@ -1,0 +1,383 @@
+ul.css-tabs a, .tab-name {
+    height:31px;
+}
+
+div.machine div.actions a {
+    width: 180px;
+}
+
+#error-success .popup-body-inner {
+    margin-left: 12px;
+}
+
+div.machine div.actions {
+    right: -183px;
+    width: 120px;
+}
+
+div.machine {
+    width: 528px;
+}
+
+.machine div.info div.toggler, .single div.tags div.toggler, div.network div.toggler {
+    font-size:1%;
+    height:10px;
+}
+
+#wizard {
+    height: 450px;
+}
+
+#wizard .topruler, #networks-wizard .topruler {
+    width: 426px;
+    margin-top: -2px;
+    margin-bottom: 0px;
+}
+
+#wizard #tabscontainer {
+    width: 426px;
+}
+
+div.image {
+    padding: 0px;
+    margin-bottom:0px;
+}
+
+.description-container {
+    width: 390px;
+    top: -10px;
+    left: 83px;
+}
+
+#machinetype {
+    width: 426px;
+}
+
+#page2-container {
+    width: 426px;
+}
+
+.typebody {
+    top: -2px;
+}
+
+.slider-container {
+    padding: 0px;
+}
+
+#page2-container label {
+    float:left;
+    margin-top: -3px;
+}
+
+.slider {
+    margin: 5px 0 20px 0px;
+}
+
+.progress {
+    font-size: 2%;
+}
+
+.handle {
+    margin-top: -9px;
+}
+
+.range {
+    margin: -3px -5px 0 15px;
+}
+
+.units {
+    padding:0px;
+}
+
+#wizard .cost {
+    margin-top: 55px;
+    margin-left:0px;
+}
+
+#credits-indicator {
+    width: 30px;
+    margin-left: 3px;
+}
+
+#page3-container {
+    width: 426px;
+    margin-bottom: 25px;
+}
+
+#wizard .text {
+    padding: 0px;
+}
+
+#wizard .bottomruler, #networks-wizard .bottomruler {
+    width:426px;
+}
+
+#wizard button.next {
+    margin-top: -23px;
+}
+
+#wizard button.prev {
+    margin-top: -3px;
+    padding-left: 5px;
+}
+
+#wizard .separator-end {
+    font-size: 2%;
+    margin-top: 383px;
+}
+
+div.confirm_single {
+    margin-right: -73px;
+}
+
+div.action_error {
+    margin-left: 465px;
+}
+
+div.action_error button.details {
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+div.single div.column3 div.server-name:hover, .single .column3 .column3-selected {
+    width: 145px;
+}
+
+.single .column3 .separator {
+    margin: 4px 0 0 7px;
+}
+
+.single div.action-container {
+    width: 165px;
+    overflow: visible;
+}
+
+.single div.upper {
+    height: 380px;
+}
+
+div.single-actions {
+    overflow: visible;
+    width: 170px;
+}
+
+.single div.confirm_single {
+    margin-right: -19px;
+}
+
+.single div.action_error {
+    position: absolute;
+    top: 190px;
+    margin-left: -95px !important;
+}
+
+#ie-fix-view-select {
+    position: relative;
+    z-index: 1000;
+}
+
+.running {
+    height: 80px;
+}
+
+.editbuttons {
+    margin-top: -19px !important;
+}
+
+#networkscreate {
+    height:20px;
+}
+
+#networks-pane #beforecreate {
+    margin-top:0;
+}
+
+#networks-wizard h2 {
+    margin-bottom:5px;
+}
+
+#networks-wizard div.container {
+    width: 426px;
+    margin-top:-6px;
+}
+
+#networks-wizard div.name-input {
+    margin-left:45px;
+}
+
+#networks-wizard .cancel {
+    margin-top:-12px;
+}
+
+#networks-wizard .create {
+    margin-top:-24px;
+}
+
+#networks-wizard .separator-end {
+    margin-top: 5px;
+}
+
+.private-networks .state div {
+    margin: 5px 1px 4px;
+}
+
+#metadata-wizard .addbuttons {
+    margin-top: -16.5px;
+}
+
+#metadata-wizard .dropdown-container {
+    position: absolute;
+}
+
+#wizard button.next {
+    margin-right: -32px;
+    padding-right: 5px;
+}
+
+#wizard div.panes {
+    width: 426px;
+}
+
+#status li {
+    margin-bottom: -10px;
+}
+
+/* float clearing for IE6 */
+* html .clearfix{
+  height: 1%;
+  overflow: visible;
+}
+
+/* float clearing for IE7 */
+*+html .clearfix{
+  min-height: 1%;
+}
+
+div.network-remove-machine {
+    position: absolute;
+    z-index: -1;
+    margin-left: 0px;
+    left: -33px;
+}
+
+div.network div.machine-actions {
+    position: absolute;
+    left: 453px;
+}
+
+.network-machine {
+    position: relative;
+    overflow: visible;
+    padding-bottom: 0;
+    margin-top: 10px;
+}
+
+.private-networks div.network-remove-machine {
+    left: -35px;
+}
+
+.last div.network-cable {
+    position: absolute;
+    left: 7px;
+}
+
+div.firewall-cable {
+    position: absolute;
+    left: -33px;
+    height: 93px;
+    margin-left:0;
+}
+
+.first div.network-cable {
+    height: 93px;
+    position: absolute;
+    left: 7px;
+}
+
+.firewall-content {
+    margin-bottom: 0px;
+    height: 90px;
+}
+
+.machines {
+    margin-top: 15px;
+    position: relative;
+}
+div.private-networks .network-contents {
+    margin-top: -6px;
+}
+
+div.private-networks div.network-placeholder {
+    position: relative;
+    z-index: -1;
+}
+
+div.network {
+    width: 540px;
+}
+
+.private-networks div.confirm_single {
+    position: absolute;
+    left: 613px;
+    width: 150px;
+}
+
+.private-networks div.machines-list div.confirm_single {
+    left: 527px;
+}
+
+div.network div.actions a {
+    position: relative;
+}
+
+div.network div.actions {
+    overflow: visible;
+    left: 540px;
+}
+
+div.network {
+    overflow: visible;
+}
+
+.machine-container {
+    margin: 2px 0 0 1px;
+}
+
+.private-networks div.status {
+    margin-bottom: 0px;
+    margin-top: 10px;
+}
+
+.private-networks div.network-indicator {
+    margin-top:0px;
+}
+
+div#user {
+    position: absolute;
+    right:0;
+}
+
+div#user .usermenu {
+    height: 26px;
+    position: relative;
+    width: 190px;
+}
+
+div#user .username {
+    height: auto;
+}
+
+div#user .usermenu .useractions {
+    margin-top:5px;
+}
+
+div#user .usermenu .useractions li {
+    display: block;
+    height: 1%;
+}
+
+div.reboot-dialog button.reboot-single {
+    position: relative;
+}

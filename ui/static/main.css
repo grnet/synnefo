@@ -21,41 +21,61 @@ html {
 }
 
 body {
-    line-height: 1;
-    background: url(../static/body-bg.png) repeat-x scroll 0 0 #FFFFFF;
+    background: url(./body-bg.png) repeat-x scroll 0 0 #FFFFFF;
     height: 100%;
+    text-align:center;
 }
 
 #container {
-	position:relative;
+    position: relative;
 	margin:0 auto;
 	width: 100%;
 	background:#f0f0f0;
 	height:auto !important;
 	height:100%;
 	min-height:100%;
-    background: url("../static/body-bg2.png") no-repeat scroll right bottom transparent;
+    background: url("./body-bg2.png") no-repeat scroll right bottom transparent;
 }
 
 #header {
     height: 93px;
-    background: url("../static/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
     margin: 0 auto;
     width: 700px;
+    text-align: left;
+    position: relative;
 }
-
 
 #content {
     padding-bottom: 183px;
     width: 100%;
 }
 
+div#wrapper {
+    width: 700px;
+    margin: 0em auto;
+    text-align: left;
+}
+
 #footer {
     height: 119px;
     background-color: #4085A5;
-	position:absolute;
+    position:absolute;
+    left: 0;
     bottom: 0;
     width:100%;
+}
+
+#footer div.grnet-sign {
+    margin-top:10px;
+}
+
+#footer div.grnet-sign a{
+    color: #72ADC8;
+}
+
+#footer div.grnet-sign a:hover {
+    color: #FFFFFF;
 }
 
 ol, ul {
@@ -94,7 +114,6 @@ table {
 
 h5 {
     font-weight: normal;
-    font-size: 9pt;
     margin-bottom:3px;
 }
 
@@ -105,7 +124,6 @@ h5 {
     float: left;
     font-size: 150%;
     height: 28px;
-    padding-top: 3px;
     text-align: center;
     width: 170px;
 }
@@ -172,8 +190,6 @@ div.css-panes {
 
 .css-panes > div.pane {
     display:none;
-    padding:0px 20px;
-    margin: 0 1em;
 }
 
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
@@ -211,28 +227,30 @@ div.css-panes {
 }
 
 #beforecreate {
+    position:relative;
     background-color: #FF9955;
     float: left;
-    height: 32px;
-    margin-left: -50px;
-    margin-top: 8px;
-    width: 20px;
+    height: 31px;
+    margin-left: -13px;
+    margin-top: -6px;
+    width: 13px;
 }
 
+#ie-fix {
+    z-index: 1000;
+    position: relative;
+}
 #createcontainer {
     margin-top: 20px;
     margin-bottom: 10px;
-    display:none;
+    z-index: 1000;
 }
 
 #create {
     background-color: #FF7F2A;
     color: #000;
     cursor: pointer;
-    display: none;
     padding: 7px 24px;
-    margin: 0 0 0 -36px;
-    width: 125px;
     text-decoration: none;
     font-size:100%;
 }
@@ -243,11 +261,12 @@ div.css-panes {
 
 #console-header {
     height: 67px;
-    background: url("../static/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    margin-bottom:15px;
+    background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
 
 .header-logo {
-    padding-top: 19px;
+    padding-top: 28px;
 }
 
 div#footer-text a {
@@ -255,30 +274,22 @@ div#footer-text a {
     text-decoration: none;
 }
 
-
 div#footer-text{
     clear: both;
     color: #FFFFFF;
     font-size: 75%;
-    left: 50%;
-    margin-left: -250px;
+    left: 22%;
     padding-top: 10px;
     position: absolute;
     width: 700px;
 }
 
 #footer-bg {
-    background: url("../static/footer-bg.png") no-repeat scroll 0 0 #4085A5;
+    background: url("./footer-bg.png") no-repeat scroll 0 0 #4085A5;
     float:right;
     width: 700px;
     height: 119px;
     background-position:right;
-}
-
-
-div#wrapper {
-    width: 700px;
-    margin: 0em auto;
 }
 
 .modal {
@@ -291,7 +302,7 @@ div#wrapper {
 
 /* server wizard scrollable root element and network wizard */
 #wizard, #networks-wizard {
-    font-size:9pt;
+    font-size:75%;
     height:405px;
     width:453px;
     overflow:hidden;
@@ -312,7 +323,7 @@ div#wrapper {
 
 /* single item */
 #wizard .page, #networks-wizard div.container {
-    padding: 15px 40px 20px 15px;
+    padding: 0px 40px 20px 15px;
     width:447px;
     float:left;
     display:block;
@@ -329,10 +340,12 @@ div#wrapper {
 
 /* title */
 #wizard h2, #networks-wizard h2 {
-    color: black;
+    color: #FF7B24;
     font-size: 100%;
-    font-weight: normal;
-    padding-left: 20px;
+    font-style: italic;
+    font-weight: bold;
+    margin-left: 37px;
+    margin-top: 17px;
 }
 
 #networks-wizard h2 {
@@ -348,7 +361,7 @@ div#wrapper {
 }
 
 #wizard label {
-    font-size:16px;
+    font-size:120%;
     display:block;
     clear: both;
 }
@@ -361,7 +374,7 @@ div#wrapper {
 }
 
 #wizard label em {
-    font-size:9pt;
+    font-size:75%;
     color:#666;
     font-style:normal;
 }
@@ -417,7 +430,7 @@ div#wrapper {
 }
 
 #wizard div.image span.size {
-    font-size: 9pt;
+    font-size: 75%;
     color: #666;
 }
 
@@ -427,7 +440,7 @@ div#wrapper {
 }
 
 #wizard div.image span.image-id, #wizard div.image span.description {
-    font-size: 9pt;
+    font-size: 75%;
     color: #666;
     font-weight: normal;
     display:inline;
@@ -441,18 +454,17 @@ div#wrapper {
     color: #79A4C1;
     margin-top: 40px;
     clear:both;
-    padding-left: 15px;
+    margin-left: 15px;
     font-size: 95%;
 }
 
 #wizard #status {
     height: 50px;
-    background: #4085A5;
-    width: 450px;
+    background-color: #4085A5;
 }
 
 #wizard .headernumber {
-    font-size: 470%;
+    font-size: 410%;
 }
 
 #wizard .headerbody {
@@ -464,30 +476,38 @@ div#wrapper {
 }
 
 #wizard .first {
-    left: -8px;
+    left: -10px;
 }
 
-#wizard .third {
+#wizard .checked {
+    color: #64a6c4 !important;
+}
+
+#wizard .li-2 {
     margin-top: -1px !important;
 }
 
-#wizard .topruler, #networks-wizard .topruler {
+#wizard .img-check {
+    margin-bottom: 8px;
+    margin-left: -8px;
+}
+
+#wizard .li-1 .img-check {
+    margin-left: 2px;
+}
+
+#wizard .topruler, #networks-wizard .topruler, #wizard .bottomruler, #networks-wizard .bottomruler {
     background-color: #CDE2EC;
+    color: #CDE2EC;
     border: 0 none;
     height: 4px;
     margin-left: -1px;
     width: 447px;
     margin-bottom: 6px;
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 #wizard .bottomruler, #networks-wizard .bottomruler {
-    background-color: #CDE2EC;
-    border: 0 none;
-    height: 4px;
-    margin-left: -1px;
-    width: 447px;
-    margin-bottom:6px;
     margin-top:6px;
 }
 
@@ -513,6 +533,14 @@ div#wrapper {
     border-color: #FF6600;
 }
 
+#wizard .img-next {
+    margin: 0 -4px -1px 8px;
+}
+
+#wizard .img-prev {
+    margin: 0 8px -1px -4px;
+}
+
 #networks-wizard .create {
     float:right;
     width: 140px;
@@ -524,6 +552,7 @@ div#wrapper {
 }
 
 #wizard .separator-end {
+    position: absolute;
     background-color: #387693;
     height: 5px;
     margin-left: -14px;
@@ -543,14 +572,13 @@ div#wrapper {
 #wizard #tabscontainer {
     background-color: #CDE2EC;
     height: 20px;
-    margin-top: -3px;
     width: 448px;
 }
 
 .page ul.tabs {
     overflow: hidden;
     height: auto;
-    margin-bottom: 3px;
+    margin-bottom: -1px;
     margin-top: -1px;
 }
 
@@ -562,7 +590,7 @@ div#wrapper {
 #status li {
     float: left;
     color: #387693;
-    padding: 0px 32px 0 33px;
+    padding: 0 1px 0 37px;
     bottom: 0px;
 }
 
@@ -582,15 +610,16 @@ div.image-container {
 
 #page2-container {
     background-color: #ECF4F8;
+    height: 193px;
+    margin-top: 3px;
     padding-top: 25px;
-    height: 180px;
 }
 
 #page3-container {
     background-color: #ECF4F8;
-    padding-left: 50px;
-    height: 244px;
+    height: 245px;
     margin-bottom: 32px;
+    padding-left: 50px;
 }
 
 /* slider root element */
@@ -623,7 +652,7 @@ div.image-container {
 /* drag handle */
 .handle {
     -moz-box-shadow: 0 0 2px #000000;
-    background: url("../static/h30.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("./h30.png") repeat-x scroll 0 0 #FFFFFF;
     border: 1px solid #000000;
     cursor: move;
     display: block;
@@ -641,13 +670,13 @@ div.image-container {
 
 /* the input field */
 .range {
+    border: 1px solid #387693;
     float: left;
     font-size: 100%;
     margin: -3px 0 0 15px;
-    padding: 2px 10px 2px 0;
+    padding: 2px 5px 2px 0;
     text-align: right;
-    width: 40px;
-    border: 1px solid #387693;
+    width: 50px;
 }
 
 .selectedrange {
@@ -659,39 +688,58 @@ div.image-container {
     float: none;
     margin: 0 0 0 10px;
     border: 1px solid #387693;
-    color: #222222;
+    color: #387693;
 }
 
+/* machines */
 .machine-container {
     min-height: 65px;
-    margin: 2px 0 0 -32px;
+    margin: 2px 0 0 3px;
     padding: 0 4px 0;
     clear: both;
     width: 523px;
+    position:relative;
 }
 
 div.machine {
-    color: #666;
+    margin-left: -7px;
     min-height: 65px;
-    padding-right: 15px;
+    padding-left: 7px;
+    padding-right: 5px;
     padding-top: 2px;
+    width: 516px;
+}
+
+div.machine:hover {
+    background-color:#A1C8DB !important;
+}
+
+div.machine.light-background, div.network.light-background {
+    background-color:#aed2e3 !important;
+}
+
+.single .light-background {
+    background-color:#aed2e3;
 }
 
 .machine a {
-    color: #3d3d3d;
     font-weight: normal;
     text-decoration: none;
-    font-size: 9pt;
 }
 
-.machine a:hover {
-    color: #000;
-    text-decoration: underline;
+div.machine-details {
+    width: 400px;
+    float:left;
 }
 
-.machine .name, .machine .ip {
-    text-decoration: none !important;
-    padding-top: 1px;
+.machine span.name, .machine a.ip {
+    font-size: 75%;
+    color: black;
+    margin-top: 6px;
+}
+
+.machine span.name {
+    font-weight: bold;
 }
 
 .oldValue {
@@ -699,7 +747,7 @@ div.machine {
 }
 
 .state {
-    float: right;
+    margin-top: -40px;
 }
 
 .state div {
@@ -707,23 +755,43 @@ div.machine {
     margin-right: 3px;
 }
 
+/* icon view actions */
 div.machine div.actions {
     float: right;
-    width: 70px;
-    margin: 0 -80px 0 0;
+    font-size: 75%;
     font-weight: normal;
     height: 68px;
-    position: relative;
+    position: absolute;
+    right: -63px;
+    width: 70px;
+    top: 0px;
 }
 
 div.machine div.actions a {
-    color: transparent;
-    margin: 0 0 5px 8px;
+    color: black;
+    visibility: hidden;
+    height: 15px;
+    width: 180px;
+    margin: 0 0 2px 8px;
     display: block;
 }
 
+div.machine div.actions a:hover {
+    background-color:#A1C8DB;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
+}
+
+div.machine div.actions a.selected {
+    color: #FF7F2A !important;
+    width: 50px;
+}
+
+div.machine div.actions a.selected:hover {
+    background-color:transparent;
+}
+
 div.machine div.actions a.action-shutdown {
-    margin-bottom: 5px;
     display: block;
 }
 
@@ -731,8 +799,8 @@ div.machine div.actions a.shutdown-padding {
     margin-bottom: 22px;
 }
 
-div.machine div.actions a.destroy-padding {
-    margin-top: 52px;
+div.action-container {
+    overflow: visible;
 }
 
 div.actions a.enabled:hover{
@@ -741,18 +809,12 @@ div.actions a.enabled:hover{
     display: block;
 }
 
-.machine:hover .actions a {
-    color: #3d3d3d;
-    display: block;
+div.machine:hover .actions a {
+    visibility: visible;
 }
 
 div.machine div.display a{
-    color: #3d3d3d;
-    display: block;
-}
-
-div.machine div.actions a.selected:hover {
-    color: orange;
+    visibility: visible;
 }
 
 div.running div.machine div.actions .disabled {
@@ -773,28 +835,99 @@ div.running div.machine div.actions a.action-destroy {
     bottom: 0;
 }
 
-.machine:hover {
-    background-color:#CDE2EC;
+div.connect-arrow {
+    background: url(/static/connect-arrow.png) no-repeat;
+    height: 28px;
+    width:14px;
+    position: absolute;
 }
 
-.standard .machine img {
+.machine div.connect-arrow {
+    display: none;
+    left: -3px;
+    position: absolute;
+    top: 9px;
+}
+
+div.connect-arrow:hover, div.connect-arrow.border-hover, div.connect-arrow-ie, div.connect-arrow.border-ie {
+    cursor: pointer;
+    background: url(/static/connect-arrow-hover.png) no-repeat;
+    height: 28px;
+    width:26px;
+}
+
+div.connect-border {
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
+    background-color:#4fe0c3;
+    height:28px;
+    width: 12px;
+    position: absolute;
+}
+
+div.connect-border:hover {
+    cursor: pointer;
+}
+
+.machine div.connect-border {
+    display: none;
+    left: -15px;
+    position: absolute;
+    top: 9px;
+}
+
+.standard .machine .logo {
     float: left;
-    margin: 7px 14px 0;
+    width: 50px;
+    height: 54px;
+    margin: 4px 14px 0;
+}
+.machine .logo {
+    background-image: url("./icons/machines/medium/unknown-sprite.png");
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+.standard .machine .single-image-state1 {
+    background-position: 0px 0;
+}
+
+.standard .machine .single-image-state3 {
+    background-position: -100px 0;
+}
+
+.standard .machine .single-image-state4 {
+    background-position: -150px 0;
+}
+
+.standard .machine .single-image-state2 {
+    background-position: -50px 0;
+}
+
+.standard .running .machine .logo {
+   cursor: pointer;
 }
 
 .list .machine img {
     margin: 0;
 }
 
-div.ip, div.state {
-    font-size: 9pt;
-    color: #3d3d3d;
+div.ip, div.ips {
+    font-size: 75%;
+    position: relative;
+    float: right;
+    top:1px;
+    right: 18px;
+    text-align: right;
 }
 
-div.indicator {
+div.indicators {
+    margin-right: 2px !important;
+}
+div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
+    background-color: #63cf1c;
     width:10px;
     height:11px;
-    margin: 3px -1px;
     clear: none;
     float:right;
 }
@@ -803,80 +936,147 @@ div.indicator {
     color:#5F8DD3;
 }
 
-.running .indicator {
-    border-top: 2px solid white;
-    border-bottom: 2px solid white;
-    border-left: 2px solid white;
-    border-right: 3px solid white;
-    background-color: #4085A5;
-}
-
 .running {
-    background-color: white;
-    margin-left: -35px;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin-top: -76px;
     padding-bottom: 15px;
-    padding-left: 35px;
-    padding-top: 15px;
-    width: 664px;
-    min-height: 50px;
+    width: 699px;
+    padding-top: 60px;
+}
+
+.running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
+    background-color: #63cf1c;
+}
+
+.rebooting-state .indicator1, .rebooting-state .indicator2, .rebooting-state .indicator3, .rebooting-state .indicator4 {
+    background-color: #d4aa00;
+}
+
+.error-state .indicator1, .error-state .indicator2, .error-state .indicator3, .error-state .indicator4 {
+    background-color: #ff0000;
+}
+
+.terminated-state .indicator1, .terminated-state .indicator2, .terminated-state .indicator3, .terminated-state .indicator4 {
+    background-color: #5e1616;
+}
+
+.build-state .indicator1, .build-state .indicator2, .build-state .indicator3, .build-state .indicator4 {
+    background-color: #FF7F2A;
+}
+
+.destroying-state .indicator1, .destroying-state .indicator3, .destroying-state .indicator2, .destroying-state .indicator4 {
+    background-color: #4085a5 !important;
+}
+
+.shutting-state .indicator1, .shutting-state .indicator3, .shutting-state .indicator2, .shutting-state .indicator4 {
+    background-color: #940606;
+}
+
+.starting-state .indicator1, .starting-state .indicator2, .starting-state .indicator3, .starting-state .indicator4 {
+    background-color: #9ed976;
+}
+
+.network-indicator .indicator1, .network-indicator .indicator2, .network-indicator .indicator3, .network-indicator .indicator4 {
+    background-color: #63cf1c;
 }
 
 .terminated {
-    background-color: white;
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
     margin-bottom: 17px;
-    margin-left: -35px;
     margin-top: 15px;
     padding-bottom: 15px;
-    padding-left: 35px;
     padding-top: 15px;
-    width: 664px;
-    opacity: 0.8;
-    filter: alpha(opacity = 80);
+    width: 699px;
 }
 
-.terminated .machine .state .status {
-    color: #666;
-}
-
-.machine:hover div.uptime, .machine:hover a.rename, .machine:hover a.configure {
-    color: #3d3d3d;
-}
-
-div.uptime {
-    clear: both;
-    color: transparent;
-    margin-left: 1px;
-}
-
-div.machine-tabs {
-    margin-top: 1em;
-}
-
-span.rename, span.configure {
+span.rename {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    font-size: 75%;
     font-weight: normal;
     margin-left: 10px;
     padding-left: 10px;
     text-align: left;
-}
-
-span.rename {
     cursor: pointer;
 }
 
 div.name:hover span.rename {
     color: #3D3D3D;
     margin-top: 0.4em;
-    background-image: url(/static/pencil.png);
+    background-image: url(./pencil.png);
     background-position: 0 3px;
 }
 
+.machine div.info {
+    float:left;
+    margin-bottom: 8px;
+    margin-top:3px;
+}
 
-a.settings:hover span.configure {
-    color: #3D3D3D;
+.machine div.info div.info-header {
+    background-color: #A1C8DB;
+    color: white;
+    height: 17px;
+    width: 50px;
+    cursor: pointer;
+}
+
+div.machine:hover div.info-header, div.machine:hover div.toggler div.down {
+    background-color: #84b7d0;
+}
+
+div.machine div.info-label.darker, .single div.tags-label.darker, div.network .darker {
+    background-color: #5CA1C0;
+}
+
+.machine div.info div.info-label {
+    font-size: 75%;
+    height:16px;
+    width: 30px;
+    padding: 1px 0 0 5px;
+}
+
+.machine div.info div.toggler, .single div.tags div.toggler, div.network div.toggler {
+    width:15px;
+    height:17px;
+    margin-top: -11px;
+    margin-left: 37px;
+}
+
+div.network div.toggler {
+    margin-left: 90px;
+}
+
+.machine div.info div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 1px 1px;
+}
+
+.single div.tags div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machines div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machine div.firewall div.down {
+    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.machine div.info div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 1px 0;
+}
+
+.single div.tags div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machines div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+}
+
+.network div.network-machine div.firewall div.up {
+    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
 }
 
 button {
@@ -931,9 +1131,10 @@ div#view-select {
     clear: both;
     color: white;
     position: relative;
-    right: -25px;
+    right: 5px;
     top: -35px;
     display: none;
+    z-index: 1000;
 }
 
 a#standard, a#list, a#single {
@@ -956,45 +1157,45 @@ a#standard:active, a#list:active {
 }
 
 a#standard {
-    background: url(/static/icon-view.png) no-repeat -36px 0;
+    background: url(./icon-view.png) no-repeat -36px 0;
 }
 
 a#list {
-    background: url(/static/list-view.png) no-repeat -36px 0;
+    background: url(./list-view.png) no-repeat -36px 0;
 }
 
 a#single {
-    background: url(/static/single-view.png) no-repeat -36px 0;
+    background: url(./single-view.png) no-repeat -36px 0;
 }
 
 a#standard:hover {
-    background: url(/static/icon-view.png) no-repeat -18px 0;
+    background: url(./icon-view.png) no-repeat -18px 0;
 }
 
 a#list:hover {
-    background: url(/static/list-view.png) no-repeat -18px 0;
+    background: url(./list-view.png) no-repeat -18px 0;
 }
 
 a#single:hover {
-    background: url(/static/single-view.png) no-repeat -18px 0;
+    background: url(./single-view.png) no-repeat -18px 0;
 }
 
 a#standard.activelink {
-    background: url(/static/icon-view.png) no-repeat 0px 0;
+    background: url(./icon-view.png) no-repeat 0px 0;
 }
 
 a#list.activelink {
-    background: url(/static/list-view.png) no-repeat 0px 0;
+    background: url(./list-view.png) no-repeat 0px 0;
 }
 
 a#single.activelink {
-    background: url(/static/single-view.png) no-repeat 0px 0;
+    background: url(./single-view.png) no-repeat 0px 0;
 }
 
 #machinetype {
     background-color: #CDE2EC;
     height: 25px;
-    margin-bottom: 4px !important;
+    margin-bottom: 0px !important;
 }
 
 div.machine-type {
@@ -1008,7 +1209,7 @@ div.machine-type {
 
 #machinesview {
     min-height: 270px;
-    margin-top: 30px;
+    margin-top: 40px;
 }
 
 .list#machinesview {
@@ -1017,12 +1218,11 @@ div.machine-type {
 }
 
 #machinesview-list.list {
-    background-color: white;
-    margin-left: -35px;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
     margin-top: -76px;
     padding-left: 15px;
     padding-top: 76px;
-    width: 683px;
+    min-height: 270px;
 }
 
 #machinesview_content {
@@ -1034,36 +1234,35 @@ div.machine-type {
 }
 
 #emptymachineslist {
-    display:none;
+    background-color: #6BA9C6;
     color: #A0A0A0;
-    background-image: url(/static/emptydegradebg.png);
-    width: 400px;
-    margin-top: 5px;
-    padding: 5px;
-    padding-left: 10px;
-    margin-left: -10px;
+    display: none;
+    margin-top: -45px;
+    padding: 65px 150px 35px;
+    text-align: justify;
 }
 
 #welcomeheader {
     color:white;
+    text-align: center;
 }
 
 .welcomebody {
-    color:black;
+    color: white;
     font-size:80%;
 }
 
 .welcomebody a {
-    color:black;
+    color: white;
 }
 
 .welcomefooter {
-    color:black;
+    color: white;
     font-size:60%;
 }
 
 .welcomefooter a {
-    color:black;
+    color: white;
 }
 
 .emptycreatecontainer {
@@ -1091,7 +1290,7 @@ div.list label img {
 
 div.list label {
     color: #3D3D3D;
-    font-size: 9pt;
+    font-size: 75%;
 }
 
 div.list .state {
@@ -1114,9 +1313,9 @@ div.list .stopped {
 }
 
 #wizard div.panes {
-    height: 250px;
-    margin-bottom: 6px;
+    height: 247px;
     clear:both;
+    margin-top: 3px;
 }
 
 .typebody {
@@ -1131,7 +1330,7 @@ div.list .stopped {
 }
 
 #label-name {
-    margin-top: 15px;
+    margin-top: 10px;
 }
 
 /* single tab */
@@ -1144,7 +1343,7 @@ div.list .stopped {
 /* link inside the tab. uses a background image */
 #wizard ul.tabs a {
     display:block;
-    padding: 0.3em 0.5em 0.5em 0.4em;
+    padding: 0.2em 0.5em 0.1em 0.4em;
     text-decoration:none;
     color: #FFFFFF;
     position:relative;
@@ -1154,6 +1353,7 @@ div.list .stopped {
     text-align: center;
     width: 100px;
     white-space: nowrap;
+    height: 17px;
 }
 
 #wizard ul.tabs a:hover {
@@ -1179,15 +1379,19 @@ div.list div.actions {
     margin-right: 15px;
     margin-top: 37px;
     text-align: right;
-    width: 150px;
+    width: 120px;
 }
 
 div.list div.actions a {
     clear: left;
-    color: #D3D3D3;
+    color: #A1A1A1;
     display: block;
-    font-size:9pt;
+    font-size:75%;
     margin-bottom: 2px;
+}
+
+div.list div.actions a:hover {
+    background-color: transparent;
 }
 
 div.list div.actions a.enabled {
@@ -1198,6 +1402,10 @@ div.list div.actions a.enabled:hover{
     cursor: pointer;
     color: black;
     text-decoration: underline;
+}
+
+div.list div.actions a.selected {
+    color: #FF7F2A !important;
 }
 
 input.machine {
@@ -1213,9 +1421,13 @@ input.machine {
     width: 300px;
 }
 
+#wizard .button-container {
+    height: 20px;
+}
+
 /* metadata editing and add machines to network overlays */
 #metadata-wizard, #add-machines-wizard {
-    position:fixed;
+    position:absolute !important;
     overflow:hidden;
     width:450px;
     display:none;
@@ -1226,7 +1438,8 @@ input.machine {
 }
 
 #metadata-wizard .close, #add-machines-wizard .close  {
-    background-image: url("/static/close-popup.png");
+    background-image: url("./close-popup.png");
+    background-repeat: no-repeat;
     cursor: pointer;
     height: 13px;
     position: absolute;
@@ -1263,6 +1476,7 @@ input.machine {
 
 #metadata-wizard .name-container {
     display: inline-block;
+    clear: both;
 }
 
 #add-machines-wizard .network-name {
@@ -1270,7 +1484,7 @@ input.machine {
 }
 
 #metadata-wizard .popup-body, #add-machines-wizard .popup-body {
-    background-image: url("/static/meta-wiz-bg.png");
+    background-image: url("./meta-wiz-bg.png");
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 1px;
@@ -1280,7 +1494,7 @@ input.machine {
 }
 
 #metadata-wizard .popup-body-inner, #add-machines-wizard .popup-body-inner {
-    background-image: url("/static/meta-wiz-inner-bg.png");
+    background: url("./meta-wiz-inner-bg.png") repeat-x scroll 0 0 transparent;
     font-size: 80%;
     height: 180px;
     margin-left: 25px;
@@ -1295,6 +1509,7 @@ input.machine {
     width: 402px;
     margin-bottom: 30px;
     clear: left;
+    font-size: 1px;
 }
 
 #metadata-wizard .metadata-pair-template {
@@ -1303,11 +1518,12 @@ input.machine {
     width: 350px;
 }
 
-#metadata-wizard .metadata-pair-template:hover {
+#metadata-wizard div.metadata-pair-template:hover {
     background-color: #74AEC9;
 }
 
 #metadata-wizard .metadata-container, #add-machines-wizard .machines-container {
+    background-color: transparent;
     float: left;
     width: 400px;
     font-size: 120%;
@@ -1332,16 +1548,18 @@ input.machine {
 }
 
 #metadata-wizard .metadata-value {
-    width: 300px;
+    width: auto;
 }
 
 #metadata-wizard .metadata-add-template {
     background-color: #74AEC9;
     width: 350px;
+    position: relative;
+    overflow: visible;
 }
 
 #metadata-wizard #add-meta-value {
-    margin-left: 10px;
+    margin-left: 25px;
     width: 150px;
 }
 
@@ -1414,15 +1632,17 @@ input.machine {
     float: right;
     margin-right: 0;
     width: 40px;
-    margin-top: -12px;
+    margin-top: -14px;
     display:none;
 }
 
 #metadata-wizard .metadata-edit .edit, #metadata-wizard .metadata-edit .remove {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
-    padding-left: 16px;
+    font-size: 75%;
+    float: left;
+    width: 16px;
+    height: 16px;
 }
 
 #metadata-wizard .addbuttons {
@@ -1430,41 +1650,44 @@ input.machine {
     clear: none;
     width: 40px;
     margin-right: -1px !important;
-    margin-top: 4px;
+    margin-top: 2px;
     float:right;
     cursor: pointer;
 }
 
 .metadata-pair-template .editbuttons {
-    margin-top: -16px !important;
-    margin-right: -1px !important;
+    margin-top: -19px !important;
+    margin-right: -2px !important;
 }
 
 #metadata-wizard .metadata-edit .edit {
-    background-image: url("../static/meta-edit.png");
-    margin-left: 3px;
+    background-image: url("./meta-edit.png");
+    margin-left: 2px;
 }
 
 #metadata-wizard .metadata-edit .remove, #metadata-wizard .editbuttons .remove {
-    background-image: url("../static/meta-remove.png");
-    margin-left: 1px;
+    background-image: url("./meta-remove.png");
+    margin-left: 4px;
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
-    padding-left: 16px;
+    font-size: 75%;
+    height: 16px;
+    width: 16px;
+    float: left;
 }
 
 #metadata-wizard .editbuttons .save {
-    background-image: url("../static/meta-save.png");
+    background-image: url("./meta-save.png");
+    padding-top:0;
 }
 
 #metadata-wizard .addbuttons .cancel {
-    background-image: url("../static/meta-remove.png");
+    background-image: url("./meta-remove.png");
     margin-left: 3px;
 }
 
 #metadata-wizard .addbuttons .save {
-    background-image: url("../static/meta-save.png");
+    background-image: url("./meta-save.png");
     margin-left: 1px;
 }
 
@@ -1472,20 +1695,21 @@ input.machine {
     background-color: #4287a7;
 }
 
-#metadata-wizard .metadata-edit .edit:hover, #metadata-wizard .metadata-edit .remove:hover, #metadata-wizard .editbuttons .remove:hover, #metadata-wizard .editbuttons .save:hover, #metadata-wizard .addbuttons .cancel:hover, #metadata-wizard .addbuttons .save:hover {
+#metadata-wizard div.metadata-edit div.edit:hover, #metadata-wizard div.metadata-edit div.remove:hover, #metadata-wizard div.editbuttons div.remove:hover, #metadata-wizard div.editbuttons div.save:hover, #metadata-wizard div.addbuttons div.cancel:hover, #metadata-wizard div.addbuttons div.save:hover {
     background-color: #74AEC9;
 }
 
 #metadata-wizard .addbuttons .cancel, #metadata-wizard .addbuttons .save {
-    padding-left: 16px;
+    width: 16px;
+    height: 16px;
+    float: left;
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
 }
 
 #metadata-wizard .metatextbox {
     font-size: 90%;
-    height: 10px;
+    height: 18px;
     margin-top: -2px;
     color: black;
     width: 150px;
@@ -1573,16 +1797,17 @@ input.machine {
 }
 #metadata-wizard .textdropdown-outer {
     float: left;
+    overflow: visible;
 }
 
 #metadata-wizard .textdropdown-btn {
-    width: 20px;
-    float: right;
-    background: url("/static/dropdown-arrow.gif") no-repeat center;
+    background: url("./dropdown-arrow.gif") no-repeat scroll center center transparent;
     cursor: pointer;
-    left: 147px;
-    margin-top: 3px;
+    float: right;
+    left: 90px;
+    margin-top: 4px;
     position: absolute;
+    width: 20px;
 }
 
 #metadata-wizard ul {
@@ -1594,6 +1819,7 @@ input.machine {
     height: auto !important;
     padding-left: 5px;
     width: 103px !important;
+    position: relative;
 }
 
 #metadata-wizard ul li {
@@ -1623,10 +1849,10 @@ input.machine {
 }
 
 #metadata-wizard #add-meta-key {
-    height: 12px;
+    height: 16px;
     margin-left: 5px;
     margin-top: 2px;
-    width: 108px !important;
+    width: 105px !important;
 }
 
 /* notification box */
@@ -1645,6 +1871,7 @@ input.machine {
     border-bottom: 5px solid #4085A5;
     min-height: 150px;
     top: 120px !important;
+    position: absolute !important;
 }
 
 #error-success p {
@@ -1656,7 +1883,8 @@ input.machine {
 }
 
 #error-success .close {
-    background-image: url("/static/close-popup.png");
+    background-image: url("./close-popup.png");
+    background-repeat: no-repeat;
     cursor: pointer;
     height: 13px;
     position: absolute;
@@ -1671,6 +1899,7 @@ input.machine {
 
 .popup-border-error {
     border-color: #800000 !important;
+    width:auto;
 }
 
 .popup-details-error {
@@ -1693,10 +1922,25 @@ input.machine {
     padding-left: 30px;
     padding-top: 10px;
     width: 482px;
+    margin-right:-16px;
+}
+
+
+#error-success.success h3 span.header-box{
+    background-color: #71c837;
+    display: block;
+    background-image: url("./save-green.png");
+    background-position: right 0;
+    background-repeat: no-repeat;
+    width: 80px;
+    padding: 3px 3px 3px 8px;
+    margin-top: -6px;
+    font-size: 90% !important;
+    margin-left: -11px;
 }
 
 #error-success .popup-body {
-    background-image: url("/static/popup-bg.png");
+    background: url("./popup-bg.png") repeat-x scroll 0 0 transparent;
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 1px;
@@ -1705,7 +1949,7 @@ input.machine {
 }
 
 #error-success .popup-body-inner {
-    background-image: url("/static/popup-inner-bg.png");
+    background: url("./popup-inner-bg.png") repeat-x scroll 0 0 transparent;
     font-size: 80%;
     min-height: 120px;
     margin-left: 20px;
@@ -1716,6 +1960,7 @@ input.machine {
 #error-success .popup-separator {
     background-color: #74AEC9;
     height: 1px;
+    font-size:1%;
     width: 442px;
     margin-bottom: 30px;
 }
@@ -1726,22 +1971,23 @@ input.machine {
     padding-top: 10px;
 }
 
+#error-success.success .machine-now-building {
+    padding-bottom: 14px !important;
+}
+
 #error-success .password-container {
-    float: left;
-    width: 100px;
+    width: 430px;
+    padding: 5px;
+    border: 2px solid #75b54a;
+    background-color: #aade87;
 }
 
 #error-success .password-header {
     margin-bottom: 5px;
-    text-align: center;
 }
 
 #error-success .password {
-    background-color: #FF7F2A;
-    height: 20px;
-    padding-top: 5px;
-    text-align: center;
-    width: 100px;
+    color: #447821;
 }
 
 #error-success .popup-details {
@@ -1751,9 +1997,28 @@ input.machine {
     padding: 2px;
 }
 
+#error-success.success .popup-details {
+    border: none !important;
+    float: none !important;
+    margin-left: none !important;
+    margin-top: 10px;
+}
+
+#error-success.success .popup-separator {
+    margin-bottom: 14px !important;
+}
+
 #error-success .write-password {
-    color: #FF7F2A;
     margin-bottom: 5px;
+    padding-left: 30px;
+}
+
+#error-success .write-password-password {
+    padding-left: 30px;
+    color: #447821;
+    display: inline;
+    font-size: 110%;
+    font-weight: bold;
 }
 
 #error-success .write-password-details {
@@ -1762,36 +2027,129 @@ input.machine {
 
 .more-details {
     display: block;
-    height: 110px;
 }
 
-.popup-details a:link,  .popup-details a:visited{
+.popup-details a:link, .popup-details a:visited{
     color: black;
 }
 
 /* Confirmation boxes */
-div.confirm_single, div.confirm_multiple {
+div.confirm_single, div.confirm_multiple, div.action_error {
     display: none;
-    background-color: #CDE2EC;
-    color: orange;
-    font-size: 9pt;
+    color: black;
+}
+
+div.action-container.destroy div.confirm_single {
+    bottom: 0;
+    position: absolute;
+    left: 83px;
+}
+
+div.terminated div.action-container.destroy div.confirm_single {
+    margin-top: 30px;
+}
+
+div.confirm_single button, div.confirm_multiple button, div.action_error button {
+    font-size: 100%;
+    cursor: pointer;
+    color: black;
+    height: 20px !important;
+}
+
+div.confirm_single {
+    float: right;
+    margin: -20px -122px 0 0;
+}
+
+div.confirm_single button {
+    border: none;
+}
+
+div.confirm_single button.yes {
+    width: 90px;
+    background-color:#FF7F2A;
+}
+
+div.confirm_single button.yes:hover {
+    background-color: #FF9955;
+}
+
+div.confirm_single button.no {
+    width: 20px;
+    margin-left:-5px;
+    background-color: #FF9955;
+    color:#d95d0a;
+}
+
+div.confirm_single button.no:hover {
+    color: white;
 }
 
 div.confirm_multiple {
     background-color: #4085A5;
+    font-size: 75%;
+    z-index: 1;
+    position: absolute;
+    width: 698px;
+    height: 28px;
+    margin-top: 15px;
+}
+
+div.confirm_multiple p {
+    float: left;
+    color: #FF7F2A;
+    font-weight: bold;
+    margin: 7px 0 0 200px;
+}
+
+#networks-pane div.confirm_multiple p {
+    margin: 7px 0 0 100px;
+}
+
+div.confirm_multiple button {
+    float: right;
+    background-color: transparent;
+    border: 1px solid #5CA1C0;
+    margin: 4px 5px 0 0;
+}
+
+div.confirm_multiple button.yes {
+    border-color: #FF7F2A;
+    padding: 0 12px;
+}
+
+div.confirm_multiple button.yes:hover {
+    background-color: #FF7F2A;
+}
+
+div.confirm_multiple button.no {
+    padding: 0px 16px;
+}
+
+div.confirm_multiple button.no:hover {
+    background-color: #5CA1C0;
 }
 
 div.action_error {
-    float: right;
     width: 80px;
     height: 60px;
     padding: 5px;
-    margin: -2px -175px 0 0;
-    display: none;
-    background-color: #DCDCDC;
-    font-size: 9pt;
-    color: black;
+    margin: -2px 0 0 595px;
+    background-color: #4085A5;
+    font-size: 75%;
     line-height: 1.5;
+    z-index:1;
+    color: #FF7F2A;
+    position:absolute;
+    top: 0px;
+}
+
+.action_error button {
+    width: 80px !important;
+    background-color: transparent;
+    border: 1px solid;
+    padding: 0px;
+    border-color: #FF7F2A;
 }
 
 div.action_error button.details {
@@ -1799,78 +2157,8 @@ div.action_error button.details {
     padding: 0 15px;
 }
 
-.orange {
-    color: orange;
-}
-
-div.confirm_single button, div.confirm_multiple button, div.action_error button{
-    font-size: 9pt;
-    background-color: transparent;
-    border: 1px solid #5CA1C0;
-    color: #3D3D3D;
-    cursor: pointer;
-    padding: 0px;
-    height: 20px !important;
-}
-
-div.confirm_single button, .action_error button {
-    width: 80px !important;
-}
-
-div.confirm_single button.yes, div.confirm_multiple button.yes {
-    border-color: orange;
-    padding: 0 12px;
-}
-
-div.confirm_single button.yes:hover, div.confirm_multiple button.yes:hover {
-    background-color: orange;
-}
-
-div.confirm_single button.no, div.confirm_multiple button.no {
-    padding: 0px 16px;
-}
-
-div.confirm_single button.no:hover, div.confirm_multiple button.no:hover, div.action_error button.details:hover {
-    background-color: #5CA1C0;
-}
-
-div.confirm_single{
-    float: right;
-    width: 90px;
-    height: 66px;
-    margin: -2px -175px 0 0;
-}
-
-div.confirm_single button.yes {
-    margin: 5px 0 0 5px;
-}
-
-div.confirm_single button.no {
-    margin: 16px 0 0 5px;
-}
-
-div.action_error {
-    display: none;
-}
-
-div.confirm_multiple {
-    width: 698px;
-    height: 28px;
-    margin: 15px 0 10px -35px;
-}
-
-div.confirm_multiple p {
-    float: left;
-    margin: 7px 0 0 200px;
-}
-
-div.confirm_multiple button {
-    float: right;
-    margin: 4px 5px 0 0;
-}
-
-div.confirm_multiple button.no {
-    margin-right: 15px;
+div.action_error button.details:hover {
+    background-color: #FF7F2A;
 }
 
 div#aboutuser{
@@ -1882,11 +2170,14 @@ div#aboutuser{
 }
 
 div#user{
-    float:right;
     clear: both;
     color: #FFFFFF;
     font-size: 75%;
-    margin-top: 43px;
+    margin-top: 38px;
+    padding-bottom: 10px;
+    z-index: 400;
+    position: absolute;
+    right:0;
 }
 
 div#user a{
@@ -1898,95 +2189,174 @@ div#user a.current_lang {
     color: #72ADC8;
 }
 
+div#user .usermenu {
+    float: left;
+    cursor: pointer;
+    overflow: hidden;
+    padding-top: 5px;
+    margin-top: -5px;
+    position: relative;
+}
+
+div#user .username {
+    display: block;
+    margin-right: 10px;
+    padding-right: 18px;
+    padding-left: 4em;
+    height: 20px;
+    background: url("./down-arrow-light.png") no-repeat right;
+    background-position: right 6px;
+    font-weight: normal;
+}
+
+div#user .hovered {
+    background: #599EBD;
+    overflow: visible;
+    border-bottom: 1px solid #C7DFE9;
+}
+
+div#user .hovered .username {
+    background-image: url("./down-arrow-lighter.png");
+}
+
+div#user .active {
+    background-color: #BED5E0 !important;
+}
+
+div#user .active .username {
+    color: #599EBD;
+    background-image: url("./down-arrow-lighter.png");
+}
+
+div#user .useractions {
+    display: none;
+}
+
+div#user .active .useractions {
+    display: block;
+    text-align: right;
+    color: #4085A5;
+    background-color: #D0E3ED;
+    margin-top:-1px;
+    border-top:1px solid #fff;
+    position: relative;
+    top: 1px;
+}
+
+div#user .useractions li {
+    padding: 5px 10px;
+    border-bottom: 1px solid #efefef;
+    text-align: right;
+    display: block;
+    background-color: transparent;
+}
+
+div#user .useractions li a {
+    color: #4085A5;
+    display: inline-block;
+    padding:5px 0;
+    padding-left: 30px;
+    padding-bottom: 6px;
+    background-repeat: no-repeat;
+    background-position: center left;
+}
+
+div#user .useractions li.hovered {
+    background-color: #E1EFF6;
+}
+
+div#user .useractions li.last {
+    border-bottom: none;
+}
+
+div#user .useractions .logout a {
+    background-image: url("./icon-logout.png");
+}
+
+div#user .langmenu {
+    float: left;
+    border-left: 1px solid #ffffff;
+    padding-left: 10px;
+    margin-left: -1px;
+}
+
+div#user .langmenu .sep {
+    display: inline-block;
+    color: #72ADC8;
+}
+
 .separator {
     background-color: #74AEC9;
     height: 10px;
     width: 700px;
-    margin: 0 0 0 -36px;
-}
-
-.machine-separator {
-    width: 508px;
-    height: 1px;
-    margin: 15px 0 0 15px;
-    background-color: #DCDCDC;
-}
-
-#mini.separator {
-    width: 535px;
-    height: 5px;
-    margin: 17px 0 17px -36px;
-    display: none;
+    font-size: 1px;
+    line-height: 0px;
 }
 
 #disks.separator {
     background-color: #dea842;
 }
 
-#images.separator {
-    background-color: #87a06d;
-}
-
 #networks.separator {
     background-color: #6c535d;
 }
 
-#desktops.separator {
-    background-color: #dea842;
-}
-
-#apps.separator {
-    background-color: #87a06d;
+.network-machine h5 {
+    margin-bottom: 26px;
+    margin-top:0px;
 }
 
 .machine-container .separator {
     width: 508px;
     height: 1px;
     margin-top: 2px;
-    background-color: #DCDCDC;
+    background-color: #5CA1C0;
     margin-left: 13px;
 }
 
 .machine h5 {
-    margin: -1px 60px 1px 84px;
+    margin: -3px 0px 4px 0px;
 }
 
-.machine .settings {
-    margin-top: 9px;
+.machine h5.namecontainer {
+    margin-top: 1px;
 }
 
 .editbuttons {
     display: block;
     clear: none;
     width: 40px;
-    margin-right:32%;
-    margin-top:3px;
-    float:right;
+    margin-right: 32%;
+    padding-top: 2px;
+    float: right;
     cursor: pointer;
+    position: relative;
+    z-index: 1000;
 }
 
-.editbuttons .save:hover, .editbuttons .cancel:hover {
-    background-color: #CCCCCC;
+div.editbuttons div.save:hover, div.editbuttons div.cancel:hover {
+    background-color: #84b7d0;
 }
 
-.editbuttons .cancel:hover {
-    background-image: url("../static/cancel-onhover.png");
+div.editbuttons div.cancel:hover {
+    background-image: url("./cancel-onhover.png");
 }
 
 .editbuttons .cancel, .editbuttons .save {
-    padding-left: 16px;
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    height: 16px;
+    width: 16px;
+    float: left;
 }
 
 .editbuttons .cancel {
-    background-image: url("../static/cancel.png");
+    background-image: url("./cancel.png");
     margin-left: 3px;
 }
 
 .editbuttons .save {
-    background-image: url("../static/save.png");
+    background-image: url("./save.png");
     margin-left: 1px;
 }
 
@@ -1996,53 +2366,73 @@ div#user a.current_lang {
 }
 
 .namecontainer {
-    line-height: 22px;
+    height: 18px;
+    margin-top: 9px;
 }
 
 .nametextbox {
-    height: 13px;
     font-size: 95%;
 }
 
 .large-spinner {
-    background: url("/static/icons/indicators/large/progress.gif");
+    background: url("./icons/indicators/large/progress.gif");
     margin-left: 298px;
-    margin-top: 80px;
+    margin-top: 0px;
     height: 31px;
     width: 31px;
     position: absolute;
 }
 
+.list .large-spinner {
+    margin-top:-30px;
+}
+
+.single .large-spinner {
+    margin-top: 50px;
+}
+
+div#networks-container .large-spinner {
+    margin-top: 50px;
+}
+
 /* tables in list view */
-div.list div.dataTables_filter,  div.list div.dataTables_filter input{
-    font-size: 9pt;
+div.list div.dataTables_filter {
+    font-size: 75%;
     display: none;
+    margin-bottom: 12px;
 }
 
 div.list div.dataTables_filter input{
-    height: 12px;
-    margin-bottom: 12px;
+    font-size: 100%;
+}
+
+.dataTables_wrapper {
+    width: 515px;
+    padding-bottom: 40px;
+}
+
+div.list table thead .sorting, div.list table thead .sorting_desc, div.list table thead .sorting_asc {
+    padding-right: 15px !important;
 }
 
 div.list table {
     width: 515px;
-    font-size: 9pt;
+    font-size: 75%;
 }
 
 div.list table tbody td {
     color: #3D3D3D;
     padding:6px;
-    background-color: #FFF;
     vertical-align: middle;
 }
 
 div.list table thead tr th {
-    background-color: #E6EEEE;
+    background-color: #CDE2EC;
     background-image: url(bg.gif);
     background-repeat: no-repeat;
     background-position: right 11px;
     font-weight: normal;
-    border: 1px solid #FFF;
+    border: 1px solid transparent;
     border-bottom: none;
     padding: 4px;
     text-align: left;
@@ -2051,7 +2441,7 @@ div.list table thead tr th {
 }
 
 div.list table thead .sorting_asc, div.list table thead .sorting_desc {
-    background-color: #87AADE;
+    background-color: #5CA1C0;
 }
 
 div.list table thead .sorting_asc {
@@ -2079,7 +2469,7 @@ ul.dropdown-selector {
     margin-left: 1px;
     display: block;
     top: 255px;
-    font-size:9pt;
+    font-size:75%;
     width:40px;
 }
 
@@ -2088,7 +2478,7 @@ ul.dropdown-selector li {
 }
 
 ul.dropdown-selector li:hover {
-    background-color: #87AADE;
+    background-color: #5CA1C0;
 }
 
 ul.dropdown-selector li a{
@@ -2109,28 +2499,44 @@ div.list table .selection {
     width: 20px !important;
     text-align: left;
     background-image: none;
+    padding-left: 6px;
 }
 
 div.list table thead .vmflavor {
     width: 100px !important;
 }
 
+/* group column commented out for v0.5
 div.list table thead .vmgroup {
     width: 40px !important;
 }
+*/
 
 div.list table thead .vmstatus {
     width: 50px !important;
 }
 
 div.list table thead .vmname {
-    width: 70px !important;
+    width: 110px !important;
 }
 
-.spinner, .wave {
+.spinner, .action-indicator {
     clear: right;
     float:right !important;
-    margin: 5px 16px 0 15px !important;
+    margin: 10px 6px 0 15px !important;
+}
+.action-indicator {
+    margin-right: 18px !important;
+}
+
+.wave {
+    clear: right;
+    float:right !important;
+    margin: 10px 15px 0 15px !important;
+}
+
+#networks-pane .spinner {
+    margin-top: 18px !important;
 }
 
 .hidden {
@@ -2139,7 +2545,6 @@ div.list table thead .vmname {
 
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
     display:block !important;
-    color: orange !important;
 }
 
 .action_error .message, .action_error .code {
@@ -2147,26 +2552,24 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 .fixed {
-    margin: 0 0 0 -35px !important;
     bottom: 0;
-    position: fixed;
+    position: fixed !important;
 }
 
 /* Networks */
 #networks-pane {
     background-color: transparent;
+    color: black;
     margin-left: 1px;
     margin-right: 0;
-    padding-left: 35px;
 }
 
 #networkscreate {
+    color: black;
     background-color: #FF7F2A;
-    color: #000000;
     cursor: pointer;
     padding: 7px 24px;
     text-decoration: none;
-    width: 125px;
 }
 
 #networkscreate:hover {
@@ -2174,30 +2577,28 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 }
 
 #networks-pane #beforecreate {
-    margin-left: -20px;
-    margin-top: -7px;
+    margin-left: -13px;
+    margin-top: -6px;
 }
 
 #networks-container {
+    margin-top: 10px;
     min-height: 270px;
 }
 
 #networks-createcontainer {
-    margin-left: -36px;
-    margin-top: 17px;
-    padding-top: 30px;
+    position: absolute;
+    top: 155px;
 }
 
 #networks-pane .public-networks {
-    background-color: white;
-    margin: -47px -20px 18px -35px;
-    padding: 70px 20px 15px 35px;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
+    margin: 0 0 18px;
+    padding: 70px 0 15px 35px;
 }
 
 #networks-pane .private-networks {
-    background-color: white;
-    margin-left: -35px;
-    margin-right: -20px;
+    background: url("./running-bg.png") repeat scroll 0 0 transparent;
     padding: 15px 20px 20px 35px;
 }
 
@@ -2210,18 +2611,18 @@ div.network a.action-network-add {
 }
 
 div.network a.action-network-destroy {
-    margin-top: 38px !important;
+    margin-top: 32px !important;
     width: 50px;
     display: none;
 }
 
 div.network {
     clear: both;
-    color: #666666;
     min-height: 65px;
-    margin: 5px 0 0 -30px;
-    padding: 3px 20px 0 4px;
+    margin: 5px 0 0 -35px;
+    padding: 3px 20px 0;
     width: 480px;
+    position: relative;
 }
 
 #private-template {
@@ -2229,81 +2630,172 @@ div.network {
 }
 
 div.network-placeholder {
-    border-left: 3px solid #FB822F;
     margin-left: 33px;
 }
 
-.network a, .show-machines, span.ip, .show-firewall {
-    color: #3d3d3d;
-    font-weight: normal;
-    text-decoration: none;
-    font-size: 9pt;
+div.private-networks div.network-placeholder {
+    border-left: 3px solid #FF7F2A;
 }
 
-.network a:hover, .show-machines:hover, span.ip:hover, .show-firewall:hover {
-    color: #000;
+div.network-cable {
+    border-left: 3px solid #FF7F2A;
+    float: left;
+    margin-left: -40px;
+    margin-top: -45px;
+    height: 185px;
+    overflow: hidden;
+}
+
+.first div.network-cable {
+    height:143px;
+    margin-top:-6px;
+    position: relative;
+}
+
+div.network-contents div.machines-list div.first {
+    margin-top:0;
+}
+
+.last div.network-cable {
+    height:85px;
+}
+
+div.firewall-cable {
+    border-left: 3px solid #FF7F2A;
+    float: left;
+    margin-left: -100px;
+    margin-top: -20px;
+    height: 110px;
+}
+
+.last div.firewall-cable {
+    display:none;
+}
+
+div.network a:hover {
     text-decoration: underline;
     cursor: pointer;
 }
 
 #networks-container .name {
-    text-decoration: none !important;
-    margin-bottom: 25px;
-    color: #000000;
-    margin-top: -4px;
+    font-size: 75%;
+}
+
+div.network-machines, div.firewall {
+    font-size: 75%;
+    margin-left: 70px;
+}
+
+div.firewall {
+    margin-left: 60px;
+    margin-bottom: 3px;
+}
+
+div.machines-header, div.firewall-header {
+    background-color: #A1C8DB;
+    color: white;
+    cursor: pointer;
+    height: 17px;
+    width: 103px;
+}
+
+ div.private-networks div.machines-header {
+    margin-top: -5px;
+}
+
+div.network:hover div.machines-header, div.network:hover div.firewall-header {
+    background-color: #84b7d0;
+}
+
+div.network-machine:hover div.firewall-header {
+    background-color: #5CA1C0;
+}
+
+div.machines-label, div.firewall-label {
+    width: 100%;
+    padding-bottom:1px;
+    padding-left: 3px;
+}
+
+div.firewall-label.darker {
+    background-color: #4085a5;
 }
 
 .state {
     float: right;
-}
-
-.state div {
-    text-align: right;
-    margin-right: 3px;
+    position: absolute;
+    right: 10px;
+    top: 40px;
+    font-size: 75%;
 }
 
 div.network div.actions {
     float: right;
-    width: 100px;
-    margin:0px -120px 0 0;
+    font-size: 75%;
     font-weight: normal;
+    height: 70px;
+    width: 100px;
+    position: absolute;
+    right: -100px;
+    top: 0;
+}
+
+div.network div.machine-actions {
+    text-decoration: none;
+    float: right;
+    width: 100px;
+    margin: -7px -100px 0 0;
+    font-weight: normal;
+    font-size: 75%;
+}
+
+div.network div.actions a, div.network div.machine-actions a {
+    text-decoration: none;
+    height: 15px;
+    color: black;
+    visibility: hidden;
+    display: block;
 }
 
 div.network div.actions a {
-    color: transparent;
-    margin: 0 0 0 8px;
-    display: block;
+    margin: 4px 0 0 8px;
 }
 
-div.actions a.enabled:hover{
-    color: black !important;
-    text-decoration: underline;
-    display: block;
+div.network div.machine-actions a {
+    margin: 8px 0 0 8px;
 }
 
-.network:hover .actions a {
-    color: #3d3d3d;
+div.network div.actions a:hover, div.network div.machine-actions a:hover {
     display: block;
+    background-color:#A1C8DB;
+    width: 200px;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
 }
 
-div.network div.actions a.selected:hover {
-    color: orange;
+div.network:hover div.actions a, div.network-machine:hover div.machine-actions a {
+    visibility: visible;
+}
+
+div.network div.actions a.selected, div.network div.machine-actions a.selected {
+    color: #FF7F2A !important;
+    width: 50px !important;
+}
+
+div.network div.actions a.selected:hover, div.network div.machine-actions a.selected:hover {
+    background-color: transparent;
+}
+
+div.network div.display a {
+    visibility: visible;
 }
 
 div.network-machine div.machine-actions a.action-details {
-    margin-top: 10px;
+    margin-top: 7px;
 }
 
-.network:hover {
-    background-color: #CDE2EC;
-}
-
-#internet-separator {
-    width: 510px;
-    height: 5px;
-    background-color: #6C535D;
-    margin-left: -36px;
-    margin-top: 20px;
+div.network:hover {
+    background-color: #A1C8DB !important;
 }
 
 .network-logos {
@@ -2315,26 +2807,23 @@ div.network-machine div.machine-actions a.action-details {
     cursor: pointer;
 }
 
-#networks-container .settings {
-    color: #000000;
-}
-
-#networks-container .network-type {
-    float: right;
-    margin-top: -4px;
-    margin-right: 15px;
-}
-
-#networks-container .indicator {
-    background-color: #87AADE;
-    border-color: white;
-    border-style: solid;
-    border-width: 2px 3px 2px 2px;
-}
-
 .state div {
-    margin-right: 3px;
     text-align: right;
+    margin: 4px 1px -4px;
+}
+
+.public-networks .state div {
+    margin-top: 4px;
+}
+
+.private-networks .state div {
+    margin-top: 9px;
+    margin-bottom: -12px;
+}
+
+.public-networks .name-div {
+    margin-top:-7px;
+    margin-bottom: 23px;
 }
 
 div.indicator {
@@ -2354,17 +2843,26 @@ div.indicator {
 }
 
 .private-networks div.confirm_single {
-    margin: -2px -200px 0 0;
+    margin: 45px -219px -5px 0;
+    font-size: 80%;
 }
 
 .private-networks .network-machine div.confirm_single {
-    margin: -8px -180px 0 0;
+    margin: 0 -199px 0 0;
+}
+
+.private-networks .state {
+    top: 35px;
+}
+
+.private-networks div.machines-list {
+    padding-top: 3px;
 }
 
 span.rename-network, span.configure {
     background-repeat: no-repeat;
     color: transparent;
-    font-size: 9pt;
+    font-size: 75%;
     font-weight: normal;
     margin-left: 10px;
     padding-left: 10px;
@@ -2378,19 +2876,21 @@ span.rename-network {
 div.name-div:hover span.rename-network {
     color: #3D3D3D;
     margin-top: 0.4em;
-    background-image: url(/static/pencil.png);
+    background-image: url(./pencil.png);
     background-position: 0 3px;
 }
 
-.network:hover a.rename {
+div.network:hover a.rename {
     color: #3d3d3d;
 }
 
 .network-separator {
-    background-color: #DCDCDC;
+    background-color: #5CA1C0;
     height: 1px;
     margin: 2px 0 0 -5px;
     width: 480px;
+    font-size: 1%;
+    line-height: 1px;
 }
 
 .network-contents {
@@ -2405,11 +2905,11 @@ div.name-div:hover span.rename-network {
 }
 
 .network-machine {
-    margin-left: 34px;
+    margin-left: 35px;
     padding-bottom: 5px;
     padding-left: 5px;
-    padding-top: 10px;
-    margin-top: 2px;
+    padding-top: 5px;
+    margin-top: 5px;
 }
 
 .network-machine .logo {
@@ -2425,43 +2925,11 @@ div.name-div:hover span.rename-network {
     margin-top: -4px;
 }
 
-div.network div.machine-actions {
-    float: right;
-    width: 100px;
-    margin:0px -100px 0 0;
-    font-weight: normal;
-}
-
-.discreet {
-    color: #969696;
-}
-
-.network-contents-start-separator {
-    height: 3px;
-    background-color: #87AADE;
-    margin-left: 39px;
-    width: 410px;
-}
-
-.network-contents-end-separator {
-    height: 3px;
-    background-color: #87AADE;
-    margin-top: 7px;
-    margin-left: 13px;
-    width: 473px;
-}
-
-.network .separator {
-    background-color: #DCDCDC;
+.private-networks .separator {
+    background-color: #5CA1C0;
     height: 1px;
-    margin-left: 5px;
-    margin-top: 3px;
-    position: absolute;
-    width: 473px;
-}
-
-.network-machines {
-    margin-bottom: 10px;
+    margin: 3px 0 -2px -10px;
+    width: 485px;
 }
 
 .network-machine .state {
@@ -2481,14 +2949,14 @@ div.network div.machine-actions {
     margin-bottom: 20px;
 }
 
-.network-machine:hover {
-    background-color: #B3B3B3;
+div.network-machine:hover {
+    background-color: #84B7D0;
 }
 
 .machines {
-    margin: 2px 0 0 0;
-    width: 410px;
-    background-color: #B3B3B3;
+    width: 416px;
+    margin-bottom: -8px;
+    margin-top: 10px;
 }
 
 div.empty-network-slot {
@@ -2499,8 +2967,9 @@ div.network-remove-machine, div.network-add-machine {
     background-color: #FB822F;
     color: #bc4b00;
     width:90px;
+    height:18px;
     float:left;
-    margin:41px 0 0 -100px;
+    margin:40px 0 0 -100px;
 }
 
 span.remove-icon {
@@ -2508,8 +2977,10 @@ span.remove-icon {
     margin-left: 15px;
 }
 
-span.add-icon {
+div.add-icon {
     margin-left: 15px;
+    margin-top: -3px;
+    cursor: pointer;
 }
 
 span.remove-icon:hover, span.add-icon:hover {
@@ -2518,7 +2989,7 @@ span.remove-icon:hover, span.add-icon:hover {
 }
 
 div.network-add-machine {
-    margin:44px 0 0 0;
+    margin:43px 0 0 -3px;
 }
 
 .firewall-on {
@@ -2529,37 +3000,12 @@ div.network-add-machine {
     color: #F82E2E;
 }
 
-div.network div.machine-actions a {
-    color: transparent;
-    margin: 0 0 0 8px;
-    display: block;
-}
-
-div.network div.machine-actions a:hover {
-    color: black !important;
-    text-decoration: underline;
-    display: block;
-}
-
-div.network div.display a{
-    color: #3d3d3d;
-    display: block;
-}
-
-div.network div.display a:selected {
-    color: #3d3d3d !important;
-}
-
-
-.network-machine:hover .machine-actions a {
-    color: #3d3d3d;
-    display: block;
-}
-
 .firewall-content {
     color: black;
     font-size: 60%;
     margin-left: 60px;
+    height: 55px;
+    margin-bottom: 17px;
 }
 
 .firewall-content .checkbox-legends {
@@ -2572,32 +3018,21 @@ div.network div.display a:selected {
     font-size: 100%;
 }
 
-.machine-connect {
-    color:black !important;
-    text-decoration: underline !important;
+h5.machine-connect {
+    font-size: 75%;
+    margin-bottom: 3px;
 }
 
-.machine-connect:hover {
+.machine-connect span {
+    text-decoration: underline;
+}
+
+h5.machine-connect span:hover {
     cursor: pointer;
 }
 
-.firewall-contents-start-separator {
-    background-color: #808080;
-    height: 2px;
-    margin-bottom: 5px;
-    width: 365px;
-}
-
-.firewall-contents-end-separator {
-    background-color: #808080;
-    height: 2px;
-    margin-left: -60px;
-    margin-top: 5px;
-    width: 425px;
-}
-
 .firewall-apply {
-    background-color: #666666;
+    background-color: #4085a5;
     border: medium none;
     float: right;
     font-size: 105%;
@@ -2607,40 +3042,88 @@ div.network div.display a:selected {
     width: 75px;
 }
 
+.firewall-apply:hover {
+    background-color:#5CA1C0;
+}
+
 .name-div {
-    margin-left: 70px;
-    margin-bottom: 20px;
+    margin: -9px 0 30px 70px;
 }
 
 .machine-name-div {
-    margin-bottom: 22px;
+    margin-bottom: 20px;
     margin-left: 60px;
 }
 
-/* Metadata */
-
-.info-content {
-    height: 95px;
-    width: 540px;
-    margin-top: 10px;
+div.reboot-dialog {
+    display: none;
+    color: black;
+    background-color: #4085A5;
+    font-size: 75%;
+    margin-top: 15px;
+    width: 698px;
+    z-index: 1;
 }
 
-.metadata-separator {
-    background-color: #808080;
-    height: 3px;
-    margin: 0 0 0 14px;
-    width: 492px;
+div#reboot-machine-template, div.reboot-machine-entry {
+    display: none;
+    padding: 0 0 10px 35px;
+    width: 300px;
+}
+
+div.reboot-dialog p {
+    color: #FF7F2A;
+    padding: 10px 0 10px 10px;
+}
+
+div.reboot-dialog button {
+    float:right;
+    border: 1px solid #FF7F2A;
+    background-color: transparent;
+    font-size:100%;
+}
+
+div.reboot-dialog button:hover {
+    background-color: #FF7F2A;
+}
+
+div.reboot-dialog button.reboot-all {
+    margin: -30px 35px 0 0;
+}
+
+div.reboot-dialog button.reboot-single {
+    color: black;
+    margin-top: -20px;
+}
+
+div.reboot-dialog div.code, div.reboot-dialog div.action, div.reboot-dialog div.message, div.reboot-dialog button.details {
+    display:none;
+}
+
+div.reboot-dialog button.details {
+    border-color: #800000;
+    margin-top: -20px;
+}
+
+div.reboot-dialog button.details:hover {
+    background-color: #800000;
+}
+
+/* Metadata */
+.info-content {
+    clear: both;
+    height: 95px;
+    width: 512px;
 }
 
 .metadata-container {
     line-height: 12px;
-    margin-left: 14px;
-    margin-top: 2px;
     height: 85px;
+    background-color: #84b7d0;
 }
 
 .metadata-column {
-    border-right: 1px solid #CECECE;
+    border-right: 1px solid #5CA1C0;
     color: black;
     float: left;
     font-size: 60%;
@@ -2649,24 +3132,42 @@ div.network div.display a:selected {
     padding-bottom: 5px;
 }
 
-.vm-stats, .vm-labels {
-    width: 109px;
+.vm-stats {
     padding-left: 10px;
+    padding-right: 5px;
+    width: 220px;
+}
+
+.vm-stats div.stat-content {
+    height: 18px;
+}
+
+.vm-stats div.stat-content img {
+    margin: 0;
+}
+
+.vm-stats div.stat-content img.busy {
+    margin-left: 95px;
+}
+
+.vm-stats div.stat-error {
+    display:none;
 }
 
 .vm-details {
-    width: 129px;
+    width: 130px;
+    margin-left:17px;
 }
 
 .vm-metadata {
     padding-left: 10px;
-    width: 129px;
+    width: 100px;
     border: none;
 }
 
 .metadata-left {
     float:left;
-    width: 50px;
+    width: 30px;
     height: 60px;
 }
 
@@ -2689,15 +3190,40 @@ div.network div.display a:selected {
     float: left;
 }
 
-a.manage-metadata {
+.single .metadata-keys-container {
+    float: none;
+    height: 50px;
+}
+
+.single a.manage-metadata {
+    font-size: 80%;
+    margin-left:4px;
+    color: #383838;
+}
+
+a.manage-metadata, a.stats-report {
     font-size: 100%;
     color: black;
     margin-left:17px;
     text-decoration: underline;
 }
 
+a.stats-report {
+    margin: 15px 0  0 80px;
+}
+
+div.machine a.manage-metadata:hover {
+    background-color: transparent;
+}
+
 .metadata-actions, .scrollable {
     padding-left: 5px;
+}
+
+.singe .metadata-actions, .single .scrollable {
+    font-size: 80%;
+    line-height: 12px;
+    width: 300px;
 }
 
 .metadata-actions .prev,  .metadata-actions .next{
@@ -2708,11 +3234,11 @@ a.manage-metadata {
 }
 
 .metadata-actions .prev {
-    background: url("/static/roll-up.png") no-repeat scroll 0 0 transparent;
+    background: url("./roll-up.png") no-repeat scroll 0 0 transparent;
 }
 
 .metadata-actions .next {
-    background: url("/static/roll-down.png") no-repeat scroll 0 0 transparent;
+    background: url("./roll-down.png") no-repeat scroll 0 0 transparent;
 }
 
 .scrollable {
@@ -2728,89 +3254,182 @@ a.manage-metadata {
     height:20000em;
 }
 
-.metadata-bar {
-    float: right !important;
-    margin: 1px 7px 0 !important;
-}
-
 /* single view */
 .single {
-    background-color: white;
     color: #383838;
-    margin-left: -35px;
     margin-top: -76px;
     padding-bottom: 10px;
-    padding-left: 20px;
-    padding-top: 77px;
     width: 679px;
 }
 
 .single .column1 {
+    float: left;
+    margin: 1px 0 25px 17px;
     width: 140px;
-    float:left;
-    margin-bottom: 25px;
 }
 
 .single .column1 .state {
-    width: 126px;
-    background-color: #999999;
     float: left;
+    margin-left: 4px;
     padding-bottom: 6px;
     padding-top: 3px;
+    position: relative;
+    right: 0;
     text-align: center;
+    width: 126px;
 }
 
 .single .column1 .state-label {
     padding-top: 5px;
 }
 
-.single .column1 .single-actions {
-    border: 3px solid #999999;
+.single .column1 .indicators {
+    margin-right: 38px !important;
+}
+
+.single div.connect-arrow {
+    margin-left: -17px;
+}
+
+.single div.connect-border {
+    margin-left: -29px;
+}
+
+.single .single-actions {
     padding-bottom: 4px;
-    padding-left: 4px;
-    width: 119px;
+    padding-left: 15px;
+    width: 69px;
+    float: left;
 }
 
 .single div.single-action {
     font-size: 80%;
-    line-height: 16px;
+    line-height: 18px;
     text-decoration: none;
     cursor: pointer;
 }
 
 .single div.single-action:hover {
-    color: #000000;
+    background-color:#A1C8DB;
+    width: 180px;
+    opacity: 0.8;
+    filter: alpha(opacity = 80);
+}
+
+.single div.single-action.selected {
+    color: #FF7F2A !important;
+    width: 50px !important;
+}
+
+.single div.single-action.selected:hover {
+    background-color:transparent;
+}
+
+.single div.confirm_single {
+    font-size: 80%;
+    margin: -19px -115px 0 0;
+}
+
+.single div.action-container.destroy div.confirm_single {
+    margin: -18px -116px 0 0;
+    position: relative;
+    left: 0px;
+}
+
+.single div.confirm_single button.no {
+    margin-left: -5px;
+}
+
+.single .spinner, .single .action-indicator {
+    margin: 15px 45px 0 0px !important
+}
+
+.single .action-indicator {
+    margin-right: 55px !important;
+}
+
+.single .wave {
+    margin: 15px 53px 0 0px !important
+}
+
+.single div.action_error {
+    margin: 2px 0px 0 605px !important;
+    position: relative;
 }
 
 .single .column2 {
+    background-color: #A1C8DB;
     float: left;
     font-size: 78%;
     line-height: 17px;
-    width: 370px;
-    margin-bottom: 20px;
+    margin: 0 0 10px 5px;
+    width: 358px;
 }
 
 .single .column2 .machine-labels {
-    width: 130px;
-    float:left;
+    float: left;
+    font-size: 90%;
+    margin-left: 10px;
+    margin-top: 10px;
+    width: 125px;
 }
 
 .single .column2 .machine-details {
-    float:left;
+    float: right;
     text-align: right;
+    font-size: 90%;
+    width: 210px;
+    margin-right: 10px;
+    margin-top: 10px;
 }
 
 .single .column2 .name, .single .column2 .disk, .single .column2 .image-size, .single .column2 .ipv6 {
     margin-bottom: 13px;
 }
 
+.single .tags {
+    clear: both;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+.single .tags-label {
+    float: left;
+    padding: 0 5px;
+    width: 30px;
+}
+
+.single .tags-down-arrow {
+    background: url("/static/tags-down-arrow.png") no-repeat scroll 1px 7px transparent;
+    float: left;
+    height: 16px;
+    width: 9px;
+}
+
+.single .tags-header {
+    background-color: #84B7D0;
+    cursor: pointer;
+    height: 16px;
+    width: 55px;
+}
+
+.single .tags-content {
+    background-color: #84B7D0;
+    clear: both;
+    height: 65px;
+    padding-bottom: 5px;
+    padding-top: 5px;
+    width: 300px;
+}
+
 .single .column3 {
-    width: 150px;
-    background-color: #CCCCCC;
-    height: 230px;
-    margin-left: 510px;
+    background-color: #A1C8DB;
+    margin-left: 535px;
     position: absolute;
-    top: 195px;
+    top: 280px;
+    width: 150px;
+    overflow: visible;
+    padding-bottom: 10px;
 }
 
 .single .column3 .controls {
@@ -2823,16 +3442,45 @@ a.manage-metadata {
 
 .single .column3 .previous {
     float:left;
+    width: 72px;
 }
 
 .single .column3 .next {
-    float:right;
+    float: right;
+    text-align: center;
+    width: 60px;
+}
+
+.single .column3 .next-label {
+    float: right;
+    margin-right: 3px;
+    margin-top: -2px;
+}
+
+.single .column3 .next-arrow {
+    float: right;
+    height: 18px;
+    width: 10px;
+    background: url("./right-arrow.png") no-repeat scroll 3px 2px transparent;
+}
+
+.single .column3 .prev-label {
+    float: left;
+    margin-left: 3px;
+    margin-top: -2px;
+}
+
+.single .column3 .prev-arrow {
+    background: url("./left-arrow.png") no-repeat scroll 3px 2px transparent;
+    float: left;
+    height: 18px;
+    width: 10px;
 }
 
 .single .column3 .separator {
     width: 135px;
     height: 1px;
-    background-color: #999999;
+    background-color: #84B7D0;
     margin: 0 0 0 7px;
     clear: both;
 }
@@ -2842,6 +3490,8 @@ a.manage-metadata {
     line-height: 15px;
     padding-top: 10px;
     text-align: right;
+    overflow: visible;
+    position: relative;
 }
 
 .single .column3 .server-name {
@@ -2851,63 +3501,111 @@ a.manage-metadata {
     padding-bottom: 2px;
 }
 
-.single .column3 .server-name:hover {
-    background-color:  #999999;
+div.single div.column3 div.server-name:hover, .single .column3 .column3-selected {
+    background-color: #84B7D0;
     color: white;
-}
-
-.single .column3 .selected {
-    background-color:  #999999;
-    color: white;
-}
-
-.single .disks, .single .networks, .single .stats {
-    background-color: #999999;
-    clear: both;
-    cursor: pointer;
-    height: 20px;
-    padding-left: 21px;
-    padding-top: 2px;
-    margin-bottom: 10px;
-    margin-left: -21px;
-    width: 500px;
-    font-size: 85%;
+    opacity: 0.8;
+    padding-left: 9px;
+    text-align: left;
+    width: 160px;
+    filter: alpha(opacity = 80);
+    position: relative;
 }
 
 .single .toggler {
     color: #FFFFFF;
     float: right;
     font-size: 140%;
-    padding-right: 7px;
-    padding-top: 7px;
 }
 
-.single .disks {
-    color: #C7A35F;
+.single .cpu-usage, .single .network-usage {
+    text-align: center;
+    padding-top: 15px;
+    margin-bottom: 5px;
+    font-size: 90%;
+    font-weight: bold;
 }
 
-.single .networks {
-    color: #9C7371;
+.single .cpu-graph, .single .network-graph {
+    margin-left: 20px;
+    margin-bottom:30px;
+    width: 660px;
 }
 
-.single .disks-content, .single .networks-content, .single .stats-content {
-    height: 150px;
+.single div.lower img.stats {
+    margin-left: 82px;
 }
 
 .single .single-image {
     width: 126px;
+    height: 136px;
     margin-bottom: 10px;
+    margin-left: 4px;
+    background-image: url("./icons/machines/large/unknown-sprite.png");
+    background-repeat: no-repeat;
+    cursor: pointer;
 }
 
-.single .column3 .previous , .single .column3 .next {
+.single .single-image-state1 {
+    background-position: 0px 0;
+}
+
+.single .single-image-state3 {
+    background-position: -252px 0;
+}
+
+.single .single-image-state4 {
+    background-position: -378px 0;
+}
+
+.single .single-image-state2 {
+    background-position: -126px 0;
+}
+
+.single .column3 .previous, .single .column3 .next {
     cursor: pointer;
+    background-color: #84B7D0;
+    color: white;
+    font-size: 100%;
+    height: 15px;
+    padding-top: 2px;
+}
+
+.single .column3 .disabled {
+    opacity: 0.5;
+    filter: alpha(opacity = 50);
+}
+
+.single div.lower {
+    clear:both;
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
+    width: 700px;
+    padding-bottom: 15px;
+}
+
+.single div.upper {
+    background: url("./terminated-bg.png") repeat scroll 0 0 transparent;
+    margin-bottom: 10px;
+    min-height: 310px;
+    overflow: visible;
+    padding-top: 60px;
+    width: 700px;
 }
 
 /* console css */
 .console-header-logo {
-    padding-top: 10px;
+    padding-top: 17px;
     margin-left: 30px;
     position: fixed;
+}
+
+#console-header div.help-text {
+    font-size: 75%;
+    font-weight:bold;
+    color:#FF7F2A;
+    float:left;
+    position: absolute;
+    margin: 45px 0 0 2px;
 }
 
 div.console-container {
@@ -2928,8 +3626,13 @@ div.console-container {
 }
 
 applet {
-    width: 100%;
-    height:75%;
+    width:100%;
+    height:100%;
+}
+
+div.console-footer {
+    /* this is for version 0.5*/
+    display: none;
 }
 
 .console-footer #footer-text{
@@ -2964,9 +3667,9 @@ applet {
 #networks-wizard .separator-end {
     background-color: #387693;
     height: 6px;
-    width: 478px;
-    margin-left: -12px;
-    margin-top: 9px;
+    width: 479px;
+    margin-left: -13px;
+    margin-top: 22px;
 }
 
 .red {
@@ -2981,4 +3684,59 @@ applet {
 
 #add-machines-wizard img.list-logo {
     margin: 2px 1px 1px;
+}
+
+.css-panes {
+    clear: both;
+}
+
+.last .firewall-content {
+    margin-bottom:13px;
+}
+
+#pub .last .network-separator {
+    display:none;
+}
+
+.public-networks .empty-network-slot {
+    display: none;
+}
+
+/* float clearing for all browsers except the devil one */
+.clearfix:after{
+  clear: both;
+  content: ".";
+  display: block;
+  height: 0;
+  visibility: hidden;
+  font-size: 0;
+}
+
+#machinesview-list div.action-indicator {
+    margin:0 !important;
+    float: none !important;
+}
+
+div.action-indicator {
+    width: 15px;
+    height: 20px;
+    background-repeat: no-repeat;
+    background-position: 0 0;
+}
+
+tbody.machines div.action-indicator {
+    position: relative;
+    top: -2px;
+}
+div.state .destroy, tbody.machines .destroy {
+    background-image: url("./icons/actions/medium/destroy.png");
+}
+div.state .start, tbody.machines .start {
+    background-image: url("./icons/actions/medium/start.png");
+}
+div.state .reboot, tbody.machines .reboot {
+    background-image: url("./icons/actions/medium/reboot.png");
+}
+div.state .shutdown, tbody.machines .shutdown {
+    background-image: url("./icons/actions/medium/shutdown.png");
 }

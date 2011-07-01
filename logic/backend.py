@@ -1,19 +1,19 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
 
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -26,7 +26,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -92,7 +92,7 @@ def process_net_status(vm, nics):
 
     Update the state of the VM in the DB accordingly.
     """
-    
+
     vm.nics.all().delete()
     for i, nic in enumerate(nics):
         if i == 0:
@@ -110,12 +110,12 @@ def process_net_status(vm, nics):
                 raise Network.DoesNotExist("NetworkLink for link='%s' not "
                     "associated with an existing Network instance." %
                     nic['link'])
-        
+    
         firewall = nic.get('firewall', '')
         firewall_profile = _reverse_tags.get(firewall, '')
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
-        
+    
         vm.nics.create(
             network=net,
             index=i,
@@ -134,11 +134,11 @@ def start_action(vm, action):
     # No actions to deleted and no actions beside destroy to suspended VMs
     if vm.deleted:
         raise VirtualMachine.DeletedError
-   
+
     # No actions to machines being built. They may be destroyed, however.
     if vm.operstate == 'BUILD' and action != 'DESTROY':
         raise VirtualMachine.BuildingError
-    
+
     vm.action = action
     vm.backendjobid = None
     vm.backendopcode = None
@@ -156,9 +156,9 @@ def start_action(vm, action):
 
 
 def create_instance(vm, flavor, image, password):
-    
+
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
-    
+
     return rapi.CreateInstance(
         mode='create',
         name=vm.backend_id,
@@ -220,7 +220,7 @@ def create_network_link():
         index = last.index + 1
     except IndexError:
         index = 1
-    
+
     if index <= settings.GANETI_MAX_LINK_NUMBER:
         name = '%s%d' % (settings.GANETI_LINK_PREFIX, index)
         return NetworkLink.objects.create(index=index, name=name,
@@ -235,17 +235,17 @@ def create_network(name, owner):
         link = create_network_link()
         if not link:
             return None
-    
+
     network = Network.objects.create(
         name=name,
         owner=owner,
         state='ACTIVE',
         link=link)
-    
+
     link.network = network
     link.available = False
     link.save()
-    
+
     return network
 
 @transaction.commit_on_success
@@ -255,7 +255,7 @@ def delete_network(net):
         link.available = True
         link.network = None
         link.save()
-    
+
     for vm in net.machines.all():
         disconnect_from_network(vm, net)
         vm.save()
@@ -285,11 +285,11 @@ def set_firewall_profile(vm, profile):
         tag = _firewall_tags[profile]
     except KeyError:
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
-    
+
     # Delete all firewall tags
     for t in _firewall_tags.values():
         rapi.DeleteInstanceTags(vm.backend_id, [t], dry_run=settings.TEST)
-    
+
     rapi.AddInstanceTags(vm.backend_id, [tag], dry_run=settings.TEST)
     
     # XXX NOP ModifyInstance call to force process_net_status to run

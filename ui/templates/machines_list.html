@@ -1,3 +1,38 @@
+<!--
+Copyright 2011 GRNET S.A. All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the following
+conditions are met:
+
+  1. Redistributions of source code must retain the above
+     copyright notice, this list of conditions and the following
+     disclaimer.
+
+  2. Redistributions in binary form must reproduce the above
+     copyright notice, this list of conditions and the following
+     disclaimer in the documentation and/or other materials
+     provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and
+documentation are those of the authors and should not be
+interpreted as representing official policies, either expressed
+or implied, of GRNET S.A.
+-->
+
 {% load i18n %}
 
 <div id="machinesview-list" class="list">
@@ -11,44 +46,55 @@
             <a id="action-destroy">{% trans "Destroy" %}</a>
             <br />
             <a id="action-details">{% trans "Show Details" %}</a>
-            <a id="action-group">{% trans "Add to group" %}</a>
+            {% comment %}<a id="action-group">{% trans "Add to group" %}</a>{% endcomment %}
             <br />
             <a id="action-console">{% trans "Console" %}</a>
+            <a id="action-connect">{% trans "Connect" %}</a>
             <br />
+            {% comment %}
             <a id="action-attach">{% trans "Attach disk" %}</a>
             <a id="action-detach">{% trans "Detach disk" %}</a>
             <br />
-            <a id="action-connect">{% trans "Connect to network" %}</a>
-            <a id="action-disconnect">{% trans "Disconnect from net" %}</a>
+            <a id="action-network-connect">{% trans "Connect to network" %}</a>
+            <a id="action-network-disconnect">{% trans "Disconnect from net" %}</a>
+            {% endcomment %}
         </div>
         <table class="list-machines" style="display: none">
             <thead>
                 <tr>
                     <th class="selection select-running">
                         <input type="checkbox"/>
+                        <!-- Drop down selector is commented out for v0.5
                         <div class="expand-icon"></div>
+                        -->
                     </th>
                     <th class="vmos">{% trans "OS" %}</th>
                     <th class="vmname">{% trans "Name" %}</th>
                     <th class="vmflavor">{% trans "Flavor" %}</th>
+                    <!--  Group column is commented out for v0.5
                     <th class="vmgroup">{% trans "Group" %}</th>
+                    -->
                     <th class="vmstatus">{% trans "Status" %}</th>
                 </tr>
             </thead>
             <tbody class="machines"></tbody>
         </table>
+        <!-- Drop down selector is commented out for v0.5
         <ul class="dropdown-selector" style="display: none">
             <li class="select-all" ><a href="#">{% trans "all" %}</a></li>
             <li class="select-none"><a href="#">{% trans "none" %}</a></li>
             <li class="select-group"><a href="#">{% trans "group" %}</a></li>
         </ul>
+        -->
     </div>
 </div>
 
 <script>
 
+init_action_indicator_handlers('list');
+
 // select/deselect all from checkbox widget of table headers
-$("#machinesview .list table thead tr th.selection :checkbox").live('change', function() {
+$("#machinesview .list table thead tr th.selection input:checkbox").click( function() {
     if ( $(this).is(":checked") ) {
         $(":checkbox").attr("checked", true);
     }
@@ -56,9 +102,9 @@ $("#machinesview .list table thead tr th.selection :checkbox").live('change', fu
         $(":checkbox").attr("checked", false);
     }
     update_listview_actions();
-    return false;
 });
 
+/* Drop down selector is commented out for v0.5
 // select all from drop down menu
 $("#machinesview .list ul.dropdown-selector li.select-all a").live('click', function() {
     $(":checkbox").attr("checked", true);
@@ -89,27 +135,26 @@ $("#machinesview .list table.list-machines thead tr th.selection .expand-icon").
     return false;
 });
 
+*/
+
 // TODO: This should be populated with more rules for all available states
+//a key represents an action, while values are lists with permitted states to which the action can be applied
 var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
                 'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
                 'connect':       ['UNKOWN', 'ACTIVE'],
-                'disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
+                //'network-connect':       ['UNKOWN', 'ACTIVE'],
+                //'network-disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
                 'console':       ['UNKOWN', 'ACTIVE', 'multiple'],
                 'details':       ['UNKOWN', 'ACTIVE', 'REBOOT', 'STOPPED'],
                 'start':         ['UNKOWN', 'STOPPED', 'multiple'],
-                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD', 'multiple'],
-                'group':         ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT','multiple'],
+                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD', 'multiple']
+                //'group':         ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT','multiple'],
                };
 
 // on checkbox click, update the actions
-$("#machinesview .list tbody input[type='checkbox']").live('change', function() {
+$("#machinesview .list tbody input[type='checkbox']").live('click', function() {
     update_listview_actions();
     pending_actions = [];
-    $(".selected").removeClass('selected');
-    update_confirmations();
-});
-
-$("div.confirm_multiple button").click(function() {
     $(".selected").removeClass('selected');
 });
 
@@ -184,6 +229,35 @@ $("#machinesview .list a.enabled#action-console").live('click', function() {
     return false;
 });
 
+$("#machinesview .list a.enabled#action-connect").live('click', function() {
+    var checked = $("#machinesview .list table.list-machines tbody input[type='checkbox']:checked");
+    $("#machinesview .list .selected").removeClass('selected');
+    $(this).addClass('selected');
+    pending_actions = []; // reset pending actions
+    checked.each(function(i,c) {
+        serverID=c.id;
+        serverName = $('#machinesview .list #'+serverID+' span.name').text();
+        pending_actions.push([machine_connect, serverID]);
+    });
+    update_confirmations();
+    return false;
+});
+
+
+$("#machinesview .list a.enabled#action-details").live('click', function() {
+    var checked = $("#machinesview .list table.list-machines tbody input[type='checkbox']:checked");
+    $("#machinesview .list .selected").removeClass('selected');
+    $(this).addClass('selected');
+    pending_actions = []; // reset pending actions
+    checked.each(function(i,c) {
+        serverID=c.id;
+    });
+    $.cookie('server', serverID);
+    $('a#single').click();
+    return false;
+});
+
+
 function update_machines_view(data){
     /*
     Go through the servers in the input data. Update existing entries, add
@@ -196,14 +270,14 @@ function update_machines_view(data){
         // check server status to select the appropriate OS icon, defaults to on state
         osTag = os_icon(server.metadata);
         var osIcon = osTag + "-on.png", imgStr, imgSrc;
-
         // check if the server already exists in the datatable
-        tableData.forEach(function(row,index){
-
-            if (row[0].split(' ')[2].replace('id=','') == server.id){
-                current = index;
-            }
-        });
+        if (tableData.length > 0) {
+            tableData.forEach(function(row,index){
+                if (row[0].split(' ')[2].replace('id=','') == server.id){
+                    current = index;
+                }
+            });
+        }
         if (current != -1) { // if it's there, update the values
             // get current status description, including non api states
             var server_row = $('#machinesview .list #' + server.id).parent().parent();
@@ -239,7 +313,7 @@ function update_machines_view(data){
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
                     tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
-                    tableData[current][5] = "<span class=status>" + STATUSES[server.status] + "</span>";
+                    tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osTag + "-off.png')", 1600);
                 } else if ( STATUSES[server.status] == server_row.find('span.status').text()) {
@@ -252,7 +326,7 @@ function update_machines_view(data){
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
                     tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
-                    tableData[current][5] = "<span class=status>" + STATUSES[server.status] + "</span>";
+                    tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osIcon + "')", 1600);
                 }
@@ -294,7 +368,7 @@ function update_machines_view(data){
                     " title=" + osTag + ">",
                 "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>",
                 "<a class=flavor><span>"+ flavorLabel + "</span></a>",
-                "group",
+                //"group",
                 "<span class=status>" + STATUSES[server.status] + "</span>"
             ]);
         }
@@ -325,7 +399,6 @@ function update_machines_view(data){
 
     $('#machinesview .list .dataTables_scrollHeadInner table').attr('style','');
     $('#machinesview .list .dataTables_scrollHeadInner th').attr('style','');
-
 }
 
 function display_success(serverID) {
@@ -346,8 +419,6 @@ var vmTable = $("div.list table.list-machines").dataTable({
     "bAutoWidth": false,
     "bSort": true,
     "bStateSave": true,
-    "sScrollY": "270px",
-    "sScrollX": "515px",
     "sScrollXInner": "500px",
     "aoColumnDefs": [
         { "bSortable": false, "aTargets": [ 0 ] }
@@ -381,6 +452,6 @@ $(window).resize(function(){
 });
 
 // set the label of the multiple buttons
-$('.confirm_multiple button.yes').text({% trans 'Confirm' %});
-$('.confirm_multiple button.no').text({% trans 'Cancel' %});
+$('.confirm_multiple button.yes').text(VARIOUS["CONFIRM"]);
+$('.confirm_multiple button.no').text(VARIOUS["CANCEL"]);
 </script>

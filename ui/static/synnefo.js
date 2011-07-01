@@ -1,3 +1,37 @@
+//
+// Copyright 2011 GRNET S.A. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or
+// without modification, are permitted provided that the following
+// conditions are met:
+//
+//   1. Redistributions of source code must retain the above
+//      copyright notice, this list of conditions and the following
+//      disclaimer.
+//
+//   2. Redistributions in binary form must reproduce the above
+//      copyright notice, this list of conditions and the following
+//      disclaimer in the documentation and/or other materials
+//      provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//
+// The views and conclusions contained in the software and
+// documentation are those of the authors and should not be
+// interpreted as representing official policies, either expressed
+// or implied, of GRNET S.A.
+//
 var API_URL = "/api/v1.1";
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
@@ -15,6 +49,19 @@ var networks = [], networks_changes_since = 0;
             //}
         }
     });
+
+
+// jquery show/hide events
+var _oldshow = $.fn.show;
+$.fn.show = function(speed, callback) {
+    $(this).trigger('show');
+    return _oldshow.apply(this,arguments);
+}
+var _oldhide = $.fn.hide;
+$.fn.hide = function(speed, callback) {
+    $(this).trigger('hide');
+    return _oldhide.apply(this,arguments);
+}
 
 function ISODateString(d){
     //return a date in an ISO 8601 format using UTC.
@@ -64,18 +111,37 @@ if (!Array.prototype.indexOf) {
   };
 }
 
-function update_confirmations(){
+// trim prototype for IE
+if(typeof String.prototype.trim !== 'function') {
+    String.prototype.trim = function() {
+        return this.replace(/^\s+|\s+$/g, '');
+    }
+}
+
+function update_confirmations() {
     // hide all confirm boxes to begin with
     $('#machines-pane div.confirm_single').hide();
     $('#machines-pane div.confirm_multiple').hide();
-    // standard view only
-    if ($.cookie("view") == '0') {
-        for (var i=0;i<pending_actions.length;i++){
+    var action_type = [];
+    // standard view or single view
+    if ($.cookie("view") == '0' || $.cookie("view") == '2') {
+        for (var i=0; i<pending_actions.length; i++) {
             // show single confirms
-            $("#machines-pane div.machine-container#"+pending_actions[i][1]+' .confirm_single').show();
+            if (pending_actions[i][0] == reboot) {
+                action_type = "reboot";
+            } else if (pending_actions[i][0] == shutdown) {
+                action_type = "shutdown";
+            } else if (pending_actions[i][0] == start) {
+                action_type = "start";
+            } else if (pending_actions[i][0] == open_console) {
+                action_type = "console";
+            } else {
+                action_type = "destroy";
+            }
+            $("#machines-pane #" + pending_actions[i][1] +
+            " div.action-container." + action_type + " div.confirm_single").show();
         }
     }
-
     // if more than one pending action show multiple confirm box
     if (pending_actions.length>1 || $.cookie("view") == '1' && pending_actions.length == 1){
         $('#machines-pane div.confirm_multiple span.actionLen').text(pending_actions.length);
@@ -200,6 +266,37 @@ function choose_view() {
     }
 }
 
+// return value from metadata key "OS", if it exists
+function os_icon(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+    if (metadata.values.OS == undefined || metadata.values.OS == '') {
+        return 'unknown';
+    } else {
+        if (os_icons.indexOf(metadata.values.OS) == -1) {
+            return 'unknown';
+        } else {
+            return metadata.values.OS;
+        }
+    }
+}
+
+function os_icon_from_value(metadata) {
+    if (!metadata) {
+        return 'unknown';
+    }
+if (metadata == undefined || metadata == '') {
+        return 'unknown';
+    } else {
+        if (os_icons.indexOf(metadata) == -1) {
+            return 'unknown';
+        } else {
+            return metadata;
+        }
+    }
+}
+
 // get and show a list of running and terminated machines
 function update_vms(interval) {
     try{ console.info('updating machines'); } catch(err){}
@@ -222,7 +319,11 @@ function update_vms(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-            ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+            try {
+                ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(0, undefined, 'Update VMs', jqXHR.responseText);
+            }
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -240,8 +341,9 @@ function update_vms(interval) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     servers = data.servers.values;
+                    jQuery.parseJSON(data);
+                    update_machines_view(data);
                 } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
-                update_machines_view(data);
             } else if (jqXHR.status != 304){
                 try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -279,7 +381,11 @@ function update_networks(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
-            ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
+            try {
+                ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(0, undefined, 'Update networks', jqXHR.responseText);
+            }
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -297,8 +403,9 @@ function update_networks(interval) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     servers = data.servers.values;
+                    jQuery.parseJSON(data);
+                    update_network_names(data);
                 } catch(err) { ajax_error('400', undefined, 'Update networks', jqXHR.responseText);}
-                update_network_names(data);
             } else if (jqXHR.status == 304) {
                 update_network_names();
             }
@@ -338,7 +445,11 @@ function update_network_names(servers_data) {
             try {
                 console.info('update_network names errback:' + jqXHR.status )
             } catch(err) {}
-            ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
+            try {
+                ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(0, undefined, 'Update network names', jqXHR.responseText);
+            }
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -351,10 +462,11 @@ function update_network_names(servers_data) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     networks = data.networks.values;
+                    jQuery.parseJSON(data);
+                    update_networks_view(servers_data, data);
                 } catch(err) {
                     ajax_error('400', undefined, 'Update network names', jqXHR.responseText);
                 }
-                update_networks_view(servers_data, data);
             } else if (jqXHR.status == 304) {
                 update_networks_view(servers_data);
             } else if (jqXHR.status != 304){
@@ -382,11 +494,16 @@ function update_images() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
-                    },
+                    try {
+                        ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(0, undefined, 'Update Images', jqXHR.responseText);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
             try {
                 images = data.images.values;
+                jQuery.parseJSON(data);
                 update_wizard_images();
             } catch(err){
                 ajax_error("NO_IMAGES");
@@ -512,16 +629,22 @@ function update_flavors() {
             update_vms(UPDATE_INTERVAL);
         },
         success: function(data, textStatus, jqXHR) {
-            flavors = data.flavors.values;
-            $.each(flavors, function(i, flavor) {
-                cpus[i] = flavor['cpu'];
-                disks[i] = flavor['disk'];
-                ram[i] = flavor['ram'];
-            });
-            cpus = cpus.unique();
-            disks = disks.unique();
-            ram = ram.unique();
-            update_wizard_flavors();
+
+            try {
+                flavors = data.flavors.values;
+                jQuery.parseJSON(data);
+                $.each(flavors, function(i, flavor) {
+                    cpus[i] = flavor['cpu'];
+                    disks[i] = flavor['disk'];
+                    ram[i] = flavor['ram'];
+                });
+                cpus = cpus.unique();
+                disks = disks.unique();
+                ram = ram.unique();
+                update_wizard_flavors();
+            } catch(err){
+                ajax_error("NO_FLAVORS");
+            }
             // start updating vm list
             update_vms(UPDATE_INTERVAL);
         }
@@ -561,12 +684,23 @@ function get_machine(serverID) {
 
 // update the actions in icon view, per server
 function update_iconview_actions(serverID, server_status) {
-    // remove .disable from all actions to begin with
-    $('#machinesview-icon.standard #' + serverID + ' div.actions').children().removeClass('disabled');
-    // decide which actions should be disabled
-    for (current_action in actions) {
-        if (actions[current_action].indexOf(server_status) == -1 ) {
-            $('#machinesview-icon.standard #' + serverID + ' a.action-' + current_action).addClass('disabled');
+    if ($.cookie("view")=='2') {
+        // remove .disable from all actions to begin with
+        $('#machinesview-single #' + serverID + ' div.single-action').show();
+        // decide which actions should be disabled
+        for (current_action in actions) {
+            if (actions[current_action].indexOf(server_status) == -1 ) {
+                $('#machinesview-single #' + serverID + ' div.action-' + current_action).hide();
+            }
+        }
+    } else {
+        // remove .disable from all actions to begin with
+        $('#machinesview-icon.standard #' + serverID + ' div.actions').find('a').removeClass('disabled');
+        // decide which actions should be disabled
+        for (current_action in actions) {
+            if (actions[current_action].indexOf(server_status) == -1 ) {
+                $('#machinesview-icon.standard #' + serverID + ' a.action-' + current_action).addClass('disabled');
+            }
         }
     }
 }
@@ -634,12 +768,20 @@ function create_vm(machineName, imageRef, flavorRef){
     data: JSON.stringify(payload),
     timeout: TIMEOUT,
     error: function(jqXHR, textStatus, errorThrown) {
-                ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
+                // close wizard and show error box
+                $('#machines-pane a#create').data('overlay').close();
+                    try {
+                        ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
+                    } catch(err) {
+                        ajax_error(0, undefined, 'Create VM', jqXHR.responseText);
+                    }
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
                     ajax_success("CREATE_VM_SUCCESS", data.server.adminPass);
                 } else {
+                    // close wizard and show error box
+                    $('#machines-pane a#create').data('overlay').close();
                     ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                 }
             }
@@ -667,7 +809,22 @@ function reboot(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText)
+                    // in machine views
+                    if ( $.cookie("pane") == 0) {
+                        try {
+                            display_failure(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
+                        } catch (err) {
+                            display_failure(0, serverID, 'Reboot', jqXHR.responseText);
+                        }
+                    }
+                    // in network view
+                    else {
+                        try {
+                            display_reboot_failure(jqXHR.status, serverID, jqXHR.responseText);
+                        } catch (err) {
+                            display_reboot_failure(0, serverID, jqXHR.responseText);
+                        }
+                    }
                 },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
@@ -675,7 +832,14 @@ function reboot(serverIDs){
                             console.info('rebooted ' + serverID);
                         } catch(err) {}
                         // indicate that the action succeeded
-                        display_success(serverID);
+                        // in machine views
+                        if ( $.cookie("pane") == 0) {
+                            display_success(serverID);
+                        }
+                        // in network view
+                        else {
+                            display_reboot_success(serverID);
+                        }
                         // continue with the rest of the servers
                         reboot(serverIDs);
                     } else {
@@ -707,8 +871,12 @@ function shutdown(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
+                    } catch(err) {
+                        display_failure(0, serverID, 'Shutdown', jqXHR.responseText);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
                         try {
@@ -745,8 +913,12 @@ function destroy(serverIDs) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
+                    } catch(err) {
+                        display_failure(0, serverID, 'Destroy', jqXHR.responseText);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '204') {
                         try {
@@ -785,8 +957,12 @@ function start(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Start', jqXHR.responseText);
+                    } catch(err) {
+                        display_failure(0, serverID, 'Start', jqXHR.responseText);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '202') {
                         try {
@@ -832,7 +1008,7 @@ function show_vnc_console(serverID, serverName, serverIP, host, port, password) 
                         'width=' + screen.width + ',' +
                         'fullscreen=yes';
 
-    window.open('/machines/console' + params_url, 'formresult' + serverID, params_window);
+    window.open('machines/console' + params_url, 'formresult' + serverID, params_window);
 
     // Restore os icon in list view
     osIcon = $('#'+serverID).parent().parent().find('.list-logo');
@@ -855,7 +1031,9 @@ function open_console(serverIDs){
 
     var machine = get_machine(serverID);
     var serverName = machine.name;
-    var serverIP = machine.addresses.values[0].values[0].addr;
+    try {
+        var serverIP = machine.addresses.values[0].values[0].addr;
+    } catch(err) { var serverIP = 'undefined'; }
 
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/action',
@@ -865,16 +1043,22 @@ function open_console(serverIDs){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Console', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Console', jqXHR.responseText);
+                    } catch(err) {
+                        display_failure(0, serverID, 'Console', jqXHR.responseText);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
                     if ( jqXHR.status == '200') {
                         try {
                             console.info('got_console ' + serverID);
                         } catch(err) {}
                         // indicate that the action succeeded
-                        //show_vnc_console(serverID, serverName, serverIP, data.console.host,data.console.port,data.console.password);
-show_vnc_console(serverID, serverName, serverIP, data.console.host,data.console.port,data.console.password);
+                        // show_vnc_console(serverID, serverName, serverIP,
+                        // data.console.host,data.console.port,data.console.password);
+                        show_vnc_console(serverID, serverName, serverIP,
+                                         data.console.host,data.console.port,data.console.password);
                         display_success(serverID);
                         // hide spinner
                         $('#' + serverID + ' .spinner').hide();
@@ -887,6 +1071,36 @@ show_vnc_console(serverID, serverName, serverIP, data.console.host,data.console.
     });
     return false;
 }
+
+// connect to machine action
+function machine_connect(serverIDs){
+    if (!serverIDs.length){
+        //ajax_success('DEFAULT');
+        return false;
+    }
+    var serverID = serverIDs.pop();
+
+    var machine = get_machine(serverID);
+    var serverName = machine.name;
+    try {
+        var serverIP = machine.addresses.values[0].values[0].addr;
+    } catch(err) { var serverIP = 'undefined'; }
+
+    try {
+        var os = machine.metadata.values.OS;
+    } catch(err) { var os = 'undefined'; }
+
+    var params_url = '?ip_address=' + serverIP + '&os=' + os;
+
+    window.open('machines/connect' + params_url);
+
+    // Restore os icon in list view
+    osIcon = $('#'+serverID).parent().parent().find('.list-logo');
+    osIcon.attr('src',osIcon.attr('os'));
+
+    return false;
+}
+
 
 // rename server
 function rename(serverID, serverName){
@@ -907,10 +1121,14 @@ function rename(serverID, serverName){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText)
-                    },
+                    try {
+                        display_failure(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
+                    } catch(err) {
+                        display_failure(0, serverID, 'Rename', jqXHR.responseText);
+                    }
+                },
         success: function(data, textStatus, jqXHR) {
-                    if ( jqXHR.status == '204') {
+                    if ( jqXHR.status == '204' || jqXHR.status == '1223') {
                         try {
                             console.info('renamed ' + serverID);
                         } catch(err) {}
@@ -928,12 +1146,15 @@ function rename(serverID, serverName){
 function get_metadata(serverID, keys_only) {
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/meta',
+        cache: false,
         type: "GET",
         //async: false,
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -964,13 +1185,15 @@ function delete_metadata(serverID, meta_key) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
             }
         },
         success: function(data, textStatus, jqXHR) {
-            // success: Do nothing, the UI is already updated
+                    // success: Do nothing, the UI is already updated
         }
     });
     return false;
@@ -993,6 +1216,8 @@ function update_metadata(serverID, meta_key, meta_value) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'add metadata', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -1002,7 +1227,41 @@ function update_metadata(serverID, meta_key, meta_value) {
             // success: Update icons if meta key is OS
             if (meta_key == "OS") {
                 $("#metadata-wizard .machine-icon").attr("src","static/icons/machines/small/" + os_icon_from_value(meta_value) + '-' + $("#metadata-wizard div#on-off").text() + '.png');
-                $("#machinesview-icon").find("div#" + serverID).find("img.logo").attr("src", "static/icons/machines/medium/" + os_icon_from_value(meta_value) + '-' + $("#metadata-wizard div#on-off").text() + '.png');
+                var machine = $("#machinesview-icon").find("div#" + serverID);
+                var os = os_icon_from_value(meta_value);
+                var state = $("#metadata-wizard div#on-off").text()
+                set_machine_os_image(machine, "icon", state, os);
+            }
+        }
+    });
+    return false;
+}
+
+// get stats
+function get_server_stats(serverID) {
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/stats',
+        cache: false,
+        type: "GET",
+        //async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) {
+                // report error as text inline
+                $('#' + serverID + ' img.busy').hide();
+                $('#' + serverID + ' div.stat-error').show();
+        },
+        success: function(data, textStatus, jqXHR) {
+            // in icon view
+            if ( $.cookie('view') == 0 ) {
+                $('#' + serverID + ' img.busy').removeClass('busy');
+                $('#' + serverID + ' img.cpu').attr("src", data.stats.cpuBar);
+                $('#' + serverID + ' img.net').attr("src", data.stats.netBar);
+            }
+            // in single view
+            else if ( $.cookie('view') == 2 ) {
+                $('#' + serverID + ' div.cpu-graph img.stats').attr("src", data.stats.cpuTimeSeries);
+                $('#' + serverID + ' div.net-graph img.stats').attr("src", data.stats.netTimeSeries);
             }
         }
     });
@@ -1025,6 +1284,8 @@ function create_network(networkName){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             } catch (err) {
                 ajax_error(err);
@@ -1035,9 +1296,15 @@ function create_network(networkName){
                 try {
                     console.info('created network ' + networkName);
                 } catch(err) {}
-                update_networks(UPDATE_INTERVAL);
-                $("a#networkscreate").overlay().close();
+                /*
+                On success of this call nothing happens.
+                When the UI gets the first update containing the created server,
+                the creation wizard is closed and the new network is inserted
+                to the DOM. This is done in update_networks_view()
+                */
             } else {
+                // close wizard and show error box
+                $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             }
         }
@@ -1067,7 +1334,7 @@ function rename_network(networkID, networkName){
             try {
                 ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Rename network', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1102,9 +1369,9 @@ function delete_network(networkIDs){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Delete network', jqXHR.responseText);
+                display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                display_net_failure(0, networkID, 'Delete', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1115,22 +1382,27 @@ function delete_network(networkIDs){
                 // continue with the rest of the servers
                 delete_network(networkIDs);
             } else {
-                ajax_error(jqXHR.status, undefined, 'Delete network', jqXHR.responseText);
+                try {
+                    display_net_failure(jqXHR.status, networkID, 'Delete', jqXHR.responseText);
+                } catch (err) {
+                    display_net_failure(0, networkID, 'Delete', jqXHR.responseText);
+                }
             }
         }
     });
     return false;
 }
 
-function add_server_to_network(networkID, serverIDs) {
+function add_server_to_network(networkID, serverIDs, serverNames, serverStates) {
     if (!serverIDs.length){
-        //ajax_success('DEFAULT');
-        update_networks(UPDATE_INTERVAL);
+        // close the overlay when all the calls are made
         $("a#add-machines-overlay").overlay().close();
         return false;
     }
     // get a server
     var serverID = serverIDs.pop();
+    var serverName = serverNames.pop();
+    var serverState = serverStates.pop();
     // prepare payload
     var payload = {
             "add": { "serverRef": serverID }
@@ -1145,9 +1417,11 @@ function add_server_to_network(networkID, serverIDs) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
+                // close wizard and show error box
+                $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Add server to network', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1155,9 +1429,13 @@ function add_server_to_network(networkID, serverIDs) {
                 try {
                     console.info('added server ' + serverID + ' to network ' + networkID);
                 } catch(err) {}
+                // toggle the reboot dialog
+                display_reboot_dialog(networkID, serverID, serverName, serverState);
                 // continue with the rest of the servers
-                add_server_to_network(networkID, serverIDs);
+                add_server_to_network(networkID, serverIDs, serverNames, serverStates);
             } else {
+                // close wizard and show error box
+                $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             }
         }
@@ -1165,7 +1443,7 @@ function add_server_to_network(networkID, serverIDs) {
     return false;
 }
 
-function remove_server_from_network(networkIDs, serverIDs) {
+function remove_server_from_network(networkIDs, serverIDs, serverNames, serverStates) {
     if (!networkIDs.length){
         //ajax_success('DEFAULT');
         return false;
@@ -1173,6 +1451,8 @@ function remove_server_from_network(networkIDs, serverIDs) {
     // get a network and a server
     var networkID = networkIDs.pop();
     var serverID = serverIDs.pop();
+    var serverName = serverNames.pop();
+    var serverState = serverStates.pop();
     // prepare payload
     var payload = {
             "remove": { "serverRef": serverID }
@@ -1189,7 +1469,7 @@ function remove_server_from_network(networkIDs, serverIDs) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(err);
+                ajax_error(0, undefined, 'Remove server form network', jqXHR.responseText);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1197,12 +1477,57 @@ function remove_server_from_network(networkIDs, serverIDs) {
                 try {
                     console.info('deleted server ' + serverID + ' from network ' + networkID);
                 } catch(err) {}
-                // remove it from DOM
-                $('#net-' + networkID + '-server-' + serverID).fadeOut('slow').remove();
+                // toggle the reboot dialog
+                display_reboot_dialog(networkID, serverID, serverName, serverState);
                 // continue with the rest of the servers
-                remove_server_form_network(networkIDs, serverIDs);
+                remove_server_form_network(networkIDs, serverIDs, serverNames, serverStates);
             } else {
                 ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
+            }
+        }
+    });
+    return false;
+}
+
+function set_firewall(networkID, serverID, profile) {
+    if (!networkID.length || !serverID.length || !profile.length){
+        return false;
+    }
+    // prepare payload
+    var payload = {
+            "firewallProfile": { "profile": profile }
+        };
+    // prepare ajax call
+    $.ajax({
+        url: API_URL + '/servers/' + serverID + '/action',
+        type: "POST",
+        contentType: "application/json",
+        dataType: "json",
+        data: JSON.stringify(payload),
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) {
+            try {
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
+            } catch (err) {
+                ajax_error(0, undefined, 'Set firewall profile', jqXHR.responseText);
+            }
+        },
+        success: function(data, textStatus, jqXHR) {
+            if ( jqXHR.status == '202') {
+                try {
+                    console.info('for server ' + serverID + ' set firewall profile to ' + profile);
+                } catch(err) {}
+                //remove progress gif and toggle the content
+                $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').html(VARIOUS["APPLY"]);
+                $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').attr("disabled", false);
+                $('div#net-' + networkID + '-server-' + serverID + ' div.firewall-header').click();
+                // toggle the reboot dialog
+                var serverName = $('div#net-' + networkID + '-server-' + serverID + ' div.machine-name-div span.name').text();
+                var serverState = $('div#net-' + networkID + '-server-' + serverID + ' img.logo').attr('src').split('-')[1];
+                serverState = serverState.split('.')[0];
+                display_reboot_dialog(networkID, serverID, serverName, serverState);
+            } else {
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
             }
         }
     });
@@ -1212,36 +1537,30 @@ function remove_server_from_network(networkIDs, serverIDs) {
 // show the welcome screen
 function showWelcome() {
     $("#view-select").fadeOut("fast");
-    $("#machinesview-icon.standard").fadeOut("fast");
-    $("#createcontainer").addClass('emptycreatecontainer')
-    $("#create").addClass('emptycreate')
     $("#emptymachineslist").fadeIn("fast");
-    $("#createbody").fadeIn("fast");
-    $("#create").css("display", "block");
-    $("#createcontainer").fadeIn("fast");
-    $("#beforecreate").fadeOut("fast");
+    $("#machinesview").hide();
 }
 
 // hide the welcome screen
 function hideWelcome() {
     $("#emptymachineslist").fadeOut("fast");
-    $("#createbody").fadeOut("fast");
-    $("#createcontainer").removeClass('emptycreatecontainer')
-    $("#create").removeClass('emptycreate')
     $("#view-select").fadeIn("fast");
-    $("#machinesview-icon.standard").fadeIn("fast");
     $("div#view-select").show();
-    $("#create").css("display", "inline");
-    $("#createcontainer").fadeIn("fast");
-    $("#beforecreate").fadeIn("fast");
+    $("#machinesview").show();
 }
 
 function log_server_status_change(server_entry, new_status) {
     // firebug console logging
     try {
-        console.info(server_entry.find("div.name span.name").text() +
-                    ' from ' + server_entry.find(".status").text() +
-                    ' to ' + STATUSES[new_status]);
+        if ($("#machinesview-single").length > 0) {
+            console.info(server_entry.find("div.machine-details div.name").text() +
+                        ' from ' + server_entry.find(".state-label").text() +
+                        ' to ' + STATUSES[new_status]);
+        } else {
+            console.info(server_entry.find("div.name span.name").text() +
+                        ' from ' + server_entry.find(".status").text() +
+                        ' to ' + STATUSES[new_status]);
+        }
     } catch(err) {}
 }
 
@@ -1274,8 +1593,12 @@ function get_image_params(imageRef) {
                 current_image = images[i];
             }
         }
-        image_name = current_image['name'];
-        image_size = current_image['metadata']['values']['size'];
+        try {
+            image_name = current_image['name'];
+        } catch(err) { image_name = 'undefined'; }
+        try{
+            image_size = current_image['metadata']['values']['size'];
+        } catch(err) { image_size = 'undefined'; }
     } else {
         image_name = 'undefined';
         image_size = 'undefined';
@@ -1319,3 +1642,311 @@ function get_public_ips(server) {
 function get_private_ips(server) {
 
 }
+
+function close_all_overlays() {
+	try {
+		$("a#networkscreate").overlay().close();
+	} catch(err) {}
+	try {
+		$('a#create').overlay().close();
+	} catch(err) {}
+	try {
+		$("a#add-machines-overlay").overlay().close();
+	} catch(err) {}
+	try {
+		$("a#metadata-scrollable").overlay().close();
+	} catch(err) {}
+}
+
+// logout
+function user_session_logout() {
+    $.cookie("X-Auth-Token", null);
+    location.reload();
+}
+
+// action indicators
+function init_action_indicator_handlers(machines_view)
+{
+    // init once for each view
+    if (window.ACTION_ICON_HANDLERS == undefined)
+    {
+        window.ACTION_ICON_HANDLERS = {};
+    }
+
+    if (machines_view in window.ACTION_ICON_HANDLERS)
+    {
+        return;
+    }
+    window.ACTION_ICON_HANDLERS[machines_view] = 1;
+
+    if (machines_view == "list")
+    {
+        // totally different logic for list view
+        init_action_indicator_list_handlers();
+        return;
+    }
+
+    function update_action_icon_indicators(force)
+    {
+        function show(el, action) {
+            $(".action-indicator", $(el)).attr("class", "action-indicator " + action);
+            $(".action-indicator", $(el)).show();
+        }
+
+        function hide(el) {
+            $(".action-indicator", $(el)).hide();
+        }
+
+        function get_pending_actions(el) {
+            return $(".confirm_single:visible", $(el));
+        }
+
+        function other_indicators(el) {
+           return $("img.wave:visible, img.spinner:visible", $(el))
+        }
+
+        $("div.machine:visible, div.single-container").each(function(index, el){
+            var el = $(el);
+            var pending = get_pending_actions(el);
+            var other = other_indicators(el);
+            var action = undefined;
+            var force_action = force;
+            var visible = $(el).css("display") == "block";
+
+            if (force_action !==undefined && force_action.el !== el[0]) {
+                // force action for other vm
+                // skipping force action
+                force_action = undefined;
+            }
+
+            if (force_action !==undefined && force_action.el === el[0]) {
+                action = force_action.action;
+            }
+
+            if (other.length >= 1) {
+                return;
+            }
+
+            if (pending.length >= 1 && force_action === undefined) {
+                action = $(pending.parent()).attr("class").replace("action-container","");
+            }
+
+            if (action in {'console':''}) {
+                return;
+            }
+
+            if (action !== undefined) {
+                show(el, action);
+            } else {
+                try {
+                    if (el.attr('id') == pending_actions[0][1])
+                    {
+                        return;
+                    }
+                } catch (err) {
+                }
+                hide(el);
+            }
+
+        });
+    }
+
+    // action indicators
+    $(".action-container").live('mouseover', function(evn) {
+        force_action = {'el': $(evn.currentTarget).parent().parent()[0], 'action':$(evn.currentTarget).attr("class").replace("action-container","")};
+        // single view case
+        if ($(force_action.el).attr("class") == "upper")
+        {
+            force_action.el = $(evn.currentTarget).parent().parent().parent()[0]
+        };
+        update_action_icon_indicators(force_action);
+    });
+
+    $("img.spinner, img.wave").live('hide', function(){
+        update_action_icon_indicators();
+    });
+    // register events where icons should get updated
+
+    // hide action indicator image on mouse out, spinner appear, wave appear
+    $(".action-container").live("mouseout", function(evn){
+        update_action_icon_indicators();
+    });
+
+    $(".confirm_single").live("click", function(evn){
+        update_action_icon_indicators();
+    });
+
+    $("img.spinner, img.wave").live('show', function(){
+        $("div.action-indicator").hide();
+    });
+
+    $(".confirm_single button.no").live('click', function(evn){
+        $("div.action-indicator", $(evn.currentTarget).parent().parent()).hide();
+    });
+
+    $(".confirm_multiple button.no").click(function(){
+        $("div.action-indicator").hide();
+    });
+
+    $(".confirm_multiple button.yes").click(function(){
+        $("div.action-indicator").hide();
+    });
+}
+
+function init_action_indicator_list_handlers()
+{
+    var skip_actions = { 'console':'','connect':'','details':'' };
+
+    var has_pending_confirmation = function()
+    {
+        return $(".confirm_multiple:visible").length >= 1
+    }
+
+    function update_action_indicator_icons(force_action, skip_pending)
+    {
+        // pending action based on the element class
+        var pending_action = $(".selected", $(".actions"))[0];
+        var selected = get_list_view_selected_machine_rows();
+
+        // reset previous state
+        list_view_hide_action_indicators();
+
+        if (pending_action == undefined && !force_action)
+        {
+            // no action selected
+            return;
+        }
+
+        if (force_action != undefined)
+        {
+            // user forced action choice
+            var action_class = force_action;
+        } else {
+            // retrieve action name (reboot, stop, etc..)
+            var action_class = $(pending_action).attr("id").replace("action-","");
+        }
+
+        selected.each(function(index, el) {
+            if (has_pending_confirmation() && skip_pending)
+            {
+                return;
+            }
+            var el = $(el);
+            var logo = $("img.list-logo", el);
+            $(".action-indicator", el).remove();
+            var cls = "action-indicator " + action_class;
+            // add icon div
+            logo.after('<div class="' + cls + '"></div>');
+            // hide os logo
+            $("img.list-logo", el).hide();
+        });
+    }
+
+    // on mouseover we force the images to the hovered action
+    $(".actions a").live("mouseover", function(evn) {
+        var el = $(evn.currentTarget);
+        if (!el.hasClass("enabled"))
+        {
+            return;
+        }
+        var action_class = el.attr("id").replace("action-","");
+        if (action_class in skip_actions)
+        {
+            return;
+        }
+        update_action_indicator_icons(action_class, false);
+    });
+
+
+    // register events where icons should get updated
+    $(".actions a.enabled").live("click", function(evn) {
+        // clear previous selections
+        $("a.selected").removeClass("selected");
+
+        var el = $(evn.currentTarget);
+        el.addClass("selected");
+        update_action_indicator_icons(undefined, false);
+    });
+
+    $(".actions a").live("mouseout", function(evn) {
+        update_action_indicator_icons(undefined, false);
+    });
+
+    $(".confirm_multiple button.no").click(function(){
+        list_view_hide_action_indicators();
+    });
+
+    $(".confirm_multiple button.yes").click(function(){
+        list_view_hide_action_indicators();
+    });
+
+    $("input[type=checkbox]").live('change', function(){
+        // pending_actions will become empty on every checkbox click/change
+        // line 154 machines_list.html
+        pending_actions = [];
+        if (pending_actions.length == 0)
+        {
+            $(".confirm_multiple").hide();
+            $("a.selected").each(function(index, el){$(el).removeClass("selected")});
+        }
+        update_action_indicator_icons(undefined, false);
+    });
+
+}
+
+function list_view_hide_action_indicators()
+{
+    $("tr td .action-indicator").remove();
+    $("tr td img.list-logo").show();
+}
+
+function get_list_view_selected_machine_rows()
+{
+    var table = $("table.list-machines");
+    var rows = $("tr:has(input[type=checkbox]:checked)",table);
+    return rows;
+}
+
+// machines images utils
+function set_machine_os_image(machine, machines_view, state, os, skip_reset_states, remove_state) {
+    var views_map = {'single': '.single-image', 'icon': '.logo'};
+    var states_map = {'on': 'state1', 'off': 'state3', 'hover': 'state4', 'click': 'state2'}
+    var sizes_map = {'single': 'large', 'icon': 'medium'}
+
+    var size = sizes_map[machines_view];
+    var img_selector = views_map[machines_view];
+    var cls = states_map[state];
+
+    console.log(state, os, skip_reset_states, remove_state, cls);
+    if (os === "unknown") { os = "okeanos" } ;
+    var new_img = 'url("./static/icons/machines/' + size + '/' + os + '-sprite.png")';
+
+    var el = $(img_selector, machine);
+    var current_img = el.css("backgroundImage");
+    if (os == undefined){
+        new_img = current_img;
+    }
+
+    // os changed
+    el.css("backgroundImage", new_img);
+
+    // reset current state
+    if (skip_reset_states === undefined)
+    {
+        el.removeClass("single-image-state1");
+        el.removeClass("single-image-state2");
+        el.removeClass("single-image-state3");
+        el.removeClass("single-image-state4");
+    }
+
+    if (remove_state !== undefined)
+    {
+        remove_state = "single-image-" + states_map[remove_state];
+        el.removeClass(remove_state);
+        return;
+    }
+    
+    // set proper state
+    el.addClass("single-image-" + cls);
+}
+

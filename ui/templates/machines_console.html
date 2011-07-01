@@ -1,8 +1,43 @@
+<!--
+Copyright 2011 GRNET S.A. All rights reserved.
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the following
+conditions are met:
+
+  1. Redistributions of source code must retain the above
+     copyright notice, this list of conditions and the following
+     disclaimer.
+
+  2. Redistributions in binary form must reproduce the above
+     copyright notice, this list of conditions and the following
+     disclaimer in the documentation and/or other materials
+     provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+The views and conclusions contained in the software and
+documentation are those of the authors and should not be
+interpreted as representing official policies, either expressed
+or implied, of GRNET S.A.
+-->
+
 {% load i18n %}
 
 <html>
     <head>
-        <link rel="stylesheet" type="text/css" href="/static/main.css"/>
+        <link rel="stylesheet" type="text/css" href="../static/main.css"/>
         <title>{% trans "Console" %}</title>
     </head>
     <body>
@@ -18,12 +53,14 @@
         <div id='console-header'>
             <div class="console-header-logo">
                 <a href="/">
-                    <img src="/static/okeanos_console.png" alt="okeanos console"/>
+                    <img src="../static/okeanos_console.png" alt="{% trans "Okeanos Console" %}"/>
                 </a>
             </div>
+            <br/>
+            <div class="help-text">{% trans "This is a slow connection meant only for troubleshooting. For an optimal experience use the machine's Connect button on the main panel." %}</div>
         </div>
         <div class="console-container">
-            <applet code="VncViewer.class" archive="/static/vncviewer/VncViewer.jar">
+            <applet code="VncViewer.class" archive="../static/vncviewer/VncViewer.jar">
                 <param name="HOST" value="{{host}}"></param>
                 <param name="PORT" value="{{port}}"></param>
                 <param name="PASSWORD" value="{{password}}"></param>

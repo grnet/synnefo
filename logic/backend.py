@@ -158,12 +158,17 @@ def start_action(vm, action):
 def create_instance(vm, flavor, image, password):
 
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
+    
+    if image.backend_id.find("windows") >= 0:
+        sz = 14000
+    else:
+        sz = 4000
 
     return rapi.CreateInstance(
         mode='create',
         name=vm.backend_id,
         disk_template='plain',
-        disks=[{"size": 4000}],     #FIXME: Always ask for a 4GB disk for now
+        disks=[{"size": sz}],     #FIXME: Always ask for a 4GB disk for now
         nics=[nic],
         os=settings.GANETI_OS_PROVIDER,
         ip_check=False,

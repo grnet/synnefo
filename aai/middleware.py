@@ -34,7 +34,7 @@ from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
 
-DONT_CHECK = ['/invitations/login']
+DONT_CHECK = ['/api', '/invitations/login']
 
 class SynnefoAuthMiddleware(object):
 

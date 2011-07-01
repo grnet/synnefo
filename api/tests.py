@@ -857,7 +857,8 @@ class AaiTestCase(TestCase):
     def test_unauthorized_call(self):
         request = {'reboot': {'type': 'HARD'}}
         path = '/api/v1.1/servers/%d/action' % 1
-        response = self.client.post(path, json.dumps(request), content_type='application/json')
+        response = self.client.post(path, json.dumps(request),
+                                    content_type='application/json')
         self.assertEquals(response.status_code, 401)
 
 

@@ -13,10 +13,6 @@ class ApiAuthMiddleware(object):
         if not request.path.startswith('/api/') :
             return
 
-        # Another middleware on the processing chain has authenticated the user.
-        if request.user:
-            return
-
         token = None
 
         # Try to find token in a cookie

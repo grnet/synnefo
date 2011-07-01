@@ -43,7 +43,7 @@ or implied, of GRNET S.A.
             <div class="column1">
                 <div class='connect-border' title='{% trans 'Connect to machine' %}'></div>
                 <div class='connect-arrow' title='{% trans 'Connect to machine' %}'></div>
-                <img src="static/icons/machines/large/ubuntu-on.png" class="single-image" />
+                <div class="single-image" />
                 <div class="state">
                     <span class="state-label">{% trans "Running" %}</span>
                     <div class="indicators">
@@ -190,6 +190,32 @@ init_action_indicator_handlers('single');
 
 //hide the all of the tags contents
 $("#machinesview-single.single .tags-content").hide();
+
+// handle connect machine image states
+$("div.connect-arrow, .single-image").live('mouseenter',
+    function() {
+        // ugly check to see if machine is running
+        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        set_machine_os_image($(this).parent().parent(), "single", "hover", undefined, 1);
+    });
+
+$("div.connect-arrow, .single-image").live('mouseleave',
+    function() {
+        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        set_machine_os_image($(this).parent().parent(), "single", "hover", undefined, 1, "hover");
+    });
+
+$("div.connect-arrow, .single-image").live('mousedown',
+    function() {
+        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1);
+    });
+
+$("div.connect-arrow, .single-image").live('mouseup',
+    function() {
+        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1, "click");
+    });
 
 //toggle the component with class tags-content
 $("#machinesview-single.single div.tags-header").live('click', function() {
@@ -445,7 +471,7 @@ function update_machines_view(data){
                     INACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
                     // from an active state to an inactive one
                     log_server_status_change(existing, server.status);
-                    existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-off.png');
+                    set_machine_os_image(existing, "single", "off", server_image);
                     existing.find(".column1 .state-label").text(STATUSES[server.status]);
                     existing.find(".connect-border").hide();
                     existing.find(".connect-arrow").hide();
@@ -458,7 +484,7 @@ function update_machines_view(data){
                          ACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0) {
                     // From an inactive state to an active one
                     log_server_status_change(existing, server.status);
-                    existing.find("img.single-image").attr("src","static/icons/machines/large/" + server_image + '-on.png');
+                    set_machine_os_image(existing, "single", "on", server_image);
                     existing.find(".column1 .state-label").text(STATUSES[server.status]);
                     existing.find(".connect-border").show();
                     existing.find(".connect-arrow").show();
@@ -512,7 +538,7 @@ function update_machines_view(data){
             var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
             machine.find(".scrollable").scrollable({vertical: true});
             machine.find(".machine-details div.name").text(server.name.substring(0,30));
-            machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-on.png');
+            set_machine_os_image(machine, "single", "on", server_image);
             machine.find("span.imagetag").text(server_image);
             machine.find(".column1 .state-label").text(STATUSES[server.status]);
             // find and display flavor parameters
@@ -530,7 +556,7 @@ function update_machines_view(data){
             machine.find(".machine-details div.ipv6").text(ips['ip6']);
             //show off image if server is not active
             if (['BUILD', 'ACTIVE', 'REBOOT'].indexOf(server.status) < 0){
-                    machine.find("img.single-image").attr("src","static/icons/machines/large/"+server_image+'-off.png');
+                    set_machine_os_image(machine, "single", "off", server_image);
                     machine.find(".connect-border").hide();
                     machine.find(".connect-arrow").hide();
                     machine.find(".column1 .state").removeClass().addClass("state terminated-state");

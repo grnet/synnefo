@@ -876,12 +876,35 @@ div.connect-border:hover {
     top: 9px;
 }
 
-.standard .machine img {
+.standard .machine .logo {
     float: left;
+    width: 50px;
+    height: 54px;
     margin: 4px 14px 0;
 }
+.machine .logo {
+    background-image: url("./icons/machines/medium/unknown-sprite.png");
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
 
-.standard .running .machine img {
+.standard .machine .single-image-state1 {
+    background-position: 0px 0;
+}
+
+.standard .machine .single-image-state3 {
+    background-position: -100px 0;
+}
+
+.standard .machine .single-image-state4 {
+    background-position: -150px 0;
+}
+
+.standard .machine .single-image-state2 {
+    background-position: -50px 0;
+}
+
+.standard .running .machine .logo {
    cursor: pointer;
 }
 
@@ -3515,8 +3538,28 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single .single-image {
     width: 126px;
+    height: 136px;
     margin-bottom: 10px;
     margin-left: 4px;
+    background-image: url("./icons/machines/large/unknown-sprite.png");
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+.single .single-image-state1 {
+    background-position: 0px 0;
+}
+
+.single .single-image-state3 {
+    background-position: -252px 0;
+}
+
+.single .single-image-state4 {
+    background-position: -378px 0;
+}
+
+.single .single-image-state2 {
+    background-position: -126px 0;
 }
 
 .single .column3 .previous, .single .column3 .next {

@@ -41,7 +41,7 @@ or implied, of GRNET S.A.
         <div class="machine" id="machine-template">
             <div class='connect-border' title='{% trans 'Connect to machine' %}'></div>
             <div class='connect-arrow' title='{% trans 'Connect to machine' %}'></div>
-            <img class="logo" src="" />
+            <div class="logo"></div>
             <div class="machine-details">
                 <div href="#" class="name">
                     <h5 class="namecontainer editable">
@@ -170,6 +170,27 @@ CONFIRMBOX_OFFSET = 200;
 
 init_action_indicator_handlers('icon');
 
+// handle connect machine image states
+$("div.connect-arrow, div.running .machine .logo").live('mouseenter',
+    function() {
+        set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1);
+    });
+
+$("div.connect-arrow, div.running .machine .logo").live('mouseleave',
+    function() {
+        set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "hover");
+    });
+
+$("div.connect-arrow, div.running .machine .logo").live('mousedown',
+    function() {
+        set_machine_os_image($(this).parent().parent(), "icon", "click", undefined, 1);
+    });
+
+$("div.connect-arrow, div.running .machine .logo").live('mouseup',
+    function() {
+        set_machine_os_image($(this).parent().parent(), "icon", "click", undefined, 1, "click");
+    });
+
 // actions on machine mouseover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
     // show connect button only if the machine is active
@@ -203,6 +224,11 @@ $("#machinesview-icon.standard .running img.logo").live('click', function(){
 });
 
 // open console on connect arrow click
+$("#machinesview-icon.standard .running div.logo").live('click', function(){
+    $(this).parent().parent().find("a.action-console").click();
+    return false;
+});
+
 $("#machinesview-icon.standard .running div.connect-arrow").live('click', function(){
     $(this).parent().parent().find("a.action-console").click();
     return false;
@@ -539,7 +565,7 @@ function update_machines_view(data) {
                     // from an active state to an inactive one
                     log_server_status_change(existing, server.status);
                     moved = existing.clone().appendTo("#machinesview-icon.standard .terminated");
-                    moved.find("img.logo").attr("src",'static/icons/machines/medium/' + server_image + '-off.png');
+                    set_machine_os_image(moved, "icon", "off", server_image);
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUSES[server.status]);
@@ -556,7 +582,7 @@ function update_machines_view(data) {
                     // From an inactive state to an active one
                     log_server_status_change(existing, server.status);
                     moved = existing.clone().appendTo("#machinesview-icon.standard .running");
-                    moved.find("img.logo").attr('src','static/icons/machines/medium/' + server_image + '-on.png');
+                    set_machine_os_image(moved, "icon", "on", server_image);
                     existing.remove();
                     existing = moved;
                     existing.find(".status").text(STATUSES[server.status]);
@@ -606,11 +632,11 @@ function update_machines_view(data) {
             // check server status to select where to append the new server to
             if (ACTIVE_STATES.indexOf(STATUSES[server.status]) >= 0 ) {
                 // append to running
-                machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-on.png');
+                set_machine_os_image(machine, "icon", "on", server_image);
                 machine.appendTo("#machinesview-icon.standard .running");
             } else {
                 // append to terminated
-                machine.find("img.logo").attr("src","static/icons/machines/medium/"+server_image+'-off.png');
+                set_machine_os_image(machine, "icon", "off", server_image);
                 machine.appendTo("#machinesview-icon.standard .terminated");
                 if (server.status == "STOPPED") { //if server status us stopped is a different case than status unknown/error
                     machine.find('.state').removeClass().addClass('state terminated-state');

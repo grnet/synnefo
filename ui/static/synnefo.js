@@ -1227,7 +1227,10 @@ function update_metadata(serverID, meta_key, meta_value) {
             // success: Update icons if meta key is OS
             if (meta_key == "OS") {
                 $("#metadata-wizard .machine-icon").attr("src","static/icons/machines/small/" + os_icon_from_value(meta_value) + '-' + $("#metadata-wizard div#on-off").text() + '.png');
-                $("#machinesview-icon").find("div#" + serverID).find("img.logo").attr("src", "static/icons/machines/medium/" + os_icon_from_value(meta_value) + '-' + $("#metadata-wizard div#on-off").text() + '.png');
+                var machine = $("#machinesview-icon").find("div#" + serverID);
+                var os = os_icon_from_value(meta_value);
+                var state = $("#metadata-wizard div#on-off").text()
+                set_machine_os_image(machine, "icon", state, os);
             }
         }
     });
@@ -1903,3 +1906,46 @@ function get_list_view_selected_machine_rows()
     var rows = $("tr:has(input[type=checkbox]:checked)",table);
     return rows;
 }
+
+// machines images utils
+function set_machine_os_image(machine, machines_view, state, os, skip_reset_states, remove_state) {
+    var views_map = {'single': '.single-image', 'icon': '.logo'};
+    var states_map = {'on': 'state1', 'off': 'state3', 'hover': 'state4', 'click': 'state2'}
+    var sizes_map = {'single': 'large', 'icon': 'medium'}
+
+    console.log(state);
+
+    var size = sizes_map[machines_view];
+    var img_selector = views_map[machines_view];
+    var cls = states_map[state];
+    var new_img = 'url("./static/icons/machines/' + size + '/' + os + '-sprite.png")';
+
+    var el = $(img_selector, machine);
+    var current_img = el.css("backgroundImage");
+    if (os == undefined){
+        new_img = current_img;
+    }
+
+    // os changed
+    el.css("backgroundImage", new_img);
+
+    // reset current state
+    if (skip_reset_states === undefined)
+    {
+        el.removeClass("single-image-state1");
+        el.removeClass("single-image-state2");
+        el.removeClass("single-image-state3");
+    }
+
+    if (remove_state !== undefined)
+    {
+        remove_state = "single-image-" + states_map[remove_state];
+        el.removeClass(remove_state);
+        return;
+    }
+    
+    console.log(cls);
+    // set proper state
+    el.addClass("single-image-" + cls);
+}
+

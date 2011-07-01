@@ -2,6 +2,58 @@ Changelog
 =========
 
 
+2011-07-01, v0.5
+
+NEW FEATURES
+    GUI:
+        * Overhauled icon and single-server view, updated color set
+          (#651, #653, #667, #669, #673, #675, #677, #443, #631)
+        * Added statistics, retrieves pre-processed PNGs from backend (#527)
+        * Added buttons for modifier keys, custom theming to Java VNC client
+          (#545)
+        * Support single-click RDP-based connection to Windows VMs (#673)
+        * Allow setting network firewall profiles on public interfaces (#661)
+    Images:
+        * Complete set of Linux distribution Images (Debian, Fedora, Ubuntu)
+          (#493, #509)
+        * Complete support for Windows machines (create, customize, boot)
+          (#495)
+    Logic:
+        * Support centralized logging, logging.conf-based setup (#547)
+    AAI:
+        * Allow per-user setting of number of outgoing invitations (#439, #705)
+        * Support "switch-user"-type functionality for helpdesk users (#665)
+        * Support user logout in the UI, delete relevant tokens (#663)
+    API:
+        * Supports retrieval of statistics (#527)
+        * Support maximum number of VMs per user (quota) (#703)
+        * Extend API to support distinct firewall profiles, update backend (#659)
+    Deployment:
+        * BSD 2-clause Licensing (#581)
+        * Initial translation of UI to Greek (#689)
+        * Drop Django dependency in snf-ganeti-eventd and snf-ganeti-hook (#691)
+          Synnefo dependency remains, already patched by ops, to be committed
+        * Split settings.py to distinct files under settings.d/ (#693)
+        * Use the Django email framework (#697)
+        * Implemented statistics-gathering mechanism at the backend (#527)
+
+FIXES:
+    GUI:
+        * Too many bug fixes to mention (#403, #429, #465, #473, #557, #589,
+          #599, #605, #607, #609, #611, #613, #619, #621, #623, #625, #627,
+          #629, #633, #635, #637, #639, #641, #643, #645, #647, #649, #655,
+          #657, #681, #687, #699, #701, #707, #709)
+        * Better cross-browser compatibility (#341)
+        * Should work with relative URLs (#421)
+    Images:
+        * Set hostname in Linux VMs appropriately (#603)
+    Logic:
+        * Include EUI-64-derived IPv6 address in ganeti-net-status notifications
+          (#615)
+    Deployment:
+        * Do not set nodes explicitly, use iallocator at Ganeti backend (#617)
+
+
 2011-06-06, v0.4
 
 NEW FEATURES:

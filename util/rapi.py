@@ -33,12 +33,12 @@
 # No Ganeti-specific modules should be imported. The RAPI client is supposed to
 # be standalone.
 
-import logging
+from synnefo.logic import log
+
 import socket
 import urllib
 import threading
 import pycurl
-import synnefo
 
 try:
   import simplejson as json
@@ -250,7 +250,7 @@ class GanetiRapiClient(object): # pylint: disable-msg=R0904
 
   def __init__(self, host, port=GANETI_RAPI_PORT,
                username=None, password=None,
-               logger=synnefo.logic.log.get_logger("rapi"),
+               logger=log.get_logger("rapi"),
                curl_config_fn=None, curl_factory=None):
     """Initializes this class.
 

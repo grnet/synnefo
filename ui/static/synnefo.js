@@ -1913,11 +1913,11 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
     var states_map = {'on': 'state1', 'off': 'state3', 'hover': 'state4', 'click': 'state2'}
     var sizes_map = {'single': 'large', 'icon': 'medium'}
 
-    console.log(state);
-
     var size = sizes_map[machines_view];
     var img_selector = views_map[machines_view];
     var cls = states_map[state];
+
+    if (os === "unknown") { os = "okeanos" } ;
     var new_img = 'url("./static/icons/machines/' + size + '/' + os + '-sprite.png")';
 
     var el = $(img_selector, machine);
@@ -1944,7 +1944,6 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
         return;
     }
     
-    console.log(cls);
     // set proper state
     el.addClass("single-image-" + cls);
 }

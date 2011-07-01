@@ -370,7 +370,9 @@ Synnefo deployment.
     the gnt-instance-image OS Provider installed on the Ganeti backend.
 
     Download and install gnt-instance-image in all Ganeti nodes from its own
-    repository, at https://code.grnet.gr/git/gnt-instance-image.
+    repository, at https://code.grnet.gr/git/gnt-instance-image. It's
+    recommended to use the win-support branch (last tested commit for Synnefo
+    v0.5 is cb9587b68bb1e2d8ce14c351244a279b0e3eb963).
 
     After installing gnt-instance-image do the following:
     1. root@ganeti-master$ cd /path-to-repo
@@ -383,6 +385,7 @@ Synnefo deployment.
        For linux you will need at lease `grub' and `root_passwd' to make the
        instance usable:
          chmod +x /etc/ganeti/instance-image/hooks/linux/{grub,root_passwd}
+       For security reasons make sure `ssh' hook is also enabled.
        For windows you will need `mbr' and `admin_passwd':
          chmod +x /etc/ganeti/instance-image/hooks/windows/{mbr,admin_passwd}
        For both architectures it is also highly recommended to enable

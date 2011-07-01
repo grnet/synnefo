@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <title>Okeanos Project</title>
+    <script src="./jquery.tools.min.js" type="text/javascript"></script>
+    <style>
+        .content {
+            width: 900px;
+            margin: 0 auto;
+            padding-top: 5%;
+            text-align: center;
+        }
+        .intro-img {
+            cursor: pointer;
+            border: none;
+        }
+        a {
+            border: none;
+        }
+    </style>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $(".intro-img").hover(function(){
+                $(this).attr("src", "./okeanos-intro-logo2.png");
+            }).mousedown(function(){
+                $(this).attr("src", "./okeanos-intro-logo3.png");
+            }).mouseup(function(){
+                $(this).attr("src", "./okeanos-intro-logo2.png");
+            }).mouseout(function() {
+                $(this).attr("src", "./okeanos-intro-logo1.png");
+            });;
+        });
+    </script>
+
+</head>
+    <body>
+    <div class="content">
+        <a href="http://www.okeanos.grnet.gr" title=""><img class="intro-img" src="./okeanos-intro-logo1.png" alt="Sign in
+            Okeanos project" /></a>
+    </div>
+</body>
+</html>

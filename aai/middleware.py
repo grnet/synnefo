@@ -67,14 +67,12 @@ class SynnefoAuthMiddleware(object):
                 user = SynnefoUser.objects.get(auth_token=token)
 
             except SynnefoUser.DoesNotExist:
-                return HttpResponseRedirect(settings.APP_INSTALL_URL +
-                                            settings.LOGIN_PATH)
+                return HttpResponseRedirect(settings.LOGIN_URL)
             # check user's auth token validity
             if (time.time() -
                 time.mktime(user.auth_token_expires.timetuple())) > 0:
                 # the user's token has expired, prompt to re-login
-                return HttpResponseRedirect(settings.APP_INSTALL_URL +
-                                            settings.LOGIN_PATH)
+                return HttpResponseRedirect(settings.LOGIN_URL)
 
             request.user = user
             return
@@ -90,20 +88,17 @@ class SynnefoAuthMiddleware(object):
                     user = SynnefoUser.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
                     return self._redirect_shib_auth_user(user)
                 else:
-                    return HttpResponseRedirect(settings.APP_INSTALL_URL +
-                                                settings.LOGIN_PATH)
+                    return HttpResponseRedirect(settings.LOGIN_URL)
 
         if settings.TEST and 'TEST-AAI' in request.META:
-            return HttpResponseRedirect(settings.APP_INSTALL_URL +
-                                        settings.LOGIN_PATH)
+            return HttpResponseRedirect(settings.LOGIN_URL)
 
-        if request.path.endswith(settings.LOGIN_PATH):
+        if request.path.endswith(settings.LOGIN_URL):
             # avoid redirect loops
             return
         else:
             # no authentication info found in headers, redirect back
-            return HttpResponseRedirect(settings.APP_INSTALL_URL +
-                                        settings.LOGIN_PATH)
+            return HttpResponseRedirect(settings.LOGIN_URL)
 
     def process_response(self, request, response):
         # Tell proxies and other interested parties that the request varies

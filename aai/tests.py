@@ -119,5 +119,5 @@ class AaiTestCase(TestCase):
     def _test_redirect(self, response):
         self.assertEquals(response.status_code, 302)
         self.assertTrue('Location' in response)
-        self.assertTrue(response['Location'].endswith(settings.LOGIN_PATH))
+        self.assertTrue(response['Location'].startswith(settings.LOGIN_URL))
 

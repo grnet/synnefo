@@ -254,8 +254,8 @@ class BaseTestCase(TestCase):
         self.assert_status(response, 201)
         return response
 
-    def update_object(self, account, container, name, data={},
-                      content_type='MULTIPART_CONTENT', **headers):
+    def update_object(self, account, container, name, data='',
+                      content_type='', **headers):
         path = '/v1/%s/%s/%s' %(account, container, name)
         response = self.client.post(path, data, content_type, **headers)
         response.content = response.content
@@ -670,6 +670,7 @@ class ContainerGet(BaseTestCase):
         r = self.update_object(self.account,
                                     self.container[0],
                                     self.obj[0]['name'],
+                                    
                                     **meta)
         r = self.list_objects(self.account,
                           self.container[0],

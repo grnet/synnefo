@@ -1261,7 +1261,7 @@ function get_server_stats(serverID) {
             // in single view
             else if ( $.cookie('view') == 2 ) {
                 $('#' + serverID + ' div.cpu-graph img.stats').attr("src", data.stats.cpuTimeSeries);
-                $('#' + serverID + ' div.net-graph img.stats').attr("src", data.stats.netTimeSeries);
+                $('#' + serverID + ' div.network-graph img.stats').attr("src", data.stats.netTimeSeries);
             }
         }
     });

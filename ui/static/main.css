@@ -2206,7 +2206,7 @@ div#user .username {
     height: 20px;
     background: url("./down-arrow-light.png") no-repeat right;
     background-position: right 6px;
-    font-weight: bold;
+    font-weight: normal;
 }
 
 div#user .hovered {

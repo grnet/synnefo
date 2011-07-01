@@ -42,7 +42,7 @@ def blocksplit(data, blocksize):
 
 class BackendFS(LoggingMixIn, Operations):
     def __init__(self, account):
-        self.user = None
+        self.user = account
         self.account = account
         self.backend = BackendProxy(backend, self.user, self.account)
     
@@ -141,7 +141,7 @@ class BackendFS(LoggingMixIn, Operations):
     
     def truncate(self, path, length, fh=None):
         container, sep, object = path[1:].partition('/')
-        if object:
+        if not object:
             raise FuseOSError(EISDIR)
         
         size, hashmap = self.backend.get_object_hashmap(container, object)

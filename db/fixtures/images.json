@@ -1,98 +1,14 @@
 [
     {
         "model": "db.Image",
-        "pk": 3,
+        "pk": 1,
         "fields": {
-            "name": "Debian base",
+            "name": "Debian Base",
             "owner": 1,
             "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
+            "updated": "2011-06-29 13:14:00",
             "state": "ACTIVE",
-            "backend_id": "debian_base",
-            "format": "dump",
-            "public": 1
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 4,
-        "fields": {
-            "name": "Debian 6.0.1a Desktop",
-            "owner": 1,
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "backend_id": "debian-6.0.1a",
-            "format": "dump",
-            "public": 1
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 5,
-        "fields": {
-            "name": "Ubuntu 11.04 Server",
-            "owner": 1,
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "backend_id": "ubuntu_11.04_server",
-            "format": "dump",
-            "public": 1
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 6,
-        "fields": {
-            "name": "Ubuntu 11.04 Desktop",
-            "owner": 1,
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "backend_id": "ubuntu_11.04_desktop",
-            "format": "dump",
-            "public": 1
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 7,
-        "fields": {
-            "name": "Debian base LVM",
-            "owner": 1,
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "backend_id": "debian_base",
-            "format": "lvm",
-            "public": 1
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 8,
-        "fields": {
-            "name": "Fedora 14 Desktop",
-            "owner": 1,
-            "created": "2011-05-27 00:00:00",
-            "updated": "2011-05-27 00:00:00",
-            "state": "ACTIVE",
-            "backend_id": "fedora-14-1",
-            "format": "dump",
-            "public": 1
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 9,
-        "fields": {
-            "name": "Fedora 15 Desktop",
-            "owner": 1,
-            "created": "2011-05-30 00:00:00",
-            "updated": "2011-05-30 00:00:00",
-            "state": "ACTIVE",
-            "backend_id": "fedora-15-1",
+            "backend_id": "debian_base-6.0.2.1-1",
             "format": "dump",
             "public": 1
         }
@@ -103,25 +19,25 @@
         "fields": {
             "meta_key": "OS",
             "meta_value": "debian",
-            "image": 3
+            "image": 1
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 2,
         "fields": {
-            "meta_key": "kernel",
-            "meta_value": "2.6.37",
-            "image": 3
+            "meta_key": "description",
+            "meta_value": "Debian Squeeze Base System",
+            "image": 1
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 3,
         "fields": {
-            "meta_key": "OS",
-            "meta_value": "debian",
-            "image": 4
+            "meta_key": "size",
+            "meta_value": "473",
+            "image": 1
         }
     },
     {
@@ -130,69 +46,96 @@
         "fields": {
             "meta_key": "kernel",
             "meta_value": "2.6.32",
-            "image": 4
+            "image": 1
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 5,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "Debian 6.0.1a Desktop, Vanilla Install",
-            "image": 4
+            "meta_key": "GUI",
+            "meta_value": "No GUI",
+            "image": 1
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 2,
+        "fields": {
+            "name": "Debian Desktop",
+            "owner": 1,
+            "created": "2011-06-29 19:33:00",
+            "updated": "2011-02-06 19:33:00",
+            "state": "ACTIVE",
+            "backend_id": "debian_desktop-6.0.2.1-1",
+            "format": "dump"
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 6,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "4000",
-            "image": 4
+            "meta_key": "OS",
+            "meta_value": "debian",
+            "image": 2
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 7,
         "fields": {
-            "meta_key": "OS",
-            "meta_value": "ubuntu",
-            "image": 5
+            "meta_key": "description",
+            "meta_value": "Debian Squeeze Desktop",
+            "image": 2
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 8,
         "fields": {
-            "meta_key": "kernel",
-            "meta_value": "2.6.35",
-            "image": 5
+            "meta_key": "size",
+            "meta_value": "3261",
+            "image": 2
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 9,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "Ubuntu 11.04 Server, Vanilla Installation",
-            "image": 5
+            "meta_key": "kernel",
+            "meta_value": "2.6.32",
+            "image": 2
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 10,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "2000",
-            "image": 5
+            "meta_key": "GUI",
+            "meta_value": "GNOME 2.30",
+            "image": 2
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 3,
+        "fields": {
+            "name": "Ubuntu",
+            "owner": 1,
+            "created": "2011-06-30 16:45:00",
+            "updated": "2011-06-30 16:45:00",
+            "state": "ACTIVE",
+            "backend_id": "ubuntu_desktop-11.04-1",
+            "format": "dump",
+            "public": 1
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 11,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "Debian base Image, same as debootstrap",
+            "meta_key": "OS",
+            "meta_value": "ubuntu",
             "image": 3
         }
     },
@@ -200,8 +143,8 @@
         "model": "db.ImageMetadata",
         "pk": 12,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "2000",
+            "meta_key": "description",
+            "meta_value": "Ubuntu 11.04",
             "image": 3
         }
     },
@@ -209,9 +152,9 @@
         "model": "db.ImageMetadata",
         "pk": 13,
         "fields": {
-            "meta_key": "OS",
-            "meta_value": "ubuntu",
-            "image": 6
+            "meta_key": "size",
+            "meta_value": "2279",
+            "image": 3
         }
     },
     {
@@ -219,62 +162,90 @@
         "pk": 14,
         "fields": {
             "meta_key": "kernel",
-            "meta_value": "2.6.35",
-            "image": 6
+            "meta_value": "2.6.38",
+            "image": 3
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 15,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "Ubuntu 11.04 Desktop, Vanilla Installation",
-            "image": 6
+            "meta_key": "GUI",
+            "meta_value": "Unity/GNOME 2.32.1",
+            "image": 3
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 4,
+        "fields": {
+            "name": "Kubuntu",
+            "owner": 1,
+            "created": "2011-06-30 16:45:00",
+            "updated": "2011-06-30 16:45:00",
+            "state": "ACTIVE",
+            "backend_id": "kubuntu_desktop-11.04-1",
+            "format": "dump",
+            "public": 1
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 16,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "4000",
-            "image": 6
+            "meta_key": "OS",
+            "meta_value": "ubuntu",
+            "image": 4
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 17,
         "fields": {
-            "meta_key": "OS",
-            "meta_value": "debian",
-            "image": 7
+            "meta_key": "description",
+            "meta_value": "Kubuntu 11.04",
+            "image": 4
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 18,
         "fields": {
-            "meta_key": "kernel",
-            "meta_value": "2.6.32",
-            "image": 7
+            "meta_key": "size",
+            "meta_value": "2270",
+            "image": 4
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 19,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "This is the same as -Debian base- but stored in a LVM format",
-            "image": 7
+            "meta_key": "kernel",
+            "meta_value": "2.6.38",
+            "image": 4
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 20,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "2000",
-            "image": 7
+            "meta_key": "GUI",
+            "meta_value": "KDE 4.6.2",
+            "image": 4
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 5,
+        "fields": {
+            "name": "Fedora Desktop",
+            "owner": 1,
+            "created": "2011-06-30 18:54:00",
+            "updated": "2011-06-30 18:54:00",
+            "state": "ACTIVE",
+            "backend_id": "fedora-15-1",
+            "format": "dump",
+            "public": 1
         }
     },
     {
@@ -283,52 +254,66 @@
         "fields": {
             "meta_key": "OS",
             "meta_value": "fedora",
-            "image": 8
+            "image": 5
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 22,
         "fields": {
-            "meta_key": "kernel",
-            "meta_value": "2.6.35",
-            "image": 8
+            "meta_key": "description",
+            "meta_value": "Fedora 15 Desktop Edition",
+            "image": 5
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 23,
         "fields": {
-            "meta_key": "description",
-            "meta_value": "Fedora 14 Desktop, full installation",
-            "image": 8
+            "meta_key": "size",
+            "meta_value": "2237",
+            "image": 5
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 24,
         "fields": {
-            "meta_key": "size",
-            "meta_value": "3300",
-            "image": 8
+            "meta_key": "kernel",
+            "meta_value": "2.6.38.6",
+            "image": 5
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 25,
         "fields": {
-            "meta_key": "OS",
-            "meta_value": "fedora",
-            "image": 9
+            "meta_key": "GUI",
+            "meta_value": "GNOME 3",
+            "image": 5
         }
     },
-    {
+   {
+        "model": "db.Image",
+        "pk": 6,
+        "fields": {
+            "name": "Windows",
+            "owner": 1,
+            "created": "2011-06-09 00:00:00",
+            "updated": "2011-06-09 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "windows-2008R2-1",
+            "format": "ntfsclone",
+            "public": 1
+        }
+    },
+   {
         "model": "db.ImageMetadata",
         "pk": 26,
         "fields": {
-            "meta_key": "kernel",
-            "meta_value": "2.6.38",
-            "image": 9
+            "meta_key": "OS",
+            "meta_value": "windows",
+            "image": 6 
         }
     },
     {
@@ -336,17 +321,36 @@
         "pk": 27,
         "fields": {
             "meta_key": "description",
-            "meta_value": "Fedora 15 Desktop Edition",
-            "image": 9
+            "meta_value": "Windows 2008 R2, Aero Desktop Experience",
+            "image": 6
         }
     },
     {
         "model": "db.ImageMetadata",
         "pk": 28,
         "fields": {
+            "meta_key": "kernel",
+            "meta_value": "Windows NT Kernel",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 29,
+        "fields": {
             "meta_key": "size",
-            "meta_value": "2284",
-            "image": 9
+            "meta_value": "11000",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 30,
+        "fields": {
+            "meta_key": "GUI",
+            "meta_value": "Windows, Aero Theme",
+            "image": 6
         }
     }
 ]
+

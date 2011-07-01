@@ -16,24 +16,24 @@ what Ganeti knows about each VM.
 The administrator can trigger reconciliation manually, by issuing a Ganeti
 OP_INSTANCE_QUERY_DATA command, using gnt-instance info.
 
-Alternatively, the reconciliation process can be triggered for all VMs using
-the command
+Alternatively, the reconciliation process can be triggered for all VMs using the
+command
 
   ./manage.py reconcile --all
 
 It is advised, though not strictly necessary, to run the reconciliation process
-periodically, through cron. To avoid overloading the Ganeti master, the
-periodic reconciliation process takes a staggered approach to updating the VMs,
-which is configured through the following parameters:
+periodically, through cron. To avoid overloading the Ganeti master, the periodic
+reconciliation process takes a staggered approach to updating the VMs, which is
+configured through the following parameters:
 
-* The settings.py RECONCILIATION_MIN parameter, which specifies the
-  maximum time a VM can remain ``non-reconciled''. (default: 30 mins)
+* The settings.py RECONCILIATION_MIN parameter, which specifies the maximum time
+  a VM can remain ``non-reconciled''. (default: 30 mins)
 
-* The --interval option to the reconcile command, which declares the
-  interval time between reconciliation attempts (default: 1 min)
+* The --interval option to the reconcile command, which declares the interval
+  time between reconciliation attempts (default: 1 min)
 
 On each invocation of the reconcile command, the system will trigger a
-reconciliation for ((num_all_vms/RECONCILIATION_MIN) * interval)
-machines. Obviously the lower the interval value and the higher the
-setting of RECONCILIATION_MIN, the less load is going to be put on Ganeti.
+reconciliation for ((num_all_vms/RECONCILIATION_MIN) * interval) machines.
+Obviously the lower the interval value and the higher the setting of
+RECONCILIATION_MIN, the less load is going to be put on Ganeti.
 

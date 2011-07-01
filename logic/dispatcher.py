@@ -54,7 +54,12 @@ from signal import signal, SIGINT, SIGTERM
 import time
 import socket
 from daemon import daemon
-from lockfile import pidlockfile
+
+# Take care of differences between python-daemon versions.
+try:
+    from daemon import pidfile
+except:
+    from daemon import pidlockfile
 
 from synnefo.logic import callbacks
 
@@ -249,8 +254,12 @@ def main():
 
     daemon_context.open()
 
-    # Create pidfile
-    pidf = pidfile.TimeoutPIDLockFile(opts.pid_file, 10)
+    # Create pidfile. Take care of differences between python-daemon versions.
+    try:
+        pidf = pidfile.TimeoutPIDLockFile(opts.pid_file, 10)
+    except:
+        pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+
     pidf.acquire()
 
     logger.info("Became a daemon")

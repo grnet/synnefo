@@ -224,19 +224,15 @@ $("#machinesview-icon.standard .running div.connect-border").live('mouseout', fu
 });
 
 // open console on machine logo click
-$("#machinesview-icon.standard .running img.logo").live('click', function(){
-    $(this).parent().parent().find("a.action-console").click();
-    return false;
-});
-
-// open console on connect arrow click
 $("#machinesview-icon.standard .running div.logo").live('click', function(){
-    $(this).parent().parent().find("a.action-console").click();
+    var serverID = $(this).parent().parent().attr("id");
+    machine_connect([machine_connect, serverID]);
     return false;
 });
 
 $("#machinesview-icon.standard .running div.connect-arrow").live('click', function(){
-    $(this).parent().parent().find("a.action-console").click();
+    var serverID = $(this).parent().parent().attr("id");
+    machine_connect([machine_connect, serverID]);
     return false;
 });
 
@@ -244,7 +240,6 @@ $("#machinesview-icon.standard .running div.connect-arrow").live('click', functi
 $("#machinesview-icon.standard .running div.connect-border").live('click', function(){
     var serverID = $(this).parent().parent().attr("id");
     machine_connect([machine_connect, serverID]);
-    return false;
     return false;
 });
 

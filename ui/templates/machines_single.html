@@ -611,6 +611,9 @@ function update_machines_view(data){
         if (!(server.metadata == undefined)) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
+        if (server.id == current_serverId()) {
+            get_server_stats(server.id);
+        }
     });
 
     // hide pane spinner
@@ -700,6 +703,7 @@ function update_prev_next() {
         //disable class
         $(".single .column3 .next").addClass('disabled');
     }
+    get_server_stats(current_serverId());
 }
 
 // basic functions executed on page load

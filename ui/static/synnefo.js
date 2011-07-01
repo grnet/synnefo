@@ -269,13 +269,13 @@ function choose_view() {
 // return value from metadata key "OS", if it exists
 function os_icon(metadata) {
     if (!metadata) {
-        return 'unknown';
+        return 'okeanos';
     }
     if (metadata.values.OS == undefined || metadata.values.OS == '') {
-        return 'unknown';
+        return 'okeanos';
     } else {
         if (os_icons.indexOf(metadata.values.OS) == -1) {
-            return 'unknown';
+            return 'okeanos';
         } else {
             return metadata.values.OS;
         }
@@ -284,13 +284,13 @@ function os_icon(metadata) {
 
 function os_icon_from_value(metadata) {
     if (!metadata) {
-        return 'unknown';
+        return 'okeanos';
     }
 if (metadata == undefined || metadata == '') {
-        return 'unknown';
+        return 'okeanos';
     } else {
         if (os_icons.indexOf(metadata) == -1) {
-            return 'unknown';
+            return 'okeanos';
         } else {
             return metadata;
         }

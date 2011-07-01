@@ -195,25 +195,26 @@ $("#machinesview-single.single .tags-content").hide();
 $("div.connect-arrow, .single-image").live('mouseenter',
     function() {
         // ugly check to see if machine is running
-        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
         set_machine_os_image($(this).parent().parent(), "single", "hover", undefined, 1);
     });
 
 $("div.connect-arrow, .single-image").live('mouseleave',
     function() {
-        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
         set_machine_os_image($(this).parent().parent(), "single", "hover", undefined, 1, "hover");
+        set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1, "click");
     });
 
 $("div.connect-arrow, .single-image").live('mousedown',
     function() {
-        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
         set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1);
     });
 
 $("div.connect-arrow, .single-image").live('mouseup',
     function() {
-        if ($(this).parent().find(".terminated-state").length > 0) { return };
+        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
         set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1, "click");
     });
 

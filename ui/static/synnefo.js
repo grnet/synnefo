@@ -1917,6 +1917,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
     var img_selector = views_map[machines_view];
     var cls = states_map[state];
 
+    console.log(state, os, skip_reset_states, remove_state, cls);
     if (os === "unknown") { os = "okeanos" } ;
     var new_img = 'url("./static/icons/machines/' + size + '/' + os + '-sprite.png")';
 
@@ -1935,6 +1936,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
         el.removeClass("single-image-state1");
         el.removeClass("single-image-state2");
         el.removeClass("single-image-state3");
+        el.removeClass("single-image-state4");
     }
 
     if (remove_state !== undefined)

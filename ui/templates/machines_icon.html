@@ -171,23 +171,29 @@ CONFIRMBOX_OFFSET = 200;
 init_action_indicator_handlers('icon');
 
 // handle connect machine image states
-$("div.connect-arrow, div.running .machine .logo").live('mouseenter',
+$("div.connect-arrow, div.running .machine .logo").live('mouseover',
     function() {
+        if ($(this).parent().parent().find('.status').text() != STATUSES['ACTIVE']) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1);
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mouseleave',
     function() {
+        if ($(this).parent().parent().find('.status').text() != STATUSES['ACTIVE']) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "hover");
+        // mouseup outside the element is not fired
+        set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "click");
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mousedown',
-    function() {
+function() {
+        if ($(this).parent().parent().find(".connect-arrow:visible").length == 0) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "click", undefined, 1);
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mouseup',
     function() {
+        if ($(this).parent().parent().find(".connect-arrow:visible").length == 0) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "click", undefined, 1, "click");
     });
 

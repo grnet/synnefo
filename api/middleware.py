@@ -31,7 +31,7 @@ class ApiAuthMiddleware(object):
                 user = None
 
             # Check user's auth token
-            if (time.time() -
+            if user and (time.time() -
                 time.mktime(user.auth_token_expires.timetuple())) > 0:
                 # The user's token has expired, re-login
                 user = None

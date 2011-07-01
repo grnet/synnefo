@@ -38,6 +38,7 @@ from email.utils import parsedate
 from random import choice, randint, sample
 from time import mktime
 
+from django.conf import settings
 from django.utils import simplejson as json
 from django.test import TestCase
 from django.test.client import Client
@@ -66,7 +67,8 @@ class APITestCase(TestCase):
 
     def setUp(self):
         self.client = AaiClient()
-
+        settings.MAX_VMS_PER_USER = 5
+    
     def test_api_version(self):
         """Check API version."""
 

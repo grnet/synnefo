@@ -118,18 +118,19 @@ def list_images(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    user_images = Image.objects.filter(Q(owner=request.user) | Q(public=True))
     since = util.isoparse(request.GET.get('changes-since'))
-    owner = request.user
     
-    avail_images = Image.objects.filter(Q(owner=owner) | Q(public=True))
     if since:
-        avail_images = avail_images.filter(updated__gte=since)
-        if not avail_images:
+        user_images = user_images.filter(updated__gte=since)
+        if not user_images:
             return HttpResponse(status=304)
+    else:
+        user_images = user_images.exclude(state='DELETED')
     
-    images = [image_to_dict(image, detail) for image in avail_images]
-
+    images = [image_to_dict(image, detail) for image in user_images]
+    
     if request.serialization == 'xml':
         data = render_to_string('list_images.xml', {
             'images': images,
@@ -205,7 +206,8 @@ def delete_image(request, image_id):
     #                       overLimit (413)
 
     image = util.get_image(image_id, request.user)
-    image.delete()
+    image.state = 'DELETED'
+    image.save()
     return HttpResponse(status=204)
 
 @util.api_method('GET')

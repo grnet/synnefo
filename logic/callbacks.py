@@ -33,13 +33,12 @@
 import socket
 import traceback
 import json
-import logging
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend, email_send
+from synnefo.logic import utils, backend, email_send, log
 
-_logger = logging.getLogger("synnefo.dispatcher")
+_logger = log.get_logger("synnefo.dispatcher")
 
 def update_db(message):
     """Process the status of a VM based on a ganeti status message"""
@@ -139,11 +138,11 @@ def trigger_status_update(message):
     try:
         msg = _parse_json(message.body)
 
-        if msg["type"] != "reconcile" :
+        if msg["type"] != "reconcile":
              _logger.error("Message is of unknown type %s", msg["type"])
              return
 
-        if msg["vmid"] == "" :
+        if msg["vmid"] == "":
             _logger.error("Reconciliate message does not specify a VM id")
             return
 
@@ -156,7 +155,7 @@ def trigger_status_update(message):
     except Exception as e:
         _logger.error("Unexpected error:%s", e)
 
-def status_job_finished (message) :
+def status_job_finished (message):
     """
         Updates VM status based on a previously sent status update request
     """
@@ -167,7 +166,7 @@ def status_job_finished (message) :
             _logger.error("Message is of unknown type %s", msg["operation"])
             return
 
-        if msg["status"] != "success" :
+        if msg["status"] != "success":
             _logger.warn("Ignoring non-success status update from job %d on VM %s",
                           msg['jobId'], msg['instance'])
             message.channel.basic_ack(message.delivery_tag)
@@ -177,7 +176,7 @@ def status_job_finished (message) :
 
         _logger.debug("Node status job result: %s" % status)
 
-        if status['summary'][0] != u'INSTANCE_QUERY_DATA' :
+        if status['summary'][0] != u'INSTANCE_QUERY_DATA':
              _logger.error("Status update is of unknown type %s", status['summary'])
              return
 
@@ -191,7 +190,7 @@ def status_job_finished (message) :
 
         if run_state == "up":
             opcode = "OP_INSTANCE_REBOOT"
-        else :
+        else:
             opcode = "OP_INSTANCE_SHUTDOWN"
 
         backend.process_op_status(vm=vm, jobid=msg['jobId'],opcode=opcode,

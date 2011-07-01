@@ -1,4 +1,5 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
+
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -41,6 +42,13 @@ from synnefo.util.rapi import GanetiRapiClient
 
 
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
+
+_firewall_tags = {
+    'ENABLED': settings.GANETI_FIREWALL_ENABLED_TAG,
+    'DISABLED': settings.GANETI_FIREWALL_DISABLED_TAG,
+    'PROTECTED': settings.GANETI_FIREWALL_PROTECTED_TAG}
+
+_reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
 def process_op_status(vm, jobid, opcode, status, logmsg):
@@ -102,12 +110,19 @@ def process_net_status(vm, nics):
                 raise Network.DoesNotExist("NetworkLink for link='%s' not "
                     "associated with an existing Network instance." %
                     nic['link'])
-
+        
+        firewall = nic.get('firewall', '')
+        firewall_profile = _reverse_tags.get(firewall, '')
+        if not firewall_profile and net.public:
+            firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
+        
         vm.nics.create(
             network=net,
             index=i,
             mac=nic.get('mac', ''),
-            ipv4=nic.get('ip', ''))
+            ipv4=nic.get('ip', ''),
+            ipv6=nic.get('ipv6',''),
+            firewall_profile=firewall_profile)
     vm.save()
 
 
@@ -153,7 +168,10 @@ def create_instance(vm, flavor, image, password):
         os='image+default',
         ip_check=False,
         name_check=False,
-        pnode=rapi.GetNodes()[0],   #TODO: use a Ganeti iallocator instead
+        # Do not specific a node explicitly, have
+        # Ganeti use an iallocator instead
+        #
+        # pnode=rapi.GetNodes()[0]
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
         osparams=dict(img_id=image.backend_id, img_passwd=password,
@@ -262,12 +280,6 @@ def disconnect_from_network(vm, net):
             'link': nic.network.link.name}))
     rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)
 
-
-_firewall_tags = {
-    'ENABLED': settings.GANETI_FIREWALL_ENABLED_TAG,
-    'DISABLED': settings.GANETI_FIREWALL_DISABLED_TAG,
-    'PROTECTED': settings.GANETI_FIREWALL_PROTECTED_TAG}
-
 def set_firewall_profile(vm, profile):
     try:
         tag = _firewall_tags[profile]
@@ -275,7 +287,7 @@ def set_firewall_profile(vm, profile):
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
     
     # Delete all firewall tags
-    rapi.DeleteInstanceTags(vm.backend_id, _firewall_tags.values(),
-                            dry_run=settings.TEST)
+    for t in _firewall_tags.values():
+        rapi.DeleteInstanceTags(vm.backend_id, [t], dry_run=settings.TEST)
     
     rapi.AddInstanceTags(vm.backend_id, [tag], dry_run=settings.TEST)

@@ -27,14 +27,27 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
-# bill Calculator Command - Management Script
 
-from django.core.management.base import NoArgsCommand
+""" Logging configuration defaults
 
-from synnefo.db import bill_calculator
+    Uses Python's logging framework and applies Synnefo conventions to it.
+"""
 
-class Command(NoArgsCommand):
-    help = ''
-    
-    def handle_noargs(self, **options):
-        bill_calculator.calculate_bills()
+import logging
+import logging.config
+import logging.handlers
+import os
+
+import synnefo.logic
+
+if os.path.exists("/etc/synnefo/logging.conf"):
+    logconf = "/etc/synnefo/logging.conf"
+elif os.path.exists(os.path.join(os.getcwd(), 'logging.conf')):
+    logconf = os.path.join(os.getcwd(), 'logging.conf')
+else:
+    logconf = os.path.join(synnefo.logic.__path__[0], 'logging.conf')
+
+logging.config.fileConfig(logconf)
+
+def get_logger(logger):
+    return logging.getLogger(logger)

@@ -33,15 +33,15 @@
 
 import logging
 
+from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import util
+from synnefo.api import faults, util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
@@ -57,6 +57,7 @@ urlpatterns = patterns('synnefo.api.servers',
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
     (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
     (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
+    (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
 )
 
 
@@ -154,17 +155,16 @@ def list_servers(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    user_vms = VirtualMachine.objects.filter(owner=request.user)
     since = util.isoparse(request.GET.get('changes-since'))
-
+    
     if since:
-        user_vms = VirtualMachine.objects.filter(owner=request.user,
-                                                updated__gte=since)
+        user_vms = user_vms.filter(updated__gte=since)
         if not user_vms:
             return HttpResponse(status=304)
     else:
-        user_vms = VirtualMachine.objects.filter(owner=request.user,
-                                                deleted=False)
+        user_vms = user_vms.filter(deleted=False)
     
     servers = [vm_to_dict(server, detail) for server in user_vms]
 
@@ -200,11 +200,15 @@ def create_server(request):
         image_id = server['imageRef']
         flavor_id = server['flavorRef']
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
     
     image = util.get_image(image_id, owner)
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()
+    
+    count = VirtualMachine.objects.filter(owner=owner, deleted=False).count()
+    if count >= settings.MAX_VMS_PER_USER:
+        raise faults.OverLimit("Maximum number of servers reached")
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
@@ -217,7 +221,7 @@ def create_server(request):
         create_instance(vm, flavor, image, password)
     except GanetiApiError:
         vm.delete()
-        raise ServiceUnavailable('Could not create server.')
+        raise faults.ServiceUnavailable("Could not create server")
 
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(
@@ -264,7 +268,7 @@ def update_server_name(request, server_id):
     try:
         name = req['server']['name']
     except (TypeError, KeyError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
 
     vm = util.get_vm(server_id, request.user)
     vm.name = name
@@ -292,7 +296,7 @@ def server_action(request, server_id):
     vm = util.get_vm(server_id, request.user)
     req = util.get_request_dict(request)
     if len(req) != 1:
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
 
     key = req.keys()[0]
     val = req[key]
@@ -301,9 +305,9 @@ def server_action(request, server_id):
         assert isinstance(val, dict)
         return server_actions[key](request, vm, req[key])
     except KeyError:
-        raise BadRequest('Unknown action.')
+        raise faults.BadRequest("Unknown action")
     except AssertionError:
-        raise BadRequest('Invalid argument.')
+        raise faults.BadRequest("Invalid argument")
 
 @util.api_method('GET')
 def list_addresses(request, server_id):
@@ -377,7 +381,7 @@ def update_metadata(request, server_id):
         metadata = req['metadata']
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
 
     updated = {}
 
@@ -429,7 +433,7 @@ def create_metadata_item(request, server_id, key):
         assert len(metadict) == 1
         assert key in metadict
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest("Malformed request")
     
     meta, created = VirtualMachineMetadata.objects.get_or_create(
         meta_key=key,
@@ -457,3 +461,32 @@ def delete_metadata_item(request, server_id, key):
     meta.delete()
     vm.save()
     return HttpResponse(status=204)
+
+@util.api_method('GET')
+def server_stats(request, server_id):
+    # Normal Response Codes: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    
+    vm = util.get_vm(server_id, request.user)
+    #secret = util.encrypt(vm.backend_id)
+    secret = vm.backend_id      # XXX disable backend id encryption
+    
+    stats = {
+        'serverRef': vm.id,
+        'refresh': settings.STATS_REFRESH_PERIOD,
+        'cpuBar': settings.CPU_BAR_GRAPH_URL % secret,
+        'cpuTimeSeries': settings.CPU_TIMESERIES_GRAPH_URL % secret,
+        'netBar': settings.NET_BAR_GRAPH_URL % secret,
+        'netTimeSeries': settings.NET_TIMESERIES_GRAPH_URL % secret}
+    
+    if request.serialization == 'xml':
+        data = render_to_string('server_stats.xml', stats)
+    else:
+        data = json.dumps({'stats': stats})
+
+    return HttpResponse(data, status=200)

@@ -31,17 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import datetime
+import dateutil.parser
+
+from base64 import b64encode
 from datetime import timedelta, tzinfo
 from functools import wraps
+from hashlib import sha256
 from random import choice
 from string import ascii_letters, digits
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
 
-import datetime
-import dateutil.parser
-import logging
+from Crypto.Cipher import AES
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -53,7 +56,7 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
-
+from synnefo.logic import log
 
 class UTC(tzinfo):
     def utcoffset(self, dt):
@@ -95,6 +98,21 @@ def isoparse(s):
 def random_password(length=8):
     pool = ascii_letters + digits
     return ''.join(choice(pool) for i in range(length))
+
+def zeropad(s):
+    """Add zeros at the end of a string in order to make its length
+       a multiple of 16."""
+    
+    npad = 16 - len(s) % 16
+    return s + '\x00' * npad
+
+def encrypt(plaintext):
+    # Make sure key is 32 bytes long
+    key = sha256(settings.SECRET_KEY).digest()
+    
+    aes = AES.new(key)
+    enc = aes.encrypt(zeropad(plaintext))
+    return b64encode(enc)
 
 
 def get_vm(server_id, owner):
@@ -261,7 +279,11 @@ def api_method(http_method=None, atom_allowed=False):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
+            u = request.user.uniq if request.user else ''
+            logger = log.get_logger("synnefo.api")
+            logger.debug("%s <%s>" % (request.path, u))
             try:
+
                 request.serialization = request_serialization(
                     request,
                     atom_allowed)
@@ -286,7 +308,7 @@ def api_method(http_method=None, atom_allowed=False):
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
-                logging.exception('Unexpected error: %s', e)
+                logger.exception('Unexpected error: %s', e)
                 fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
         return wrapper

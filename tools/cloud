@@ -45,6 +45,7 @@ DEFAULT_API = 'v1.1'
 
 TOKEN = '46e427d657b20defe352804f0eb6f8a2'
 
+MARGIN = 14
 
 commands = {}
 
@@ -57,12 +58,14 @@ def command_name(name):
 
 def print_addresses(networks):
     for i, net in enumerate(networks):
-        key = 'addresses:'.rjust(13) if i == 0 else ' ' * 13
+        key = 'addresses:'.rjust(MARGIN + 1) if i == 0 else ' ' * (MARGIN + 1)
         addr = ''
         if 'values' in net:
             addr = '[%s]' % ' '.join(ip['addr'] for ip in net['values'])
         
         val = '%s/%s %s %s' % (net['id'], net['name'], net['mac'], addr)
+        if 'firewallProfile' in net:
+            val += ' - %s' % net['firewallProfile']
         print '%s %s' % (key, val)
 
 def print_dict(d, show_empty=True):
@@ -75,7 +78,7 @@ def print_dict(d, show_empty=True):
         elif key == 'servers':
             val = ', '.join(str(server_id) for server_id in val['values'])
         if val or show_empty:
-            print '%s: %s' % (key.rjust(12), val)
+            print '%s: %s' % (key.rjust(MARGIN), val)
 
 
 class Command(object):
@@ -607,6 +610,18 @@ class RemoveNetwork(Command):
         path = '/api/%s/networks/%s/action' % (self.api, int(network_id))
         body = json.dumps({'remove': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
+
+@command_name('stats')
+class ServerStats(Command):
+    description = 'get server stats'
+    syntax = '<server id>'
+
+    def execute(self, server_id):
+        path = '/api/%s/servers/%d/stats' % (self.api, int(server_id))
+        reply = self.http_get(path)
+        stats = reply['stats']
+        stats.pop('serverRef')
+        print_dict(stats)
 
 
 def print_usage():

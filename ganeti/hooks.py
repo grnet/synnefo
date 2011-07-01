@@ -18,8 +18,8 @@ import logging
 
 from amqplib import client_0_8 as amqp
 
+from synnefo.util.mac2eui64 import mac2eui64
 import synnefo.settings as settings
-
 
 def ganeti_net_status(logger, environ):
     """Produce notifications of type 'Ganeti-net-status'
@@ -48,6 +48,31 @@ def ganeti_net_status(logger, environ):
                     nics[index][key] = environ[env]
                 else:
                     nics[index] = { key: environ[env] }
+
+                # IPv6 support:
+                #
+                # The IPv6 of NIC with index 0 [the public NIC]
+                # is derived using an EUI64 scheme.
+                if index == 0 and key == 'mac':
+                    nics[0]['ipv6'] = mac2eui64(nics[0]['mac'],
+                                                settings.PUBLIC_IPV6_PREFIX)
+
+    # Amend notification with firewall settings
+    tags = environ.get('GANETI_INSTANCE_TAGS', '')
+    for tag in tags.split(' '):
+        t = tag.split(':')
+        if t[0:2] == ['synnefo', 'network']:
+            if len(t) != 4:
+                logger.error("Malformed synnefo tag %s", tag)
+                continue
+            try:
+                index = int(t[2])
+                nics[index]['firewall'] = t[3]
+            except ValueError:
+                logger.error("Malformed synnefo tag %s", tag)
+            except KeyError:
+                logger.error("Found tag %s for non-existent NIC %d",
+                             tag, index)
 
     # Verify our findings are consistent with the Ganeti environment
     indexes = list(nics.keys())

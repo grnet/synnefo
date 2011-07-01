@@ -165,7 +165,7 @@ def create_instance(vm, flavor, image, password):
         disk_template='plain',
         disks=[{"size": 4000}],     #FIXME: Always ask for a 4GB disk for now
         nics=[nic],
-        os='image+default',
+        os=settings.GANETI_OS_PROVIDER,
         ip_check=False,
         name_check=False,
         # Do not specific a node explicitly, have
@@ -291,3 +291,7 @@ def set_firewall_profile(vm, profile):
         rapi.DeleteInstanceTags(vm.backend_id, [t], dry_run=settings.TEST)
     
     rapi.AddInstanceTags(vm.backend_id, [tag], dry_run=settings.TEST)
+    
+    # XXX NOP ModifyInstance call to force process_net_status to run
+    # on the dispatcher
+    rapi.ModifyInstance(vm.backend_id, os_name=settings.GANETI_OS_PROVIDER)

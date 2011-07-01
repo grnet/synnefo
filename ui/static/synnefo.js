@@ -1661,7 +1661,12 @@ function close_all_overlays() {
 // logout
 function user_session_logout() {
     $.cookie("X-Auth-Token", null);
-    location.reload();
+    if (window.LOGOUT_REDIRECT !== undefined)
+    {
+        window.location = window.LOGOUT_REDIRECT;
+    } else {
+        window.location.reload();
+    }
 }
 
 // action indicators

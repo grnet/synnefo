@@ -710,13 +710,14 @@ div.machine {
     width: 516px;
 }
 
+div.machine.light-background, div.network.light-background {
+    background-color:#aed2e3 !important;
+}
+
 div.machine:hover {
     background-color:#A1C8DB !important;
 }
 
-div.machine.light-background, div.network.light-background {
-    background-color:#aed2e3 !important;
-}
 
 .single .light-background {
     background-color:#aed2e3;

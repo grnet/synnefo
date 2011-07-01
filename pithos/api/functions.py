@@ -35,6 +35,7 @@ import os
 import logging
 import hashlib
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -115,7 +116,8 @@ def authenticate(request):
     if not x_auth_user or not x_auth_key:
         raise BadRequest('Missing X-Auth-User or X-Auth-Key header')
     response = HttpResponse(status=204)
-    response['X-Auth-Token'] = '0000'
+    inv_auth_tokens = dict((v, k) for k, v in settings.AUTH_TOKENS.items())
+    response['X-Auth-Token'] = inv_auth_tokens.get(x_auth_user, '0000')
     response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(), 'demo')
     return response
 

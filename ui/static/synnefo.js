@@ -269,13 +269,13 @@ function choose_view() {
 // return value from metadata key "OS", if it exists
 function os_icon(metadata) {
     if (!metadata) {
-        return 'unknown';
+        return 'okeanos';
     }
     if (metadata.values.OS == undefined || metadata.values.OS == '') {
-        return 'unknown';
+        return 'okeanos';
     } else {
         if (os_icons.indexOf(metadata.values.OS) == -1) {
-            return 'unknown';
+            return 'okeanos';
         } else {
             return metadata.values.OS;
         }
@@ -284,13 +284,13 @@ function os_icon(metadata) {
 
 function os_icon_from_value(metadata) {
     if (!metadata) {
-        return 'unknown';
+        return 'okeanos';
     }
 if (metadata == undefined || metadata == '') {
-        return 'unknown';
+        return 'okeanos';
     } else {
         if (os_icons.indexOf(metadata) == -1) {
-            return 'unknown';
+            return 'okeanos';
         } else {
             return metadata;
         }
@@ -1227,10 +1227,14 @@ function update_metadata(serverID, meta_key, meta_value) {
             // success: Update icons if meta key is OS
             if (meta_key == "OS") {
                 $("#metadata-wizard .machine-icon").attr("src","static/icons/machines/small/" + os_icon_from_value(meta_value) + '-' + $("#metadata-wizard div#on-off").text() + '.png');
-                var machine = $("#machinesview-icon").find("div#" + serverID);
+                var machine_icon = $("#machinesview-icon").find("div#" + serverID);
+                var machine_single = $("#machinesview-single").find("div#" + serverID);
+
                 var os = os_icon_from_value(meta_value);
                 var state = $("#metadata-wizard div#on-off").text()
-                set_machine_os_image(machine, "icon", state, os);
+                var state_single = $(".state", machine_single).hasClass("terminated-state") ? "off" : "on";
+                set_machine_os_image(machine_icon, "icon", state, os);
+                set_machine_os_image(machine_single, "single", state_single, os);
             }
         }
     });
@@ -1922,7 +1926,6 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
     var img_selector = views_map[machines_view];
     var cls = states_map[state];
 
-    console.log(state, os, skip_reset_states, remove_state, cls);
     if (os === "unknown") { os = "okeanos" } ;
     var new_img = 'url("./static/icons/machines/' + size + '/' + os + '-sprite.png")';
 

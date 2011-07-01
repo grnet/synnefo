@@ -255,6 +255,8 @@ class GetObject(Command):
                           default=False, help='show detailed output')
         parser.add_option('--range', action='store', dest='range',
                           default=None, help='show range of data')
+        parser.add_option('--if-range', action='store', dest='if-range',
+                          default=None, help='show range of data')
         parser.add_option('--if-match', action='store', dest='if-match',
                           default=None, help='show output if ETags match')
         parser.add_option('--if-none-match', action='store',
@@ -281,6 +283,8 @@ class GetObject(Command):
         headers = {}
         if self.range:
             headers['RANGE'] = 'bytes=%s' %self.range
+        if getattr(self, 'if-range'):
+            headers['IF_RANGE'] = 'If-Range:%s' % getattr(self, 'if-range')
         attrs = ['if-match', 'if-none-match', 'if-modified-since',
                  'if-unmodified-since']
         attrs = [a for a in attrs if getattr(self, a)]

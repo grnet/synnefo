@@ -458,6 +458,8 @@ class SimpleBackend(BaseBackend):
         self._put_version(path, user, 0, 1)
         sql = 'delete from permissions where name = ?'
         self.con.execute(sql, (path,))
+        sql = 'delete from public where name = ?'
+        self.con.execute(sql, (path,))
         self.con.commit()
     
     def list_versions(self, user, account, container, name):
@@ -694,9 +696,11 @@ class SimpleBackend(BaseBackend):
         sql = '''select name from permissions
                     where name != ? and (name like ? or ? like name || ?)'''
         c = self.con.execute(sql, (path, path + '%', path, '%'))
-        rows = c.fetchall()
-        if rows:
-            raise AttributeError('Permissions already set')
+        row = c.fetchone()
+        if row:
+            ae = AttributeError()
+            ae.data = row[0]
+            raise ae
         
         # Format given permissions.
         if len(permissions) == 0:
@@ -803,6 +807,4 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql, (path,))
         sql = '''delete from versions where name = ?'''
         self.con.execute(sql, (path,))
-        sql = '''delete from permissions where name like ?'''
-        self.con.execute(sql, (path + '%',)) # Redundant.
         self.con.commit()

@@ -650,21 +650,18 @@ def object_write(request, v_account, v_container, v_object):
         if etag and parse_etags(etag)[0].lower() != meta['hash']:
             raise UnprocessableEntity('Object ETag does not match')
     
-    payload = ''
-    code = 201
     try:
         backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True, permissions)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except IndexError, e:
-        payload = json.dumps(e.data)
-        code = 409
+        raise Conflict(json.dumps(e.data))
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except AttributeError:
-        raise Conflict('Sharing already set above or below this path in the hierarchy')
+    except AttributeError, e:
+        raise Conflict(json.dumps(e.data))
     if public is not None:
         try:
             backend.update_object_public(request.user, v_account, v_container, v_object, public)
@@ -673,7 +670,7 @@ def object_write(request, v_account, v_container, v_object):
         except NameError:
             raise ItemNotFound('Object does not exist')
     
-    response = HttpResponse(content=payload, status=code)
+    response = HttpResponse(status=201)
     response['ETag'] = meta['hash']
     return response
 
@@ -754,8 +751,8 @@ def object_update(request, v_account, v_container, v_object):
                 raise ItemNotFound('Object does not exist')
             except ValueError:
                 raise BadRequest('Invalid sharing header')
-            except AttributeError:
-                raise Conflict('Sharing already set above or below this path in the hierarchy')
+            except AttributeError, e:
+                raise Conflict(json.dumps(e.data))
         if public is not None:
             try:
                 backend.update_object_public(request.user, v_account, v_container, v_object, public)
@@ -827,8 +824,8 @@ def object_update(request, v_account, v_container, v_object):
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except AttributeError:
-        raise Conflict('Sharing already set above or below this path in the hierarchy')
+    except AttributeError, e:
+        raise Conflict(json.dumps(e.data))
     if public is not None:
         try:
             backend.update_object_public(request.user, v_account, v_container, v_object, public)

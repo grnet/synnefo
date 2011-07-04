@@ -596,6 +596,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                  Description
 ===========================  ==============================
 201 (Created)                The object has been created
+409 (Conflict)               The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a conflicting sharing path will be included in the reply - in JSON format)
 411 (Length Required)        Missing ``Content-Length`` or ``Content-Type`` in the request
 422 (Unprocessable Entity)   The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
 ===========================  ==============================
@@ -626,6 +627,7 @@ No reply content/headers.
 Return Code                  Description
 ===========================  ==============================
 201 (Created)                The object has been created
+409 (Conflict)               There are conflicting permissions (a conflicting sharing path will be included in the reply - in JSON format)
 ===========================  ==============================
 
 
@@ -692,6 +694,7 @@ Return Code                  Description
 ===========================  ==============================
 202 (Accepted)               The request has been accepted (not a data update)
 204 (No Content)             The request succeeded (data updated)
+409 (Conflict)               There are conflicting permissions (a conflicting sharing path will be included in the reply - in JSON format)
 411 (Length Required)        Missing ``Content-Length`` in the request
 416 (Range Not Satisfiable)  The supplied range is invalid
 ===========================  ==============================

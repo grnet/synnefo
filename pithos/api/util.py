@@ -39,6 +39,7 @@ from binascii import hexlify
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
 
 from pithos.api.compat import parse_http_date_safe, parse_http_date
@@ -258,8 +259,8 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
-    except AttributeError:
-        raise Conflict('Sharing already set above or below this path in the hierarchy')
+    except AttributeError, e:
+        raise Conflict(json.dumps(e.data))
     if public is not None:
         try:
             backend.update_object_public(request.user, v_account, v_container, v_object, public)
@@ -666,7 +667,7 @@ def update_response_headers(request, response):
 def render_fault(request, fault):
     if settings.DEBUG or settings.TEST:
         fault.details = format_exc(fault)
-
+    
     request.serialization = 'text'
     data = '\n'.join((fault.message, fault.details)) + '\n'
     response = HttpResponse(data, status=fault.code)

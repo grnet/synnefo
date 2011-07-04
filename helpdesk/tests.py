@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,45 +28,25 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
-# Methods for sending email
+from django.test import TestCase
+from django.test.client import Client
 
-import json
+from synnefo.helpdesk.middleware import check_ip
 
-from django.core.mail import send_mail
-from django.conf import settings
-import amqp_connection
+class HelpdeskTestCase(TestCase):
+    apibase = '/api/v1.1'
 
+    def setUp(self):
+        self.client = Client()
 
-def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
-               to = None, subject = None, body = None):
-    """
-        Queue a message to be sent sometime later
-        by a worker process.
-    """
+    def test_check_ip(self):
+        range = ('127.0.0.1', '195.251.249.0')
 
-    msg = dict()
-    msg['frm'] = frm
-    msg['to'] = to
-    msg['subject'] = subject
-    msg['body'] = body
+        ip = '127.0.0.1'
+        self.assertTrue(check_ip(ip, range))
 
-    routekey = "logic.email.outgoing"
-    amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
+        ip = '195.251.249.212'
+        self.assertTrue(check_ip(ip, range))
 
-
-def send (sender = settings.SYSTEM_EMAIL_ADDR,
-          recipient = None, subject = None, body = None):
-    import logging
-    logger = logging.getLogger("synnefo.logic")
-    attempts = 0
-
-    while attempts < 3:
-        try:
-            send_mail(subject, body, sender, [recipient])
-            return
-        except Exception as e:
-            logger.warn("Error sending email: ", e)
-        finally:
-            attempts += 1
-    logger.warn("Failed all %d attempts to send email, aborting", attempts)
-
+        ip = '195.234.249.2'
+        self.assertFalse(check_ip(ip, range))

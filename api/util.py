@@ -287,6 +287,10 @@ def api_method(http_method=None, atom_allowed=False):
                 request.serialization = request_serialization(
                     request,
                     atom_allowed)
+                if not request.method == 'GET':
+                    if 'readonly' in request.__dict__ and \
+                       request.readonly == True:
+                        raise BadRequest('Method not allowed')
                 if not request.user:
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:

@@ -46,6 +46,8 @@ def _register_user(f, u, unq, t):
     user.uniq = unq
     user.type = t
     user.credit = 10 #TODO: Fix this when we have a per group policy
+    if hasattr(user, 'max_invitations'):
+        user.max_invitations = settings.MAX_INVITATIONS
     user.save()
     create_auth_token(user)
 
@@ -90,4 +92,14 @@ def create_auth_token(user):
                               timedelta(hours=settings.AUTH_TOKEN_DURATION)
     user.save()
 
-#def login(username, password):
+@transaction.commit_on_success
+def create_tmp_token(user):
+    md5 = hashlib.md5()
+    md5.update(user.uniq)
+    md5.update(user.name.encode('ascii', 'ignore'))
+    md5.update(time.asctime())
+
+    user.tmp_auth_token = md5.hexdigest()
+    user.tmp_auth_token_expires = datetime.now() + \
+                                  timedelta(minutes=settings.HELPDESK_TOKEN_DURATION_MIN)
+    user.save()

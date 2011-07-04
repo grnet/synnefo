@@ -1,9 +1,7 @@
-from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from synnefo.db.models import SynnefoUser
-from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
+from django.utils.cache import patch_vary_headers
 import time
-import datetime
 
 class ApiAuthMiddleware(object):
 
@@ -17,37 +15,36 @@ class ApiAuthMiddleware(object):
 
         token = None
 
-        #Try to find token in a cookie
-        try:
-            token = request.COOKIES['X-Auth-Token']
-        except Exception:
-            pass
+        # Try to find token in a cookie
+        token = request.COOKIES.get('X-Auth-Token', None)
 
-        #Try to find token in request header
+        # Try to find token in request header
         if not token:
             token = request.META.get('HTTP_X_AUTH_TOKEN', None)
 
         if token:
             user = None
-            #Retrieve user from DB or other caching mechanism
+            # Retrieve user from DB or other caching mechanism
             try:
                 user = SynnefoUser.objects.get(auth_token=token)
             except SynnefoUser.DoesNotExist:
                 user = None
 
-            #Check user's auth token
-            if (time.time() -
+            # Check user's auth token
+            if user and (time.time() -
                 time.mktime(user.auth_token_expires.timetuple())) > 0:
-                #The user's token has expired, re-login
+                # The user's token has expired, re-login
                 user = None
 
             request.user = user
             return
 
-        #A Rackspace API authentication request
-        if self.auth_user in request.META and self.auth_key in request.META and 'GET' == request.method:
+        # A Rackspace API authentication request
+        if self.auth_user in request.META and \
+           self.auth_key in request.META and \
+           'GET' == request.method:
             # This is here merely for compatibility with the Openstack API.
-            # All normal users should authenticate through Sibbolleth. Admin
+            # All normal users should authenticate through Shibboleth. Admin
             # users or other selected users could use this as a bypass
             # mechanism
             user = SynnefoUser.objects\
@@ -60,7 +57,7 @@ class ApiAuthMiddleware(object):
             else:
                 response.status_code = 204
                 response['X-Auth-Token'] = user[0].auth_token
-                #TODO: set the following fields when we do have this info
+                # TODO: set the following fields when we do have this info
                 response['X-Server-Management-Url'] = ""
                 response['X-Storage-Url'] = ""
                 response['X-CDN-Management-Url'] = ""
@@ -69,9 +66,8 @@ class ApiAuthMiddleware(object):
         request.user = None
 
     def process_response(self, request, response):
-        #Tell proxies and other interested parties that the
-        #request varies based on the auth token, to avoid
-        #caching of results
-        response['Vary'] = self.auth_token
+        # Tell proxies and other interested parties that the request varies
+        # based on X-Auth-Token, to avoid caching of results
+        patch_vary_headers(response, ('X-Auth-Token',))
         return response
 

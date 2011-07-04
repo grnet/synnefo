@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Σύννεφο -- Εφαρμογή HelpDesk</title>
+    <script src="/static/jquery.tools.min.js"></script>
+    <script src="/static/jquery.cookie.js"></script>
+    
+    <style>
+        body, html {height: 99%;}
+        iframe     {display:block; width:100%; border:none; height: 90%}
+        .center    {text-align: center;}
+        .header    {height: 10%;}
+    </style>
+
+    <script type="text/javascript">
+
+        jQuery.fn.countdown = function(options) {
+
+            if(!options) options = '()';
+            if(jQuery(this).length == 0) return false;
+            var obj = this;
+
+            if(options.seconds < 0 || options.seconds == 'undefined') {
+                if(options.callback) eval(options.callback);
+                return null;
+            }
+
+            window.setTimeout(
+                function() {
+                    jQuery(obj).html(String(options.seconds));
+                    --options.seconds;
+                    jQuery(obj).countdown(options);
+                }
+                , 1000
+            );
+
+            return this;
+        }
+
+        jQuery.fn.countdown.stop = function() {
+	        window.clearTimeout(setTimeout("0")-1);
+        }
+
+        function setCookie(name, value, expires, path, domain, secure) {
+            var expires_date = new Date( expires * 1000 );
+
+            document.cookie = name + "=" +escape(value) +
+                (( expires ) ? ";expires=" + expires_date.toGMTString() : "") +
+                (( path ) ? ";path=" + path : "") +
+                (( domain ) ? ";domain=" + domain : "") +
+                (( secure ) ? ";secure" : "");
+        }
+
+        function delCookie(name) {
+            document.cookie = name + '=foo; expires=Fri, 27 Jul 2001 02:47:11 UTC; path=/';
+        }
+
+        $(document).ready(function() {
+
+            delCookie('X-Auth-Tmp-Token');
+
+            $("#username").change(function() {
+                if ($("#username").val() != '') {
+                    $("#go").removeAttr("disabled");
+                } else {
+                    $("#go").attr('disabled', 'disabled');
+                }
+            });
+
+            $("#go").click(function() {
+
+                var val = $('#username').val();
+                if (val == '')
+                    return;
+
+                $.ajax({
+                    url:  '/helpdesk/token',
+                    data: {user_id: $("#username").val()},
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        $('#remtime').countdown.stop();
+                        $('#countdown').css('display', 'block');
+
+                        var secs = data.expires - parseInt((new Date()).getTime() / 1000);
+
+                        $('#remtime').countdown({seconds: secs,
+                            callback: function(){
+                                alert('Το token του χρήστη έληξε')
+                            }});
+
+                        setCookie('X-Auth-Tmp-Token', data.token, data.expires, '/', '', false);
+
+                        $('#content').attr('src', '/');
+                    },
+                    error : function(xhr, textStatus, errorThrown) {
+                        alert(errorThrown)
+                    }
+                });
+            });
+
+            $("#clear").click(function(){
+                delCookie('X-Auth-Tmp-Token');
+                $($('#username option').get(0)).attr('selected', 'selected')
+                $('#remtime').countdown.stop();
+                $('#countdown').css('display', 'none');
+                $('#go').attr('disabled', 'disabled');
+                $('#content').attr('src', '/');
+            });
+        });
+
+    </script>
+</head>
+
+<body>
+
+<div id="header" class="center">
+    Επιλέξτε το όνομα του χρήστη:
+    <select id="username">
+            <option value="">--Επιλογή--</option>
+         {% for user in users %}
+             <option value="{{ user.id }}">{{ user.name }}</option>
+         {% endfor %}
+    </select>
+    <input id="go" type="button" value="Go" disabled="true"/>
+    <input id="clear" type="button" value="Clear"/>
+    <div id="countdown" style="display:none">
+        <span id="remtime"> </span><span> δευτερόλεπτα πριν το token λήξει</span>
+    </div>
+</div>
+
+<iframe id="content" src="/" class="center frame">
+    <p>
+        Your browser does not support iframes.
+        Use a current millenium browser.
+    </p>
+</iframe>
+
+</body>
+</html>

@@ -58,6 +58,8 @@ def process_form(request):
     for inv in valid_inv:
         (name, inv_id) = inv.split('_')
 
+        email = ""
+        name = ""
         try:
             email = request.POST['email_' + inv_id]
             name = request.POST[inv]
@@ -70,9 +72,11 @@ def process_form(request):
 
         except Exception as e:
             try :
-                errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.messages[0])]
+                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
+                           (name, email, e.messages[0])]
             except:
-                errors += ["Invitation to %s <%s> not sent. Reason: %s"%(name, email, e.message)]
+                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
+                           (name, email, e.message)]
 
     respose = None
     if errors:
@@ -127,6 +131,7 @@ def inv_demux(request):
         return process_form(request)
     else:
         method_not_allowed(request)
+
 
 def login(request):
 
@@ -237,12 +242,13 @@ def send_invitation(invitation):
 def add_invitation(source, name, email):
     """
         Adds an invitation, if the source user has not gone over his/her
-        invitation count or the target user has not been invited already
+        invitation limit or the target user has not been invited already
     """
     num_inv = Invitations.objects.filter(source = source).count()
 
-    if num_inv >= settings.MAX_INVITATIONS:
-        raise TooManyInvitations("User invitation limit (%d) exhausted" % settings.MAX_INVITATIONS)
+    if num_inv >= source.max_invitations:
+        raise TooManyInvitations("User invitation limit (%d) exhausted" %
+                                 source.max_invitations)
 
     target = SynnefoUser.objects.filter(uniq = email)
 

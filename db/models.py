@@ -40,7 +40,8 @@ class SynnefoUser(models.Model):
     ACCOUNT_TYPE = (
         ('STUDENT', 'Student'),
         ('PROFESSOR', 'Professor'),
-        ('USER', 'Generic User')
+        ('USER', 'Generic User'),
+        ('HELPDESK', 'Helpdesk User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')
@@ -50,9 +51,13 @@ class SynnefoUser(models.Model):
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
     auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True, null = True)
     auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True, null = True)
+    tmp_auth_token = models.CharField('Temporary authentication token', max_length=32, null=True)
+    tmp_auth_token_expires = models.DateTimeField('Time of temporary auth token expiration', auto_now_add=True, null = True)
     type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
+    max_invitations = models.IntegerField('Max number of invitations',
+                                          null=True)
 
     class Meta:
         verbose_name = u'Synnefo User'
@@ -97,8 +102,9 @@ class Image(models.Model):
 
     # The list of supported Image formats
     FORMATS = (
-        ('dump', 'ext2 dump'),
-        ('lvm', 'lvm snapshot')
+        ('dump', 'ext3 dump'),
+        ('lvm', 'lvm snapshot'),
+        ('ntfsclone', 'Windows Image produced by ntfsclone')
     )
 
     name = models.CharField('Image name', max_length=255)

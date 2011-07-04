@@ -85,11 +85,14 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists groups (
                     account text, name text, users text, primary key (account, name))'''
         self.con.execute(sql)
+        sql = '''create table if not exists policy (
+                    name text, key text, value text, primary key (name, key))'''
+        self.con.execute(sql)
         sql = '''create table if not exists permissions (
                     name text, read text, write text, primary key (name))'''
         self.con.execute(sql)
-        sql = '''create table if not exists policy (
-                    name text, key text, value text, primary key (name, key))'''
+        sql = '''create table if not exists public (
+                    name text, primary key (name))'''
         self.con.execute(sql)
         self.con.commit()
     
@@ -351,13 +354,19 @@ class SimpleBackend(BaseBackend):
         """Return the public URL of the object if applicable."""
         
         logger.debug("get_object_public: %s %s %s", account, container, name)
+        self._can_read(user, account, container, name)
+        path = self._get_objectinfo(account, container, name)[0]
+        if self._get_public(path):
+            return '/public/' + path
         return None
     
     def update_object_public(self, user, account, container, name, public):
         """Update the public status of the object."""
         
         logger.debug("update_object_public: %s %s %s %s", account, container, name, public)
-        return
+        self._can_write(user, account, container, name)
+        path = self._get_objectinfo(account, container, name)[0]
+        self._put_public(path, public)
     
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
@@ -649,6 +658,8 @@ class SimpleBackend(BaseBackend):
         if user == account:
             return True
         path = os.path.join(account, container, name)
+        if op == 'read' and self._get_public(path):
+            return True
         perm_path, perms = self._get_permissions(path)
         
         # Expand groups.
@@ -721,6 +732,22 @@ class SimpleBackend(BaseBackend):
         else:
             sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
             self.con.execute(sql, (path, r, w))
+        self.con.commit()
+    
+    def _get_public(self, path):
+        sql = 'select name from public where name = ?'
+        c = self.con.execute(sql, (path,))
+        row = c.fetchone()
+        if not row:
+            return False
+        return True
+    
+    def _put_public(self, path, public):
+        if not public:
+            sql = 'delete from public where name = ?'
+        else:
+            sql = 'insert or replace into public (name) values (?)'
+        self.con.execute(sql, (path,))
         self.con.commit()
     
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):

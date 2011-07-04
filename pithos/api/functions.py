@@ -45,7 +45,7 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (format_header_key, printable_header_dict, get_account_headers,
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
-    update_manifest_meta, update_sharing_meta, validate_modification_preconditions,
+    update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, raw_input_socket,
     socket_read_iterator, object_data_response, put_object_block, hashmap_hash, api_method)
@@ -412,13 +412,16 @@ def object_list(request, v_account, v_container):
                 meta = backend.get_object_meta(request.user, v_account, v_container, x[0], x[1])
                 if until is None:
                     permissions = backend.get_object_permissions(request.user, v_account, v_container, x[0])
+                    public = backend.get_object_public(request.user, v_account, v_container, x[0])
                 else:
                     permissions = None
+                    public = None
             except NotAllowedError:
                 raise Unauthorized('Access denied')
             except NameError:
                 pass
             update_sharing_meta(permissions, v_account, v_container, x[0], meta)
+            update_public_meta(public, meta)
             object_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
@@ -441,8 +444,10 @@ def object_meta(request, v_account, v_container, v_object):
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
         if version is None:
             permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+            public = backend.get_object_public(request.user, v_account, v_container, v_object)
         else:
             permissions = None
+            public = None
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -452,6 +457,7 @@ def object_meta(request, v_account, v_container, v_object):
     
     update_manifest_meta(request, v_account, meta)
     update_sharing_meta(permissions, v_account, v_container, v_object, meta)
+    update_public_meta(public, meta)
     
     response = HttpResponse(status=200)
     put_object_headers(response, meta)
@@ -494,8 +500,10 @@ def object_read(request, v_account, v_container, v_object):
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
         if version is None:
             permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+            public = backend.update_object_public(request.user, v_account, v_container, v_object)
         else:
             permissions = None
+            public = None
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -505,6 +513,7 @@ def object_read(request, v_account, v_container, v_object):
     
     update_manifest_meta(request, v_account, meta)
     update_sharing_meta(permissions, v_account, v_container, v_object, meta)
+    update_public_meta(public, meta)
     
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
@@ -656,6 +665,13 @@ def object_write(request, v_account, v_container, v_object):
         raise BadRequest('Invalid sharing header')
     except AttributeError:
         raise Conflict('Sharing already set above or below this path in the hierarchy')
+    if public is not None:
+        try:
+            backend.update_object_public(request.user, v_account, v_container, v_object, public)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(content=payload, status=code)
     response['ETag'] = meta['hash']
@@ -740,6 +756,13 @@ def object_update(request, v_account, v_container, v_object):
                 raise BadRequest('Invalid sharing header')
             except AttributeError:
                 raise Conflict('Sharing already set above or below this path in the hierarchy')
+        if public is not None:
+            try:
+                backend.update_object_public(request.user, v_account, v_container, v_object, public)
+            except NotAllowedError:
+                raise Unauthorized('Access denied')
+            except NameError:
+                raise ItemNotFound('Object does not exist')
         try:
             backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
         except NotAllowedError:
@@ -806,6 +829,13 @@ def object_update(request, v_account, v_container, v_object):
         raise BadRequest('Invalid sharing header')
     except AttributeError:
         raise Conflict('Sharing already set above or below this path in the hierarchy')
+    if public is not None:
+        try:
+            backend.update_object_public(request.user, v_account, v_container, v_object, public)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Object does not exist')
     
     response = HttpResponse(status=204)
     response['ETag'] = meta['hash']

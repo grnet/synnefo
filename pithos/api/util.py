@@ -148,7 +148,7 @@ def put_object_headers(response, meta, restricted=False):
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
             response[k.encode('utf-8')] = meta[k].encode('utf-8')
-        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By'):
+        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By', 'X-Object-Public'):
             if k in meta:
                 response[k] = meta[k]
     else:
@@ -193,6 +193,11 @@ def update_sharing_meta(permissions, v_account, v_container, v_object, meta):
     meta['X-Object-Sharing'] = '; '.join(ret)
     if '/'.join((v_account, v_container, v_object)) != perm_path:
         meta['X-Object-Shared-By'] = perm_path
+
+def update_public_meta(public, meta):
+    if not public:
+        return
+    meta['X-Object-Public'] = public
 
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set."""
@@ -255,6 +260,13 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         raise BadRequest('Invalid sharing header')
     except AttributeError:
         raise Conflict('Sharing already set above or below this path in the hierarchy')
+    if public is not None:
+        try:
+            backend.update_object_public(request.user, v_account, v_container, v_object, public)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Object does not exist')
 
 def get_int_parameter(request, name):
     p = request.GET.get(name)

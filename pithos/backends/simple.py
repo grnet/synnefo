@@ -58,6 +58,8 @@ class SimpleBackend(BaseBackend):
         self.hash_algorithm = 'sha1'
         self.block_size = 128 * 1024 # 128KB
         
+        self.default_policy = {'quota': 0, 'versioning': 'auto'}
+        
         basepath = os.path.split(db)[0]
         if basepath and not os.path.exists(basepath):
             os.makedirs(basepath)
@@ -83,11 +85,14 @@ class SimpleBackend(BaseBackend):
         sql = '''create table if not exists groups (
                     account text, name text, users text, primary key (account, name))'''
         self.con.execute(sql)
+        sql = '''create table if not exists policy (
+                    name text, key text, value text, primary key (name, key))'''
+        self.con.execute(sql)
         sql = '''create table if not exists permissions (
                     name text, read text, write text, primary key (name))'''
         self.con.execute(sql)
-        sql = '''create table if not exists policy (
-                    name text, key text, value text, primary key (name, key))'''
+        sql = '''create table if not exists public (
+                    name text, primary key (name))'''
         self.con.execute(sql)
         self.con.commit()
     
@@ -220,13 +225,27 @@ class SimpleBackend(BaseBackend):
         """Return a dictionary with the container policy."""
         
         logger.debug("get_container_policy: %s %s", account, container)
-        return {}
+        if user != account:
+            raise NotAllowedError
+        path = self._get_containerinfo(account, container)[0]
+        return self._get_policy(path)
     
     def update_container_policy(self, user, account, container, policy, replace=False):
         """Update the policy associated with the account."""
         
         logger.debug("update_container_policy: %s %s %s %s", account, container, policy, replace)
-        return
+        if user != account:
+            raise NotAllowedError
+        path = self._get_containerinfo(account, container)[0]
+        self._check_policy(policy)
+        if replace:
+            for k, v in self.default_policy.iteritems():
+                if k not in policy:
+                    policy[k] = v
+        for k, v in policy.iteritems():
+            sql = 'insert or replace into policy (name, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (path, k, v))
+        self.con.commit()
     
     def put_container(self, user, account, container, policy=None):
         """Create a new container with the given name."""
@@ -237,10 +256,20 @@ class SimpleBackend(BaseBackend):
         try:
             path, version_id, mtime = self._get_containerinfo(account, container)
         except NameError:
-            path = os.path.join(account, container)
-            version_id = self._put_version(path, user)
+            pass
         else:
             raise NameError('Container already exists')
+        if policy:
+            self._check_policy(policy)
+        path = os.path.join(account, container)
+        version_id = self._put_version(path, user)
+        for k, v in self.default_policy.iteritems():
+            if k not in policy:
+                policy[k] = v
+        for k, v in policy.iteritems():
+            sql = 'insert or replace into policy (name, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (path, k, v))
+        self.con.commit()
     
     def delete_container(self, user, account, container):
         """Delete the container with the given name."""
@@ -325,13 +354,19 @@ class SimpleBackend(BaseBackend):
         """Return the public URL of the object if applicable."""
         
         logger.debug("get_object_public: %s %s %s", account, container, name)
+        self._can_read(user, account, container, name)
+        path = self._get_objectinfo(account, container, name)[0]
+        if self._get_public(path):
+            return '/public/' + path
         return None
     
     def update_object_public(self, user, account, container, name, public):
         """Update the public status of the object."""
         
         logger.debug("update_object_public: %s %s %s %s", account, container, name, public)
-        return
+        self._can_write(user, account, container, name)
+        path = self._get_objectinfo(account, container, name)[0]
+        self._put_public(path, public)
     
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
@@ -422,6 +457,8 @@ class SimpleBackend(BaseBackend):
         path = self._get_objectinfo(account, container, name)[0]
         self._put_version(path, user, 0, 1)
         sql = 'delete from permissions where name = ?'
+        self.con.execute(sql, (path,))
+        sql = 'delete from public where name = ?'
         self.con.execute(sql, (path,))
         self.con.commit()
     
@@ -599,10 +636,32 @@ class SimpleBackend(BaseBackend):
         c = self.con.execute(sql, (account,))
         return dict([(x[0], x[1].split(',')) for x in c.fetchall()])
     
+    def _check_policy(self, policy):
+        for k in policy.keys():
+            if policy[k] == '':
+                policy[k] = self.default_policy.get(k)
+        for k, v in policy.iteritems():
+            if k == 'quota':
+                q = int(v) # May raise ValueError.
+                if q < 0:
+                    raise ValueError
+            elif k == 'versioning':
+                if v not in ['auto', 'manual', 'none']:
+                    raise ValueError
+            else:
+                raise ValueError
+    
+    def _get_policy(self, path):
+        sql = 'select key, value from policy where name = ?'
+        c = self.con.execute(sql, (path,))
+        return dict(c.fetchall())
+    
     def _is_allowed(self, user, account, container, name, op='read'):
         if user == account:
             return True
         path = os.path.join(account, container, name)
+        if op == 'read' and self._get_public(path):
+            return True
         perm_path, perms = self._get_permissions(path)
         
         # Expand groups.
@@ -637,9 +696,11 @@ class SimpleBackend(BaseBackend):
         sql = '''select name from permissions
                     where name != ? and (name like ? or ? like name || ?)'''
         c = self.con.execute(sql, (path, path + '%', path, '%'))
-        rows = c.fetchall()
-        if rows:
-            raise AttributeError('Permissions already set')
+        row = c.fetchone()
+        if row:
+            ae = AttributeError()
+            ae.data = row[0]
+            raise ae
         
         # Format given permissions.
         if len(permissions) == 0:
@@ -675,6 +736,22 @@ class SimpleBackend(BaseBackend):
         else:
             sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
             self.con.execute(sql, (path, r, w))
+        self.con.commit()
+    
+    def _get_public(self, path):
+        sql = 'select name from public where name = ?'
+        c = self.con.execute(sql, (path,))
+        row = c.fetchone()
+        if not row:
+            return False
+        return True
+    
+    def _put_public(self, path, public):
+        if not public:
+            sql = 'delete from public where name = ?'
+        else:
+            sql = 'insert or replace into public (name) values (?)'
+        self.con.execute(sql, (path,))
         self.con.commit()
     
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
@@ -730,6 +807,4 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql, (path,))
         sql = '''delete from versions where name = ?'''
         self.con.execute(sql, (path,))
-        sql = '''delete from permissions where name like ?'''
-        self.con.execute(sql, (path + '%',)) # Redundant.
         self.con.commit()

@@ -65,12 +65,11 @@ def object_meta(request, v_account, v_container, v_object):
     
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
-        permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+        public = backend.get_object_public(request.user, v_account, v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
     
-    # TODO: Fix public indicator.
-    if 'public' not in permissions:
+    if not public:
         raise ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
     
@@ -91,12 +90,11 @@ def object_read(request, v_account, v_container, v_object):
     
     try:
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
-        permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
+        public = backend.get_object_public(request.user, v_account, v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
     
-    # TODO: Fix public indicator.
-    if 'public' not in permissions:
+    if not public:
         raise ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
     

@@ -500,7 +500,7 @@ def object_read(request, v_account, v_container, v_object):
         meta = backend.get_object_meta(request.user, v_account, v_container, v_object, version)
         if version is None:
             permissions = backend.get_object_permissions(request.user, v_account, v_container, v_object)
-            public = backend.update_object_public(request.user, v_account, v_container, v_object)
+            public = backend.get_object_public(request.user, v_account, v_container, v_object)
         else:
             permissions = None
             public = None

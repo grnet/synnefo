@@ -73,7 +73,9 @@ class BaseTestCase(TestCase):
                 'Content-Length',
                 'Date',
                 'X-Container-Block-Size',
-                'X-Container-Block-Hash',),
+                'X-Container-Block-Hash',
+                'X-Container-Policy-Quota',
+                'X-Container-Policy-Versioning',),
             'object':(
                 'ETag',
                 'Content-Length',

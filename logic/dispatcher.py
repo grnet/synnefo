@@ -177,9 +177,15 @@ def parse_arguments(args):
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
-    parser.add_option("-c", "--cleanup-queues", action="store_true",
-                      default=False, dest="cleanup_queues",
+    parser.add_option("--purge-queues", action="store_true",
+                      default=False, dest="purge_queues",
                       help="Remove all declared queues (DANGEROUS!)")
+    parser.add_option("--purge-exchanges", action="store_true",
+                      default=False, dest="purge_exchanges",
+                      help="Remove all exchanges. Implies deleting all queues \
+                           first (DANGEROUS!)")
+    parser.add_option("--drain-queue", dest="clean_queue",
+                      help="Acks and removes all messages from a queue")
     parser.add_option("-w", "--workers", default=2, dest="workers",
                       help="Number of workers to spawn", type="int")
     parser.add_option("-p", '--pid-file', dest="pid_file",
@@ -190,36 +196,87 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 
-def cleanup_queues() :
-    """Delete declared queues from RabbitMQ. Use with care!"""
-    conn = amqp.Connection( host=settings.RABBIT_HOST,
-                            userid=settings.RABBIT_USERNAME,
-                            password=settings.RABBIT_PASSWORD,
-                            virtual_host=settings.RABBIT_VHOST)
+def purge_queues() :
+    """
+        Delete declared queues from RabbitMQ. Use with care!
+    """
+    conn = get_connection()
     chan = conn.channel()
 
     print "Queues to be deleted: ",  settings.QUEUES
-    print "Exchnages to be deleted: ", settings.EXCHANGES
-    ans = raw_input("Are you sure (N/y):")
 
-    if not ans:
+    if not get_user_confirmation():
         return
-    if ans not in ['Y', 'y']:
-        return
-
-    #for exchange in settings.EXCHANGES:
-    #    try:
-    #        chan.exchange_delete(exchange=exchange)
-    #    except amqp.exceptions.AMQPChannelException as e:
-    #        print e.amqp_reply_code, " ", e.amqp_reply_text
 
     for queue in settings.QUEUES:
         try:
             chan.queue_delete(queue=queue)
+            print "Deleting queue %s" % queue
         except amqp.exceptions.AMQPChannelException as e:
             print e.amqp_reply_code, " ", e.amqp_reply_text
-    chan.close()
+            chan = conn.channel()
+
     chan.connection.close()
+
+
+def purge_exchanges():
+    """
+        Delete declared exchanges from RabbitMQ, after removing all queues first
+    """
+    purge_queues()
+
+    conn = get_connection()
+    chan = conn.channel()
+
+    print "Exchnages to be deleted: ", settings.EXCHANGES
+
+    if not get_user_confirmation():
+        return
+
+    for exchange in settings.EXCHANGES:
+        try:
+            chan.exchange_delete(exchange=exchange)
+        except amqp.exceptions.AMQPChannelException as e:
+            print e.amqp_reply_code, " ", e.amqp_reply_text
+
+    chan.connection.close()
+
+
+def drain_queue(queue):
+    """
+        Strip a (declared) queue from all outstanding messages
+    """
+    if not queue:
+        return
+
+    if not queue in settings.QUEUES:
+        print "Queue %s not configured" % queue
+        return
+
+    print "Queue to be drained: %s" % queue
+
+    if not get_user_confirmation():
+        return
+    conn = get_connection()
+    chan = conn.channel()
+
+    chan.connection.close()
+
+def get_connection():
+    conn = amqp.Connection( host=settings.RABBIT_HOST,
+                        userid=settings.RABBIT_USERNAME,
+                        password=settings.RABBIT_PASSWORD,
+                        virtual_host=settings.RABBIT_VHOST)
+    return conn
+
+def get_user_confirmation():
+    ans = raw_input("Are you sure (N/y):")
+
+    if not ans:
+        return False
+    if ans not in ['Y', 'y']:
+        return False
+    return True
 
 
 def debug_mode():
@@ -237,8 +294,17 @@ def main():
     logger = log.get_logger("synnefo.dispatcher")
 
     # Special case for the clean up queues action
-    if opts.cleanup_queues:
-        cleanup_queues()
+    if opts.purge_queues:
+        purge_queues()
+        return
+
+    # Special case for the clean up exch action
+    if opts.purge_exchanges:
+        purge_exchanges()
+        return
+
+    if opts.clean_queue:
+        drain_queue(opts.clean_queue)
         return
 
     # Debug mode, process messages without spawning workers

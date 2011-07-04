@@ -46,7 +46,7 @@ from pithos.api.util import (format_header_key, printable_header_dict, get_accou
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
     update_manifest_meta, update_sharing_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
-    get_int_parameter, get_content_length, get_content_range, get_sharing, raw_input_socket,
+    get_int_parameter, get_content_length, get_content_range, raw_input_socket,
     socket_read_iterator, object_data_response, put_object_block, hashmap_hash, api_method)
 from pithos.backends import backend
 from pithos.backends.base import NotAllowedError
@@ -212,6 +212,9 @@ def container_list(request, v_account):
         if x[1] is not None:
             try:
                 meta = backend.get_container_meta(request.user, v_account, x[0], until)
+                policy = backend.get_container_policy(request.user, v_account, x[0])
+                for k, v in policy.iteritems():
+                    meta['X-Container-Policy-' + k] = v
                 container_meta.append(printable_header_dict(meta))
             except NotAllowedError:
                 raise Unauthorized('Access denied')
@@ -237,13 +240,14 @@ def container_meta(request, v_account, v_container):
     try:
         meta = backend.get_container_meta(request.user, v_account, v_container, until)
         meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
+        policy = backend.get_container_policy(request.user, v_account, v_container)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
     response = HttpResponse(status=204)
-    put_container_headers(response, meta)
+    put_container_headers(response, meta, policy)
     return response
 
 @api_method('PUT')
@@ -254,10 +258,10 @@ def container_create(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_container_headers(request)
+    meta, policy = get_container_headers(request)
     
     try:
-        backend.put_container(request.user, v_account, v_container)
+        backend.put_container(request.user, v_account, v_container, policy)
         ret = 201
     except NotAllowedError:
         raise Unauthorized('Access denied')
@@ -282,10 +286,19 @@ def container_update(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_container_headers(request)
+    meta, policy = get_container_headers(request)
     replace = True
     if 'update' in request.GET:
         replace = False
+    if policy:
+        try:
+            backend.update_container_policy(request.user, v_account, v_container, policy, replace)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Container does not exist')
+        except ValueError:
+            raise BadRequest('Invalid policy header')
     try:
         backend.update_container_meta(request.user, v_account, v_container, meta, replace)
     except NotAllowedError:
@@ -325,6 +338,7 @@ def object_list(request, v_account, v_container):
     try:
         meta = backend.get_container_meta(request.user, v_account, v_container, until)
         meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
+        policy = backend.get_container_policy(request.user, v_account, v_container)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -333,7 +347,7 @@ def object_list(request, v_account, v_container):
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_container_headers(response, meta)
+    put_container_headers(response, meta, policy)
     
     path = request.GET.get('path')
     prefix = request.GET.get('prefix')
@@ -583,8 +597,7 @@ def object_write(request, v_account, v_container, v_object):
             copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
         return HttpResponse(status=201)
     
-    meta = get_object_headers(request)
-    permissions = get_sharing(request)
+    meta, permissions, public = get_object_headers(request)
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
         content_length = get_content_length(request)
@@ -691,8 +704,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    meta = get_object_headers(request)
-    permissions = get_sharing(request)
+    meta, permissions, public = get_object_headers(request)
     content_type = meta.get('Content-Type')
     if content_type:
         del(meta['Content-Type']) # Do not allow changing the Content-Type.

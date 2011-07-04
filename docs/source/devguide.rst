@@ -6,7 +6,7 @@ Introduction
 
 Pithos is a storage service implemented by GRNET (http://www.grnet.gr). Data is stored as objects, organized in containers, belonging to an account. This hierarchy of storage layers has been inspired by the OpenStack Object Storage (OOS) API and similar CloudFiles API by Rackspace. The Pithos API follows the OOS API as closely as possible. One of the design requirements has been to be able to use Pithos with clients built for the OOS, without changes.
 
-However, to be able to take full advantage of the Pithos infrastructure, client software should be aware of the extensions that differentiate Pithos from OOS. Pithos objects can be updated, or appended to. Automatic version management, allows taking account and container listings back in time, as well as reading previous instances of objects.
+However, to be able to take full advantage of the Pithos infrastructure, client software should be aware of the extensions that differentiate Pithos from OOS. Pithos objects can be updated, or appended to. Pithos will store sharing permissions per object and enforce corresponding authorization policies. Automatic version management, allows taking account and container listings back in time, as well as reading previous instances of objects.
 
 The storage backend of Pithos is block oriented, permitting efficient, deduplicated data placement. The block structure of objects is exposed at the API layer, in order to encourage external software to implement advanced data management operations.
 
@@ -25,7 +25,9 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.4 (June 22, 2011)        Support updating/deleting individual metadata with ``POST``.
+0.4 (June 30, 2011)        Object permissions and account groups.
+\                          Control versioning behavior and container quotas with container policy directives.
+\                          Support updating/deleting individual metadata with ``POST``.
 0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
 \                          Allow for publicly available objects via ``https://hostname/public``.
 \                          Support time-variant account/container listings. 
@@ -118,6 +120,7 @@ X-Account-Bytes-Used        The total number of bytes stored
 X-Account-Bytes-Remaining   The total number of bytes remaining (**TBD**)
 X-Account-Last-Login        The last login (**TBD**)
 X-Account-Until-Timestamp   The last account modification date until the timestamp provided
+X-Account-Group-*           Optional user defined groups
 X-Account-Meta-*            Optional user defined metadata
 Last-Modified               The last account modification date (regardless of ``until``)
 ==========================  =====================
@@ -164,6 +167,7 @@ count                        The number of objects inside the container
 bytes                        The total size of the objects inside the container
 last_modified                The last container modification date (regardless of ``until``)
 x_container_until_timestamp  The last container modification date until the timestamp provided
+x_container_policy_*         Container behavior and limits
 x_container_meta_*           Optional user defined metadata
 ===========================  ============================
 
@@ -187,7 +191,7 @@ POST
 ======================  ============================================
 Request Parameter Name  Value
 ======================  ============================================
-update                  Do not replace metadata (no value parameter)
+update                  Do not replace metadata/groups (no value parameter)
 ======================  ============================================
 
 |
@@ -195,12 +199,14 @@ update                  Do not replace metadata (no value parameter)
 ====================  ===========================
 Request Header Name   Value
 ====================  ===========================
+X-Account-Group-*     Optional user defined groups
 X-Account-Meta-*      Optional user defined metadata
 ====================  ===========================
 
 No reply content/headers.
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
+To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user names in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
 
 ================  ===============================
 Return Code       Description
@@ -245,11 +251,12 @@ X-Container-Block-Size       The block size used by the storage backend
 X-Container-Block-Hash       The hash algorithm used for block identifiers in object hashmaps
 X-Container-Until-Timestamp  The last container modification date until the timestamp provided
 X-Container-Object-Meta      A list with all meta keys used by objects
+X-Container-Policy-*         Container behavior and limits
 X-Container-Meta-*           Optional user defined metadata
 Last-Modified                The last container modification date (regardless of ``until``)
 ===========================  ===============================
 
-The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix.
+The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix. See container ``PUT`` for a reference of policy directives.
 
 ================  ===============================
 Return Code       Description
@@ -305,7 +312,9 @@ x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
 x_object_modified_by        The user that committed the object's version
 x_object_manifest           Object parts prefix in ``<container>/<object>`` form (optional)
-x_object_public             Object is publicly accessible (optional) (**TBD**)
+x_object_sharing            Object permissions (optional)
+x_object_shared_by          Object inheriting permissions (optional)
+x_object_public             Object's publicly accessible URI (optional)
 x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
 
@@ -334,10 +343,17 @@ PUT
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+X-Container-Policy-*  Container behavior and limits
 X-Container-Meta-*    Optional user defined metadata
 ====================  ================================
  
 No reply content/headers.
+
+If no policy is defined, the container will be created with the default values.
+Available policy directives:
+
+* ``versioning``: Set to ``auto``, ``manual`` or ``none`` (default is ``manual``)
+* ``quota``: Size limit in KB (default is ``0`` - unlimited)
  
 ================  ===============================
 Return Code       Description
@@ -353,7 +369,7 @@ POST
 ======================  ============================================
 Request Parameter Name  Value
 ======================  ============================================
-update                  Do not replace metadata (no value parameter)
+update                  Do not replace metadata/policy (no value parameter)
 ======================  ============================================
 
 |
@@ -361,12 +377,14 @@ update                  Do not replace metadata (no value parameter)
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+X-Container-Policy-*  Container behavior and limits
 X-Container-Meta-*    Optional user defined metadata
 ====================  ================================
 
 No reply content/headers.
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
+To change policy, include an ``X-Container-Policy-*`` header with the name in the key. If no ``X-Container-Policy-*`` header is present, no changes will be applied to policy. The ``update`` parameter also applies to policy - deleted values will revert to defaults. To delete/revert a specific policy directive, use ``update`` and an empty header value. See container ``PUT`` for a reference of policy directives.
 
 ================  ===============================
 Return Code       Description
@@ -432,7 +450,9 @@ X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public             Object is publicly accessible (optional) (**TBD**)
+X-Object-Sharing            Object permissions (optional)
+X-Object-Shared-By          Object inheriting permissions (optional)
+X-Object-Public             Object's publicly accessible URI (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -522,7 +542,9 @@ X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public             Object is publicly accessible (optional) (**TBD**)
+X-Object-Sharing            Object permissions (optional)
+X-Object-Shared-By          Object inheriting permissions (optional)
+X-Object-Public             Object's publicly accessible URI (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -555,7 +577,8 @@ X-Source-Version      The source version to copy from
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public       Object is publicly accessible (optional) (**TBD**)
+X-Object-Sharing      Object permissions (optional)
+X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
@@ -567,7 +590,7 @@ Reply Header Name           Value
 ETag                        The MD5 hash of the object (on create)
 ==========================  ===============================
 
-|
+The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separated user/group list, or a ``write=...`` comma-separated user/group list, or both separated by a semicolon (``;``). To publish the object, set ``X-Object-Public`` to ``true``. To unpublish, set to ``false``, or use an empty header value.
 
 ===========================  ==============================
 Return Code                  Description
@@ -590,11 +613,12 @@ Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Version      The source version to copy from
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public       Object is publicly accessible (optional) (**TBD**)
+X-Object-Sharing      Object permissions (optional)
+X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-Refer to ``POST`` for a description of request headers. Metadata is also copied, updated with any values defined.
+Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 
 No reply content/headers.
 
@@ -632,11 +656,14 @@ Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if us
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
-X-Object-Public       Object is publicly accessible (optional) (**TBD**)
+X-Object-Sharing      Object permissions (optional)
+X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**) and ``X-Object-Meta-*`` headers are considered to be user defined metadata. An operation without the ``update`` parameter will overwrite all previous values and remove any keys not supplied. When using ``update`` any metadata with an empty value will be deleted.
+The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest`` and ``X-Object-Meta-*`` headers are considered to be user defined metadata. An operation without the ``update`` parameter will overwrite all previous values and remove any keys not supplied. When using ``update`` any metadata with an empty value will be deleted.
+
+To change permissions, include an ``X-Object-Sharing`` header (as defined in ``PUT``). To publish, include an ``X-Object-Public`` header, with a value of ``true``. If no such headers are defined, no changes will be applied to sharing/public. Use empty values to remove permissions/unpublish (unpublishing also works with ``false`` as a header value). Sharing options are applied to the object - not its versions.
 
 To update an object's data:
 
@@ -683,10 +710,12 @@ Return Code                  Description
 204 (No Content)             The request succeeded
 ===========================  ==============================
 
-Public Objects
-^^^^^^^^^^^^^^
+Sharing and Public Objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Objects that are marked as public, via the ``X-Object-Public`` meta (**TBD**), are also available at the corresponding URI ``https://hostname/public/<account>/<container>/<object>`` for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden).
+Read and write control in Pithos is managed by setting appropriate permissions with the ``X-Object-Sharing`` header. The permissions are applied using prefix-based inheritance. Thus, each set of authorization directives is applied to all objects sharing the same prefix with the object where the corresponding ``X-Object-Sharing`` header is defined. For simplicity, nested/overlapping permissions are not allowed. Setting ``X-Object-Sharing`` will fail, if the object is already "covered", or another object with a longer common-prefix name already has permissions. When retrieving an object, the ``X-Object-Shared-By`` header reports where it gets its permissions from. If not present, the object is the actual source of authorization directives.
+
+Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden).
 
 ==========================  ===============================
 Reply Header Name           Value
@@ -706,20 +735,22 @@ Summary
 List of differences from the OOS API:
 
 * Support for ``X-Account-Meta-*`` style headers at the account level. Use ``POST`` to update.
-* Support for ``X-Container-Meta-*`` style headers at the account level. Can be set when creating via ``PUT``. Use ``POST`` to update.
+* Support for ``X-Container-Meta-*`` style headers at the container level. Can be set when creating via ``PUT``. Use ``POST`` to update.
 * Header ``X-Container-Object-Meta`` at the container level and parameter ``meta`` in container listings.
+* Container policies to manage behavior and limits.
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
-* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``, ``X-Object-Public`` (**TBD**). These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
+* Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object GET support as outlined in RFC2616.
 * Object hashmap retrieval through GET and the ``format`` parameter.
 * Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers.
 * Object ``MOVE`` support.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY.
-* Publicly accessible objects via ``https://hostname/public``. Control with ``X-Object-Public`` (**TBD**).
+* Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
+* Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.
 

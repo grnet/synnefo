@@ -79,7 +79,8 @@ def get_header_prefix(request, prefix):
     """Get all prefix-* request headers in a dict. Reformat keys with format_header_key()."""
     
     prefix = 'HTTP_' + prefix.upper().replace('-', '_')
-    return dict([(format_header_key(k[5:]), v.replace('_', '')) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
+    # TODO: Document or remove '~' replacing.
+    return dict([(format_header_key(k[5:]), v.replace('~', '')) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
 
 def get_account_headers(request):
     meta = get_header_prefix(request, 'X-Account-Meta-')
@@ -107,9 +108,10 @@ def put_account_headers(response, meta, groups):
 
 def get_container_headers(request):
     meta = get_header_prefix(request, 'X-Container-Meta-')
-    return meta
+    policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in get_header_prefix(request, 'X-Container-Policy-').iteritems()])
+    return meta, policy
 
-def put_container_headers(response, meta):
+def put_container_headers(response, meta, policy):
     response['X-Container-Object-Count'] = meta['count']
     response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
@@ -120,6 +122,8 @@ def put_container_headers(response, meta):
     response['X-Container-Block-Hash'] = backend.hash_algorithm
     if 'until_timestamp' in meta:
         response['X-Container-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
+    for k, v in policy.iteritems():
+        response[format_header_key('X-Container-Policy-' + k).encode('utf-8')] = v.encode('utf-8')
 
 def get_object_headers(request):
     meta = get_header_prefix(request, 'X-Object-Meta-')
@@ -131,14 +135,14 @@ def get_object_headers(request):
         meta['Content-Disposition'] = request.META['HTTP_CONTENT_DISPOSITION']
     if request.META.get('HTTP_X_OBJECT_MANIFEST'):
         meta['X-Object-Manifest'] = request.META['HTTP_X_OBJECT_MANIFEST']
-    return meta
+    return meta, get_sharing(request), get_public(request)
 
-def put_object_headers(response, meta, public=False):
+def put_object_headers(response, meta, restricted=False):
     response['ETag'] = meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
-    if not public:
+    if not restricted:
         response['X-Object-Modified-By'] = meta['modified_by']
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
@@ -236,8 +240,7 @@ def split_container_object_string(s):
 def copy_or_move_object(request, v_account, src_container, src_name, dest_container, dest_name, move=False):
     """Copy or move an object."""
     
-    meta = get_object_headers(request)
-    permissions = get_sharing(request)
+    meta, permissions, public = get_object_headers(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')    
     try:
         if move:
@@ -387,6 +390,23 @@ def get_sharing(request):
         else:
             raise BadRequest('Bad X-Object-Sharing header value')
     return ret
+
+def get_public(request):
+    """Parse an X-Object-Public header from the request.
+    
+    Raises BadRequest on error.
+    """
+    
+    public = request.META.get('HTTP_X_OBJECT_PUBLIC')
+    if public is None:
+        return None
+    
+    public = public.replace(' ', '').lower()
+    if public == 'true':
+        return True
+    elif public == 'false' or public == '':
+        return False
+    raise BadRequest('Bad X-Object-Public header value')
 
 def raw_input_socket(request):
     """Return the socket for reading the rest of the request."""

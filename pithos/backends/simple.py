@@ -58,6 +58,8 @@ class SimpleBackend(BaseBackend):
         self.hash_algorithm = 'sha1'
         self.block_size = 128 * 1024 # 128KB
         
+        self.default_policy = {'quota': 0, 'versioning': 'auto'}
+        
         basepath = os.path.split(db)[0]
         if basepath and not os.path.exists(basepath):
             os.makedirs(basepath)
@@ -220,13 +222,27 @@ class SimpleBackend(BaseBackend):
         """Return a dictionary with the container policy."""
         
         logger.debug("get_container_policy: %s %s", account, container)
-        return {}
+        if user != account:
+            raise NotAllowedError
+        path = self._get_containerinfo(account, container)[0]
+        return self._get_policy(path)
     
     def update_container_policy(self, user, account, container, policy, replace=False):
         """Update the policy associated with the account."""
         
         logger.debug("update_container_policy: %s %s %s %s", account, container, policy, replace)
-        return
+        if user != account:
+            raise NotAllowedError
+        path = self._get_containerinfo(account, container)[0]
+        self._check_policy(policy)
+        if replace:
+            for k, v in self.default_policy.iteritems():
+                if k not in policy:
+                    policy[k] = v
+        for k, v in policy.iteritems():
+            sql = 'insert or replace into policy (name, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (path, k, v))
+        self.con.commit()
     
     def put_container(self, user, account, container, policy=None):
         """Create a new container with the given name."""
@@ -237,10 +253,20 @@ class SimpleBackend(BaseBackend):
         try:
             path, version_id, mtime = self._get_containerinfo(account, container)
         except NameError:
-            path = os.path.join(account, container)
-            version_id = self._put_version(path, user)
+            pass
         else:
             raise NameError('Container already exists')
+        if policy:
+            self._check_policy(policy)
+        path = os.path.join(account, container)
+        version_id = self._put_version(path, user)
+        for k, v in self.default_policy.iteritems():
+            if k not in policy:
+                policy[k] = v
+        for k, v in policy.iteritems():
+            sql = 'insert or replace into policy (name, key, value) values (?, ?, ?)'
+            self.con.execute(sql, (path, k, v))
+        self.con.commit()
     
     def delete_container(self, user, account, container):
         """Delete the container with the given name."""
@@ -598,6 +624,26 @@ class SimpleBackend(BaseBackend):
         sql = 'select name, users from groups where account = ?'
         c = self.con.execute(sql, (account,))
         return dict([(x[0], x[1].split(',')) for x in c.fetchall()])
+    
+    def _check_policy(self, policy):
+        for k in policy.keys():
+            if policy[k] == '':
+                policy[k] = self.default_policy.get(k)
+        for k, v in policy.iteritems():
+            if k == 'quota':
+                q = int(v) # May raise ValueError.
+                if q < 0:
+                    raise ValueError
+            elif k == 'versioning':
+                if v not in ['auto', 'manual', 'none']:
+                    raise ValueError
+            else:
+                raise ValueError
+    
+    def _get_policy(self, path):
+        sql = 'select key, value from policy where name = ?'
+        c = self.con.execute(sql, (path,))
+        return dict(c.fetchall())
     
     def _is_allowed(self, user, account, container, name, op='read'):
         if user == account:

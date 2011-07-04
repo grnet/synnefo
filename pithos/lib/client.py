@@ -150,6 +150,8 @@ class Client(object):
             kwargs['headers']['Content-Length'] = len(body) if body else 0
         if body:
             kwargs['body'] = body
+        else:
+            kwargs['headers']['Content-Type'] = ''
         kwargs['headers'].setdefault('Content-Type', 'application/octet-stream')
         try:
             conn.request(method, full_path, **kwargs)

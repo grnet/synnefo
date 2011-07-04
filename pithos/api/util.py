@@ -41,7 +41,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils.http import http_date, parse_etags
 
-from pithos.api.compat import parse_http_date_safe
+from pithos.api.compat import parse_http_date_safe, parse_http_date
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound,
                                 LengthRequired, PreconditionFailed, RangeNotSatisfiable,
                                 ServiceUnavailable)
@@ -574,8 +574,21 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
                     offset < 0 or offset >= size or
                     offset + length > size]
         if len(check) > 0:
-            raise RangeNotSatisfiable('Requested range exceeds object limits')        
+            raise RangeNotSatisfiable('Requested range exceeds object limits')
         ret = 206
+        if_range = request.META.get('HTTP_IF_RANGE', '')
+        if if_range and if_range.startswith('If-Range:'):
+            if_range = if_range.split('If-Range:')[1]
+            try:
+                # modification time has passed instead
+                last_modified = parse_http_date(if_range)
+                if last_modified != meta['modified']:
+                    ranges = [(0, size)]
+                    ret = 200
+            except ValueError:
+                if if_range != meta['hash']:
+                    ranges = [(0, size)]
+                    ret = 200
     
     if ret == 206 and len(ranges) > 1:
         boundary = uuid.uuid4().hex

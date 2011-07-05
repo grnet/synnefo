@@ -668,12 +668,11 @@ class SimpleBackend(BaseBackend):
         for x in ('read', 'write'):
             g_perms = []
             for y in perms.get(x, []):
-                if ':' in y:
-                    g_account, g_name = y.split(':', 1)
-                    groups = self._get_groups(g_account)
-                    if g_name in groups:
-                        g_perms += groups[g_name]
-                else:
+                groups = self._get_groups(account)
+                if y in groups: #it's a group
+                    for g_name in groups[y]:
+                        g_perms.append(g_name)
+                else: #it's a user
                     g_perms.append(y)
             perms[x] = g_perms
         

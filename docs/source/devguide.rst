@@ -25,9 +25,10 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.4 (June 30, 2011)        Object permissions and account groups.
+0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
+\                          Create object using hashmap.
 0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
 \                          Allow for publicly available objects via ``https://hostname/public``.
 \                          Support time-variant account/container listings. 
@@ -472,6 +473,7 @@ GET
 Request Header Name   Value
 ====================  ================================
 Range                 Optional range of data to retrieve
+If-Range              Retrieve the missing part if entity is unchanged; otherwise, retrieve the entire new entity (used together with Range header)
 If-Match              Retrieve if ETags match
 If-None-Match         Retrieve if ETags don't match
 If-Modified-Since     Retrieve if object has changed since provided timestamp
@@ -583,6 +585,23 @@ X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
 |
+
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+format                  Optional extended request type (can be ``json``) to create the object by suppling its hashmap instead
+======================  ===================================
+
+The request is the object's data (or part of it), except if a hashmap is provided with the ``format`` parameter.  If format is used and all different parts are stored in the server, the object is created otherwise the server returns Conflict (409) with the list of the missing parts. 
+
+Hashmaps expose the underlying storage format of the object.
+
+Example ``format=json`` request:
+
+::
+
+  {"block_hash": "sha1", "hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c", ...], "block_size": 131072, "bytes": 242}
+
 
 ==========================  ===============================
 Reply Header Name           Value

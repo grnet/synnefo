@@ -215,13 +215,14 @@ def container_list(request, v_account):
             try:
                 meta = backend.get_container_meta(request.user, v_account, x[0], until)
                 policy = backend.get_container_policy(request.user, v_account, x[0])
-                for k, v in policy.iteritems():
-                    meta['X-Container-Policy-' + k] = v
-                container_meta.append(printable_header_dict(meta))
             except NotAllowedError:
                 raise Unauthorized('Access denied')
             except NameError:
                 pass
+            else:
+                for k, v in policy.iteritems():
+                    meta['X-Container-Policy-' + k] = v
+                container_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': v_account, 'containers': container_meta})
     elif request.serialization  == 'json':
@@ -420,9 +421,10 @@ def object_list(request, v_account, v_container):
                 raise Unauthorized('Access denied')
             except NameError:
                 pass
-            update_sharing_meta(permissions, v_account, v_container, x[0], meta)
-            update_public_meta(public, meta)
-            object_meta.append(printable_header_dict(meta))
+            else:
+                update_sharing_meta(permissions, v_account, v_container, x[0], meta)
+                update_public_meta(public, meta)
+                object_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':

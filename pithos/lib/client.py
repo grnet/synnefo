@@ -136,6 +136,8 @@ class Client(object):
             for k,v in params.items():
                 if v:
                     full_path = '%s&%s=%s' %(full_path, k, v)
+                else:
+                    full_path = '%s&%s' %(full_path, k)
         conn = HTTPConnection(self.host)
         
         #encode whitespace
@@ -189,8 +191,9 @@ class Client(object):
     def head(self, path, format='text', params=None):
         return self.req('HEAD', path, format=format, params=params)
     
-    def post(self, path, body=None, format='text', headers=None):
-        return self.req('POST', path, body, headers=headers, format=format)
+    def post(self, path, body=None, format='text', headers=None, params=None):
+        return self.req('POST', path, body, headers=headers, format=format,
+                        params=params)
     
     def put(self, path, body=None, format='text', headers=None):
         return self.req('PUT', path, body, headers=headers, format=format)
@@ -219,17 +222,16 @@ class Client(object):
     
     def _update_metadata(self, path, entity, **meta):
         """
-         adds new and updates the values of previously set metadata
+        adds new and updates the values of previously set metadata
         """
-        prefix = 'x-%s-meta-' % entity
-        prev_meta = self._get_metadata(path, prefix)
-        prev_meta.update(meta)
+        params = {'update':None}
         headers = {}
-        for key, val in prev_meta.items():
-            key = '%s%s' % (prefix, key)
-            key = '-'.join(elem.capitalize() for elem in key.split('-'))
-            headers[key] = val
-        self.post(path, headers=headers)
+        prefix = 'x-%s-meta-' % entity
+        for k,v in meta.items():
+            k = '%s%s' % (prefix, k)
+            k = '-'.join(elem.capitalize() for elem in k.split('-'))
+            headers[k] = v
+        self.post(path, headers=headers, params=params)
     
     def _delete_metadata(self, path, entity, meta=[]):
         """

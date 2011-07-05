@@ -29,7 +29,7 @@
 # policies, either expressed or implied, of GRNET S.A.
 
 
-""" Message queue setup and dispatch
+""" Message queue setup, dispatch and admin
 
 This program sets up connections to the queues configured in settings.py
 and implements the message wait and dispatch loops. Actual messages are
@@ -177,6 +177,12 @@ def parse_arguments(args):
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
+    parser.add_option("-w", "--workers", default=2, dest="workers",
+                      help="Number of workers to spawn", type="int")
+    parser.add_option("-p", '--pid-file', dest="pid_file",
+                      default=os.path.join(os.getcwd(), "dispatcher.pid"),
+                      help="Save PID to file (default:%s)" %
+                           os.path.join(os.getcwd(), "dispatcher.pid"))
     parser.add_option("--purge-queues", action="store_true",
                       default=False, dest="purge_queues",
                       help="Remove all declared queues (DANGEROUS!)")
@@ -184,14 +190,8 @@ def parse_arguments(args):
                       default=False, dest="purge_exchanges",
                       help="Remove all exchanges. Implies deleting all queues \
                            first (DANGEROUS!)")
-    parser.add_option("--drain-queue", dest="clean_queue",
-                      help="Acks and removes all messages from a queue")
-    parser.add_option("-w", "--workers", default=2, dest="workers",
-                      help="Number of workers to spawn", type="int")
-    parser.add_option("-p", '--pid-file', dest="pid_file",
-                      default=os.path.join(os.getcwd(), "dispatcher.pid"),
-                      help="Save PID to file (default:%s)" %
-                           os.path.join(os.getcwd(), "dispatcher.pid"))
+    parser.add_option("--drain-queue", dest="queue",
+                      help="Strips a queue from all outstanding messages")
 
     return parser.parse_args(args)
 
@@ -260,6 +260,28 @@ def drain_queue(queue):
     conn = get_connection()
     chan = conn.channel()
 
+    # Register a temporary queue binding
+    for binding in settings.BINDINGS:
+        if binding[0] == queue:
+            exch = binding[1]
+
+    if not exch:
+        print "Queue not bound to any exchange: %s" % queue
+        return
+
+    chan.queue_bind(queue=queue, exchange=exch,routing_key='#')
+    tag = chan.basic_consume(queue=queue, callback=callbacks.dummy_proc)
+
+    print "Queue draining about to start, hit Ctrl+c when done"
+    time.sleep(2)
+    print "Queue draining starting"
+
+    signal(SIGTERM, _exit_handler)
+    signal(SIGINT, _exit_handler)
+
+    while True:
+        chan.wait()
+    chan.basic_cancel(tag)
     chan.connection.close()
 
 def get_connection():
@@ -304,7 +326,7 @@ def main():
         return
 
     if opts.clean_queue:
-        drain_queue(opts.clean_queue)
+        drain_queue(opts.queue)
         return
 
     # Debug mode, process messages without spawning workers

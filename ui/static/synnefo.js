@@ -1623,22 +1623,22 @@ function get_public_ips(server) {
                             } else if (ip.version == '6') {
                                 ip6 = ip.addr;
                             } else {
-                                ip4 = 'undefined';
-                                ip6 = 'undefined';
+                                ip4 = 'pending';
+                                ip6 = 'pending';
                             }
                         });
                     } catch (err){
                         try{console.info('Server ' + server.id + ' has invalid ips')}catch(err){};
-                        ip4 = 'undefined';
-                        ip6 = 'undefined';
+                        ip4 = 'pending';
+                        ip6 = 'pending';
                     }
                 }
             });
         }
     } catch (err) {
         try{console.info('Server ' + server.id + ' has no network addresses')}catch(err){};
-        ip4 = 'undefined';
-        ip6 = 'undefined';
+        ip4 = 'pending';
+        ip6 = 'pending';
     }
     return {'ip4': ip4, 'ip6': ip6};
 }

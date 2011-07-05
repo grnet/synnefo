@@ -408,6 +408,7 @@ $("#machinesview-single.single div.action-console").live('click', function(){
 
 // connect to machine on machine logo click
 $("#machinesview-single.single div.single-image").live('click', function(){
+    if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
     var serverID = $(this).closest(".single-container").attr("id");
     machine_connect([machine_connect, serverID]);
     return false;

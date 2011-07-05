@@ -229,6 +229,7 @@ $("#machinesview-icon.standard .running div.connect-border").live('mouseout', fu
 
 // open console on machine logo click
 $("#machinesview-icon.standard .running div.logo").live('click', function(){
+    if ($(this).parent().parent().find(".connect-arrow:visible").length == 0) { return };
     var serverID = $(this).parent().parent().attr("id");
     machine_connect([machine_connect, serverID]);
     return false;

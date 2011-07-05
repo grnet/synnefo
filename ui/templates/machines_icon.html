@@ -610,7 +610,13 @@ function update_machines_view(data) {
                         existing.find('.state').removeClass().addClass('state running-state');
                         setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                     }
-                    else {
+                    else if (STATUSES[server.status] == "Rebooting") { 
+                        // from running to rebooting
+                        log_server_status_change(existing, server.status);
+                        existing.find(".state").removeClass().addClass('state rebooting-state');
+                        existing.find('.spinner').show();
+                        existing.find(".status").text(STATUSES[server.status]);
+                    } else {
                         // in any other case just change the status and ignore spinners/waves
                         existing.find(".status").text(STATUSES[server.status]);
                         existing.appendTo("#machinesview-icon.standard .running");

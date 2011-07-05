@@ -340,7 +340,8 @@ function update_vms(interval) {
 
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
-                    servers = data.servers.values;
+                    //servers = data.servers.values;
+                    update_servers_data(data.servers.values, data);
                     jQuery.parseJSON(data);
                     update_machines_view(data);
                 } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
@@ -357,6 +358,75 @@ function update_vms(interval) {
         }
     });
     return false;
+}
+
+function update_servers_data(servers_update, data) {
+    $(window).trigger("vm:update", servers_update, data);
+
+    // first call
+    if (!window.servers || window.servers.length == 0) {
+        window.servers = servers_update;
+        return;
+    }
+    
+    // server exists helper
+    server_exists = function(server) {
+        var id = server.id;
+        var found = false;
+        var index = 0;
+        $.each(servers, function(i, s) {
+            console.log(index);
+            if (s.id == id) { found = true, index = i };
+        });
+        if (found)
+            return [found, index];
+
+        return false;
+    }
+
+    // merge object properties
+    merge = function() {
+        var initial = arguments[0];
+        $.each(arguments, function(index, el) {
+            $.each(el, function(key,v) {
+                // new attribute added
+                if (initial[key] == undefined) {
+                    $(window).trigger("vm:attr:add", initial, key, v);
+                } else {
+                    // value changed
+                    if (initial[key] != v) {
+                        $(window).trigger("vm:attr:change", {'initial': initial, 'attr': key, 'newvalue': v});
+                    }
+                }
+                initial[key] = v;
+            });
+        });
+        return initial;
+    }
+    
+    // server removed
+    var remove = [];
+    $.each(servers_update, function(index, server) {
+        if (server.status == "DELETED") {
+            remove.push(server.id);
+        }
+    });
+    
+    // check server, if exists merge it with new values else add it
+    $.each(servers_update, function(index, server) {
+        var exists = server_exists(server);
+        if (exists !== false) {
+            servers[exists[1]] = merge(servers[exists[1]], server);
+        } else {
+            servers.push(server);
+            $(window).trigger("vm:add", server);
+        }
+        if (remove.indexOf(server.id) > -1) {
+            var remove_exists = server_exists(server);
+            servers.splice(remove_exists[1], 1);
+            $(window).trigger("vm:remove", server);
+        }
+    });
 }
 
 // get a list of running and terminated machines, used in network view
@@ -402,7 +472,8 @@ function update_networks(interval) {
 
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
-                    servers = data.servers.values;
+                    //servers = data.servers.values;
+                    update_servers_data(data.servers.values, data);
                     jQuery.parseJSON(data);
                     update_network_names(data);
                 } catch(err) { ajax_error('400', undefined, 'Update networks', jqXHR.responseText);}
@@ -1091,6 +1162,10 @@ function machine_connect(serverIDs){
     } catch(err) { var os = 'undefined'; }
 
     var params_url = '?ip_address=' + serverIP + '&os=' + os;
+
+    //console.log(serverIP);
+    //console.log(machine.addresses);
+    //console.log(machine.addresses.values[0].values[0].addr);
 
     window.open('machines/connect' + params_url);
 

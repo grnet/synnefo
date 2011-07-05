@@ -175,6 +175,8 @@ $("div.connect-arrow, div.running .machine .logo").live('mouseover',
     function() {
         if ($(this).parent().parent().find('.status').text() != STATUSES['ACTIVE']) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1);
+        var parent = $(this).parent().parent();
+        parent.find(".connect-arrow").show().addClass('border-hover');
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mouseleave',
@@ -183,6 +185,8 @@ $("div.connect-arrow, div.running .machine .logo").live('mouseleave',
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "hover");
         // mouseup outside the element is not fired
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "click");
+        var parent = $(this).parent().parent();
+        parent.find(".connect-arrow").show().removeClass('border-hover');
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mousedown',

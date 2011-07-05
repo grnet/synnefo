@@ -59,7 +59,8 @@ or implied, of GRNET S.A.
     <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->
     <script>
         // empty object for console to avoid errors in browsers that don't support it
-        if (!window.console) {window.console = {}; window.console.log = function () {}};
+        if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
+            window.console.error = function() {}};
 
         //populate available image icons array
         var os_icons = {{image_icons|safe}};

@@ -387,20 +387,29 @@ function update_servers_data(servers_update, data) {
     // merge object properties
     merge = function() {
         var initial = arguments[0];
+        var status_changed = undefined;
         $.each(arguments, function(index, el) {
             $.each(el, function(key,v) {
                 // new attribute added
+                var previous_value = initial[key];
+
                 if (initial[key] == undefined) {
                     $(window).trigger("vm:attr:add", initial, key, v);
                 } else {
                     // value changed
                     if (initial[key] != v) {
+                        if (key == "status") {
+                            status_changed = {'old': previous_value, 'new': v}; 
+                        }
                         $(window).trigger("vm:attr:change", {'initial': initial, 'attr': key, 'newvalue': v});
                     }
                 }
                 initial[key] = v;
             });
         });
+        if (status_changed !== undefined) {
+            $(window).trigger('vm:status:change', {'vm': initial, 'old': status_changed['old'], 'new': status_changed['new']});
+        }
         return initial;
     }
     
@@ -416,7 +425,11 @@ function update_servers_data(servers_update, data) {
     $.each(servers_update, function(index, server) {
         var exists = server_exists(server);
         if (exists !== false) {
-            servers[exists[1]] = merge(servers[exists[1]], server);
+            try {
+                servers[exists[1]] = merge(servers[exists[1]], server);
+            } catch (err) {
+                console.log("merge error", err);
+            }
         } else {
             servers.push(server);
             $(window).trigger("vm:add", server);

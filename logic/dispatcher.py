@@ -190,7 +190,7 @@ def parse_arguments(args):
                       default=False, dest="purge_exchanges",
                       help="Remove all exchanges. Implies deleting all queues \
                            first (DANGEROUS!)")
-    parser.add_option("--drain-queue", dest="queue",
+    parser.add_option("--drain-queue", dest="drain_queue",
                       help="Strips a queue from all outstanding messages")
 
     return parser.parse_args(args)
@@ -325,8 +325,8 @@ def main():
         purge_exchanges()
         return
 
-    if opts.clean_queue:
-        drain_queue(opts.queue)
+    if opts.drain_queue:
+        drain_queue(opts.drain_queue)
         return
 
     # Debug mode, process messages without spawning workers

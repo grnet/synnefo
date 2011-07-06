@@ -590,6 +590,10 @@ def object_write(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
+    
+    if not request.GET.get('format'):
+        request.serialization = 'text'
+    
     copy_from = request.META.get('HTTP_X_COPY_FROM')
     move_from = request.META.get('HTTP_X_MOVE_FROM')
     if copy_from or move_from:

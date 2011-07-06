@@ -238,6 +238,19 @@ def send_invitation(invitation):
     )
 
 
+def get_invitee_level(source):
+    return get_user_inv_level(source) + 1
+
+
+def get_user_inv_level(u):
+    inv = Invitations.objects.filter(target = u)
+
+    if inv is None:
+        raise Exception("User without invitation", u)
+
+    return inv[0].level
+
+
 @transaction.commit_on_success
 def add_invitation(source, name, email):
     """
@@ -263,9 +276,16 @@ def add_invitation(source, name, email):
     if not r:
         raise Exception("Invited user cannot be added")
 
+    u = target[0]
+    invitee_level = get_invitee_level(source)
+
+    u.max_invitations = settings.INVITATIONS_PER_LEVEL[invitee_level]
+    u.save()
+
     inv = Invitations()
     inv.source = source
-    inv.target = target[0]
+    inv.target = u
+    inv.level = invitee_level
     inv.save()
     return inv
 

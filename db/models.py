@@ -447,6 +447,7 @@ class Invitations(models.Model):
     accepted = models.BooleanField('Is the invitation accepted?', default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    level = models.IntegerField('Invitation depth level', null=True)
 
     class Meta:
         verbose_name = u'Invitation'

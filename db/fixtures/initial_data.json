@@ -51,5 +51,15 @@
             "public": 1,
             "link": 1
         }
+    },
+    {
+        "model" : "db.Invitations",
+        "pk" : 1,
+        "fields": {
+            "source": 1,
+            "target": 1,
+            "accepted": "True",
+            "level" : -1
+        }
     }
 ] 

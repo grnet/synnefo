@@ -42,14 +42,16 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
-from synnefo.logic.email_send import send_async
+from django.utils.translation import gettext_lazy as _
 
+from synnefo.logic.email_send import send_async
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
-from synnefo.logic import users
+from synnefo.logic import users, log
 
 from Crypto.Cipher import AES
 
+_logger = log.get_logger("synnefo.invitations")
 
 def process_form(request):
     errors = []
@@ -69,14 +71,14 @@ def process_form(request):
 
             inv = add_invitation(request.user, name, email)
             send_invitation(inv)
-
+        # FIXME: Delete invitation and user on error
+        except (InvitationException, ValidationError) as e:
+            errors += ["Invitation to %s <%s> not sent. Reason: %s" %
+                       (name, email, e.messages[0])]
         except Exception as e:
-            try :
-                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
-                           (name, email, e.messages[0])]
-            except:
-                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
-                           (name, email, e.message)]
+            _logger.exception(e)
+            errors += ["Invitation to %s <%s> not sent. Reason: %s" %
+                       (name, email, e.message)]
 
     respose = None
     if errors:
@@ -228,12 +230,11 @@ def send_invitation(invitation):
 
     data = render_to_string('invitation.txt', {'email': email})
 
-    print data
-
     send_async(
         frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
-        subject = u'Πρόσκληση για την υπηρεσία Ωκεανός',
+        subject = u'Πρόσκληση στην υπηρεσία Ωκεανός',
+        #subject = _('Invitation to IaaS service Okeanos'),
         body = data
     )
 
@@ -298,16 +299,16 @@ def invitation_accepted(invitation):
     invitation.accepted = True
     invitation.save()
 
-
-class TooManyInvitations(Exception):
+class InvitationException(Exception):
     messages = []
+
+class TooManyInvitations(InvitationException):
 
     def __init__(self, msg):
         self.messages.append(msg)
 
 
-class AlreadyInvited(Exception):
-    messages = []
+class AlreadyInvited(InvitationException):
 
     def __init__(self, msg):
         self.messages.append(msg)

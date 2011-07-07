@@ -1,10 +1,10 @@
-README.deploy -- Instructions for a basic deployment of Synnefo v0.4
+README.deploy -- Instructions for a basic deployment of Synnefo v0.5.1
 
 This document describes the basic steps to obtain a basic, working Synnefo
 deployment. It begins by examining the different node roles, then moves to the
 installation and setup of distinct software components.
 
-It applies to Synnefo v0.4.
+It is current as of Synnefo v0.5.1.
 
 
 Node types

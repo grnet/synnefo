@@ -4,7 +4,7 @@ from django.conf import settings
 OKEANOS_STATIC = getattr(settings, 'OKEANOS_STATIC_URL', '/okeanos_static/')
 OKEANOS_SITE_URL = getattr(settings, 'OKEANOS_SITE_URL', '/okeanos')
 OKEANOS_VIDEO_URL = getattr(settings, 'OKEANOS_VIDEO_URL', '')
-OKEANOS_APP_URL = getattr(settings, 'OKEANOS_APP_URL', '')
+OKEANOS_APP_URL = getattr(settings, 'OKEANOS_APP_URL', '/')
 
 context = {
     'OKEANOS_STATIC_URL': OKEANOS_STATIC,

@@ -112,6 +112,7 @@ Synnefo deployment.
       WARNING: version python-dateutil==2.0 downloaded by pip known *not* to
                work with Python 2.6
     * python-ipy [IPy==0.72]
+      UPDATE: tested with squeeze's 0.70 and it seems to work..
     * south [south==0.7.1]
       WARNING: might not work with Debian squeeze's default south-0.7-1 package.
     * amqplib [amqplib==0.6.1]
@@ -377,8 +378,8 @@ Synnefo deployment.
 
     Download and install gnt-instance-image in all Ganeti nodes from its own
     repository, at https://code.grnet.gr/git/gnt-instance-image. It's
-    recommended to use the win-support branch (last tested commit for Synnefo
-    v0.5 is cb9587b68bb1e2d8ce14c351244a279b0e3eb963).
+    recommended to use the win-support branch (known good commit:
+    aa661a7ea6da9c11a05a3587ee61d10348eb7422).
 
     After installing gnt-instance-image do the following:
     1. root@ganeti-master$ cd /path-to-repo

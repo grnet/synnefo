@@ -194,7 +194,7 @@
         "pk": 16,
         "fields": {
             "meta_key": "OS",
-            "meta_value": "ubuntu",
+            "meta_value": "kubuntu",
             "image": 4
         }
     },

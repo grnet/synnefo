@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from socket import getfqdn
+from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -41,7 +42,6 @@ from django.utils import simplejson as json
 from synnefo.api.faults import BadRequest, ServiceUnavailable
 from synnefo.api.util import random_password, get_vm
 from synnefo.db.models import NetworkInterface
-from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
 from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
 

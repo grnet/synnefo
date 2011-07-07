@@ -1,0 +1,313 @@
+#!/usr/bin/env python
+
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
+from django.core.management import setup_environ
+try:
+    from synnefo import settings
+except ImportError:
+    raise Exception("Cannot import settings, make sure PYTHONPATH contains "
+                    "the parent directory of the Synnefo Django project.")
+setup_environ(settings)
+
+import inspect
+import logging
+import sys
+
+from collections import defaultdict
+from optparse import OptionParser
+from os.path import basename
+
+from synnefo.db import models
+
+
+def get_user(uid):
+    try:
+        uid = int(uid)
+        return models.SynnefoUser.objects.get(id=uid)
+        servers = servers.filter(owner=user)
+    except ValueError:
+        return None
+    except models.SynnefoUser.DoesNotExist:
+        return None
+
+def print_dict(d, exclude=()):
+    margin = max(len(key) for key in d) + 1
+
+    for key, val in sorted(d.items()):
+        if key in exclude:
+            continue
+        print '%s: %s' % (key.rjust(margin), val)
+
+def print_items(items, detail=False):
+    for item in items:
+        print '%d %s' % (item.id, item.name)
+        if detail:
+            print_dict(item.__dict__, exclude=('id', 'name', '_state'))
+            print
+
+
+class Command(object):
+    category = ''
+    name = ''
+    syntax = ''
+    description = ''
+    
+    def __init__(self, argv):
+        parser = OptionParser()
+        parser.usage = '%%prog %s %s %s' % (self.category, self.name,
+                                            self.syntax)
+        self.add_options(parser)
+        options, self.args = parser.parse_args(argv)
+        
+        # Add options to self
+        for opt in parser.option_list:
+            key = opt.dest
+            if key:
+                val = getattr(options, key)
+                setattr(self, key, val)
+        
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter('%(message)s'))
+        logger = logging.getLogger()
+        logger.addHandler(ch)
+        level = logging.WARNING
+        logger.setLevel(level)
+        
+        self.parser = parser
+    
+    def add_options(self, parser):
+        pass
+    
+    def execute(self):
+        try:
+            self.main(*self.args)
+        except TypeError:
+            self.parser.print_help()
+
+
+class ListServers(Command):
+    category = 'server'
+    name = 'ls'
+    syntax = '[server id]'
+    description = 'list servers'
+    
+    def add_options(self, parser):
+        parser.add_option('-a', action='store_true', dest='show_deleted',
+                        default=False, help='also list deleted servers')
+        parser.add_option('-l', action='store_true', dest='detail',
+                        default=False, help='show detailed output')
+        parser.add_option('-u', dest='uid', metavar='UID',
+                            help='show servers of user with id UID')
+    
+    def main(self, server_id=None):
+        servers = models.VirtualMachine.objects.order_by('id')
+        if server_id:
+            servers = servers.filter(id=server_id)
+        if not self.show_deleted:
+            servers = servers.filter(deleted=False)
+        if self.uid:
+            user = get_user(self.uid)
+            if user:
+                servers = servers.filter(owner=user)
+            else:
+                print 'Unknown user id'
+                return
+        
+        print_items(servers, self.detail)
+
+
+class ListUsers(Command):
+    category = 'user'
+    name = 'ls'
+    syntax = '[user id]'
+    description = 'list users'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail',
+                        default=False, help='show detailed output')
+    
+    def main(self, user_id=None):
+        if user_id:
+            users = [models.SynnefoUser.objects.get(id=user_id)]
+        else:
+            users = models.SynnefoUser.objects.order_by('id')
+        print_items(users, self.detail)
+
+
+class ListImages(Command):
+    category = 'image'
+    name = 'ls'
+    syntax = '[image id]'
+    description = 'list images'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail',
+                        default=False, help='show detailed output')
+    
+    def main(self, image_id=None):
+        if image_id:
+            images = [models.Image.objects.get(id=image_id)]
+        else:
+            images = models.Image.objects.order_by('id')
+        print_items(images, self.detail)
+
+
+class RegisterImage(Command):
+    category = 'image'
+    name = 'register'
+    syntax = '<name> <backend id>'
+    description = 'register an image'
+    
+    def add_options(self, parser):
+        parser.add_option('-p', action='store_true', dest='public',
+                            default=False, help='make image public')
+        parser.add_option('-u', dest='uid', metavar='UID',
+                            help='assign image to user with id UID')
+    
+    def main(self, name, backend_id):
+        user = None
+        if self.uid:
+            user = get_user(self.uid)
+            if not user:
+                print 'Unknown user id'
+                return
+        
+        image = models.Image.objects.create(
+            name=name,
+            state='ACTIVE',
+            owner=user,
+            backend_id=backend_id,
+            public=self.public)
+
+
+class ModifyImage(Command):
+    category = 'image'
+    name = 'modify'
+    syntax = '<image id>'
+    description = 'modify an image'
+    
+    def add_options(self, parser):
+        parser.add_option('-b', dest='backend_id', metavar='BACKEND_ID',
+                            help='set image backend id')
+        parser.add_option('-f', dest='format', metavar='FORMAT',
+                            help='set image format')
+        parser.add_option('-n', dest='name', metavar='NAME',
+                            help='set image name')
+        parser.add_option('-p', action='store_true', dest='public',
+                            default=False, help='make image public')
+        parser.add_option('-r', action='store_true', dest='private',
+                            default=False, help='make image private')
+        parser.add_option('-s', dest='state', metavar='STATE',
+                            default=False, help='set image state')
+        parser.add_option('-u', dest='uid', metavar='UID',
+                            help='assign image to user with id UID')
+    
+    def main(self, image_id):
+        try:
+            image = models.Image.objects.get(id=image_id)
+        except:
+            print 'Image not found'
+            return
+        
+        if self.backend_id:
+            image.backend_id = self.backend_id
+        if self.format:
+            image.format = format
+        if self.name:
+            image.name = self.name
+        if self.public:
+            image.public = True
+        if self.private:
+            image.public = False
+        if self.state:
+            image.state = self.state
+        if self.uid:
+            image.owner = get_user(self.uid)
+        
+        image.save()
+
+
+def print_categories(exe, categories):
+    print 'Usage: %s <category> <command>' % exe
+    print
+    print 'Categories:'
+    for category in sorted(categories):
+        print '  %s' % category
+
+def print_commands(exe, commands):
+    print 'Usage: %s <command>' % exe
+    print
+    print 'Commands:'
+    for command, cls in sorted(commands.items()):
+        print '  %s %s' % (command.ljust(10), cls.description)
+
+
+def main():
+    categories = defaultdict(dict)
+    module = sys.modules[__name__]
+    for name, cls in inspect.getmembers(module, inspect.isclass):
+        if issubclass(cls, Command) and cls != Command:
+            categories[cls.category][cls.name] = cls
+    
+    argv = list(sys.argv)
+    exe = basename(argv.pop(0))
+    snf, sep, rest = exe.partition('-')
+    if snf == 'snf' and sep and rest != 'admin':
+        category = rest
+        if category not in categories:
+            print 'Invalid alias'
+            sys.exit(1)
+    else:
+        category = argv.pop(0) if argv else None
+        if category:
+            exe = '%s %s' % (exe, category)
+    
+    if not category or category not in categories:
+        print_categories(exe, categories)
+        sys.exit(1)
+    
+    command = argv.pop(0) if argv else None
+    
+    if not command or command not in categories[category]:
+        print_commands(exe, categories[category])
+        sys.exit(1)
+    
+    cls = categories[category][command]
+    cmd = cls(argv)
+    cmd.execute()
+
+
+if __name__ == '__main__':
+    main()

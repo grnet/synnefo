@@ -99,6 +99,11 @@ Development-specific guidelines on each step:
 16.As is.
 
 
+17.[OPTIONAL] Create settings.d/99-local.conf and insert local overrides for
+   settings.d/*.  This will allow pulling new files without needing to reapply
+   local any local modifications.
+
+
 South Database Migrations
 =========================
 

@@ -158,11 +158,14 @@ def start_action(vm, action):
 def create_instance(vm, flavor, image, password):
 
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
-    
-    if image.backend_id.find("windows") >= 0:
-        sz = 14000
+
+    if settings.IGNORE_FLAVOR_DISK_SIZES:
+        if image.backend_id.find("windows") >= 0:
+            sz = 14000
+        else:
+            sz = 4000
     else:
-        sz = 4000
+        sz = flavor.disk * 1024
 
     return rapi.CreateInstance(
         mode='create',
@@ -176,7 +179,7 @@ def create_instance(vm, flavor, image, password):
         # Do not specific a node explicitly, have
         # Ganeti use an iallocator instead
         #
-        # pnode=rapi.GetNodes()[0]
+        # pnode=rapi.GetNodes()[0],
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
         osparams=dict(img_id=image.backend_id, img_passwd=password,

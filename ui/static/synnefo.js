@@ -1156,6 +1156,20 @@ function open_console(serverIDs){
     return false;
 }
 
+function vm_has_address(vmId) {
+    var vm = get_machine(vmId);
+
+    if (!vm) return false;
+
+    try {
+        var ip = vm.addresses.values[0].values[0].addr;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+    return ip;
+}
+
 // connect to machine action
 function machine_connect(serverIDs){
     if (!serverIDs.length){
@@ -1163,7 +1177,7 @@ function machine_connect(serverIDs){
         return false;
     }
     var serverID = serverIDs.pop();
-
+    
     var machine = get_machine(serverID);
     var serverName = machine.name;
     try {
@@ -1179,8 +1193,11 @@ function machine_connect(serverIDs){
     //console.log(serverIP);
     //console.log(machine.addresses);
     //console.log(machine.addresses.values[0].values[0].addr);
-
+    
+    //show_connect_dialog(machine, ip);
     window.open('machines/connect' + params_url);
+    
+
 
     // Restore os icon in list view
     osIcon = $('#'+serverID).parent().parent().find('.list-logo');
@@ -2046,3 +2063,69 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
     el.addClass("single-image-" + cls);
 }
 
+
+// generic info box
+
+function msg_box(config) {
+    var config = $.extend({'title':'Info message', 'content': 'this is an info message', 'ajax': false, 'extra':false}, config);
+    // prepare the error message
+    // bring up success notification
+
+    var box = $("#notification-box");
+    box.addClass('success');
+    box.removeClass('error');
+
+    var sel = function(s){console.log(box); return $(s, box)};
+
+    sel("h3 span.header-box").text(config.title);
+    sel("div.machine-now-building").html(config.content);
+    sel(".popup-header").removeClass("popup-header-error");
+    box.removeClass("popup-border-error");
+    sel(".popup-details").removeClass("popup-details-error");
+    sel(".popup-separator").removeClass("popup-separator-error");
+    
+    sel(".password-container").hide();
+    if (config.extra) {
+        sel(".password-container .password").html(config.extra);
+        sel(".password-container").show();
+    }
+
+    var triggers = $("a#msgbox").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#666',
+        top: 'center',
+        closeOnClick: false,
+        oneInstance: false,
+        load: false,
+        onClose: function () {
+            // With partial refresh working properly,
+            // it is no longer necessary to refresh the whole page
+            // choose_view();
+        }
+    });
+    $("a#msgbox").data('overlay').load();
+    
+    var parse_data = config.parse_data || false;
+    if (config.ajax) {
+        $.ajax({ 
+            url:config.ajax, 
+            success: function(data){
+                if (parse_data) {
+                    data = parse_data(data);
+                }
+
+                if (data.title)
+                    sel("h3 span.header-box").text(data.title);
+
+                if (data.content)
+                    sel("div.machine-now-building").html(data.content);
+
+                if (data.extra) {
+                    sel(".password-container .password").html(data.extra);
+                    sel(".password-container").show();
+                }
+            }
+        });
+    }
+    return false;
+}

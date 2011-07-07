@@ -1867,7 +1867,7 @@ input.machine {
     margin-top: 15px;
 }
 
-#error-success {
+#error-success, #notification-box {
     z-index: 9999;
     border-bottom: 5px solid #4085A5;
     min-height: 150px;
@@ -1875,15 +1875,15 @@ input.machine {
     position: absolute !important;
 }
 
-#error-success p {
+#error-success p, #notification-box p {
     margin-top: 5px;
 }
 
-#error-success strong {
+#error-success strong, #notification-box strong {
     color: #F49C1A;
 }
 
-#error-success .close {
+#error-success .close, #notification-box .close {
     background-image: url("./close-popup.png");
     background-repeat: no-repeat;
     cursor: pointer;
@@ -1911,7 +1911,7 @@ input.machine {
     margin-bottom: 5px !important;
 }
 
-#error-success .popup-header {
+#error-success .popup-header, #notification-box .popup-header {
     background-color: #4085A5;
     color: white;
     font-size: 95%;
@@ -1927,7 +1927,7 @@ input.machine {
 }
 
 
-#error-success.success h3 span.header-box{
+#error-success.success h3 span.header-box, #notification-box h3 span.header-box {
     background-color: #71c837;
     display: block;
     background-image: url("./save-green.png");
@@ -1940,7 +1940,7 @@ input.machine {
     margin-left: -11px;
 }
 
-#error-success .popup-body {
+#error-success .popup-body, #notification-box .popup-body {
     background: url("./popup-bg.png") repeat-x scroll 0 0 transparent;
     margin-left: -16px;
     margin-right: -16px;
@@ -1949,7 +1949,7 @@ input.machine {
     padding-top: 10px;
 }
 
-#error-success .popup-body-inner {
+#error-success .popup-body-inner, #notification-box .popup-body-inner {
     background: url("./popup-inner-bg.png") repeat-x scroll 0 0 transparent;
     font-size: 80%;
     min-height: 120px;
@@ -1958,7 +1958,7 @@ input.machine {
     width: 460px;
 }
 
-#error-success .popup-separator {
+#error-success .popup-separator, #notification-box .popup-seperator {
     background-color: #74AEC9;
     height: 1px;
     font-size:1%;
@@ -1976,18 +1976,18 @@ input.machine {
     padding-bottom: 14px !important;
 }
 
-#error-success .password-container {
+#error-success .password-container, #notification-box .password-container {
     width: 430px;
     padding: 5px;
     border: 2px solid #75b54a;
     background-color: #aade87;
 }
 
-#error-success .password-header {
+#error-success .password-header, #notification-box .password-header {
     margin-bottom: 5px;
 }
 
-#error-success .password {
+#error-success .password, #notification-box .password {
     color: #447821;
 }
 
@@ -2028,6 +2028,35 @@ input.machine {
 
 .more-details {
     display: block;
+}
+
+#notification-box h3 span.header-box {
+    background: transparent;
+}
+
+#notification-box .machine-now-building {
+    padding: 20px 0;
+}
+
+#notification-box .header-box {
+    width: auto !important;
+}
+
+#notification-box .password {
+    text-align: center;
+}
+#notification-box .password a:hover {
+    background-color: #447821;
+    color: #fff;
+}
+
+#notification-box .password a {
+    padding: 0.2em;
+    text-align: center;
+    color: #447821;
+    font-weight: bold;
+    font-size: 1.2em;
+    text-decoration: none;
 }
 
 .popup-details a:link, .popup-details a:visited{

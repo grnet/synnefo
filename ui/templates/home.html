@@ -440,10 +440,12 @@ or implied, of GRNET S.A.
             $(".usermenu .logout").click(function() {
                 user_session_logout();
             });
+
         });
     </script>
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>
+    <a id="msgbox" rel="#notification-box" href="#"></a>
 
     <div class="modal" id="error-success">
         <h3 class="popup-header">
@@ -460,6 +462,22 @@ or implied, of GRNET S.A.
                 <div class="popup-details">
                     <div class="write-password"></div>
                     <div class="write-password-details">{% trans "More details about the result"%}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="notification-box">
+        <h3 class="popup-header">
+            <span class="header-box"></span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="machine-now-building"></div>
+                <div class="popup-separator"></div>
+                <div class="password-container">
+                    <div class="password-header"></div>
+                    <div class="password"></div>
                 </div>
             </div>
         </div>

@@ -1195,8 +1195,20 @@ function machine_connect(serverIDs){
     //console.log(machine.addresses.values[0].values[0].addr);
     
     //show_connect_dialog(machine, ip);
+    try {
+        msg_box({title:'Connect to ' + serverName,content:'loading...',extra:'',
+        'ajax':'machines/connect' + params_url,
+        parse_data:function(data){
+            data.title = false;
+            data.content = data.info;
+            data.extra = "<a href='"+data.link.url+"'>"+data.link.title+"</a>";
+            return data;
+        }
+        });
+    } catch (error) {
+        console.log(error);
     window.open('machines/connect' + params_url);
-    
+    }
 
 
     // Restore os icon in list view

@@ -39,6 +39,7 @@ from django.http import HttpResponse
 from django.utils.translation import get_language
 from django.utils import simplejson as json
 from django.shortcuts import render_to_response
+from django.core.urlresolvers import reverse
 
 TIMEOUT = settings.TIMEOUT
 UPDATE_INTERVAL = settings.UPDATE_INTERVAL
@@ -88,14 +89,34 @@ def machines_console(request):
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
     operating_system = request.GET.get('os','')
-    if operating_system == 'windows': #check if we are on windows
+    if operating_system == 'windows' and request.GET.get("rdp", False): #check if we are on windows
         rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
         connect_data = open(rdp_file, 'r').read()
         connect_data = connect_data + 'full address:s:' + ip_address + '\n'
         response = HttpResponse(connect_data, mimetype='application/x-rdp')
         response['Content-Disposition'] = 'attachment; filename=synnefo-windows.rdp'
     else:
-        response = HttpResponse("Try ssh maybe")  #no windows, no rdp
+        ssh = False
+        if (operating_system != "windows"):
+            ssh = True
+
+        info = _("Connect on windows using the following RDP shortcut file")
+        link_title = _("Windows RDP shortcut file")
+        link_url = "%s?ip_address=%s&os=%s&rdp=1" % (reverse("machines-connect"), ip_address, operating_system)
+
+        if (operating_system != "windows"):
+            info = _("Connect on linux machine using the following url")
+            link_url = "ssh://%s/" % ip_address
+            link_title = link_url
+
+        response_object = {
+                'ip': ip_address,
+                'os': operating_system,
+                'ssh': ssh,
+                'info': unicode(info),
+                'link': {'title': unicode(link_title), 'url': link_url}
+            }
+        response = HttpResponse(json.dumps(response_object), mimetype='application/json')  #no windows, no rdp
     return response
 
 

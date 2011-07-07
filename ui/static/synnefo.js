@@ -38,17 +38,30 @@ var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var networks = [], networks_changes_since = 0;
 
 
-//FIXME: authentication
-//if cookie with value X-Auth-Token exists, set the value on the headers.
-    $.ajaxSetup({
-        'beforeSend': function(xhr) {
-            //if ($.cookie("X-Auth-Token") != null) {
-              xhr.setRequestHeader("X-Auth-Token", $.cookie("X-Auth-Token"));
-            //} else {
-            //    $.cookie("X-Auth-Token", "46e427d657b20defe352804f0eb6f8a2"); // set X-Auth-Token cookie
-            //}
+var error_timeout = 20000;
+$.ajaxSetup({
+    'beforeSend': function(xhr) {
+          xhr.setRequestHeader("X-Auth-Token", $.cookie("X-Auth-Token"));
+    },
+
+    // catch uncaught error requests
+    // stop interaction and show only for the 5xx errors
+    // refresh the page after 20secs
+    error: function(jqXHR, textStatus, errorThrown) {
+        // stop interaction for important (aka 500) error codes only
+        if (jqXHR.status >= 500 && jqXHR.status < 600)
+        {
+            try {
+                ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText);
+            } catch(err) {
+                ajax_error(0, undefined, 'Unknown', jqXHR.responseText);
+            }
         }
-    });
+
+        // refresh after 10 seconds
+        window.setTimeout("window.location.reload()", window.error_timeout);
+    }
+});
 
 
 // jquery show/hide events
@@ -375,7 +388,6 @@ function update_servers_data(servers_update, data) {
         var found = false;
         var index = 0;
         $.each(servers, function(i, s) {
-            console.log(index);
             if (s.id == id) { found = true, index = i };
         });
         if (found)
@@ -2087,7 +2099,7 @@ function msg_box(config) {
     box.addClass('success');
     box.removeClass('error');
 
-    var sel = function(s){console.log(box); return $(s, box)};
+    var sel = function(s){return $(s, box)};
 
     sel("h3 span.header-box").text(config.title);
     sel("div.machine-now-building").html(config.content);

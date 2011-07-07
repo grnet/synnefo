@@ -1,0 +1,83 @@
+/* ============================== */
+/* Zeta import: 'ie.css' */
+/* From: 'None' */
+body {
+	text-align: center}
+
+* html body legend {
+	margin: -8px 16px 0;
+	padding: 0}
+
+html > body p code {
+	*white-space: normal}
+
+.container {
+	text-align: left}
+
+sup {
+	vertical-align: text-top}
+
+sub {
+	vertical-align: text-bottom}
+
+hr {
+	margin: -8px auto 11px}
+
+img {
+	-ms-interpolation-mode: bicubic}
+
+fieldset {
+	padding-top: 0}
+
+textarea {
+	overflow: auto}
+
+input.text {
+	margin: .5em 0;
+	border: 1px solid #bbb;
+	background-color: #fff}
+
+input.text:focus {
+	border: 1px solid #666}
+
+input.title {
+	margin: .5em 0;
+	border: 1px solid #bbb;
+	background-color: #fff}
+
+input.title:focus {
+	border: 1px solid #666}
+
+input.checkbox {
+	position: relative;
+	top: .25em}
+
+input.radio {
+	position: relative;
+	top: .25em}
+
+input.button {
+	position: relative;
+	top: .25em}
+
+textarea {
+	margin: .5em 0}
+
+select {
+	margin: .5em 0}
+
+button {
+	position: relative;
+	top: .25em}
+
+a {
+    color: #4085A5;
+}
+
+.menu li {
+    height: 50px;
+}
+
+.menu li.last {
+    margin-top: -7px;
+}

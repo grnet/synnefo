@@ -307,14 +307,14 @@ class ModifyImageMeta(Command):
 
 
 def print_categories(exe, categories):
-    print 'Usage: %s <category> <command>' % exe
+    print 'Usage: %s <category> <command> [args]' % exe
     print
     print 'Categories:'
     for category in sorted(categories):
         print '  %s' % category
 
 def print_commands(exe, commands):
-    print 'Usage: %s <command>' % exe
+    print 'Usage: %s <command> [args]' % exe
     print
     print 'Commands:'
     for command, cls in sorted(commands.items()):

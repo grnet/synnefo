@@ -440,7 +440,6 @@ function update_servers_data(servers_update, data) {
             try {
                 servers[exists[1]] = merge(servers[exists[1]], server);
             } catch (err) {
-                console.log("merge error", err);
             }
         } else {
             servers.push(server);
@@ -1176,7 +1175,6 @@ function vm_has_address(vmId) {
     try {
         var ip = vm.addresses.values[0].values[0].addr;
     } catch (err) {
-        console.log(err);
         return false;
     }
     return ip;
@@ -1219,7 +1217,6 @@ function machine_connect(serverIDs){
         }
         });
     } catch (error) {
-        console.log(error);
         window.open('machines/connect' + params_url);
     }
 
@@ -2183,7 +2180,6 @@ function show_invitations() {
         var cont = el;
         var form = $(el).find("form");
         $("#invform #removable-name-container-1").dynamicField();
-        console.log(form);
         form.submit(function(evn){
             evn.preventDefault();
             $.post(form.attr("action"), form.serialize(), function(data) {$(cont).html(data); handle_invitations(cont)});

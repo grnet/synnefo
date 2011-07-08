@@ -63,6 +63,8 @@ def get_user(uid):
         return None
 
 def print_dict(d, exclude=()):
+    if not d:
+        return
     margin = max(len(key) for key in d) + 1
 
     for key, val in sorted(d.items()):
@@ -119,7 +121,7 @@ class Command(object):
 
 class ListServers(Command):
     category = 'server'
-    name = 'ls'
+    name = 'list'
     syntax = '[server id]'
     description = 'list servers'
     
@@ -150,7 +152,7 @@ class ListServers(Command):
 
 class ListUsers(Command):
     category = 'user'
-    name = 'ls'
+    name = 'list'
     syntax = '[user id]'
     description = 'list users'
     
@@ -168,7 +170,7 @@ class ListUsers(Command):
 
 class ListImages(Command):
     category = 'image'
-    name = 'ls'
+    name = 'list'
     syntax = '[image id]'
     description = 'list images'
     
@@ -191,7 +193,7 @@ class RegisterImage(Command):
     description = 'register an image'
     
     def add_options(self, parser):
-        parser.add_option('-p', action='store_true', dest='public',
+        parser.add_option('--public', action='store_true', dest='public',
                             default=False, help='make image public')
         parser.add_option('-u', dest='uid', metavar='UID',
                             help='assign image to user with id UID')
@@ -225,9 +227,9 @@ class ModifyImage(Command):
                             help='set image format')
         parser.add_option('-n', dest='name', metavar='NAME',
                             help='set image name')
-        parser.add_option('-p', action='store_true', dest='public',
+        parser.add_option('--public', action='store_true', dest='public',
                             default=False, help='make image public')
-        parser.add_option('-r', action='store_true', dest='private',
+        parser.add_option('--nopublic', action='store_true', dest='private',
                             default=False, help='make image private')
         parser.add_option('-s', dest='state', metavar='STATE',
                             default=False, help='set image state')
@@ -257,6 +259,51 @@ class ModifyImage(Command):
             image.owner = get_user(self.uid)
         
         image.save()
+
+
+class ModifyImageMeta(Command):
+    category = 'image'
+    name = 'meta'
+    syntax = '<image id> [key[=val]]'
+    description = 'get and manipulate image metadata'
+    
+    def main(self, image_id, arg=''):
+        try:
+            image = models.Image.objects.get(id=image_id)
+        except:
+            print 'Image not found'
+            return
+        
+        key, sep, val = arg.partition('=')
+        if not sep:
+            val = None
+        
+        if not key:
+            metadata = {}
+            for meta in image.imagemetadata_set.order_by('meta_key'):
+                metadata[meta.meta_key] = meta.meta_value
+            print_dict(metadata)
+            return
+        
+        try:
+            meta = image.imagemetadata_set.get(meta_key=key)
+        except models.ImageMetadata.DoesNotExist:
+            meta = None
+        
+        if val is None:
+            if meta:
+                print_dict({key: meta.meta_value})
+            return
+        
+        if val:
+            if not meta:
+                meta = image.imagemetadata_set.create(meta_key=key)
+            meta.meta_value = val
+            meta.save()
+        else:
+            # Delete if val is empty
+            if meta:
+                meta.delete()
 
 
 def print_categories(exe, categories):

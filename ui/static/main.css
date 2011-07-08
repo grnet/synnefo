@@ -230,10 +230,14 @@ div.css-panes {
     position:relative;
     background-color: #FF9955;
     float: left;
-    height: 31px;
+    height: 32px;
     margin-left: -13px;
-    margin-top: -6px;
+    margin-top: -7px;
     width: 13px;
+}
+
+#network-page #beforecreate {
+    margin-top: -8px;
 }
 
 #ie-fix {
@@ -2608,7 +2612,6 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 
 #networks-pane #beforecreate {
     margin-left: -13px;
-    margin-top: -6px;
 }
 
 #networks-container {

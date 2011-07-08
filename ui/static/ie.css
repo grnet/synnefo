@@ -192,6 +192,7 @@ div.single-actions {
 
 #networks-pane #beforecreate {
     margin-top:0;
+    height: 32px;
 }
 
 #networks-wizard h2 {

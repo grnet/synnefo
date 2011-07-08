@@ -115,7 +115,7 @@ or implied, of GRNET S.A.
                 <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
                 <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
             </div>
-            <div class="actions">
+            <div class="actions clearfix">
                 <div class="action-container start">
                     <a href="#" class="action-start">{% trans "Start" %}</a>
                     <div class="confirm_single">
@@ -795,7 +795,9 @@ if ($.browser.msie) {
         $(this).css("background-color","transparent");
         $(this).find("div.info-header").css("background-color","#A1C8DB");
         $(this).find("div.toggler div.down").css("background-color","#A1C8DB");
-        $(this).find(".actions a").css("visibility","hidden");
+        if ($(this).parent().find(".confirm_single:visible").length == 0) {
+            $(this).find(".actions a").css("visibility","hidden");
+        }
     });
     //IE fix for green arrow hover
     $("div.connect-arrow").live("mouseenter", function () {

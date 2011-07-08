@@ -32,7 +32,7 @@ from django.conf.urls.defaults import *
 import os
 
 urlpatterns = patterns('',
-    (r'^$', 'synnefo.invitations.invitations.inv_demux'),
+    url(r'^$', 'synnefo.invitations.invitations.inv_demux', name="invitations"),
     (r'^static/(.*)$', 'django.views.static.serve', {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
     (r'^login/?$', 'synnefo.invitations.invitations.login')
 )

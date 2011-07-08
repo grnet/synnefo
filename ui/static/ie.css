@@ -405,3 +405,40 @@ div.reboot-dialog button.reboot-single {
 .indicators {
     height: 10px;
 }
+
+.network-machine .network-cable {
+    position: relative;
+    left: 2px;
+}
+
+.network-machine .network-cable {
+    height: 120px;
+}
+
+.machines {
+    width: 433px;
+}
+
+.network-remove-machine {
+    bottom: 13px;
+}
+
+.last .network-remove-machine {
+    bottom: 7px;
+}
+
+#networks-container .indicators div {
+    height: 20px;
+}
+
+.private-networks .indicators div {
+    height: 10px !important;
+    margin: 0!important;
+    margin-right: 2px;
+    margin-top: 4px;
+}
+
+.private-networks .network-remove-machine {
+    bottom: 9px;
+}
+

@@ -1188,10 +1188,11 @@ function machine_connect(serverIDs){
         //ajax_success('DEFAULT');
         return false;
     }
+
     var serverID = serverIDs.pop();
-    
     var machine = get_machine(serverID);
     var serverName = machine.name;
+    
     try {
         var serverIP = machine.addresses.values[0].values[0].addr;
     } catch(err) { var serverIP = 'undefined'; }
@@ -1200,13 +1201,13 @@ function machine_connect(serverIDs){
         var os = machine.metadata.values.OS;
     } catch(err) { var os = 'undefined'; }
 
-    var params_url = '?ip_address=' + serverIP + '&os=' + os;
-
-    //console.log(serverIP);
-    //console.log(machine.addresses);
-    //console.log(machine.addresses.values[0].values[0].addr);
+    var params_url = '?ip_address=' + serverIP + '&os=' + os + "&host_os=" + $.client.os;
     
-    //show_connect_dialog(machine, ip);
+    if ($.client.os == "Windows" && os == "windows") {
+        window.open('machines/connect' + params_url + "&rdp=1");
+        return;
+    }
+
     try {
         msg_box({title:'Connect to ' + serverName,content:'loading...',extra:'',
         'ajax':'machines/connect' + params_url,
@@ -1219,7 +1220,7 @@ function machine_connect(serverIDs){
         });
     } catch (error) {
         console.log(error);
-    window.open('machines/connect' + params_url);
+        window.open('machines/connect' + params_url);
     }
 
 

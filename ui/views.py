@@ -86,9 +86,31 @@ def machines_console(request):
     context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip}
     return template('machines_console', context)
 
+
+CONNECT_LINUX_LINUX_MESSAGE = _("Trying to connect from linux to linux")
+CONNECT_LINUX_WINDOWS_MESSAGE = _("Trying to connect from linux to windows")
+CONNECT_WINDOWS_LINUX_MESSAGE = _("Trying to connect from windows to linux")
+CONNECT_WINDOWS_WINDOWS_MESSAGE = _("Trying to connect from windows to windows")
+
+CONNECT_PROMT_MESSAGES = {
+    'linux': {
+            'linux': CONNECT_LINUX_LINUX_MESSAGE,
+            'windows': CONNECT_LINUX_WINDOWS_MESSAGE
+        },
+    'windows': {
+            'linux': CONNECT_WINDOWS_LINUX_MESSAGE,
+            'windows': CONNECT_WINDOWS_WINDOWS_MESSAGE
+        }
+    }
+
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
     operating_system = request.GET.get('os','')
+    host_os = request.GET.get('host_os','Linux').lower()
+
+    if operating_system != "windows":
+        operating_system = "linux"
+
     if operating_system == 'windows' and request.GET.get("rdp", False): #check if we are on windows
         rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
         connect_data = open(rdp_file, 'r').read()
@@ -109,14 +131,21 @@ def machines_connect(request):
             link_url = "ssh://%s/" % ip_address
             link_title = link_url
 
+        # try to find a specific message
+        try:
+            connect_message = CONNECT_PROMT_MESSAGES[host_os][operating_system]
+        except KeyError:
+            connect_message = _("You are trying to connect from a %s machine to a %s machine") % (host_os, operating_system)
+
         response_object = {
                 'ip': ip_address,
                 'os': operating_system,
                 'ssh': ssh,
-                'info': unicode(info),
+                'info': unicode(connect_message),
                 'link': {'title': unicode(link_title), 'url': link_url}
             }
         response = HttpResponse(json.dumps(response_object), mimetype='application/json')  #no windows, no rdp
+
     return response
 
 

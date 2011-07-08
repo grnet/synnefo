@@ -55,7 +55,9 @@ or implied, of GRNET S.A.
     <script src="static/jquery.client.js"></script>
     <script src="static/json2.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
+    <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
+
     <link rel="stylesheet" type="text/css" href="static/main.css"/>
     <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->
     <script>
@@ -70,6 +72,8 @@ or implied, of GRNET S.A.
         var TIMEOUT = {{timeout}};
         var UPDATE_INTERVAL = {{update_interval}};
         var LOGOUT_REDIRECT = undefined;
+        var INVITATIONS_URL = "{% url invitations %}"
+        var INVITATIONS_TITLE = "{% trans "Invitations" %}"
 
         // server statuses and transitions
         var STATUSES = {
@@ -331,7 +335,8 @@ or implied, of GRNET S.A.
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
-                        <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
+                        <li class="logout"><a class="action" href="#">{% trans "logout" %}</a></li>
+                        <li class="invitations last"><a class="action" href="#">{% trans "Invitations" %}</a></li>
                     </ul>
                 </div>
                 <div class="langmenu">
@@ -420,8 +425,8 @@ or implied, of GRNET S.A.
             }).appendTo("head");
         }
 
-        // user menu interaction
         $(document).ready(function(){
+            // user menu interaction
             var resetUserMenu = function() {
                 $(this).removeClass("hovered");
                 $(this).removeClass("active");
@@ -442,6 +447,8 @@ or implied, of GRNET S.A.
                 user_session_logout();
             });
 
+            $(".usermenu .invitations").click(show_invitations);
+            
         });
     </script>
     <!-- base notification for error/success reporting -->

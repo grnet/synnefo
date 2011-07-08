@@ -3773,3 +3773,44 @@ div.state .reboot, tbody.machines .reboot {
 div.state .shutdown, tbody.machines .shutdown {
     background-image: url("./icons/actions/medium/shutdown.png");
 }
+
+
+.invitations #errors {
+    font-size: 75%;
+    color: #f00;
+    margin-bottom: 20px;
+}
+
+#add-name-container {
+    margin-bottom: 10px;   
+}
+
+.invitations form {
+    margin-bottom: 30px;
+}
+
+#invsent h3 {
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+#invsent span {
+    font-weight: normal;
+    font-size: 0.9em;
+    float: right;
+    margin-top: -7px;
+    margin-right: 10px;
+}
+
+#invsent ul {
+    margin-top: 10px;
+}
+
+#invsent li {
+    color: #4085A5;
+    font-size: 1.1em;
+}
+
+.invitations #field_email_name {
+    margin-left: 140px;
+}

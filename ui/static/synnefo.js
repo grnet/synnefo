@@ -2131,26 +2131,66 @@ function msg_box(config) {
     $("a#msgbox").data('overlay').load();
     
     var parse_data = config.parse_data || false;
+    var load_html = config.html || false;
+    var user_success = config.success || false;
+    config.ajax = config.ajax || {};
+
+    // requested to show remote data in msg_box
+    // 
     if (config.ajax) {
-        $.ajax({ 
+        $.ajax($.extend({ 
             url:config.ajax, 
             success: function(data){
+                // we want to get our data parsed before
+                // placing them in content
                 if (parse_data) {
                     data = parse_data(data);
                 }
 
-                if (data.title)
-                    sel("h3 span.header-box").text(data.title);
+                // no json response
+                // load html body
+                if (load_html) {
+                    sel("div.machine-now-building").html(data);
+                    sel("div.machine-now-building").html(data);
+                } else {
 
-                if (data.content)
-                    sel("div.machine-now-building").html(data.content);
+                    if (data.title)
+                        sel("h3 span.header-box").text(data.title);
 
-                if (data.extra) {
-                    sel(".password-container .password").html(data.extra);
-                    sel(".password-container").show();
+                    if (data.content) {
+                        sel("div.machine-now-building").html(data.content);
+                    }
+                    if (data.extra) {
+                        sel(".password-container .password").html(data.extra);
+                        sel(".password-container").show();
+                    }
                 }
-            }
-        });
+
+                if (user_success) {
+                    user_success($("div.machine-now-building"));
+                }
+            },
+        }, config.ajax_config));
     }
     return false;
+}
+
+
+function show_invitations() {
+
+    handle_invitations = function(el) {
+        el.addClass("invitations");
+        var cont = el;
+        var form = $(el).find("form");
+        $("#invform #removable-name-container-1").dynamicField();
+        console.log(form);
+        form.submit(function(evn){
+            evn.preventDefault();
+            $.post(form.attr("action"), form.serialize(), function(data) {$(cont).html(data); handle_invitations(cont)});
+            return false;
+        });
+    }
+    msg_box({title:window.INVITATIONS_TITLE, content:'', ajax:INVITATIONS_URL, html:true, success: function(el){ 
+        handle_invitations(el)}
+    });
 }

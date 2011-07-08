@@ -82,7 +82,7 @@ def process_form(request):
     if errors:
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request),
-                                 'errors': errors},
+                                    'errors': errors, 'ajax': request.is_ajax()},
                                 context_instance=RequestContext(request))
         response =  HttpResponse(data)
     else:
@@ -124,7 +124,7 @@ def inv_demux(request):
 
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request)},
+                {'invitations': invitations_for_user(request), 'ajax': request.is_ajax()},
                                 context_instance=RequestContext(request))
         return  HttpResponse(data)
     elif request.method == 'POST':

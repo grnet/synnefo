@@ -111,7 +111,8 @@ Synnefo deployment.
     * python-dateutil  [python-dateutil==1.4.1]
       WARNING: version python-dateutil==2.0 downloaded by pip known *not* to
                work with Python 2.6
-    * python-ipy [IPy==0.72]
+    * python-ipy [IPy==0.75]
+        also verified to work with python-ipy 0.70-1 as shipped with Squeeze
     * south [south==0.7.1]
       WARNING: might not work with Debian squeeze's default south-0.7-1 package.
     * amqplib [amqplib==0.6.1]

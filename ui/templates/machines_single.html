@@ -614,6 +614,8 @@ function update_machines_view(data){
                 $('#machinesview-single.single div.#' + server.id + ' div.action-reboot').hide();
                 $('#machinesview-single.single div.#' + server.id + ' div.action-shutdown').hide();
             }
+
+
             //show the first machine and select it in the widget
             $('.single-container:eq(1)').show();
             $('.single .column3').find('.server-name:eq(1)').addClass('column3-selected');
@@ -634,6 +636,7 @@ function update_machines_view(data){
                 existing.find(".column1 .state-label").text(TRANSITIONS['Destroying']);
                 existing.find(".column1 .state").removeClass().addClass('state destroying-state');
                 existing.find(".column1 .state .spinner").show();
+                existing.find(".column1 .wave").hide();
             }
         }
     });

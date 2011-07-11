@@ -235,6 +235,7 @@ div.css-panes {
     margin-top: -7px;
     width: 13px;
 }
+@-moz-document url-prefix() { #beforecreate { height: 35px; } }
 
 #network-page #beforecreate {
     margin-top: -8px;

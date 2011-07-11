@@ -442,3 +442,11 @@ div.reboot-dialog button.reboot-single {
     bottom: 9px;
 }
 
+#notification-box .popup-body-inner {
+    width: 445px;
+}
+
+.invitations #field_email_name {
+    margin-left: 117px;
+}
+

@@ -3812,5 +3812,9 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 .invitations #field_email_name {
-    margin-left: 140px;
+    margin-left: 150px;
+}
+
+#invform #fields input {
+    margin-right: 10px;
 }

@@ -159,6 +159,7 @@ Synnefo deployment.
     otherwise python imports will not work. Therefore, do not change the
     or rename the checkout path.
 
+
 5. Database installation:
    A database supported by the Django ORM layer must be installed on nodes
    of type DB. The choices are: SQLIte, MySQL, PostgreSQL.
@@ -306,7 +307,7 @@ Synnefo deployment.
 9. Installation of the Ganeti monitoring daemon, /ganeti/snf-ganeti-eventd:
    The Ganeti monitoring daemon must run on GANETI-MASTER.
    The Ganeti monitoring daemon has no dependency on Django.
-   
+
    Override all relevant settings in settings.d/99-snf-ganeti-eventd.conf,
    GANETI_* variables.
    Then, make sure PYTHONPATH contains the parent of the Django project,
@@ -363,7 +364,22 @@ Synnefo deployment.
     Download and install vncauthproxy from its own repository,
     at https://code.grnet.gr/git/vncauthproxy (known good commit: 1c241b27b81).
 
+    Download and install a specific repository commit:
+
+    $ bin/pip install -e git+https://code.grnet.gr/git/vncauthproxy@INSERT_COMMIT_HERE#egg=vncauthproxy
+
     Create /var/log/vncauthproxy and set its permissions appropriately.
+
+    Alternatively, you can build Debian packages. To do so,
+    checkout the "debian" branch of the vncauthproxy repository
+    (known good commit:39f9b7047c):
+
+    $ git checkout debian
+
+    Then build debian package, and install as root:
+
+    $ dpkg-buildpackage -b -uc -us
+    # dpkg -i ../vncauthproxy_1.0-1_all.deb
 
 
 13. Installation of the customized Ganeti Instance Image for image deployment:

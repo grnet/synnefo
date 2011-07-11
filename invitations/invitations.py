@@ -42,6 +42,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
+from django.utils.translation import ugettext as _
 from synnefo.logic.email_send import send_async
 
 from synnefo.api.common import method_not_allowed
@@ -70,13 +71,12 @@ def process_form(request):
             inv = add_invitation(request.user, name, email)
             send_invitation(inv)
 
-        except Exception as e:
-            try :
-                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
-                           (name, email, e.messages[0])]
-            except:
-                errors += ["Invitation to %s <%s> not sent. Reason: %s" %
-                           (name, email, e.message)]
+        except ValidationError as e:
+            errors += [_("Invitation to %s <%s> not sent. Reason: %s") %
+                       (name, email, e.messages[0])]
+        except Exception:
+            # generic error
+            errors += [_("Invitation to %s <%s> cannot be sent.") % (name, email)]
 
     respose = None
     if errors:
@@ -93,10 +93,10 @@ def process_form(request):
 
 def validate_name(name):
     if name is None or name.strip() == '' :
-        raise ValidationError("Name is empty")
+        raise ValidationError(_("Name is empty"))
 
     if name.find(' ') is -1:
-        raise ValidationError("Name must contain at least one space")
+        raise ValidationError(_("Name must contain at least one space"))
 
     return True
 

@@ -697,6 +697,7 @@ function update_machines_view(data) {
                 $(existing).find('.status').text(TRANSITIONS['Destroying']);
                 $(existing).find('.state').removeClass().addClass('state destroying-state');
                 $(existing).find('.spinner').show();
+                $(existing).find('.wave').hide();
             }
         }
 

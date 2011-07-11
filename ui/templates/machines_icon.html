@@ -533,6 +533,7 @@ function update_machines_view(data) {
     new ones to the list
     */
     $.each(data.servers.values, function(i,server) {
+
         // get DOM element, if it exists
         existing = $('#machinesview-icon.standard #' + server.id);
         // get server OS, if it exists
@@ -687,6 +688,19 @@ function update_machines_view(data) {
         if (!(server.metadata == undefined)) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
+
+        // if machine in destroy state keep it that way
+        var server = get_machine(server.id);
+        if (server.status == "DESTROY") {
+            existing = $('#machinesview-icon.standard #' + server.id);
+            if (existing.length) {
+                $(existing).find('.status').text(TRANSITIONS['Destroying']);
+                $(existing).find('.state').removeClass().addClass('state destroying-state');
+                $(existing).find('.spinner').show();
+            }
+        }
+
+
     });
     /*
     Do some standard stuff, repeated each time

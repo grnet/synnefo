@@ -625,6 +625,17 @@ function update_machines_view(data){
         if (server.id == current_serverId()) {
             get_server_stats(server.id);
         }
+
+        // if machine in destroy state keep it that way
+        var server = get_machine(server.id);
+        if (server.status == "DESTROY") {
+            existing = $('#machinesview-single.single #' + server.id);
+            if (existing.length) {
+                existing.find(".column1 .state-label").text(TRANSITIONS['Destroying']);
+                existing.find(".column1 .state").removeClass().addClass('state destroying-state');
+                existing.find(".column1 .state .spinner").show();
+            }
+        }
     });
 
     // hide pane spinner

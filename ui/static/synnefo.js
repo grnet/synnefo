@@ -355,7 +355,6 @@ function update_vms(interval) {
                 try {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
-                    jQuery.parseJSON(data);
                     update_machines_view(data);
                 } catch(err) { ajax_error('400', undefined, 'Update VMs', jqXHR.responseText);}
             } else if (jqXHR.status != 304){
@@ -404,13 +403,17 @@ function update_servers_data(servers_update, data) {
             $.each(el, function(key,v) {
                 // new attribute added
                 var previous_value = initial[key];
-
+                var v = v;
                 if (initial[key] == undefined) {
                     $(window).trigger("vm:attr:add", initial, key, v);
                 } else {
                     // value changed
                     if (initial[key] != v) {
                         if (key == "status") {
+                            // dont change if in destroy state
+                            if (initial.status == "DESTROY") {
+                                v = "DESTROY";
+                            }
                             status_changed = {'old': previous_value, 'new': v}; 
                         }
                         $(window).trigger("vm:attr:change", {'initial': initial, 'attr': key, 'newvalue': v});
@@ -1019,6 +1022,11 @@ function destroy(serverIDs) {
                         try {
                             console.info('destroyed ' + serverID);
                         } catch (err) {}
+
+                        // update status on local storage object
+                        vm = get_machine(serverID);
+                        vm.status = "DESTROY";
+
                         // indicate that the action succeeded
                         display_success(serverID);
                         // continue with the rest of the servers

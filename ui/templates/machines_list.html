@@ -266,6 +266,8 @@ function update_machines_view(data){
     tableData = vmTable.fnGetData();
 
     $.each(data.servers.values, function(i,server){
+        var server = get_machine(server.id);
+
         current = -1;
         // check server status to select the appropriate OS icon, defaults to on state
         osTag = os_icon(server.metadata);
@@ -336,7 +338,7 @@ function update_machines_view(data){
             // check server status to select the appropriate OS icon
             if (['ERROR', 'STOPPED', 'UNKNOWN'].indexOf(server.status) >= 0) {
                 osIcon = "static/icons/machines/small/" + osTag + "-off.png";
-            } else if ( server.status == 'BUILD') {
+            } else if ( server.status == 'BUILD' || server.status == "DESTROY" ) {
                 osIcon = "static/icons/indicators/small/progress.gif";
             } else {
                 osIcon = "static/icons/machines/small/" + osTag + "-on.png";
@@ -361,6 +363,14 @@ function update_machines_view(data){
                 flavorLabel = 'No flavor data';
             }
 
+            var status_string = STATUSES[server.status];
+
+            // if destroy is requested don't change the state
+            var server = get_machine(server.id);
+            if (server.status == "DESTROY") {
+                status_string = TRANSITIONS['Destroying'];
+            }
+
             // add new row to the table
             vmTable.fnAddData([
                 "<input class=" + server.status + " id=" + server.id + " type=checkbox>",
@@ -369,7 +379,7 @@ function update_machines_view(data){
                 "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>",
                 "<a class=flavor><span>"+ flavorLabel + "</span></a>",
                 //"group",
-                "<span class=status>" + STATUSES[server.status] + "</span>"
+                "<span class=status>" + status_string + "</span>"
             ]);
         }
     });

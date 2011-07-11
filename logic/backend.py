@@ -176,7 +176,7 @@ def create_instance(vm, flavor, image, password):
     return rapi.CreateInstance(
         mode='create',
         name=vm.backend_id,
-        disk_template='plain',
+        disk_template=settings.GANETI_DISK_TEMPLATE,
         disks=[{"size": sz}],     #FIXME: Always ask for a 4GB disk for now
         nics=[nic],
         os=settings.GANETI_OS_PROVIDER,

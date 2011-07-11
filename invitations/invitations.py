@@ -87,8 +87,11 @@ def process_form(request):
                                  'errors': errors},
                                 context_instance=RequestContext(request))
         response =  HttpResponse(data)
+        _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
+                                                             email, errors))
     else:
         response = HttpResponseRedirect("/invitations/")
+        _logger.info("Added invitation %s -> %s"%(request.user.uniq, email))
 
     return response
 
@@ -181,6 +184,8 @@ def login(request):
 
     inv.accepted = True
     inv.save()
+
+    _logger.info("Invited user %s logged in"%(inv.target.uniq))
 
     data = dict()
     data['user'] = user.realname

@@ -57,7 +57,8 @@ def home(request):
                'request': request,
                'current_lang': get_language() or 'en',
                'update_interval': UPDATE_INTERVAL,
-               'image_icons': IMAGE_ICONS,}
+               'image_icons': IMAGE_ICONS,
+               'DEBUG': settings.DEBUG}
     return template('home', context)
 
 def machines(request):

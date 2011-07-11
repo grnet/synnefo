@@ -266,7 +266,6 @@ function update_machines_view(data){
     tableData = vmTable.fnGetData();
 
     $.each(data.servers.values, function(i,server){
-        var server = get_machine(server.id);
 
         current = -1;
         // check server status to select the appropriate OS icon, defaults to on state
@@ -369,6 +368,7 @@ function update_machines_view(data){
             var server = get_machine(server.id);
             if (server.status == "DESTROY") {
                 status_string = TRANSITIONS['Destroying'];
+                osIcon = "static/icons/indicators/small/progress.gif";
             }
 
             // add new row to the table

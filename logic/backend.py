@@ -189,7 +189,10 @@ def create_instance(vm, flavor, image, password):
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
         osparams=dict(img_id=image.backend_id, img_passwd=password,
-                      img_format=image.format))
+                      img_format=image.format),
+        # Be explicit about setting serial_console = False for Synnefo-based
+        # instances regardless of the cluster-wide setting, see #785
+        hvparams=dict(serial_console=False))
 
 
 def delete_instance(vm):

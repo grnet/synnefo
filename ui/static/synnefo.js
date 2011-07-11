@@ -1787,6 +1787,9 @@ function close_all_overlays() {
 	try {
 		$("a#metadata-scrollable").overlay().close();
 	} catch(err) {}
+	try {
+		$("a#msgbox").overlay().close();
+	} catch(err) {}
 }
 
 // logout

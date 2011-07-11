@@ -32,7 +32,7 @@
 from synnefo.db.models import VirtualMachine
 from synnefo.logic import credits
 
-import synnefo.settings as settings
+from django.conf import settings
 
 def id_from_instance_name(name):
     """Returns VirtualMachine's Django id, given a ganeti machine name.

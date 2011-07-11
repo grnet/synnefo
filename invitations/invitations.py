@@ -42,7 +42,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ugettext as _
 
 from synnefo.logic.email_send import send_async
 from synnefo.api.common import method_not_allowed
@@ -94,7 +94,7 @@ def process_form(request):
 
 
 def validate_name(name):
-    if name is None or name.strip() == '' :
+    if name is None or name.strip() == '':
         raise ValidationError("Name is empty")
 
     if name.find(' ') is -1:
@@ -147,7 +147,7 @@ def login(request):
 
     PADDING = '{'
 
-    try :
+    try:
         DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
         cipher = AES.new(settings.INVITATION_ENCR_KEY)
         decoded = DecodeAES(cipher, key)
@@ -233,11 +233,9 @@ def send_invitation(invitation):
     send_async(
         frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
-        subject = u'Πρόσκληση στην υπηρεσία Ωκεανός',
-        #subject = _('Invitation to IaaS service Okeanos'),
+        subject = _('Invitation to IaaS service Okeanos'),
         body = data
     )
-
 
 def get_invitee_level(source):
     return get_user_inv_level(source) + 1

@@ -597,8 +597,7 @@ def object_write(request, v_account, v_container, v_object):
     copy_from = request.META.get('HTTP_X_COPY_FROM')
     move_from = request.META.get('HTTP_X_MOVE_FROM')
     if copy_from or move_from:
-        # TODO: Why is this required? Copy this ammount?
-        content_length = get_content_length(request)
+        content_length = get_content_length(request) # Required by the API.
         
         if move_from:
             try:
@@ -745,8 +744,9 @@ def object_update(request, v_account, v_container, v_object):
             if k in prev_meta:
                 meta[k] = prev_meta[k]
     
-    # A Content-Type header indicates data updates.
-    if not content_type or content_type != 'application/octet-stream':
+    # A Content-Type or X-Source-Object header indicates data updates.
+    src_object = request.META.get('HTTP_X_SOURCE_OBJECT')
+    if (not content_type or content_type != 'application/octet-stream') and not src_object:
         # Do permissions first, as it may fail easier.
         if permissions is not None:
             try:
@@ -783,10 +783,6 @@ def object_update(request, v_account, v_container, v_object):
     ranges = get_content_range(request)
     if not ranges:
         raise RangeNotSatisfiable('Invalid Content-Range header')
-    # Require either a Content-Length, or 'chunked' Transfer-Encoding.
-    content_length = -1
-    if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
-        content_length = get_content_length(request)
     
     try:
         size, hashmap = backend.get_object_hashmap(request.user, v_account, v_container, v_object)
@@ -800,24 +796,79 @@ def object_update(request, v_account, v_container, v_object):
         offset = size
     elif offset > size:
         raise RangeNotSatisfiable('Supplied offset is beyond object limits')
-    if length is None or content_length == -1:
-        length = content_length # Nevermind the error.
-    elif length != content_length:
-        raise BadRequest('Content length does not match range length')
+    if src_object:
+        src_container, src_name = split_container_object_string(src_object)
+        src_version = request.META.get('HTTP_X_SOURCE_VERSION')
+        try:
+            src_size, src_hashmap = backend.get_object_hashmap(request.user, v_account, src_container, src_name, src_version)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Source object does not exist')
+        
+        if length is None:
+            length = src_size
+        elif length > src_size:
+            raise BadRequest('Object length is smaller than range length')
+    else:
+        # Require either a Content-Length, or 'chunked' Transfer-Encoding.
+        content_length = -1
+        if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
+            content_length = get_content_length(request)
+        
+        if length is None:
+            length = content_length
+        else:
+            if content_length == -1:
+                # TODO: Get up to length bytes in chunks.
+                length = content_length
+            elif length != content_length:
+                raise BadRequest('Content length does not match range length')
     if total is not None and (total != size or offset >= size or (length > 0 and offset + length >= size)):
         raise RangeNotSatisfiable('Supplied range will change provided object limits')
     
-    sock = raw_input_socket(request)
-    data = ''
-    for d in socket_read_iterator(sock, length, backend.block_size):
-        # TODO: Raise 408 (Request Timeout) if this takes too long.
-        # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
-        data += d
-        bytes = put_object_block(hashmap, data, offset)
-        offset += bytes
-        data = data[bytes:]
-    if len(data) > 0:
-        put_object_block(hashmap, data, offset)
+    if src_object:
+        if offset % backend.block_size == 0:
+            # Update the hashes only.
+            sbi = 0
+            while length > 0:
+                bi = int(offset / backend.block_size)
+                bl = min(length, backend.block_size)
+                if bi < len(hashmap):
+                    if bl == backend.block_size:
+                        hashmap[bi] = src_hashmap[sbi]
+                    else:
+                        data = backend.get_block(src_hashmap[sbi])
+                        hashmap[bi] = backend.update_block(hashmap[bi], data[:bl], 0)
+                else:
+                    hashmap.append(src_hashmap[sbi])
+                offset += bl
+                length -= bl
+                sbi += 1
+        else:
+            data = ''
+            sbi = 0
+            while length > 0:
+                data += backend.get_block(src_hashmap[sbi])
+                if length < backend.block_size:
+                    data = data[:length]
+                bytes = put_object_block(hashmap, data, offset)
+                offset += bytes
+                data = data[bytes:]
+                length -= bytes
+                sbi += 1
+    else:
+        sock = raw_input_socket(request)
+        data = ''
+        for d in socket_read_iterator(sock, length, backend.block_size):
+            # TODO: Raise 408 (Request Timeout) if this takes too long.
+            # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+            data += d
+            bytes = put_object_block(hashmap, data, offset)
+            offset += bytes
+            data = data[bytes:]
+        if len(data) > 0:
+            put_object_block(hashmap, data, offset)
     
     if offset > size:
         size = offset

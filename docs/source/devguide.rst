@@ -25,6 +25,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.5 (July 11, 2011)        Object update from another object's data.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -676,6 +677,8 @@ Content-Range         The range of data supplied (optional, to update)
 Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
+X-Source-Object       Update with data from the object at path ``/<container>/<object>`` (optional, to update)
+X-Source-Version      The source version to update from (optional, to update)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Sharing      Object permissions (optional)
 X-Object-Public       Object is publicly accessible (optional)
@@ -688,13 +691,13 @@ To change permissions, include an ``X-Object-Sharing`` header (as defined in ``P
 
 To update an object's data:
 
-* Set ``Content-Type`` to ``application/octet-stream``. If ``Content-Type`` has some other value, it will be ignored and only the metadata will be updated.
-* Supply ``Content-Length`` (except if using chunked transfers), ``Content-Type`` and ``Content-Range`` headers.
+* Either set ``Content-Type`` to ``application/octet-stream``, or provide an object with ``X-Source-Object``. If ``Content-Type`` has some other value, it will be ignored and only the metadata will be updated.
+* If the data is supplied in the request (using ``Content-Type`` instead of ``X-Source-Object``), a valid ``Content-Length`` header is required - except if using chunked transfers (set ``Transfer-Encoding`` to ``chunked``).
 * Set ``Content-Range`` as specified in RFC2616, with the following differences:
 
   * Client software MAY omit ``last-byte-pos`` of if the length of the range being transferred is unknown or difficult to determine.
   * Client software SHOULD not specify the ``instance-length`` (use a ``*``), unless there is a reason for performing a size check at the server.
-* If ``Content-Range`` used has a ``byte-range-resp-spec = *``, data supplied will be appended to the object.
+* If ``Content-Range`` used has a ``byte-range-resp-spec = *``, data will be appended to the object.
 
 A data update will trigger an ETag change. The new ETag will not correspond to the object's MD5 sum (**TBD**) and will be included in reply headers.
 
@@ -767,7 +770,7 @@ List of differences from the OOS API:
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object GET support as outlined in RFC2616.
 * Object hashmap retrieval through GET and the ``format`` parameter.
-* Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers.
+* Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``.
 * Object ``MOVE`` support.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY.
@@ -821,16 +824,13 @@ Conventions and Metadata Specification
 
 Pithos clients should use the ``pithos`` container for all Pithos objects. Object names use the ``/`` delimiter to impose a hierarchy of folders and files.
 
-At the object level, tags are implemented by managing metadata keys. The client software should allow the user to use any string as a tag (except ``trash``) and then set the corresponding ``X-Object-Meta-<tag>`` key at the server. The API extensions provided, allow for listing all tags in a container and filtering object listings based on one or more tags. The tag list is sufficient for implementing the ``tags`` element, either as a special, virtual folder (as done in the first version of Pithos), or as an application menu.
-
-To manage the deletion of files use the same API and the ``X-Object-Meta-Trash`` key. The string ``trash`` can not be used as a tag. The ``trash`` element should be presented as a folder, although with no hierarchy.
+At the object level, tags are implemented by managing metadata keys. The client software should allow the user to use any string as a tag and then set the corresponding ``X-Object-Meta-<tag>`` key at the server. The API extensions provided, allow for listing all tags in a container and filtering object listings based on one or more tags. The tag list is sufficient for implementing the ``tags`` element, either as a special, virtual folder (as done in the first version of Pithos), or as an application menu.
 
 The metadata specification is summarized in the following table.
 
 ===========================  ==============================
 Metadata Name                Value
 ===========================  ==============================
-X-Object-Meta-Trash          Set to ``true`` if the object has been moved to the trash
 X-Object-Meta-*              Use for other tags that apply to the object
 ===========================  ==============================
 
@@ -891,9 +891,7 @@ Assuming an authentication token is obtained (**TBD**), the following high-level
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos?meta=trash
-
-  This is the recommended way of tagging/retrieving objects in trash.
+         https://pithos.dev.grnet.gr/v1/user/pithos?meta=favorites
 
 * Retrieve an object ::
 
@@ -969,4 +967,3 @@ Assuming an authentication token is obtained (**TBD**), the following high-level
     curl -X DELETE -D - \
          -H "X-Auth-Token: 0000" \
          https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
-

@@ -263,7 +263,7 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         raise Conflict(json.dumps(e.data))
     if public is not None:
         try:
-            backend.update_object_public(request.user, v_account, v_container, v_object, public)
+            backend.update_object_public(request.user, v_account, dest_container, dest_name, public)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:

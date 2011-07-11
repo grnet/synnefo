@@ -2133,7 +2133,6 @@ function msg_box(config) {
     config.ajax = config.ajax || {};
 
     // requested to show remote data in msg_box
-    // 
     if (config.ajax) {
         $.ajax($.extend({ 
             url:config.ajax, 
@@ -2179,10 +2178,16 @@ function show_invitations() {
         el.addClass("invitations");
         var cont = el;
         var form = $(el).find("form");
+
+        // remove garbage rows that stay in DOM between requests
+        $(".removable-field-row:hidden").remove();
         $("#invform #removable-name-container-1").dynamicField();
         form.submit(function(evn){
             evn.preventDefault();
-            $.post(form.attr("action"), form.serialize(), function(data) {$(cont).html(data); handle_invitations(cont)});
+            $.post(form.attr("action"), form.serialize(), function(data) {
+                $(cont).html(data); 
+                handle_invitations(cont);
+            });
             return false;
         });
     }

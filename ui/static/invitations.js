@@ -84,16 +84,18 @@
 				var pos = new Number(i+1);
 				var d = $(elem)
 							.attr("id",settings.cloneContainerId + "-" + pos);
-				
+
 				d.children("label")
 							.attr("for",settings.baseName + pos)
 							.html((pos > 1) ? "" : settings.labelText);
 				
-				d.children("input")
-							.attr({
-								"id":settings.baseName + pos,
-								"name":settings.baseName + pos
-							});
+                names = settings.baseNames;
+				d.children("input").each(function(i){
+                    $(this).attr({
+                        "id": names[i] + pos,
+                        "name": names[i] + pos
+                    });
+                });
 			});
 			
 			addRemoveBtnCk();

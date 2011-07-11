@@ -125,7 +125,7 @@ class Dispatcher:
         bindings = settings.BINDINGS
 
         # Special queue for debugging, should not appear in production
-        if self.debug:
+        if self.debug and settings.DEBUG:
             self.chan.queue_declare(queue=settings.QUEUE_DEBUG, durable=True,
                                     exclusive=False, auto_delete=False)
             bindings += settings.BINDINGS_DEBUG

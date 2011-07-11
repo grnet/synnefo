@@ -36,7 +36,6 @@ and implements the message wait and dispatch loops. Actual messages are
 handled in the dispatched functions.
 
 """
-
 from django.core.management import setup_environ
 
 import sys
@@ -126,7 +125,7 @@ class Dispatcher:
         bindings = settings.BINDINGS
 
         # Special queue for debugging, should not appear in production
-        if self.debug:
+        if self.debug and settings.DEBUG:
             self.chan.queue_declare(queue=settings.QUEUE_DEBUG, durable=True,
                                     exclusive=False, auto_delete=False)
             bindings += settings.BINDINGS_DEBUG
@@ -279,8 +278,12 @@ def drain_queue(queue):
     signal(SIGTERM, _exit_handler)
     signal(SIGINT, _exit_handler)
 
+    num_processed = 0
     while True:
         chan.wait()
+        num_processed += 1
+        sys.stderr.write("Ignored %d messages\r" % num_processed)
+
     chan.basic_cancel(tag)
     chan.connection.close()
 

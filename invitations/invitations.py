@@ -43,7 +43,6 @@ from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
 from django.utils.translation import ugettext as _
-from synnefo.logic.email_send import send_async
 
 from synnefo.logic.email_send import send_async
 from synnefo.api.common import method_not_allowed
@@ -89,15 +88,18 @@ def process_form(request):
                                     'errors': errors, 'ajax': request.is_ajax()},
                                 context_instance=RequestContext(request))
         response =  HttpResponse(data)
+        _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
+                                                             email, errors))
     else:
         response = HttpResponseRedirect("/invitations/")
+        _logger.info("Added invitation %s -> %s"%(request.user.uniq, email))
 
     return response
 
 
 def validate_name(name):
-    if name is None or name.strip() == '' :
-        raise ValidationError(_("Name is empty"))
+    if name is None or name.strip() == '':
+        raise ValidationError("Name is empty")
 
     if name.find(' ') is -1:
         raise ValidationError(_("Name must contain at least one space"))
@@ -149,7 +151,7 @@ def login(request):
 
     PADDING = '{'
 
-    try :
+    try:
         DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
         cipher = AES.new(settings.INVITATION_ENCR_KEY)
         decoded = DecodeAES(cipher, key)
@@ -183,6 +185,8 @@ def login(request):
 
     inv.accepted = True
     inv.save()
+
+    _logger.info("Invited user %s logged in"%(inv.target.uniq))
 
     data = dict()
     data['user'] = user.realname
@@ -235,11 +239,9 @@ def send_invitation(invitation):
     send_async(
         frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
-        subject = u'Πρόσκληση στην υπηρεσία Ωκεανός',
-        #subject = _('Invitation to IaaS service Okeanos'),
+        subject = _('Invitation to IaaS service Okeanos'),
         body = data
     )
-
 
 def get_invitee_level(source):
     return get_user_inv_level(source) + 1

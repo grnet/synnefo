@@ -35,6 +35,9 @@ from django.core.mail import send_mail
 from django.conf import settings
 import amqp_connection
 
+from synnefo.logic import log
+
+_logger = log.get_logger("synnefo.logic")
 
 def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
                to = None, subject = None, body = None):
@@ -55,8 +58,7 @@ def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
 
 def send (sender = settings.SYSTEM_EMAIL_ADDR,
           recipient = None, subject = None, body = None):
-    import logging
-    logger = logging.getLogger("synnefo.logic")
+
     attempts = 0
 
     while attempts < 3:
@@ -64,10 +66,10 @@ def send (sender = settings.SYSTEM_EMAIL_ADDR,
             send_mail(subject, body, sender, [recipient])
             return True
         except Exception as e:
-            logger.error("Error sending email: %s", e)
+            _logger.exception("Error sending email")
         finally:
             attempts += 1
 
-    logger.warn("Failed all %d attempts to send email, aborting", attempts)
+    _logger.warn("Failed all %d attempts to send email, aborting", attempts)
     return False
 

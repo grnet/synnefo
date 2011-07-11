@@ -214,8 +214,27 @@ def shutdown_instance(vm):
 
 
 def get_instance_console(vm):
-    return rapi.GetInstanceConsole(vm.backend_id)
-
+    # RAPI GetInstanceConsole() returns endpoints to the vnc_bind_address,
+    # which is a cluster-wide setting, either 0.0.0.0 or 127.0.0.1, and pretty
+    # useless (see #783).
+    #
+    # Until this is fixed on the Ganeti side, construct a console info reply
+    # directly.
+    # 
+    # WARNING: This assumes that VNC runs on port network_port on
+    #          the instance's primary node, and is probably
+    #          hypervisor-specific.
+    #
+    console = {}
+    console['kind'] = 'vnc'
+    i = rapi.GetInstance(vm.backend_id)
+    if i['hvparams']['serial_console']:
+        raise Exception("hv parameter serial_console cannot be true")
+    console['host'] = i['pnode']
+    console['port'] = i['network_port']
+    
+    return console
+    # return rapi.GetInstanceConsole(vm.backend_id)
 
 def request_status_update(vm):
     return rapi.GetInstanceInfo(vm.backend_id)

@@ -47,11 +47,14 @@ function routed_setup_firewall {
 	ifprefix="synnefo:network:$INTERFACE_INDEX:"
 	for tag in $TAGS; do
 		case ${tag#$ifprefix} in
-		protected:1)
-			chain=PROTECTED-1
+		protected)
+			chain=protected
 		;;
-		protected:2)
-			chain=PROTECTED-2
+		unprotected)
+			chain=unprotected
+		;;
+		limited)
+			chain=limited
 		;;
 		esac
 	done

@@ -360,13 +360,7 @@ Synnefo deployment.
     daemon must be running on every node of type APISERVER.
 
     Download and install vncauthproxy from its own repository,
-    at https://code.grnet.gr/git/vncauthproxy (known good commit: 8799ab6d6e).
-
-    Edit default settings on top of vncauthproxy.py.
-    Set CTRL_SOCKET in util/vapclient.py to point to its control socket.
-
-    FIXME: The CTRL_SOCKET setting will be moved to settings.py as
-    VNCAUTHPROXY_CTRL_SOCKET.
+    at https://code.grnet.gr/git/vncauthproxy (known good commit: 1c241b27b81).
 
     Create /var/log/vncauthproxy and set its permissions appropriately.
 

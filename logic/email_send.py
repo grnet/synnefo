@@ -62,10 +62,12 @@ def send (sender = settings.SYSTEM_EMAIL_ADDR,
     while attempts < 3:
         try:
             send_mail(subject, body, sender, [recipient])
-            return
+            return True
         except Exception as e:
-            logger.warn("Error sending email: ", e)
+            logger.error("Error sending email: %s", e)
         finally:
             attempts += 1
+
     logger.warn("Failed all %d attempts to send email, aborting", attempts)
+    return False
 

@@ -1,5 +1,4 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -145,9 +144,16 @@ def start_action(vm, action):
     vm.backendjobstatus = None
     vm.backendlogmsg = None
 
-    # Update the relevant flags if the VM is being suspended or destroyed
+    # Update the relevant flags if the VM is being suspended or destroyed.
+    # Do not set the deleted flag here, see ticket #721.
+    #
+    # The deleted flag is set asynchronously, when an OP_INSTANCE_REMOVE
+    # completes successfully. Hence, a server may be visible for some time
+    # after a DELETE /servers/id returns HTTP 204.
+    #
     if action == "DESTROY":
-        vm.deleted = True
+        # vm.deleted = True
+        pass
     elif action == "SUSPEND":
         vm.suspended = True
     elif action == "START":
@@ -158,16 +164,19 @@ def start_action(vm, action):
 def create_instance(vm, flavor, image, password):
 
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
-    
-    if image.backend_id.find("windows") >= 0:
-        sz = 14000
+
+    if settings.IGNORE_FLAVOR_DISK_SIZES:
+        if image.backend_id.find("windows") >= 0:
+            sz = 14000
+        else:
+            sz = 4000
     else:
-        sz = 4000
+        sz = flavor.disk * 1024
 
     return rapi.CreateInstance(
         mode='create',
         name=vm.backend_id,
-        disk_template='plain',
+        disk_template=settings.GANETI_DISK_TEMPLATE,
         disks=[{"size": sz}],     #FIXME: Always ask for a 4GB disk for now
         nics=[nic],
         os=settings.GANETI_OS_PROVIDER,
@@ -176,11 +185,14 @@ def create_instance(vm, flavor, image, password):
         # Do not specific a node explicitly, have
         # Ganeti use an iallocator instead
         #
-        # pnode=rapi.GetNodes()[0]
+        # pnode=rapi.GetNodes()[0],
         dry_run=settings.TEST,
         beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
         osparams=dict(img_id=image.backend_id, img_passwd=password,
-                      img_format=image.format))
+                      img_format=image.format),
+        # Be explicit about setting serial_console = False for Synnefo-based
+        # instances regardless of the cluster-wide setting, see #785
+        hvparams=dict(serial_console=False))
 
 
 def delete_instance(vm):
@@ -205,8 +217,27 @@ def shutdown_instance(vm):
 
 
 def get_instance_console(vm):
-    return rapi.GetInstanceConsole(vm.backend_id)
-
+    # RAPI GetInstanceConsole() returns endpoints to the vnc_bind_address,
+    # which is a cluster-wide setting, either 0.0.0.0 or 127.0.0.1, and pretty
+    # useless (see #783).
+    #
+    # Until this is fixed on the Ganeti side, construct a console info reply
+    # directly.
+    # 
+    # WARNING: This assumes that VNC runs on port network_port on
+    #          the instance's primary node, and is probably
+    #          hypervisor-specific.
+    #
+    console = {}
+    console['kind'] = 'vnc'
+    i = rapi.GetInstance(vm.backend_id)
+    if i['hvparams']['serial_console']:
+        raise Exception("hv parameter serial_console cannot be true")
+    console['host'] = i['pnode']
+    console['port'] = i['network_port']
+    
+    return console
+    # return rapi.GetInstanceConsole(vm.backend_id)
 
 def request_status_update(vm):
     return rapi.GetInstanceInfo(vm.backend_id)

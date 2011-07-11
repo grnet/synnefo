@@ -112,9 +112,13 @@ def send_email(message):
     try:
         msg = json.loads(message.body)
 
-        email_send.send(sender=msg['frm'], recipient = msg['to'],
+        sent = email_send.send(sender=msg['frm'], recipient = msg['to'],
                         body=msg['body'], subject=msg['subject'])
-        message.channel.basic_ack(message.delivery_tag)
+
+        if not sent:
+            _logger.warn("Failed to send email to %s", msg['to'])
+        else:
+            message.channel.basic_ack(message.delivery_tag)
     except KeyError:
         _logger.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)

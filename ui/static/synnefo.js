@@ -2176,7 +2176,7 @@ function msg_box(config) {
                 if (user_success) {
                     user_success($("div.machine-now-building"));
                 }
-            },
+            }
         }, config.ajax_config));
     }
     return false;
@@ -2206,3 +2206,4 @@ function show_invitations() {
         handle_invitations(el)}
     });
 }
+

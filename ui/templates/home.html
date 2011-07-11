@@ -74,6 +74,7 @@ or implied, of GRNET S.A.
         var LOGOUT_REDIRECT = undefined;
         var INVITATIONS_URL = "{% url invitations %}"
         var INVITATIONS_TITLE = "{% trans "Invitations" %}"
+        var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
 
         // server statuses and transitions
         var STATUSES = {
@@ -196,8 +197,18 @@ or implied, of GRNET S.A.
                 if (serverName) {
                     serverName = "<p>{% trans "Server" %}: " + serverName + "</p>";
                 }
+
                 if ((errors[0].details === undefined) || (errors[0].details === "")) {
                     details = ERRORS["NO_DETAILS"];
+                    
+                    // if no details message show debug info
+                    if (window.APP_DEBUG) {
+                        details = responseText;
+                        try {
+                            console.trace();
+                        } catch (err) {
+                        }
+                    }
                 } else {
                     details = errors[0].details;
                 }
@@ -208,7 +219,13 @@ or implied, of GRNET S.A.
                 $("#error-success .password-container").hide();
                 $("#error-success .popup-details").addClass("popup-details-error");
                 $("#error-success .popup-separator").addClass("popup-separator-error");
-                $("#error-success .popup-details").html("<p>" + (errors[0].message || ERRORS[errors[0].code]) + "</p>" + serverName + "<p>{% trans "Action" %}: " + action + "</p><p>{% trans "Code" %}: " + errors[0].code + "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + details + "</div></p>");
+                $("#error-success .popup-details").html("<p>" + 
+                    (errors[0].message || ERRORS[errors[0].code] || serverID) + 
+                    "</p>" + serverName + "<p>{% trans "Action" %}:" + 
+                    action + "</p><p>{% trans "Code" %}: " + errors[0].code + 
+                    "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + 
+                    details + "</div></p>");
+
             } else if (ERRORS[status] !== undefined) {
                 if (serverID === undefined) {
                     //eg no_images, no_flavors cases

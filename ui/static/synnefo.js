@@ -1204,7 +1204,7 @@ function machine_connect(serverIDs){
     } catch(err) { var serverIP = 'undefined'; }
 
     try {
-        var os = machine.metadata.values.OS;
+        var os = os_icon(machine.metadata);
     } catch(err) { var os = 'undefined'; }
 
     var params_url = '?ip_address=' + serverIP + '&os=' + os + "&host_os=" + $.client.os + "&srv=" + serverID;

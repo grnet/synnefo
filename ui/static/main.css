@@ -3825,7 +3825,6 @@ div.state .shutdown, tbody.machines .shutdown {
 #invsent h3 span {
     font-weight: normal;
     font-size: 0.9em;
-    float: right;
     margin-right: 5px;
     display: block;
     margin-top: -2px;

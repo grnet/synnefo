@@ -160,8 +160,8 @@ or implied, of GRNET S.A.
             </div>
         </div>
         <div class="separator"></div>
-    </div>
-    <div class="running"><div class="large-spinner"></div></div>
+    </div><div class="large-spinner"></div>
+    <div class="running disabled"></div>
     <div class="terminated" style="display:none;"></div>
 </div>
 
@@ -707,7 +707,8 @@ function update_machines_view(data) {
     Do some standard stuff, repeated each time
     FIXME: Can these be moved to a new function?
     */
-    $("div.running > div.large-spinner").hide();
+    $("div.large-spinner").hide();
+    $("div.running").removeClass("disabled");
     // show all separators and hide the last one
     $("#machinesview-icon.standard div.machine-container div.separator").show();
     $("#machinesview-icon.standard div.machine-container:last-child").find("div.separator").hide();

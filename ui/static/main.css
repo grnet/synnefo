@@ -950,6 +950,10 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     padding-top: 60px;
 }
 
+.running.disabled {
+    background: transparent;
+}
+
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
     background-color: #63cf1c;
 }
@@ -2416,6 +2420,11 @@ div.editbuttons div.cancel:hover {
     height: 31px;
     width: 31px;
     position: absolute;
+    top: 200px;
+}
+
+#machinesview-icon .large-spinner {
+    top: 170px;
 }
 
 .list .large-spinner {

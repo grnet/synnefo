@@ -3769,6 +3769,9 @@ tbody.machines div.action-indicator {
 div.state .destroy, tbody.machines .destroy {
     background-image: url("./icons/actions/medium/destroy.png");
 }
+div.state .console, tbody.machines .console {
+    background-image: url("./icons/actions/medium/console.png");
+}
 div.state .start, tbody.machines .start {
     background-image: url("./icons/actions/medium/start.png");
 }

@@ -1948,7 +1948,7 @@ function init_action_indicator_handlers(machines_view)
 
 function init_action_indicator_list_handlers()
 {
-    var skip_actions = { 'console':'','connect':'','details':'' };
+    var skip_actions = { 'connect':'','details':'' };
 
     var has_pending_confirmation = function()
     {

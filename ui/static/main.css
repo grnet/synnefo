@@ -797,7 +797,7 @@ div.machine div.actions a.selected:hover {
     background-color:transparent;
 }
 
-div.machine div.actions a.action-shutdown {
+div.running div.machine div.actions a.action-shutdown {
     display: block;
 }
 
@@ -823,20 +823,15 @@ div.machine div.display a{
     visibility: visible;
 }
 
-div.running div.machine div.actions .disabled {
+div.machine div.actions .disabled {
     display: none;
 }
 
-div.terminated div.machine div.actions .disabled {
+div.machine div.actions .disabled {
     display: none;
 }
 
-div.terminated div.machine div.actions a.action-destroy {
-    position: absolute;
-    bottom: 0;
-}
-
-div.running div.machine div.actions a.action-destroy {
+div.machine div.actions a.action-destroy {
     position: absolute;
     bottom: 0;
 }

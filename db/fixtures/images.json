@@ -67,7 +67,7 @@
             "created": "2011-06-29 19:33:00",
             "updated": "2011-02-06 19:33:00",
             "state": "ACTIVE",
-            "backend_id": "debian_desktop-6.0.2.1-1",
+            "backend_id": "debian_desktop-6.0.2.1-2",
             "format": "dump"
         }
     },

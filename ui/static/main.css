@@ -3830,7 +3830,7 @@ div.state .shutdown, tbody.machines .shutdown {
     padding-right: 15px;
     text-align: justify;
     font-style: italic;
-    font-size: 0.9em;
+    font-size: 0.8em !important;
 }
 
 #notification-box a {

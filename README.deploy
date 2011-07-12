@@ -378,8 +378,8 @@ Synnefo deployment.
 
     Download and install gnt-instance-image in all Ganeti nodes from its own
     repository, at https://code.grnet.gr/git/gnt-instance-image. It's
-    recommended to use the win-support branch (known good commit:
-    aa661a7ea6da9c11a05a3587ee61d10348eb7422).
+    recommended to use the win-support branch (known good commit for 0.5.1:
+    8afaedb329c981282aed1a6c3daf62e43532f00d).
 
     After installing gnt-instance-image do the following:
     1. root@ganeti-master$ cd /path-to-repo

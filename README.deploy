@@ -1,10 +1,10 @@
-README.deploy -- Instructions for a basic deployment of Synnefo v0.4
+README.deploy -- Instructions for a basic deployment of Synnefo v0.5.1
 
 This document describes the basic steps to obtain a basic, working Synnefo
 deployment. It begins by examining the different node roles, then moves to the
 installation and setup of distinct software components.
 
-It applies to Synnefo v0.4.
+It is current as of Synnefo v0.5.1.
 
 
 Node types
@@ -111,7 +111,8 @@ Synnefo deployment.
     * python-dateutil  [python-dateutil==1.4.1]
       WARNING: version python-dateutil==2.0 downloaded by pip known *not* to
                work with Python 2.6
-    * python-ipy [IPy==0.72]
+    * python-ipy [IPy==0.75]
+        also verified to work with python-ipy 0.70-1 as shipped with Squeeze
     * south [south==0.7.1]
       WARNING: might not work with Debian squeeze's default south-0.7-1 package.
     * amqplib [amqplib==0.6.1]
@@ -157,6 +158,7 @@ Synnefo deployment.
     [WARNING]: The software must be checked out in a directory named synnefo,
     otherwise python imports will not work. Therefore, do not change the
     or rename the checkout path.
+
 
 5. Database installation:
    A database supported by the Django ORM layer must be installed on nodes
@@ -305,7 +307,7 @@ Synnefo deployment.
 9. Installation of the Ganeti monitoring daemon, /ganeti/snf-ganeti-eventd:
    The Ganeti monitoring daemon must run on GANETI-MASTER.
    The Ganeti monitoring daemon has no dependency on Django.
-   
+
    Override all relevant settings in settings.d/99-snf-ganeti-eventd.conf,
    GANETI_* variables.
    Then, make sure PYTHONPATH contains the parent of the Django project,
@@ -360,15 +362,24 @@ Synnefo deployment.
     daemon must be running on every node of type APISERVER.
 
     Download and install vncauthproxy from its own repository,
-    at https://code.grnet.gr/git/vncauthproxy (known good commit: 8799ab6d6e).
+    at https://code.grnet.gr/git/vncauthproxy (known good commit: 1c241b27b81).
 
-    Edit default settings on top of vncauthproxy.py.
-    Set CTRL_SOCKET in util/vapclient.py to point to its control socket.
+    Download and install a specific repository commit:
 
-    FIXME: The CTRL_SOCKET setting will be moved to settings.py as
-    VNCAUTHPROXY_CTRL_SOCKET.
+    $ bin/pip install -e git+https://code.grnet.gr/git/vncauthproxy@INSERT_COMMIT_HERE#egg=vncauthproxy
 
     Create /var/log/vncauthproxy and set its permissions appropriately.
+
+    Alternatively, you can build Debian packages. To do so,
+    checkout the "debian" branch of the vncauthproxy repository
+    (known good commit:39f9b7047c):
+
+    $ git checkout debian
+
+    Then build debian package, and install as root:
+
+    $ dpkg-buildpackage -b -uc -us
+    # dpkg -i ../vncauthproxy_1.0-1_all.deb
 
 
 13. Installation of the customized Ganeti Instance Image for image deployment:
@@ -377,8 +388,8 @@ Synnefo deployment.
 
     Download and install gnt-instance-image in all Ganeti nodes from its own
     repository, at https://code.grnet.gr/git/gnt-instance-image. It's
-    recommended to use the win-support branch (last tested commit for Synnefo
-    v0.5 is cb9587b68bb1e2d8ce14c351244a279b0e3eb963).
+    recommended to use the win-support branch (known good commit:
+    aa661a7ea6da9c11a05a3587ee61d10348eb7422).
 
     After installing gnt-instance-image do the following:
     1. root@ganeti-master$ cd /path-to-repo

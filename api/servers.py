@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
@@ -45,8 +43,10 @@ from synnefo.api.common import method_not_allowed
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
+from synnefo.logic import log
 from synnefo.util.rapi import GanetiApiError
 
+_log = log.get_logger("synnefo.api")
 
 urlpatterns = patterns('synnefo.api.servers',
     (r'^(?:/|.json|.xml)?$', 'demux'),
@@ -229,7 +229,7 @@ def create_server(request):
             meta_value=val,
             vm=vm)
     
-    logging.info('created vm with %s cpus, %s ram and %s storage',
+    _log.info('created vm with %s cpus, %s ram and %s storage',
                     flavor.cpu, flavor.ram, flavor.disk)
 
     server = vm_to_dict(vm, detail=True)

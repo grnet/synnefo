@@ -308,7 +308,7 @@ def api_method(http_method=None, atom_allowed=False):
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
-                logger.exception('Unexpected error: %s', e)
+                logger.exception('Unexpected error')
                 fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
         return wrapper

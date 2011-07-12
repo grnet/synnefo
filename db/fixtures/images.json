@@ -297,6 +297,65 @@
         "model": "db.Image",
         "pk": 6,
         "fields": {
+            "name": "CentOS",
+            "owner": 1,
+            "created": "2011-06-09 00:00:00",
+            "updated": "2011-06-09 00:00:00",
+            "state": "ACTIVE",
+            "backend_id": "centos-5.6-1",
+            "format": "dump",
+            "public": 1
+        }
+    },
+   {
+        "model": "db.ImageMetadata",
+        "pk": 26,
+        "fields": {
+            "meta_key": "OS",
+            "meta_value": "centos",
+            "image": 6 
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 27,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "CentOS 5.6",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 28,
+        "fields": {
+            "meta_key": "kernel",
+            "meta_value": "2.6.18",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 29,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "990",
+            "image": 6
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 30,
+        "fields": {
+            "meta_key": "GUI",
+            "meta_value": "No GUI",
+            "image": 6
+        }
+    },
+   {
+        "model": "db.Image",
+        "pk": 7,
+        "fields": {
             "name": "Windows",
             "owner": 1,
             "created": "2011-06-09 00:00:00",
@@ -309,47 +368,47 @@
     },
    {
         "model": "db.ImageMetadata",
-        "pk": 26,
+        "pk": 31,
         "fields": {
             "meta_key": "OS",
             "meta_value": "windows",
-            "image": 6 
+            "image": 7 
         }
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 27,
+        "pk": 32,
         "fields": {
             "meta_key": "description",
             "meta_value": "Windows 2008 R2, Aero Desktop Experience",
-            "image": 6
+            "image": 7
         }
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 28,
+        "pk": 33,
         "fields": {
             "meta_key": "kernel",
             "meta_value": "Windows NT Kernel",
-            "image": 6
+            "image": 7
         }
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 29,
+        "pk": 34,
         "fields": {
             "meta_key": "size",
             "meta_value": "11000",
-            "image": 6
+            "image": 7
         }
     },
     {
         "model": "db.ImageMetadata",
-        "pk": 30,
+        "pk": 35,
         "fields": {
             "meta_key": "GUI",
             "meta_value": "Windows, Aero Theme",
-            "image": 6
+            "image": 7
         }
     }
 ]

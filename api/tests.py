@@ -213,7 +213,7 @@ class APITestCase(TestCase):
         path = '/api/v1.1/servers/%d/action' % self.test_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 202)
-        #server id that does not exist
+        # server id that does not exist
         path = '/api/v1.1/servers/%d/action' % self.test_wrong_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 404)
@@ -225,7 +225,7 @@ class APITestCase(TestCase):
         path = '/api/v1.1/servers/%d/action' % self.test_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 202)
-        #server id that does not exist
+        # server id that does not exist
         path = '/api/v1.1/servers/%d/action' % self.test_wrong_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 404)
@@ -237,7 +237,7 @@ class APITestCase(TestCase):
         path = '/api/v1.1/servers/%d/action' % self.test_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 202)
-        #server id that does not exist
+        # server id that does not exist
         path = '/api/v1.1/servers/%d/action' % self.test_wrong_server_id
         response = self.client.post(path, json.dumps(request), content_type='application/json')
         self.assertEqual(response.status_code, 404)
@@ -246,7 +246,7 @@ class APITestCase(TestCase):
         """Test if the specified server is deleted."""
         response = self.client.delete('/api/v1.1/servers/%d' % self.test_server_id)
         self.assertEqual(response.status_code, 204)
-        #server id that does not exist
+        # server id that does not exist
         response = self.client.delete('/api/v1.1/servers/%d' % self.test_wrong_server_id)
         self.assertEqual(response.status_code, 404)
 

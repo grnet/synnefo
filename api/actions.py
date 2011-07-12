@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from socket import getfqdn
+from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -41,7 +42,6 @@ from django.utils import simplejson as json
 from synnefo.api.faults import BadRequest, ServiceUnavailable
 from synnefo.api.util import random_password, get_vm
 from synnefo.db.models import NetworkInterface
-from synnefo.util.vapclient import request_forwarding as request_vnc_forwarding
 from synnefo.logic import backend
 from synnefo.logic.utils import get_rsapi_state
 
@@ -203,6 +203,7 @@ def get_console(request, vm, args):
     It uses a running instance of vncauthproxy to setup proper
     VNC forwarding with a random password, then returns the necessary
     VNC connection info to the caller.
+
     """
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
@@ -228,7 +229,7 @@ def get_console(request, vm, args):
         console_data = backend.get_instance_console(vm)
 
     if console_data['kind'] != 'vnc':
-        message = 'Could not create a console of requested type.'
+        message = 'got console of kind %s, not "vnc"' % console_data['kind']
         raise ServiceUnavailable(message)
 
     # Let vncauthproxy decide on the source port.
@@ -239,16 +240,13 @@ def get_console(request, vm, args):
     dport = console_data['port']
     password = random_password()
 
-    try:
-        if settings.TEST:
-            fwd = {'source_port': 1234, 'status': 'OK'}
-        else:
-            fwd = request_vnc_forwarding(sport, daddr, dport, password)
-    except Exception:
-        raise ServiceUnavailable('Could not allocate VNC console port.')
+    if settings.TEST:
+        fwd = {'source_port': 1234, 'status': 'OK'}
+    else:
+        fwd = request_vnc_forwarding(sport, daddr, dport, password)
 
     if fwd['status'] != "OK":
-        raise ServiceUnavailable('Could not allocate VNC console.')
+        raise ServiceUnavailable('vncauthproxy returned error status')
 
     console = {
         'type': 'vnc',

@@ -118,7 +118,8 @@ def authenticate(request):
     response = HttpResponse(status=204)
     inv_auth_tokens = dict((v, k) for k, v in settings.AUTH_TOKENS.items())
     response['X-Auth-Token'] = inv_auth_tokens.get(x_auth_user, '0000')
-    response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(), 'demo')
+    response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(),
+                                            x_auth_user)
     return response
 
 @api_method('HEAD')
@@ -636,7 +637,7 @@ def object_write(request, v_account, v_container, v_object):
             raise BadRequest('Invalid data formatting')
         meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
     elif request.serialization == 'xml':
-        #TODO support for xml
+        # TODO: Support xml.
         raise BadRequest('Format xml is not supported')
     else:
         md5 = hashlib.md5()

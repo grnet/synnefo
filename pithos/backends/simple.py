@@ -282,7 +282,7 @@ class SimpleBackend(BaseBackend):
         if count > 0:
             raise IndexError('Container is not empty')
         self._del_path(path) # Point of no return.
-        self._copy_version(user, account, account, True, True) # New account version.
+        self._copy_version(user, account, account, True, True) # New account version (for timestamp update).
     
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""

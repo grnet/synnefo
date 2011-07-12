@@ -653,7 +653,10 @@ def update_response_headers(request, response):
         response['Content-Type'] = 'application/json; charset=UTF-8'
     elif not response['Content-Type']:
         response['Content-Type'] = 'text/plain; charset=UTF-8'
-
+    
+    if not response.has_header('Content-Length') and not (response.has_header('Content-Type') and response['Content-Type'].startswith('multipart/byteranges')):
+        response['Content-Length'] = len(response.content)
+    
     if settings.TEST:
         response['Date'] = format_date_time(time())
 

@@ -2204,6 +2204,11 @@ function show_invitations() {
         // remove garbage rows that stay in DOM between requests
         $(".removable-field-row:hidden").remove();
         $("#invform #removable-name-container-1").dynamicField();
+        
+        $(".invitations-left").hide();
+        $(".header-box").html("");
+        $(".header-box").html("Invitations " + $($(".invitations-left")[0]).text());
+
         form.submit(function(evn){
             evn.preventDefault();
             $.post(form.attr("action"), form.serialize(), function(data) {

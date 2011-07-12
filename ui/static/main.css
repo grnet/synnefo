@@ -3776,6 +3776,29 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 
+.invitations #field_name_name, .invitations #field_email_name {
+    float: left;
+    display: block;
+    width: 180px;
+}
+.invitations input {
+    width: 170px;
+}
+
+.invitations #fieldheaders span.description {
+    font-size: 0.8em;
+    color: #666;
+    margin-left: 2px;
+}
+
+.invitations #fields {
+    margin-top: 5px;
+}
+
+.invitations .add-field-container {
+    margin-top: 5px;
+}
+
 .invitations #errors {
     font-size: 75%;
     color: #f00;
@@ -3784,6 +3807,10 @@ div.state .shutdown, tbody.machines .shutdown {
 
 #add-name-container {
     margin-bottom: 10px;   
+}
+
+.add-field-trigger img {
+    vertical-align: middle;
 }
 
 .invitations form {
@@ -3795,12 +3822,13 @@ div.state .shutdown, tbody.machines .shutdown {
     font-weight: bold;
 }
 
-#invsent span {
+#invsent h3 span {
     font-weight: normal;
     font-size: 0.9em;
     float: right;
-    margin-top: -7px;
-    margin-right: 10px;
+    margin-right: 5px;
+    display: block;
+    margin-top: -2px;
 }
 
 #invsent ul {
@@ -3810,10 +3838,50 @@ div.state .shutdown, tbody.machines .shutdown {
 #invsent li {
     color: #4085A5;
     font-size: 1.1em;
+    padding-top: 0.5em;
+    border-bottom: 1px solid #efefef;
+    padding-bottom: 0.5em;
+    font-size: 0.9em;
+    position: relative;
+}
+
+#invsent li:hover {
+    background-color: #efefef;
+}
+
+#invsent li img {
+    position: absolute;
+    left:20px;
+    bottom: 2px;
+}
+
+#invsent h3 img {
+    float: none;
+    vertical-align: middle;
+    margin-left: 3px;
+}
+
+#invsent .name {
+    float: left;
+    width: 55%;
+    padding-left: 20px;
+}
+
+#invsent .email {
+    float: left;
+    width: 40%;
+}
+
+#invsent li.accepted {
+    color: #ABD49C;
+}
+
+#invsent li img {
+    margin-left: -20px;
+    margin-top: 1px;
 }
 
 .invitations #field_email_name {
-    margin-left: 150px;
 }
 
 #invform #fields input {

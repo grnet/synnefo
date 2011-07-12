@@ -381,6 +381,20 @@ Synnefo deployment.
     $ dpkg-buildpackage -b -uc -us
     # dpkg -i ../vncauthproxy_1.0-1_all.deb
 
+    --Failure to build the package on the Mac.
+
+    libevent, a requirement for gevent which in turn is a requirement for
+    vncauthproxy is not included in MacOSX by default and installing it with
+    MacPorts does not lead to a version that can be found by the gevent
+    build process. A quick workaround is to execute the following commands:
+
+    cd $SYNNEFO
+    sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
+    <the above fails>
+    cd build/gevent
+    sudo python setup.py -I/opt/local/include -L/opt/local/lib build
+    cd $SYNNEFO
+    sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
 
 13. Installation of the customized Ganeti Instance Image for image deployment:
     For Synnefo to be able to launch VMs from specified Images, you need

@@ -356,11 +356,14 @@ or implied, of GRNET S.A.
                     </ul>
                 </div>
                 <div class="langmenu">
+                <a class="current_lang">en</a>
+                {% comment %}
                 {% get_available_languages as LANGUAGES %}
                 {% for lang in LANGUAGES %}
-                    <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
+                <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
                     {% if not forloop.last %}<span class="sep">~</span>{% endif %}
                     {% endfor %}
+                {% endcomment %}
                 </div>
             </div>
             <div class="header-logo">

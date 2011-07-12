@@ -242,6 +242,8 @@ def send_invitation(invitation):
 
     data = render_to_string('invitation.txt', {'email': email})
 
+    _logger.debug("Invitation URL: %s" % email['url'])
+
     send_async(
         frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),

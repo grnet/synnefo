@@ -453,7 +453,7 @@ class Invitations(models.Model):
         verbose_name = u'Invitation'
 
     def __unicode__(self):
-        return self.name
+        return "From: %s, To: %s" % (self.source, self.target)
 
 
 class NetworkInterface(models.Model):

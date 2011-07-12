@@ -25,7 +25,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.5 (July 11, 2011)        Object update from another object's data.
+0.5 (July 12, 2011)        Object update from another object's data.
+\                          Support object truncate.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -679,6 +680,7 @@ Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Object       Update with data from the object at path ``/<container>/<object>`` (optional, to update)
 X-Source-Version      The source version to update from (optional, to update)
+X-Object-Bytes        The updated object's final size (optional, when updating)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Sharing      Object permissions (optional)
 X-Object-Public       Object is publicly accessible (optional)
@@ -698,6 +700,8 @@ To update an object's data:
   * Client software MAY omit ``last-byte-pos`` of if the length of the range being transferred is unknown or difficult to determine.
   * Client software SHOULD not specify the ``instance-length`` (use a ``*``), unless there is a reason for performing a size check at the server.
 * If ``Content-Range`` used has a ``byte-range-resp-spec = *``, data will be appended to the object.
+
+Optionally, truncate the updated object to the desired length with the ``X-Object-Bytes`` header.
 
 A data update will trigger an ETag change. The new ETag will not correspond to the object's MD5 sum (**TBD**) and will be included in reply headers.
 
@@ -770,7 +774,7 @@ List of differences from the OOS API:
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object GET support as outlined in RFC2616.
 * Object hashmap retrieval through GET and the ``format`` parameter.
-* Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``.
+* Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Object ``MOVE`` support.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY.
@@ -944,6 +948,17 @@ Assuming an authentication token is obtained (**TBD**), the following high-level
          -H "Content-Range: bytes */*" \
          -d "0123456789" \
          https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+* Update an object (truncate) ::
+
+    curl -X POST -D - \
+         -H "X-Auth-Token: 0000" \
+         -H "X-Source-Object: /folder/EXAMPLE.txt" \
+         -H "Content-Range: bytes 0-0/*" \
+         -H "X-Object-Bytes: 0" \
+         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+
+  This will truncate the object to 0 bytes.
 
 * Add object metadata ::
 

@@ -269,8 +269,7 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         except NameError:
             raise ItemNotFound('Object does not exist')
 
-def get_int_parameter(request, name):
-    p = request.GET.get(name)
+def get_int_parameter(p):
     if p is not None:
         try:
             p = int(p)
@@ -281,15 +280,9 @@ def get_int_parameter(request, name):
     return p
 
 def get_content_length(request):
-    content_length = request.META.get('CONTENT_LENGTH')
-    if not content_length:
-        raise LengthRequired('Missing Content-Length header')
-    try:
-        content_length = int(content_length)
-        if content_length < 0:
-            raise ValueError
-    except ValueError:
-        raise BadRequest('Invalid Content-Length header')
+    content_length = get_int_parameter(request.META.get('CONTENT_LENGTH'))
+    if content_length is None:
+        raise LengthRequired('Missing or invalid Content-Length header')
     return content_length
 
 def get_range(request, size):

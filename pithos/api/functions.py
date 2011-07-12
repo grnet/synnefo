@@ -128,7 +128,7 @@ def account_meta(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    until = get_int_parameter(request, 'until')
+    until = get_int_parameter(request.GET.get('until'))
     try:
         meta = backend.get_account_meta(request.user, v_account, until)
         groups = backend.get_account_groups(request.user, v_account)
@@ -171,7 +171,7 @@ def container_list(request, v_account):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    until = get_int_parameter(request, 'until')
+    until = get_int_parameter(request.GET.get('until'))
     try:
         meta = backend.get_account_meta(request.user, v_account, until)
         groups = backend.get_account_groups(request.user, v_account)
@@ -239,7 +239,7 @@ def container_meta(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    until = get_int_parameter(request, 'until')
+    until = get_int_parameter(request.GET.get('until'))
     try:
         meta = backend.get_container_meta(request.user, v_account, v_container, until)
         meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
@@ -337,7 +337,7 @@ def object_list(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    until = get_int_parameter(request, 'until')
+    until = get_int_parameter(request.GET.get('until'))
     try:
         meta = backend.get_container_meta(request.user, v_account, v_container, until)
         meta['object_meta'] = backend.list_object_meta(request.user, v_account, v_container, until)
@@ -827,6 +827,12 @@ def object_update(request, v_account, v_container, v_object):
     if total is not None and (total != size or offset >= size or (length > 0 and offset + length >= size)):
         raise RangeNotSatisfiable('Supplied range will change provided object limits')
     
+    dest_bytes = request.META.get('HTTP_X_OBJECT_BYTES')
+    if dest_bytes is not None:
+        dest_bytes = get_int_parameter(dest_bytes)
+        if dest_bytes is None:
+            raise BadRequest('Invalid X-Object-Bytes header')
+    
     if src_object:
         if offset % backend.block_size == 0:
             # Update the hashes only.
@@ -872,6 +878,9 @@ def object_update(request, v_account, v_container, v_object):
     
     if offset > size:
         size = offset
+    if dest_bytes is not None and dest_bytes < size:
+        size = dest_bytes
+        hashmap = hashmap[:(int((size - 1) / backend.block_size) + 1)]
     meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
     try:
         backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, replace, permissions)

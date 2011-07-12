@@ -2,28 +2,10 @@ ul.css-tabs a, .tab-name {
     height:31px;
 }
 
-div.machine div.actions a {
-    width: 180px;
-}
-
 #error-success .popup-body-inner {
     margin-left: 12px;
 }
 
-div.machine div.actions {
-    right: -183px;
-    width: 114px;
-}
-
-div.machine div.actions {
-    height: 75px;
-    margin-top: -10px;
-    padding-top: 10px;
-}
-
-div.machine .destroy .confirm_single {
-    width: 130px;
-}
 
 div.machine {
     width: 528px;
@@ -175,11 +157,40 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     height: 380px;
+    padding-top: 80px;
 }
 
 div.single-actions {
     overflow: visible;
     width: 170px;
+}
+
+div.machine div.actions a {
+    width: 180px;
+}
+
+#error-success .popup-body-inner {
+      margin-left: 12px;
+}
+    
+div.machine div.actions {
+    right: -183px;
+    width: 114px;
+}
+
+div.machine div.actions {
+    height: 75px;
+    margin-top: -10px;
+    padding-top: 10px;
+}
+
+div.machine .destroy .confirm_single {
+    width: 130px;
+}
+
+div.machine .actions .destroy {
+    position: absolute;
+    bottom:0;
 }
 
 .single div.confirm_single {
@@ -197,8 +208,13 @@ div.single-actions {
     z-index: 1000;
 }
 
+#view-select {
+    top: -45px !important;
+}
+
 .running {
     height: 80px;
+    padding-top: 70px;
 }
 
 .editbuttons {
@@ -483,4 +499,16 @@ div.reboot-dialog button.reboot-single {
 }
 
 #field_email_name {
+}
+
+a.manage-metadata {
+    margin-left: 0 !important;
+}
+
+.metadata-keys-container {
+    float: left;
+}
+
+.vm-metadata {
+    width: 110px;
 }

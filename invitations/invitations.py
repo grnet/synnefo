@@ -85,7 +85,10 @@ def process_form(request):
     if errors:
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request),
-                                    'errors': errors, 'ajax': request.is_ajax()},
+                                    'errors': errors,
+                                    'ajax': request.is_ajax(),
+                                    'invitations_left': get_invitations_left(request.user)
+                                },
                                 context_instance=RequestContext(request))
         response =  HttpResponse(data)
         _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
@@ -130,7 +133,10 @@ def inv_demux(request):
 
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                {'invitations': invitations_for_user(request), 'ajax': request.is_ajax()},
+                {'invitations': invitations_for_user(request),
+                    'ajax': request.is_ajax(),
+                    'invitations_left': get_invitations_left(request.user)
+                },
                                 context_instance=RequestContext(request))
         return  HttpResponse(data)
     elif request.method == 'POST':
@@ -302,6 +308,14 @@ def invitation_accepted(invitation):
     """
     invitation.accepted = True
     invitation.save()
+
+
+def get_invitations_left(user):
+    """
+    Get user invitations left
+    """
+    num_inv = Invitations.objects.filter(source = user).count()
+    return user.max_invitations - num_inv
 
 class InvitationException(Exception):
     messages = []

@@ -1,24 +1,22 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+{% load i18n %}{% if not ajax %}<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-    <title>Αποστολή προσκλήσεων σε χρήστες</title>
-    {% if not ajax %}
+<title>{% trans "Invitations" %}</title>
     <script src="/static/jquery.tools.min.js"></script>
     <script src="/invitations/static/invitations.js"></script>
-    {% endif %}
 
     <script type="text/javascript">
-    {% if not ajax %}
     $(document).ready(function() {
         $("#invform #removable-name-container-1").dynamicField();
     });
-    {% endif %}
 
     </script>
 
 </head>
 <body>
+{% endif %}
+<div class="invitations-left">({% blocktrans with invitations_left as left %}{{ left }} left{% endblocktrans %})</div>
 <form action="/invitations/" method="post" id="invform">
     {% csrf_token %}
     
@@ -32,37 +30,35 @@
         </div>
     {% endif %}
 
-    <div id="fieldheaders">
-        <span id="field_name_name">Όνομα</span>
-        <span id="field_email_name">Email</span>
+    <div id="fieldheaders" class="clearfix">
+        <span id="field_name_name">{% trans "Name" %}<span class="description">(e.g. John Smith)</span></span>
+        <span id="field_email_name">{% trans "Email" %}</span>
     </div>
     <div id="fields">
-        <div id="removable-name-container-1" class="removable-field-row">
-            <input type="text" name="name_1" id="name_1" value="" class="textInput removable" /><input type="text" name="email_1" id="email_1" value="" class="textInput removable" /><img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
+        <div id="removable-name-container-1" class="removable-field-row"><input type="text" name="name_1" id="name_1" value="" class="textInput removable" /><input type="text" name="email_1" id="email_1" value="" class="textInput removable" /><img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
         </div>
         <div id="add-name-container" class="add-field-container">
         <span class="add-field-trigger">
             <img src="/static/add.gif" alt="" title="Add New Item" />
-            Προσθήκη Παραλήπτη
+            {% trans "Add invitation" %}
         </span>
         </div>
     </div>
-    <p><input type="submit" value="Αποστολή Προσκλήσεων" /></p>
+    <p><input type="submit" value="{% trans "Send invitations" %}" /></p>
 </form>
 
 <div id="invsent">
 
-    <h3>Λίστα προσκλήσεων που έχουν αποσταλεί
-    <span>(<img src="/static/save.png" alt=""> = Η πρόσκληση έγινε
-        αποδεκτή)</span></h3>
+    <h3 class="clearfix">{% trans "Sent invitations" %}
+        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span></h3>
     <div>
         <ul>
         {% for inv in invitations %}
-            <li>
+        <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
                 {% if inv.accepted %}
-                    <img src="/static/save.png" alt="">
+                <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accpeted" %}">
                 {% endif %}
-                {{ inv.targetname }} &lt;{{ inv.target }}&gt;
+                <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
             </li>
         {% endfor %}
         </ul>

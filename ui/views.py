@@ -88,61 +88,89 @@ def machines_console(request):
     return template('machines_console', context)
 
 
-CONNECT_LINUX_LINUX_MESSAGE = _("Trying to connect from linux to linux")
-CONNECT_LINUX_WINDOWS_MESSAGE = _("Trying to connect from linux to windows")
-CONNECT_WINDOWS_LINUX_MESSAGE = _("Trying to connect from windows to linux")
+CONNECT_LINUX_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
+href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
+To do so open a terminal and type the following at the prompt to connect to your machine:""")
+CONNECT_LINUX_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
+established using <a target="_blank" href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">Remote Desktop Service</a>.
+To do so, open the following file with an appropriate remote desktop client.""")
+CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have one already
+installed, we suggest the use of <a target="_blank" href="http://sourceforge.net/projects/tsclient/files/tsclient/tsclient-unstable/tsclient-2.0.1.tar.bz2/download">tsclient</a>.""")
+
+CONNECT_WINDOWS_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
+href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
+Open an ssh client such as PuTTY to connect to your machine at IP:""")
+CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already installed,
+<a target="_blank" href="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe">Download PuTTY</a>""")
 CONNECT_WINDOWS_WINDOWS_MESSAGE = _("Trying to connect from windows to windows")
 
+
+# info/subinfo for all os combinations
+#
+# [0] info gets displayed on top of the message box
+# [1] subinfo gets displayed on the bottom as extra info
+# provided to the user when needed
 CONNECT_PROMT_MESSAGES = {
     'linux': {
-            'linux': CONNECT_LINUX_LINUX_MESSAGE,
-            'windows': CONNECT_LINUX_WINDOWS_MESSAGE
+            'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
+            'windows': [CONNECT_LINUX_WINDOWS_MESSAGE, CONNECT_LINUX_WINDOWS_SUBMESSAGE]
         },
     'windows': {
-            'linux': CONNECT_WINDOWS_LINUX_MESSAGE,
-            'windows': CONNECT_WINDOWS_WINDOWS_MESSAGE
+            'linux': [CONNECT_WINDOWS_LINUX_MESSAGE, CONNECT_WINDOWS_LINUX_SUBMESSAGE],
+            'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE, ""]
         }
     }
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
     operating_system = request.GET.get('os','')
+    server_id = request.GET.get('srv', 0)
     host_os = request.GET.get('host_os','Linux').lower()
 
     if operating_system != "windows":
         operating_system = "linux"
 
+    # rdp param is set, the user requested rdp file
     if operating_system == 'windows' and request.GET.get("rdp", False): #check if we are on windows
         rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
         connect_data = open(rdp_file, 'r').read()
         connect_data = connect_data + 'full address:s:' + ip_address + '\n'
         response = HttpResponse(connect_data, mimetype='application/x-rdp')
-        response['Content-Disposition'] = 'attachment; filename=synnefo-windows.rdp'
+
+        # proper filename, use server id and ip address
+        filename = "%d-%s.rdp" % (int(server_id), ip_address)
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
+        # no rdp requested return json object with info on how to connect
         ssh = False
         if (operating_system != "windows"):
             ssh = True
 
-        info = _("Connect on windows using the following RDP shortcut file")
-        link_title = _("Windows RDP shortcut file")
-        link_url = "%s?ip_address=%s&os=%s&rdp=1" % (reverse("machines-connect"), ip_address, operating_system)
+        link_title = _("Remote desktop to %s") % ip_address
+        link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d" % (reverse("machines-connect"), ip_address, operating_system,
+                int(server_id))
 
         if (operating_system != "windows"):
-            info = _("Connect on linux machine using the following url")
-            link_url = "ssh://%s/" % ip_address
-            link_title = link_url
+            link_title = "ssh root@%s" % ip_address
+            link_url = None
+
+            if host_os == "windows":
+                link_title = ip_address
 
         # try to find a specific message
         try:
-            connect_message = CONNECT_PROMT_MESSAGES[host_os][operating_system]
+            connect_message = CONNECT_PROMT_MESSAGES[host_os][operating_system][0]
+            subinfo = CONNECT_PROMT_MESSAGES[host_os][operating_system][1]
         except KeyError:
             connect_message = _("You are trying to connect from a %s machine to a %s machine") % (host_os, operating_system)
+            subinfo = ""
 
         response_object = {
                 'ip': ip_address,
                 'os': operating_system,
                 'ssh': ssh,
                 'info': unicode(connect_message),
+                'subinfo': unicode(subinfo),
                 'link': {'title': unicode(link_title), 'url': link_url}
             }
         response = HttpResponse(json.dumps(response_object), mimetype='application/json')  #no windows, no rdp

@@ -1207,20 +1207,26 @@ function machine_connect(serverIDs){
         var os = machine.metadata.values.OS;
     } catch(err) { var os = 'undefined'; }
 
-    var params_url = '?ip_address=' + serverIP + '&os=' + os + "&host_os=" + $.client.os;
+    var params_url = '?ip_address=' + serverIP + '&os=' + os + "&host_os=" + $.client.os + "&srv=" + serverID;
     
     if ($.client.os == "Windows" && os == "windows") {
         window.open('machines/connect' + params_url + "&rdp=1");
         return;
     }
+    
+    var title = 'Connect to: ' + '<span class="machine-title"><img src="static/icons/machines/small/'+os+'-on.png" /> '+serverName+'</span>';
 
     try {
-        msg_box({title:'Connect to ' + serverName,content:'loading...',extra:'',
+        msg_box({title:title, content:'loading...',extra:'',
         'ajax':'machines/connect' + params_url,
         parse_data:function(data){
+            var box_content = "<a href='"+data.link.url+"'>"+data.link.title+"</a>";
+            if (!data.link.url) {
+                box_content = "<span class='cmd'>"+data.link.title+"</span>";
+            }
             data.title = false;
             data.content = data.info;
-            data.extra = "<a href='"+data.link.url+"'>"+data.link.title+"</a>";
+            data.extra = box_content;
             return data;
         }
         });
@@ -2110,7 +2116,7 @@ function msg_box(config) {
 
     var sel = function(s){return $(s, box)};
 
-    sel("h3 span.header-box").text(config.title);
+    sel("h3 span.header-box").html(config.title);
     sel("div.machine-now-building").html(config.content);
     sel(".popup-header").removeClass("popup-header-error");
     box.removeClass("popup-border-error");
@@ -2170,6 +2176,11 @@ function msg_box(config) {
                     if (data.extra) {
                         sel(".password-container .password").html(data.extra);
                         sel(".password-container").show();
+                    }
+                    if (data.subinfo) {
+                        sel(".sub-text").html(data.subinfo);
+                    } else {
+                        sel(".sub-text").html("");
                     }
                 }
 

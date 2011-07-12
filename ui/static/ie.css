@@ -450,3 +450,11 @@ div.reboot-dialog button.reboot-single {
     margin-left: 117px;
 }
 
+.password-container {
+    width: 415px !important;
+}
+
+.popup-body-inner {
+    padding-bottom: 20px !important;
+}
+

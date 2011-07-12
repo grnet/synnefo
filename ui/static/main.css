@@ -3819,3 +3819,57 @@ div.state .shutdown, tbody.machines .shutdown {
 #invform #fields input {
     margin-right: 10px;
 }
+
+.machine-now-building {
+    padding-right: 15px !important;
+    text-align: justify;
+}
+
+.sub-text {
+    padding-top: 15px;
+    padding-right: 15px;
+    text-align: justify;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+#notification-box a {
+    color: #4085A5;
+}
+
+#notification-box .machine-title img {
+    vertical-align: middle;
+}
+
+#notifiaction-box .password-header {
+    margin-bottom: 0 !important;
+}
+
+#notification-box .password-container a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+#notification-box .password-container a:hover {
+    background-color: #fff;
+    color: #4085A5;
+}
+
+#notification-box .password-container {
+    background: #4085A5;
+    border: none;
+}
+
+#notification-box .password-container .password a {
+    font-weight: normal !important;
+}
+
+#notification-box .cmd {
+    color: #fff;
+    font-family: monospace;
+    font-size: 1.6em;
+}
+
+.machine-container .separator {
+    background-color: #B0D1E0;
+}

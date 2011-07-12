@@ -270,6 +270,11 @@ div.single-actions {
   overflow: visible;
 }
 
+.clearfix {
+    zoom: 1;     /* triggers hasLayout */
+    display: block;     /* resets display for IE/Win */
+}
+
 /* float clearing for IE7 */
 *+html .clearfix{
   min-height: 1%;
@@ -446,9 +451,24 @@ div.reboot-dialog button.reboot-single {
     width: 445px;
 }
 
-.invitations #field_email_name {
-    margin-left: 117px;
+
+#invsent h3 span {
+    font-size: 0.8em;
+    margin-top: -15px;
 }
+
+#invsent li {
+    padding-left: 0px;
+}
+
+#invsent li img {
+    left: 20px;
+}
+
+.add-field-container {
+    margin-top: 10px;
+}
+
 
 .password-container {
     width: 415px !important;
@@ -458,3 +478,9 @@ div.reboot-dialog button.reboot-single {
     padding-bottom: 20px !important;
 }
 
+#invsent h3 img {
+    float: none;
+}
+
+#field_email_name {
+}

@@ -472,11 +472,10 @@ def socket_read_iterator(sock, length=0, blocksize=4096):
                     data = data[blocksize:]
                     yield ret
             sock.read(2) # CRLF
-        # TODO: Raise something to note that maximum size is reached.
+        raise BadRequest('Maximum size is reached')
     else:
         if length > MAX_UPLOAD_SIZE:
-            # TODO: Raise something to note that maximum size is reached.
-            pass
+            raise BadRequest('Maximum size is reached')
         while length > 0:
             data = sock.read(min(length, blocksize))
             length -= len(data)

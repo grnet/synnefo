@@ -40,6 +40,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
+from xml.dom import minidom
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
@@ -622,23 +623,35 @@ def object_write(request, v_account, v_container, v_object):
     if 'Content-Type' not in meta:
         raise LengthRequired('Missing Content-Type header')
     
-    if request.serialization == 'json':
+    if request.serialization != 'text':
         data = ''
         sock = raw_input_socket(request)
         for block in socket_read_iterator(sock, content_length, backend.block_size):
             data = '%s%s' % (data, block)
-        d = json.loads(data)
-        if not hasattr(d, '__getitem__'):
-            raise BadRequest('Invalid data formating')
-        try:
-            hashmap = d['hashes']
-            size = d['bytes']
-        except KeyError:
-            raise BadRequest('Invalid data formatting')
+        
+        if request.serialization == 'json':
+            d = json.loads(data)
+            if not hasattr(d, '__getitem__'):
+                raise BadRequest('Invalid data formating')
+            try:
+                hashmap = d['hashes']
+                size = d['bytes']
+            except KeyError:
+                raise BadRequest('Invalid data formatting')
+        elif request.serialization == 'xml':
+            try:
+                xml = minidom.parseString(data)
+                obj = xml.getElementsByTagName('object')[0]
+                size = obj.attributes['bytes'].value
+                
+                hashes = xml.getElementsByTagName('hash')
+                hashmap = []
+                for hash in hashes:
+                    hashmap.append(hash.firstChild.data)
+            except Exception:
+                raise BadRequest('Invalid data formatting')
+        
         meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
-    elif request.serialization == 'xml':
-        # TODO: Support xml.
-        raise BadRequest('Format xml is not supported')
     else:
         md5 = hashlib.md5()
         size = 0
@@ -724,7 +737,6 @@ def object_update(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
-    
     meta, permissions, public = get_object_headers(request)
     content_type = meta.get('Content-Type')
     if content_type:
@@ -816,7 +828,7 @@ def object_update(request, v_account, v_container, v_object):
         content_length = -1
         if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
             content_length = get_content_length(request)
-        
+            
         if length is None:
             length = content_length
         else:

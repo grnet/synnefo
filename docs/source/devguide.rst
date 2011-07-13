@@ -604,6 +604,15 @@ Example ``format=json`` request:
 
   {"block_hash": "sha1", "hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c", ...], "block_size": 131072, "bytes": 242}
 
+Example ``format=xml`` request:
+
+::
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <object name="file" bytes="24223726" block_size="131072" block_hash="sha1">
+    <hash>7295c41da03d7f916440b98e32c4a2a39351546c</hash>
+    <hash>...</hash>
+  </object>
 
 ==========================  ===============================
 Reply Header Name           Value

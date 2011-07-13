@@ -48,8 +48,8 @@ from synnefo.logic import backend
 urlpatterns = patterns('synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
-    (r'^/(\d+)(?:.json|.xml)?$', 'network_demux'),
-    (r'^/(\d+)/action(?:.json|.xml)?$', 'network_action'),
+    (r'^/(\w+)(?:.json|.xml)?$', 'network_demux'),
+    (r'^/(\w+)/action(?:.json|.xml)?$', 'network_action'),
 )
 
 

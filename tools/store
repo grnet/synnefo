@@ -47,9 +47,9 @@ import re
 import time as _time
 import os
 
-#DEFAULT_HOST = 'pithos.dev.grnet.gr'
-DEFAULT_HOST = '127.0.0.1:8000'
-DEFAULT_API = 'v1'
+DEFAULT_HOST = 'pithos.dev.grnet.gr'
+#DEFAULT_HOST = '127.0.0.1:8000'
+#DEFAULT_API = 'v1'
 
 _cli_commands = {}
 
@@ -186,7 +186,7 @@ class List(Command):
 @cli_command('meta')
 class Meta(Command):
     syntax = '[<container>[/<object>]]'
-    description = 'get the metadata of an account, a container or an object'
+    description = 'get account/container/object metadata'
     
     def add_options(self, parser):
         parser.add_option('-r', action='store_true', dest='restricted',
@@ -319,7 +319,7 @@ class PutMarker(Command):
 
 @cli_command('put')
 class PutObject(Command):
-    syntax = '<container>/<object> <path> [key=val] [...]'
+    syntax = '<container>/<object> [key=val] [...]'
     description = 'create/override object'
     
     def add_options(self, parser):
@@ -417,6 +417,7 @@ class CopyObject(Command):
             dst_container = src_container
             dst_object = dst
         version = getattr(self, 'version')
+        headers = None
         if version:
             headers = {}
             headers['X_SOURCE_VERSION'] = version
@@ -431,7 +432,7 @@ class CopyObject(Command):
 @cli_command('set')
 class SetMeta(Command):
     syntax = '[<container>[/<object>]] key=val [key=val] [...]'
-    description = 'set metadata'
+    description = 'set account/container/object metadata'
     
     def execute(self, path, *args):
         #in case of account fix the args
@@ -498,7 +499,6 @@ class UpdateObject(Command):
             headers['X_OBJECT_MANIFEST'] = self.manifest
         if self.sharing:
             headers['X_OBJECT_SHARING'] = self.sharing
-        
         if self.no_sharing:
             headers['X_OBJECT_SHARING'] = ''
         
@@ -596,9 +596,9 @@ class UnsetObject(Command):
             self.client.delete_account_metadata(meta)
 
 @cli_command('group')
-class SetGroup(Command):
+class CreateGroup(Command):
     syntax = 'key=val [key=val] [...]'
-    description = 'set group account info'
+    description = 'create account groups'
     
     def execute(self, *args):
         groups = {}
@@ -606,6 +606,17 @@ class SetGroup(Command):
             key, sep, val = arg.partition('=')
             groups[key] = val
         self.client.set_account_groups(**groups)
+
+@cli_command('ungroup')
+class DeleteGroup(Command):
+    syntax = 'key [key] [...]'
+    description = 'delete account groups'
+    
+    def execute(self, *args):
+        groups = []
+        for arg in args:
+            groups.append(arg)
+        self.client.unset_account_groups(groups)
 
 @cli_command('policy')
 class SetPolicy(Command):

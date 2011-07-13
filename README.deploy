@@ -193,6 +193,13 @@ Synnefo deployment.
 	    mysql> show databases;
 	    mysql> GRANT ALL on synnefo.* TO username IDENTIFIED BY 'password';
 
+     IMPORTANT:
+        MySQL *must* be set in READ-COMMITED mode, e.g. by setting
+
+        transaction-isolation = READ-COMMITTED
+
+        in the [mysql] section of /etc/mysql/my.cnf.
+
    * PostgreSQL
      You need to install the PostgreSQL binaries:
      * Ubuntu - Debian

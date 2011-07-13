@@ -4034,6 +4034,11 @@ div.state .shutdown, tbody.machines .shutdown {
     right: 10px;
 }
 
+
+#feedback-form  .submit:hover {
+    background-color: #549FC3;
+}
+
 .popup-body .message {
     padding: 20px 5px;
     display: none;

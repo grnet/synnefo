@@ -63,6 +63,32 @@ $.ajaxSetup({
     }
 });
 
+Object.prototype.toString = function(o){
+    
+    var parse = function(_o){
+        var a = [], t;
+        for(var p in _o){
+            if(_o.hasOwnProperty(p)){
+                t = _o[p];
+                if(t && typeof t == "object"){
+                    a[a.length]= p + ":{ " + arguments.callee(t).join(", ") + "}";
+                }
+                else {
+                    if(typeof t == "string"){
+                        a[a.length] = [ p+ ": \"" + t.toString() + "\"" ];
+                    }
+                    else{
+                        a[a.length] = [ p+ ": " + t.toString()];
+                    }
+                }
+            }
+        }
+        return a;
+        
+    }
+    return "{" + parse(o).join(", ") + "}";
+   
+}
 
 // jquery show/hide events
 var _oldshow = $.fn.show;
@@ -364,7 +390,7 @@ function update_vms(interval) {
                         Instead 304 it returns 0. To dealt with this we treat 0 as an
                         304, which should be corrected (Bug #317).
                 */
-                //ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+                // ajax_error(jqXHR.status, "Ajax error", 'Update VMs', jqXHR.responseText);
             }
             return false;
         }
@@ -1804,6 +1830,9 @@ function close_all_overlays() {
 	try {
 		$("a#msgbox").overlay().close();
 	} catch(err) {}
+	try {
+		$("a#feedbackbox").overlay().close();
+	} catch(err) {}
 }
 
 // logout
@@ -2104,6 +2133,69 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
 
 
 // generic info box
+function show_feedback_form() {
+    var box = $("#feedback-form");
+    box.addClass("notification-box");
+
+    // initialize
+    box.find(".form-container").show();
+    box.find("textarea").val("");
+    box.find(".message").hide();
+
+    var triggers = $("a#feedbackbox").overlay({
+        // some mask tweaks suitable for modal dialogs
+        mask: '#666',
+        top: '10px',
+        fixed: false,
+        closeOnClick: false,
+        oneInstance: false,
+        load: false,
+        onClose: function () {
+            // With partial refresh working properly,
+            // it is no longer necessary to refresh the whole page
+            // choose_view();
+        }
+    });
+    
+    $("#feedback-form form").unbind("submit");
+    $("#feedback-form form").submit(function(event) {
+        event.preventDefault();
+            
+        // empty msg
+        if ($("textarea.feedback-text").val().replace(/^\s*|\s*$/,"") == "") {
+            alert($(".empty-error-msg", this).text());
+            return;
+        }
+
+        $("textarea.data-text", this).val("").val(JSON.stringify(get_user_data()));
+
+        $.ajax({
+            url: FEEDBACK_URL,
+            data: $(this).serialize(),
+            type: "POST",
+            // show loading
+            beforeSend: function() {box.find(".form-container").hide(); box.find(".sending").fadeIn() },
+            // hide form
+            complete: function() { box.find(".form-container").hide(); box.find(".sending").hide() },
+            // on success display success message
+            success: function() { box.find(".success").fadeIn(); box.find(".sending").hide() },
+            // display error message
+            error: function() { box.find(".errormsg").fadeIn(); box.find(".sending").hide() }
+        })
+    });
+    
+    $("a#feedbackbox").data('overlay').load();
+    return false;
+}
+
+function get_user_data(extra_data) {
+    return $.extend({
+        'cookie': $.cookie("X-Auth-Token"),
+        'servers': $.extend({}, servers),
+        'client': {'browser': $.browser, 'screen': $.extend({}, screen), 'client': $.client},
+        'dates': {'now': new Date, 'lastUpdate': changes_since_date}
+    }, extra_data);
+}
 
 function msg_box(config) {
     var config = $.extend({'title':'Info message', 'content': 'this is an info message', 'ajax': false, 'extra':false}, config);
@@ -2111,11 +2203,11 @@ function msg_box(config) {
     // bring up success notification
 
     var box = $("#notification-box");
+    box.addClass("notification-box");
     box.addClass('success');
     box.removeClass('error');
 
     var sel = function(s){return $(s, box)};
-
     // reset texts
     sel("h3 span.header-box").html("");
     sel(".sub-text").html("");
@@ -2140,10 +2232,11 @@ function msg_box(config) {
     var triggers = $("a#msgbox").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#666',
-        top: 'center',
+        top: '10px',
         closeOnClick: false,
         oneInstance: false,
         load: false,
+        fixed: false,
         onClose: function () {
             // With partial refresh working properly,
             // it is no longer necessary to refresh the whole page
@@ -2174,8 +2267,9 @@ function msg_box(config) {
                     sel("div.machine-now-building").html(data);
                 } else {
 
-                    if (data.title)
+                    if (data.title) {
                         sel("h3 span.header-box").text(data.title);
+                    }
 
                     if (data.content) {
                         sel("div.machine-now-building").html(data.content);
@@ -2194,6 +2288,9 @@ function msg_box(config) {
                 if (user_success) {
                     user_success($("div.machine-now-building"));
                 }
+            },
+            error: function(xhr, status, err) {
+                ajax_error(-5, "UI Error", "Machine connect", err);
             }
         }, config.ajax_config));
     }
@@ -2213,8 +2310,8 @@ function show_invitations() {
         $("#invform #removable-name-container-1").dynamicField();
         
         $(".invitations-left").hide();
-        $(".header-box").html("");
-        $(".header-box").html("Invitations " + $($(".invitations-left")[0]).text());
+        $("#notification-box .header-box").html("");
+        $("#notification-box .header-box").html("Invitations " + $($(".invitations-left")[0]).text());
 
         form.submit(function(evn){
             evn.preventDefault();
@@ -2225,6 +2322,7 @@ function show_invitations() {
             return false;
         });
     }
+
     msg_box({title:window.INVITATIONS_TITLE, content:'', ajax:INVITATIONS_URL, html:true, success: function(el){ 
         handle_invitations(el)}
     });

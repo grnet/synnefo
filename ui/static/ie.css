@@ -2,8 +2,14 @@ ul.css-tabs a, .tab-name {
     height:31px;
 }
 
-#error-success .popup-body-inner {
+div.machine div.actions a {
+    width: 180px;
+}
+
+#error-success .popup-body-inner, .notification-box .popup-body-inner {
     margin-left: 12px;
+    padding-bottom: 30px;
+    height: 140px;
 }
 
 
@@ -209,12 +215,14 @@ div.machine .actions .destroy {
 }
 
 #view-select {
-    top: -45px !important;
+    top: -35px !important;
+    right: 10px;
 }
 
 .running {
     height: 80px;
     padding-top: 70px;
+    margin-top: -70px;
 }
 
 .editbuttons {
@@ -463,14 +471,20 @@ div.reboot-dialog button.reboot-single {
     bottom: 9px;
 }
 
-#notification-box .popup-body-inner {
-    width: 445px;
+
+#error-success, .notification-box {
+    top: 50px !important;
+    position: absolute !important;
+}
+
+.notification-box .popup-body-inner {
+    width: 455px !important;
+    padding-right: 10px !important;
 }
 
 
 #invsent h3 span {
     font-size: 0.8em;
-    margin-top: -15px;
 }
 
 #invsent li {
@@ -511,4 +525,9 @@ a.manage-metadata {
 
 .vm-metadata {
     width: 110px;
+}
+
+.error-report {
+    float: right;
+    text-align: right;
 }

@@ -72,9 +72,11 @@ or implied, of GRNET S.A.
         var TIMEOUT = {{timeout}};
         var UPDATE_INTERVAL = {{update_interval}};
         var LOGOUT_REDIRECT = undefined;
-        var INVITATIONS_URL = "{% url invitations %}"
-        var INVITATIONS_TITLE = "{% trans "Invitations" %}"
+        var INVITATIONS_URL = "{% url invitations %}";
+        var INVITATIONS_TITLE = "{% trans "Invitations" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
+        var FEEDBACK_URL = "{% url feedback %}";
+        var FEEDBACK_TITLE = "{% trans "Feedback" %}";
 
         // server statuses and transitions
         var STATUSES = {
@@ -271,18 +273,66 @@ or implied, of GRNET S.A.
                 }
             }
 
+            
+            // prepare ajax call to get called when user clicks on 
+            // send error report button
+            function initialize_error_report(cont, extra_data) {
+                var cont = $(cont);
+                var sel = function(sel) {return $(sel, cont)};
+                var btn = sel(".send-btn");
+                var extra_data = extra_data;
+
+                // clear previous callbacks
+                btn.unbind('click');
+                btn.click(function(){
+
+                    // wrap in its own try catch to avoid retriggering ajax_error
+
+                    try {
+                        var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
+                        var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
+                        
+                        $.ajax({
+                            url: FEEDBACK_URL,
+                            type: "POST",
+                            data: $.param(payload),
+                            beforeSend: function() {
+                                sel(".send-btn").hide();
+                                sel(".sending").fadeIn();
+                            },
+                            error: function() {
+                                sel(".sending").hide();
+                                sel(".errormsg").fadeIn();
+                            },
+                            success: function() {
+                                sel(".sending").hide();
+                                sel(".success").fadeIn();
+                            }
+                        });
+
+                    } catch (err) {
+                        console.error(err);
+                    }
+                });
+            }
+
             // bring up error notification
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
                 mask: '#666',
                 top: 'center',
                 closeOnClick: false,
+                fixed: false,
                 oneInstance: false,
                 load: false,
                 onClose: function () {
-                    // refresh the whole page
-                    location.reload();
+                   // refresh the whole page
+                   location.reload();
+                },
+                onLoad: function() {
+                    initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
                 }
+
             });
 
             // we need to give the browser some time to close the old overlays before opening the new one
@@ -351,7 +401,8 @@ or implied, of GRNET S.A.
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
-                        <li class="invitations"><a class="action" href="#">{% trans "Invitations" %}</a></li>
+                        <li class="invitations"><a class="action" href="#">{% trans "invitations" %}</a></li>
+                        <li class="feedback"><a class="action" href="#">{% trans "feedback" %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -445,6 +496,8 @@ or implied, of GRNET S.A.
         }
 
         $(document).ready(function(){
+            
+            $(".close-msg-box").live('click', close_all_overlays);
 
             {% if current_lang == "el" and not DEBUG %}
                 window.location = "/lang/?l=en";
@@ -472,19 +525,27 @@ or implied, of GRNET S.A.
             });
 
             $(".usermenu .invitations").click(show_invitations);
-            
+            $(".usermenu .feedback").click(show_feedback_form);
+
         });
     </script>
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>
     <a id="msgbox" rel="#notification-box" href="#"></a>
+    <a id="feedbackbox" rel="#feedback-form" href="#"></a>
 
     <div class="modal" id="error-success">
         <h3 class="popup-header">
-            <span class="header-box"></span>
+            <span class="header-box">{% trans "Feedback form" %}</span>
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">
+                <div class="error-report">
+                    <div class="send-btn">{% trans "send error report" %}</div>
+                    <div class="sending">{% trans "sending...." %}</div>
+                    <div class="errormsg">{% trans "cannot send error report" %}</div>
+                    <div class="success">{% trans "report send successfully" %}</div>
+                </div>
                 <div class="machine-now-building"></div>
                 <div class="popup-separator"></div>
                 <div class="password-container">
@@ -499,7 +560,44 @@ or implied, of GRNET S.A.
         </div>
     </div>
 
-    <div class="modal" id="notification-box">
+    <div class="modal" id="feedback-form" class="feedback notification-box">
+        <h3 class="popup-header">
+            <span class="header-box">{% trans "Feedback form" %}</span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="form-container">
+                <p class="feedback-intro">
+                {% blocktrans %}
+                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
+                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
+                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
+                {% endblocktrans %}</p>
+                <form id="feedback-form">
+                    <label for="feedback-msg">{% trans "Feedback or question" %}</label>
+                    <div class="description">{% trans "please describe here .... blah blah blah" %}</div>
+                    <div class="empty-error-msg">{% trans "Please fill out the feedback form" %}</div>
+                    <textarea name="feedback-msg" class="feedback-text"></textarea>
+                    <input type="checkbox" name="submit-submit-data"/><label class="inline" for="submit-submit-data">{% trans "submit application data" %}</label>
+                    <div class="description">{% trans "describe what application data checkbox does" %}</div>
+                    <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
+                    <textarea name="feedback-data" class="data-text"></textarea>
+                </form>
+            </div>
+
+            <div class="message sending">{% trans "submiting your data....." %}</div>
+            <div class="message success">
+                {% trans "thank you for submiting your feedback" %}
+                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+            <div class="message errormsg">
+                {% trans "some error occured submiting submiting your feedback, please try again later" %}
+                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="notification-box" class="notification-box">
         <h3 class="popup-header">
             <span class="header-box"></span>
         </h3>

@@ -672,7 +672,6 @@ class ContainerGet(BaseTestCase):
         r = self.update_object(self.account,
                                     self.container[0],
                                     self.obj[0]['name'],
-                                    
                                     **meta)
         r = self.list_objects(self.account,
                           self.container[0],

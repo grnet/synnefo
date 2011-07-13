@@ -25,8 +25,9 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.5 (July 12, 2011)        Object update from another object's data.
+0.5 (July 14, 2011)        Object update from another object's data.
 \                          Support object truncate.
+\                          Create object using a standard HTML form.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -34,13 +35,13 @@ Revision                   Description
 0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
 \                          Allow for publicly available objects via ``https://hostname/public``.
 \                          Support time-variant account/container listings. 
-\                          Add source version when duplicating with PUT/COPY.
-\                          Request version in object HEAD/GET requests (list versions with GET).
+\                          Add source version when duplicating with ``PUT``/``COPY``.
+\                          Request version in object ``HEAD``/``GET`` requests (list versions with ``GET``).
 0.2 (May 31, 2011)         Add object meta listing and filtering in containers.
 \                          Include underlying storage characteristics in container meta.
-\                          Support for partial object updates through POST.
-\                          Expose object hashmaps through GET.
-\                          Support for multi-range object GET requests.
+\                          Support for partial object updates through ``POST``.
+\                          Expose object hashmaps through ``GET``.
+\                          Support for multi-range object ``GET`` requests.
 0.1 (May 17, 2011)         Initial release. Based on OpenStack Object Storage Developer Guide API v1 (Apr. 15, 2011).
 =========================  ================================
 
@@ -594,7 +595,7 @@ Request Parameter Name  Value
 format                  Optional extended request type (can be ``json``) to create the object by suppling its hashmap instead
 ======================  ===================================
 
-The request is the object's data (or part of it), except if a hashmap is provided with the ``format`` parameter.  If format is used and all different parts are stored in the server, the object is created otherwise the server returns Conflict (409) with the list of the missing parts. 
+The request is the object's data (or part of it), except if a hashmap is provided with the ``format`` parameter.  If format is used and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts. 
 
 Hashmaps expose the underlying storage format of the object.
 
@@ -725,6 +726,30 @@ Return Code                  Description
 416 (Range Not Satisfiable)  The supplied range is invalid
 ===========================  ==============================
 
+The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have exactly two fields, as in the following example. ::
+
+  <form method="post" action="https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt" enctype="multipart/form-data">
+    <input type="hidden" name="X-Auth-Token" value="0000">
+    <input type="file" name="X-Object-Data">
+    <input type="submit">
+  </form>
+
+This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data. Metadata, sharing and other object attributes can not be set this way.
+
+==========================  ===============================
+Reply Header Name           Value
+==========================  ===============================
+ETag                        The MD5 hash of the object
+==========================  ===============================
+
+|
+
+===========================  ==============================
+Return Code                  Description
+===========================  ==============================
+201 (Created)                The object has been created
+===========================  ==============================
+
 
 DELETE
 """"""
@@ -772,12 +797,14 @@ List of differences from the OOS API:
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
-* Multi-range object GET support as outlined in RFC2616.
-* Object hashmap retrieval through GET and the ``format`` parameter.
-* Partial object updates through POST, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
+* Multi-range object ``GET`` support as outlined in RFC2616.
+* Object hashmap retrieval through ``GET`` and the ``format`` parameter.
+* Object create via hashmap through ``PUT`` and the ``format`` parameter.
+* Object create using ``POST`` to support standard HTML forms.
+* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Object ``MOVE`` support.
 * Time-variant account/container listings via the ``until`` parameter.
-* Object versions - parameter ``version`` in HEAD/GET (list versions with GET), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in PUT/COPY.
+* Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
 * Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
 * Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Large object support with ``X-Object-Manifest``.

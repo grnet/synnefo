@@ -98,6 +98,8 @@ def object_demux(request, v_account, v_container, v_object):
     elif request.method == 'MOVE':
         return object_move(request, v_account, v_container, v_object)
     elif request.method == 'POST':
+        if request.META.get('CONTENT_TYPE', '').startswith('multipart/form-data'):
+            return object_write_form(request, v_account, v_container, v_object)
         return object_update(request, v_account, v_container, v_object)
     elif request.method == 'DELETE':
         return object_delete(request, v_account, v_container, v_object)
@@ -675,6 +677,42 @@ def object_write(request, v_account, v_container, v_object):
             raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Object does not exist')
+    
+    response = HttpResponse(status=201)
+    response['ETag'] = meta['hash']
+    return response
+
+@api_method('POST')
+def object_write_form(request, v_account, v_container, v_object):
+    # Normal Response Codes: 201
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404),
+    #                       unauthorized (401),
+    #                       badRequest (400)
+    
+    if not request.FILES.has_key('X-Object-Data'):
+        raise BadRequest('Missing X-Object-Data field')
+    file = request.FILES['X-Object-Data']
+    
+    meta = {}
+    meta['Content-Type'] = file.content_type
+    
+    md5 = hashlib.md5()
+    size = 0
+    hashmap = []
+    for data in file.chunks(backend.block_size):
+        size += len(data)
+        hashmap.append(backend.put_block(data))
+        md5.update(data)
+    
+    meta['hash'] = md5.hexdigest().lower()
+    
+    try:
+        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True)
+    except NotAllowedError:
+        raise Unauthorized('Access denied')
+    except NameError:
+        raise ItemNotFound('Container does not exist')
     
     response = HttpResponse(status=201)
     response['ETag'] = meta['hash']

@@ -39,7 +39,10 @@ from django.http import HttpResponse
 from django.utils.translation import get_language
 from django.utils import simplejson as json
 from django.shortcuts import render_to_response
+from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
+
+from synnefo.logic.email_send import send_async
 
 TIMEOUT = settings.TIMEOUT
 UPDATE_INTERVAL = settings.UPDATE_INTERVAL
@@ -177,6 +180,33 @@ def machines_connect(request):
 
     return response
 
+FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
+FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
+
+def feedback_submit(request):
+    message = request.POST.get("feedback-msg")
+    data = request.POST.get("feedback-data")
+
+    # default to True (calls from error pages)
+    allow_data_send = request.POST.get("feedback-submit-data", True)
+
+    mail_subject = _("Feedback from synnefo application")
+
+    mail_context = {'message': message, 'data': data, 'allow_data_send': allow_data_send, 'request': request}
+    mail_content = render_to_string("feedback_mail.txt", mail_context)
+
+    if settings.DEBUG:
+        print mail_subject, mail_content
+
+    for email in FEEDBACK_CONTACTS:
+        send_async(
+                frm = FEEDBACK_EMAIL_FROM,
+                to = "%s <%s>" % (email[0], email[1]),
+                subject = mail_subject,
+                body = mail_content
+        )
+
+    return HttpResponse("ok");
 
 def images(request):
     context = {}

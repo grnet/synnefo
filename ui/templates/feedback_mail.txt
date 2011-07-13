@@ -1,0 +1,9 @@
+Feedback message:
+{{ message }}
+
+User accepted data send:
+{{ allow_data_send }}
+
+User data:
+{{ data|safe }}
+

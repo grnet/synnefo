@@ -797,10 +797,6 @@ div.machine div.actions a.selected:hover {
     background-color:transparent;
 }
 
-div.running div.machine div.actions a.action-shutdown {
-    display: block;
-}
-
 div.machine div.actions a.shutdown-padding {
     margin-bottom: 22px;
 }

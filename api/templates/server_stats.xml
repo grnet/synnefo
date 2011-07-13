@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stats xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom" serverRef="{{ serverRef }}" refresh="{{ refresh }}" cpuBar="{{ cpuBar }}" cpuTimeSeries="{{ cpuTimeSeries }}" netBar="{{ netBar }}" netTimeSeries="{{ netTimeSeries }}">
+</stats>

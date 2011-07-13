@@ -4027,9 +4027,11 @@ div.state .shutdown, tbody.machines .shutdown {
     color: #fff;
     float: right;
     border: none;
-    padding: 5px 15px;
+    padding: 5px 16px;
     cursor: pointer;
     font-size: 0.9em;
+    position: relative;
+    right: 10px;
 }
 
 .popup-body .message {

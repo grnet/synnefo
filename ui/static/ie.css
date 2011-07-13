@@ -216,7 +216,7 @@ div.machine .actions .destroy {
 }
 
 #view-select {
-    top: -35px !important;
+    top: -30px !important;
     right: 10px;
 }
 
@@ -419,6 +419,11 @@ div#user .username {
     height: auto;
 }
 
+div#user .active .useractions {
+    border-right: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
+}
+
 div#user .usermenu .useractions {
     margin-top:5px;
 }
@@ -531,4 +536,8 @@ a.manage-metadata {
 .error-report {
     float: right;
     text-align: right;
+}
+
+#feedback-form .submit {
+    padding: 5px 10px;
 }

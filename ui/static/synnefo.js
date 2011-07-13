@@ -2190,7 +2190,6 @@ function show_feedback_form() {
 
 function get_user_data(extra_data) {
     return $.extend({
-        'cookie': $.cookie("X-Auth-Token"),
         'servers': $.extend({}, servers),
         'client': {'browser': $.browser, 'screen': $.extend({}, screen), 'client': $.client},
         'dates': {'now': new Date, 'lastUpdate': changes_since_date}

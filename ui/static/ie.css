@@ -163,7 +163,8 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 
 .single div.upper {
     height: 380px;
-    padding-top: 80px;
+    padding-top: 90px;
+    margin-top: 10px;
 }
 
 div.single-actions {
@@ -222,7 +223,7 @@ div.machine .actions .destroy {
 .running {
     height: 80px;
     padding-top: 70px;
-    margin-top: -70px;
+    margin-top: -68px;
 }
 
 .editbuttons {

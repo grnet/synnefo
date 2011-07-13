@@ -207,11 +207,10 @@ def status_job_finished (message):
 
 def dummy_proc(message):
     try:
-        msg = _logger.debug(message.body)
-        _logger.debug("Msg (exchange:%s) ", msg)
+        _logger.debug("Msg: %s" %(message.body))
         message.channel.basic_ack(message.delivery_tag)
     except Exception as e:
-        _logger.error("Could not receive message %s" % e.message)
+        _logger.exception("Could not receive message")
         pass
 
 def _parse_json(data):

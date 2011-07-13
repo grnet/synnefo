@@ -362,7 +362,7 @@ Synnefo deployment.
     daemon must be running on every node of type APISERVER.
 
     Download and install vncauthproxy from its own repository,
-    at https://code.grnet.gr/git/vncauthproxy (known good commit: 1c241b27b81).
+    at https://code.grnet.gr/git/vncauthproxy (known good commit: tag v1.0).
 
     Download and install a specific repository commit:
 
@@ -372,7 +372,7 @@ Synnefo deployment.
 
     Alternatively, you can build Debian packages. To do so,
     checkout the "debian" branch of the vncauthproxy repository
-    (known good commit:39f9b7047c):
+    (known good commit: tag debian/v1.0):
 
     $ git checkout debian
 
@@ -381,6 +381,20 @@ Synnefo deployment.
     $ dpkg-buildpackage -b -uc -us
     # dpkg -i ../vncauthproxy_1.0-1_all.deb
 
+    --Failure to build the package on the Mac.
+
+    libevent, a requirement for gevent which in turn is a requirement for
+    vncauthproxy is not included in MacOSX by default and installing it with
+    MacPorts does not lead to a version that can be found by the gevent
+    build process. A quick workaround is to execute the following commands:
+
+    cd $SYNNEFO
+    sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
+    <the above fails>
+    cd build/gevent
+    sudo python setup.py -I/opt/local/include -L/opt/local/lib build
+    cd $SYNNEFO
+    sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
 
 13. Installation of the customized Ganeti Instance Image for image deployment:
     For Synnefo to be able to launch VMs from specified Images, you need

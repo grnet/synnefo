@@ -242,13 +242,14 @@ div.css-panes {
 }
 
 #ie-fix {
-    z-index: 1000;
+    z-index: 600;
     position: relative;
 }
+
 #createcontainer {
     margin-top: 20px;
     margin-bottom: 10px;
-    z-index: 1000;
+    z-index: 800;
 }
 
 #create {
@@ -1867,23 +1868,55 @@ input.machine {
     margin-top: 15px;
 }
 
-#error-success, #notification-box {
+#error-success, .notification-box {
     z-index: 9999;
     border-bottom: 5px solid #4085A5;
     min-height: 150px;
-    top: 120px !important;
+    top: 50px !important;
     position: absolute !important;
 }
 
-#error-success p, #notification-box p {
+#error-success p, .notification-box p {
     margin-top: 5px;
 }
 
-#error-success strong, #notification-box strong {
+.error-report {
+    display: none;
+}
+
+#error-success .error-report {
+    position: absolute;
+    top: 140px;
+    right: 40px;
+}
+
+.error .error-report {
+    display: block;
+}
+
+#error-success .error-report .errormsg {
+    display: none;
+}
+
+#error-success .error-report .success {
+    display: none;
+}
+
+#error-success .error-report .sending {
+    display: none;
+}
+
+#error-success .error-report .send-btn {
+    color: #4085A5;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#error-success strong, .notification-box strong {
     color: #F49C1A;
 }
 
-#error-success .close, #notification-box .close {
+#error-success .close, .notification-box .close {
     background-image: url("./close-popup.png");
     background-repeat: no-repeat;
     cursor: pointer;
@@ -1911,7 +1944,7 @@ input.machine {
     margin-bottom: 5px !important;
 }
 
-#error-success .popup-header, #notification-box .popup-header {
+#error-success .popup-header, .notification-box .popup-header {
     background-color: #4085A5;
     color: white;
     font-size: 95%;
@@ -1927,7 +1960,7 @@ input.machine {
 }
 
 
-#error-success.success h3 span.header-box, #notification-box h3 span.header-box {
+#error-success.success h3 span.header-box, .notification-box h3 span.header-box {
     background-color: #71c837;
     display: block;
     background-image: url("./save-green.png");
@@ -1940,7 +1973,7 @@ input.machine {
     margin-left: -11px;
 }
 
-#error-success .popup-body, #notification-box .popup-body {
+#error-success .popup-body, .notification-box .popup-body {
     background: url("./popup-bg.png") repeat-x scroll 0 0 transparent;
     margin-left: -16px;
     margin-right: -16px;
@@ -1949,7 +1982,7 @@ input.machine {
     padding-top: 10px;
 }
 
-#error-success .popup-body-inner, #notification-box .popup-body-inner {
+#error-success .popup-body-inner, .notification-box .popup-body-inner {
     background: url("./popup-inner-bg.png") repeat-x scroll 0 0 transparent;
     font-size: 80%;
     min-height: 120px;
@@ -1958,7 +1991,7 @@ input.machine {
     width: 460px;
 }
 
-#error-success .popup-separator, #notification-box .popup-seperator {
+#error-success .popup-separator, .notification-box .popup-seperator {
     background-color: #74AEC9;
     height: 1px;
     font-size:1%;
@@ -1976,45 +2009,45 @@ input.machine {
     padding-bottom: 14px !important;
 }
 
-#error-success .password-container, #notification-box .password-container {
+#error-success .password-container, .notification-box .password-container {
     width: 430px;
     padding: 5px;
     border: 2px solid #75b54a;
     background-color: #aade87;
 }
 
-#error-success .password-header, #notification-box .password-header {
+#error-success .password-header, .notification-box .password-header {
     margin-bottom: 5px;
 }
 
-#error-success .password, #notification-box .password {
+#error-success .password, .notification-box .password {
     color: #447821;
 }
 
-#error-success .popup-details {
+#error-success .popup-details, .notification-box .popup-details {
     border: 2px solid #FF7F2A;
     float: left;
     margin-left: 10px;
     padding: 2px;
 }
 
-#error-success.success .popup-details {
+#error-success.success .popup-details, .notification-box .popup-details {
     border: none !important;
     float: none !important;
     margin-left: none !important;
     margin-top: 10px;
 }
 
-#error-success.success .popup-separator {
+#error-success.success .popup-separator, .notification-box .popup-seperator {
     margin-bottom: 14px !important;
 }
 
-#error-success .write-password {
+#error-success .write-password, .notification-box .write-password {
     margin-bottom: 5px;
     padding-left: 30px;
 }
 
-#error-success .write-password-password {
+#error-success .write-password-password, .notification-box .write-password-password {
     padding-left: 30px;
     color: #447821;
     display: inline;
@@ -2022,7 +2055,7 @@ input.machine {
     font-weight: bold;
 }
 
-#error-success .write-password-details {
+#error-success .write-password-details, .notification-box .write-password-details {
     font-size: 75%;
 }
 
@@ -2030,27 +2063,27 @@ input.machine {
     display: block;
 }
 
-#notification-box h3 span.header-box {
+.notification-box h3 span.header-box {
     background: transparent;
 }
 
-#notification-box .machine-now-building {
+.notification-box .machine-now-building {
     padding: 20px 0;
 }
 
-#notification-box .header-box {
+.notification-box .header-box {
     width: auto !important;
 }
 
-#notification-box .password {
+.notification-box .password {
     text-align: center;
 }
-#notification-box .password a:hover {
+.notification-box .password a:hover {
     background-color: #447821;
     color: #fff;
 }
 
-#notification-box .password a {
+.notification-box .password a {
     padding: 0.2em;
     text-align: center;
     color: #447821;
@@ -2205,7 +2238,7 @@ div#user{
     font-size: 75%;
     margin-top: 38px;
     padding-bottom: 10px;
-    z-index: 400;
+    z-index: 8000;
     position: absolute;
     right:0;
 }
@@ -2271,10 +2304,14 @@ div#user .active .useractions {
     border-top:1px solid #fff;
     position: relative;
     top: 1px;
+    box-shadow: 1px 1px 1px #aaa;
+    -moz-box-shadow: 1px 1px 1px #aaa;
+    -webkit-box-shadow: 1px 1px 1px #aaa;
+    z-index: 2000;
 }
 
 div#user .useractions li {
-    padding: 5px 10px;
+    padding: 2px 10px;
     border-bottom: 1px solid #efefef;
     text-align: right;
     display: block;
@@ -3942,4 +3979,81 @@ div.state .shutdown, tbody.machines .shutdown {
 
 .machine-container .separator {
     background-color: #B0D1E0;
+}
+
+#feedback-form .empty-error-msg {
+    display: none;
+}
+
+#feedback-form .data-text {
+    display: none;
+}
+
+#feedback-form .message {
+    display: none;
+}
+
+#feedback-form label {
+    display: block;
+}
+
+#feedback-form label.inline {
+    display: inline;
+    padding-left: 5px;
+}
+
+#feedback-form p {
+    padding: 1em 0;
+    color: #444;
+}
+
+#feedback-form .description {
+    font-style: italic;
+    font-size: 0.9em;
+    color: #888;
+    padding-left: 2px;
+}
+
+#feedback-form .feedback-text {
+    width: 98%;
+    height: 100px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#feedback-form  .submit {
+    margin-top: 10px;
+    background-color: #4085A5;
+    color: #fff;
+    float: right;
+    border: 1px solid #445566;
+    padding: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.popup-body .message {
+    padding: 20px 5px;
+    display: none;
+}
+
+.popup-body .loading {
+    color: #fff;
+}
+
+.popup-body .success {
+    color: #1F921A;
+}
+
+.popup-body .errormsg {
+    color: #E32424;
+}
+
+
+.close-msg-box {
+    display: block;
+    margin-top: 10px;
+    cursor: pointer;
+    color: #4085A5;
+    text-decoration: underline;
 }

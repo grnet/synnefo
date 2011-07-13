@@ -4011,7 +4011,7 @@ div.state .shutdown, tbody.machines .shutdown {
     font-style: italic;
     font-size: 0.9em;
     color: #888;
-    padding-left: 2px;
+    margin-top: 3px;
 }
 
 #feedback-form .feedback-text {
@@ -4019,6 +4019,10 @@ div.state .shutdown, tbody.machines .shutdown {
     height: 100px;
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+#feedback-form .submit-data {
+    display: none;
 }
 
 #feedback-form .submit, #invform .submit {
@@ -4040,6 +4044,11 @@ div.state .shutdown, tbody.machines .shutdown {
 
 #feedback-form .submit:hover, #invform .submit:hover {
     background-color: #549FC3;
+}
+
+.feedback-intro {
+    padding-right: 15px !important;
+    text-align: justify;
 }
 
 .popup-body .message {

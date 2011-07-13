@@ -16,7 +16,11 @@
 </head>
 <body>
 {% endif %}
-<div class="invitations-left">({% blocktrans with invitations_left as left %}{{ left }} left{% endblocktrans %})</div>
+<div class="invitations-left">({% blocktrans count invitations_left as left %}
+{{ left }} invitation left
+{% plural %}
+{{ left }} invitations left
+{% endblocktrans %})</div>
 <form action="/invitations/" method="post" id="invform">
     {% csrf_token %}
     

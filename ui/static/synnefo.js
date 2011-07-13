@@ -2311,7 +2311,7 @@ function show_invitations() {
         
         $(".invitations-left").hide();
         $("#notification-box .header-box").html("");
-        $("#notification-box .header-box").html("Invitations " + $($(".invitations-left")[0]).text());
+        $("#notification-box .header-box").html(window.INVITATIONS_TITLE + " " + $($(".invitations-left")[0]).text());
 
         form.submit(function(evn){
             evn.preventDefault();

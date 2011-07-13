@@ -73,10 +73,10 @@ or implied, of GRNET S.A.
         var UPDATE_INTERVAL = {{update_interval}};
         var LOGOUT_REDIRECT = undefined;
         var INVITATIONS_URL = "{% url invitations %}";
-        var INVITATIONS_TITLE = "{% trans "Invitations" %}";
+        var INVITATIONS_TITLE = "{% trans "Invite people" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
-        var FEEDBACK_TITLE = "{% trans "Feedback" %}";
+        var FEEDBACK_TITLE = "{% trans "Send us feedback" %}";
 
         // server statuses and transitions
         var STATUSES = {
@@ -401,8 +401,8 @@ or implied, of GRNET S.A.
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
-                        <li class="invitations"><a class="action" href="#">{% trans "invitations" %}</a></li>
-                        <li class="feedback"><a class="action" href="#">{% trans "feedback" %}</a></li>
+                        <li class="invitations"><a class="action" href="#">{% trans "invite people..." %}</a></li>
+                        <li class="feedback"><a class="action" href="#">{% trans "send us feedback..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -536,14 +536,14 @@ or implied, of GRNET S.A.
 
     <div class="modal" id="error-success">
         <h3 class="popup-header">
-            <span class="header-box">{% trans "Feedback form" %}</span>
+            <span class="header-box"></span>
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">
                 <div class="error-report">
-                    <div class="send-btn">{% trans "send error report" %}</div>
-                    <div class="sending">{% trans "sending...." %}</div>
-                    <div class="errormsg">{% trans "cannot send error report" %}</div>
+                    <div class="send-btn">{% trans "report error" %}</div>
+                    <div class="sending">{% trans "sending error report..." %}</div>
+                    <div class="errormsg">{% trans "report failed" %}</div>
                     <div class="success">{% trans "report send successfully" %}</div>
                 </div>
                 <div class="machine-now-building"></div>
@@ -562,24 +562,21 @@ or implied, of GRNET S.A.
 
     <div class="modal" id="feedback-form" class="feedback notification-box">
         <h3 class="popup-header">
-            <span class="header-box">{% trans "Feedback form" %}</span>
+            <span class="header-box">{% trans "Send us feedback" %}</span>
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">
                 <div class="form-container">
                 <p class="feedback-intro">
-                {% blocktrans %}
-                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
-                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
-                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
-                {% endblocktrans %}</p>
+                {% blocktrans %}~ okeanos is currently in alpha version and we would appreciate any kind of feedback.
+We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
                 <form id="feedback-form">
-                    <label for="feedback-msg">{% trans "Feedback or question" %}</label>
-                    <div class="description">{% trans "please describe here .... blah blah blah" %}</div>
-                    <div class="empty-error-msg">{% trans "Please fill out the feedback form" %}</div>
+                    <label for="feedback-msg">{% trans "Feedback message" %}</label>
+                    <div class="description">{% trans "Please describe your problem here, provide as many details as possible" %}</div>
+                    <div class="empty-error-msg">{% trans "" %}</div>
                     <textarea name="feedback-msg" class="feedback-text"></textarea>
-                    <input type="checkbox" name="submit-submit-data"/><label class="inline" for="submit-submit-data">{% trans "submit application data" %}</label>
-                    <div class="description">{% trans "describe what application data checkbox does" %}</div>
+
+                    <input type="checkbox" name="submit-submit-data" class='submit-data' />
                     <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
                     <textarea name="feedback-data" class="data-text"></textarea>
                 </form>

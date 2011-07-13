@@ -2116,6 +2116,14 @@ function msg_box(config) {
 
     var sel = function(s){return $(s, box)};
 
+    // reset texts
+    sel("h3 span.header-box").html("");
+    sel(".sub-text").html("");
+    sel(".password-container .password").html("");
+    sel("div.machine-now-building").html("");
+    
+
+    // apply msg box contents
     sel("h3 span.header-box").html(config.title);
     sel("div.machine-now-building").html(config.content);
     sel(".popup-header").removeClass("popup-header-error");
@@ -2163,7 +2171,6 @@ function msg_box(config) {
                 // no json response
                 // load html body
                 if (load_html) {
-                    sel("div.machine-now-building").html(data);
                     sel("div.machine-now-building").html(data);
                 } else {
 

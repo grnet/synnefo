@@ -200,8 +200,17 @@ Synnefo deployment.
 
         transaction-isolation = READ-COMMITTED
 
-        in the [mysql] section of /etc/mysql/my.cnf.
+        in the [mysqld] section of /etc/mysql/my.cnf.
 
+        Alternatively, make sure the following code fragment stays enabled
+        in settings.d/10-database.conf:
+
+            if DATABASES['default']['ENGINE'].endswith('mysql'):
+                DATABASES['default']['OPTIONS'] = {
+                        'init_command': 'SET storage_engine=INNODB; ' +
+                            'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED',
+                }
+          
    * PostgreSQL
      You need to install the PostgreSQL binaries:
      * Ubuntu - Debian

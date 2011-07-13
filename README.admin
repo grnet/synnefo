@@ -5,6 +5,12 @@ deployment. This document should be read *after* README.deploy, which contains
 step-by-step Synnefo deployment instructions.
 
 
+Database
+========
+
+MySQL: manage.py dbshell seems to ignore the setting of 'init_command'
+       in settings.DATABASES
+
 Reconciliation mechanism
 ========================
 

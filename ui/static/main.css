@@ -4021,21 +4021,24 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-bottom: 10px;
 }
 
-#feedback-form  .submit {
-    margin-top: 10px;
+#feedback-form .submit, #invform .submit {
     background-color: #4085A5;
     color: #fff;
-    float: right;
     border: none;
     padding: 5px 16px;
     cursor: pointer;
     font-size: 0.9em;
     position: relative;
+}
+
+#feedback .submit {
+    float: right;
     right: 10px;
+    margin-top: 10px;
 }
 
 
-#feedback-form  .submit:hover {
+#feedback-form .submit:hover, #invform .submit:hover {
     background-color: #549FC3;
 }
 

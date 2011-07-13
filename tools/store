@@ -47,7 +47,8 @@ import re
 import time as _time
 import os
 
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
+#DEFAULT_HOST = 'pithos.dev.grnet.gr'
+DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1'
 
 _cli_commands = {}

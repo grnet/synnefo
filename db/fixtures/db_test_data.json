@@ -132,7 +132,7 @@
         "model": "db.VirtualMachine",
         "pk": 30000,
         "fields": {
-            "owner": 30000,  
+            "owner": 30000,
             "name": "snf-1001",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",
@@ -142,7 +142,7 @@
             "operstate": "STARTED"
         }
     },
-{
+    {
         "model": "db.VirtualMachine",
         "pk": 30001,
         "fields": {
@@ -165,6 +165,20 @@
             "size" : 20,
             "vm" : 30000,
             "owner" : 30000
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 30002,
+        "fields": {
+            "owner": 30000,
+            "name": "snf-test-building",
+            "created": "2009-02-06 00:00:00",
+            "charged": "2010-02-06 00:00:00",
+            "sourceimage": 30000,
+            "hostid": "HAL-9000",
+            "flavor": 30000,
+            "operstate": "BUILD"
         }
     }
 ]

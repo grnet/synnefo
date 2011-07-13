@@ -33,6 +33,7 @@ from django.test.client import Client
 
 import invitations
 from synnefo.db.models import SynnefoUser
+from django.conf import settings
 
 
 class InvitationsTestCase(TestCase):
@@ -43,6 +44,9 @@ class InvitationsTestCase(TestCase):
         self.client = Client()
 
     def test_add_invitation(self):
+        """
+            Tests whether invitations can be added
+        """
         source = SynnefoUser.objects.filter(auth_token = self.token)[0]
         invitations.add_invitation(source, "Test", "test@gmail.com")
 
@@ -58,4 +62,18 @@ class InvitationsTestCase(TestCase):
         except invitations.AlreadyInvited:
             self.assertTrue(True)
 
-        # 
+    def test_get_invitee_level(self):
+        """
+            Checks whether invitation levels and their limits are being respected
+        """
+        source = SynnefoUser.objects.filter(auth_token = self.token)[0]
+
+        self.assertEqual(invitations.get_user_inv_level(source), -1)
+
+        inv = invitations.add_invitation(source, "Test", "test@gmail.com")
+        self.assertEqual(inv.target.max_invitations, settings.INVITATIONS_PER_LEVEL[0])
+        self.assertEqual(invitations.get_user_inv_level(inv.target), 0)
+
+        inv = invitations.add_invitation(inv.target, "Test2", "test2@gmail.com")
+        self.assertEqual(invitations.get_user_inv_level(inv.target), 1)
+        self.assertEqual(inv.target.max_invitations, settings.INVITATIONS_PER_LEVEL[1])

@@ -34,9 +34,12 @@ from synnefo.db.models import *
 from synnefo.logic import backend
 from synnefo.logic import credits
 from synnefo.logic import users
-from django.test import TestCase
-import time
+from synnefo.logic.utils import get_rsapi_state
 
+from django.test import TestCase
+from django.conf import settings
+
+import time
 import hashlib
 
 class CostsTestCase(TestCase):
@@ -127,6 +130,7 @@ class DebitAccountTestCase(TestCase):
 
         self.assertEqual(0, s_user.credit, 'SynnefoUser (pk=30000) should have zero credits (%d)' % ( s_user.credit, ))
 
+
 class AuthTestCase(TestCase):
     fixtures = [ 'db_test_data' ]
 
@@ -156,7 +160,123 @@ class AuthTestCase(TestCase):
         
         users.delete_user(self.user)
 
-        self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get, name = "jpage")
+        self.assertRaises(SynnefoUser.DoesNotExist, SynnefoUser.objects.get,
+                          name = "jpage")
+
+
+class ProcessOpStatusTestCase(TestCase):
+    fixtures = ['db_test_data']
+    msg_op = {
+        'instance': 'instance-name',
+        'type': 'ganeti-op-status',
+        'operation': 'OP_INSTANCE_STARTUP',
+        'jobId': 0,
+        'status': 'success',
+        'logmsg': 'unittest - simulated message'
+    }
+
+    def test_op_startup_success(self):
+        """Test notification for successful OP_INSTANCE_START"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_STARTUP'
+        msg['status'] = 'success'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'ACTIVE')
+
+    def test_op_shutdown_success(self):
+        """Test notification for successful OP_INSTANCE_SHUTDOWN"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_SHUTDOWN'
+        msg['status'] = 'success'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'STOPPED')
+
+    def test_op_reboot_success(self):
+        """Test notification for successful OP_INSTANCE_REBOOT"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_REBOOT'
+        msg['status'] = 'success'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'ACTIVE')
+
+    def test_op_create_success(self):
+        """Test notification for successful OP_INSTANCE_CREATE"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_CREATE'
+        msg['status'] = 'success'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'ACTIVE')
+
+    def test_op_remove_success(self):
+        """Test notification for successful OP_INSTANCE_REMOVE"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_REMOVE'
+        msg['status'] = 'success'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'DELETED')
+        self.assertTrue(vm.deleted)
+
+    def test_unknown_op(self):
+        """Test notification for unknown Ganeti op raises exception"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_SOMETHING_ELSE'
+        msg['status'] = 'success'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        self.assertRaises(VirtualMachine.InvalidBackendMsgError,
+                          backend.process_op_status,
+                          vm, msg["jobId"], msg["operation"],
+                          msg["status"], msg["logmsg"])
+
+    def test_op_create_error(self):
+        """Test notification for failed OP_INSTANCE_CREATE"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_CREATE'
+        msg['status'] = 'error'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'ERROR')
+        self.assertFalse(vm.deleted)
+
+    def test_remove_machine_in_error(self):
+        """Test notification for failed OP_INSTANCE_REMOVE, server in ERROR"""
+        msg = self.msg_op
+        msg['operation'] = 'OP_INSTANCE_REMOVE'
+        msg['status'] = 'error'
+
+        # This machine is initially in BUILD
+        vm = VirtualMachine.objects.get(pk=30002)
+        backend.process_op_status(vm, 0, "OP_INSTANCE_CREATE", "error", "test")
+        self.assertEquals(get_rsapi_state(vm), 'ERROR')
+
+        backend.process_op_status(vm, msg["jobId"], msg["operation"],
+                                  msg["status"], msg["logmsg"])
+        self.assertEquals(get_rsapi_state(vm), 'DELETED')
+        self.assertTrue(vm.deleted)
 
 
 class ProcessNetStatusTestCase(TestCase):

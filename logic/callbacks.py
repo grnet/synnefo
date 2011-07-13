@@ -40,6 +40,7 @@ from synnefo.logic import utils, backend, email_send, log
 
 _logger = log.get_logger("synnefo.dispatcher")
 
+
 def update_db(message):
     """Process the status of a VM based on a ganeti status message"""
     _logger.debug("Processing ganeti-op-status msg: %s", message.body)
@@ -67,12 +68,13 @@ def update_db(message):
     except VirtualMachine.InvalidBackendIdError:
         _logger.debug("Ignoring msg for unknown instance %s.",
                       msg["instance"])
+    except VirtualMachine.InvalidBackendMsgError, e:
+        _logger.debug("Ignoring msg of unknown type: %s.", e)
     except VirtualMachine.DoesNotExist:
         _logger.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
     except Exception as e:
-        _logger.error("Unexpected error:\n%s" %
-            "".join(traceback.format_exception(*sys.exc_info())))
+        _logger.exception("Unexpected error")
 
 
 def update_net(message):
@@ -102,8 +104,7 @@ def update_net(message):
         _logger.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
     except Exception as e:
-        _logger.error("Unexpected error:\n%s" %
-            "".join(traceback.format_exception(*sys.exc_info())))
+        _logger.exception("Unexpected error")
 
 
 def send_email(message):
@@ -112,16 +113,20 @@ def send_email(message):
     try:
         msg = json.loads(message.body)
 
-        email_send.send(sender=msg['frm'], recipient = msg['to'],
+        sent = email_send.send(sender=msg['frm'], recipient = msg['to'],
                         body=msg['body'], subject=msg['subject'])
-        message.channel.basic_ack(message.delivery_tag)
+
+        if not sent:
+            _logger.warn("Failed to send email to %s", msg['to'])
+        else:
+            message.channel.basic_ack(message.delivery_tag)
     except KeyError:
         _logger.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
     except socket.error as e:
         _logger.error("Cannot connect to SMTP server:%s\n", e)
     except Exception as e:
-        _logger.error("Unexpected error:%s\n", e)
+        _logger.exception("Unexpected error")
         raise
 
 
@@ -143,7 +148,7 @@ def trigger_status_update(message):
              return
 
         if msg["vmid"] == "":
-            _logger.error("Reconciliate message does not specify a VM id")
+            _logger.error("Reconciliation message does not specify a VM id")
             return
 
         vm = VirtualMachine.objects.get(id=msg["vmid"])
@@ -153,7 +158,7 @@ def trigger_status_update(message):
     except KeyError as k:
         _logger.error("Malformed incoming JSON, missing attributes: %s", k)
     except Exception as e:
-        _logger.error("Unexpected error:%s", e)
+        _logger.exception("Unexpected error")
 
 def status_job_finished (message):
     """
@@ -201,7 +206,7 @@ def status_job_finished (message):
     except KeyError as k:
         _logger.error("Malformed incoming JSON, missing attributes: %s", k)
     except Exception as e:
-        _logger.error("Unexpected error:%s"%e)
+        _logger.exception("Unexpected error")
 
 def dummy_proc(message):
     try:

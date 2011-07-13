@@ -40,6 +40,7 @@ from synnefo.logic import utils, backend, email_send, log
 
 _logger = log.get_logger("synnefo.dispatcher")
 
+
 def update_db(message):
     """Process the status of a VM based on a ganeti status message"""
     _logger.debug("Processing ganeti-op-status msg: %s", message.body)
@@ -67,6 +68,8 @@ def update_db(message):
     except VirtualMachine.InvalidBackendIdError:
         _logger.debug("Ignoring msg for unknown instance %s.",
                       msg["instance"])
+    except VirtualMachine.InvalidBackendMsgError, e:
+        _logger.debug("Ignoring msg of unknown type: %s.", e)
     except VirtualMachine.DoesNotExist:
         _logger.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
@@ -145,7 +148,7 @@ def trigger_status_update(message):
              return
 
         if msg["vmid"] == "":
-            _logger.error("Reconciliate message does not specify a VM id")
+            _logger.error("Reconciliation message does not specify a VM id")
             return
 
         vm = VirtualMachine.objects.get(id=msg["vmid"])

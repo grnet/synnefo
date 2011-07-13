@@ -50,6 +50,7 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
+@transaction.commit_on_success
 def process_op_status(vm, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
 
@@ -77,6 +78,15 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if status in ('canceled', 'error') and opcode == 'OP_INSTANCE_CREATE':
         utils.update_state(vm, 'ERROR')
+
+    # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
+    # when no instance exists at the Ganeti backend.
+    # See ticket #799 for all the details.
+    #
+    if (status == 'error' and opcode == 'OP_INSTANCE_REMOVE' and
+        vm.operstate == 'ERROR'):
+        vm.deleted = True
+
     # Any other notification of failure leaves the operating state unchanged
 
     vm.save()

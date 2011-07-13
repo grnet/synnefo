@@ -287,12 +287,14 @@ def drain_queue(queue):
     chan.basic_cancel(tag)
     chan.connection.close()
 
+
 def get_connection():
     conn = amqp.Connection( host=settings.RABBIT_HOST,
                         userid=settings.RABBIT_USERNAME,
                         password=settings.RABBIT_PASSWORD,
                         virtual_host=settings.RABBIT_VHOST)
     return conn
+
 
 def get_user_confirmation():
     ans = raw_input("Are you sure (N/y):")

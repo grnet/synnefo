@@ -68,7 +68,7 @@ def print_dict(d, exclude=()):
     margin = max(len(key) for key in d) + 1
 
     for key, val in sorted(d.items()):
-        if key in exclude:
+        if key in exclude or key.startswith('_'):
             continue
         print '%s: %s' % (key.rjust(margin), val)
 
@@ -76,20 +76,21 @@ def print_items(items, detail=False):
     for item in items:
         print '%d %s' % (item.id, item.name)
         if detail:
-            print_dict(item.__dict__, exclude=('id', 'name', '_state'))
+            print_dict(item.__dict__, exclude=('id', 'name'))
             print
 
 
 class Command(object):
-    category = ''
-    name = ''
+    group = '<group>'
+    name = '<command>'
     syntax = ''
     description = ''
     
-    def __init__(self, argv):
+    def __init__(self, exe, argv):
         parser = OptionParser()
-        parser.usage = '%%prog %s %s %s' % (self.category, self.name,
-                                            self.syntax)
+        syntax = '%s [options]' % self.syntax if self.syntax else '[options]'
+        parser.usage = '%s %s %s' % (exe, self.name, syntax)
+        parser.description = self.description
         self.add_options(parser)
         options, self.args = parser.parse_args(argv)
         
@@ -120,7 +121,7 @@ class Command(object):
 
 
 class ListServers(Command):
-    category = 'server'
+    group = 'server'
     name = 'list'
     syntax = '[server id]'
     description = 'list servers'
@@ -151,7 +152,7 @@ class ListServers(Command):
 
 
 class ListUsers(Command):
-    category = 'user'
+    group = 'user'
     name = 'list'
     syntax = '[user id]'
     description = 'list users'
@@ -169,7 +170,7 @@ class ListUsers(Command):
 
 
 class ListImages(Command):
-    category = 'image'
+    group = 'image'
     name = 'list'
     syntax = '[image id]'
     description = 'list images'
@@ -187,7 +188,7 @@ class ListImages(Command):
 
 
 class RegisterImage(Command):
-    category = 'image'
+    group = 'image'
     name = 'register'
     syntax = '<name> <backend id>'
     description = 'register an image'
@@ -212,10 +213,12 @@ class RegisterImage(Command):
             owner=user,
             backend_id=backend_id,
             public=self.public)
+        
+        print_items([image], detail=True)
 
 
 class ModifyImage(Command):
-    category = 'image'
+    group = 'image'
     name = 'modify'
     syntax = '<image id>'
     description = 'modify an image'
@@ -262,7 +265,7 @@ class ModifyImage(Command):
 
 
 class ModifyImageMeta(Command):
-    category = 'image'
+    group = 'image'
     name = 'meta'
     syntax = '<image id> [key[=val]]'
     description = 'get and manipulate image metadata'
@@ -306,53 +309,52 @@ class ModifyImageMeta(Command):
                 meta.delete()
 
 
-def print_categories(exe, categories):
-    print 'Usage: %s <category> <command> [args]' % exe
-    print
-    print 'Categories:'
-    for category in sorted(categories):
-        print '  %s' % category
+def print_usage(exe, groups, group=None, shortcut=False):
+    nop = Command(exe, [])
+    nop.parser.print_help()
+    if group:
+        groups = {group: groups[group]}
 
-def print_commands(exe, commands):
-    print 'Usage: %s <command> [args]' % exe
     print
     print 'Commands:'
-    for command, cls in sorted(commands.items()):
-        print '  %s %s' % (command.ljust(10), cls.description)
+    
+    for group, commands in sorted(groups.items()):
+        for command, cls in sorted(commands.items()):
+            name = '  %s %s' % (group, command)
+            print '%s %s' % (name.ljust(22), cls.description)
+        print
 
 
 def main():
-    categories = defaultdict(dict)
+    groups = defaultdict(dict)
     module = sys.modules[__name__]
     for name, cls in inspect.getmembers(module, inspect.isclass):
-        if issubclass(cls, Command) and cls != Command:
-            categories[cls.category][cls.name] = cls
+        if not issubclass(cls, Command) or cls == Command:
+            continue
+        groups[cls.group][cls.name] = cls
     
     argv = list(sys.argv)
     exe = basename(argv.pop(0))
-    snf, sep, rest = exe.partition('-')
-    if snf == 'snf' and sep and rest != 'admin':
-        category = rest
-        if category not in categories:
-            print 'Invalid alias'
-            sys.exit(1)
+    prefix, sep, suffix = exe.partition('-')
+    if sep and prefix == 'snf' and suffix in groups:
+        # Allow shortcut aliases like snf-image, snf-server, etc
+        group = suffix
     else:
-        category = argv.pop(0) if argv else None
-        if category:
-            exe = '%s %s' % (exe, category)
-    
-    if not category or category not in categories:
-        print_categories(exe, categories)
-        sys.exit(1)
+        group = argv.pop(0) if argv else None
+        if group in groups:
+            exe = '%s %s' % (exe, group)
+        else:
+            exe = '%s <group>' % exe
+            group = None
     
     command = argv.pop(0) if argv else None
     
-    if not command or command not in categories[category]:
-        print_commands(exe, categories[category])
+    if group not in groups or command not in groups[group]:
+        print_usage(exe, groups, group)
         sys.exit(1)
     
-    cls = categories[category][command]
-    cmd = cls(argv)
+    cls = groups[group][command]
+    cmd = cls(exe, argv)
     cmd.execute()
 
 

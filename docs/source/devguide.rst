@@ -816,7 +816,7 @@ Clarifications/suggestions:
 * Some processing is done in the variable part of all ``X-*-Meta-*`` headers. If it includes underscores, they will be converted to dashes and the first letter of all intra-dash strings will be capitalized.
 * A ``GET`` reply for a level will include all headers of the corresponding ``HEAD`` request.
 * To avoid conflicts between objects and virtual directory markers in container listings, it is recommended that object names do not end with the delimiter used.
-* The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired reply format. The parameter overrides the header.
+* The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired reply format. The parameter overrides the header (**TBD**).
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
 * In headers, dates are formatted according to RFC 1123. In extended information listings, dates are formatted according to ISO 8601.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.

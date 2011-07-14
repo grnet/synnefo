@@ -684,12 +684,12 @@ def request_serialization(request, format_allowed=False):
     elif format == 'xml':
         return 'xml'
     
-    for item in request.META.get('HTTP_ACCEPT', '').split(','):
-        accept, sep, rest = item.strip().partition(';')
-        if accept == 'application/json':
-            return 'json'
-        elif accept == 'application/xml' or accept == 'text/xml':
-            return 'xml'
+#     for item in request.META.get('HTTP_ACCEPT', '').split(','):
+#         accept, sep, rest = item.strip().partition(';')
+#         if accept == 'application/json':
+#             return 'json'
+#         elif accept == 'application/xml' or accept == 'text/xml':
+#             return 'xml'
     
     return 'text'
 

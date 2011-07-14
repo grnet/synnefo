@@ -39,13 +39,20 @@ Settings
 
 - OKEANOS_VIDEO_URL
   Vimeo flash url.
+  Make the following steps to retrieve the appropriate url
+
+  - open vimeo video page
+  - click on the embed button 
+    (on the right side of the video container)
+  - click on "old embed code" to view the flash embedable html code
+  - extract the url from <embed src="<video url>"
 
 
 Views
 -----
 The application contains 2 views. 
 
-The okeanos_site.views.intro that displays the okeanos logo
+The okeanos_site.views.intro that displays the ~okeanos logo
 and redirects to `OKEANOS_SITE_URL`.
 
 The okeanos_site.views.index that displays the introductory 
@@ -57,12 +64,21 @@ Templates
 ---------
 The content of the info blocks (who/why/what) are placed in
 templates/okeanos/pages directory.
-For test purposes the templates currently make use of the 
-`django.contrib.webdesign` template `lorem` tag.
 
 
 Urls
 ----
 The application contains a convenience `urls.py` file which
-extends the synnefo urlpatterns with two extra urls.
+extends the synnefo urlpatterns with two extra urls and modifies.
+
+
+Deploying synnefo with ~okeanos intro pages
+-------------------------------------------
+
+A sample configuration file with documented settings 
+modifications exists in okeanos_site/90-okeanos.conf.sample .
+
+The sample configuration file contains all settings needed
+for the smooth deployment of ~okeanos aplha release with no extra
+modifications on the synnefo application settings.
 

@@ -452,5 +452,9 @@ Synnefo deployment.
     use /var/log/synnefo.
 
 
-16. (Hopefully) Done
+16. Optionally, read the okeanos_site/README file to setup ~okeanos introductory 
+    site (intro, video/info pages).
+    
+17. (Hopefully) Done
+
 

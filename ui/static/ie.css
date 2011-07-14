@@ -13,6 +13,10 @@ div.machine div.actions a {
 }
 
 
+div.terminated .confirm-single {
+    margin-left: -120px;
+}
+
 div.machine {
     width: 528px;
     padding-bottom: 10px;
@@ -138,8 +142,20 @@ div.confirm_single {
     margin-right: -73px;
 }
 
+#machinesview-icon div.confirm_single {
+    margin-right: -70px;
+}
+
+div.terminated .confirm_single {
+    margin-right: 4px !important;
+}
+
 div.action_error {
     margin-left: 465px;
+}
+
+div.single .column3 {
+    top: 310px;
 }
 
 div.action_error button.details {
@@ -157,7 +173,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 }
 
 .single div.action-container {
-    width: 165px;
+    width: 195px;
     overflow: visible;
 }
 
@@ -170,10 +186,12 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
 div.single-actions {
     overflow: visible;
     width: 170px;
+    position: absolute;
+    top: 227px;
 }
 
 div.machine div.actions a {
-    width: 180px;
+    width: 190px;
 }
 
 #error-success .popup-body-inner {
@@ -181,8 +199,12 @@ div.machine div.actions a {
 }
     
 div.machine div.actions {
-    right: -183px;
-    width: 114px;
+    right: -193px;
+    width: 124px;
+}
+
+div.terminated div.machine div.actions {
+    width: 200px;
 }
 
 div.machine div.actions {
@@ -193,15 +215,20 @@ div.machine div.actions {
 
 div.machine .destroy .confirm_single {
     width: 130px;
+    margin-left: 7px;
 }
 
 div.machine .actions .destroy {
     position: absolute;
-    bottom:0;
+    bottom: -4px;
 }
 
 .single div.confirm_single {
-    margin-right: -19px;
+    margin-right: 10px;
+}
+
+.single .destroy div.confirm_single {
+    margin-right: 10px !important;
 }
 
 .single div.action_error {

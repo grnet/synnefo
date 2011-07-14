@@ -13,7 +13,7 @@ div.machine div.actions a {
 }
 
 
-div.terminated .confirm-single {
+div.terminated .confirm-single, div.vm-building .confirm-single {
     margin-left: -120px;
 }
 
@@ -146,7 +146,7 @@ div.confirm_single {
     margin-right: -70px;
 }
 
-div.terminated .confirm_single {
+div.terminated .confirm_single, .vm-building .confirm_single {
     margin-right: 4px !important;
 }
 
@@ -203,7 +203,7 @@ div.machine div.actions {
     width: 124px;
 }
 
-div.terminated div.machine div.actions {
+div.terminated div.machine div.actions, div.vm-building div.actions {
     width: 200px;
 }
 

@@ -5,11 +5,11 @@ INSTALLED_APPS = list(INSTALLED_APPS) + ['synnefo.okeanos_site']
 DEBUG = False
 
 # we redirect the user to the intro page of the project
-APP_INSTALL_URL = "/intro"
+APP_INSTALL_URL = "http://host:port/intro"
 
 # invitations only, no login page exists
 # redirect client to the intro page
-LOGIN_URL = "/intro"
+LOGIN_URL = "http://host:port/intro"
 
 # bypass Shibboleth authentication for /okeanos and /intro pages 
 # (they should be available to the public)

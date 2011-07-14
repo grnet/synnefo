@@ -453,8 +453,11 @@ Synnefo deployment.
 
 
 16. Optionally, read the okeanos_site/README file to setup ~okeanos introductory 
-    site (intro, video/info pages).
-    
+    site (intro, video/info pages). Please see okeanos_site/90-okeanos.sample
+    for a sample configuration file which overrides site-specific variables,
+    to be placed under settings.d/, after customization.
+
+
 17. (Hopefully) Done
 
 

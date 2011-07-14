@@ -4031,7 +4031,7 @@ div.state .shutdown, tbody.machines .shutdown {
     border: none;
     padding: 5px 16px;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 1em;
     position: relative;
 }
 

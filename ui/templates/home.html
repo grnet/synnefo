@@ -285,33 +285,37 @@ or implied, of GRNET S.A.
                 // clear previous callbacks
                 btn.unbind('click');
                 btn.click(function(){
-
                     // wrap in its own try catch to avoid retriggering ajax_error
-
                     try {
                         var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
                         var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
-                        
-                        $.ajax({
-                            url: FEEDBACK_URL,
-                            type: "POST",
-                            data: $.param(payload),
-                            beforeSend: function() {
-                                sel(".send-btn").hide();
-                                sel(".sending").fadeIn();
-                            },
-                            error: function() {
-                                sel(".sending").hide();
-                                sel(".errormsg").fadeIn();
-                            },
-                            success: function() {
-                                sel(".sending").hide();
-                                sel(".success").fadeIn();
-                            }
-                        });
 
+                        // we will close error overlay to display feedback form
+                        // set feedback pending flag to not reload the window url
+                        // unless the user is done with the feedback
+                        window.FEEDBACK_PENDING = true;
+
+                        $("a#notification").overlay().close();
+
+                        var errorCode = extra_data[0] || -10;
+                        var errorType = extra_data[1] || "Generic error";
+                        var errorAction = extra_data[2] || "noaction";
+                        var errorData = extra_data[3] || "";
+                            
+                        fdb_msg =   "Error report\n" +
+                                    "------------\n" + 
+                                    "Code: " + errorCode + "\n" + 
+                                    "Type: " + errorType + "\n" + 
+                                    "Action: " + errorAction + "\n" + 
+                                    "Data: " + errorData + "\n\n" + 
+                                    "Please describe the actions that triggered the error:\n";
+
+                        setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
                     } catch (err) {
-                        console.error(err);
+                        console.log(err);
+                        sel(".send-btn").hide();
+                        sel(".errormsg").fadeIn();
+                        window.FEEDBACK_PENDING = false;
                     }
                 });
             }
@@ -326,8 +330,11 @@ or implied, of GRNET S.A.
                 oneInstance: false,
                 load: false,
                 onClose: function () {
-                   // refresh the whole page
-                   location.reload();
+                    // user requested feedback from error page
+                    if (!window.FEEDBACK_PENDING) {
+                        // refresh the whole page
+                       location.reload();
+                    }
                 },
                 onLoad: function() {
                     initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
@@ -526,7 +533,7 @@ or implied, of GRNET S.A.
 
             $(".usermenu .invitations").click(show_invitations);
             $(".usermenu .feedback").click(show_feedback_form);
-
+                
         });
     </script>
     <!-- base notification for error/success reporting -->
@@ -573,7 +580,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
                 <form id="feedback-form">
                     <label for="feedback-msg">{% trans "Feedback message" %}</label>
                     <div class="description">{% trans "Please describe your problem here, provide as many details as possible" %}</div>
-                    <div class="empty-error-msg">{% trans "" %}</div>
+                    <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
                     <textarea name="feedback-msg" class="feedback-text"></textarea>
 
                     <input type="checkbox" name="submit-submit-data" class='submit-data' />

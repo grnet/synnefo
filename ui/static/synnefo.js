@@ -90,6 +90,19 @@ Object.prototype.toString = function(o){
    
 }
 
+// http://stackoverflow.com/questions/499126/jquery-set-cursor-position-in-text-area 
+$.fn.setCursorPosition = function(pos) {
+    if ($(this).get(0).setSelectionRange) {
+      $(this).get(0).setSelectionRange(pos, pos);
+    } else if ($(this).get(0).createTextRange) {
+      var range = $(this).get(0).createTextRange();
+      range.collapse(true);
+      range.moveEnd('character', pos);
+      range.moveStart('character', pos);
+      range.select();
+    }
+}
+
 // jquery show/hide events
 var _oldshow = $.fn.show;
 $.fn.show = function(speed, callback) {
@@ -2133,7 +2146,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
 
 
 // generic info box
-function show_feedback_form() {
+function show_feedback_form(msg, from_error) {
     var box = $("#feedback-form");
     box.addClass("notification-box");
 
@@ -2141,7 +2154,9 @@ function show_feedback_form() {
     box.find(".form-container").show();
     box.find("textarea").val("");
     box.find(".message").hide();
-
+    
+    var initial_msg = msg || undefined;
+    
     var triggers = $("a#feedbackbox").overlay({
         // some mask tweaks suitable for modal dialogs
         mask: '#666',
@@ -2149,14 +2164,19 @@ function show_feedback_form() {
         fixed: false,
         closeOnClick: false,
         oneInstance: false,
-        load: false,
-        onClose: function () {
-            // With partial refresh working properly,
-            // it is no longer necessary to refresh the whole page
-            // choose_view();
-        }
+        load: false
     });
+
     
+    if (initial_msg && from_error) {
+        // feedback form from ajax_error window
+        box.find("textarea").val(initial_msg);
+        $("a#feedbackbox").overlay().onClose(function(){window.location.reload()});
+        box.find("textarea").height(200);
+        $("a#feedbackbox").overlay().onLoad(function(){box.find("textarea").focus().setCursorPosition(500);});
+        
+    }
+
     $("#feedback-form form").unbind("submit");
     $("#feedback-form form").submit(function(event) {
         event.preventDefault();
@@ -2185,6 +2205,9 @@ function show_feedback_form() {
     });
     
     $("a#feedbackbox").data('overlay').load();
+
+    // reset feedback_pending for ajax_errors
+    window.FEEDBACK_PENDING = false;
     return false;
 }
 

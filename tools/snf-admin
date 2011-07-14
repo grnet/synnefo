@@ -56,7 +56,6 @@ def get_user(uid):
     try:
         uid = int(uid)
         return models.SynnefoUser.objects.get(id=uid)
-        servers = servers.filter(owner=user)
     except ValueError:
         return None
     except models.SynnefoUser.DoesNotExist:
@@ -71,6 +70,10 @@ def print_dict(d, exclude=()):
         if key in exclude or key.startswith('_'):
             continue
         print '%s: %s' % (key.rjust(margin), val)
+
+def print_item(item):
+    print '%d %s' % (item.id, item.name)
+    print_dict(item.__dict__, exclude=('id', 'name'))
 
 def print_items(items, detail=False):
     for item in items:
@@ -120,6 +123,8 @@ class Command(object):
             self.parser.print_help()
 
 
+# Server commands
+
 class ListServers(Command):
     group = 'server'
     name = 'list'
@@ -151,6 +156,8 @@ class ListServers(Command):
         print_items(servers, self.detail)
 
 
+# User commands
+
 class ListUsers(Command):
     group = 'user'
     name = 'list'
@@ -168,6 +175,48 @@ class ListUsers(Command):
             users = models.SynnefoUser.objects.order_by('id')
         print_items(users, self.detail)
 
+
+class ModifyUser(Command):
+    group = 'user'
+    name = 'modify'
+    syntax = '<user id>'
+    description = 'modify a user'
+    
+    def add_options(self, parser):
+        parser.add_option('--credit', dest='credit', metavar='VALUE',
+                            help='set user credits')
+        parser.add_option('--invitations', dest='invitations',
+                            metavar='VALUE', help='set max invitations')
+        parser.add_option('--realname', dest='realname', metavar='NAME',
+                            help='set real name of user')
+        parser.add_option('--type', dest='type', metavar='TYPE',
+                            help='set user type')
+        parser.add_option('--username', dest='username', metavar='NAME',
+                            help='set username')
+    
+    def main(self, user_id):
+        user = get_user(user_id)
+        
+        if self.credit:
+            user.credit = self.credit
+        if self.invitations:
+            user.max_invitations = self.invitations
+        if self.realname:
+            user.realname = self.realname
+        if self.type:
+            allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
+            if self.type not in allowed:
+                print 'Invalid type'
+                return
+            user.type = self.type
+        if self.username:
+            user.name = self.username
+        
+        user.save()
+        print_item(user)
+
+
+# Image commands
 
 class ListImages(Command):
     group = 'image'
@@ -214,7 +263,7 @@ class RegisterImage(Command):
             backend_id=backend_id,
             public=self.public)
         
-        print_items([image], detail=True)
+        print_item(image)
 
 
 class ModifyImage(Command):
@@ -249,7 +298,11 @@ class ModifyImage(Command):
         if self.backend_id:
             image.backend_id = self.backend_id
         if self.format:
-            image.format = format
+            allowed = [x[0] for x in models.Image.FORMATS]
+            if self.format not in allowed:
+                print 'Invalid format'
+                return
+            image.format = self.format
         if self.name:
             image.name = self.name
         if self.public:
@@ -257,11 +310,16 @@ class ModifyImage(Command):
         if self.private:
             image.public = False
         if self.state:
+            allowed = [x[0] for x in models.Image.IMAGE_STATES]
+            if self.state not in allowed:
+                print 'Invalid state'
+                return
             image.state = self.state
         if self.uid:
             image.owner = get_user(self.uid)
         
         image.save()
+        print_item(image)
 
 
 class ModifyImageMeta(Command):

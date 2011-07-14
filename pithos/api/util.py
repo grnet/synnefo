@@ -581,11 +581,10 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         if len(check) > 0:
             raise RangeNotSatisfiable('Requested range exceeds object limits')
         ret = 206
-        if_range = request.META.get('HTTP_IF_RANGE', '')
-        if if_range and if_range.startswith('If-Range:'):
-            if_range = if_range.split('If-Range:')[1]
+        if_range = request.META.get('HTTP_IF_RANGE')
+        if if_range:
             try:
-                # modification time has passed instead
+                # Modification time has passed instead.
                 last_modified = parse_http_date(if_range)
                 if last_modified != meta['modified']:
                     ranges = [(0, size)]
@@ -684,12 +683,12 @@ def request_serialization(request, format_allowed=False):
     elif format == 'xml':
         return 'xml'
     
-    for item in request.META.get('HTTP_ACCEPT', '').split(','):
-        accept, sep, rest = item.strip().partition(';')
-        if accept == 'application/json':
-            return 'json'
-        elif accept == 'application/xml' or accept == 'text/xml':
-            return 'xml'
+#     for item in request.META.get('HTTP_ACCEPT', '').split(','):
+#         accept, sep, rest = item.strip().partition(';')
+#         if accept == 'application/json':
+#             return 'json'
+#         elif accept == 'application/xml' or accept == 'text/xml':
+#             return 'xml'
     
     return 'text'
 

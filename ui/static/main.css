@@ -3995,6 +3995,8 @@ div.state .shutdown, tbody.machines .shutdown {
 
 #feedback-form label {
     display: block;
+    font-size: 0.85em;
+    font-weight: bold;
 }
 
 #feedback-form label.inline {
@@ -4005,13 +4007,13 @@ div.state .shutdown, tbody.machines .shutdown {
 #feedback-form p {
     padding: 1em 0;
     color: #444;
+    margin-bottom: 10px;
 }
 
 #feedback-form .description {
     font-style: italic;
     font-size: 0.9em;
     color: #888;
-    margin-top: 3px;
 }
 
 #feedback-form .feedback-text {

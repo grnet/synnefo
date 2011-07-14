@@ -50,6 +50,7 @@
 </div>
 
 <div class="footer">
+    {% comment %}
 <ul class="links clearfix">
     <li><a href="#">{% trans "About" %}</a></li>
     <li><a href="#">{% trans "Help" %}</a></li>
@@ -58,8 +59,9 @@
     <li><a href="#">{% trans "Privacy" %}</a></li>
     <li class="last"><a href="#">{% trans "Language" %} ^</a></li>
 </ul>
+{% endcomment %}
 <div class="bottom-text">
-    <p>{% trans "Copyright (C) 2011 Greek Research and Technology Network" %}</p>
+    <p>{% trans "Copyright (C) 2011" %} <a target="_blank" href="http://www.grnet.gr/">Greek Research and Technology Network</a></p>
 </div>
 </div>
 {% endblock %}

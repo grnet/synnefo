@@ -19,12 +19,21 @@
   font-size: 0;
 }
 
+.footer a {
+    color: #74AEC9;
+    text-decoration: underline;
+}
+
+.footer a:hover {
+    color: #4085A5;
+}
+
 body {
     background-image: url("../images/bg.png");
     background-repeat: repeat-x;
     font-size: 13px;
     font-family: verdana;
-    background-position: 0px -30px;
+    background-position: 0px -70px;
 }
 
 body.alt {
@@ -34,7 +43,7 @@ body.alt {
 .container {
     width: 870px;
     margin: 0 auto;
-    margin-top: 50px;
+    margin-top: 30px;
 }
 
 .inner {
@@ -77,7 +86,7 @@ body.alt {
     color: #fff;
     background-color: #74AEC9;
     border-left: 0px solid #92C1D7;
-    padding-left: 34px;
+    padding-left: 36px;
 }
 
 .inner .left ul li .close-button {
@@ -105,7 +114,7 @@ body.alt {
     color: #fff;
     background-color: #74AEC9;
     border-left: 30px solid #92C1D7;
-    padding-left: 34px;
+    padding-left: 36px;
     margin-left: -30px;
 }
 
@@ -135,7 +144,7 @@ body.alt {
 }
 
 .page.text h2 {
-    font-size: 2.2em;
+    font-size: 1.8em;
     color: #4085A5;
     margin-bottom: 0.5em;
     text-shadow: 1px 1px 0px #ddd;
@@ -146,15 +155,16 @@ body.alt {
 }
 
 .page.text p em {
-    color: #444;
+    color: #4C6A78;
     font-weight: bold;
 }
 
 .page.text h3 {
-    font-size: 1.3em;
-    color: #407087;
+    font-size: 1.1em;
+    color: #4C6A78;
+    font-weight: bold;
     margin-bottom: 0.5em;
-    margin-top: 0.3em;
+    margin-top: 1.5em;
 }
 
 .page.text h4 {
@@ -164,7 +174,8 @@ body.alt {
 }
 
 .page.text p {
-    font-size: 1.2em;
+    color: #213D4A;
+    font-size: 1.1em;
     margin-bottom: 1em;
     text-align: justify;
     line-height: 1.2em;
@@ -186,6 +197,10 @@ body.alt {
     text-align: center;
 }
 
+.logo img {
+    margin-left: 75px;
+}
+
 .inner-bottom {
     width: 100%;
 }
@@ -193,7 +208,7 @@ body.alt {
 .inner-bottom .testuser {
     display: none;
     background: #000;
-    margin-right: 20px;
+    margin-right: 40px;
     float: right;
     margin-top: 10px;
     margin-bottom: 20px;
@@ -204,14 +219,22 @@ body.alt {
     padding: 0.7em 5em;
     color: #fff;
     font-size: 1.2em;
-    background-color: #FF6600;
+    background-color: #FF7F2A;
     cursor: pointer;
-    text-shadow: 1px 1px 0px #444;
     margin-right: -20px;
 }
 
 .gotoapp:hover {
-    background-color: #D3702E;
+    background-color: #FF9955;
+}
+
+.page.text {
+    margin-right: 20px;
+    margin-top: 20px;
+}
+
+.inner-bottom.in-page .testuser {
+    margin-right: 60px;
 }
 
 .gotoapp {

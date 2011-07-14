@@ -23,7 +23,9 @@
                 li.addClass("selected");
                 li.addClass("current");
                 $(link.parent()).find(".close-button").css("visibility", "visible");
+                $(".inner-bottom").addClass("in-page");
             } else {
+                $(".inner-bottom").removeClass("in-page");
             }
             event.preventDefault();
             //location.hash = id;

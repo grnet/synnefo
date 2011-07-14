@@ -37,4 +37,6 @@ from django.conf import settings
 class DummyAuthMiddleware(object):
     def process_request(self, request):
         token = request.META.get('HTTP_X_AUTH_TOKEN', None)
+        if token is None and request.META.get('CONTENT_TYPE', '').startswith('multipart/form-data'):
+            token = request.POST.get('X-Auth-Token', None)
         request.user = settings.AUTH_TOKENS.get(token, None)

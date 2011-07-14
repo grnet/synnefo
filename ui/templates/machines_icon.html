@@ -638,6 +638,7 @@ function update_machines_view(data) {
         else if ( server.status != 'DELETED') {
             // clone the proper template and put basic values in
             var machine = $("#machinesview-icon.standard #machine-container-template").clone().attr("id", server.id).fadeIn("slow");
+
             machine.find(".scrollable").scrollable({vertical: true});
             machine.find("div.name span.name").text(server.name.substring(0,50));
             machine.find("span.imagetag").text(server_image);
@@ -657,11 +658,16 @@ function update_machines_view(data) {
                        machine.find('.state').removeClass().addClass('state error-state');
                 }
             }
+
             //show spinner if server is still building or rebooting
             if (server.status == 'BUILD') {
                 machine.find('.spinner').show();
                 machine.find('.state').removeClass().addClass('state build-state');
+                machine.addClass('vm-building');
+            } else {
+                machine.removeClass('vm-building');
             }
+
             if (server.status == 'REBOOT') {
                 machine.find('.spinner').show();
                 machine.find('.state').removeClass().addClass('state rebooting-state');

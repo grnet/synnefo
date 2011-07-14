@@ -73,10 +73,10 @@ or implied, of GRNET S.A.
         var UPDATE_INTERVAL = {{update_interval}};
         var LOGOUT_REDIRECT = undefined;
         var INVITATIONS_URL = "{% url invitations %}";
-        var INVITATIONS_TITLE = "{% trans "Invitations" %}";
+        var INVITATIONS_TITLE = "{% trans "Invite people" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
-        var FEEDBACK_TITLE = "{% trans "Feedback" %}";
+        var FEEDBACK_TITLE = "{% trans "Send us feedback" %}";
 
         // server statuses and transitions
         var STATUSES = {
@@ -285,33 +285,37 @@ or implied, of GRNET S.A.
                 // clear previous callbacks
                 btn.unbind('click');
                 btn.click(function(){
-
                     // wrap in its own try catch to avoid retriggering ajax_error
-
                     try {
                         var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
                         var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
-                        
-                        $.ajax({
-                            url: FEEDBACK_URL,
-                            type: "POST",
-                            data: $.param(payload),
-                            beforeSend: function() {
-                                sel(".send-btn").hide();
-                                sel(".sending").fadeIn();
-                            },
-                            error: function() {
-                                sel(".sending").hide();
-                                sel(".errormsg").fadeIn();
-                            },
-                            success: function() {
-                                sel(".sending").hide();
-                                sel(".success").fadeIn();
-                            }
-                        });
 
+                        // we will close error overlay to display feedback form
+                        // set feedback pending flag to not reload the window url
+                        // unless the user is done with the feedback
+                        window.FEEDBACK_PENDING = true;
+
+                        $("a#notification").overlay().close();
+
+                        var errorCode = extra_data[0] || -10;
+                        var errorType = extra_data[1] || "Generic error";
+                        var errorAction = extra_data[2] || "noaction";
+                        var errorData = extra_data[3] || "";
+                            
+                        fdb_msg =   "Error report\n" +
+                                    "------------\n" + 
+                                    "Code: " + errorCode + "\n" + 
+                                    "Type: " + errorType + "\n" + 
+                                    "Action: " + errorAction + "\n" + 
+                                    "Data: " + errorData + "\n\n" + 
+                                    "Please describe the actions that triggered the error:\n";
+
+                        setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
                     } catch (err) {
-                        console.error(err);
+                        console.log(err);
+                        sel(".send-btn").hide();
+                        sel(".errormsg").fadeIn();
+                        window.FEEDBACK_PENDING = false;
                     }
                 });
             }
@@ -326,8 +330,11 @@ or implied, of GRNET S.A.
                 oneInstance: false,
                 load: false,
                 onClose: function () {
-                   // refresh the whole page
-                   location.reload();
+                    // user requested feedback from error page
+                    if (!window.FEEDBACK_PENDING) {
+                        // refresh the whole page
+                       location.reload();
+                    }
                 },
                 onLoad: function() {
                     initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
@@ -401,8 +408,8 @@ or implied, of GRNET S.A.
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
-                        <li class="invitations"><a class="action" href="#">{% trans "invitations" %}</a></li>
-                        <li class="feedback"><a class="action" href="#">{% trans "feedback" %}</a></li>
+                        <li class="invitations"><a class="action" href="#">{% trans "invite people..." %}</a></li>
+                        <li class="feedback"><a class="action" href="#">{% trans "send us feedback..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -419,7 +426,7 @@ or implied, of GRNET S.A.
             </div>
             <div class="header-logo">
                 <a href="/">
-                    <img src="static/okeanos.png" alt="okeanos"/>
+                    <img src="static/okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
                 </a>
             </div>
         </div>
@@ -526,7 +533,7 @@ or implied, of GRNET S.A.
 
             $(".usermenu .invitations").click(show_invitations);
             $(".usermenu .feedback").click(show_feedback_form);
-
+                
         });
     </script>
     <!-- base notification for error/success reporting -->
@@ -536,14 +543,14 @@ or implied, of GRNET S.A.
 
     <div class="modal" id="error-success">
         <h3 class="popup-header">
-            <span class="header-box">{% trans "Feedback form" %}</span>
+            <span class="header-box"></span>
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">
                 <div class="error-report">
-                    <div class="send-btn">{% trans "send error report" %}</div>
-                    <div class="sending">{% trans "sending...." %}</div>
-                    <div class="errormsg">{% trans "cannot send error report" %}</div>
+                    <div class="send-btn">{% trans "report error" %}</div>
+                    <div class="sending">{% trans "sending error report..." %}</div>
+                    <div class="errormsg">{% trans "report failed" %}</div>
                     <div class="success">{% trans "report send successfully" %}</div>
                 </div>
                 <div class="machine-now-building"></div>
@@ -562,24 +569,21 @@ or implied, of GRNET S.A.
 
     <div class="modal" id="feedback-form" class="feedback notification-box">
         <h3 class="popup-header">
-            <span class="header-box">{% trans "Feedback form" %}</span>
+            <span class="header-box">{% trans "Send us feedback" %}</span>
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">
                 <div class="form-container">
                 <p class="feedback-intro">
-                {% blocktrans %}
-                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
-                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
-                Feedback form intro text ..... .. ... .. ..... .. .. . .. . .. .. .. ...... .. .
-                {% endblocktrans %}</p>
+                {% blocktrans %}~okeanos is currently in alpha version and we would appreciate any kind of feedback.
+We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
                 <form id="feedback-form">
-                    <label for="feedback-msg">{% trans "Feedback or question" %}</label>
-                    <div class="description">{% trans "please describe here .... blah blah blah" %}</div>
-                    <div class="empty-error-msg">{% trans "Please fill out the feedback form" %}</div>
+                    <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+                    <div class="description"></div>
+                    <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
                     <textarea name="feedback-msg" class="feedback-text"></textarea>
-                    <input type="checkbox" name="submit-submit-data"/><label class="inline" for="submit-submit-data">{% trans "submit application data" %}</label>
-                    <div class="description">{% trans "describe what application data checkbox does" %}</div>
+
+                    <input type="checkbox" name="submit-submit-data" class='submit-data' />
                     <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
                     <textarea name="feedback-data" class="data-text"></textarea>
                 </form>

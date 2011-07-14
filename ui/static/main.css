@@ -3995,6 +3995,8 @@ div.state .shutdown, tbody.machines .shutdown {
 
 #feedback-form label {
     display: block;
+    font-size: 0.85em;
+    font-weight: bold;
 }
 
 #feedback-form label.inline {
@@ -4005,13 +4007,13 @@ div.state .shutdown, tbody.machines .shutdown {
 #feedback-form p {
     padding: 1em 0;
     color: #444;
+    margin-bottom: 10px;
 }
 
 #feedback-form .description {
     font-style: italic;
     font-size: 0.9em;
     color: #888;
-    padding-left: 2px;
 }
 
 #feedback-form .feedback-text {
@@ -4021,15 +4023,34 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-bottom: 10px;
 }
 
-#feedback-form  .submit {
-    margin-top: 10px;
+#feedback-form .submit-data {
+    display: none;
+}
+
+#feedback-form .submit, #invform .submit {
     background-color: #4085A5;
     color: #fff;
-    float: right;
-    border: 1px solid #445566;
-    padding: 5px;
+    border: none;
+    padding: 5px 16px;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 1em;
+    position: relative;
+}
+
+#feedback .submit {
+    float: right;
+    right: 10px;
+    margin-top: 10px;
+}
+
+
+#feedback-form .submit:hover, #invform .submit:hover {
+    background-color: #549FC3;
+}
+
+.feedback-intro {
+    padding-right: 15px !important;
+    text-align: justify;
 }
 
 .popup-body .message {

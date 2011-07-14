@@ -4,6 +4,10 @@ Feedback message:
 User accepted data send:
 {{ allow_data_send }}
 
-User data:
+User info:
+ID: {{ request.user.id }}
+Email: {{ request.user.uniq }}
+
+User application data:
 {{ data|safe }}
 

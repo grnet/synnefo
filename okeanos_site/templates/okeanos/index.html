@@ -9,8 +9,8 @@
 {% block main %}
 <div class="container">
 <div class="logo">
-<a href="./" title="{% trans "~okeanos project" %}">
-<img src="{{ OKEANOS_STATIC_URL }}images/okeanos-logo.png" alt="{% trans "Okeanos project" %}" />
+    <a href="{% url okeanos_index %}" title="{% trans "~okeanos project" %}">
+<img src="{{ OKEANOS_STATIC_URL }}images/okeanos-logo-alpha.png" alt="{% trans "Okeanos project" %}" />
 </a>
 </div>
 
@@ -20,8 +20,8 @@
         <img class="banner-coming" src="{{ OKEANOS_STATIC_URL}}images/banner-coming2.png" alt="{% trans "Coming this fall" %}" />
         <ul class="menu">
             <li><a href="#video" class="close-button">X</a><a href="#what" class="page-link">{% trans "What ?" %}</a></li>
-            <li><a href="#video" class="close-button">X</a><a href="#why" class="page-link">{% trans "Why ?" %}</a></li>
-            <li class="last"><a href="#video" class="close-button">X</a><a href="#who" class="page-link">{% trans "Who ?" %}</a></li>
+            <li><a href="#video" class="close-button">X</a><a href="#who" class="page-link">{% trans "Who ?" %}</a></li>
+            <li class="last"><a href="#video" class="close-button">X</a><a href="#why" class="page-link">{% trans "Why ?" %}</a></li>
         </div>
         <div class="page-cont">
             <div class="page-wrapper">
@@ -50,6 +50,7 @@
 </div>
 
 <div class="footer">
+    {% comment %}
 <ul class="links clearfix">
     <li><a href="#">{% trans "About" %}</a></li>
     <li><a href="#">{% trans "Help" %}</a></li>
@@ -58,8 +59,9 @@
     <li><a href="#">{% trans "Privacy" %}</a></li>
     <li class="last"><a href="#">{% trans "Language" %} ^</a></li>
 </ul>
+{% endcomment %}
 <div class="bottom-text">
-    <p>{% trans "Copyright (C) 2011 Greek Research and Technology Network" %}</p>
+    <p>{% trans "Copyright (C) 2011" %} <a target="_blank" href="http://www.grnet.gr/">Greek Research and Technology Network</a></p>
 </div>
 </div>
 {% endblock %}

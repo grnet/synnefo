@@ -13,7 +13,7 @@ LOGIN_URL = "/intro"
 
 # bypass Shibboleth authentication for /okeanos and /intro pages 
 # (they should be available to the public)
-AAI_SKIP_AUTH_URLS = list(AAI_SKIP_AUTH_URLS) + ['/about', '/intro']
+AAI_SKIP_AUTH_URLS = list(AAI_SKIP_AUTH_URLS) + ['/about', '/intro', '/okeanos_static']
 
 # change django url configuration
 # okeanos_site.urls includes and extends/modifies synnefo.urls

@@ -46,6 +46,7 @@ import logging
 import sys
 
 from collections import defaultdict
+from itertools import product
 from optparse import OptionParser
 from os.path import basename
 
@@ -434,6 +435,67 @@ class ModifyImageMeta(Command):
             # Delete if val is empty
             if meta:
                 meta.delete()
+
+
+# Flavor commands
+
+class CreateFlavor(Command):
+    group = 'flavor'
+    name = 'create'
+    syntax = '<cpu>[,<cpu>,...] <ram>[,<ram>,...] <disk>[,<disk>,...]'
+    description = 'create one or more flavors'
+    
+    def main(self, cpu, ram, disk):
+        cpus = cpu.split(',')
+        rams = ram.split(',')
+        disks = disk.split(',')
+        
+        flavors = []
+        for cpu, ram, disk in product(cpus, rams, disks):
+            try:
+                flavors.append((int(cpu), int(ram), int(disk)))
+            except ValueError:
+                print 'Invalid values'
+                return
+        
+        created = []
+        for cpu, ram, disk in flavors:
+            flavor = models.Flavor.objects.create(cpu=cpu, ram=ram, disk=disk)
+            created.append(flavor)
+        
+        print_items(created, detail=True)
+
+
+class DeleteFlavor(Command):
+    group = 'flavor'
+    name = 'delete'
+    syntax = '<flavor id> [<flavor id>] [...]'
+    description = 'delete one or more flavors'
+    
+    def main(self, *args):
+        if not args:
+            raise TypeError
+        for flavor_id in args:
+            flavor = models.Flavor.objects.get(id=int(flavor_id))
+            flavor.delete()
+
+
+class ListFlavors(Command):
+    group = 'flavor'
+    name = 'list'
+    syntax = '[flavor id]'
+    description = 'list images'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail',
+                        default=False, help='show detailed output')
+    
+    def main(self, flavor_id=None):
+        if flavor_id:
+            flavors = [models.Flavor.objects.get(id=flavor_id)]
+        else:
+            flavors = models.Flavor.objects.order_by('id')
+        print_items(flavors, self.detail)
 
 
 def print_usage(exe, groups, group=None, shortcut=False):

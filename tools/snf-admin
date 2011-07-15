@@ -88,6 +88,7 @@ class Command(object):
     name = '<command>'
     syntax = ''
     description = ''
+    hidden = False
     
     def __init__(self, exe, argv):
         parser = OptionParser()
@@ -158,6 +159,70 @@ class ListServers(Command):
 
 # User commands
 
+class CreateUser(Command):
+    group = 'user'
+    name = 'create'
+    syntax = '<user name>'
+    description = 'create a user'
+    
+    def add_options(self, parser):
+        parser.add_option('--credit', dest='credit', metavar='VALUE',
+                            help='set user credits')
+        parser.add_option('--invitations', dest='invitations',
+                            metavar='VALUE', help='set max invitations')
+        parser.add_option('--realname', dest='realname', metavar='NAME',
+                            help='set real name of user')
+        parser.add_option('--type', dest='type', metavar='TYPE',
+                            help='set user type')
+        parser.add_option('--uniq', dest='uniq', metavar='ID',
+                            help='set external unique ID')
+    
+    def main(self, username):
+        user = models.SynnefoUser(name=username)
+        user.credit = self.credit if self.credit else 0
+        user.max_invitations = self.invitations if self.invitations else 0
+        user.realname = self.realname if self.realname else username
+        
+        if self.type:
+            allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
+            if self.type not in allowed:
+                print 'Invalid type'
+                return
+            user.type = self.type
+        else:
+            user.type = 'USER'
+        
+        if self.uniq:
+            user.uniq = self.uniq
+        
+        user.save()
+        print_item(user)
+
+
+class DeleteUser(Command):
+    group = 'user'
+    name = 'delete'
+    syntax = '<user id>'
+    description = 'delete a user'
+    hidden = True
+    
+    def add_options(self, parser):
+        parser.add_option('--force', action='store_true', dest='force',
+                        default=False, help='force deletion (use with care)')
+    
+    def main(self, user_id):
+        if not self.force:
+            print "WARNING: Deleting a user is a very destructive operation."
+            print "Any objects with foreign keys pointing to this user will" \
+                    " be deleted as well."
+            print "Use --force to force deletion of this user."
+            print "You have been warned!"
+            return
+        
+        user = get_user(user_id)
+        user.delete()
+
+
 class ListUsers(Command):
     group = 'user'
     name = 'list'
@@ -191,6 +256,8 @@ class ModifyUser(Command):
                             help='set real name of user')
         parser.add_option('--type', dest='type', metavar='TYPE',
                             help='set user type')
+        parser.add_option('--uniq', dest='uniq', metavar='ID',
+                            help='set external unique ID')
         parser.add_option('--username', dest='username', metavar='NAME',
                             help='set username')
     
@@ -209,6 +276,8 @@ class ModifyUser(Command):
                 print 'Invalid type'
                 return
             user.type = self.type
+        if self.uniq:
+            user.uniq = self.uniq
         if self.username:
             user.name = self.username
         
@@ -378,6 +447,8 @@ def print_usage(exe, groups, group=None, shortcut=False):
     
     for group, commands in sorted(groups.items()):
         for command, cls in sorted(commands.items()):
+            if cls.hidden:
+                continue
             name = '  %s %s' % (group, command)
             print '%s %s' % (name.ljust(22), cls.description)
         print

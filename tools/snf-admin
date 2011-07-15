@@ -51,6 +51,8 @@ from optparse import OptionParser
 from os.path import basename
 
 from synnefo.db import models
+from synnefo.invitations.invitations import add_invitation, send_invitation
+from synnefo.logic.users import _register_user, delete_user
 
 
 def get_user(uid):
@@ -163,40 +165,23 @@ class ListServers(Command):
 class CreateUser(Command):
     group = 'user'
     name = 'create'
-    syntax = '<user name>'
+    syntax = '<username> <email>'
     description = 'create a user'
     
     def add_options(self, parser):
-        parser.add_option('--credit', dest='credit', metavar='VALUE',
-                            help='set user credits')
-        parser.add_option('--invitations', dest='invitations',
-                            metavar='VALUE', help='set max invitations')
         parser.add_option('--realname', dest='realname', metavar='NAME',
                             help='set real name of user')
         parser.add_option('--type', dest='type', metavar='TYPE',
                             help='set user type')
-        parser.add_option('--uniq', dest='uniq', metavar='ID',
-                            help='set external unique ID')
     
-    def main(self, username):
-        user = models.SynnefoUser(name=username)
-        user.credit = self.credit if self.credit else 0
-        user.max_invitations = self.invitations if self.invitations else 0
-        user.realname = self.realname if self.realname else username
+    def main(self, username, email):
+        realname = self.realname or username
+        type = self.type or 'USER'
+        if type not in [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]:
+            print 'Invalid type'
+            return
         
-        if self.type:
-            allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
-            if self.type not in allowed:
-                print 'Invalid type'
-                return
-            user.type = self.type
-        else:
-            user.type = 'USER'
-        
-        if self.uniq:
-            user.uniq = self.uniq
-        
-        user.save()
+        user = _register_user(realname, username, email, type)
         print_item(user)
 
 
@@ -212,16 +197,27 @@ class DeleteUser(Command):
                         default=False, help='force deletion (use with care)')
     
     def main(self, user_id):
-        if not self.force:
+        if self.force:
+            user = get_user(user_id)
+            delete_user(user)
+        else:
             print "WARNING: Deleting a user is a very destructive operation."
             print "Any objects with foreign keys pointing to this user will" \
                     " be deleted as well."
             print "Use --force to force deletion of this user."
             print "You have been warned!"
-            return
-        
-        user = get_user(user_id)
-        user.delete()
+
+
+class InviteUser(Command):
+    group = 'user'
+    name = 'invite'
+    syntax = '<inviter id> <invitee name> <invitee email>'
+    description = 'invite a user'
+    
+    def main(self, inviter_id, name, email):
+        inviter = get_user(inviter_id)
+        inv = add_invitation(inviter, name, email)
+        send_invitation(inv)
 
 
 class ListUsers(Command):

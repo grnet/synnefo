@@ -258,7 +258,7 @@ def get_invitee_level(source):
 def get_user_inv_level(u):
     inv = Invitations.objects.filter(target = u)
 
-    if inv is None:
+    if not inv:
         raise Exception("User without invitation", u)
 
     return inv[0].level

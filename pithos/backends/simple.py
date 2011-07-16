@@ -325,8 +325,8 @@ class SimpleBackend(BaseBackend):
         count = self._get_pathstats(path)[0]
         if count > 0:
             raise IndexError('Container is not empty')
-        sql = 'delete from versions where name like ?' # May contain hidden items.
-        self.con.execute(sql, (path + '/%',))
+        sql = 'delete from versions where name = ? or name like ?' # May contain hidden items.
+        self.con.execute(sql, (path, path + '/%',))
         sql = 'delete from policy where name = ?'
         self.con.execute(sql, (path,))
         self._copy_version(user, account, account, True, True) # New account version (for timestamp update).
@@ -574,7 +574,7 @@ class SimpleBackend(BaseBackend):
             until = int(time.time())
         sql = '''select version_id, name, tstamp, size from versions v
                     where version_id = (select max(version_id) from versions
-                                        where v.name = name and tstamp <= ?)
+                                        where v.name = name and tstamp <= %s)
                     and hide = 0'''
         return sql % (until,)
     

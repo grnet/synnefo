@@ -25,9 +25,10 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.5 (July 14, 2011)        Object update from another object's data.
+0.5 (July 16, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
+\                          Purge container/object history.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -55,7 +56,7 @@ The URI requests supported by the Pithos API follow one of the following forms:
 * Container level: ``https://hostname/v1/<account>/<container>``
 * Object level: ``https://hostname/v1/<account>/<container>/<object>``
 
-All requests must include an ``X-Auth-Token``. The process of obtaining the token is still to be determined (**TBD**).
+All requests must include an ``X-Auth-Token`` - as a header, or a parameter. The process of obtaining the token is still to be determined (**TBD**).
 
 The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
@@ -400,7 +401,13 @@ Return Code       Description
 DELETE
 """"""
 
-No request parameters/headers.
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+until                   Optional timestamp
+======================  ===================================
+
+If ``until`` is defined, the container is "purged" up to that time (the history of all objects up to then is deleted).
 
 No reply content/headers.
 
@@ -763,7 +770,13 @@ Return Code                  Description
 DELETE
 """"""
 
-No request parameters/headers.
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+until                   Optional timestamp
+======================  ===================================
+
+If ``until`` is defined, the object is "purged" up to that time (the history up to then is deleted).
 
 No reply content/headers.
 
@@ -818,6 +831,7 @@ List of differences from the OOS API:
 * Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.
+* Purge container/object history with the ``until`` parameter in ``DELETE``.
 
 Clarifications/suggestions:
 

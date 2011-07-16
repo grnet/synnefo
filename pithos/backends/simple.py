@@ -35,12 +35,11 @@ import os
 import time
 import sqlite3
 import logging
-import types
 import hashlib
-import shutil
-import pickle
+import binascii
 
 from base import NotAllowedError, BaseBackend
+from pithos.lib.hashfiler import Mapper, Blocker
 
 
 logger = logging.getLogger(__name__)
@@ -52,19 +51,19 @@ class SimpleBackend(BaseBackend):
     Uses SQLite for storage.
     """
     
-    # TODO: Automatic/manual clean-up after a time interval.
-    
     def __init__(self, db):
-        self.hash_algorithm = 'sha1'
-        self.block_size = 128 * 1024 # 128KB
+        self.hash_algorithm = 'sha256'
+        self.block_size = 4 * 1024 * 1024 # 4MB
         
         self.default_policy = {'quota': 0, 'versioning': 'auto'}
         
         basepath = os.path.split(db)[0]
         if basepath and not os.path.exists(basepath):
             os.makedirs(basepath)
+        if not os.path.isdir(basepath):
+            raise RuntimeError("Cannot open database at '%s'" % (db,))
         
-        self.con = sqlite3.connect(db, check_same_thread=False)
+        self.con = sqlite3.connect(basepath + '/db', check_same_thread=False)
         
         sql = '''pragma foreign_keys = on'''
         self.con.execute(sql)
@@ -85,17 +84,6 @@ class SimpleBackend(BaseBackend):
                     foreign key (version_id) references versions(version_id)
                     on delete cascade)'''
         self.con.execute(sql)
-        sql = '''create table if not exists hashmaps (
-                    version_id integer,
-                    pos integer,
-                    block_id text,
-                    primary key (version_id, pos)
-                    foreign key (version_id) references versions(version_id)
-                    on delete cascade)'''
-        self.con.execute(sql)
-        sql = '''create table if not exists blocks (
-                    block_id text, data blob, primary key (block_id))'''
-        self.con.execute(sql)
         
         sql = '''create table if not exists policy (
                     name text, key text, value text, primary key (name, key))'''
@@ -111,6 +99,15 @@ class SimpleBackend(BaseBackend):
                     name text, primary key (name))'''
         self.con.execute(sql)
         self.con.commit()
+        
+        params = {'blocksize': self.block_size,
+                  'blockpath': basepath + '/blocks',
+                  'hashtype': self.hash_algorithm}
+        self.blocker = Blocker(**params)
+        
+        params = {'mappath': basepath + '/maps',
+                  'namelen': self.blocker.hashlen}
+        self.mapper = Mapper(**params)
     
     def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata."""
@@ -154,7 +151,7 @@ class SimpleBackend(BaseBackend):
         logger.debug("update_account_meta: %s %s %s", account, meta, replace)
         if user != account:
             raise NotAllowedError
-        self._put_metadata(user, account, meta, replace)
+        self._put_metadata(user, account, meta, replace, False)
     
     def get_account_groups(self, user, account):
         """Return a dictionary with the user groups defined for this account."""
@@ -254,7 +251,7 @@ class SimpleBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container)
-        self._put_metadata(user, path, meta, replace)
+        self._put_metadata(user, path, meta, replace, False)
     
     def get_container_policy(self, user, account, container):
         """Return a dictionary with the container policy."""
@@ -329,7 +326,7 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql, (path, path + '/%',))
         sql = 'delete from policy where name = ?'
         self.con.execute(sql, (path,))
-        self._copy_version(user, account, account, True, True) # New account version (for timestamp update).
+        self._copy_version(user, account, account, True, False) # New account version (for timestamp update).
     
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
@@ -421,10 +418,8 @@ class SimpleBackend(BaseBackend):
         logger.debug("get_object_hashmap: %s %s %s %s", account, container, name, version)
         self._can_read(user, account, container, name)
         path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name, version)
-        sql = 'select block_id from hashmaps where version_id = ? order by pos asc'
-        c = self.con.execute(sql, (version_id,))
-        hashmap = [x[0] for x in c.fetchall()]
-        return size, hashmap
+        hashmap = self.mapper.map_retr(version_id)
+        return size, [binascii.hexlify(x) for x in hashmap]
     
     def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes."""
@@ -433,12 +428,7 @@ class SimpleBackend(BaseBackend):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
-        missing = []
-        for i in range(len(hashmap)):
-            sql = 'select count(*) from blocks where block_id = ?'
-            c = self.con.execute(sql, (hashmap[i],))
-            if c.fetchone()[0] == 0:
-                missing.append(hashmap[i])
+        missing = self.blocker.block_ping([binascii.unhexlify(x) for x in hashmap])
         if missing:
             ie = IndexError()
             ie.data = missing
@@ -450,10 +440,7 @@ class SimpleBackend(BaseBackend):
         src_version_id, dest_version_id = self._copy_version(user, path, path, not replace_meta, False)
         sql = 'update versions set size = ? where version_id = ?'
         self.con.execute(sql, (size, dest_version_id))
-        # TODO: Check for block_id existence.
-        for i in range(len(hashmap)):
-            sql = 'insert or replace into hashmaps (version_id, pos, block_id) values (?, ?, ?)'
-            self.con.execute(sql, (dest_version_id, i, hashmap[i]))
+        self.mapper.map_stor(dest_version_id, [binascii.unhexlify(x) for x in hashmap])
         for k, v in meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
@@ -536,24 +523,17 @@ class SimpleBackend(BaseBackend):
         """Return a block's data."""
         
         logger.debug("get_block: %s", hash)
-        c = self.con.execute('select data from blocks where block_id = ?', (hash,))
-        row = c.fetchone()
-        if row:
-            return str(row[0])
-        else:
+        blocks = self.blocker.block_retr((binascii.unhexlify(hash),))
+        if not blocks:
             raise NameError('Block does not exist')
+        return blocks[0]
     
     def put_block(self, data):
         """Create a block and return the hash."""
         
         logger.debug("put_block: %s", len(data))
-        h = hashlib.new(self.hash_algorithm)
-        h.update(data.rstrip('\x00'))
-        hash = h.hexdigest()
-        sql = 'insert or ignore into blocks (block_id, data) values (?, ?)'
-        self.con.execute(sql, (hash, buffer(data)))
-        self.con.commit()
-        return hash
+        hashes, absent = self.blocker.block_stor((data,))
+        return binascii.hexlify(hashes[0])
     
     def update_block(self, hash, data, offset=0):
         """Update a known block and return the hash."""
@@ -561,12 +541,8 @@ class SimpleBackend(BaseBackend):
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
-        src_data = self.get_block(hash)
-        bs = self.block_size
-        if offset < 0 or offset > bs or offset + len(data) > bs:
-            raise IndexError('Offset or data outside block limits')
-        dest_data = src_data[:offset] + data + src_data[offset + len(data):]
-        return self.put_block(dest_data)
+        h, e = self.blocker.block_delta(binascii.unhexlify(hash), ((offset, data),))
+        return binascii.hexlify(h)
     
     def _sql_until(self, until=None):
         """Return the sql to get the latest versions until the timestamp given."""
@@ -631,9 +607,9 @@ class SimpleBackend(BaseBackend):
             sql = sql % dest_version_id
             self.con.execute(sql, (src_version_id,))
         if copy_data and src_version_id is not None:
-            sql = 'insert into hashmaps select %s, pos, block_id from hashmaps where version_id = ?'
-            sql = sql % dest_version_id
-            self.con.execute(sql, (src_version_id,))
+            # TODO: Copy properly.
+            hashmap = self.mapper.map_retr(src_version_id)
+            self.mapper.map_stor(dest_version_id, hashmap)
         self.con.commit()
         return src_version_id, dest_version_id
     
@@ -678,10 +654,10 @@ class SimpleBackend(BaseBackend):
         c = self.con.execute(sql, (version,))
         return dict(c.fetchall())
     
-    def _put_metadata(self, user, path, meta, replace=False):
+    def _put_metadata(self, user, path, meta, replace=False, copy_data=True):
         """Create a new version and store metadata."""
         
-        src_version_id, dest_version_id = self._copy_version(user, path, path, not replace, True)
+        src_version_id, dest_version_id = self._copy_version(user, path, path, not replace, copy_data)
         for k, v in meta.iteritems():
             if not replace and v == '':
                 sql = 'delete from metadata where version_id = ? and key = ?'
@@ -865,7 +841,6 @@ class SimpleBackend(BaseBackend):
         return objects[start:start + limit]
     
     def _del_version(self, version):
-        sql = 'delete from hashmaps where version_id = ?'
-        self.con.execute(sql, (version,))
+        self.mapper.map_remv(version)
         sql = 'delete from versions where version_id = ?'
         self.con.execute(sql, (version,))

@@ -323,8 +323,9 @@ def container_delete(request, v_account, v_container):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    until = get_int_parameter(request.GET.get('until'))
     try:
-        backend.delete_container(request.user, v_account, v_container)
+        backend.delete_container(request.user, v_account, v_container, until)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -963,8 +964,9 @@ def object_delete(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
+    until = get_int_parameter(request.GET.get('until'))
     try:
-        backend.delete_object(request.user, v_account, v_container, v_object)
+        backend.delete_object(request.user, v_account, v_container, v_object, until)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:

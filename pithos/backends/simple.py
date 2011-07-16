@@ -65,28 +65,44 @@ class SimpleBackend(BaseBackend):
             os.makedirs(basepath)
         
         self.con = sqlite3.connect(db, check_same_thread=False)
+        
+        sql = '''pragma foreign_keys = on'''
+        self.con.execute(sql)
+        
         sql = '''create table if not exists versions (
                     version_id integer primary key,
                     name text,
                     user text,
-                    tstamp datetime default current_timestamp,
+                    tstamp integer not null,
                     size integer default 0,
                     hide integer default 0)'''
         self.con.execute(sql)
         sql = '''create table if not exists metadata (
-                    version_id integer, key text, value text, primary key (version_id, key))'''
+                    version_id integer,
+                    key text,
+                    value text,
+                    primary key (version_id, key)
+                    foreign key (version_id) references versions(version_id)
+                    on delete cascade)'''
+        self.con.execute(sql)
+        sql = '''create table if not exists hashmaps (
+                    version_id integer,
+                    pos integer,
+                    block_id text,
+                    primary key (version_id, pos)
+                    foreign key (version_id) references versions(version_id)
+                    on delete cascade)'''
         self.con.execute(sql)
         sql = '''create table if not exists blocks (
                     block_id text, data blob, primary key (block_id))'''
         self.con.execute(sql)
-        sql = '''create table if not exists hashmaps (
-                    version_id integer, pos integer, block_id text, primary key (version_id, pos))'''
-        self.con.execute(sql)
-        sql = '''create table if not exists groups (
-                    account text, name text, users text, primary key (account, name))'''
-        self.con.execute(sql)
+        
         sql = '''create table if not exists policy (
                     name text, key text, value text, primary key (name, key))'''
+        self.con.execute(sql)
+        
+        sql = '''create table if not exists groups (
+                    account text, name text, users text, primary key (account, name))'''
         self.con.execute(sql)
         sql = '''create table if not exists permissions (
                     name text, read text, write text, primary key (name))'''
@@ -170,16 +186,35 @@ class SimpleBackend(BaseBackend):
                 self.con.execute(sql, (account, k, ','.join(v)))
         self.con.commit()
     
+    def put_account(self, user, account):
+        """Create a new account with the given name."""
+        
+        logger.debug("put_account: %s", account)
+        if user != account:
+            raise NotAllowedError
+        try:
+            version_id, mtime = self._get_accountinfo(account)
+        except NameError:
+            pass
+        else:
+            raise NameError('Account already exists')
+        version_id = self._put_version(account, user)
+        self.con.commit()
+    
     def delete_account(self, user, account):
         """Delete the account with the given name."""
         
         logger.debug("delete_account: %s", account)
         if user != account:
             raise NotAllowedError
-        count, bytes, tstamp = self._get_pathstats(account)
+        count = self._get_pathstats(account)[0]
         if count > 0:
             raise IndexError('Account is not empty')
-        self._del_path(account) # Point of no return.
+        sql = 'delete from versions where name = ?'
+        self.con.execute(sql, (account,))
+        sql = 'delete from groups where name = ?'
+        self.con.execute(sql, (account,))
+        self.con.commit()
     
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
         """Return a list of containers existing under an account."""
@@ -271,23 +306,35 @@ class SimpleBackend(BaseBackend):
             self.con.execute(sql, (path, k, v))
         self.con.commit()
     
-    def delete_container(self, user, account, container):
-        """Delete the container with the given name."""
+    def delete_container(self, user, account, container, until=None):
+        """Delete/purge the container with the given name."""
         
-        logger.debug("delete_container: %s %s", account, container)
+        logger.debug("delete_container: %s %s %s", account, container, until)
         if user != account:
             raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container)
-        count, bytes, tstamp = self._get_pathstats(path)
+        
+        if until is not None:
+            sql = '''select version_id from versions where name like ? and tstamp <= ?'''
+            c = self.con.execute(sql, (path + '/%', until))
+            for v in [x[0] for x in c.fetchall()]:
+                self._del_version(v)
+            self.con.commit()
+            return
+        
+        count = self._get_pathstats(path)[0]
         if count > 0:
             raise IndexError('Container is not empty')
-        self._del_path(path) # Point of no return.
+        sql = 'delete from versions where name like ?' # May contain hidden items.
+        self.con.execute(sql, (path + '/%',))
+        sql = 'delete from policy where name = ?'
+        self.con.execute(sql, (path,))
         self._copy_version(user, account, account, True, True) # New account version (for timestamp update).
     
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         """Return a list of objects existing under a container."""
         
-        logger.debug("list_objects: %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, until)
+        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, until)
         if user != account:
             raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
@@ -448,19 +495,31 @@ class SimpleBackend(BaseBackend):
         self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
         self.delete_object(user, account, src_container, src_name)
     
-    def delete_object(self, user, account, container, name):
-        """Delete an object."""
+    def delete_object(self, user, account, container, name, until=None):
+        """Delete/purge an object."""
         
-        logger.debug("delete_object: %s %s %s", account, container, name)
+        logger.debug("delete_object: %s %s %s %s", account, container, name, until)
         if user != account:
             raise NotAllowedError
+        
+        if until is not None:
+            path = os.path.join(account, container, name)
+            sql = '''select version_id from versions where name = ? and tstamp <= ?'''
+            c = self.con.execute(sql, (path, until))
+            for v in [x[0] in c.fetchall()]:
+                self._del_version(v)
+            try:
+                version_id = self._get_version(path)[0]
+            except NameError:
+                pass
+            else:
+                self._del_sharing(path)
+            self.con.commit()
+            return
+        
         path = self._get_objectinfo(account, container, name)[0]
         self._put_version(path, user, 0, 1)
-        sql = 'delete from permissions where name = ?'
-        self.con.execute(sql, (path,))
-        sql = 'delete from public where name = ?'
-        self.con.execute(sql, (path,))
-        self.con.commit()
+        self._del_sharing(path)
     
     def list_versions(self, user, account, container, name):
         """Return a list of all (version, version_timestamp) tuples for an object."""
@@ -469,7 +528,7 @@ class SimpleBackend(BaseBackend):
         self._can_read(user, account, container, name)
         # This will even show deleted versions.
         path = os.path.join(account, container, name)
-        sql = '''select distinct version_id, strftime('%s', tstamp) from versions where name = ? and hide = 0'''
+        sql = '''select distinct version_id, tstamp from versions where name = ? and hide = 0'''
         c = self.con.execute(sql, (path,))
         return [(int(x[0]), int(x[1])) for x in c.fetchall()]
     
@@ -513,11 +572,11 @@ class SimpleBackend(BaseBackend):
         """Return the sql to get the latest versions until the timestamp given."""
         if until is None:
             until = int(time.time())
-        sql = '''select version_id, name, strftime('%s', tstamp) as tstamp, size from versions v
+        sql = '''select version_id, name, tstamp, size from versions v
                     where version_id = (select max(version_id) from versions
-                                        where v.name = name and tstamp <= datetime(%s, 'unixepoch'))
+                                        where v.name = name and tstamp <= ?)
                     and hide = 0'''
-        return sql % ('%s', until)
+        return sql % (until,)
     
     def _get_pathstats(self, path, until=None):
         """Return count and sum of size of everything under path and latest timestamp."""
@@ -531,7 +590,7 @@ class SimpleBackend(BaseBackend):
     
     def _get_version(self, path, version=None):
         if version is None:
-            sql = '''select version_id, user, strftime('%s', tstamp), size, hide from versions where name = ?
+            sql = '''select version_id, user, tstamp, size, hide from versions where name = ?
                         order by version_id desc limit 1'''
             c = self.con.execute(sql, (path,))
             row = c.fetchone()
@@ -539,7 +598,7 @@ class SimpleBackend(BaseBackend):
                 raise NameError('Object does not exist')
         else:
             # The database (sqlite) will not complain if the version is not an integer.
-            sql = '''select version_id, user, strftime('%s', tstamp), size from versions where name = ?
+            sql = '''select version_id, user, tstamp, size from versions where name = ?
                         and version_id = ?'''
             c = self.con.execute(sql, (path, version))
             row = c.fetchone()
@@ -548,8 +607,9 @@ class SimpleBackend(BaseBackend):
         return str(row[0]), str(row[1]), int(row[2]), int(row[3])
     
     def _put_version(self, path, user, size=0, hide=0):
-        sql = 'insert into versions (name, user, size, hide) values (?, ?, ?, ?)'
-        id = self.con.execute(sql, (path, user, size, hide)).lastrowid
+        tstamp = int(time.time())
+        sql = 'insert into versions (name, user, tstamp, size, hide) values (?, ?, ?, ?, ?)'
+        id = self.con.execute(sql, (path, user, tstamp, size, hide)).lastrowid
         self.con.commit()
         return str(id)
     
@@ -753,6 +813,13 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql, (path,))
         self.con.commit()
     
+    def _del_sharing(self, path):
+        sql = 'delete from permissions where name = ?'
+        self.con.execute(sql, (path,))
+        sql = 'delete from public where name = ?'
+        self.con.execute(sql, (path,))
+        self.con.commit()
+    
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         cont_prefix = path + '/'
         if keys and len(keys) > 0:
@@ -797,13 +864,8 @@ class SimpleBackend(BaseBackend):
             limit = 10000
         return objects[start:start + limit]
     
-    def _del_path(self, path):
-        sql = '''delete from hashmaps where version_id in
-                    (select version_id from versions where name = ?)'''
-        self.con.execute(sql, (path,))
-        sql = '''delete from metadata where version_id in
-                    (select version_id from versions where name = ?)'''
-        self.con.execute(sql, (path,))
-        sql = '''delete from versions where name = ?'''
-        self.con.execute(sql, (path,))
-        self.con.commit()
+    def _del_version(self, version):
+        sql = 'delete from hashmaps where version_id = ?'
+        self.con.execute(sql, (version,))
+        sql = 'delete from versions where version_id = ?'
+        self.con.execute(sql, (version,))

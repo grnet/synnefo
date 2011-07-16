@@ -176,8 +176,8 @@ class BaseBackend(object):
         """
         return
     
-    def delete_container(self, user, account, container):
-        """Delete the container with the given name.
+    def delete_container(self, user, account, container, until=None):
+        """Delete/purge the container with the given name.
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -359,8 +359,8 @@ class BaseBackend(object):
         """
         return
     
-    def delete_object(self, user, account, container, name):
-        """Delete an object.
+    def delete_object(self, user, account, container, name, until=None):
+        """Delete/purge an object.
         
         Raises:
             NotAllowedError: Operation not permitted

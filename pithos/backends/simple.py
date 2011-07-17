@@ -84,20 +84,21 @@ class SimpleBackend(BaseBackend):
                     foreign key (version_id) references versions(version_id)
                     on delete cascade)'''
         self.con.execute(sql)
-        
         sql = '''create table if not exists policy (
                     name text, key text, value text, primary key (name, key))'''
         self.con.execute(sql)
         
+        # Access control tables.
         sql = '''create table if not exists groups (
-                    account text, name text, users text, primary key (account, name))'''
+                    account text, gname text, user text)'''
         self.con.execute(sql)
         sql = '''create table if not exists permissions (
-                    name text, read text, write text, primary key (name))'''
+                    name text, op text, user text)'''
         self.con.execute(sql)
         sql = '''create table if not exists public (
                     name text, primary key (name))'''
         self.con.execute(sql)
+        
         self.con.commit()
         
         params = {'blocksize': self.block_size,
@@ -167,21 +168,8 @@ class SimpleBackend(BaseBackend):
         logger.debug("update_account_groups: %s %s %s", account, groups, replace)
         if user != account:
             raise NotAllowedError
-        for k, v in groups.iteritems():
-            if True in [False or ',' in x for x in v]:
-                raise ValueError('Bad characters in groups')
-        if replace:
-            sql = 'delete from groups where account = ?'
-            self.con.execute(sql, (account,))
-        for k, v in groups.iteritems():
-            if len(v) == 0:
-                if not replace:
-                    sql = 'delete from groups where account = ? and name = ?'
-                    self.con.execute(sql, (account, k))
-            else:
-                sql = 'insert or replace into groups (account, name, users) values (?, ?, ?)'
-                self.con.execute(sql, (account, k, ','.join(v)))
-        self.con.commit()
+        self._check_groups(groups)
+        self._put_groups(account, groups, replace)
     
     def put_account(self, user, account):
         """Create a new account with the given name."""
@@ -209,8 +197,7 @@ class SimpleBackend(BaseBackend):
             raise IndexError('Account is not empty')
         sql = 'delete from versions where name = ?'
         self.con.execute(sql, (account,))
-        sql = 'delete from groups where name = ?'
-        self.con.execute(sql, (account,))
+        self._del_groups(account)
         self.con.commit()
     
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
@@ -445,8 +432,7 @@ class SimpleBackend(BaseBackend):
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
-            sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
-            self.con.execute(sql, (path, r, w))
+            self._put_permissions(path, r, w)
         self.con.commit()
     
     def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
@@ -471,8 +457,7 @@ class SimpleBackend(BaseBackend):
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
-            sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
-            self.con.execute(sql, (dest_path, r, w))
+            self._put_permissions(dest_path, r, w)
         self.con.commit()
     
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
@@ -667,11 +652,6 @@ class SimpleBackend(BaseBackend):
                 self.con.execute(sql, (dest_version_id, k, v))
         self.con.commit()
     
-    def _get_groups(self, account):
-        sql = 'select name, users from groups where account = ?'
-        c = self.con.execute(sql, (account,))
-        return dict([(x[0], x[1].split(',')) for x in c.fetchall()])
-    
     def _check_policy(self, policy):
         for k in policy.keys():
             if policy[k] == '':
@@ -691,110 +671,6 @@ class SimpleBackend(BaseBackend):
         sql = 'select key, value from policy where name = ?'
         c = self.con.execute(sql, (path,))
         return dict(c.fetchall())
-    
-    def _is_allowed(self, user, account, container, name, op='read'):
-        if user == account:
-            return True
-        path = os.path.join(account, container, name)
-        if op == 'read' and self._get_public(path):
-            return True
-        perm_path, perms = self._get_permissions(path)
-        
-        # Expand groups.
-        for x in ('read', 'write'):
-            g_perms = []
-            for y in perms.get(x, []):
-                groups = self._get_groups(account)
-                if y in groups: #it's a group
-                    for g_name in groups[y]:
-                        g_perms.append(g_name)
-                else: #it's a user
-                    g_perms.append(y)
-            perms[x] = g_perms
-        
-        if op == 'read' and user in perms.get('read', []):
-            return True
-        if user in perms.get('write', []):
-            return True
-        return False
-    
-    def _can_read(self, user, account, container, name):
-        if not self._is_allowed(user, account, container, name, 'read'):
-            raise NotAllowedError
-    
-    def _can_write(self, user, account, container, name):
-        if not self._is_allowed(user, account, container, name, 'write'):
-            raise NotAllowedError
-    
-    def _check_permissions(self, path, permissions):
-        # Check for existing permissions.
-        sql = '''select name from permissions
-                    where name != ? and (name like ? or ? like name || ?)'''
-        c = self.con.execute(sql, (path, path + '%', path, '%'))
-        row = c.fetchone()
-        if row:
-            ae = AttributeError()
-            ae.data = row[0]
-            raise ae
-        
-        # Format given permissions.
-        if len(permissions) == 0:
-            return '', ''
-        r = permissions.get('read', [])
-        w = permissions.get('write', [])
-        if True in [False or ',' in x for x in r]:
-            raise ValueError('Bad characters in read permissions')
-        if True in [False or ',' in x for x in w]:
-            raise ValueError('Bad characters in write permissions')
-        return ','.join(r), ','.join(w)
-    
-    def _get_permissions(self, path):
-        # Check for permissions at path or above.
-        sql = 'select name, read, write from permissions where ? like name || ?'
-        c = self.con.execute(sql, (path, '%'))
-        row = c.fetchone()
-        if not row:
-            return path, {}
-        
-        name, r, w = row
-        ret = {}
-        if w != '':
-            ret['write'] = w.split(',')
-        if r != '':
-            ret['read'] = r.split(',')
-        return name, ret
-    
-    def _put_permissions(self, path, r, w):
-        if r == '' and w == '':
-            sql = 'delete from permissions where name = ?'
-            self.con.execute(sql, (path,))
-        else:
-            sql = 'insert or replace into permissions (name, read, write) values (?, ?, ?)'
-            self.con.execute(sql, (path, r, w))
-        self.con.commit()
-    
-    def _get_public(self, path):
-        sql = 'select name from public where name = ?'
-        c = self.con.execute(sql, (path,))
-        row = c.fetchone()
-        if not row:
-            return False
-        return True
-    
-    def _put_public(self, path, public):
-        if not public:
-            sql = 'delete from public where name = ?'
-        else:
-            sql = 'insert or replace into public (name) values (?)'
-        self.con.execute(sql, (path,))
-        self.con.commit()
-    
-    def _del_sharing(self, path):
-        sql = 'delete from permissions where name = ?'
-        self.con.execute(sql, (path,))
-        sql = 'delete from public where name = ?'
-        self.con.execute(sql, (path,))
-        self.con.commit()
     
     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
         cont_prefix = path + '/'
@@ -844,3 +720,141 @@ class SimpleBackend(BaseBackend):
         self.mapper.map_remv(version)
         sql = 'delete from versions where version_id = ?'
         self.con.execute(sql, (version,))
+    
+    # Access control functions.
+    
+    def _check_groups(self, groups):
+        # Example follows.
+        # for k, v in groups.iteritems():
+        #     if True in [False or ',' in x for x in v]:
+        #         raise ValueError('Bad characters in groups')
+        pass
+    
+    def _get_groups(self, account):
+        sql = 'select gname, user from groups where account = ?'
+        c = self.con.execute(sql, (account,))
+        groups = {}
+        for row in c.fetchall():
+            if row[0] not in groups:
+                groups[row[0]] = []
+            groups[row[0]].append(row[1])
+        return groups
+    
+    def _put_groups(self, account, groups, replace=False):
+        if replace:
+            self._del_groups(account)
+        for k, v in groups.iteritems():
+            sql = 'delete from groups where account = ? and gname = ?'
+            self.con.execute(sql, (account, k))
+            if v:
+                sql = 'insert into groups (account, gname, user) values (?, ?, ?)'
+                self.con.executemany(sql, [(account, k, x) for x in v])
+        self.con.commit()
+    
+    def _del_groups(self, account):
+        sql = 'delete from groups where account = ?'
+        self.con.execute(sql, (account,))
+    
+    def _is_allowed(self, user, account, container, name, op='read'):
+        if user == account:
+            return True
+        path = os.path.join(account, container, name)
+        if op == 'read' and self._get_public(path):
+            return True
+        perm_path, perms = self._get_permissions(path)
+        
+        # Expand groups.
+        for x in ('read', 'write'):
+            g_perms = set()
+            for y in perms.get(x, []):
+                if ':' in y:
+                    g_account, g_name = y.split(':', 1)
+                    groups = self._get_groups(g_account)
+                    if g_name in groups:
+                        g_perms.update(groups[g_name])
+                else:
+                    g_perms.add(y)
+            perms[x] = g_perms
+        
+        if op == 'read' and ('*' in perms['read'] or user in perms['read']):
+            return True
+        if '*' in perms['write'] or user in perms['write']:
+            return True
+        return False
+    
+    def _can_read(self, user, account, container, name):
+        if not self._is_allowed(user, account, container, name, 'read'):
+            raise NotAllowedError
+    
+    def _can_write(self, user, account, container, name):
+        if not self._is_allowed(user, account, container, name, 'write'):
+            raise NotAllowedError
+    
+    def _check_permissions(self, path, permissions):
+        # Check for existing permissions.
+        sql = '''select name from permissions
+                    where name != ? and (name like ? or ? like name || ?)'''
+        c = self.con.execute(sql, (path, path + '%', path, '%'))
+        row = c.fetchone()
+        if row:
+            ae = AttributeError()
+            ae.data = row[0]
+            raise ae
+        
+        # Format given permissions.
+        if len(permissions) == 0:
+            return [], []
+        r = permissions.get('read', [])
+        w = permissions.get('write', [])
+        # Examples follow.
+        # if True in [False or ',' in x for x in r]:
+        #     raise ValueError('Bad characters in read permissions')
+        # if True in [False or ',' in x for x in w]:
+        #     raise ValueError('Bad characters in write permissions')
+        return r, w
+    
+    def _get_permissions(self, path):
+        # Check for permissions at path or above.
+        sql = 'select name, op, user from permissions where ? like name || ?'
+        c = self.con.execute(sql, (path, '%'))
+        name = path
+        perms = {} # Return nothing, if nothing is set.
+        for row in c.fetchall():
+            name = row[0]
+            if row[1] not in perms:
+                perms[row[1]] = []
+            perms[row[1]].append(row[2])
+        return name, perms
+    
+    def _put_permissions(self, path, r, w):
+        sql = 'delete from permissions where name = ?'
+        self.con.execute(sql, (path,))
+        sql = 'insert into permissions (name, op, user) values (?, ?, ?)'
+        if r:
+            self.con.executemany(sql, [(path, 'read', x) for x in r])
+        if w:
+            self.con.executemany(sql, [(path, 'write', x) for x in w])
+        self.con.commit()
+    
+    def _get_public(self, path):
+        sql = 'select name from public where name = ?'
+        c = self.con.execute(sql, (path,))
+        row = c.fetchone()
+        if not row:
+            return False
+        return True
+    
+    def _put_public(self, path, public):
+        if not public:
+            sql = 'delete from public where name = ?'
+        else:
+            sql = 'insert or replace into public (name) values (?)'
+        self.con.execute(sql, (path,))
+        self.con.commit()
+    
+    def _del_sharing(self, path):
+        sql = 'delete from permissions where name = ?'
+        self.con.execute(sql, (path,))
+        sql = 'delete from public where name = ?'
+        self.con.execute(sql, (path,))
+        self.con.commit()

@@ -628,7 +628,7 @@ Reply Header Name           Value
 ETag                        The MD5 hash of the object (on create)
 ==========================  ===============================
 
-The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separated user/group list, or a ``write=...`` comma-separated user/group list, or both separated by a semicolon (``;``). To publish the object, set ``X-Object-Public`` to ``true``. To unpublish, set to ``false``, or use an empty header value.
+The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separated user/group list, or a ``write=...`` comma-separated user/group list, or both separated by a semicolon (``;``). Groups are specified as ``<account>:<group>``. To publish the object, set ``X-Object-Public`` to ``true``. To unpublish, set to ``false``, or use an empty header value.
 
 ===========================  ==============================
 Return Code                  Description

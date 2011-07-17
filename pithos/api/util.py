@@ -378,7 +378,7 @@ def get_sharing(request):
         return ret
     for perm in (x for x in permissions.split(';')):
         if perm.startswith('read='):
-            ret['read'] = [v.replace(' ','').lower() for v in perm[5:].split(',')]
+            ret['read'] = list(set([v.replace(' ','').lower() for v in perm[5:].split(',')]))
             if '' in ret['read']:
                 ret['read'].remove('')
             if '*' in ret['read']:
@@ -386,7 +386,7 @@ def get_sharing(request):
             if len(ret['read']) == 0:
                 raise BadRequest('Bad X-Object-Sharing header value')
         elif perm.startswith('write='):
-            ret['write'] = [v.replace(' ','').lower() for v in perm[6:].split(',')]
+            ret['write'] = list(set([v.replace(' ','').lower() for v in perm[6:].split(',')]))
             if '' in ret['write']:
                 ret['write'].remove('')
             if '*' in ret['write']:

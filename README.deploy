@@ -1,10 +1,10 @@
-README.deploy -- Instructions for a basic deployment of Synnefo v0.5.1
+README.deploy -- Instructions for a basic Synnefo deployment
 
 This document describes the basic steps to obtain a basic, working Synnefo
 deployment. It begins by examining the different node roles, then moves to the
 installation and setup of distinct software components.
 
-It is current as of Synnefo v0.5.1.
+It is current as of Synnefo v0.5.2.
 
 
 Node types
@@ -418,7 +418,7 @@ Synnefo deployment.
 
     Download and install gnt-instance-image in all Ganeti nodes from its own
     repository, at https://code.grnet.gr/git/gnt-instance-image. It's
-    recommended to use the win-support branch (known good commit for 0.5.1:
+    recommended to use the win-support branch (known good commit for 0.5.2:
     8afaedb329c981282aed1a6c3daf62e43532f00d).
 
     After installing gnt-instance-image do the following:

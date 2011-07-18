@@ -125,7 +125,7 @@
             "created": "2011-06-30 16:45:00",
             "updated": "2011-06-30 16:45:00",
             "state": "ACTIVE",
-            "backend_id": "ubuntu_desktop-11.04-1",
+            "backend_id": "ubuntu_desktop-11.04-2",
             "format": "dump",
             "public": 1
         }
@@ -184,7 +184,7 @@
             "created": "2011-06-30 16:45:00",
             "updated": "2011-06-30 16:45:00",
             "state": "ACTIVE",
-            "backend_id": "kubuntu_desktop-11.04-1",
+            "backend_id": "kubuntu_desktop-11.04-2",
             "format": "dump",
             "public": 1
         }
@@ -243,7 +243,7 @@
             "created": "2011-06-30 18:54:00",
             "updated": "2011-06-30 18:54:00",
             "state": "ACTIVE",
-            "backend_id": "fedora-15-1",
+            "backend_id": "fedora-15-3",
             "format": "dump",
             "public": 1
         }

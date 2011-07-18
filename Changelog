@@ -1,6 +1,20 @@
 Changelog
 =========
 
+2011-07-18, v0.5.2
+
+FIXES:
+    GUI:
+        * Improve IPv6 support in UI (#839, #841)
+        * Improve Connect messages, propose username (#801)
+        * Add "tag"/"value" headers in Modify tags popup (#845)
+    API:
+        * Support arbitrary arguments to RAPI CreateInstanceCall() (#835)
+    Admin tool:
+        * Support creation and modification of users, flavors, images (#827)
+        * Support sending invitations from the command line
+
+
 2011-07-14, v0.5.1
 
 FIXES:

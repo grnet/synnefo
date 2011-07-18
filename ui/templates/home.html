@@ -76,7 +76,7 @@ or implied, of GRNET S.A.
         var INVITATIONS_TITLE = "{% trans "Invite people" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
-        var FEEDBACK_TITLE = "{% trans "Send us feedback" %}";
+        var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
 
         // server statuses and transitions
         var STATUSES = {
@@ -408,8 +408,8 @@ or implied, of GRNET S.A.
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
-                        <li class="invitations"><a class="action" href="#">{% trans "invite people..." %}</a></li>
-                        <li class="feedback"><a class="action" href="#">{% trans "send us feedback..." %}</a></li>
+                        <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
+                        <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -569,7 +569,7 @@ or implied, of GRNET S.A.
 
     <div class="modal" id="feedback-form" class="feedback notification-box">
         <h3 class="popup-header">
-            <span class="header-box">{% trans "Send us feedback" %}</span>
+            <span class="header-box">{% trans "Send feedback" %}</span>
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">

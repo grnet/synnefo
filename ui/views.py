@@ -87,7 +87,8 @@ def machines_console(request):
     password = request.GET.get('password','')
     machine = request.GET.get('machine','')
     host_ip = request.GET.get('host_ip','')
-    context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip}
+    host_ip_v6 = request.GET.get('host_ip_v6','')
+    context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', context)
 
 

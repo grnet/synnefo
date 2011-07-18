@@ -568,3 +568,7 @@ a.manage-metadata {
 #feedback-form .submit {
     padding: 5px 10px;
 }
+
+#machinesview-icon .ipv4-text {
+    margin-right: 5px;
+}

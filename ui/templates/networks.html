@@ -142,11 +142,11 @@ or implied, of GRNET S.A.
         <div class="ips">
             <div class="ip4-container status">
                 {% trans "IPv4" %}:
-                <span class="ip4">192.94.73.15</span>
+                <span class="ip4 ipv4-text">192.94.73.15</span>
             </div>
             <div class="ip6-container status">
                 {% trans "IPv6" %}:
-                <span class="ip6">vv</span>
+                <span class="ip6 ipv6-text"></span>
             </div>
         </div>
         <img class="logo" src="static/icons/machines/medium/debian-on.png" />
@@ -988,6 +988,7 @@ function update_networks_view(servers_data, networks_data){
                         existing_public.find(".ip6-container").hide();
                     } else {
                         existing_public.find('span.ip6').text(new_ip6);
+                        fix_v6_addresses();
                     }
                 }
                 //update firewall setting
@@ -1033,6 +1034,7 @@ function update_networks_view(servers_data, networks_data){
                         machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-off.png');
                     }
                     machine.appendTo("#networks-pane .public-networks .machines-list");
+                    fix_v6_addresses();
                     //update firewall setting
                     try {
                         if (server.addresses.values[0].firewallProfile) {

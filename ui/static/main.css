@@ -3693,7 +3693,7 @@ div.console-container {
     color: white;
     float:left;
     position:relative;
-    margin: 25px 0 0 480px;
+    margin: 15px 0 0 480px;
 }
 
 applet {
@@ -4078,3 +4078,31 @@ div.state .shutdown, tbody.machines .shutdown {
     color: #4085A5;
     text-decoration: underline;
 }
+
+.ip-version-label {
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 0.3em;
+    background-color: #74AEC9;
+    color: #fff;
+    margin-top: -2px;
+    vertical-align: middle;
+}
+
+.console .ip-version-label {
+    margin: 0 5px;
+}
+
+.ipv6-text, .ipv4-text {
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.tooltip {
+    background-color: #72ADC8;
+    color: #fff;
+    font-size: 0.7em;
+    padding: 0.3em;
+    border: 1px solid #444;
+}
+

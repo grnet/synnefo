@@ -69,9 +69,329 @@ class Client(object):
         self.debug = debug
         self.token = token
     
+    def _req(self, method, path, body=None, headers={}, format='text',
+            params={}):
+        full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path,
+                                            format)
+        for k,v in params.items():
+            if v:
+                full_path = '%s&%s=%s' %(full_path, k, v)
+            else:
+                full_path = '%s&%s' %(full_path, k)
+        conn = HTTPConnection(self.host)
+        
+        #encode whitespace
+        full_path = full_path.replace(' ', '%20')
+        
+        kwargs = {}
+        for k,v in headers.items():
+            headers.pop(k)
+            k = k.replace('_', '-')
+            headers[k] = v
+        
+        kwargs['headers'] = headers
+        kwargs['headers']['X-Auth-Token'] = self.token
+        if body:
+            kwargs['body'] = body
+        else:
+            kwargs['headers']['content-type'] = ''
+        kwargs['headers'].setdefault('content-length', len(body) if body else 0)
+        kwargs['headers'].setdefault('content-type', 'application/octet-stream')
+        try:
+            #print '*', method, full_path, kwargs
+            conn.request(method, full_path, **kwargs)
+        except socket.error, e:
+            raise Fault(status=503)
+            
+        resp = conn.getresponse()
+        headers = dict(resp.getheaders())
+        
+        if self.verbose:
+            print '%d %s' % (resp.status, resp.reason)
+            for key, val in headers.items():
+                print '%s: %s' % (key.capitalize(), val)
+            print
+        
+        length = resp.getheader('content-length', None)
+        data = resp.read(length)
+        if self.debug:
+            print data
+            print
+        
+        if int(resp.status) in ERROR_CODES.keys():
+            raise Fault(data, int(resp.status))
+        
+        #print '*',  resp.status, headers, data
+        return resp.status, headers, data
+    
+    def delete(self, path, format='text', params={}):
+        return self._req('DELETE', path, format=format, params=params)
+    
+    def get(self, path, format='text', headers=None, params={}):
+        return self._req('GET', path, headers=headers, format=format,
+                        params=params)
+    
+    def head(self, path, format='text', params={}):
+        return self._req('HEAD', path, format=format, params=params)
+    
+    def post(self, path, body=None, format='text', headers=None, params={}):
+        return self._req('POST', path, body, headers=headers, format=format,
+                        params=params)
+    
+    def put(self, path, body=None, format='text', headers=None):
+        return self._req('PUT', path, body, headers=headers, format=format)
+    
+    def _list(self, path, detail=False, params={}, **headers):
+        format = 'json' if detail else 'text'
+        status, headers, data = self.get(path, format=format, headers=headers,
+                                         params=params)
+        if detail:
+            data = json.loads(data) if data else ''
+        else:
+            data = data.strip().split('\n') if data else ''
+        return data
+    
+    def _get_metadata(self, path, prefix=None, params={}):
+        status, headers, data = self.head(path, params=params)
+        prefixlen = len(prefix) if prefix else 0
+        meta = {}
+        for key, val in headers.items():
+            if prefix and not key.startswith(prefix):
+                continue
+            elif prefix and key.startswith(prefix):
+                key = key[prefixlen:]
+            meta[key] = val
+        return meta
+    
+    def _filter(self, l, d):
+        """
+        filter out from l elements having the metadata values provided
+        """
+        ll = l
+        for elem in l:
+            if type(elem) == types.DictionaryType:
+                for key in d.keys():
+                    k = 'x_object_meta_%s' % key
+                    if k in elem.keys() and elem[k] == d[key]:
+                        ll.remove(elem)
+                        break
+        return ll
+    
+class OOS_Client(Client):
+    """Openstack Objest Storage Client"""
+    
+    def _update_metadata(self, path, entity, **meta):
+        """adds new and updates the values of previously set metadata"""
+        ex_meta = self.retrieve_account_metadata(restricted=True)
+        ex_meta.update(meta)
+        headers = {}
+        prefix = 'x-%s-meta-' % entity
+        for k,v in ex_meta.items():
+            k = '%s%s' % (prefix, k)
+            headers[k] = v
+        return self.post(path, headers=headers, params=params)
+    
+    def _delete_metadata(self, path, entity, meta=[]):
+        """delete previously set metadata"""
+        ex_meta = self.retrieve_account_metadata(restricted=True)
+        headers = {}
+        prefix = 'x-%s-meta-' % entity
+        for k in ex_meta.keys():
+            if k in meta:
+                headers['%s%s' % (prefix, k)] = ex_meta[k]
+        return self.post(path, headers=headers)
+    
+    # Storage Account Services
+    
+    def list_containers(self, detail=False, limit=10000, marker=None, params={},
+                        **headers):
+        """lists containers"""
+        if not params:
+            params = {}
+        params.update({'limit':limit, 'marker':marker})
+        return self._list('', detail, params, **headers)
+    
+    def retrieve_account_metadata(self, restricted=False, **params):
+        """returns the account metadata"""
+        prefix = 'x-account-meta-' if restricted else None
+        return self._get_metadata('', prefix, params)
+    
+    def update_account_metadata(self, **meta):
+        """updates the account metadata"""
+        return self._update_metadata('', 'account', **meta)
+        
+    def delete_account_metadata(self, meta=[]):
+        """deletes the account metadata"""
+        return self._delete_metadata('', 'account', meta)
+    
+    # Storage Container Services
+    
+    def _filter_trashed(self, l):
+        return self._filter(l, {'trash':'true'})
+    
+    def list_objects(self, container, detail=False, limit=10000, marker=None,
+                     prefix=None, delimiter=None, path=None,
+                     include_trashed=False, params={}, **headers):
+        """returns a list with the container objects"""
+        params.update({'limit':limit, 'marker':marker, 'prefix':prefix,
+                       'delimiter':delimiter, 'path':path})
+        l = self._list('/' + container, detail, params, **headers)
+        if not include_trashed:
+            l = self._filter_trashed(l)
+        return l
+    
+    def create_container(self, container, **meta):
+        """creates a container"""
+        headers = {}
+        for k,v in meta.items():
+            headers['x-container-meta-%s' %k.strip().upper()] = v.strip()
+        status, header, data = self.put('/' + container, headers=headers)
+        if status == 202:
+            return False
+        elif status != 201:
+            raise Fault(data, int(status))
+        return True
+    
+    def delete_container(self, container, params={}):
+        """deletes a container"""
+        return self.delete('/' + container, params=params)
+    
+    def retrieve_container_metadata(self, container, restricted=False, **params):
+        """returns the container metadata"""
+        prefix = 'x-container-meta-' if restricted else None
+        return self._get_metadata('/%s' % container, prefix, params)
+    
+    def update_container_metadata(self, container, **meta):
+        """unpdates the container metadata"""
+        return self._update_metadata('/' + container, 'container', **meta)
+        
+    def delete_container_metadata(self, container, meta=[]):
+        """deletes the container metadata"""
+        path = '/%s' % (container)
+        return self._delete_metadata(path, 'container', meta)
+    
+    # Storage Object Services
+    
+    def request_object(self, container, object, detail=False, params={},
+                        **headers):
+        """returns tuple containing the status, headers and data response for an object request"""
+        path = '/%s/%s' % (container, object)
+        format = 'json' if detail else 'text' 
+        status, headers, data = self.get(path, format, headers, params)
+        return status, headers, data
+    
+    def retrieve_object(self, container, object, detail=False, params={},
+                             **headers):
+        """returns an object's data"""
+        t = self.request_object(container, object, detail, params, **headers)
+        return t[2]
+    
+    def create_directory_marker(self, container, object):
+        """creates a dierectory marker"""
+        if not object:
+            raise Fault('Directory markers have to be nested in a container')
+        h = {'Content-Type':'application/directory'}
+        return self.create_zero_length_object(container, object, **h)
+    
+    def create_object(self, container, object, f=stdin, format='text', meta={},
+                      etag=None, content_type=None, content_encoding=None,
+                      content_disposition=None, **headers):
+        """creates an object"""
+        path = '/%s/%s' % (container, object)
+        for k, v  in headers.items():
+            if not v:
+                headers.pop(k)
+        
+        l = ['etag', 'content_encoding', 'content_disposition', 'content_type']
+        l = [elem for elem in l if eval(elem)]
+        for elem in l:
+            headers.update({elem:eval(elem)})
+            
+        for k,v in meta.items():
+            headers['x-object-meta-%s' %k.strip()] = v.strip()
+        data = f.read() if f else None
+        return self.put(path, data, format, headers=headers)
+    
+    def update_object(self, container, object, f=stdin, offset=None, meta={},
+                      content_length=None, content_type=None,
+                      content_encoding=None, content_disposition=None,
+                      **headers):
+        path = '/%s/%s' % (container, object)
+        for k, v  in headers.items():
+            if not v:
+                headers.pop(k)
+        
+        l = ['content_encoding', 'content_disposition', 'content_type',
+             'content_length']
+        l = [elem for elem in l if eval(elem)]
+        for elem in l:
+            headers.update({elem:eval(elem)})
+            
+        if 'content_range' not in headers.keys():
+            if offset != None:
+                headers['content_range'] = 'bytes %s-/*' % offset
+            else:
+                headers['content_range'] = 'bytes */*'
+            
+        for k,v in meta.items():
+            headers['x-object-meta-%s' %k.strip()] = v.strip()
+        data = f.read() if f else None
+        return self.post(path, data, headers=headers)
+    
+    def _change_obj_location(self, src_container, src_object, dst_container,
+                             dst_object, remove=False, public=False, **meta):
+        path = '/%s/%s' % (dst_container, dst_object)
+        headers = {}
+        for k, v in meta.items():
+            headers['x-object-meta-%s' % k] = v 
+        if remove:
+            headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
+        else:
+            headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
+        self._set_public_header(headers, public)
+        self.headers = headers if headers else None
+        headers['content-length'] = 0
+        return self.put(path, headers=headers)
+    
+    def copy_object(self, src_container, src_object, dst_container,
+                             dst_object, public=False, **meta):
+        return self._change_obj_location(src_container, src_object,
+                                   dst_container, dst_object, False,
+                                   public, **meta)
+    
+    def move_object(self, src_container, src_object, dst_container,
+                             dst_object, public=False, **meta):
+        return self._change_obj_location(src_container, src_object,
+                                   dst_container, dst_object, True,
+                                   public, **meta)
+    
+    def delete_object(self, container, object, params={}):
+        return self.delete('/%s/%s' % (container, object), params=params)
+    
+    def retrieve_object_metadata(self, container, object, restricted=False,
+                                 version=None):
+        """
+        set restricted to True to get only user defined metadata
+        """
+        path = '/%s/%s' % (container, object)
+        prefix = 'x-object-meta-' if restricted else None
+        params = {'version':version} if version else {}
+        return self._get_metadata(path, prefix, params=params)
+    
+    def update_object_metadata(self, container, object, **meta):
+        path = '/%s/%s' % (container, object)
+        return self._update_metadata(path, 'object', **meta)
+    
+    def delete_object_metadata(self, container, object, meta=[]):
+        path = '/%s/%s' % (container, object)
+        return self._delete_metadata(path, 'object', meta)
+    
+class Pithos_Client(OOS_Client):
+    """Pithos Storage Client. Extends OOS_Client"""
+    
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024):
-        
+        """perfomrs a chunked request"""
         http = HTTPConnection(self.host)
         
         # write header
@@ -129,99 +449,6 @@ class Client(object):
         #print '*',  resp.status, headers, data
         return resp.status, headers, data
     
-    def _req(self, method, path, body=None, headers=None, format='text',
-            params=None):
-        full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path,
-                                            format)
-        if params:
-            for k,v in params.items():
-                if v:
-                    full_path = '%s&%s=%s' %(full_path, k, v)
-                else:
-                    full_path = '%s&%s' %(full_path, k)
-        conn = HTTPConnection(self.host)
-        
-        #encode whitespace
-        full_path = full_path.replace(' ', '%20')
-        
-        kwargs = {}
-        kwargs['headers'] = headers or {}
-        kwargs['headers']['X-Auth-Token'] = self.token
-        if not headers or \
-        'transfer-encoding' not in headers \
-        or headers['transfer-encoding'] != 'chunked':
-            kwargs['headers']['content-length'] = len(body) if body else 0
-        if body:
-            kwargs['body'] = body
-        else:
-            kwargs['headers']['content-type'] = ''
-        kwargs['headers'].setdefault('content-type', 'application/octet-stream')
-        try:
-            #print '*', method, full_path, kwargs
-            conn.request(method, full_path, **kwargs)
-        except socket.error, e:
-            raise Fault(status=503)
-            
-        resp = conn.getresponse()
-        headers = dict(resp.getheaders())
-        
-        if self.verbose:
-            print '%d %s' % (resp.status, resp.reason)
-            for key, val in headers.items():
-                print '%s: %s' % (key.capitalize(), val)
-            print
-        
-        length = resp.getheader('content-length', None)
-        data = resp.read(length)
-        if self.debug:
-            print data
-            print
-        
-        if int(resp.status) in ERROR_CODES.keys():
-            raise Fault(data, int(resp.status))
-        
-        #print '*',  resp.status, headers, data
-        return resp.status, headers, data
-    
-    def delete(self, path, format='text'):
-        return self._req('DELETE', path, format=format)
-    
-    def get(self, path, format='text', headers=None, params=None):
-        return self._req('GET', path, headers=headers, format=format,
-                        params=params)
-    
-    def head(self, path, format='text', params=None):
-        return self._req('HEAD', path, format=format, params=params)
-    
-    def post(self, path, body=None, format='text', headers=None, params=None):
-        return self._req('POST', path, body, headers=headers, format=format,
-                        params=params)
-    
-    def put(self, path, body=None, format='text', headers=None):
-        return self._req('PUT', path, body, headers=headers, format=format)
-    
-    def _list(self, path, detail=False, params=None, headers=None):
-        format = 'json' if detail else 'text'
-        status, headers, data = self.get(path, format=format, headers=headers,
-                                         params=params)
-        if detail:
-            data = json.loads(data) if data else ''
-        else:
-            data = data.strip().split('\n')
-        return data
-    
-    def _get_metadata(self, path, prefix=None, params=None):
-        status, headers, data = self.head(path, params=params)
-        prefixlen = len(prefix) if prefix else 0
-        meta = {}
-        for key, val in headers.items():
-            if prefix and not key.startswith(prefix):
-                continue
-            elif prefix and key.startswith(prefix):
-                key = key[prefixlen:]
-            meta[key] = val
-        return meta
-    
     def _update_metadata(self, path, entity, **meta):
         """
         adds new and updates the values of previously set metadata
@@ -243,28 +470,29 @@ class Client(object):
         prefix = 'x-%s-meta-' % entity
         for m in meta:
             headers['%s%s' % (prefix, m)] = None
-        return self.post(path, headers=headers)
+        return self.post(path, headers=headers, params=params)
     
     # Storage Account Services
     
-    def list_containers(self, detail=False, params=None, headers=None):
-        return self._list('', detail, params, headers)
-    
-    def account_metadata(self, restricted=False, until=None):
-        prefix = 'x-account-meta-' if restricted else None
+    def list_containers(self, detail=False, if_modified_since=None,
+                        if_unmodified_since=None, limit=1000, marker=None,
+                        until=None):
+        """returns a list with the account containers"""
         params = {'until':until} if until else None
-        return self._get_metadata('', prefix, params=params)
+        headers = {'if-modified-since':if_modified_since,
+                   'if-unmodified-since':if_unmodified_since}
+        return OOS_Client.list_containers(self, detail=detail, limit=limit,
+                                          marker=marker, params=params,
+                                          **headers)
     
-    def update_account_metadata(self, **meta):
-        return self._update_metadata('', 'account', **meta)
-        
-    def delete_account_metadata(self, meta=[]):
-        return self._delete_metadata('', 'account', meta)
+    def retrieve_account_metadata(self, restricted=False, until=None):
+        """returns the account metadata"""
+        params = {'until':until} if until else {}
+        return OOS_Client.retrieve_account_metadata(self, restricted=restricted,
+                                                   **params)
     
     def set_account_groups(self, **groups):
-        """
-        create account groups
-        """
+        """create account groups"""
         headers = {}
         for key, val in groups.items():
             headers['x-account-group-%s' % key] = val
@@ -272,9 +500,7 @@ class Client(object):
         return self.post('', headers=headers, params=params)
     
     def unset_account_groups(self, groups=[]):
-        """
-        delete account groups
-        """
+        """delete account groups"""
         headers = {}
         for elem in groups:
             headers['x-account-group-%s' % elem] = ''
@@ -283,57 +509,28 @@ class Client(object):
     
     # Storage Container Services
     
-    def _filter(self, l, d):
-        """
-        filter out from l elements having the metadata values provided
-        """
-        ll = l
-        for elem in l:
-            if type(elem) == types.DictionaryType:
-                for key in d.keys():
-                    k = 'x_object_meta_%s' % key
-                    if k in elem.keys() and elem[k] == d[key]:
-                        ll.remove(elem)
-                        break
-        return ll
-    
-    def _filter_trashed(self, l):
-        return self._filter(l, {'trash':'true'})
-    
-    def list_objects(self, container, detail=False, headers=None,
-                     include_trashed=False, **params):
-        l = self._list('/' + container, detail, params, headers)
-        if not include_trashed:
-            l = self._filter_trashed(l)
-        return l
-    
-    def create_container(self, container, headers=None, **meta):
-        for k,v in meta.items():
-            headers['x-container-meta-%s' %k.strip().upper()] = v.strip()
-        status, header, data = self.put('/' + container, headers=headers)
-        if status == 202:
-            return False
-        elif status != 201:
-            raise Fault(data, int(status))
-        return True
-    
-    def delete_container(self, container):
-        return self.delete('/' + container)
+    def list_objects(self, container, detail=False, limit=10000, marker=None,
+                     prefix=None, delimiter=None, path=None,
+                     include_trashed=False, params={}, if_modified_since=None,
+                     if_unmodified_since=None, meta={}, until=None):
+        """returns a list with the container objects"""
+        params = {'until':until, 'meta':meta}
+        args = locals()
+        for elem in ['self', 'container', 'params', 'until', 'meta']:
+            args.pop(elem)
+        return OOS_Client.list_objects(self, container, params=params, 
+                                       **args)
     
     def retrieve_container_metadata(self, container, restricted=False,
                                     until=None):
-        prefix = 'x-container-meta-' if restricted else None
-        params = {'until':until} if until else None
-        return self._get_metadata('/%s' % container, prefix, params=params)
-    
-    def update_container_metadata(self, container, **meta):
-        return self._update_metadata('/' + container, 'container', **meta)
-        
-    def delete_container_metadata(self, container, meta=[]):
-        path = '/%s' % (container)
-        return self._delete_metadata(path, 'container', meta)
+        """returns container's metadata"""
+        params = {'until':until} if until else {}
+        return OOS_Client.retrieve_container_metadata(self, container,
+                                                      restricted=restricted,
+                                                      **params)
     
     def set_container_policies(self, container, **policies):
+        """sets containers policies"""
         path = '/%s' % (container)
         headers = {}
         print ''
@@ -341,172 +538,184 @@ class Client(object):
             headers['x-container-policy-%s' % key] = val
         return self.post(path, headers=headers)
     
+    def delete_container(self, container, until=None):
+        """deletes a container or the container history until the date provided"""
+        params = {'until':until} if until else {}
+        return OOS_Client.delete_container(self, container, params)
+    
     # Storage Object Services
     
-    def retrieve_object(self, container, object, detail=False, headers=None,
-                        version=None):
+    def retrieve_object(self, container, object, params={}, detail=False, range=None,
+                        if_range=None, if_match=None, if_none_match=None,
+                        if_modified_since=None, if_unmodified_since=None,
+                        **headers):
+        """returns an object"""
+        headers={}
+        l = ['range', 'if_range', 'if_match', 'if_none_match',
+             'if_modified_since', 'if_unmodified_since']
+        l = [elem for elem in l if eval(elem)]
+        for elem in l:
+            headers.update({elem:eval(elem)})
+        return OOS_Client.retrieve_object(self, container, object, detail=detail,
+                                          params=params, **headers)
+    
+    def retrieve_object_version(self, container, object, version, detail=False,
+                                range=None, if_range=None, if_match=None,
+                                if_none_match=None, if_modified_since=None,
+                                if_unmodified_since=None):
+        """returns a specific object version"""
+        args = locals()
+        l = ['self', 'container', 'object']
+        for elem in l:
+            args.pop(elem)
+        params = {'version':version}
+        return self.retrieve_object(container, object, params, **args)
+    
+    def retrieve_object_versionlist(self, container, object, range=None,
+                                    if_range=None, if_match=None,
+                                    if_none_match=None, if_modified_since=None,
+                                    if_unmodified_since=None):
+        """returns the object version list"""
+        args = locals()
+        l = ['self', 'container', 'object']
+        for elem in l:
+            args.pop(elem)
+            
+        return self.retrieve_object_version(container, object, version='list',
+                                            detail=True, **args)
+    
+    def create_object(self, container, object, f=stdin, meta={},
+                      etag=None, content_type=None, content_encoding=None,
+                      content_disposition=None, x_object_manifest=None,
+                      x_object_sharing=None, x_object_public=None):
+        """creates an object"""
+        args = locals()
+        for elem in ['self', 'container', 'object']:
+            args.pop(elem)
+        return OOS_Client.create_object(self, container, object, **args)
+        
+    def create_object_using_chunks(self, container, object, f=stdin,
+                                    blocksize=1024, meta={}, etag=None,
+                                    content_type=None, content_encoding=None,
+                                    content_disposition=None, 
+                                    x_object_sharing=None,
+                                    x_object_manifest=None, 
+                                    x_object_public=None):
+        """creates an object (incremental upload)"""
         path = '/%s/%s' % (container, object)
-        format = 'json' if detail else 'text'
-        params = {'version':version} if version else None 
-        status, headers, data = self.get(path, format, headers, params)
-        return data
-    
-    def create_directory_marker(self, container, object):
-        if not object:
-            raise Fault('Directory markers have to be nested in a container')
-        h = {'Content-Type':'application/directory'}
-        return self.create_object(container, object, f=None, headers=h)
-    
-    def _set_public_header(self, headers, public=False):
-        """
-        sets the public header
-        """
-        if public == None:
-            return
-        elif public:
-            headers['x-object-public'] = public
-        else:
-            headers['x-object-public'] = ''
-    
-    def create_object(self, container, object, f=stdin, chunked=False,
-                      blocksize=1024, headers={}, use_hashes=False,
-                      public=None, **meta):
-        """
-        creates an object
-        if f is None then creates a zero length object
-        if f is stdin or chunked is set then performs chunked transfer 
-        """
-        path = '/%s/%s' % (container, object)
-        for k,v in meta.items():
-            headers['x-object-meta-%s' %k.strip().upper()] = v.strip()
-        self._set_public_header(headers, public)
-        headers = headers if headers else None
-        if not chunked:
-            format = 'json' if use_hashes else 'text'
-            data = f.read() if f else None
-            if data:
-                if format == 'json':
-                    try:
-                        data = eval(data)
-                        data = json.dumps(data)
-                    except SyntaxError:
-                        raise Fault('Invalid formatting')
-            return self.put(path, data, headers=headers, format=format)
-        else:
-            return self._chunked_transfer(path, 'PUT', f, headers=headers,
-                                   blocksize=1024)
-    
-    def update_object_data(self, container, object, data=None, headers={},
-                      offset=None, public=None, **meta):
-        path = '/%s/%s' % (container, object)
-        for k,v in meta.items():
-            headers['x-object-meta-%s' %k.strip()] = v.strip()
-        if 'content-range' not in headers.keys():
-            if offset:
-                headers['content-range'] = 'bytes %s-/*' % offset
-            else:
-                headers['content-range'] = 'bytes */*'
-        self._set_public_header(headers, public)
-        headers = headers if headers else None
-        return self.post(path, data, headers=headers)
-    
-    def update_object(self, container, object, f=stdin, chunked=False,
-                      blocksize=1024, headers={}, offset=None, public=None,
-                      **meta):
-        path = '/%s/%s' % (container, object)
-        for k,v in meta.items():
-            headers['x-object-meta-%s' %k.strip()] = v.strip()
-        if offset:
-            headers['content-range'] = 'bytes %s-/*' % offset
-        else:
-            headers['content-range'] = 'bytes */*'
-        self._set_public_header(headers, public)
-        headers = headers if headers else None
-        if not chunked and f != stdin:
-            data = f.read() if f else None
-            return self.post(path, data, headers=headers)
-        else:
-            return self._chunked_transfer(path, 'POST', f, headers=headers,
-                                   blocksize=1024)
-    
-    def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False, public=False, **meta):
-        path = '/%s/%s' % (dst_container, dst_object)
         headers = {}
-        for k, v in meta.items():
-            headers['x-object-meta-%s' % k] = v 
-        if remove:
-            headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
+        l = ['etag', 'content_type', 'content_encoding', 'content_disposition', 
+             'x_object_sharing', 'x_object_manifest', 'x_object_public']
+        l = [elem for elem in l if eval(elem)]
+        for elem in l:
+            headers.update({elem:eval(elem)})
+        
+        for k,v in meta.items():
+            headers['x-object-meta-%s' %k.strip()] = v.strip()
+        
+        return self._chunked_transfer(path, 'PUT', f, headers=headers,
+                                      blocksize=blocksize)
+    
+    def create_object_by_hashmap(container, object, f=stdin, format='json',
+                                 meta={}, etag=None, content_encoding=None,
+                                 content_disposition=None, content_type=None,
+                                 x_object_sharing=None, x_object_manifest=None,
+                                 x_object_public = None):
+        """creates an object by uploading hashes representing data instead of data"""
+        args = locals()
+        for elem in ['self', 'container', 'object']:
+            args.pop(elem)
+            
+        data = f.read() if f else None
+        if data and format == 'json':
+            try:
+                data = eval(data)
+                data = json.dumps(data)
+            except SyntaxError:
+                raise Fault('Invalid formatting')
+        
+        #TODO check with xml
+        return self.create_object(container, object, **args)
+    
+    def create_manifestation(self, container, object, manifest):
+        """creates a manifestation"""
+        headers={'x_object_manifest':manifest}
+        return self.create_object(container, object, f=None, **headers)
+    
+    def update_object(self, container, object, f=stdin, offset=None, meta={},
+                      content_length=None, content_type=None, content_range=None,
+                      content_encoding=None, content_disposition=None,
+                      x_object_bytes=None, x_object_manifest=None,
+                      x_object_sharing=None, x_object_public=None):
+        """updates an object"""
+        spath = '/%s/%s' % (container, object)
+        args = locals()
+        for elem in ['self', 'container', 'object']:
+            args.pop(elem)
+        
+        return OOS_Client.update_object(self, container, object, **args)
+        
+    def update_object_using_chunks(self, container, object, f=stdin,
+                                    blocksize=1024, offset=None, meta={},
+                                    content_type=None, content_encoding=None,
+                                    content_disposition=None, x_object_bytes=None,
+                                    x_object_manifest=None, x_object_sharing=None,
+                                    x_object_public=None):
+        """updates an object (incremental upload)"""
+        path = '/%s/%s' % (container, object)
+        headers = {}
+        l = ['content_type', 'content_encoding', 'content_disposition',
+             'x_object_bytes', 'x_object_manifest', 'x_object_sharing',
+             'x_object_public']
+        l = [elem for elem in l if eval(elem)]
+        for elem in l:
+            headers.update({elem:eval(elem)})
+        
+        if offset != None:
+            headers['content_range'] = 'bytes %s-/*' % offset
         else:
-            headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
-        self._set_public_header(headers, public)
-        self.headers = headers if headers else None
-        headers['content-length'] = 0
-        return self.put(path, headers=headers)
+            headers['content_range'] = 'bytes */*'
+        
+        for k,v in meta.items():
+            headers['x-object-meta-%s' %k.strip()] = v.strip()
+        
+        return self._chunked_transfer(path, 'POST', f, headers=headers,
+                                      blocksize=blocksize)
     
-    def copy_object(self, src_container, src_object, dst_container,
-                             dst_object, public=False, **meta):
-        return self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, False,
-                                   public, **meta)
-    
-    def move_object(self, src_container, src_object, dst_container,
-                             dst_object, public=False, **meta):
-        return self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, True,
-                                   public, **meta)
-    
-    def delete_object(self, container, object):
-        return self.delete('/%s/%s' % (container, object))
-    
-    def retrieve_object_metadata(self, container, object, restricted=False,
-                                 version=None):
-        """
-        set restricted to True to get only user defined metadata
-        """
-        path = '/%s/%s' % (container, object)
-        prefix = 'x-object-meta-' if restricted else None
-        params = {'version':version} if version else None
-        return self._get_metadata(path, prefix, params=params)
-    
-    def update_object_metadata(self, container, object, **meta):
-        path = '/%s/%s' % (container, object)
-        return self._update_metadata(path, 'object', **meta)
-    
-    def delete_object_metadata(self, container, object, meta=[]):
-        path = '/%s/%s' % (container, object)
-        return self._delete_metadata(path, 'object', meta)
+    def delete_object(self, container, object, until=None):
+        """deletes an object or the object history until the date provided"""
+        params = {'until':until} if until else {}
+        return OOS_Client.delete_object(self, container, object, params)
     
     def trash_object(self, container, object):
-        """
-        trashes an object
-        actually resets all object metadata with trash = true 
-        """
+        """trashes an object"""
         path = '/%s/%s' % (container, object)
         meta = {'trash':'true'}
         return self._update_metadata(path, 'object', **meta)
     
     def restore_object(self, container, object):
-        """
-        restores a trashed object
-        actualy removes trash object metadata info
-        """
+        """restores a trashed object"""
         return self.delete_object_metadata(container, object, ['trash'])
     
+    def _set_public_header(self, headers, public=False):
+        """sets the public header"""
+        if not headers:
+            headers = {}
+        if public == None:
+            return
+        else:
+            headers['x-object-public'] = public if public else ''
+    
     def publish_object(self, container, object):
-        """
-        sets a previously created object publicly accessible
-        """
+        """sets a previously created object publicly accessible"""
         path = '/%s/%s' % (container, object)
-        headers = {'content-range':'bytes */*'}
+        headers = {'content_range':'bytes */*'}
         self._set_public_header(headers, public=True)
         return self.post(path, headers=headers)
     
     def unpublish_object(self, container, object):
-        """
-        unpublish an object
-        """
+        """unpublish an object"""
         path = '/%s/%s' % (container, object)
-        headers = {'content-range':'bytes */*'}
+        headers = {'content_range':'bytes */*'}
         self._set_public_header(headers, public=False)
         return self.post(path, headers=headers)

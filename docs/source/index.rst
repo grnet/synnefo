@@ -9,7 +9,7 @@ Contents:
    devguide
    adminguide
    backends
-
+   clients
 
 Indices and tables
 ==================

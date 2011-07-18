@@ -37,7 +37,7 @@ from getpass import getuser
 from optparse import OptionParser
 from os import environ
 from sys import argv, exit, stdin, stdout
-from pithos.lib.client import Client, Fault
+from pithos.lib.client import Pithos_Client, Fault
 from datetime import datetime
 
 import json
@@ -47,9 +47,9 @@ import re
 import time as _time
 import os
 
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
-#DEFAULT_HOST = '127.0.0.1:8000'
-#DEFAULT_API = 'v1'
+#DEFAULT_HOST = 'pithos.dev.grnet.gr'
+DEFAULT_HOST = '127.0.0.1:8000'
+DEFAULT_API = 'v1'
 
 _cli_commands = {}
 
@@ -70,7 +70,7 @@ class Command(object):
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
         parser.add_option('--host', dest='host', metavar='HOST',
-                          default=DEFAULT_HOST, help='use server HOST')
+                          default=_get_server(), help='use server HOST')
         parser.add_option('--user', dest='user', metavar='USERNAME',
                           default=_get_user(),
                           help='use account USERNAME')
@@ -93,12 +93,18 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
         
-        self.client = Client(self.host, self.token, self.user, self.api, self.verbose,
+        self.client = Pithos_Client(self.host, self.token, self.user, self.api, self.verbose,
                              self.debug)
         
         self.parser = parser
         self.args = args
-        
+    
+    def _build_args(self, attrs):
+        args = {}
+        for a in [a for a in attrs if getattr(self, a)]:
+            args[a] = getattr(self, a)
+        return args
+
     def add_options(self, parser):
         pass
     
@@ -114,7 +120,7 @@ class List(Command):
         parser.add_option('-l', action='store_true', dest='detail',
                           default=False, help='show detailed output')
         parser.add_option('-n', action='store', type='int', dest='limit',
-                          default=1000, help='show limited output')
+                          default=10000, help='show limited output')
         parser.add_option('--marker', action='store', type='str',
                           dest='marker', default=None,
                           help='show output greater then marker')
@@ -148,30 +154,28 @@ class List(Command):
             self.list_containers()
     
     def list_containers(self):
-        params = {'limit':self.limit, 'marker':self.marker}
-        headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
-                   'IF_UNMODIFIED_SINCE':self.if_unmodified_since}
+        attrs = ['detail', 'limit', 'marker', 'if_modified_since',
+                 'if_unmodified_since']
+        args = self._build_args(attrs)
         
         if self.until:
             t = _time.strptime(self.until, self.format)
-            params['until'] = int(_time.mktime(t))
+            args['until'] = int(_time.mktime(t))
         
-        l = self.client.list_containers(self.detail, params, headers)
+        l = self.client.list_containers(**args)
         print_list(l)
     
     def list_objects(self, container):
         #prepate params
         params = {}
-        attrs = ['limit', 'marker', 'prefix', 'delimiter', 'path', 'meta']
-        for a in [a for a in attrs if getattr(self, a)]:
-            params[a] = getattr(self, a)
+        attrs = ['detail', 'limit', 'marker', 'prefix', 'delimiter', 'path',
+                 'meta', 'if_modified_since', 'if_unmodified_since']
+        args = self._build_args(attrs)
         
         if self.until:
             t = _time.strptime(self.until, self.format)
-            params['until'] = int(_time.mktime(t))
+            args['until'] = int(_time.mktime(t))
         
-        headers = {'IF_MODIFIED_SINCE':self.if_modified_since,
-                   'IF_UNMODIFIED_SINCE':self.if_unmodified_since}
         container, sep, object = container.partition('/')
         if object:
             return
@@ -179,8 +183,7 @@ class List(Command):
         detail = 'json'
         #if request with meta quering disable trash filtering
         show_trashed = True if self.meta else False
-        l = self.client.list_objects(container, detail, headers,
-                                     include_trashed = show_trashed, **params)
+        l = self.client.list_objects(container, **args)
         print_list(l, detail=self.detail)
 
 @cli_command('meta')
@@ -201,19 +204,19 @@ class Meta(Command):
     
     def execute(self, path=''):
         container, sep, object = path.partition('/')
+        args = {'restricted':self.restricted}
         if self.until:
             t = _time.strptime(self.until, self.format)
-            self.until = int(_time.mktime(t))
+            args['until'] = int(_time.mktime(t))
+            
         if object:
             meta = self.client.retrieve_object_metadata(container, object,
                                                         self.restricted,
                                                         self.version)
         elif container:
-            meta = self.client.retrieve_container_metadata(container,
-                                                           self.restricted,
-                                                           self.until)
+            meta = self.client.retrieve_container_metadata(container, **args)
         else:
-            meta = self.client.account_metadata(self.restricted, self.until)
+            meta = self.client.retrieve_account_metadata(**args)
         if meta == None:
             print 'Entity does not exist'
         else:
@@ -225,12 +228,11 @@ class CreateContainer(Command):
     description = 'create a container'
     
     def execute(self, container, *args):
-        headers = {}
         meta = {}
         for arg in args:
             key, sep, val = arg.partition('=')
             meta[key] = val
-        ret = self.client.create_container(container, headers, **meta)
+        ret = self.client.create_container(container, **meta)
         if not ret:
             print 'Container already exists'
 
@@ -239,12 +241,22 @@ class Delete(Command):
     syntax = '<container>[/<object>]'
     description = 'delete a container or an object'
     
+    def add_options(self, parser):
+        parser.add_option('--until', action='store', dest='until',
+                          default=False, help='remove history until that date')
+        parser.add_option('--format', action='store', dest='format',
+                          default='%d/%m/%Y', help='format to parse until date')
+    
     def execute(self, path):
         container, sep, object = path.partition('/')
+        if self.until:
+            t = _time.strptime(self.until, self.format)
+            until = int(_time.mktime(t))
+        
         if object:
-            self.client.delete_object(container, object)
+            self.client.delete_object(container, object, until)
         else:
-            self.client.delete_container(container)
+            self.client.delete_container(container, until)
 
 @cli_command('get')
 class GetObject(Command):
@@ -256,18 +268,18 @@ class GetObject(Command):
                           default=False, help='show detailed output')
         parser.add_option('--range', action='store', dest='range',
                           default=None, help='show range of data')
-        parser.add_option('--if-range', action='store', dest='if-range',
+        parser.add_option('--if-range', action='store', dest='if_range',
                           default=None, help='show range of data')
-        parser.add_option('--if-match', action='store', dest='if-match',
+        parser.add_option('--if-match', action='store', dest='if_match',
                           default=None, help='show output if ETags match')
         parser.add_option('--if-none-match', action='store',
-                          dest='if-none-match', default=None,
+                          dest='if_none_match', default=None,
                           help='show output if ETags don\'t match')
         parser.add_option('--if-modified-since', action='store', type='str',
-                          dest='if-modified-since', default=None,
+                          dest='if_modified_since', default=None,
                           help='show output if modified since then')
         parser.add_option('--if-unmodified-since', action='store', type='str',
-                          dest='if-unmodified-since', default=None,
+                          dest='if_unmodified_since', default=None,
                           help='show output if not modified since then')
         parser.add_option('-o', action='store', type='str',
                           dest='file', default=None,
@@ -281,22 +293,27 @@ class GetObject(Command):
                           help='get the full object version list')
     
     def execute(self, path):
-        headers = {}
+        attrs = ['detail', 'if_match', 'if_none_match', 'if_modified_since',
+                 'if_unmodified_since']
+        args = self._build_args(attrs)
+        
         if self.range:
-            headers['RANGE'] = 'bytes=%s' %self.range
-        if getattr(self, 'if-range'):
-            headers['IF_RANGE'] = 'If-Range:%s' % getattr(self, 'if-range')
-        attrs = ['if-match', 'if-none-match', 'if-modified-since',
-                 'if-unmodified-since']
-        attrs = [a for a in attrs if getattr(self, a)]
-        for a in attrs:
-            headers[a.replace('-', '_').upper()] = getattr(self, a)
+            args['range'] = 'bytes=%s' %self.range
+        if getattr(self, 'if_range'):
+            args['if-range'] = 'If-Range:%s' % getattr(self, 'if_range')
+        
         container, sep, object = path.partition('/')
+        data = None
         if self.versionlist:
-            self.version = 'list'
-            self.detail = True
-        data = self.client.retrieve_object(container, object, self.detail,
-                                          headers, self.version)
+            if 'detail' in args.keys():
+                args.pop('detail')
+            data = self.client.retrieve_object_versionlist(container, object, **args)
+        elif self.version:
+            data = self.client.retrieve_object_version(container, object,
+                                                       self.version, **args)
+        else:
+            data = self.client.retrieve_object(container, object, **args)    
+        
         f = self.file and open(self.file, 'w') or stdout
         if self.detail:
             data = json.loads(data)
@@ -330,28 +347,28 @@ class PutObject(Command):
         parser.add_option('--etag', action='store', dest='etag',
                           default=None, help='check written data')
         parser.add_option('--content-encoding', action='store',
-                          dest='content-encoding', default=None,
+                          dest='content_encoding', default=None,
                           help='provide the object MIME content type')
         parser.add_option('--content-disposition', action='store', type='str',
-                          dest='content-disposition', default=None,
+                          dest='content_disposition', default=None,
                           help='provide the presentation style of the object')
-        parser.add_option('-S', action='store',
-                          dest='segment-size', default=False,
-                          help='use for large file support')
+        #parser.add_option('-S', action='store',
+        #                  dest='segment_size', default=False,
+        #                  help='use for large file support')
         parser.add_option('--manifest', action='store_true',
-                          dest='manifest', default=None,
+                          dest='x_object_manifest', default=None,
                           help='upload a manifestation file')
-        parser.add_option('--type', action='store',
-                          dest='content-type', default=False,
+        parser.add_option('--content-type', action='store',
+                          dest='content_type', default=None,
                           help='create object with specific content type')
         parser.add_option('--sharing', action='store',
-                          dest='sharing', default=None,
+                          dest='x_object_sharing', default=None,
                           help='define sharing object policy')
         parser.add_option('-f', action='store',
                           dest='srcpath', default=None,
                           help='file descriptor to read from (pass - for standard input)')
-        parser.add_option('--public', action='store',
-                          dest='public', default=None,
+        parser.add_option('--public', action='store_true',
+                          dest='x_object_public', default=False,
                           help='make object publicly accessible (\'True\'/\'False\')')
     
     def execute(self, path, *args):
@@ -364,21 +381,9 @@ class PutObject(Command):
             key, sep, val = arg.partition('=')
             meta[key] = val
         
-        headers = {}
-        manifest = getattr(self, 'manifest')
-        if manifest:
-            # if it's manifestation file
-            # send zero-byte data with X-Object-Manifest header
-            self.touch = True
-            headers['X_OBJECT_MANIFEST'] = manifest
-        if self.sharing:
-            headers['X_OBJECT_SHARING'] = self.sharing
-        
-        attrs = ['etag', 'content-encoding', 'content-disposition',
-                 'content-type']
-        attrs = [a for a in attrs if getattr(self, a)]
-        for a in attrs:
-            headers[a.replace('-', '_').upper()] = getattr(self, a)
+        attrs = ['etag', 'content_encoding', 'content_disposition',
+                 'content_type', 'x_object_sharing', 'x_object_public']
+        args = self._build_args(attrs)
         
         container, sep, object = path.partition('/')
         
@@ -388,12 +393,19 @@ class PutObject(Command):
         
         if self.use_hashes and not f:
             raise Fault('Illegal option combination')
-        if self.public not in ['True', 'False', None]:
-            raise Fault('Not acceptable value for public')
-        public = eval(self.public) if self.public else None
-        self.client.create_object(container, object, f, chunked=self.chunked,
-                                  headers=headers, use_hashes=self.use_hashes,
-                                  public=public, **meta)
+        
+        if self.chunked:
+            self.client.create_object_using_chunks(container, object, f,
+                                                    meta=meta, **args)
+        elif self.use_hashes:
+            format = 'json' if detail else 'text'
+            self.client.create_object_by_hashmap(container, object, f, format,
+                                 meta=meta, **args)
+        elif self.x_object_manifest:
+            self.client.create_manifestation(container, object, self.x_object_manifest)
+        else:
+            data = f.read() if f else None
+            self.client.create_object(container, object, data, meta=meta, **args)
         if f:
             f.close()
 
@@ -469,16 +481,16 @@ class UpdateObject(Command):
         parser.add_option('--chunked', action='store_true', dest='chunked',
                           default=False, help='set chunked transfer mode')
         parser.add_option('--content-encoding', action='store',
-                          dest='content-encoding', default=None,
+                          dest='content_encoding', default=None,
                           help='provide the object MIME content type')
         parser.add_option('--content-disposition', action='store', type='str',
-                          dest='content-disposition', default=None,
+                          dest='content_disposition', default=None,
                           help='provide the presentation style of the object')
         parser.add_option('--manifest', action='store', type='str',
-                          dest='manifest', default=None,
+                          dest='x_object_manifest', default=None,
                           help='use for large file support')        
         parser.add_option('--sharing', action='store',
-                          dest='sharing', default=None,
+                          dest='x_object_sharing', default=None,
                           help='define sharing object policy')
         parser.add_option('--nosharing', action='store_true',
                           dest='no_sharing', default=None,
@@ -487,25 +499,12 @@ class UpdateObject(Command):
                           dest='srcpath', default=None,
                           help='file descriptor to read from: pass - for standard input')
         parser.add_option('--public', action='store',
-                          dest='public', default=None,
+                          dest='x_object_public', default=False,
                           help='publish/unpublish object (\'True\'/\'False\')')
     
     def execute(self, path, *args):
         if path.find('=') != -1:
             raise Fault('Missing path argument')
-        
-        headers = {}
-        if self.manifest:
-            headers['X_OBJECT_MANIFEST'] = self.manifest
-        if self.sharing:
-            headers['X_OBJECT_SHARING'] = self.sharing
-        if self.no_sharing:
-            headers['X_OBJECT_SHARING'] = ''
-        
-        attrs = ['content-encoding', 'content-disposition']
-        attrs = [a for a in attrs if getattr(self, a)]
-        for a in attrs:
-            headers[a.replace('-', '_').upper()] = getattr(self, a)
         
         #prepare user defined meta
         meta = {}
@@ -513,20 +512,25 @@ class UpdateObject(Command):
             key, sep, val = arg.partition('=')
             meta[key] = val
         
+        if self.no_sharing:
+            self.x_object_sharing = ''
+        
+        attrs = ['content_encoding', 'content_disposition', 'x_object_sharing',
+                 'x_object_public']
+        args = self._build_args(attrs)
+        
         container, sep, object = path.partition('/')
         
         f = None
-        chunked = False
         if self.srcpath:
-            f = self.srcpath != '-' and open(self.srcpath) or stdin
-        if f:
-            chunked = True if (self.chunked or f == stdin) else False
-        if self.public not in ['True', 'False', None]:
-            raise Fault('Not acceptable value for public')
-        public = eval(self.public) if self.public else None
-        self.client.update_object(container, object, f, chunked=chunked,
-                                  headers=headers, offset=self.offset,
-                                  public=public, **meta)
+            f = open(self.srcpath) if self.srcpath != '-' else stdin
+        
+        if self.chunked:
+            self.client.update_object_using_chunks(container, object, f,
+                                                    meta=meta, **args)
+        else:
+            data = f.read() if f else None
+            self.client.update_object(container, object, data, meta=meta, **args)
         if f:
             f.close()
 
@@ -680,11 +684,6 @@ def print_dict(d, header='name', f=stdout, detail=True):
         patterns = ['^x_(account|container|object)_meta_(\w+)$']
         patterns.append(patterns[0].replace('_', '-'))
         for key, val in sorted(d.items()):
-            for p in patterns:
-                p = re.compile(p)
-                m = p.match(key)
-                if m:
-                    key = m.group(2)
             f.write('%s: %s\n' % (key.rjust(30), val))
 
 def print_list(l, verbose=False, f=stdout, detail=True):
@@ -720,7 +719,12 @@ def _get_auth():
             return os.environ['PITHOS_AUTH']
         except KeyError:
             return '0000'
-    
+
+def _get_server():
+    try:
+        return os.environ['PITHOS_SERVER']
+    except KeyError:
+        return DEFAULT_HOST
 
 def main():
     try:
@@ -732,6 +736,7 @@ def main():
     
     cmd = cls(name, argv[2:])
     
+    #cmd.execute(*cmd.args)
     try:
         cmd.execute(*cmd.args)
     except TypeError, e:

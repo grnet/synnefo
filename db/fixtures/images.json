@@ -361,7 +361,7 @@
             "created": "2011-06-09 00:00:00",
             "updated": "2011-06-09 00:00:00",
             "state": "ACTIVE",
-            "backend_id": "windows-2008R2-1",
+            "backend_id": "windows-2008R2-2",
             "format": "ntfsclone",
             "public": 1
         }

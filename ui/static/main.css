@@ -1549,6 +1549,31 @@ input.machine {
     padding-left: 5px;
 }
 
+#metadata-wizard .metadata-key-label {
+    width: 110px;
+    float: left;
+}
+
+#metadata-wizard .metadata-label {
+    float: left;
+    width: 110px;
+    padding-left: 5px;
+}
+
+#metadata-wizard .last {
+    width: auto;
+    padding-left: 12px;
+}
+
+#metadata-wizard .metadata-labels {
+    margin-bottom: 10px;
+    font-weight: bold;
+    height: 10px;
+    width: 400px;
+    color: #4085A5; 
+}
+
+
 #metadata-wizard .metadata-value {
     width: auto;
 }
@@ -1604,11 +1629,22 @@ input.machine {
     margin: 10px 0 0 0;
     background-color: #FF6600;
     border-color: #FF6600;
+    padding-left: 1.5em;
+    padding-right: 1.5em;
+    width: auto;
 }
 
 #metadata-wizard button.create:hover, #add-machines-wizard button.add:hover {
     background-color: #FF9651;
     border-color: #FF9651;
+}
+
+#metadata-wizard .metadata-pair-template .editbuttons .save {
+    background-color: #fff;
+}
+
+#metadata-wizard .metadata-pair-template .editbuttons .save:hover {
+    background-color: #fff !important;
 }
 
 #metadata-wizard .editbuttons {
@@ -3581,6 +3617,7 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     width: 160px;
     filter: alpha(opacity = 80);
     position: relative;
+    width: 126px;
 }
 
 .single .toggler {
@@ -4080,11 +4117,10 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 .ip-version-label {
-    font-size: 0.7em;
-    font-weight: bold;
+    font-size: 0.8em;
     padding: 0.3em;
-    background-color: #74AEC9;
-    color: #fff;
+    background-color: #C4DDE9;
+    color: #000;
     margin-top: -2px;
     vertical-align: middle;
 }
@@ -4099,10 +4135,11 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 .tooltip {
-    background-color: #72ADC8;
-    color: #fff;
+    background-color: #C4DDE9;
+    color: #000;
     font-size: 0.7em;
     padding: 0.2em 0.5em;
-    border: 1px solid #444;
+    border: 1px solid #888;
 }
+
 

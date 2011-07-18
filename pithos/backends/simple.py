@@ -205,7 +205,18 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
         if user != account:
-            raise NotAllowedError
+            if until:
+                raise NotAllowedError
+            containers = self._allowed_containers(user, account)
+            start = 0
+            if marker:
+                try:
+                    start = containers.index(marker) + 1
+                except ValueError:
+                    pass
+            if not limit or limit > 10000:
+                limit = 10000
+            return containers[start:start + limit]
         return self._list_objects(account, '', '/', marker, limit, False, [], until)
     
     def get_container_meta(self, user, account, container, until=None):
@@ -757,41 +768,6 @@ class SimpleBackend(BaseBackend):
         sql = 'delete from groups where account = ?'
         self.con.execute(sql, (account,))
     
-    def _is_allowed(self, user, account, container, name, op='read'):
-        if user == account:
-            return True
-        path = os.path.join(account, container, name)
-        if op == 'read' and self._get_public(path):
-            return True
-        perm_path, perms = self._get_permissions(path)
-        
-        # Expand groups.
-        for x in ('read', 'write'):
-            g_perms = set()
-            for y in perms.get(x, []):
-                if ':' in y:
-                    g_account, g_name = y.split(':', 1)
-                    groups = self._get_groups(g_account)
-                    if g_name in groups:
-                        g_perms.update(groups[g_name])
-                else:
-                    g_perms.add(y)
-            perms[x] = g_perms
-        
-        if op == 'read' and ('*' in perms['read'] or user in perms['read']):
-            return True
-        if '*' in perms['write'] or user in perms['write']:
-            return True
-        return False
-    
-    def _can_read(self, user, account, container, name):
-        if not self._is_allowed(user, account, container, name, 'read'):
-            raise NotAllowedError
-    
-    def _can_write(self, user, account, container, name):
-        if not self._is_allowed(user, account, container, name, 'write'):
-            raise NotAllowedError
-    
     def _check_permissions(self, path, permissions):
         # Check for existing permissions.
         sql = '''select name from permissions
@@ -860,3 +836,60 @@ class SimpleBackend(BaseBackend):
         sql = 'delete from public where name = ?'
         self.con.execute(sql, (path,))
         self.con.commit()
+    
+    def _is_allowed(self, user, account, container, name, op='read'):
+        if user == account:
+            return True
+        path = os.path.join(account, container, name)
+        if op == 'read' and self._get_public(path):
+            return True
+        perm_path, perms = self._get_permissions(path)
+        
+        # Expand groups.
+        for x in ('read', 'write'):
+            g_perms = set()
+            for y in perms.get(x, []):
+                if ':' in y:
+                    g_account, g_name = y.split(':', 1)
+                    groups = self._get_groups(g_account)
+                    if g_name in groups:
+                        g_perms.update(groups[g_name])
+                else:
+                    g_perms.add(y)
+            perms[x] = g_perms
+        
+        if op == 'read' and ('*' in perms['read'] or user in perms['read']):
+            return True
+        if '*' in perms['write'] or user in perms['write']:
+            return True
+        return False
+    
+    def _can_read(self, user, account, container, name):
+        if not self._is_allowed(user, account, container, name, 'read'):
+            raise NotAllowedError
+    
+    def _can_write(self, user, account, container, name):
+        if not self._is_allowed(user, account, container, name, 'write'):
+            raise NotAllowedError
+    
+    def _allowed_paths(self, user, prefix=None):
+        sql = '''select distinct name from permissions where (user = ?
+                    or user in (select account || ':' || gname from groups where user = ?))'''
+        param = (user, user)
+        if prefix:
+            sql += ' and name like ?'
+            param += (prefix + '/%',)
+        c = self.con.execute(sql, param)
+        return [x[0] for x in c.fetchall()]
+    
+    def _allowed_accounts(self, user):
+        allow = set()
+        for path in self._allowed_paths(user):
+            allow.add(path.split('/', 1)[0])
+        return sorted(allow)
+    
+    def _allowed_containers(self, user, account):
+        allow = set()
+        for path in self._allowed_paths(user, account):
+            allow.add(path.split('/', 2)[1])
+        return sorted(allow)

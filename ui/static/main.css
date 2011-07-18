@@ -4102,7 +4102,7 @@ div.state .shutdown, tbody.machines .shutdown {
     background-color: #72ADC8;
     color: #fff;
     font-size: 0.7em;
-    padding: 0.3em;
+    padding: 0.2em 0.5em;
     border: 1px solid #444;
 }
 

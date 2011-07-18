@@ -2383,7 +2383,7 @@ function fix_v6_addresses() {
                 $(el).data("ipstring", ip);
                 $(el).text(match + get_short_v6(ip, parts_to_keep_from_end));
                 $(el).attr("title", ip);
-                $(el).tooltip();
+                $(el).tooltip({'tipClass':'tooltip ipv6-tip', 'position': 'center center'});
             }
         } else {
             if (ip.indexOf(match) == 0) {

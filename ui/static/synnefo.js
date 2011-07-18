@@ -1237,6 +1237,8 @@ function machine_connect(serverIDs){
         return false;
     }
 
+    var username_meta_key = 'User';
+
     var serverID = serverIDs.pop();
     var machine = get_machine(serverID);
     var serverName = machine.name;
@@ -1249,7 +1251,16 @@ function machine_connect(serverIDs){
         var os = os_icon(machine.metadata);
     } catch(err) { var os = 'undefined'; }
 
+    var username = "";
+    try {
+        username = machine.metadata.values[username_meta_key];
+    } catch(err){ username = undefined}
+
     var params_url = '?ip_address=' + serverIP + '&os=' + os + "&host_os=" + $.client.os + "&srv=" + serverID;
+
+    if (username) {
+        params_url += "&username=" + username;
+    }
     
     if ($.client.os == "Windows" && os == "windows") {
         window.open('machines/connect' + params_url + "&rdp=1");

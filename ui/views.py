@@ -127,9 +127,10 @@ CONNECT_PROMT_MESSAGES = {
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
-    operating_system = request.GET.get('os','')
+    operating_system = metadata_os = request.GET.get('os','')
     server_id = request.GET.get('srv', 0)
     host_os = request.GET.get('host_os','Linux').lower()
+    username = request.GET.get('username', None)
 
     if operating_system != "windows":
         operating_system = "linux"
@@ -154,8 +155,14 @@ def machines_connect(request):
         link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d" % (reverse("machines-connect"), ip_address, operating_system,
                 int(server_id))
 
+        user = username
+        if not user:
+            user = "root"
+            if metadata_os.lower() in ['ubuntu', 'kubuntu', 'fedora']:
+                user = "user"
+
         if (operating_system != "windows"):
-            link_title = "ssh root@%s" % ip_address
+            link_title = "ssh %s@%s" % (user, ip_address)
             link_url = None
 
             if host_os == "windows":

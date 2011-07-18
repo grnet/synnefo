@@ -299,7 +299,9 @@ class SimpleBackend(BaseBackend):
         path, version_id, mtime = self._get_containerinfo(account, container)
         
         if until is not None:
-            sql = '''select version_id from versions where name like ? and tstamp <= ?'''
+            sql = '''select version_id from versions where name like ? and tstamp <= ?
+                        and version_id not in (select version_id from (%s))'''
+            sql = sql % self._sql_until() # Do not delete current versions.
             c = self.con.execute(sql, (path + '/%', until))
             for v in [x[0] for x in c.fetchall()]:
                 self._del_version(v)

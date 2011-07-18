@@ -27,5 +27,5 @@ OKEANOS_SITE_URL = "/about"
 OKEANOS_APP_URL = "/ui"
 
 # video url (see okeanos_site/README)
-OKEANOS_VIDEO_URL = "http://vimeo.com/moogaloop.swf?clip_id=9330391&amp;server=vimeo.com&amp;show_title=0&amp;show_byline=0&amp;show_portrait=0&amp;color=74aec9&amp;fullscreen=1&amp;autoplay=0&amp;loop=0"
+OKEANOS_VIDEO_URL = "http://vimeo.com/moogaloop.swf?clip_id=26579413&amp;server=vimeo.com&amp;show_title=0&amp;show_byline=0&amp;show_portrait=0&amp;color=74aec9&amp;fullscreen=1&amp;autoplay=0&amp;loop=0"
 

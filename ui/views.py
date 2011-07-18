@@ -103,7 +103,7 @@ installed, we suggest the use of <a target="_blank" href="http://sourceforge.net
 
 CONNECT_WINDOWS_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
-Open an ssh client such as PuTTY to connect to your machine at IP:""")
+Open an ssh client such as PuTTY and type the following:""")
 CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already installed,
 <a target="_blank" href="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe">Download PuTTY</a>""")
 CONNECT_WINDOWS_WINDOWS_MESSAGE = _("Trying to connect from windows to windows")
@@ -166,7 +166,7 @@ def machines_connect(request):
             link_url = None
 
             if host_os == "windows":
-                link_title = ip_address
+                link_title = "%s@%s" % (user, ip_address)
 
         # try to find a specific message
         try:

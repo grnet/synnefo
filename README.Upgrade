@@ -6,6 +6,7 @@ This file documents the upgrade to newer versions of the Synnefo software.
 v0.5.1 -> v0.5.2
 NEW SETTINGS
     * 10-backend.py:GANETI_CREATEINSTANCE_KWARGS
+    * 30-ui.conf:LOGOUT_URL
 
 REMOVE SETTINGS
     * 10-backend.conf/GANETI_OS_PROVIDER

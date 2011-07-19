@@ -71,7 +71,7 @@ or implied, of GRNET S.A.
         // timeout value from settings.py
         var TIMEOUT = {{timeout}};
         var UPDATE_INTERVAL = {{update_interval}};
-        var LOGOUT_REDIRECT = undefined;
+        var LOGOUT_REDIRECT = '{{ logout_redirect }}';
         var INVITATIONS_URL = "{% url invitations %}";
         var INVITATIONS_TITLE = "{% trans "Invite people" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};

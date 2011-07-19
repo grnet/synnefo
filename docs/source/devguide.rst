@@ -314,7 +314,7 @@ X-Container-Meta-*           Optional user defined metadata
 Last-Modified                The last container modification date (regardless of ``until``)
 ===========================  ===============================
 
-The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix. See container ``PUT`` for a reference of policy directives.
+The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix, formatted as a comma-separated list. See container ``PUT`` for a reference of policy directives.
 
 ================  ===============================
 Return Code       Description

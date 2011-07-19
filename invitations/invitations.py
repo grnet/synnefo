@@ -245,7 +245,7 @@ def send_invitation(invitation):
     _logger.debug("Invitation URL: %s" % email['url'])
 
     send_async(
-        frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
+        frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
         subject = _('Invitation to IaaS service Okeanos'),
         body = data

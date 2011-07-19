@@ -6,7 +6,7 @@ DEBUG = True
 
 # invitations only, no login page exists
 # redirect client to the intro page
-LOGIN_URL = "http://host:port/intro"
+LOGIN_URL = "/intro"
 
 # redirect to login url (intro) on user logout
 LOGOUT_URL = LOGIN_URL

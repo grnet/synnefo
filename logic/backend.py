@@ -350,4 +350,6 @@ def set_firewall_profile(vm, profile):
     
     # XXX NOP ModifyInstance call to force process_net_status to run
     # on the dispatcher
-    rapi.ModifyInstance(vm.backend_id, os_name=settings.GANETI_OS_PROVIDER)
+    rapi.ModifyInstance(vm.backend_id,
+                        os_name=settings.GANETI_CREATEINSTANCE_KWARGS['os'])
+

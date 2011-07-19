@@ -80,3 +80,10 @@ a {
 
 .menu li.last {
 }
+
+.inner-bottom .testuser {
+    margin-right: 22px;
+}
+.inner-bottom .testuser a {
+    margin-right: 0px;
+}

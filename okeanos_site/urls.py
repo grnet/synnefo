@@ -23,8 +23,7 @@ urlpatterns = patterns('',
 
 urlpatterns += synnefo_urls
 
-if settings.DEBUG:
-    urlpatterns += patterns('',
-        url(r'^okeanos_static/(.*)$', 'django.views.static.serve',
-        {'document_root': os.path.join(os.path.dirname(__file__), 'static/okeanos_static')}),
-    )
+urlpatterns += patterns('',
+    url(r'^okeanos_static/(.*)$', 'django.views.static.serve',
+    {'document_root': os.path.join(os.path.dirname(__file__), 'static/okeanos_static')}),
+)

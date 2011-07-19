@@ -111,12 +111,13 @@ class BaseBackend(object):
         """
         return
     
-    def list_containers(self, user, account, marker=None, limit=10000, until=None):
+    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
         """Return a list of container names existing under an account.
         
         Parameters:
             'marker': Start list from the next item after 'marker'
             'limit': Number of containers to return
+            'shared': Only list containers with permissions set
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -195,7 +196,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):
         """Return a list of object (name, version_id) tuples existing under a container.
         
         Parameters:
@@ -209,6 +210,7 @@ class BaseBackend(object):
                        If set, the result will include all names after 'prefix',\
                        up to and including the 'delimiter' if it is found
             'keys': Include objects that have meta with the keys in the list
+            'shared': Only list objects with permissions set
         
         Raises:
             NotAllowedError: Operation not permitted

@@ -30,6 +30,7 @@ Revision                   Description
 \                          Create object using a standard HTML form.
 \                          Purge container/object history.
 \                          List other accounts that share objects with a user.
+\                          List shared containers/objects.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -206,6 +207,7 @@ Request Parameter Name  Value
 limit                   The amount of results requested (default is 10000)
 marker                  Return containers with name lexicographically after marker
 format                  Optional extended reply type (can be ``json`` or ``xml``)
+shared                  Show only shared containers (no value parameter)
 until                   Optional timestamp
 ======================  =========================
 
@@ -343,6 +345,7 @@ delimiter               Return objects up to the delimiter (discussion follows)
 path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 meta                    Return objects having the specified meta keys (can be a comma separated list)
+shared                  Show only shared objects (no value parameter)
 until                   Optional timestamp
 ======================  ===================================
 
@@ -883,7 +886,8 @@ List of differences from the OOS API:
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
-* Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility. 
+* Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility.
+* Option to include only shared containers/objects in listings.
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object ``GET`` support as outlined in RFC2616.
 * Object hashmap retrieval through ``GET`` and the ``format`` parameter.

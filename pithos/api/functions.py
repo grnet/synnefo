@@ -198,7 +198,7 @@ def account_update(request, v_account):
     meta, groups = get_account_headers(request)
     replace = True
     if 'update' in request.GET:
-        replace = False    
+        replace = False
     if groups:
         try:
             backend.update_account_groups(request.user, v_account, groups, replace)
@@ -237,8 +237,12 @@ def container_list(request, v_account):
     if not limit:
         limit = 10000
     
+    shared = False
+    if 'shared' in request.GET:
+        shared = True
+    
     try:
-        containers = backend.list_containers(request.user, v_account, marker, limit, until)
+        containers = backend.list_containers(request.user, v_account, marker, limit, shared, until)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -426,8 +430,12 @@ def object_list(request, v_account, v_container):
     else:
         keys = []
     
+    shared = False
+    if 'shared' in request.GET:
+        shared = True
+    
     try:
-        objects = backend.list_objects(request.user, v_account, v_container, prefix, delimiter, marker, limit, virtual, keys, until)
+        objects = backend.list_objects(request.user, v_account, v_container, prefix, delimiter, marker, limit, virtual, keys, shared, until)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -901,7 +909,7 @@ def object_update(request, v_account, v_container, v_object):
         content_length = -1
         if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
             content_length = get_content_length(request)
-            
+        
         if length is None:
             length = content_length
         else:

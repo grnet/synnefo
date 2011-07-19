@@ -238,7 +238,7 @@ class SimpleBackend(BaseBackend):
         self._del_groups(account)
     
     @backend_method
-    def list_containers(self, user, account, marker=None, limit=10000, until=None):
+    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
         """Return a list of containers existing under an account."""
         
         logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
@@ -248,6 +248,11 @@ class SimpleBackend(BaseBackend):
             allowed = self._allowed_containers(user, account)
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
+        else:
+            if shared:
+                allowed = [x.split('/', 2)[1] for x in self._shared_paths(account)]
+                start, limit = self._list_limits(allowed, marker, limit)
+                return allowed[start:start + limit]
         return [x[0] for x in self._list_objects(account, '', '/', marker, limit, False, [], until)]
     
     @backend_method
@@ -369,10 +374,10 @@ class SimpleBackend(BaseBackend):
         self._copy_version(user, account, account, True, False) # New account version (for timestamp update).
     
     @backend_method
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):
         """Return a list of objects existing under a container."""
         
-        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, until)
+        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, shared, until)
         allowed = []
         if user != account:
             if until:
@@ -380,6 +385,9 @@ class SimpleBackend(BaseBackend):
             allowed = self._allowed_paths(user, os.path.join(account, container))
             if not allowed:
                 raise NotAllowedError
+        else:
+            if shared:
+                allowed = self._shared_paths(os.path.join(account, container))
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     
@@ -970,3 +978,8 @@ class SimpleBackend(BaseBackend):
         for path in self._allowed_paths(user, account):
             allow.add(path.split('/', 2)[1])
         return sorted(allow)
+    
+    def _shared_paths(self, prefix):
+        sql = 'select distinct name from permissions where name like ?'
+        c = self.con.execute(sql, (prefix + '/%',))
+        return [x[0] for x in c.fetchall()]

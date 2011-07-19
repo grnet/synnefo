@@ -143,7 +143,7 @@ class List(Command):
                           dest='if_unmodified_since', default=None,
                           help='show output if not modified since then')
         parser.add_option('--until', action='store', dest='until',
-                          default=False, help='show metadata until that date')
+                          default=None, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
     
@@ -154,11 +154,12 @@ class List(Command):
             self.list_containers()
     
     def list_containers(self):
-        attrs = ['detail', 'limit', 'marker', 'if_modified_since',
+        attrs = ['limit', 'marker', 'if_modified_since',
                  'if_unmodified_since']
         args = self._build_args(attrs)
+        args['format'] = 'json' if self.detail else 'text'
         
-        if self.until:
+        if getattr(self, 'until'):
             t = _time.strptime(self.until, self.format)
             args['until'] = int(_time.mktime(t))
         
@@ -168,9 +169,10 @@ class List(Command):
     def list_objects(self, container):
         #prepate params
         params = {}
-        attrs = ['detail', 'limit', 'marker', 'prefix', 'delimiter', 'path',
+        attrs = ['limit', 'marker', 'prefix', 'delimiter', 'path',
                  'meta', 'if_modified_since', 'if_unmodified_since']
         args = self._build_args(attrs)
+        args['format'] = 'json' if self.detail else 'text'
         
         if self.until:
             t = _time.strptime(self.until, self.format)
@@ -195,7 +197,7 @@ class Meta(Command):
         parser.add_option('-r', action='store_true', dest='restricted',
                           default=False, help='show only user defined metadata')
         parser.add_option('--until', action='store', dest='until',
-                          default=False, help='show metadata until that date')
+                          default=None, help='show metadata until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
         parser.add_option('--version', action='store', dest='version',
@@ -205,7 +207,7 @@ class Meta(Command):
     def execute(self, path=''):
         container, sep, object = path.partition('/')
         args = {'restricted':self.restricted}
-        if self.until:
+        if getattr(self, 'until'):
             t = _time.strptime(self.until, self.format)
             args['until'] = int(_time.mktime(t))
             
@@ -243,13 +245,14 @@ class Delete(Command):
     
     def add_options(self, parser):
         parser.add_option('--until', action='store', dest='until',
-                          default=False, help='remove history until that date')
+                          default=None, help='remove history until that date')
         parser.add_option('--format', action='store', dest='format',
                           default='%d/%m/%Y', help='format to parse until date')
     
     def execute(self, path):
         container, sep, object = path.partition('/')
-        if self.until:
+        until = None
+        if getattr(self, 'until'):
             t = _time.strptime(self.until, self.format)
             until = int(_time.mktime(t))
         
@@ -293,10 +296,10 @@ class GetObject(Command):
                           help='get the full object version list')
     
     def execute(self, path):
-        attrs = ['detail', 'if_match', 'if_none_match', 'if_modified_since',
+        attrs = ['if_match', 'if_none_match', 'if_modified_since',
                  'if_unmodified_since']
         args = self._build_args(attrs)
-        
+        args['format'] = 'json' if self.detail else 'text'
         if self.range:
             args['range'] = 'bytes=%s' %self.range
         if getattr(self, 'if_range'):

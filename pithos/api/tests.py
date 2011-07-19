@@ -36,6 +36,7 @@ import unittest
 from django.utils import simplejson as json
 from xml.dom import minidom
 from StringIO import StringIO
+import time as _time
 import types
 import hashlib
 import os
@@ -45,8 +46,6 @@ import datetime
 import string
 import re
 
-#from pithos.backends import backend
-
 DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
                 "%A, %d-%b-%y %H:%M:%S GMT",
                 "%a, %d %b %Y %H:%M:%S GMT"]
@@ -54,51 +53,58 @@ DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
 DEFAULT_HOST = 'pithos.dev.grnet.gr'
 #DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1'
-DEFAULT_USER = 'papagian'
-DEFAULT_AUTH = '0004'
+DEFAULT_USER = 'test'
+DEFAULT_AUTH = '0000'
 
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
-        self.client = Pithos_Client(DEFAULT_HOST, DEFAULT_AUTH, DEFAULT_USER, DEFAULT_API)
-        self.headers = {
-            'account': ('x-account-container-count',
-                        'x-account-bytes-used',
-                        'last-modified',
-                        'content-length',
-                        'date',
-                        'content_type',
-                        'server',),
-            'object': ('etag',
-                       'content-length',
-                       'content_type',
-                       'content-encoding',
-                       'last-modified',
-                       'date',
-                       'x-object-manifest',
-                       'content-range',
-                       'x-object-modified-by',
-                       'x-object-version',
-                       'x-object-version-timestamp',
-                       'server',),
-            'container': ('x-container-object-count',
-                          'x-container-bytes-used',
-                          'content_type',
-                          'last-modified',
-                          'content-length',
-                          'date',
-                          'x-container-block-size',
-                          'x-container-block-hash',
-                          'x-container-policy-quota',
-                          'x-container-policy-versioning',
-                          'server',
-                          'x-container-object-meta',
-                          'x-container-policy-versioning',
-                          'server',)}
-        
-        self.contentTypes = {'xml':'application/xml',
-                             'json':'application/json',
-                             '':'text/plain'}
+        self.client = Pithos_Client(DEFAULT_HOST,
+                                    DEFAULT_AUTH,
+                                    DEFAULT_USER,
+                                    DEFAULT_API)
+        self.invalid_client = Pithos_Client(DEFAULT_HOST,
+                                                  DEFAULT_AUTH,
+                                                  'invalid',
+                                                  DEFAULT_API)
+        #self.headers = {
+        #    'account': ('x-account-container-count',
+        #                'x-account-bytes-used',
+        #                'last-modified',
+        #                'content-length',
+        #                'date',
+        #                'content_type',
+        #                'server',),
+        #    'object': ('etag',
+        #               'content-length',
+        #               'content_type',
+        #               'content-encoding',
+        #               'last-modified',
+        #               'date',
+        #               'x-object-manifest',
+        #               'content-range',
+        #               'x-object-modified-by',
+        #               'x-object-version',
+        #               'x-object-version-timestamp',
+        #               'server',),
+        #    'container': ('x-container-object-count',
+        #                  'x-container-bytes-used',
+        #                  'content_type',
+        #                  'last-modified',
+        #                  'content-length',
+        #                  'date',
+        #                  'x-container-block-size',
+        #                  'x-container-block-hash',
+        #                  'x-container-policy-quota',
+        #                  'x-container-policy-versioning',
+        #                  'server',
+        #                  'x-container-object-meta',
+        #                  'x-container-policy-versioning',
+        #                  'server',)}
+        #
+        #self.contentTypes = {'xml':'application/xml',
+        #                     'json':'application/json',
+        #                     '':'text/plain'}
         self.extended = {
             'container':(
                 'name',
@@ -146,48 +152,47 @@ class BaseTestCase(unittest.TestCase):
     #            data = minidom.parseString(data)
     #    return status, headers, data
     
-    def assert_headers(self, headers, type, **exp_meta):
-        prefix = 'x-%s-meta-' %type
-        system_headers = [h for h in headers if not h.startswith(prefix)]
-        for k,v in headers.items():
-            if k in system_headers:
-                self.assertTrue(k in headers[type])
-            elif exp_meta:
-                k = k.split(prefix)[-1]
-                self.assertEqual(v, exp_meta[k])
+    #def assert_headers(self, headers, type, **exp_meta):
+    #    prefix = 'x-%s-meta-' %type
+    #    system_headers = [h for h in headers if not h.startswith(prefix)]
+    #    for k,v in headers.items():
+    #        if k in system_headers:
+    #            self.assertTrue(k in headers[type])
+    #        elif exp_meta:
+    #            k = k.split(prefix)[-1]
+    #            self.assertEqual(v, exp_meta[k])
     
-    #def assert_extended(self, data, format, type, size):
-    #    if format == 'xml':
-    #        self._assert_xml(data, type, size)
-    #    elif format == 'json':
-    #        self._assert_json(data, type, size)
+    def assert_extended(self, data, format, type, size):
+        if format == 'xml':
+            self._assert_xml(data, type, size)
+        elif format == 'json':
+            self._assert_json(data, type, size)
     
-    #def _assert_json(self, data, type, size):
-    #    print '#', data
-    #    convert = lambda s: s.lower()
-    #    info = [convert(elem) for elem in self.extended[type]]
-    #    data = json.loads(data)
-    #    self.assertTrue(len(data) <= size)
-    #    for item in info:
-    #        for i in data:
-    #            if 'subdir' in i.keys():
-    #                continue
-    #            self.assertTrue(item in i.keys())
+    def _assert_json(self, data, type, size):
+        print '#', data
+        convert = lambda s: s.lower()
+        info = [convert(elem) for elem in self.extended[type]]
+        self.assertTrue(len(data) <= size)
+        for item in info:
+            for i in data:
+                if 'subdir' in i.keys():
+                    continue
+                self.assertTrue(item in i.keys())
     
-    #def _assert_xml(self, data, type, size):
-    #    print '#', data
-    #    convert = lambda s: s.lower()
-    #    info = [convert(elem) for elem in self.extended[type]]
-    #    try:
-    #        info.remove('content_encoding')
-    #    except ValueError:
-    #        pass
-    #    xml = minidom.parseString(data)
-    #    entities = xml.getElementsByTagName(type)
-    #    self.assertTrue(len(entities) <= size)
-    #    for e in entities:
-    #        for item in info:
-    #            self.assertTrue(e.hasAttribute(item))
+    def _assert_xml(self, data, type, size):
+        convert = lambda s: s.lower()
+        info = [convert(elem) for elem in self.extended[type]]
+        try:
+            info.remove('content_encoding')
+        except ValueError:
+            pass
+        xml = data
+        entities = xml.getElementsByTagName(type)
+        self.assertTrue(len(entities) <= size)
+        for e in entities:
+            for item in info:
+                print '#', item
+                self.assertTrue(e.hasAttribute(item))
     
     def assert_raises_fault(self, status, callableObj, *args, **kwargs):
         """
@@ -265,6 +270,10 @@ class AccountHead(BaseTestCase):
         for item in self.containers:
             self.client.create_container(item)
     
+    def tearDown(self):
+        self.client.delete_account_metadata(['foo'])
+        BaseTestCase.tearDown(self)
+    
     def test_get_account_meta(self):
         meta = self.client.retrieve_account_metadata()
         
@@ -277,10 +286,30 @@ class AccountHead(BaseTestCase):
             size = size + int(m['x-container-bytes-used'])
         self.assertEqual(meta['x-account-bytes-used'], str(size))
     
-    #def test_get_account_401(self):
-    #    response = self.get_account_meta('non-existing-account')
-    #    print response
-    #    self.assertEqual(response.status_code, 401)
+    def test_get_account_401(self):
+        self.assert_raises_fault(401,
+                                 self.invalid_client.retrieve_account_metadata)
+    
+    def test_get_account_meta_until(self):
+        t = datetime.datetime.utcnow()
+        past = t - datetime.timedelta(minutes=-15)
+        past = int(_time.mktime(past.timetuple()))
+        
+        meta = {'foo':'bar'}
+        self.client.update_account_metadata(**meta)
+        meta = self.client.retrieve_account_metadata(restricted=True,
+                                                     until=past)
+        self.assertTrue('foo' not in meta)
+        
+        meta = self.client.retrieve_account_metadata(restricted=True)
+        self.assertTrue('foo' in meta)
+    
+    def test_get_account_meta_until_invalid_date(self):
+        meta = {'foo':'bar'}
+        self.client.update_account_metadata(**meta)
+        meta = self.client.retrieve_account_metadata(restricted=True,
+                                                     until='kshfksfh')
+        self.assertTrue('foo' in meta)
 
 class AccountGet(BaseTestCase):
     def setUp(self):
@@ -296,9 +325,8 @@ class AccountGet(BaseTestCase):
         containers = self.client.list_containers()
         self.assertEquals(self.containers, containers)
     
-    #def test_list_204(self):
-    #    response = self.list_containers('non-existing-account')
-    #    self.assertEqual(response.status_code, 204)
+    def test_list_401(self):
+        self.assert_raises_fault(401, self.invalid_client.list_containers)
     
     def test_list_with_limit(self):
         limit = 2
@@ -318,24 +346,22 @@ class AccountGet(BaseTestCase):
         i = self.containers.index(m) + 1
         self.assertEquals(self.containers[i:(i+l)], containers)
     
-    #def test_extended_list(self):
-    #    self.list_containers(self.account, limit=3, format='xml')
-    #    self.list_containers(self.account, limit=3, format='json')
-    
     def test_list_json_with_marker(self):
         l = 2
         m = 'bananas'
-        containers = self.client.list_containers(limit=l, marker=m, detail=True)
+        containers = self.client.list_containers(limit=l, marker=m, format='json')
+        self.assert_extended(containers, 'json', 'container', l)
         self.assertEqual(containers[0]['name'], 'kiwis')
         self.assertEqual(containers[1]['name'], 'oranges')
     
-    #def test_list_xml_with_marker(self):
-    #    l = 2
-    #    m = 'oranges'
-    #    status, headers, xml = self.list_containers(limit=l, marker=m, format='xml')
-    #    nodes = xml.getElementsByTagName('name')
-    #    self.assertEqual(len(nodes), 1)
-    #    self.assertEqual(nodes[0].childNodes[0].data, 'pears')
+    def test_list_xml_with_marker(self):
+        l = 2
+        m = 'oranges'
+        xml = self.client.list_containers(limit=l, marker=m, format='xml')
+        #self.assert_extended(xml, 'xml', 'container', l)
+        nodes = xml.getElementsByTagName('name')
+        self.assertEqual(len(nodes), 1)
+        self.assertEqual(nodes[0].childNodes[0].data, 'pears')
     
     def test_if_modified_since(self):
         t = datetime.datetime.utcnow()
@@ -404,11 +430,12 @@ class AccountPost(BaseTestCase):
         self.client.update_account_metadata(**meta)
         self.assertEqual(meta, self.client.retrieve_account_metadata(restricted=True))
     
-    #def test_invalid_account_update_meta(self):
-    #    with AssertMappingInvariant(self.get_account_meta, self.account):
-    #        meta = {'HTTP_X_ACCOUNT_META_TEST':'test',
-    #               'HTTP_X_ACCOUNT_META_TOST':'tost'}
-    #        response = self.update_account_meta('non-existing-account', **meta)
+    def test_invalid_account_update_meta(self):
+        meta = {'HTTP_X_ACCOUNT_META_TEST':'test',
+               'HTTP_X_ACCOUNT_META_TOST':'tost'}
+        self.assert_raises_fault(401,
+                                 self.invalid_client.update_account_metadata,
+                                 **meta)
 
 class ContainerHead(BaseTestCase):
     def setUp(self):
@@ -486,23 +513,23 @@ class ContainerGet(BaseTestCase):
         self.assertEquals(['photos/me.jpg'], objects)
     
     def test_extended_list_json(self):
-        objects = self.client.list_objects(self.container[1], detail=True,
+        objects = self.client.list_objects(self.container[1], format='json',
                                            limit=2, prefix='photos/animals',
                                            delimiter='/')
         self.assertEqual(objects[0]['subdir'], 'photos/animals/cats/')
         self.assertEqual(objects[1]['subdir'], 'photos/animals/dogs/')
     
-    #def test_extended_list_xml(self):
-    #    xml = self.client.list_objects(self.container[1], format='xml', limit=4,
-    #                                   prefix='photos', delimiter='/')
-    #    dirs = xml.getElementsByTagName('subdir')
-    #    self.assertEqual(len(dirs), 2)
-    #    self.assertEqual(dirs[0].attributes['name'].value, 'photos/animals/')
-    #    self.assertEqual(dirs[1].attributes['name'].value, 'photos/plants/')
-    #    
-    #    objects = xml.getElementsByTagName('name')
-    #    self.assertEqual(len(objects), 1)
-    #    self.assertEqual(objects[0].childNodes[0].data, 'photos/me.jpg')
+    def test_extended_list_xml(self):
+        xml = self.client.list_objects(self.container[1], format='xml', limit=4,
+                                       prefix='photos', delimiter='/')
+        dirs = xml.getElementsByTagName('subdir')
+        self.assertEqual(len(dirs), 2)
+        self.assertEqual(dirs[0].attributes['name'].value, 'photos/animals/')
+        self.assertEqual(dirs[1].attributes['name'].value, 'photos/plants/')
+        
+        objects = xml.getElementsByTagName('name')
+        self.assertEqual(len(objects), 1)
+        self.assertEqual(objects[0].childNodes[0].data, 'photos/me.jpg')
     
     def test_list_meta_double_matching(self):
         meta = {'quality':'aaa', 'stock':'true'}
@@ -978,7 +1005,8 @@ class ObjectGet(BaseTestCase):
         fname = 'largefile'
         o = self.upload_random_data(self.containers[1], fname, l)
         if o:
-            data = self.client.retrieve_object(self.containers[1], fname, detail=True)
+            data = self.client.retrieve_object(self.containers[1], fname,
+                                               format='json')
             body = json.loads(data)
             hashes = body['hashes']
             block_size = body['block_size']
@@ -1026,7 +1054,7 @@ class ObjectPut(BaseTestCase):
         self.assert_raises_fault(422, self.upload_random_data, self.container,
                                  o_names[0], **meta)
     
-    def test_chucked_transfer(self):
+    def test_chunked_transfer(self):
         data = get_random_data()
         objname = 'object'
         self.client.create_object_using_chunks(self.container, objname,
@@ -1197,13 +1225,11 @@ class ObjectPost(BaseTestCase):
                                     self.containers[0], self.obj['name']):
             self.test_update_object(499, 0, True)
     
-    #no use if the server resets the content-legth
     def test_update_object_invalid_range_and_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj['name']):
             self.test_update_object(499, 0, True, -1)
     
-    #no use if the server resets the content-legth
     def test_update_object_invalid_range_with_no_content_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj['name']):

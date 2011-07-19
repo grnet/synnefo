@@ -60,9 +60,9 @@ DATABASES = {
 
 # The backend to use and its initilization options.
 if TEST:
-    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/testpithos.db'),))
+    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/test/'),))
 else:
-    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/pithos.db'),))
+    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/pithos/'),))
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -149,4 +149,5 @@ AUTH_TOKENS = {
     '0004': 'papagian',
     '0005': 'louridas',
     '0006': 'chstath',
-    '0007': 'pkanavos'}
+    '0007': 'pkanavos',
+    '0008': 'mvasilak'}

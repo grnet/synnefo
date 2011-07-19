@@ -33,6 +33,7 @@
 
 from httplib import HTTPConnection, HTTP
 from sys import stdin
+from xml.dom import minidom
 
 import json
 import types
@@ -93,7 +94,7 @@ class Client(object):
         kwargs['headers']['X-Auth-Token'] = self.token
         if body:
             kwargs['body'] = body
-        else:
+        elif 'content-type' not in kwargs['headers']:
             kwargs['headers']['content-type'] = ''
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
         kwargs['headers'].setdefault('content-type', 'application/octet-stream')
@@ -141,12 +142,14 @@ class Client(object):
     def put(self, path, body=None, format='text', headers=None):
         return self._req('PUT', path, body, headers=headers, format=format)
     
-    def _list(self, path, detail=False, params={}, **headers):
-        format = 'json' if detail else 'text'
+    def _list(self, path, format='text', params={}, **headers):
         status, headers, data = self.get(path, format=format, headers=headers,
                                          params=params)
-        if detail:
+        if format == 'json':
             data = json.loads(data) if data else ''
+        elif format == 'xml':
+            print '#', data
+            data = minidom.parseString(data)
         else:
             data = data.strip().split('\n') if data else ''
         return data
@@ -178,7 +181,7 @@ class Client(object):
         return ll
     
 class OOS_Client(Client):
-    """Openstack Objest Storage Client"""
+    """Openstack Object Storage Client"""
     
     def _update_metadata(self, path, entity, **meta):
         """adds new and updates the values of previously set metadata"""
@@ -203,13 +206,13 @@ class OOS_Client(Client):
     
     # Storage Account Services
     
-    def list_containers(self, detail=False, limit=10000, marker=None, params={},
+    def list_containers(self, format='text', limit=10000, marker=None, params={},
                         **headers):
         """lists containers"""
         if not params:
             params = {}
         params.update({'limit':limit, 'marker':marker})
-        return self._list('', detail, params, **headers)
+        return self._list('', format, params, **headers)
     
     def retrieve_account_metadata(self, restricted=False, **params):
         """returns the account metadata"""
@@ -229,14 +232,15 @@ class OOS_Client(Client):
     def _filter_trashed(self, l):
         return self._filter(l, {'trash':'true'})
     
-    def list_objects(self, container, detail=False, limit=10000, marker=None,
+    def list_objects(self, container, format='text', limit=10000, marker=None,
                      prefix=None, delimiter=None, path=None,
                      include_trashed=False, params={}, **headers):
         """returns a list with the container objects"""
         params.update({'limit':limit, 'marker':marker, 'prefix':prefix,
                        'delimiter':delimiter, 'path':path})
-        l = self._list('/' + container, detail, params, **headers)
-        if not include_trashed:
+        l = self._list('/' + container, format, params, **headers)
+        #TODO support filter trashed with xml also
+        if format != 'xml' and not include_trashed:
             l = self._filter_trashed(l)
         return l
     
@@ -272,18 +276,17 @@ class OOS_Client(Client):
     
     # Storage Object Services
     
-    def request_object(self, container, object, detail=False, params={},
+    def request_object(self, container, object, format='text', params={},
                         **headers):
         """returns tuple containing the status, headers and data response for an object request"""
         path = '/%s/%s' % (container, object)
-        format = 'json' if detail else 'text' 
         status, headers, data = self.get(path, format, headers, params)
         return status, headers, data
     
-    def retrieve_object(self, container, object, detail=False, params={},
+    def retrieve_object(self, container, object, format='text', params={},
                              **headers):
         """returns an object's data"""
-        t = self.request_object(container, object, detail, params, **headers)
+        t = self.request_object(container, object, format, params, **headers)
         return t[2]
     
     def create_directory_marker(self, container, object):
@@ -469,19 +472,19 @@ class Pithos_Client(OOS_Client):
         headers = {}
         prefix = 'x-%s-meta-' % entity
         for m in meta:
-            headers['%s%s' % (prefix, m)] = None
+            headers['%s%s' % (prefix, m)] = ''
         return self.post(path, headers=headers, params=params)
     
     # Storage Account Services
     
-    def list_containers(self, detail=False, if_modified_since=None,
+    def list_containers(self, format='text', if_modified_since=None,
                         if_unmodified_since=None, limit=1000, marker=None,
                         until=None):
         """returns a list with the account containers"""
         params = {'until':until} if until else None
         headers = {'if-modified-since':if_modified_since,
                    'if-unmodified-since':if_unmodified_since}
-        return OOS_Client.list_containers(self, detail=detail, limit=limit,
+        return OOS_Client.list_containers(self, format=format, limit=limit,
                                           marker=marker, params=params,
                                           **headers)
     
@@ -509,7 +512,7 @@ class Pithos_Client(OOS_Client):
     
     # Storage Container Services
     
-    def list_objects(self, container, detail=False, limit=10000, marker=None,
+    def list_objects(self, container, format='text', limit=10000, marker=None,
                      prefix=None, delimiter=None, path=None,
                      include_trashed=False, params={}, if_modified_since=None,
                      if_unmodified_since=None, meta={}, until=None):
@@ -545,7 +548,7 @@ class Pithos_Client(OOS_Client):
     
     # Storage Object Services
     
-    def retrieve_object(self, container, object, params={}, detail=False, range=None,
+    def retrieve_object(self, container, object, params={}, format='text', range=None,
                         if_range=None, if_match=None, if_none_match=None,
                         if_modified_since=None, if_unmodified_since=None,
                         **headers):
@@ -556,7 +559,7 @@ class Pithos_Client(OOS_Client):
         l = [elem for elem in l if eval(elem)]
         for elem in l:
             headers.update({elem:eval(elem)})
-        return OOS_Client.retrieve_object(self, container, object, detail=detail,
+        return OOS_Client.retrieve_object(self, container, object, format=format,
                                           params=params, **headers)
     
     def retrieve_object_version(self, container, object, version, detail=False,

@@ -49,6 +49,15 @@ class BaseBackend(object):
         'block_size': Suggested is 4MB
     """
     
+    def list_accounts(self, user, marker=None, limit=10000):
+        """Return a list of accounts the user can access.
+        
+        Parameters:
+            'marker': Start list from the next item after 'marker'
+            'limit': Number of containers to return
+        """
+        return []
+    
     def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata.
         
@@ -103,7 +112,7 @@ class BaseBackend(object):
         return
     
     def list_containers(self, user, account, marker=None, limit=10000, until=None):
-        """Return a list of container (name, version_id) tuples existing under an account.
+        """Return a list of container names existing under an account.
         
         Parameters:
             'marker': Start list from the next item after 'marker'

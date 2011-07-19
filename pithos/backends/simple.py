@@ -130,12 +130,21 @@ class SimpleBackend(BaseBackend):
         self.mapper = Mapper(**params)
     
     @backend_method
+    def list_accounts(self, user, marker=None, limit=10000):
+        """Return a list of accounts the user can access."""
+        
+        allowed = self._allowed_accounts(user)
+        start, limit = self._list_limits(allowed, marker, limit)
+        return allowed[start:start + limit]
+    
+    @backend_method
     def get_account_meta(self, user, account, until=None):
         """Return a dictionary with the account metadata."""
         
         logger.debug("get_account_meta: %s %s", account, until)
         if user != account:
-            raise NotAllowedError
+            if until or account not in self._allowed_accounts(user):
+                raise NotAllowedError
         try:
             version_id, mtime = self._get_accountinfo(account, until)
         except NameError:
@@ -158,12 +167,15 @@ class SimpleBackend(BaseBackend):
         row = c.fetchone()
         count = row[0]
         
-        meta = self._get_metadata(account, version_id)
-        meta.update({'name': account, 'count': count, 'bytes': bytes})
+        if user != account:
+            meta = {'name': account}
+        else:
+            meta = self._get_metadata(account, version_id)
+            meta.update({'name': account, 'count': count, 'bytes': bytes})
+            if until is not None:
+                meta.update({'until_timestamp': tstamp})
         if modified:
             meta.update({'modified': modified})
-        if until is not None:
-            meta.update({'until_timestamp': tstamp})
         return meta
     
     @backend_method
@@ -181,7 +193,9 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("get_account_groups: %s", account)
         if user != account:
-            raise NotAllowedError
+            if account not in self._allowed_accounts(user):
+                raise NotAllowedError
+            return {}
         return self._get_groups(account)
     
     @backend_method
@@ -229,19 +243,12 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
         if user != account:
-            if until:
+            if until or account not in self._allowed_accounts(user):
                 raise NotAllowedError
-            containers = self._allowed_containers(user, account)
-            start = 0
-            if marker:
-                try:
-                    start = containers.index(marker) + 1
-                except ValueError:
-                    pass
-            if not limit or limit > 10000:
-                limit = 10000
-            return containers[start:start + limit]
-        return self._list_objects(account, '', '/', marker, limit, False, [], until)
+            allowed = self._allowed_containers(user, account)
+            start, limit = self._list_limits(allowed, marker, limit)
+            return allowed[start:start + limit]
+        return [x[0] for x in self._list_objects(account, '', '/', marker, limit, False, [], until)]
     
     @backend_method
     def get_container_meta(self, user, account, container, until=None):
@@ -249,7 +256,8 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("get_container_meta: %s %s %s", account, container, until)
         if user != account:
-            raise NotAllowedError
+            if until or container not in self._allowed_containers(user, account):
+                raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         count, bytes, tstamp = self._get_pathstats(path, until)
         if mtime > tstamp:
@@ -261,10 +269,13 @@ class SimpleBackend(BaseBackend):
             if mtime > modified:
                 modified = mtime
         
-        meta = self._get_metadata(path, version_id)
-        meta.update({'name': container, 'count': count, 'bytes': bytes, 'modified': modified})
-        if until is not None:
-            meta.update({'until_timestamp': tstamp})
+        if user != account:
+            meta = {'name': container, 'modified': modified}
+        else:
+            meta = self._get_metadata(path, version_id)
+            meta.update({'name': container, 'count': count, 'bytes': bytes, 'modified': modified})
+            if until is not None:
+                meta.update({'until_timestamp': tstamp})
         return meta
     
     @backend_method
@@ -283,7 +294,9 @@ class SimpleBackend(BaseBackend):
         
         logger.debug("get_container_policy: %s %s", account, container)
         if user != account:
-            raise NotAllowedError
+            if container not in self._allowed_containers(user, account):
+                raise NotAllowedError
+            return {}
         path = self._get_containerinfo(account, container)[0]
         return self._get_policy(path)
     
@@ -360,23 +373,38 @@ class SimpleBackend(BaseBackend):
         """Return a list of objects existing under a container."""
         
         logger.debug("list_objects: %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, until)
+        allowed = []
         if user != account:
-            raise NotAllowedError
+            if until:
+                raise NotAllowedError
+            allowed = self._allowed_paths(user, os.path.join(account, container))
+            if not allowed:
+                raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
-        return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until)
+        return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     
     @backend_method
     def list_object_meta(self, user, account, container, until=None):
         """Return a list with all the container's object meta keys."""
         
         logger.debug("list_object_meta: %s %s %s", account, container, until)
+        allowed = []
         if user != account:
-            raise NotAllowedError
+            if until:
+                raise NotAllowedError
+            allowed = self._allowed_paths(user, os.path.join(account, container))
+            if not allowed:
+                raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         sql = '''select distinct m.key from (%s) o, metadata m
                     where m.version_id = o.version_id and o.name like ?'''
         sql = sql % self._sql_until(until)
-        c = self.con.execute(sql, (path + '/%',))
+        param = (path + '/%',)
+        if allowed:
+            for x in allowed:
+                sql += ' and o.name like ?'
+                param += (x,)
+        c = self.con.execute(sql, param)
         return [x[0] for x in c.fetchall()]
     
     @backend_method
@@ -723,17 +751,39 @@ class SimpleBackend(BaseBackend):
         c = self.con.execute(sql, (path,))
         return dict(c.fetchall())
     
-    def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None):
+    
+    def _list_limits(self, listing, marker, limit):
+        start = 0
+        if marker:
+            try:
+                start = listing.index(marker) + 1
+            except ValueError:
+                pass
+        if not limit or limit > 10000:
+            limit = 10000
+        return start, limit
+    
+    def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None, allowed=[]):
         cont_prefix = path + '/'
         if keys and len(keys) > 0:
             sql = '''select distinct o.name, o.version_id from (%s) o, metadata m where o.name like ? and
-                        m.version_id = o.version_id and m.key in (%s) order by o.name'''
+                        m.version_id = o.version_id and m.key in (%s)'''
             sql = sql % (self._sql_until(until), ', '.join('?' * len(keys)))
             param = (cont_prefix + prefix + '%',) + tuple(keys)
+            if allowed:
+                for x in allowed:
+                    sql += ' and o.name like ?'
+                    param += (x,)
+            sql += ' order by o.name'
         else:
-            sql = 'select name, version_id from (%s) where name like ? order by name'
+            sql = 'select name, version_id from (%s) where name like ?'
             sql = sql % self._sql_until(until)
             param = (cont_prefix + prefix + '%',)
+            if allowed:
+                for x in allowed:
+                    sql += ' and name like ?'
+                    param += (x,)
+            sql += ' order by name'
         c = self.con.execute(sql, param)
         objects = [(x[0][len(cont_prefix):], x[1]) for x in c.fetchall()]
         if delimiter:
@@ -757,14 +807,7 @@ class SimpleBackend(BaseBackend):
                             pseudo_objects.append((pseudo_name, None))
             objects = pseudo_objects
         
-        start = 0
-        if marker:
-            try:
-                start = [x[0] for x in objects].index(marker) + 1
-            except ValueError:
-                pass
-        if not limit or limit > 10000:
-            limit = 10000
+        start, limit = self._list_limits([x[0] for x in objects], marker, limit)
         return objects[start:start + limit]
     
     def _del_version(self, version):

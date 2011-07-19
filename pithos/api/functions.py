@@ -59,6 +59,8 @@ logger = logging.getLogger(__name__)
 
 def top_demux(request):
     if request.method == 'GET':
+        if request.user:
+            return account_list(request)
         return authenticate(request)
     else:
         return method_not_allowed(request)
@@ -125,6 +127,49 @@ def authenticate(request):
                                             x_auth_user)
     return response
 
+@api_method('GET', format_allowed=True)
+def account_list(request):
+    # Normal Response Codes: 200, 204
+    # Error Response Codes: serviceUnavailable (503),
+    #                       badRequest (400)
+    
+    response = HttpResponse()
+    
+    marker = request.GET.get('marker')
+    limit = get_int_parameter(request.GET.get('limit'))
+    if not limit:
+        limit = 10000
+    
+    accounts = backend.list_accounts(request.user, marker, limit)
+    
+    if request.serialization == 'text':
+        if len(accounts) == 0:
+            # The cloudfiles python bindings expect 200 if json/xml.
+            response.status_code = 204
+            return response
+        response.status_code = 200
+        response.content = '\n'.join(accounts) + '\n'
+        return response
+    
+    account_meta = []
+    for x in accounts:
+        try:
+            meta = backend.get_account_meta(request.user, x)
+            groups = backend.get_account_groups(request.user, x)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        else:
+            for k, v in groups.iteritems():
+                meta['X-Container-Group-' + k] = ','.join(v)
+            account_meta.append(printable_header_dict(meta))
+    if request.serialization == 'xml':
+        data = render_to_string('accounts.xml', {'accounts': account_meta})
+    elif request.serialization  == 'json':
+        data = json.dumps(account_meta)
+    response.status_code = 200
+    response.content = data
+    return response
+
 @api_method('HEAD')
 def account_meta(request, v_account):
     # Normal Response Codes: 204
@@ -188,14 +233,9 @@ def container_list(request, v_account):
     put_account_headers(response, meta, groups)
     
     marker = request.GET.get('marker')
-    limit = request.GET.get('limit')
-    if limit:
-        try:
-            limit = int(limit)
-            if limit <= 0:
-                raise ValueError
-        except ValueError:
-            limit = 10000
+    limit = get_int_parameter(request.GET.get('limit'))
+    if not limit:
+        limit = 10000
     
     try:
         containers = backend.list_containers(request.user, v_account, marker, limit, until)
@@ -210,23 +250,22 @@ def container_list(request, v_account):
             response.status_code = 204
             return response
         response.status_code = 200
-        response.content = '\n'.join([x[0] for x in containers]) + '\n'
+        response.content = '\n'.join(containers) + '\n'
         return response
     
     container_meta = []
     for x in containers:
-        if x[1] is not None:
-            try:
-                meta = backend.get_container_meta(request.user, v_account, x[0], until)
-                policy = backend.get_container_policy(request.user, v_account, x[0])
-            except NotAllowedError:
-                raise Unauthorized('Access denied')
-            except NameError:
-                pass
-            else:
-                for k, v in policy.iteritems():
-                    meta['X-Container-Policy-' + k] = v
-                container_meta.append(printable_header_dict(meta))
+        try:
+            meta = backend.get_container_meta(request.user, v_account, x, until)
+            policy = backend.get_container_policy(request.user, v_account, x)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            pass
+        else:
+            for k, v in policy.iteritems():
+                meta['X-Container-Policy-' + k] = v
+            container_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': v_account, 'containers': container_meta})
     elif request.serialization  == 'json':
@@ -376,14 +415,9 @@ def object_list(request, v_account, v_container):
     prefix = prefix.lstrip('/')
     
     marker = request.GET.get('marker')
-    limit = request.GET.get('limit')
-    if limit:
-        try:
-            limit = int(limit)
-            if limit <= 0:
-                raise ValueError
-        except ValueError:
-            limit = 10000
+    limit = get_int_parameter(request.GET.get('limit'))
+    if not limit:
+        limit = 10000
     
     keys = request.GET.get('meta')
     if keys:

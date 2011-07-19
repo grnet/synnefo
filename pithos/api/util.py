@@ -96,8 +96,10 @@ def get_account_headers(request):
     return meta, groups
 
 def put_account_headers(response, meta, groups):
-    response['X-Account-Container-Count'] = meta['count']
-    response['X-Account-Bytes-Used'] = meta['bytes']
+    if 'count' in meta:
+        response['X-Account-Container-Count'] = meta['count']
+    if 'bytes' in meta:
+        response['X-Account-Bytes-Used'] = meta['bytes']
     if 'modified' in meta:
         response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
@@ -113,8 +115,10 @@ def get_container_headers(request):
     return meta, policy
 
 def put_container_headers(response, meta, policy):
-    response['X-Container-Object-Count'] = meta['count']
-    response['X-Container-Bytes-Used'] = meta['bytes']
+    if 'count' in meta:
+        response['X-Container-Object-Count'] = meta['count']
+    if 'bytes' in meta:
+        response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')

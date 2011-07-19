@@ -25,10 +25,11 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.5 (July 16, 2011)        Object update from another object's data.
+0.5 (July 19, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
 \                          Purge container/object history.
+\                          List other accounts that share objects with a user.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -77,7 +78,7 @@ List of operations:
 =========  ==================
 Operation  Description
 =========  ==================
-GET        Authentication. This is kept for compatibility with the OOS API
+GET        Authentication (for compatibility with the OOS API) or list allowed accounts
 =========  ==================
 
 GET
@@ -91,6 +92,54 @@ Return Code       Description
 204 (No Content)  The request succeeded
 ================  =====================
 
+If an ``X-Auth-Token`` is already present, the operation will be interpreted as a request to list other accounts that share objects to the user.
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+limit                   The amount of results requested (default is 10000)
+marker                  Return containers with name lexicographically after marker
+format                  Optional extended reply type (can be ``json`` or ``xml``)
+======================  =========================
+
+The reply is a list of account names.
+If a ``format=xml`` or ``format=json`` argument is given, extended information on the containers will be returned, serialized in the chosen format.
+For each account, the information will include the following (names will be in lower case and with hyphens replaced with underscores):
+
+===========================  ============================
+Name                         Description
+===========================  ============================
+name                         The name of the account
+last_modified                The last container modification date (regardless of ``until``)
+===========================  ============================
+
+Example ``format=json`` reply:
+
+::
+
+  [{"name": "user", "last_modified": "2011-07-19T10:48:16"}, ...]
+
+Example ``format=xml`` reply:
+
+::
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <accounts>
+    <account>
+      <name>user</name>
+      <last_modified>2011-07-19T10:48:16</last_modified>
+    </account>
+    <account>...</account>
+  </accounts>
+
+===========================  =====================
+Return Code                  Description
+===========================  =====================
+200 (OK)                     The request succeeded
+204 (No Content)             The account has no containers (only for non-extended replies)
+===========================  =====================
+
+Will use a ``200`` return code if the reply is of type json/xml.
 
 Account Level
 ^^^^^^^^^^^^^
@@ -114,7 +163,7 @@ Request Parameter Name  Value
 until                   Optional timestamp
 ======================  ===================================
 
-|
+Cross-user requests are not allowed to use ``until`` and only include the account modification date in the reply.
 
 ==========================  =====================
 Reply Header Name           Value
@@ -161,6 +210,8 @@ until                   Optional timestamp
 ======================  =========================
 
 The reply is a list of container names. Account headers (as in a ``HEAD`` request) will also be included.
+Cross-user requests are not allowed to use ``until`` and only include the account/container modification dates in the reply.
+
 If a ``format=xml`` or ``format=json`` argument is given, extended information on the containers will be returned, serialized in the chosen format.
 For each container, the information will include all container metadata (names will be in lower case and with hyphens replaced with underscores):
 
@@ -245,7 +296,7 @@ Request Parameter Name  Value
 until                   Optional timestamp
 ======================  ===================================
 
-|
+Cross-user requests are not allowed to use ``until`` and only include the container modification date in the reply.
 
 ===========================  ===============================
 Reply Header Name            Value
@@ -300,6 +351,17 @@ The ``path`` parameter overrides ``prefix`` and ``delimiter``. When using ``path
 The keys given with ``meta`` will be matched with the strings after the ``X-Object-Meta-`` prefix.
 
 The reply is a list of object names. Container headers (as in a ``HEAD`` request) will also be included.
+Cross-user requests are not allowed to use ``until`` and include the following limited set of headers in the reply:
+
+===========================  ===============================
+Reply Header Name            Value
+===========================  ===============================
+X-Container-Block-Size       The block size used by the storage backend
+X-Container-Block-Hash       The hash algorithm used for block identifiers in object hashmaps
+X-Container-Object-Meta      A list with all meta keys used by allowed objects (**TBD**)
+Last-Modified                The last container modification date
+===========================  ===============================
+
 If a ``format=xml`` or ``format=json`` argument is given, extended information on the objects will be returned, serialized in the chosen format.
 For each object, the information will include all object metadata (names will be in lower case and with hyphens replaced with underscores):
 
@@ -791,7 +853,9 @@ Sharing and Public Objects
 
 Read and write control in Pithos is managed by setting appropriate permissions with the ``X-Object-Sharing`` header. The permissions are applied using prefix-based inheritance. Thus, each set of authorization directives is applied to all objects sharing the same prefix with the object where the corresponding ``X-Object-Sharing`` header is defined. For simplicity, nested/overlapping permissions are not allowed. Setting ``X-Object-Sharing`` will fail, if the object is already "covered", or another object with a longer common-prefix name already has permissions. When retrieving an object, the ``X-Object-Shared-By`` header reports where it gets its permissions from. If not present, the object is the actual source of authorization directives.
 
-Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden).
+A user may ``GET`` another account or container. The result will include a limited reply, containing only the allowed containers or objects respectively. A top-level request with an authentication token, will return a list of allowed accounts, so the user can easily find out which other users share objects.
+
+Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden):
 
 ==========================  ===============================
 Reply Header Name           Value
@@ -804,6 +868,8 @@ Last-Modified               The last object modification date (regardless of ver
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 ==========================  ===============================
+
+Public objects are not included and do not influence cross-user listings. They are, however, readable by all users.
 
 Summary
 ^^^^^^^
@@ -827,7 +893,7 @@ List of differences from the OOS API:
 * Object ``MOVE`` support.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
-* Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
+* Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
 * Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.

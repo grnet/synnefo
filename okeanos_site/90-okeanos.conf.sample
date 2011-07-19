@@ -8,6 +8,9 @@ DEBUG = False
 # redirect client to the intro page
 LOGIN_URL = "http://host:port/intro"
 
+# redirect to login url (intro) on user logout
+LOGOUT_URL = LOGIN_URL
+
 # bypass Shibboleth authentication for /okeanos and /intro pages 
 # (they should be available to the public)
 AAI_SKIP_AUTH_URLS = list(AAI_SKIP_AUTH_URLS) + ['/about', '/intro', '/okeanos_static']

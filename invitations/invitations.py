@@ -86,7 +86,7 @@ def process_form(request):
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request),
                                     'errors': errors,
-                                    'ajax': request.is_ajax(),
+                                    'ajax': True,
                                     'invitations_left': get_invitations_left(request.user)
                                 },
                                 context_instance=RequestContext(request))

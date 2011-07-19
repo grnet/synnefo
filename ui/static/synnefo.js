@@ -2357,14 +2357,8 @@ function show_invitations() {
         form.submit(function(evn){
             evn.preventDefault();
             $.post(form.attr("action"), form.serialize(), function(data) {
-                if (data.redirect) {
-                    $.ajax({url: data.redirect, success: function(){
-                        handle_invitations(el)
-                    }});
-                } else {
-                    $(cont).html(data); 
-                    handle_invitations(cont);
-                }
+                $(cont).html(data); 
+                handle_invitations(cont);
             });
             return false;
         });

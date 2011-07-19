@@ -78,7 +78,6 @@ body.alt {
     text-decoration: none;
     padding: 10px;
     padding-left: 36px;
-    text-shadow: 1px 1px 0px #efefef;
 }
 
 .inner .left ul li a.page-link:hover, .inner .left ul li.selected a.page-link {
@@ -87,6 +86,10 @@ body.alt {
     background-color: #74AEC9;
     border-left: 0px solid #92C1D7;
     padding-left: 36px;
+}
+
+.inner .left ul li .close-button:hover {
+    background-color: #99C9E0;
 }
 
 .inner .left ul li .close-button {
@@ -144,25 +147,27 @@ body.alt {
 }
 
 .page.text h2 {
-    font-size: 1.8em;
+    font-size: 1.9em;
     color: #4085A5;
-    margin-bottom: 0.5em;
-    text-shadow: 1px 1px 0px #ddd;
+    margin-bottom: 1.2em;
+}
+
+.page.text h2 em {
+    color: #FCFDFE;
 }
 
 .page.text a {
-    color: #407087;
+    color: #213D4A;
 }
 
 .page.text p em {
     color: #4C6A78;
-    font-weight: bold;
+    /*font-weight: bold;*/
 }
 
 .page.text h3 {
-    font-size: 1.1em;
-    color: #4C6A78;
-    font-weight: bold;
+    font-size: 1.2em;
+    color: #4394B9;
     margin-bottom: 0.5em;
     margin-top: 1.5em;
 }
@@ -178,8 +183,7 @@ body.alt {
     font-size: 1.1em;
     margin-bottom: 1em;
     text-align: justify;
-    line-height: 1.2em;
-    text-shadow: 1px 1px 0px #efefef;
+    line-height: 1.4em;
 }
 
 .inner .video {
@@ -290,5 +294,4 @@ body.style2 .page.text {
 
 body.style2 .page.text p, body.style2 .page.text h2 {
     color: #fff;
-    text-shadow: 1px 1px 0px #aaa;
 }

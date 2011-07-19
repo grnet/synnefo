@@ -2,7 +2,7 @@
 INSTALLED_APPS = list(INSTALLED_APPS) + ['synnefo.okeanos_site']
 
 # for production deployment no DEBUG needed
-DEBUG = False
+DEBUG = True
 
 # invitations only, no login page exists
 # redirect client to the intro page

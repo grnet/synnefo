@@ -1,6 +1,17 @@
 Changelog
 =========
 
+
+2011-07-19, v0.5.3.1
+    API:
+        * Fix bug with firewall code using inexistent, removed setting
+    GUI:
+        * Fix bug with invitations UI (#859)
+        * Fix bug with feedback form submission raising HTTP 500
+    Deployment:
+        * Fix bug with error reporting by the invitations app
+
+
 2011-07-19, v0.5.3
 
 FIXES:

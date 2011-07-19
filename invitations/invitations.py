@@ -320,15 +320,11 @@ def get_invitations_left(user):
     return user.max_invitations - num_inv
 
 class InvitationException(Exception):
-    messages = []
+    def __init__(self, msg):
+        self.messages = [msg]
 
 class TooManyInvitations(InvitationException):
-
-    def __init__(self, msg):
-        self.messages.append(msg)
-
+    pass
 
 class AlreadyInvited(InvitationException):
-
-    def __init__(self, msg):
-        self.messages.append(msg)
+    pass

@@ -39,7 +39,7 @@ from synnefo.logic import log
 
 _logger = log.get_logger("synnefo.logic")
 
-def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
+def send_async(frm = settings.DEFAULT_FROM_EMAIL,
                to = None, subject = None, body = None):
     """
         Queue a message to be sent sometime later
@@ -56,7 +56,7 @@ def send_async(frm = settings.SYSTEM_EMAIL_ADDR,
     amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
 
 
-def send (sender = settings.SYSTEM_EMAIL_ADDR,
+def send (sender = settings.DEFAULT_FROM_EMAIL,
           recipient = None, subject = None, body = None):
 
     attempts = 0

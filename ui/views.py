@@ -47,6 +47,7 @@ from synnefo.logic.email_send import send_async
 TIMEOUT = settings.TIMEOUT
 UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
+LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -61,6 +62,7 @@ def home(request):
                'current_lang': get_language() or 'en',
                'update_interval': UPDATE_INTERVAL,
                'image_icons': IMAGE_ICONS,
+               'logout_redirect': LOGOUT_URL,
                'DEBUG': settings.DEBUG}
     return template('home', context)
 

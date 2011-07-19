@@ -44,6 +44,8 @@ from django.core.urlresolvers import reverse
 
 from synnefo.logic.email_send import send_async
 
+from django.http import Http404
+
 TIMEOUT = settings.TIMEOUT
 UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
@@ -194,13 +196,17 @@ FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
 def feedback_submit(request):
+
+    if not request.method == "POST":
+        raise Http404
+
     message = request.POST.get("feedback-msg")
     data = request.POST.get("feedback-data")
 
     # default to True (calls from error pages)
     allow_data_send = request.POST.get("feedback-submit-data", True)
 
-    mail_subject = _("Feedback from synnefo application")
+    mail_subject = unicode(_("Feedback from synnefo application"))
 
     mail_context = {'message': message, 'data': data, 'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)

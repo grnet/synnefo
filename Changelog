@@ -1,6 +1,63 @@
 Changelog
 =========
 
+2011-07-18, v0.5.2
+
+FIXES:
+    GUI:
+        * Improve IPv6 support in UI (#839, #841)
+        * Improve Connect messages, propose username (#801)
+        * Add "tag"/"value" headers in Modify tags popup (#845)
+    API:
+        * Support arbitrary arguments to RAPI CreateInstanceCall() (#835)
+    Admin tool:
+        * Support creation and modification of users, flavors, images (#827)
+        * Support sending invitations from the command line
+
+
+2011-07-14, v0.5.1
+
+FIXES:
+    GUI:
+        * non-standard dpi settings (#343)
+        * many minor bugs (#717)
+        * remove "Login again" button from Java VNC viewer (#731)
+        * Fix no firewall settings shown for newly built machines (#753)
+        * Fix handling of transitional "Destroying" state (#771)
+        * Use well-formed, client- and server-specific messages
+          for the Connect operation (#801)
+        * Fix misaligned action labels in IE (#821)
+          generic cross-browser compatibility fixes (#341)
+    Logic:
+        * fix dispatcher flushing AMQP queues (#719)
+        * Support asynchronous VM deletion (#721)
+        * Add backend prefix to all AMQP queues (#723)
+        * Document workarounds for dispatcher daemonization problems
+          when logging to stdout (#779)
+    Images:
+        * Fix ntfsclone causing excess I/O load due to verbose output (#729)
+    API:
+        * Have API use the flavor-defined disk sizes (#759)
+        * Make backend disk templates (plain, drbd) configurable (#77&)
+        * Work around Ganeti bug with getting VNC console info (#783)
+        * Set serial_console=False explicitly on Ganeti backend (#785)
+        * Allow exception info to propagate when VNC console allocation fails
+          (#789)
+        * Handle deletion of machines in ERROR when no Ganeti instance exists
+          (#799)
+    Backend:
+        * Synchronize contrib/kvm-vif-bridge to agree with the API on the tags
+          to use for firewall profiles (#789)
+
+NEW FEATURES
+    GUI:
+        * Add themed form for invitations, integrate with UI (#439)
+        * Add themed feedback form, integrate with API error window
+          (~okeanos #7)
+    Admin tool:
+        * Add initial version of snf-admin tool for user, VM and image
+          management (#727)
+
 
 2011-07-01, v0.5
 

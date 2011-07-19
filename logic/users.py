@@ -46,8 +46,10 @@ def _register_user(f, u, unq, t):
     user.uniq = unq
     user.type = t
     user.credit = 10 #TODO: Fix this when we have a per group policy
+    user.max_invitations = 0
     user.save()
     create_auth_token(user)
+    return user
 
 def create_uname(fullname):
     fullname = fullname.strip()

@@ -4,7 +4,7 @@
 # interfaces based on the initial deployment of the Okeanos project
 
 TAP_CONSTANT_MAC=cc:47:52:4e:45:54 # GRNET in hex :-)
-MAC2EUI64=/etc/ganeti/mac2eui64.py
+MAC2EUI64=/usr/bin/mac2eui64
 NFDHCPD_STATE_DIR=/var/lib/nfdhcpd
 
 function routed_setup_ipv4 {
@@ -47,11 +47,14 @@ function routed_setup_firewall {
 	ifprefix="synnefo:network:$INTERFACE_INDEX:"
 	for tag in $TAGS; do
 		case ${tag#$ifprefix} in
-		protected:1)
-			chain=PROTECTED-1
+		protected)
+			chain=protected
 		;;
-		protected:2)
-			chain=PROTECTED-2
+		unprotected)
+			chain=unprotected
+		;;
+		limited)
+			chain=limited
 		;;
 		esac
 	done

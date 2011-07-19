@@ -52,12 +52,19 @@ or implied, of GRNET S.A.
     <script src="http://flowplayer.org/tools/download/1.2.5/toolbox/toolbox.expose.js"></script>
     -->
     <script src="static/jquery.cookie.js"></script>
+    <script src="static/jquery.client.js"></script>
     <script src="static/json2.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
+    <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
+
     <link rel="stylesheet" type="text/css" href="static/main.css"/>
     <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->
     <script>
+        // empty object for console to avoid errors in browsers that don't support it
+        if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
+            window.console.error = function() {}};
+
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
 
@@ -65,6 +72,11 @@ or implied, of GRNET S.A.
         var TIMEOUT = {{timeout}};
         var UPDATE_INTERVAL = {{update_interval}};
         var LOGOUT_REDIRECT = undefined;
+        var INVITATIONS_URL = "{% url invitations %}";
+        var INVITATIONS_TITLE = "{% trans "Invite people" %}";
+        var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
+        var FEEDBACK_URL = "{% url feedback %}";
+        var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
 
         // server statuses and transitions
         var STATUSES = {
@@ -100,7 +112,6 @@ or implied, of GRNET S.A.
             '{% trans "Stopped" %}',
             '{% trans "Error" %}',
             '{% trans "Starting" %}',
-            '{% trans "Destroying" %}'
         ];
 
         // Network statuses and transitions
@@ -187,8 +198,18 @@ or implied, of GRNET S.A.
                 if (serverName) {
                     serverName = "<p>{% trans "Server" %}: " + serverName + "</p>";
                 }
+
                 if ((errors[0].details === undefined) || (errors[0].details === "")) {
                     details = ERRORS["NO_DETAILS"];
+                    
+                    // if no details message show debug info
+                    if (window.APP_DEBUG) {
+                        details = responseText;
+                        try {
+                            console.trace();
+                        } catch (err) {
+                        }
+                    }
                 } else {
                     details = errors[0].details;
                 }
@@ -199,7 +220,13 @@ or implied, of GRNET S.A.
                 $("#error-success .password-container").hide();
                 $("#error-success .popup-details").addClass("popup-details-error");
                 $("#error-success .popup-separator").addClass("popup-separator-error");
-                $("#error-success .popup-details").html("<p>" + (errors[0].message || ERRORS[errors[0].code]) + "</p>" + serverName + "<p>{% trans "Action" %}: " + action + "</p><p>{% trans "Code" %}: " + errors[0].code + "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + details + "</div></p>");
+                $("#error-success .popup-details").html("<p>" + 
+                    (errors[0].message || ERRORS[errors[0].code] || serverID) + 
+                    "</p>" + serverName + "<p>{% trans "Action" %}:" + 
+                    action + "</p><p>{% trans "Code" %}: " + errors[0].code + 
+                    "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + 
+                    details + "</div></p>");
+
             } else if (ERRORS[status] !== undefined) {
                 if (serverID === undefined) {
                     //eg no_images, no_flavors cases
@@ -246,18 +273,73 @@ or implied, of GRNET S.A.
                 }
             }
 
+            
+            // prepare ajax call to get called when user clicks on 
+            // send error report button
+            function initialize_error_report(cont, extra_data) {
+                var cont = $(cont);
+                var sel = function(sel) {return $(sel, cont)};
+                var btn = sel(".send-btn");
+                var extra_data = extra_data;
+
+                // clear previous callbacks
+                btn.unbind('click');
+                btn.click(function(){
+                    // wrap in its own try catch to avoid retriggering ajax_error
+                    try {
+                        var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
+                        var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
+
+                        // we will close error overlay to display feedback form
+                        // set feedback pending flag to not reload the window url
+                        // unless the user is done with the feedback
+                        window.FEEDBACK_PENDING = true;
+
+                        $("a#notification").overlay().close();
+
+                        var errorCode = extra_data[0] || -10;
+                        var errorType = extra_data[1] || "Generic error";
+                        var errorAction = extra_data[2] || "noaction";
+                        var errorData = extra_data[3] || "";
+                            
+                        fdb_msg =   "Error report\n" +
+                                    "------------\n" + 
+                                    "Code: " + errorCode + "\n" + 
+                                    "Type: " + errorType + "\n" + 
+                                    "Action: " + errorAction + "\n" + 
+                                    "Data: " + errorData + "\n\n" + 
+                                    "Please describe the actions that triggered the error:\n";
+
+                        setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
+                    } catch (err) {
+                        console.log(err);
+                        sel(".send-btn").hide();
+                        sel(".errormsg").fadeIn();
+                        window.FEEDBACK_PENDING = false;
+                    }
+                });
+            }
+
             // bring up error notification
             var triggers = $("a#notification").overlay({
                 // some mask tweaks suitable for modal dialogs
                 mask: '#666',
                 top: 'center',
                 closeOnClick: false,
+                fixed: false,
                 oneInstance: false,
                 load: false,
                 onClose: function () {
-                    // refresh the whole page
-                    location.reload();
+                    // user requested feedback from error page
+                    if (!window.FEEDBACK_PENDING) {
+                        // refresh the whole page
+                       location.reload();
+                    }
+                },
+                onLoad: function() {
+                    initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
                 }
+
             });
 
             // we need to give the browser some time to close the old overlays before opening the new one
@@ -326,20 +408,25 @@ or implied, of GRNET S.A.
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
+                        <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
+                        <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
                 <div class="langmenu">
+                <a class="current_lang">en</a>
+                {% comment %}
                 {% get_available_languages as LANGUAGES %}
                 {% for lang in LANGUAGES %}
-                    <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
+                <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
                     {% if not forloop.last %}<span class="sep">~</span>{% endif %}
                     {% endfor %}
+                {% endcomment %}
                 </div>
             </div>
             <div class="header-logo">
                 <a href="/">
-                    <img src="static/okeanos.png" alt="okeanos"/>
+                    <img src="static/okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
                 </a>
             </div>
         </div>
@@ -415,8 +502,15 @@ or implied, of GRNET S.A.
             }).appendTo("head");
         }
 
-        // user menu interaction
         $(document).ready(function(){
+
+            $(".close-msg-box").live('click', close_all_overlays);
+
+            {% if current_lang == "el" and not DEBUG %}
+                window.location = "/lang/?l=en";
+            {% endif %}
+
+            // user menu interaction
             var resetUserMenu = function() {
                 $(this).removeClass("hovered");
                 $(this).removeClass("active");
@@ -436,10 +530,16 @@ or implied, of GRNET S.A.
             $(".usermenu .logout").click(function() {
                 user_session_logout();
             });
+
+            $(".usermenu .invitations").click(show_invitations);
+            $(".usermenu .feedback").click(show_feedback_form);
+                
         });
     </script>
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>
+    <a id="msgbox" rel="#notification-box" href="#"></a>
+    <a id="feedbackbox" rel="#feedback-form" href="#"></a>
 
     <div class="modal" id="error-success">
         <h3 class="popup-header">
@@ -447,6 +547,12 @@ or implied, of GRNET S.A.
         </h3>
         <div class="popup-body">
             <div class="popup-body-inner">
+                <div class="error-report">
+                    <div class="send-btn">{% trans "report error" %}</div>
+                    <div class="sending">{% trans "sending error report..." %}</div>
+                    <div class="errormsg">{% trans "report failed" %}</div>
+                    <div class="success">{% trans "report send successfully" %}</div>
+                </div>
                 <div class="machine-now-building"></div>
                 <div class="popup-separator"></div>
                 <div class="password-container">
@@ -457,6 +563,56 @@ or implied, of GRNET S.A.
                     <div class="write-password"></div>
                     <div class="write-password-details">{% trans "More details about the result"%}</div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="feedback-form" class="feedback notification-box">
+        <h3 class="popup-header">
+            <span class="header-box">{% trans "Send feedback" %}</span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="form-container">
+                <p class="feedback-intro">
+                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
+                <form id="feedback-form">
+                    <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+                    <div class="description"></div>
+                    <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
+                    <textarea name="feedback-msg" class="feedback-text"></textarea>
+
+                    <input type="checkbox" name="submit-submit-data" class='submit-data' />
+                    <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
+                    <textarea name="feedback-data" class="data-text"></textarea>
+                </form>
+            </div>
+
+            <div class="message sending">{% trans "submiting your data....." %}</div>
+            <div class="message success">
+                {% trans "thank you for submiting your feedback" %}
+                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+            <div class="message errormsg">
+                {% trans "some error occured submiting submiting your feedback, please try again later" %}
+                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="notification-box" class="notification-box">
+        <h3 class="popup-header">
+            <span class="header-box"></span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="machine-now-building"></div>
+                <div class="popup-separator"></div>
+                <div class="password-container">
+                    <div class="password"></div>
+                </div>
+                <div class="sub-text"></div>
             </div>
         </div>
     </div>

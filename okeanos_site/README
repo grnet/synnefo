@@ -1,0 +1,84 @@
+~Okeanos intro site application
+===============================
+
+About
+-----
+This is a django application that contains the intro site 
+pages for ~okeanos project.
+
+Its placed inside synnefo repository for convenience pupropses 
+to ease the deployment process for the alpha version of the
+project.
+
+
+Static files
+------------
+The application provides its own static files (images/css/js) 
+seperated from the ones included in ui application. For convenience 
+the url of the static files can be dynamicly change by proper set 
+of the OKEANOS_STATIC_URL setting variable.
+
+
+Settings
+--------
+- OKEANOS_STATIC_URL
+  See `Static files`.
+
+  Defaults to "/okeanos_static/"
+
+- OKEANOS_SITE_URL
+  The url of the intro site (that displays the 
+  introductory application video)
+
+  Defaults to "/okeanos"
+
+- OKEANOS_APP_URL
+  The url of the ~okeanos webapp.
+
+  Defaults to "/"
+
+- OKEANOS_VIDEO_URL
+  Vimeo flash url.
+  Make the following steps to retrieve the appropriate url
+
+  - open vimeo video page
+  - click on the embed button 
+    (on the right side of the video container)
+  - click on "old embed code" to view the flash embedable html code
+  - extract the url from <embed src="<video url>"
+
+
+Views
+-----
+The application contains 2 views. 
+
+The okeanos_site.views.intro that displays the ~okeanos logo
+and redirects to `OKEANOS_SITE_URL`.
+
+The okeanos_site.views.index that displays the introductory 
+video/info and depending on if the user already has the web app
+cookie displays a link that forwards user to the `OKEANOS_APP_URL`.
+
+
+Templates
+---------
+The content of the info blocks (who/why/what) are placed in
+templates/okeanos/pages directory.
+
+
+Urls
+----
+The application contains a convenience `urls.py` file which
+extends the synnefo urlpatterns with two extra urls and modifies.
+
+
+Deploying synnefo with ~okeanos intro pages
+-------------------------------------------
+
+A sample configuration file with documented settings 
+modifications exists in okeanos_site/90-okeanos.conf.sample .
+
+The sample configuration file contains all settings needed
+for the smooth deployment of ~okeanos aplha release with no extra
+modifications on the synnefo application settings.
+

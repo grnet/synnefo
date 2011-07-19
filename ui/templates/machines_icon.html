@@ -53,7 +53,10 @@ or implied, of GRNET S.A.
                     </h5>
                 </div>
                 <a href="#" class="ip">
-                    <h5>{% trans "IP" %}: <span class="public">node.public_ip</span></h5>
+                    <h5>
+                        {% trans "IP:" %} <span class="ip-version-label">v4</span> <span class="public ipv4-text"></span>
+                        <span class="ip-version-label">v6</span> <span class="public ipv6-text"></span>
+                    </h5>
                 </a>
             </div>
             <div class="info">
@@ -66,10 +69,10 @@ or implied, of GRNET S.A.
                 <div class="metadata-container">
                     <div class="vm-details metadata-column">
                         {% trans "CPUs" %}: <span class="cpu-data">1</span><br />
-                        {% trans "RAM" %}: <span class="ram-data">2048</span> (MB)<br />
-                        {% trans "System Disk" %}: <span class="disk-data">20</span> (GB) <br /><br />
+                        {% trans "RAM" %}: <span class="ram-data">2048</span>MB<br />
+                        {% trans "System Disk" %}: <span class="disk-data">20</span>GB <br /><br />
                         {% trans "Image" %}: <span class="image-data">Debian</span><br />
-                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span> (GB)
+                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span>MB
                     </div>
                     <div class="vm-stats metadata-column">
                         <div class='stat-label'>{% trans "CPU" %}</div>
@@ -115,7 +118,7 @@ or implied, of GRNET S.A.
                 <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
                 <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
             </div>
-            <div class="actions">
+            <div class="actions clearfix">
                 <div class="action-container start">
                     <a href="#" class="action-start">{% trans "Start" %}</a>
                     <div class="confirm_single">
@@ -160,8 +163,8 @@ or implied, of GRNET S.A.
             </div>
         </div>
         <div class="separator"></div>
-    </div>
-    <div class="running"><div class="large-spinner"></div></div>
+    </div><div class="large-spinner"></div>
+    <div class="running disabled"></div>
     <div class="terminated" style="display:none;"></div>
 </div>
 
@@ -175,6 +178,8 @@ $("div.connect-arrow, div.running .machine .logo").live('mouseover',
     function() {
         if ($(this).parent().parent().find('.status').text() != STATUSES['ACTIVE']) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1);
+        var parent = $(this).parent().parent();
+        parent.find(".connect-arrow").show().addClass('border-hover');
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mouseleave',
@@ -183,6 +188,8 @@ $("div.connect-arrow, div.running .machine .logo").live('mouseleave',
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "hover");
         // mouseup outside the element is not fired
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "click");
+        var parent = $(this).parent().parent();
+        parent.find(".connect-arrow").show().removeClass('border-hover');
     });
 
 $("div.connect-arrow, div.running .machine .logo").live('mousedown',
@@ -225,6 +232,7 @@ $("#machinesview-icon.standard .running div.connect-border").live('mouseout', fu
 
 // open console on machine logo click
 $("#machinesview-icon.standard .running div.logo").live('click', function(){
+    if ($(this).parent().parent().find(".connect-arrow:visible").length == 0) { return };
     var serverID = $(this).parent().parent().attr("id");
     machine_connect([machine_connect, serverID]);
     return false;
@@ -528,6 +536,7 @@ function update_machines_view(data) {
     new ones to the list
     */
     $.each(data.servers.values, function(i,server) {
+
         // get DOM element, if it exists
         existing = $('#machinesview-icon.standard #' + server.id);
         // get server OS, if it exists
@@ -610,7 +619,13 @@ function update_machines_view(data) {
                         existing.find('.state').removeClass().addClass('state running-state');
                         setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                     }
-                    else {
+                    else if (STATUSES[server.status] == "Rebooting") { 
+                        // from running to rebooting
+                        log_server_status_change(existing, server.status);
+                        existing.find(".state").removeClass().addClass('state rebooting-state');
+                        existing.find('.spinner').show();
+                        existing.find(".status").text(STATUSES[server.status]);
+                    } else {
                         // in any other case just change the status and ignore spinners/waves
                         existing.find(".status").text(STATUSES[server.status]);
                         existing.appendTo("#machinesview-icon.standard .running");
@@ -621,11 +636,13 @@ function update_machines_view(data) {
             // find and display ips
             var ips = get_public_ips(server);
             existing.find("a.ip span.public").text(ips['ip4']);
+            existing.find("a.ip span.public.ipv6-text").text(ips['ip6']);
         }
         // if it doesn't exist and the server is not DELETED, make a new entry
         else if ( server.status != 'DELETED') {
             // clone the proper template and put basic values in
             var machine = $("#machinesview-icon.standard #machine-container-template").clone().attr("id", server.id).fadeIn("slow");
+
             machine.find(".scrollable").scrollable({vertical: true});
             machine.find("div.name span.name").text(server.name.substring(0,50));
             machine.find("span.imagetag").text(server_image);
@@ -645,11 +662,16 @@ function update_machines_view(data) {
                        machine.find('.state').removeClass().addClass('state error-state');
                 }
             }
+
             //show spinner if server is still building or rebooting
             if (server.status == 'BUILD') {
                 machine.find('.spinner').show();
                 machine.find('.state').removeClass().addClass('state build-state');
+                machine.addClass('vm-building');
+            } else {
+                machine.removeClass('vm-building');
             }
+
             if (server.status == 'REBOOT') {
                 machine.find('.spinner').show();
                 machine.find('.state').removeClass().addClass('state rebooting-state');
@@ -666,6 +688,7 @@ function update_machines_view(data) {
             // find and display ips
             var ips = get_public_ips(server);
             machine.find("a.ip span.public").text(ips['ip4']);
+            machine.find("a.ip span.public.ipv6-text").text(ips['ip6']);
         }
         /*
         Do some repeated actions that include:
@@ -676,12 +699,28 @@ function update_machines_view(data) {
         if (!(server.metadata == undefined)) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
+
+        // if machine in destroy state keep it that way
+        var server = get_machine(server.id);
+        if (server.status == "DESTROY") {
+            existing = $('#machinesview-icon.standard #' + server.id);
+            if (existing.length) {
+                $(existing).find('.status').text(TRANSITIONS['Destroying']);
+                $(existing).find('.state').removeClass().addClass('state destroying-state');
+                $(existing).find('.spinner').show();
+                $(existing).find('.wave').hide();
+            }
+        }
+
+
     });
     /*
     Do some standard stuff, repeated each time
     FIXME: Can these be moved to a new function?
     */
-    $("div.running > div.large-spinner").hide();
+    fix_v6_addresses();
+    $("div.large-spinner").hide();
+    $("div.running").removeClass("disabled");
     // show all separators and hide the last one
     $("#machinesview-icon.standard div.machine-container div.separator").show();
     $("#machinesview-icon.standard div.machine-container:last-child").find("div.separator").hide();
@@ -784,7 +823,9 @@ if ($.browser.msie) {
         $(this).css("background-color","transparent");
         $(this).find("div.info-header").css("background-color","#A1C8DB");
         $(this).find("div.toggler div.down").css("background-color","#A1C8DB");
-        $(this).find(".actions a").css("visibility","hidden");
+        if ($(this).parent().find(".confirm_single:visible").length == 0) {
+            $(this).find(".actions a").css("visibility","hidden");
+        }
     });
     //IE fix for green arrow hover
     $("div.connect-arrow").live("mouseenter", function () {

@@ -39,6 +39,10 @@ from django.http import HttpResponse
 from django.utils.translation import get_language
 from django.utils import simplejson as json
 from django.shortcuts import render_to_response
+from django.template.loader import render_to_string
+from django.core.urlresolvers import reverse
+
+from synnefo.logic.email_send import send_async
 
 TIMEOUT = settings.TIMEOUT
 UPDATE_INTERVAL = settings.UPDATE_INTERVAL
@@ -56,7 +60,8 @@ def home(request):
                'request': request,
                'current_lang': get_language() or 'en',
                'update_interval': UPDATE_INTERVAL,
-               'image_icons': IMAGE_ICONS,}
+               'image_icons': IMAGE_ICONS,
+               'DEBUG': settings.DEBUG}
     return template('home', context)
 
 def machines(request):
@@ -82,22 +87,134 @@ def machines_console(request):
     password = request.GET.get('password','')
     machine = request.GET.get('machine','')
     host_ip = request.GET.get('host_ip','')
-    context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip}
+    host_ip_v6 = request.GET.get('host_ip_v6','')
+    context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', context)
+
+
+CONNECT_LINUX_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
+href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
+To do so open a terminal and type the following at the prompt to connect to your machine:""")
+CONNECT_LINUX_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
+established using <a target="_blank" href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">Remote Desktop Service</a>.
+To do so, open the following file with an appropriate remote desktop client.""")
+CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have one already
+installed, we suggest the use of <a target="_blank" href="http://sourceforge.net/projects/tsclient/files/tsclient/tsclient-unstable/tsclient-2.0.1.tar.bz2/download">tsclient</a>.""")
+
+CONNECT_WINDOWS_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
+href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
+Open an ssh client such as PuTTY and type the following:""")
+CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already installed,
+<a target="_blank" href="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe">Download PuTTY</a>""")
+CONNECT_WINDOWS_WINDOWS_MESSAGE = _("Trying to connect from windows to windows")
+
+
+# info/subinfo for all os combinations
+#
+# [0] info gets displayed on top of the message box
+# [1] subinfo gets displayed on the bottom as extra info
+# provided to the user when needed
+CONNECT_PROMT_MESSAGES = {
+    'linux': {
+            'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
+            'windows': [CONNECT_LINUX_WINDOWS_MESSAGE, CONNECT_LINUX_WINDOWS_SUBMESSAGE]
+        },
+    'windows': {
+            'linux': [CONNECT_WINDOWS_LINUX_MESSAGE, CONNECT_WINDOWS_LINUX_SUBMESSAGE],
+            'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE, ""]
+        }
+    }
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
-    operating_system = request.GET.get('os','')
-    if operating_system == 'windows': #check if we are on windows
+    operating_system = metadata_os = request.GET.get('os','')
+    server_id = request.GET.get('srv', 0)
+    host_os = request.GET.get('host_os','Linux').lower()
+    username = request.GET.get('username', None)
+
+    if operating_system != "windows":
+        operating_system = "linux"
+
+    # rdp param is set, the user requested rdp file
+    if operating_system == 'windows' and request.GET.get("rdp", False): #check if we are on windows
         rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
         connect_data = open(rdp_file, 'r').read()
         connect_data = connect_data + 'full address:s:' + ip_address + '\n'
         response = HttpResponse(connect_data, mimetype='application/x-rdp')
-        response['Content-Disposition'] = 'attachment; filename=synnefo-windows.rdp'
+
+        # proper filename, use server id and ip address
+        filename = "%d-%s.rdp" % (int(server_id), ip_address)
+        response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        response = HttpResponse("Try ssh maybe")  #no windows, no rdp
+        # no rdp requested return json object with info on how to connect
+        ssh = False
+        if (operating_system != "windows"):
+            ssh = True
+
+        link_title = _("Remote desktop to %s") % ip_address
+        link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d" % (reverse("machines-connect"), ip_address, operating_system,
+                int(server_id))
+
+        user = username
+        if not user:
+            user = "root"
+            if metadata_os.lower() in ['ubuntu', 'kubuntu', 'fedora']:
+                user = "user"
+
+        if (operating_system != "windows"):
+            link_title = "ssh %s@%s" % (user, ip_address)
+            link_url = None
+
+            if host_os == "windows":
+                link_title = "%s@%s" % (user, ip_address)
+
+        # try to find a specific message
+        try:
+            connect_message = CONNECT_PROMT_MESSAGES[host_os][operating_system][0]
+            subinfo = CONNECT_PROMT_MESSAGES[host_os][operating_system][1]
+        except KeyError:
+            connect_message = _("You are trying to connect from a %s machine to a %s machine") % (host_os, operating_system)
+            subinfo = ""
+
+        response_object = {
+                'ip': ip_address,
+                'os': operating_system,
+                'ssh': ssh,
+                'info': unicode(connect_message),
+                'subinfo': unicode(subinfo),
+                'link': {'title': unicode(link_title), 'url': link_url}
+            }
+        response = HttpResponse(json.dumps(response_object), mimetype='application/json')  #no windows, no rdp
+
     return response
 
+FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
+FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
+
+def feedback_submit(request):
+    message = request.POST.get("feedback-msg")
+    data = request.POST.get("feedback-data")
+
+    # default to True (calls from error pages)
+    allow_data_send = request.POST.get("feedback-submit-data", True)
+
+    mail_subject = _("Feedback from synnefo application")
+
+    mail_context = {'message': message, 'data': data, 'allow_data_send': allow_data_send, 'request': request}
+    mail_content = render_to_string("feedback_mail.txt", mail_context)
+
+    if settings.DEBUG:
+        print mail_subject, mail_content
+
+    for email in FEEDBACK_CONTACTS:
+        send_async(
+                frm = FEEDBACK_EMAIL_FROM,
+                to = "%s <%s>" % (email[0], email[1]),
+                subject = mail_subject,
+                body = mail_content
+        )
+
+    return HttpResponse("ok");
 
 def images(request):
     context = {}

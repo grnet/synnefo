@@ -94,8 +94,6 @@ class Client(object):
         kwargs['headers']['X-Auth-Token'] = self.token
         if body:
             kwargs['body'] = body
-        elif 'content-type' not in kwargs['headers']:
-            kwargs['headers']['content-type'] = ''
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
         kwargs['headers'].setdefault('content-type', 'application/octet-stream')
         try:
@@ -194,6 +192,17 @@ class OOS_Client(Client):
             headers[k] = v
         return self.post(path, headers=headers, params=params)
     
+    def _reset_metadata(self, path, entity, **meta):
+        """
+        overwrites all user defined metadata
+        """
+        headers = {}
+        prefix = 'x-%s-meta-' % entity
+        for k,v in meta.items():
+            k = '%s%s' % (prefix, k)
+            headers[k] = v
+        return self.post(path, headers=headers)
+    
     def _delete_metadata(self, path, entity, meta=[]):
         """delete previously set metadata"""
         ex_meta = self.retrieve_account_metadata(restricted=True)
@@ -226,6 +235,10 @@ class OOS_Client(Client):
     def delete_account_metadata(self, meta=[]):
         """deletes the account metadata"""
         return self._delete_metadata('', 'account', meta)
+    
+    def reset_account_metadata(self, **meta):
+        """resets account metadata"""
+        return self._reset_metadata('', 'account', **meta)
     
     # Storage Container Services
     
@@ -501,6 +514,20 @@ class Pithos_Client(OOS_Client):
             headers['x-account-group-%s' % key] = val
         params = {'update':None}
         return self.post('', headers=headers, params=params)
+    
+    def retrieve_account_groups(self):
+        """returns the account groups"""
+        meta = self.retrieve_account_metadata()
+        prefix = 'x-account-group-'
+        prefixlen = len(prefix)
+        groups = {}
+        for key, val in meta.items():
+            if prefix and not key.startswith(prefix):
+                continue
+            elif prefix and key.startswith(prefix):
+                key = key[prefixlen:]
+            groups[key] = val
+        return groups
     
     def unset_account_groups(self, groups=[]):
         """delete account groups"""

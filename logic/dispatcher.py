@@ -96,7 +96,45 @@ class Dispatcher:
 
     def _init(self):
         self.logger.info("Initializing")
-        
+
+        # Queue declarations
+        prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
+
+        QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
+        QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
+        QUEUE_CRON_CREDITS = "%s-credits" % prefix
+        QUEUE_EMAIL = "%s-email" % prefix
+        QUEUE_RECONC = "%s-reconciliation" % prefix
+        if settings.DEBUG is True:
+            QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
+
+        QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET,
+                  QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC)
+
+        if settings.DEBUG is True:
+            BINDINGS_DEBUG = [
+                # Queue       # Exchange          # RouteKey  # Handler
+                (QUEUE_DEBUG, settings.EXCHANGE_GANETI, '#',  'dummy_proc'),
+                (QUEUE_DEBUG, settings.EXCHANGE_CRON,   '#',  'dummy_proc'),
+                (QUEUE_DEBUG, settings.EXCHANGE_API,    '#',  'dummy_proc'),
+            ]
+            QUEUES += (QUEUE_DEBUG,)
+
+        # notifications of type "ganeti-op-status"
+        DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
+        # notifications of type "ganeti-net-status"
+        DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
+
+        BINDINGS = [
+        # Queue                   # Exchange                # RouteKey          # Handler
+        (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,  'update_db'),
+        (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net'),
+        (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',      'update_credits'),
+        (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',        'send_email'),
+        (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',        'send_email'),
+        (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*', 'trigger_status_update'),
+        ]
+
         # Connect to RabbitMQ
         conn = None
         while conn == None:
@@ -118,17 +156,17 @@ class Dispatcher:
             self.chan.exchange_declare(exchange=exchange, type="topic",
                                        durable=True, auto_delete=False)
 
-        for queue in settings.QUEUES:
+        for queue in QUEUES:
             self.chan.queue_declare(queue=queue, durable=True,
                                     exclusive=False, auto_delete=False)
 
-        bindings = settings.BINDINGS
+        bindings = BINDINGS
 
         # Special queue for debugging, should not appear in production
         if self.debug and settings.DEBUG:
-            self.chan.queue_declare(queue=settings.QUEUE_DEBUG, durable=True,
+            self.chan.queue_declare(queue=QUEUE_DEBUG, durable=True,
                                     exclusive=False, auto_delete=False)
-            bindings += settings.BINDINGS_DEBUG
+            bindings += BINDINGS_DEBUG
 
         # Bind queues to handler methods
         for binding in bindings:

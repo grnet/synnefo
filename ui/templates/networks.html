@@ -962,7 +962,7 @@ function update_networks_view(servers_data, networks_data){
             if (existing_public.length){
                 // server was renamed
                 if (server.name != existing_public.find('span.name').text()) {
-                    existing_public.find('span.name').text(server.name.substring(0,30));
+                    existing_public.find('span.name').text(fix_server_name(server.name,25));
                 }
                 // server has changed state
                 if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
@@ -1014,7 +1014,7 @@ function update_networks_view(servers_data, networks_data){
                 // quick fix to skip machines with no addresses
                 if (server.addresses) {
                     var machine = $("#networks-pane #public-machine-template").clone().attr("id", "net-pub-server-" + server.id).fadeIn("slow");
-                    machine.find('span.name').text(server.name.substring(0,30));
+                    machine.find('span.name').text(fix_server_name(server.name,25));
                     // find and display ips
                     var ips = get_public_ips(server);
                     if (ips['ip4'] == undefined) {
@@ -1069,7 +1069,7 @@ function update_networks_view(servers_data, networks_data){
                         // add new server
                         if (!existing_private.length) {
                             var machine = $("#networks-pane #private-machine-template").clone().attr("id", "net-" + server_net.id + "-server-" + server.id).fadeIn("slow");
-                            machine.find('span.name').text(server.name.substring(0,30));
+                            machine.find('span.name').text(fix_server_name(server.name, 25));
                             if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
                                 machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
                             } else {
@@ -1086,7 +1086,7 @@ function update_networks_view(servers_data, networks_data){
                         }
                         // server was renamed
                         if (server.name != existing_private.find('span.name').text()) {
-                            existing_private.find('span.name').text(server.name.substring(0,30));
+                            existing_private.find('span.name').text(fix_server_name(server.name,25));
                         }
                         // server has changed state
                         if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {

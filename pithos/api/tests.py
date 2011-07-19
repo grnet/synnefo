@@ -169,7 +169,6 @@ class BaseTestCase(unittest.TestCase):
             self._assert_json(data, type, size)
     
     def _assert_json(self, data, type, size):
-        print '#', data
         convert = lambda s: s.lower()
         info = [convert(elem) for elem in self.extended[type]]
         self.assertTrue(len(data) <= size)
@@ -191,7 +190,6 @@ class BaseTestCase(unittest.TestCase):
         self.assertTrue(len(entities) <= size)
         for e in entities:
             for item in info:
-                print '#', item
                 self.assertTrue(e.hasAttribute(item))
     
     def assert_raises_fault(self, status, callableObj, *args, **kwargs):
@@ -424,19 +422,105 @@ class AccountPost(BaseTestCase):
         self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in self.containers:
             self.client.create_container(item)
+        
+        #keep track of initial account groups
+        self.initial_groups = self.client.retrieve_account_groups()
+        
+        #keep track of initial account meta
+        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
+        
+        meta = {'foo':'bar'}
+        self.client.update_account_metadata(**meta)
+        self.updated_meta = self.initial_meta.update(meta)
+    
+    def tearDown(self):
+        #delete additionally created meta
+        l = []
+        for m in self.client.retrieve_account_metadata(restricted=True):
+            if m not in self.initial_meta:
+                l.append(m)
+        self.client.delete_account_metadata(l)
+        
+        #delete additionally created groups
+        l = []
+        for g in self.client.retrieve_account_groups():
+            if g not in self.initial_groups:
+                l.append(g)
+        self.client.unset_account_groups(l)
+        
+        #print '#', self.client.retrieve_account_groups()
+        #print '#', self.client.retrieve_account_metadata(restricted=True)
+        BaseTestCase.tearDown(self)
     
     def test_update_meta(self):
-        meta = {'test':'test', 'tost':'tost'}
-        self.client.update_account_metadata(**meta)
-        self.assertEqual(meta, self.client.retrieve_account_metadata(restricted=True))
-    
+        with AssertMappingInvariant(self.client.retrieve_account_groups):
+            meta = {'test':'test', 'tost':'tost'}
+            self.client.update_account_metadata(**meta)
+            
+            meta.update(self.initial_meta)
+            self.assertEqual(meta,
+                             self.client.retrieve_account_metadata(
+                                restricted=True))
+        
     def test_invalid_account_update_meta(self):
-        meta = {'HTTP_X_ACCOUNT_META_TEST':'test',
-               'HTTP_X_ACCOUNT_META_TOST':'tost'}
+        meta = {'test':'test', 'tost':'tost'}
         self.assert_raises_fault(401,
                                  self.invalid_client.update_account_metadata,
                                  **meta)
-
+    
+    def test_reset_meta(self):
+        with AssertMappingInvariant(self.client.retrieve_account_groups):
+            meta = {'test':'test', 'tost':'tost'}
+            self.client.update_account_metadata(**meta)
+            
+            meta = {'test':'test33'}
+            self.client.reset_account_metadata(**meta)
+            
+            self.assertEqual(meta, self.client.retrieve_account_metadata(restricted=True))
+    
+    #def test_delete_meta(self):
+    #    with AssertMappingInvariant(self.client.reset_account_groups):
+    #        meta = {'test':'test', 'tost':'tost'}
+    #        self.client.update_account_metadata(**meta)
+    #        
+    #        self.client.delete_account_metadata(**meta)
+    
+    def test_set_account_groups(self):
+        with AssertMappingInvariant(self.client.retrieve_account_metadata):
+            groups = {'pithosdev':'verigak,gtsouk,chazapis'}
+            self.client.set_account_groups(**groups)
+            
+            self.assertEqual(groups, self.client.retrieve_account_groups())
+            
+            more_groups = {'clientsdev':'pkanavos,mvasilak'}
+            self.client.set_account_groups(**more_groups)
+            
+            groups.update(more_groups)
+            self.assertEqual(groups, self.client.retrieve_account_groups())
+    
+    def test_reset_account_groups(self):
+        with AssertMappingInvariant(self.client.retrieve_account_metadata):
+            groups = {'pithosdev':'verigak,gtsouk,chazapis',
+                      'clientsdev':'pkanavos,mvasilak'}
+            self.client.set_account_groups(**groups)
+            
+            self.assertEqual(groups, self.client.retrieve_account_groups())
+            
+            groups = {'pithosdev':'verigak,gtsouk,chazapis, papagian'}
+            self.client.reset_account_groups(**groups)
+            
+            self.assertTrue(groups, self.client.retrieve_account_groups())
+    
+    def test_delete_account_groups(self):
+        with AssertMappingInvariant(self.client.retrieve_account_metadata):
+            groups = {'pithosdev':'verigak,gtsouk,chazapis',
+                      'clientsdev':'pkanavos,mvasilak'}
+            self.client.set_account_groups(**groups)
+            
+            self.client.unset_account_groups(groups.keys())
+            
+            self.assertEqual({}, self.client.retrieve_account_groups())
+    
 class ContainerHead(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -1198,6 +1282,7 @@ class ObjectPost(BaseTestCase):
                 'content_range':'%s' %range}
         if content_length:
             args['content_length'] = content_length
+        
         status = self.client.update_object(self.containers[0], self.obj['name'],
                                   StringIO(data), **args)[0]
         
@@ -1223,17 +1308,19 @@ class ObjectPost(BaseTestCase):
     def test_update_object_invalid_range(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj['name']):
-            self.test_update_object(499, 0, True)
+            self.assert_raises_fault(416, self.test_update_object, 499, 0, True)
     
     def test_update_object_invalid_range_and_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj['name']):
-            self.test_update_object(499, 0, True, -1)
+            self.assert_raises_fault(416, self.test_update_object, 499, 0, True,
+                                     -1)
     
     def test_update_object_invalid_range_with_no_content_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj['name']):
-            self.test_update_object(499, 0, True, content_length = None)
+            self.assert_raises_fault(416, self.test_update_object, 499, 0, True,
+                                     content_length = None)
     
     def test_update_object_out_of_limits(self):    
         with AssertContentInvariant(self.client.retrieve_object,
@@ -1300,7 +1387,7 @@ class AssertMappingInvariant(object):
     def __exit__(self, type, value, tb):
         map = self.callable(*self.args, **self.kwargs)
         for k in self.map.keys():
-            if is_date(map[k]):
+            if is_date(self.map[k]):
                 continue
             assert map[k] == self.map[k]
 

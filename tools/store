@@ -406,8 +406,10 @@ class PutObject(Command):
                                  meta=meta, **args)
         elif self.x_object_manifest:
             self.client.create_manifestation(container, object, self.x_object_manifest)
+        elif not f:
+            self.client.create_zero_length_object(container, object, meta=meta, **args)
         else:
-            data = f.read() if f else None
+            data = f.read()
             self.client.create_object(container, object, data, meta=meta, **args)
         if f:
             f.close()

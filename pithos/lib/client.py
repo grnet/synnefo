@@ -307,12 +307,8 @@ class OOS_Client(Client):
         """creates a dierectory marker"""
         if not object:
             raise Fault('Directory markers have to be nested in a container')
-        h = {'Content-Type':'application/directory'}
+        h = {'content_type':'application/directory'}
         return self.create_zero_length_object(container, object, **h)
-    
-    def create_directory_marker(self, container, object):
-        """creates a dierectory marker"""
-        return self.create_object(container, object, f=None)
     
     def create_object(self, container, object, f=stdin, format='text', meta={},
                       etag=None, content_type=None, content_encoding=None,

@@ -5,6 +5,12 @@ deployment. This document should be read *after* README.deploy, which contains
 step-by-step Synnefo deployment instructions.
 
 
+Database
+========
+
+MySQL: manage.py dbshell seems to ignore the setting of 'init_command'
+       in settings.DATABASES
+
 Reconciliation mechanism
 ========================
 
@@ -37,3 +43,29 @@ reconciliation for ((num_all_vms/RECONCILIATION_MIN) * interval) machines.
 Obviously the lower the interval value and the higher the setting of
 RECONCILIATION_MIN, the less load is going to be put on Ganeti.
 
+Logging
+=======
+
+Logging in Synnefo is using Python's logging module. The module is configured
+using a configuration file, whose format is described here:
+
+http://docs.python.org/library/logging.config.html
+
+By default, the log initialization code will look for the logging.conf file
+in the following locations in order:
+
+1. /etc/synnefo/logging.conf
+2. os.getcwd()/logging.conf
+3. synnefo.logic.__path__[0]/logging.conf (<-- this is the default)
+
+The default configuration is using Linux conventions: it logs to /dev/log for
+all loggers. The default configuration can be changed by copying the default
+file to any of the above mentioned locations and changing it appropriately.
+
+* Logging and demonization: If the logging is configured to print to the console
+  (using the consoleHandler handler) then daemon processes (notably, the
+  dispatcher) will not work as it should. This only happens after the daemon
+  has lost its controlling terminal (e.g. because the terminal was closed);
+  in this case the dispatcher does not know where to log to and depending on
+  the system it either crashes or stalls. This can be avoided if the logging
+  module is not configured to output to the console.

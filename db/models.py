@@ -53,7 +53,8 @@ class SynnefoUser(models.Model):
     auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True, null = True)
     tmp_auth_token = models.CharField('Temporary authentication token', max_length=32, null=True)
     tmp_auth_token_expires = models.DateTimeField('Time of temporary auth token expiration', auto_now_add=True, null = True)
-    type = models.CharField('Current Image State', choices=ACCOUNT_TYPE, max_length=30)
+    type = models.CharField('Account type', choices=ACCOUNT_TYPE,
+                            max_length=30)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     max_invitations = models.IntegerField('Max number of invitations',
@@ -453,7 +454,7 @@ class Invitations(models.Model):
         verbose_name = u'Invitation'
 
     def __unicode__(self):
-        return self.name
+        return "From: %s, To: %s" % (self.source, self.target)
 
 
 class NetworkInterface(models.Model):

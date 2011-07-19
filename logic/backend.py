@@ -183,26 +183,36 @@ def create_instance(vm, flavor, image, password):
     else:
         sz = flavor.disk * 1024
 
-    return rapi.CreateInstance(
-        mode='create',
-        name=vm.backend_id,
-        disk_template=settings.GANETI_DISK_TEMPLATE,
-        disks=[{"size": sz}],     #FIXME: Always ask for a 4GB disk for now
-        nics=[nic],
-        os=settings.GANETI_OS_PROVIDER,
-        ip_check=False,
-        name_check=False,
-        # Do not specific a node explicitly, have
-        # Ganeti use an iallocator instead
-        #
-        # pnode=rapi.GetNodes()[0],
-        dry_run=settings.TEST,
-        beparams=dict(auto_balance=True, vcpus=flavor.cpu, memory=flavor.ram),
-        osparams=dict(img_id=image.backend_id, img_passwd=password,
-                      img_format=image.format),
-        # Be explicit about setting serial_console = False for Synnefo-based
-        # instances regardless of the cluster-wide setting, see #785
-        hvparams=dict(serial_console=False))
+    # Handle arguments to CreateInstance() as a dictionary,
+    # initialize it based on a deployment-specific value.
+    # This enables the administrator to override deployment-specific
+    # arguments, such as the disk templatei to use, name of os provider
+    # and hypervisor-specific parameters at will (see Synnefo #785, #835).
+    #
+    kw = settings.GANETI_CREATEINSTANCE_KWARGS
+    kw['mode'] = 'create'
+    kw['name'] = vm.backend_id
+    # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
+    # kw['disk_template'] = settings.GANETI_DISK_TEMPLATE
+    kw['disks'] = [{"size": sz}]
+    kw['nics'] = [nic]
+    # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
+    # kw['os'] = settings.GANETI_OS_PROVIDER
+    kw['ip_check'] = False
+    kw['name_check'] = False
+    # Do not specific a node explicitly, have
+    # Ganeti use an iallocator instead
+    #
+    # kw['pnode']=rapi.GetNodes()[0]
+    kw['dry_run'] = settings.TEST
+    kw['beparams'] = dict(auto_balance=True, vcpus=flavor.cpu,
+                          memory=flavor.ram)
+    kw['osparams'] = dict(img_id=image.backend_id, img_passwd=password,
+                         img_format=image.format)
+    # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
+    # kw['hvparams'] = dict(serial_console=False)
+
+    return rapi.CreateInstance(**kw)
 
 
 def delete_instance(vm):

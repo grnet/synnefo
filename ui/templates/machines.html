@@ -48,22 +48,22 @@ or implied, of GRNET S.A.
 <!-- changing between standard/list view -->
 <div id="ie-fix-view-select">
     <div id="view-select">
-        <a id="standard" href="{% url machines-standard %}"></a>
-        <a id="list" href="{% url machines-list %}"></a>
-        <a id="single" href="{% url machines-single %}"></a>
+        <a id="standard" href="{% url machines-standard %}" title="{% trans "Icon view" %}"></a>
+        <a id="list" href="{% url machines-list %}" title="{% trans "List view" %}"></a>
+        <a id="single" href="{% url machines-single %}" title="{% trans "Single view" %}"></a>
     </div>
 </div>
 
 <div id="emptymachineslist">
     <h1 id="welcomeheader">{% trans "Welcome to ~okeanos !" %}</h1>
     <br />
-    <span class="welcomebody">{% trans "From this panel you will be able to manage your Virtual Machines (VMs). If you don't know what a VM is: " %}<br /><a href="#">{% trans "take the tour" %}</a>.</span>
+    <span class="welcomebody">{% trans "From this panel you will be able to manage your Virtual Machines (VMs)." %} <!-- If you don't know what a VM is: " %}<br /><a href="#">{% trans "take the tour" %}. --></a></span>
     <br />
     <br />
     <span class="welcomebody">{% trans "The panel is currently empty, because you don't have any VMs yet. Start by clicking the orange button on the top left. The wizard will guide you through the whole process." %}</span>
     <br />
     <br />
-    <span class="welcomefooter">{% trans "For more information or help, click " %}<a href="#">{% trans "here" %}</a>.</span>
+    <span class="welcomefooter">{% trans "For more information or help, click " %}<a href="/about">{% trans "here" %}</a>.</span>
 </div>
 
 <!-- the form -->
@@ -242,6 +242,10 @@ or implied, of GRNET S.A.
                 </div>
                 <div class="popup-separator"></div>
                 <div class="large-spinner" style="display:none;"></div>
+                <div class="metadata-labels">
+                    <div class="metadata-label">{% trans "Tag" %}</div>
+                    <div class="metadata-label last">{% trans "Value" %}</div>
+                </div>
                 <div class="metadata-container">
                     <!-- append metadata entries here -->
                 </div>

@@ -71,6 +71,7 @@ def process_form(request):
 
             inv = add_invitation(request.user, name, email)
             send_invitation(inv)
+
         # FIXME: Delete invitation and user on error
         except (InvitationException, ValidationError) as e:
             errors += ["Invitation to %s <%s> not sent. Reason: %s" %
@@ -84,7 +85,10 @@ def process_form(request):
     if errors:
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request),
-                                 'errors': errors},
+                                    'errors': errors,
+                                    'ajax': request.is_ajax(),
+                                    'invitations_left': get_invitations_left(request.user)
+                                },
                                 context_instance=RequestContext(request))
         response =  HttpResponse(data)
         _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
@@ -101,7 +105,7 @@ def validate_name(name):
         raise ValidationError("Name is empty")
 
     if name.find(' ') is -1:
-        raise ValidationError("Name must contain at least one space")
+        raise ValidationError(_("Name must contain at least one space"))
 
     return True
 
@@ -129,7 +133,10 @@ def inv_demux(request):
 
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request)},
+                {'invitations': invitations_for_user(request),
+                    'ajax': request.is_ajax(),
+                    'invitations_left': get_invitations_left(request.user)
+                },
                                 context_instance=RequestContext(request))
         return  HttpResponse(data)
     elif request.method == 'POST':
@@ -235,6 +242,8 @@ def send_invitation(invitation):
 
     data = render_to_string('invitation.txt', {'email': email})
 
+    _logger.debug("Invitation URL: %s" % email['url'])
+
     send_async(
         frm = "%s <%s>"%(invitation.source.realname,invitation.source.uniq),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
@@ -301,6 +310,14 @@ def invitation_accepted(invitation):
     """
     invitation.accepted = True
     invitation.save()
+
+
+def get_invitations_left(user):
+    """
+    Get user invitations left
+    """
+    num_inv = Invitations.objects.filter(source = user).count()
+    return user.max_invitations - num_inv
 
 class InvitationException(Exception):
     messages = []

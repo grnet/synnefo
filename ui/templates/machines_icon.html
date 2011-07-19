@@ -299,10 +299,13 @@ $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
 
 //initiate machine renaming
 $("#machinesview-icon.standard .rename, #machinesview-icon.standard h5.editable span.name").live('click', function() {
+    serverId = $(this).closest('.machine-container').attr("id");
+    vm = get_machine(serverId);
+
     $(this).parent().find('.name').html("<input type=\"text\" class=\"nametextbox\" value=\"" +
-                                        $(this).parent().find('.name').text() +
+                                        vm.name +
                                         "\" / ><span class=\"oldValue\">" +
-                                        $(this).parent().find('.name').text() + "</span>");
+                                        vm.name + "</span>");
     $(this).parent().find('.rename').hide();
     $(this).parent().find(".editbuttons").fadeIn();
     $(this).parent().find(".nametextbox").focus().select();
@@ -328,17 +331,25 @@ $("#machinesview-icon.standard .editbuttons .save").live('click', function() {
     if (serverName.trim() == ''){
         return false;
     }
-    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.nametextbox').val());
+
+    vm = get_machine(serverId)
+    vm.name = serverName;
+    longName = vm.name;
+
+    var serverName = $(this).parent().parent().find('.nametextbox').val();
+    serverName = fix_server_name(serverName);
+
+    $(this).parent().parent().find('.name').html(serverName);
     $(this).parent().parent().find(".editbuttons").fadeOut("fast");
     $(this).parent().parent().find(".rename").fadeIn("slow");
     $(this).parent().parent().addClass('editable');
-    rename(serverID, serverName);
+    rename(serverID, longName);
     return false;
 });
 
 //cancel renaming
 $("#machinesview-icon.standard .editbuttons .cancel").live('click', function() {
-    $(this).parent().parent().find('.name').html($(this).parent().parent().find('.oldValue').text());
+    $(this).parent().parent().find('.name').html(fix_server_name($(this).parent().parent().find('.oldValue').text()));
     $(this).parent().parent().find(".editbuttons").hide();
     $(this).parent().parent().find(".rename").fadeIn();
     $(this).parent().parent().addClass('editable');
@@ -644,7 +655,7 @@ function update_machines_view(data) {
             var machine = $("#machinesview-icon.standard #machine-container-template").clone().attr("id", server.id).fadeIn("slow");
 
             machine.find(".scrollable").scrollable({vertical: true});
-            machine.find("div.name span.name").text(server.name.substring(0,50));
+            machine.find("div.name span.name").text(fix_server_name(server.name));
             machine.find("span.imagetag").text(server_image);
             machine.find(".status").text(STATUSES[server.status]);
             // check server status to select where to append the new server to

@@ -2411,3 +2411,12 @@ function fix_v6_addresses() {
     });
 }
 
+function fix_server_name(str, limit, append) {
+    limit = limit || 30;
+    append = append || "...";
+
+    if (str.length > limit) {
+        str = str.substring(0,limit-append.length) + append;
+    }
+    return str;
+}

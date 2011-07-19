@@ -94,8 +94,9 @@ class Client(object):
         kwargs['headers']['X-Auth-Token'] = self.token
         if body:
             kwargs['body'] = body
+            kwargs['headers'].setdefault('content-type',
+                                         'application/octet-stream')
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
-        kwargs['headers'].setdefault('content-type', 'application/octet-stream')
         try:
             #print '*', method, full_path, kwargs
             conn.request(method, full_path, **kwargs)
@@ -118,9 +119,10 @@ class Client(object):
             print
         
         if int(resp.status) in ERROR_CODES.keys():
+            #print '**', resp.status
             raise Fault(data, int(resp.status))
         
-        #print '*',  resp.status, headers, data
+        #print '**',  resp.status, headers, data
         return resp.status, headers, data
     
     def delete(self, path, format='text', params={}):
@@ -146,7 +148,6 @@ class Client(object):
         if format == 'json':
             data = json.loads(data) if data else ''
         elif format == 'xml':
-            print '#', data
             data = minidom.parseString(data)
         else:
             data = data.strip().split('\n') if data else ''
@@ -190,7 +191,7 @@ class OOS_Client(Client):
         for k,v in ex_meta.items():
             k = '%s%s' % (prefix, k)
             headers[k] = v
-        return self.post(path, headers=headers, params=params)
+        return self.post(path, headers=headers)
     
     def _reset_metadata(self, path, entity, **meta):
         """
@@ -309,10 +310,14 @@ class OOS_Client(Client):
         h = {'Content-Type':'application/directory'}
         return self.create_zero_length_object(container, object, **h)
     
+    def create_directory_marker(self, container, object):
+        """creates a dierectory marker"""
+        return self.create_object(container, object, f=None)
+    
     def create_object(self, container, object, f=stdin, format='text', meta={},
                       etag=None, content_type=None, content_encoding=None,
                       content_disposition=None, **headers):
-        """creates an object"""
+        """creates a zero-length object"""
         path = '/%s/%s' % (container, object)
         for k, v  in headers.items():
             if not v:
@@ -327,6 +332,15 @@ class OOS_Client(Client):
             headers['x-object-meta-%s' %k.strip()] = v.strip()
         data = f.read() if f else None
         return self.put(path, data, format, headers=headers)
+    
+    def create_zero_length_object(self, container, object, meta={}, etag=None,
+                                  content_type=None, content_encoding=None,
+                                  content_disposition=None, **headers):
+        args = locals()
+        for elem in ['self', 'container', 'headers']:
+            args.pop(elem)
+        args.update(headers)
+        return self.create_object(container, f=None, **args)
     
     def update_object(self, container, object, f=stdin, offset=None, meta={},
                       content_length=None, content_type=None,
@@ -537,6 +551,15 @@ class Pithos_Client(OOS_Client):
         params = {'update':None}
         return self.post('', headers=headers, params=params)
     
+    def reset_account_groups(self, **groups):
+        """overrides account groups"""
+        headers = {}
+        for key, val in groups.items():
+            headers['x-account-group-%s' % key] = val
+        meta = self.retrieve_account_metadata()
+        headers.update(meta)
+        return self.post('', headers=headers)
+    
     # Storage Container Services
     
     def list_objects(self, container, format='text', limit=10000, marker=None,
@@ -613,6 +636,17 @@ class Pithos_Client(OOS_Client):
             
         return self.retrieve_object_version(container, object, version='list',
                                             detail=True, **args)
+    
+    def create_zero_length_object(self, container, object, meta={},
+                      etag=None, content_type=None, content_encoding=None,
+                      content_disposition=None, x_object_manifest=None,
+                      x_object_sharing=None, x_object_public=None):
+        """createas a zero length object"""
+        args = locals()
+        for elem in ['self', 'container', 'object']:
+            args.pop(elem)
+        return OOS_Client.create_zero_length_object(self, container, object,
+                                                    **args)
     
     def create_object(self, container, object, f=stdin, meta={},
                       etag=None, content_type=None, content_encoding=None,

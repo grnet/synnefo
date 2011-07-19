@@ -1,6 +1,18 @@
 Changelog
 =========
 
+2011-07-19, v0.5.3
+
+FIXES:
+    GUI:
+        * Add separate LOGOUT_URL setting
+          fixes bug with URL in invitations mail
+    Deployment:
+        * Recode invitations email in UTF-8
+        * Use DEFAULT_FROM_EMAIL Django setting as From: header
+          for all emails
+
+
 2011-07-18, v0.5.2
 
 FIXES:

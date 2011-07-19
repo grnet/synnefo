@@ -2343,7 +2343,12 @@ function show_invitations() {
 
         // remove garbage rows that stay in DOM between requests
         $(".removable-field-row:hidden").remove();
-        $("#invform #removable-name-container-1").dynamicField();
+
+        try {
+            $("#invform #removable-name-container-1").dynamicField();
+        } catch (err) {
+            close_all_overlays();
+        }
         
         $(".invitations-left").hide();
         $("#notification-box .header-box").html("");
@@ -2352,8 +2357,14 @@ function show_invitations() {
         form.submit(function(evn){
             evn.preventDefault();
             $.post(form.attr("action"), form.serialize(), function(data) {
-                $(cont).html(data); 
-                handle_invitations(cont);
+                if (data.redirect) {
+                    $.ajax({url: data.redirect, success: function(){
+                        handle_invitations(el)
+                    }});
+                } else {
+                    $(cont).html(data); 
+                    handle_invitations(cont);
+                }
             });
             return false;
         });

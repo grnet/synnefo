@@ -28,8 +28,8 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 # Reconcile VM state - Management Script
-
 from synnefo.db.models import VirtualMachine
+from django.db.models import Q
 from django.conf import settings
 from datetime import datetime, timedelta
 from optparse import make_option
@@ -52,14 +52,15 @@ class Command(BaseCommand):
     )
 
     def handle(self, all_vms = False, interval = 1, **options):
-        all =  VirtualMachine.objects.all().filter(deleted = False) \
-                                           .filter(suspended = False)
+        all =  VirtualMachine.objects.filter(Q(deleted = False) &
+                                             Q(suspended = False))
 
         if not all_vms:
             now = datetime.now()
             last_update = timedelta(minutes = settings.RECONCILIATION_MIN)
-            not_updated = VirtualMachine.objects \
-                    .filter(updated__lte = (now - last_update))
+            not_updated = VirtualMachine.objects.filter(Q(deleted = False) &
+                                                        Q(suspended = False) &
+                                                        Q(updated__lte = (now - last_update)))
 
             to_update = ((all.count() / settings.RECONCILIATION_MIN) * interval)
         else:

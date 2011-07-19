@@ -2374,7 +2374,7 @@ function get_short_v6(v6, parts_to_keep) {
 function fix_v6_addresses() {
 
     // what to prepend
-    var match = "... ";
+    var match = "...";
     // long ip min length
     var limit = 20;
     // parts to show after the transformation

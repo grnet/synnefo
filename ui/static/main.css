@@ -2473,6 +2473,14 @@ div.editbuttons div.cancel:hover {
     margin-top: 9px;
 }
 
+.namecontainer .name {
+    position: relative;
+}
+
+.namecontainer .name .nametextbox {
+    z-index: 1000;
+}
+
 .nametextbox {
     font-size: 95%;
 }

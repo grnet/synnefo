@@ -247,7 +247,7 @@ def send_invitation(invitation):
     send_async(
         frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
         to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
-        subject = _('Invitation to IaaS service Okeanos'),
+        subject = _('Invitation to ~okeanos IaaS service'),
         body = data
     )
 

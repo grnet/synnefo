@@ -13,7 +13,7 @@
 ;(function($) {
 	$.fn.dynamicField = function(options) {
 		if ( $(this).attr("id") == undefined ) {
-			alert("The dynamicField plugin could not be initialized.\n\nPlease check the selector.");
+			throw "The dynamicField plugin could not be initialized.\n\nPlease check the selector.";
 			return $;
 		}
 

@@ -86,7 +86,6 @@ def process_form(request):
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request),
                                     'errors': errors,
-                                    'ajax': True,
                                     'invitations_left': get_invitations_left(request.user)
                                 },
                                 context_instance=RequestContext(request))
@@ -94,7 +93,13 @@ def process_form(request):
         _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
                                                              email, errors))
     else:
-        response = HttpResponseRedirect("/invitations/")
+        # form submitted
+        data = render_to_string('invitations.html',
+                                {'invitations': invitations_for_user(request),
+                                    'invitations_left': get_invitations_left(request.user)
+                                },
+                                context_instance=RequestContext(request))
+        response = HttpResponse(data)
         _logger.info("Added invitation %s -> %s"%(request.user.uniq, email))
 
     return response
@@ -134,7 +139,6 @@ def inv_demux(request):
     if request.method == 'GET':
         data = render_to_string('invitations.html',
                 {'invitations': invitations_for_user(request),
-                    'ajax': request.is_ajax(),
                     'invitations_left': get_invitations_left(request.user)
                 },
                                 context_instance=RequestContext(request))

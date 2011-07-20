@@ -69,6 +69,7 @@
             "state": "ACTIVE",
             "backend_id": "debian_desktop-6.0.2.1-2",
             "format": "dump"
+            "public": 1
         }
     },
     {

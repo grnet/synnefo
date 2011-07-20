@@ -78,11 +78,15 @@ def print_item(item):
     print '%d %s' % (item.id, item.name)
     print_dict(item.__dict__, exclude=('id', 'name'))
 
-def print_items(items, detail=False):
+def print_items(items, detail=False, keys=None):
+    keys = keys or ('id', 'name')
     for item in items:
-        print '%d %s' % (item.id, item.name)
+        for key in keys:
+            print getattr(item, key),
+        print
+        
         if detail:
-            print_dict(item.__dict__, exclude=('id', 'name'))
+            print_dict(item.__dict__, exclude=keys)
             print
 
 
@@ -235,7 +239,7 @@ class ListUsers(Command):
             users = [models.SynnefoUser.objects.get(id=user_id)]
         else:
             users = models.SynnefoUser.objects.order_by('id')
-        print_items(users, self.detail)
+        print_items(users, self.detail, keys=('id', 'name', 'uniq'))
 
 
 class ModifyUser(Command):

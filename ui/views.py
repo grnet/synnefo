@@ -136,6 +136,9 @@ def machines_connect(request):
     host_os = request.GET.get('host_os','Linux').lower()
     username = request.GET.get('username', None)
 
+    if host_os != "windows":
+        host_os = 'linux'
+
     if operating_system != "windows":
         operating_system = "linux"
 

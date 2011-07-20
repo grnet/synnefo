@@ -1,16 +1,10 @@
-{% load i18n %}{% if not ajax %}<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>{% trans "Invitations" %}</title>
-</head>
-<body>
-{% endif %}
+{% load i18n %}
 <div class="invitations-left">({% blocktrans count invitations_left as left %}
 {{ left }} invitation left
 {% plural %}
 {{ left }} invitations left
 {% endblocktrans %})</div>
+
 <form action="/invitations/" method="post" id="invform">
     {% csrf_token %}
     
@@ -58,6 +52,3 @@
         </ul>
     </div>
 </div>
-
-</body>
-</html>

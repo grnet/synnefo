@@ -365,33 +365,34 @@ class OOS_Client(Client):
         return self.post(path, data, headers=headers)
     
     def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False, public=False, **meta):
+                             dst_object, remove=False, meta={}, **headers):
         path = '/%s/%s' % (dst_container, dst_object)
-        headers = {}
+        headers = {} if not headers else headers
         for k, v in meta.items():
             headers['x-object-meta-%s' % k] = v 
         if remove:
             headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
         else:
             headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
-        self._set_public_header(headers, public)
-        self.headers = headers if headers else None
-        headers['content-length'] = 0
+        headers['content_length'] = 0
         return self.put(path, headers=headers)
     
-    def copy_object(self, src_container, src_object, dst_container,
-                             dst_object, public=False, **meta):
+    def copy_object(self, src_container, src_object, dst_container, dst_object,
+                    meta, **headers):
+        """copies an object"""
         return self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, False,
-                                   public, **meta)
+                                   dst_container, dst_object, remove=False,
+                                   meta=meta, **headers)
     
     def move_object(self, src_container, src_object, dst_container,
-                             dst_object, public=False, **meta):
+                             dst_object, meta={}, **headers):
+        """moves an object"""
         return self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, True,
-                                   public, **meta)
+                                         dst_container, dst_object, remove=True,
+                                         meta=meta, **headers)
     
     def delete_object(self, container, object, params={}):
+        """deletes an object"""
         return self.delete('/%s/%s' % (container, object), params=params)
     
     def retrieve_object_metadata(self, container, object, restricted=False,
@@ -757,25 +758,51 @@ class Pithos_Client(OOS_Client):
         """restores a trashed object"""
         return self.delete_object_metadata(container, object, ['trash'])
     
-    def _set_public_header(self, headers, public=False):
-        """sets the public header"""
-        if not headers:
-            headers = {}
-        if public == None:
-            return
-        else:
-            headers['x-object-public'] = public if public else ''
-    
     def publish_object(self, container, object):
         """sets a previously created object publicly accessible"""
         path = '/%s/%s' % (container, object)
         headers = {'content_range':'bytes */*'}
-        self._set_public_header(headers, public=True)
+        headers['x_object_public'] = True
         return self.post(path, headers=headers)
     
     def unpublish_object(self, container, object):
         """unpublish an object"""
         path = '/%s/%s' % (container, object)
         headers = {'content_range':'bytes */*'}
-        self._set_public_header(headers, public=False)
+        headers['x_object_public'] = False
         return self.post(path, headers=headers)
+    
+    def _change_obj_location(self, src_container, src_object, dst_container,
+                             dst_object, remove=False, meta={}, **headers):
+        path = '/%s/%s' % (dst_container, dst_object)
+        headers = {} if not headers else headers
+        for k, v in meta.items():
+            headers['x-object-meta-%s' % k] = v 
+        if remove:
+            headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
+        else:
+            headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
+        headers['content_length'] = 0
+        return self.put(path, headers=headers)
+    
+    def copy_object(self, src_container, src_object, dst_container, dst_object,
+                    meta={}, public=False, version=None):
+        """copies an object"""
+        headers = {}
+        headers['x_object_public'] = public
+        if version:
+            headers['x_object_version'] = version
+        return OOS_Client.copy_object(self, src_container, src_object,
+                                      dst_container, dst_object, meta=meta,
+                                      **headers)
+    
+    def move_object(self, src_container, src_object, dst_container,
+                             dst_object, meta={}, public=False, version=None):
+        """moves an object"""
+        headers = {}
+        headers['x_object_public'] = public
+        if version:
+            headers['x_object_version'] = version
+        return OOS_Client.move_object(self, src_container, src_object,
+                                      dst_container, dst_object, meta=meta,
+                                      **headers)

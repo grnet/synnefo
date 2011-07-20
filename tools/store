@@ -210,7 +210,7 @@ class Meta(Command):
         if getattr(self, 'until'):
             t = _time.strptime(self.until, self.format)
             args['until'] = int(_time.mktime(t))
-            
+        
         if object:
             meta = self.client.retrieve_object_metadata(container, object,
                                                         self.restricted,
@@ -372,7 +372,7 @@ class PutObject(Command):
                           help='file descriptor to read from (pass - for standard input)')
         parser.add_option('--public', action='store_true',
                           dest='x_object_public', default=False,
-                          help='make object publicly accessible (\'True\'/\'False\')')
+                          help='make object publicly accessible')
     
     def execute(self, path, *args):
         if path.find('=') != -1:
@@ -416,35 +416,33 @@ class PutObject(Command):
 
 @cli_command('copy', 'cp')
 class CopyObject(Command):
-    syntax = '<src container>/<src object> [<dst container>/]<dst object>'
+    syntax = '<src container>/<src object> [<dst container>/]<dst object> [key=val] [...]'
     description = 'copy an object to a different location'
     
     def add_options(self, parser):
         parser.add_option('--version', action='store',
                           dest='version', default=False,
                           help='copy specific version')
-        parser.add_option('--public', action='store',
-                          dest='public', default=None,
-                          help='publish/unpublish object (\'True\'/\'False\')')
+        parser.add_option('--public', action='store_true',
+                          dest='public', default=False,
+                          help='make object publicly accessible')
     
-    def execute(self, src, dst):
+    def execute(self, src, dst, *args):
         src_container, sep, src_object = src.partition('/')
         dst_container, sep, dst_object = dst.partition('/')
+        
+        #prepare user defined meta
+        meta = {}
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            meta[key] = val
+        
         if not sep:
             dst_container = src_container
             dst_object = dst
-        version = getattr(self, 'version')
-        headers = None
-        if version:
-            headers = {}
-            headers['X_SOURCE_VERSION'] = version
-        if self.public and self.nopublic:
-            raise Fault('Conflicting options')
-        if self.public not in ['True', 'False', None]:
-            raise Fault('Not acceptable value for public')
-        public = eval(self.public) if self.public else None
+        
         self.client.copy_object(src_container, src_object, dst_container,
-                                dst_object, public, headers)
+                                dst_object, meta, self.public, self.version, **meta)
 
 @cli_command('set')
 class SetMeta(Command):
@@ -503,9 +501,9 @@ class UpdateObject(Command):
         parser.add_option('-f', action='store',
                           dest='srcpath', default=None,
                           help='file descriptor to read from: pass - for standard input')
-        parser.add_option('--public', action='store',
+        parser.add_option('--public', action='store_true',
                           dest='x_object_public', default=False,
-                          help='publish/unpublish object (\'True\'/\'False\')')
+                          help='make object publicly accessible')
     
     def execute(self, path, *args):
         if path.find('=') != -1:
@@ -545,21 +543,28 @@ class MoveObject(Command):
     description = 'move an object to a different location'
     
     def add_options(self, parser):
-        parser.add_option('--public', action='store',
-                          dest='public', default=None,
-                          help='publish/unpublish object (\'True\'/\'False\')')
+        parser.add_option('--version', action='store',
+                          dest='version', default=None,
+                          help='move a specific object version')
+        parser.add_option('--public', action='store_true',
+                          dest='public', default=False,
+                          help='make object publicly accessible')
     
-    def execute(self, src, dst):
+    def execute(self, src, dst, *args):
         src_container, sep, src_object = src.partition('/')
         dst_container, sep, dst_object = dst.partition('/')
         if not sep:
             dst_container = src_container
             dst_object = dst
-        if self.public not in ['True', 'False', None]:
-            raise Fault('Not acceptable value for public')
-        public = eval(self.public) if self.public else None
+        
+        #prepare user defined meta
+        meta = {}
+        for arg in args:
+            key, sep, val = arg.partition('=')
+            meta[key] = val
+        
         self.client.move_object(src_container, src_object, dst_container,
-                                dst_object, public, headers)
+                                dst_object, meta, self.public, self.version)
 
 @cli_command('remove')
 class TrashObject(Command):
@@ -741,15 +746,15 @@ def main():
     
     cmd = cls(name, argv[2:])
     
-    #cmd.execute(*cmd.args)
-    try:
-        cmd.execute(*cmd.args)
-    except TypeError, e:
-        cmd.parser.print_help()
-        exit(1)
-    except Fault, f:
-        status = f.status and '%s ' % f.status or ''
-        print '%s%s' % (status, f.data)
+    cmd.execute(*cmd.args)
+    #try:
+    #    cmd.execute(*cmd.args)
+    #except TypeError, e:
+    #    cmd.parser.print_help()
+    #    exit(1)
+    #except Fault, f:
+    #    status = f.status and '%s ' % f.status or ''
+    #    print '%s%s' % (status, f.data)
 
 if __name__ == '__main__':
     main()

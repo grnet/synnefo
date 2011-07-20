@@ -121,7 +121,7 @@ def put_container_headers(response, meta, policy):
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
-    response['X-Container-Object-Meta'] = [x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
+    response['X-Container-Object-Meta'] = ','.join([x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')])
     response['X-Container-Block-Size'] = backend.block_size
     response['X-Container-Block-Hash'] = backend.hash_algorithm
     if 'until_timestamp' in meta:

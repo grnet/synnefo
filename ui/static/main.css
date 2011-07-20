@@ -3861,6 +3861,11 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 
+.no-invitations-left {
+    margin-bottom: 20px;
+    color: #E44848;
+}
+
 .invitations #field_name_name, .invitations #field_email_name {
     float: left;
     display: block;

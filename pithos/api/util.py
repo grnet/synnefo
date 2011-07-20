@@ -100,8 +100,7 @@ def put_account_headers(response, meta, groups):
         response['X-Account-Container-Count'] = meta['count']
     if 'bytes' in meta:
         response['X-Account-Bytes-Used'] = meta['bytes']
-    if 'modified' in meta:
-        response['Last-Modified'] = http_date(int(meta['modified']))
+    response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
         response[k.encode('utf-8')] = meta[k].encode('utf-8')
     if 'until_timestamp' in meta:

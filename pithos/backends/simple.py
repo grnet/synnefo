@@ -70,6 +70,8 @@ class SimpleBackend(BaseBackend):
     Uses SQLite for storage.
     """
     
+    # TODO: Create account if not present in all functions.
+    
     def __init__(self, db):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
@@ -145,9 +147,12 @@ class SimpleBackend(BaseBackend):
         if user != account:
             if until or account not in self._allowed_accounts(user):
                 raise NotAllowedError
+        else:
+            self._create_account(user, account)
         try:
             version_id, mtime = self._get_accountinfo(account, until)
         except NameError:
+            # TODO: Make sure this doesn't happen.
             version_id = None
             mtime = 0
         count, bytes, tstamp = self._get_pathstats(account, until)
@@ -174,8 +179,7 @@ class SimpleBackend(BaseBackend):
             meta.update({'name': account, 'count': count, 'bytes': bytes})
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
-        if modified:
-            meta.update({'modified': modified})
+        meta.update({'modified': modified})
         return meta
     
     @backend_method
@@ -196,6 +200,7 @@ class SimpleBackend(BaseBackend):
             if account not in self._allowed_accounts(user):
                 raise NotAllowedError
             return {}
+        self._create_account(user, account)
         return self._get_groups(account)
     
     @backend_method
@@ -205,6 +210,7 @@ class SimpleBackend(BaseBackend):
         logger.debug("update_account_groups: %s %s %s", account, groups, replace)
         if user != account:
             raise NotAllowedError
+        self._create_account(user, account)
         self._check_groups(groups)
         self._put_groups(account, groups, replace)
     
@@ -221,7 +227,7 @@ class SimpleBackend(BaseBackend):
             pass
         else:
             raise NameError('Account already exists')
-        version_id = self._put_version(account, user)
+        self._put_version(account, user)
     
     @backend_method
     def delete_account(self, user, account):
@@ -338,7 +344,7 @@ class SimpleBackend(BaseBackend):
         if policy:
             self._check_policy(policy)
         path = os.path.join(account, container)
-        version_id = self._put_version(path, user)
+        version_id = self._put_version(path, user)[0]
         for k, v in self.default_policy.iteritems():
             if k not in policy:
                 policy[k] = v
@@ -661,7 +667,7 @@ class SimpleBackend(BaseBackend):
         tstamp = int(time.time())
         sql = 'insert into versions (name, user, tstamp, size, hide) values (?, ?, ?, ?, ?)'
         id = self.con.execute(sql, (path, user, tstamp, size, hide)).lastrowid
-        return str(id)
+        return str(id), tstamp
     
     def _copy_version(self, user, src_path, dest_path, copy_meta=True, copy_data=True, src_version=None):
         if src_version is not None:
@@ -675,7 +681,7 @@ class SimpleBackend(BaseBackend):
                 size = 0
         if not copy_data:
             size = 0
-        dest_version_id = self._put_version(dest_path, user, size)
+        dest_version_id = self._put_version(dest_path, user, size)[0]
         if copy_meta and src_version_id is not None:
             sql = 'insert into metadata select %s, key, value from metadata where version_id = ?'
             sql = sql % dest_version_id
@@ -722,6 +728,12 @@ class SimpleBackend(BaseBackend):
         version_id, muser, mtime, size = self._get_version(path, version)
         return path, version_id, muser, mtime, size
     
+    def _create_account(self, user, account):
+        try:
+            self._get_accountinfo(account)
+        except NameError:
+            self._put_version(account, user)
+    
     def _get_metadata(self, path, version):
         sql = 'select key, value from metadata where version_id = ?'
         c = self.con.execute(sql, (version,))
@@ -758,7 +770,6 @@ class SimpleBackend(BaseBackend):
         sql = 'select key, value from policy where name = ?'
         c = self.con.execute(sql, (path,))
         return dict(c.fetchall())
-    
     
     def _list_limits(self, listing, marker, limit):
         start = 0

@@ -2337,33 +2337,51 @@ function msg_box(config) {
 function show_invitations() {
 
     handle_invitations = function(el) {
+
+        // proper class to identify the overlay block
         el.addClass("invitations");
+
         var cont = el;
         var form = $(el).find("form");
 
         // remove garbage rows that stay in DOM between requests
         $(".removable-field-row:hidden").remove();
 
+        // avoid buggy behaviour, close all overlays if something went wrong
         try {
-            $("#invform #removable-name-container-1").dynamicField();
+            // form is in content (form is not displayed if user has no invitations)
+            if ($("#invform #removable-name-container-1").length) {
+                $("#invform #removable-name-container-1").dynamicField();
+            }
         } catch (err) {
             close_all_overlays();
         }
         
+        // we copy/paste it on the title no need to show it twice
         $(".invitations-left").hide();
+
+        // reset title
         $("#notification-box .header-box").html("");
         $("#notification-box .header-box").html(window.INVITATIONS_TITLE + " " + $($(".invitations-left")[0]).text());
 
+        // handle form submit
         form.submit(function(evn){
             evn.preventDefault();
+
+            // do the post
             $.post(form.attr("action"), form.serialize(), function(data) {
+                // replace data
                 $(cont).html(data); 
+
+                // append all handlers again (new html data need to redo all changes)
                 handle_invitations(cont);
             });
+
             return false;
         });
     }
-
+    
+    // first time clicked (show the msg box with /invitations content)
     msg_box({title:window.INVITATIONS_TITLE, content:'', ajax:INVITATIONS_URL, html:true, success: function(el){ 
         handle_invitations(el)}
     });

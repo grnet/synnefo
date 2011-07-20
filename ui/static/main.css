@@ -4155,4 +4155,93 @@ div.state .shutdown, tbody.machines .shutdown {
     border: 1px solid #888;
 }
 
+/*404 and 500 pages*/
 
+.error_page {
+    position: relative;
+    top: 40px;
+    padding-bottom: 140px !important;
+}
+
+.error_page h1 {
+    font-weight: normal;
+}
+
+.error_page .msg_header {
+    margin: 0px;
+    font-size: 10em;
+    position: absolute;
+    left: -5px;
+    top: 0px;
+    color: #4085A5;
+    font-family: arial, verdana;
+}
+
+.error_page p.error_desc {
+    color: #fff;
+    font-size: 0.8em;
+}
+
+.error_page {
+    padding-right: 50px !important;
+    padding-left: 100px !important;
+}
+
+.error_page .error_content {
+    padding-left: 150px;
+    padding-top: 97px;
+}
+
+.error_page .error_content .links, .info_content .links {
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
+.error_page .http_error .code {
+    letter-spacing: -10px;
+    font-size: 9em;
+}
+
+.error_page .http_error .msg {
+    letter-spacing: -1px;
+    font-size: 2em;
+}
+
+.error_page .http_error {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    color: #75B3D0;
+    line-height: 1em;
+}
+
+.error_page .error_content a, .info_content .links a {
+    color: #4085A5;
+    font-weight: bold;
+    margin-right: 10px;
+    font-size: 0.9em;
+}
+
+.error_body #container, .info_body #container {
+    background-position: right 200px;
+}
+
+.info_page h1 {
+    color: #4085A5;
+    font-size: 2em;
+    font-weight: normal;
+}
+
+.info_page p {
+    color: #ffffff;
+    margin: 1em 0;
+}
+
+.info_body p a, .error_body p a{
+    color: #4085A5;
+    text-decoration: underline;
+}
+
+.error_404 .http_error .code {
+    letter-spacing: -7px;
+}

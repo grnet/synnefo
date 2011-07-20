@@ -32,10 +32,10 @@
 # or implied, of GRNET S.A.
 
 from pithos.lib.client import Pithos_Client, Fault
-import unittest
 from django.utils import simplejson as json
 from xml.dom import minidom
 from StringIO import StringIO
+import unittest
 import time as _time
 import types
 import hashlib
@@ -267,9 +267,34 @@ class AccountHead(BaseTestCase):
         self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in self.containers:
             self.client.create_container(item)
+        
+                #keep track of initial account groups
+        self.initial_groups = self.client.retrieve_account_groups()
+        
+        #keep track of initial account meta
+        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
+        
+        meta = {'foo':'bar'}
+        self.client.update_account_metadata(**meta)
+        self.updated_meta = self.initial_meta.update(meta)
     
     def tearDown(self):
-        self.client.delete_account_metadata(['foo'])
+        #delete additionally created meta
+        l = []
+        for m in self.client.retrieve_account_metadata(restricted=True):
+            if m not in self.initial_meta:
+                l.append(m)
+        self.client.delete_account_metadata(l)
+        
+        #delete additionally created groups
+        l = []
+        for g in self.client.retrieve_account_groups():
+            if g not in self.initial_groups:
+                l.append(g)
+        self.client.unset_account_groups(l)
+        
+        #print '#', self.client.retrieve_account_groups()
+        #print '#', self.client.retrieve_account_metadata(restricted=True)
         BaseTestCase.tearDown(self)
     
     def test_get_account_meta(self):
@@ -293,21 +318,21 @@ class AccountHead(BaseTestCase):
         past = t - datetime.timedelta(minutes=-15)
         past = int(_time.mktime(past.timetuple()))
         
-        meta = {'foo':'bar'}
+        meta = {'premium':True}
         self.client.update_account_metadata(**meta)
         meta = self.client.retrieve_account_metadata(restricted=True,
                                                      until=past)
-        self.assertTrue('foo' not in meta)
+        self.assertTrue('premium' not in meta)
         
         meta = self.client.retrieve_account_metadata(restricted=True)
-        self.assertTrue('foo' in meta)
+        self.assertTrue('premium' in meta)
     
     def test_get_account_meta_until_invalid_date(self):
-        meta = {'foo':'bar'}
+        meta = {'premium':True}
         self.client.update_account_metadata(**meta)
         meta = self.client.retrieve_account_metadata(restricted=True,
                                                      until='kshfksfh')
-        self.assertTrue('foo' in meta)
+        self.assertTrue('premium' in meta)
 
 class AccountGet(BaseTestCase):
     def setUp(self):
@@ -478,12 +503,16 @@ class AccountPost(BaseTestCase):
             
             self.assertEqual(meta, self.client.retrieve_account_metadata(restricted=True))
     
-    #def test_delete_meta(self):
-    #    with AssertMappingInvariant(self.client.reset_account_groups):
-    #        meta = {'test':'test', 'tost':'tost'}
-    #        self.client.update_account_metadata(**meta)
-    #        
-    #        self.client.delete_account_metadata(**meta)
+    def test_delete_meta(self):
+        with AssertMappingInvariant(self.client.retrieve_account_groups):
+            meta = {'test':'test', 'tost':'tost'}
+            self.client.update_account_metadata(**meta)
+            
+            self.client.delete_account_metadata(meta.keys())
+            
+            account_meta = self.client.retrieve_account_metadata(restricted=True)
+            for m in meta:
+                self.assertTrue(m not in account_meta.keys())
     
     def test_set_account_groups(self):
         with AssertMappingInvariant(self.client.retrieve_account_metadata):
@@ -1131,6 +1160,22 @@ class ObjectPut(BaseTestCase):
         #assert content-type
         self.assertEqual(h['content-type'], o['meta']['content_type'])
     
+    def test_upload_with_name_containing_slash(self):
+        name = '/%s' % o_names[0]
+        meta = {'test':'test1'}
+        o = self.upload_random_data(self.container, name, **meta)
+        
+        self.assertEqual(o['data'],
+                         self.client.retrieve_object(self.container, name))
+        
+        self.assertTrue(name in self.client.list_objects(self.container))
+    
+    def test_create_directory_marker(self):
+        self.client.create_directory_marker(self.container, 'foo')
+        meta = self.client.retrieve_object_metadata(self.container, 'foo')
+        self.assertEqual(meta['content-length'], '0')
+        self.assertEqual(meta['content-type'], 'application/directory')
+
     def test_upload_unprocessable_entity(self):
         meta={'etag':'123', 'test':'test1'}
         
@@ -1165,7 +1210,7 @@ class ObjectCopy(BaseTestCase):
                                               self.obj['name'],
                                               self.containers[0],
                                               'testcopy',
-                                              **meta)[0]
+                                              meta)[0]
             
             #assert copy success
             self.assertEqual(status, 201)
@@ -1190,7 +1235,7 @@ class ObjectCopy(BaseTestCase):
                                              self.obj['name'],
                                              self.containers[1],
                                              'testcopy',
-                                             **meta)[0]
+                                             meta)[0]
             self.assertEqual(status, 201)
             
             # assert updated metadata
@@ -1207,24 +1252,31 @@ class ObjectCopy(BaseTestCase):
         #copy from invalid object
         meta = {'test':'testcopy'}
         self.assert_raises_fault(404, self.client.copy_object, self.containers[0],
-                                 'test.py', self.containers[1], 'testcopy',
-                                 **meta)
+                                 'test.py', self.containers[1], 'testcopy', meta)
         
         #copy from invalid container
         meta = {'test':'testcopy'}
         self.assert_raises_fault(404, self.client.copy_object, self.containers[1],
                                  self.obj['name'], self.containers[1],
-                                 'testcopy', **meta)
+                                 'testcopy', meta)
         
 
-class ObjectMove(ObjectCopy):
+class ObjectMove(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        self.account = 'test'
+        self.containers = ['c1', 'c2']
+        for c in self.containers:
+            self.client.create_container(c)
+        self.obj = self.upload_random_data(self.containers[0], o_names[0])
+    
     def test_move(self):
         #perform move
         meta = {'test':'testcopy'}
         src_path = os.path.join('/', self.containers[0], self.obj['name'])
         status = self.client.move_object(self.containers[0], self.obj['name'],
                                          self.containers[0], 'testcopy',
-                                         **meta)[0]
+                                         meta)[0]
         
         #assert successful move
         self.assertEqual(status, 201)

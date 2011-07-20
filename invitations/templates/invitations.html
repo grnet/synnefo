@@ -5,6 +5,7 @@
 {{ left }} invitations left
 {% endblocktrans %})</div>
 
+{% if invitations_left > 0 %}
 <form action="/invitations/" method="post" id="invform">
     {% csrf_token %}
     
@@ -34,6 +35,16 @@
     </div>
     <p><input class="submit" type="submit" value="{% trans "Send invitations" %}" /></p>
 </form>
+{% else %}
+
+<div class="no-invitations-left">
+<p>
+{% blocktrans %}
+You have no invitations left in your account.
+{% endblocktrans %}
+</p>
+</div>
+{% endif %}
 
 <div id="invsent">
 

@@ -1236,8 +1236,10 @@ function machine_connect(serverIDs){
         //ajax_success('DEFAULT');
         return false;
     }
-
+    
+    // prefer metadata values for specific options (username, domain)
     var username_meta_key = 'User';
+    var domain_meta_key = "Domain";
 
     var serverID = serverIDs.pop();
     var machine = get_machine(serverID);
@@ -1245,45 +1247,61 @@ function machine_connect(serverIDs){
     
     try {
         var serverIP = machine.addresses.values[0].values[0].addr;
-    } catch(err) { var serverIP = 'undefined'; }
+    } catch (err) { var serverIP = 'undefined'; }
 
     try {
         var os = os_icon(machine.metadata);
-    } catch(err) { var os = 'undefined'; }
+    } catch (err) { var os = 'undefined'; }
 
     var username = "";
     try {
         username = machine.metadata.values[username_meta_key];
-    } catch(err){ username = undefined}
+    } catch (err) { username = undefined }
+
+    var domain = "";
+    try {
+        domain = machine.metadata.values[domain_meta_key];
+    } catch (erro) { domain = undefined }
 
     var params_url = '?ip_address=' + serverIP + '&os=' + os + "&host_os=" + $.client.os + "&srv=" + serverID;
 
     if (username) {
         params_url += "&username=" + username;
     }
+
+    if (domain) {
+        params_url += "&domain=" + domain;
+    }
     
     if ($.client.os == "Windows" && os == "windows") {
+        // request rdp file
         window.open('machines/connect' + params_url + "&rdp=1");
         return;
     }
     
+    // FIXME: I18n ???
     var title = 'Connect to: ' + '<span class="machine-title"><img src="static/icons/machines/small/'+os+'-on.png" /> '+serverName+'</span>';
-
+    
+    // open msg box and fill it with json data retrieved from connect machine view
     try {
-        msg_box({title:title, content:'loading...',extra:'',
-        'ajax':'machines/connect' + params_url,
-        parse_data:function(data){
-            var box_content = "<a href='"+data.link.url+"'>"+data.link.title+"</a>";
-            if (!data.link.url) {
-                box_content = "<span class='cmd'>"+data.link.title+"</span>";
+        // open msg box
+        msg_box({
+            title:title, 
+            content:'loading...',
+            extra:'', 'ajax':'machines/connect' + params_url,
+            parse_data:function(data){
+                var box_content = "<a href='"+data.link.url+"'>"+data.link.title+"</a>";
+                if (!data.link.url) {
+                    box_content = "<span class='cmd'>"+data.link.title+"</span>";
+                }
+                data.title = false;
+                data.content = data.info;
+                data.extra = box_content;
+                return data;
             }
-            data.title = false;
-            data.content = data.info;
-            data.extra = box_content;
-            return data;
-        }
         });
     } catch (error) {
+        // if msg box fails fallback redirecting the user to the connect url
         window.open('machines/connect' + params_url);
     }
 
@@ -2337,33 +2355,51 @@ function msg_box(config) {
 function show_invitations() {
 
     handle_invitations = function(el) {
+
+        // proper class to identify the overlay block
         el.addClass("invitations");
+
         var cont = el;
         var form = $(el).find("form");
 
         // remove garbage rows that stay in DOM between requests
         $(".removable-field-row:hidden").remove();
 
+        // avoid buggy behaviour, close all overlays if something went wrong
         try {
-            $("#invform #removable-name-container-1").dynamicField();
+            // form is in content (form is not displayed if user has no invitations)
+            if ($("#invform #removable-name-container-1").length) {
+                $("#invform #removable-name-container-1").dynamicField();
+            }
         } catch (err) {
             close_all_overlays();
         }
         
+        // we copy/paste it on the title no need to show it twice
         $(".invitations-left").hide();
+
+        // reset title
         $("#notification-box .header-box").html("");
         $("#notification-box .header-box").html(window.INVITATIONS_TITLE + " " + $($(".invitations-left")[0]).text());
 
+        // handle form submit
         form.submit(function(evn){
             evn.preventDefault();
+
+            // do the post
             $.post(form.attr("action"), form.serialize(), function(data) {
+                // replace data
                 $(cont).html(data); 
+
+                // append all handlers again (new html data need to redo all changes)
                 handle_invitations(cont);
             });
+
             return false;
         });
     }
-
+    
+    // first time clicked (show the msg box with /invitations content)
     msg_box({title:window.INVITATIONS_TITLE, content:'', ajax:INVITATIONS_URL, html:true, success: function(el){ 
         handle_invitations(el)}
     });

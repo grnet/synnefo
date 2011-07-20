@@ -572,3 +572,8 @@ a.manage-metadata {
 #machinesview-icon .ipv4-text {
     margin-right: 5px;
 }
+
+/*404 and 500 error pages*/
+.error_page .http_error {
+    line-height: 7em;
+}

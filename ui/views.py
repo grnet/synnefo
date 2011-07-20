@@ -135,45 +135,57 @@ def machines_connect(request):
     server_id = request.GET.get('srv', 0)
     host_os = request.GET.get('host_os','Linux').lower()
     username = request.GET.get('username', None)
+    domain = request.GET.get("domain", "snf-%d" % int(server_id))
 
+    # guess host os
     if host_os != "windows":
         host_os = 'linux'
 
+    # guess username
+    if not username:
+        username = "root"
+
+        if metadata_os.lower() in ['ubuntu', 'kubuntu', 'fedora']:
+            username = "user"
+
+        if metadata_os.lower() == "windows":
+            username = "Administrator"
+
+    # operating system provides ssh access
+    ssh = False
     if operating_system != "windows":
         operating_system = "linux"
+        ssh = True
 
     # rdp param is set, the user requested rdp file
-    if operating_system == 'windows' and request.GET.get("rdp", False): #check if we are on windows
-        rdp_file = os.path.join(os.path.dirname(__file__), "static/") + 'synnefo-windows.rdp'
-        connect_data = open(rdp_file, 'r').read()
-        connect_data = connect_data + 'full address:s:' + ip_address + '\n'
-        response = HttpResponse(connect_data, mimetype='application/x-rdp')
+    # check if we are on windows
+    if operating_system == 'windows' and request.GET.get("rdp", False):
+
+        # UI sent domain info (from vm metadata) use this
+        # otherwise use our default snf-<vm_id> domain
+        rdp_context = {
+                'username': username,
+                'domain': domain,
+                'ip_address': ip_address
+        }
+
+        rdp_file_data = render_to_string("synnefo-windows.rdp", rdp_context)
+        response = HttpResponse(rdp_file_data, mimetype='application/x-rdp')
 
         # proper filename, use server id and ip address
         filename = "%d-%s.rdp" % (int(server_id), ip_address)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        # no rdp requested return json object with info on how to connect
-        ssh = False
-        if (operating_system != "windows"):
-            ssh = True
-
         link_title = _("Remote desktop to %s") % ip_address
-        link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d" % (reverse("machines-connect"), ip_address, operating_system,
-                int(server_id))
-
-        user = username
-        if not user:
-            user = "root"
-            if metadata_os.lower() in ['ubuntu', 'kubuntu', 'fedora']:
-                user = "user"
+        link_url = "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" % (
+                reverse("machines-connect"), ip_address, operating_system,int(server_id), username, domain)
 
         if (operating_system != "windows"):
-            link_title = "ssh %s@%s" % (user, ip_address)
+            link_title = "ssh %s@%s" % (username, ip_address)
             link_url = None
 
             if host_os == "windows":
-                link_title = "%s@%s" % (user, ip_address)
+                link_title = "%s@%s" % (username, ip_address)
 
         # try to find a specific message
         try:

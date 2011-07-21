@@ -42,20 +42,19 @@ from sys import argv
 from time import time
 
 from pithos.api.compat import parse_http_date
-from pithos.lib.client import Client, Fault
+from pithos.lib.client import OOS_Client, Fault
 from pithos.lib.fuse import FUSE, FuseOSError, Operations
 
 DEFAULT_HOST = 'pithos.dev.grnet.gr'
-DEFAULT_API = 'v1'
 
 
 epoch = int(time())
 
 
 class StoreFS(Operations):
-    def __init__(self, user, verbose=False):
+    def __init__(self, user, token, verbose=False):
         self.verbose = verbose
-        self.client = Client(DEFAULT_HOST, user, DEFAULT_API)
+        self.client = OOS_Client(DEFAULT_HOST, token, user)
     
     def __call__(self, op, path, *args):
         container, sep, object = path[1:].partition('/')
@@ -66,14 +65,21 @@ class StoreFS(Operations):
         
         try:
             if object:
-                ret = getattr(self, 'object_' + op)(container, object, *args)
+                func = getattr(self, 'object_' + op, None)
+                funcargs = (container, object) + args
             elif container:
-                ret = getattr(self, 'container_' + op)(container, *args)
+                func = getattr(self, 'container_' + op, None)
+                funcargs = (container,) + args
             else:
-                ret = getattr(self, 'account_' + op)(*args)
-            return ret
-        except AttributeError:
-            ret = getattr(self, op)(path, *args)
+                func = getattr(self, 'account_' + op, None)
+                funcargs = args
+
+            if not func:
+                # Fallback to defaults
+                func = getattr(self, op)
+                funcargs = (path,) + args
+            
+            ret = func(*funcargs)
             return ret
         except FuseOSError, e:
             ret = str(e)
@@ -107,15 +113,16 @@ class StoreFS(Operations):
     # Account Level
     
     def account_chmod(self, mode):
-        self.client.update_account_metadata(mode=mode)
+        self.client.update_account_metadata(mode=str(mode))
     
     def account_chown(self, uid, gid):
         self.client.update_account_metadata(uid=uid, gid=gid)
     
     def account_getattr(self, fh=None):
-        meta = self.client.account_metadata()
+        meta = self.client.retrieve_account_metadata()
         mode = int(meta.get('x-account-meta-mode', 0755))
-        modified = parse_http_date(meta['last-modified'])
+        last_modified = meta.get('last-modified', None)
+        modified = parse_http_date(last_modified) if last_modified else epoch
         count = int(meta['x-account-container-count'])
         uid = int(meta.get('x-account-meta-uid', 0))
         gid = int(meta.get('x-account-meta-gid', 0))
@@ -154,7 +161,7 @@ class StoreFS(Operations):
     # Container Level
     
     def container_chmod(self, container, mode):
-        self.client.update_container_metadata(container, mode=mode)
+        self.client.update_container_metadata(container, mode=str(mode))
     
     def container_chown(self, container, uid, gid):
         self.client.update_container_metadata(container, uid=uid, gid=gid)
@@ -186,8 +193,8 @@ class StoreFS(Operations):
         return [k[len(prefix):] for k in meta if k.startswith(prefix)]
     
     def container_mkdir(self, container, mode):
-        self.client.create_container(container)
-        self.client.update_container_metadata(container, mode=mode)
+        mode = str(mode & 0777)
+        self.client.create_container(container, mode=mode)
     
     def container_readdir(self, container, fh):
         params = {'delimiter': '/', 'prefix': ''}
@@ -221,16 +228,18 @@ class StoreFS(Operations):
     # Object Level
     
     def object_chmod(self, container, object, mode):
-        self.client.update_object_metadata(container, object, mode=mode)
+        self.client.update_object_metadata(container, object, mode=str(mode))
     
     def object_chown(self, container, uid, gid):
-        self.client.update_object_metadata(container, object, uid=uid, gid=gid)
+        self.client.update_object_metadata(container, object,
+                                            uid=str(uid), gid=str(gid))
     
     def object_create(self, container, object, mode, fi=None):
         mode &= 0777
-        headers = {'Content-Type': 'application/octet-stream'}
-        self.client.create_object(container, object, f=None, headers=headers)
-        self.client.update_object_metadata(container, object, mode=mode)
+        self.client.create_object(container, object,
+                                    f=None,
+                                    content_type='application/octet-stream',
+                                    mode=str(mode))
         return 0
     
     def object_getattr(self, container, object, fh=None):
@@ -268,6 +277,7 @@ class StoreFS(Operations):
         return [k[len(prefix):] for k in meta if k.startswith(prefix)]
     
     def object_mkdir(self, container, object, mode):
+        mode = str(mode & 0777)
         self.client.create_directory_marker(container, object)
         self.client.update_object_metadata(container, object, mode=mode)
     
@@ -310,21 +320,15 @@ class StoreFS(Operations):
     
     def object_write(self, container, object, data, offset, fh):
         f = StringIO(data)
-        headers = {}
-        if offset:
-            headers['CONTENT_RANGE'] = 'bytes %d-/*' % offset
-        else:
-            headers['CONTENT_RANGE'] = 'bytes */*'
-        
-        self.client.update_object(container, object, f, headers=headers)
+        self.client.update_object(container, object, f, offset=offset)
         return len(data)
 
 
 if __name__ == "__main__":
-    if len(argv) != 2:
-        print 'usage: %s <mountpoint>' % argv[0]
+    if len(argv) != 4:
+        print 'usage: %s <user> <token> <mountpoint>' % argv[0]
         exit(1)
     
     user = getuser()
-    fs = StoreFS(user, verbose=True)
-    fuse = FUSE(fs, argv[1], foreground=True)
+    fs = StoreFS(argv[1], argv[2], verbose=True)
+    fuse = FUSE(fs, argv[3], foreground=True)

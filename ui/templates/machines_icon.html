@@ -52,12 +52,12 @@ or implied, of GRNET S.A.
                         </div>
                     </h5>
                 </div>
-                <a href="#" class="ip">
+                <span class="ip">
                     <h5>
                         {% trans "IP:" %} <span class="ip-version-label">v4</span> <span class="public ipv4-text"></span>
                         <span class="ip-version-label">v6</span> <span class="public ipv6-text"></span>
                     </h5>
-                </a>
+                </span>
             </div>
             <div class="info">
                 <div class="info-header">
@@ -646,8 +646,8 @@ function update_machines_view(data) {
             }
             // find and display ips
             var ips = get_public_ips(server);
-            existing.find("a.ip span.public").text(ips['ip4']);
-            existing.find("a.ip span.public.ipv6-text").text(ips['ip6']);
+            existing.find("span.ip span.public").text(ips['ip4']);
+            existing.find("span.ip span.public.ipv6-text").text(ips['ip6']);
         }
         // if it doesn't exist and the server is not DELETED, make a new entry
         else if ( server.status != 'DELETED') {
@@ -698,8 +698,8 @@ function update_machines_view(data) {
             machine.find(".image-size-data").text(image_params['size']);
             // find and display ips
             var ips = get_public_ips(server);
-            machine.find("a.ip span.public").text(ips['ip4']);
-            machine.find("a.ip span.public.ipv6-text").text(ips['ip6']);
+            machine.find("span.ip span.public").text(ips['ip4']);
+            machine.find("span.ip span.public.ipv6-text").text(ips['ip6']);
         }
         /*
         Do some repeated actions that include:

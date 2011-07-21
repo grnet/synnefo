@@ -739,7 +739,7 @@ div.machine-details {
     float:left;
 }
 
-.machine span.name, .machine a.ip {
+.machine span.name, .machine span.ip {
     font-size: 75%;
     color: black;
     margin-top: 6px;
@@ -4144,7 +4144,6 @@ div.state .shutdown, tbody.machines .shutdown {
 
 .ipv6-text, .ipv4-text {
     font-size: 0.9em;
-    cursor: pointer;
 }
 
 .tooltip {

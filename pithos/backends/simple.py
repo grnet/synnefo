@@ -152,9 +152,9 @@ class SimpleBackend(BaseBackend):
         try:
             version_id, mtime = self._get_accountinfo(account, until)
         except NameError:
-            # TODO: Make sure this doesn't happen.
+            # Account does not exist before until.
             version_id = None
-            mtime = 0
+            mtime = until
         count, bytes, tstamp = self._get_pathstats(account, until)
         if mtime > tstamp:
             tstamp = mtime

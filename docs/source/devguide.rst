@@ -25,12 +25,13 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.5 (July 19, 2011)        Object update from another object's data.
+0.5 (July 21, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
 \                          Purge container/object history.
 \                          List other accounts that share objects with a user.
 \                          List shared containers/objects.
+\                          Update implementation guidelines.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -911,7 +912,7 @@ Clarifications/suggestions:
 * To avoid conflicts between objects and virtual directory markers in container listings, it is recommended that object names do not end with the delimiter used.
 * The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired reply format. The parameter overrides the header (**TBD**).
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
-* In headers, dates are formatted according to RFC 1123. In extended information listings, dates are formatted according to ISO 8601.
+* In headers, dates are formatted according to RFC 1123. In extended information listings, the ``last_modified`` field is formatted according to ISO 8601 (for OOS API compatibility). All other fields (Pithos extensions) use integer tiemstamps.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
 * A copy/move using ``PUT``/``COPY``/``MOVE`` will always update metadata, keeping all old values except the ones redefined in the request headers.
 * A ``HEAD`` or ``GET`` for an ``X-Object-Manifest`` object, will include modified ``Content-Length`` and ``ETag`` headers, according to the characteristics of the objects under the specified prefix. The ``Etag`` will be the MD5 hash of the corresponding ETags concatenated. In extended container listings there is no metadata processing.
@@ -932,6 +933,7 @@ Upon entrance to the service, a user is presented with the following elements - 
 * The ``others`` element, which contains all objects that other users share with the user.
 * The ``tags`` element, which lists the names of tags the user has defined. This can be an entry point to list all files that have been assigned a specific tag or manage tags in general (remove a tag completely, rename a tag etc.).
 * The ``groups`` element, which contains the names of groups the user has defined. Each group consists of a user list. Group creation, deletion, and manipulation is carried out by actions originating here.
+* The ``history`` element, which allows browsing past instances of ``home`` and - optionally - ``trash``.
 
 Objects in Pithos can be:
 
@@ -941,22 +943,24 @@ Objects in Pithos can be:
 * Made public (shared with non-Pithos users).
 * Restored from previous versions.
 
-Some of these functions are performed by the client software and some by the Pithos server. Client-driven functionality is based on specific metadata that should be handled equally across implementations. These metadata names are discussed in the next chapter. 
+Some of these functions are performed by the client software and some by the Pithos server.
 
-Conventions and Metadata Specification
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Implementation Guidelines
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Pithos clients should use the ``pithos`` container for all Pithos objects. Object names use the ``/`` delimiter to impose a hierarchy of folders and files.
+Pithos clients should use the ``pithos`` and ``trash`` containers for active and inactive objects respectively. If any of these containers is not found, the client software should create it, without interrupting the user's workflow. The ``home`` element corresponds to ``pithos`` and the ``trash`` element to ``trash``. Use ``PUT`` with the ``X-Move-From`` header, or ``MOVE`` to transfer objects from one container to the other. Use ``DELETE`` to remove from ``pithos`` without trashing, or to remove from ``trash``. When moving objects, detect naming conflicts with the ``If-Match`` or ``If-None-Match`` headers (**TBD**). Such conflicts should be resolved by the user.
 
-At the object level, tags are implemented by managing metadata keys. The client software should allow the user to use any string as a tag and then set the corresponding ``X-Object-Meta-<tag>`` key at the server. The API extensions provided, allow for listing all tags in a container and filtering object listings based on one or more tags. The tag list is sufficient for implementing the ``tags`` element, either as a special, virtual folder (as done in the first version of Pithos), or as an application menu.
+Object names should use the ``/`` delimiter to impose a hierarchy of folders and files.
 
-The metadata specification is summarized in the following table.
+The ``shared`` element should be implemented as a read-only view of the ``pithos`` container, using the ``shared`` parameter when listing objects. The ``others`` element, should start with a top-level ``GET`` to retrieve the list of accounts accessible to the user. It is suggested that the client software hides the next step of navigation - the container - if it only includes ``pithos`` and forwards the user directly to the objects.
 
-===========================  ==============================
-Metadata Name                Value
-===========================  ==============================
-X-Object-Meta-*              Use for other tags that apply to the object
-===========================  ==============================
+Public objects are not included in ``shared`` and ``others`` listings. It is suggested that they are marked in a visually distinctive way in ``pithos`` listings (for example using an icon overlay).
+
+At the object level, tags are implemented by managing metadata keys. The client software should allow the user to use any string as a tag and set the corresponding ``X-Object-Meta-<tag>`` key at the server. The API extensions provided, allow for listing all tags in a container and filtering object listings based on one or more tags. The tag list is sufficient for implementing the ``tags`` element, either as a special, virtual folder (as done in the first version of Pithos), or as an application menu.
+
+A special application menu, or a section in application preferences, should be devoted to managing groups (the ``groups`` element). All group-related actions are implemented at the account level.
+
+Browsing past versions of objects should be available both at the object and the container level. At the object level, a list of past versions can be included in the screen showing details or more information on the object (metadata, tags, permissions, etc.). At the container level, it is suggested that clients use a ``history`` element, which presents to the user a read-only, time-variable view of ``pithos`` contents. This can be accomplished via the ``until`` parameter in listings. Optionally, ``history`` may include ``trash``.
 
 Recommended Practices and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

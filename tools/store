@@ -531,8 +531,7 @@ class UpdateObject(Command):
             self.client.update_object_using_chunks(container, object, f,
                                                     meta=meta, **args)
         else:
-            data = f.read() if f else None
-            self.client.update_object(container, object, data, meta=meta, **args)
+            self.client.update_object(container, object, f, meta=meta, **args)
         if f:
             f.close()
 

@@ -134,6 +134,38 @@ def update_credits(message):
     _logger.debug("Request to update credits")
     message.channel.basic_ack(message.delivery_tag)
 
+
+def update_build_progress(message):
+    """Process a progress update message"""
+    try:
+        msg = json.loads(message.body)
+
+        if msg['type'] != "ganeti-create-progess":
+            _logger.error("Message is of unknown type %s", msg["type"])
+            return
+
+        # XXX: The following assumes names like snf-12
+        instid = msg['instance'].split('-')[1]
+
+        vm = VirtualMachine.objects.get(id = instid)
+
+        backend.process_net_status(vm, msg['percentage'])
+
+        _logger.debug("Done processing ganeti-create-progess msg for vm %s.",
+                      msg["instance"])
+        message.channel.basic_ack(message.delivery_tag)
+
+    except KeyError:
+        _logger.error("Malformed incoming JSON, missing attributes: %s",
+                      message.body)
+    except VirtualMachine.IllegalState:
+        _logger.error("Build progress message for non-building VM %s: %s"%
+                      (instid, message.body))
+    except Exception as e:
+        _logger.exception("Unexpected error")
+        raise
+
+
 def trigger_status_update(message):
     """
         Triggers a status update job for a specific VM id.

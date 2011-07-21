@@ -134,6 +134,26 @@ def process_net_status(vm, nics):
             firewall_profile=firewall_profile)
     vm.save()
 
+@transaction.commit_on_success
+def process_progress_update(vm, pr_percentage):
+
+    if not type(pr_percentage) == int:
+        raise TypeError("Percentage not an integer")
+
+    if pr_percentage < 0 or pr_percentage > 100:
+        raise Exception("Percentage not in range (0, 100)")
+
+    last_update = vm.buildpercentage
+
+    if last_update > pr_percentage:
+        raise Exception("Build percentage should increase monotonically" \
+                        " (old=%d, new=%d)"%(last_update, pr_percentage))
+
+    if not vm.operstate == 'BUILD':
+        raise VirtualMachine.IllegalState("VM is not in building state")
+
+    vm.buildpercentage = pr_percentage
+    vm.save()
 
 def start_action(vm, action):
     """Update the state of a VM when a new action is initiated."""

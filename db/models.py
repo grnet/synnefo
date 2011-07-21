@@ -308,6 +308,8 @@ class VirtualMachine(models.Model):
                                         null=True)
     backendlogmsg = models.TextField(null=True)
 
+    buildpercentage = models.IntegerField(null=True)
+
     # Error classes
     class InvalidBackendIdError(Exception):
          def __init__(self, value):
@@ -333,6 +335,9 @@ class VirtualMachine(models.Model):
         pass
     
     class BuildingError(Exception):
+        pass
+
+    class IllegalState(Exception):
         pass
     
     def __init__(self, *args, **kw):

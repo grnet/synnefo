@@ -317,3 +317,24 @@ class UsersTestCase(TestCase):
 
         username = users.create_uname(u'Γεώργιος Παπαγεωργίου')
         self.assertEquals(username, u'παπαγεωγ')
+
+class ProcessProgressUpdateTestCase(TestCase):
+    fixtures = [ 'db_test_data' ]
+
+    def test_progress_update(self):
+
+        # A VM in status BUILDING
+        vm = VirtualMachine.objects.get(pk=30002)
+
+        backend.process_progress_update(vm, 12)
+        self.assertEquals(vm.buildpercentage, 12)
+
+        self.assertRaises(Exception, backend.process_progress_update, vm, 10)
+        self.assertRaises(Exception, backend.process_progress_update, vm, -1)
+        self.assertRaises(Exception, backend.process_progress_update, vm, 102)
+        self.assertRaises(TypeError, backend.process_progress_update, vm, '1')
+
+        # A VM in status RUNNING
+        vm = VirtualMachine.objects.get(pk=30000)
+        self.assertRaises(VirtualMachine.IllegalState,
+                          backend.process_progress_update, vm, 1)

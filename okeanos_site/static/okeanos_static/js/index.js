@@ -20,6 +20,9 @@
             $("li .close-button").css("visibility", "hidden");
                 
             if (id !== "#video") {
+                try {
+                    $("video")[0].player.pause();
+                } catch (err) {}
                 li.addClass("selected");
                 li.addClass("current");
                 $(link.parent()).find(".close-button").css("visibility", "visible");

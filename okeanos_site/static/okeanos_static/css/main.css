@@ -295,3 +295,9 @@ body.style2 .page.text {
 body.style2 .page.text p, body.style2 .page.text h2 {
     color: #fff;
 }
+
+#video div.vjs-big-play-button {
+    background: none !important; 
+    border: none !important;
+    box-shadow: 4px 4px 50px #477589; 
+}

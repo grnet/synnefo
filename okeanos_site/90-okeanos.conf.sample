@@ -27,5 +27,19 @@ OKEANOS_SITE_URL = "/about"
 OKEANOS_APP_URL = "/ui"
 
 # video url (see okeanos_site/README)
-OKEANOS_VIDEO_URL = "http://vimeo.com/moogaloop.swf?clip_id=26579413&amp;server=vimeo.com&amp;show_title=0&amp;show_byline=0&amp;show_portrait=0&amp;color=74aec9&amp;fullscreen=1&amp;autoplay=0&amp;loop=0"
+# mp4 should be absolute for flash player to work (flash video player 
+# is the fallback video player for IE)
+#
+# VIDEOS ARE NOT CONTAINED IN PROJECT FILES
+# you can download all files from http://<videos tar.gz download url>
+# and extract the containing directory on okeanos_site/static/okeanos_static/
+#
+# wget http://<videos tar.gz download url>/okeanos_intro_vide.tar.gz
+# tar xzvf okeanos_intro_video.tar.gz -C okeanos_site/static/okeanos_static/
+OKEANOS_VIDEO_URL = {
+    'mp4': {'src': 'http://host:port/okeanos_static/intro_video/intro_video.m4v', 'codecs': 'avc1.42E01E, mp4a.40.2'},
+    'webm': {'src': 'http://host:port/okeanos_static/intro_video/intro_video.webm', 'codecs': 'vp8, vorbis'},
+    'ogg': {'src': 'http://host:port/okeanos_static/intro_video/intro_video.ogv', 'codecs': 'theora, vorbis'}
+}
 
+OKEANOS_VIDEO_POSTER_IMAGE_URL = "/okeanos_static/intro_video/intro_video.jpg"

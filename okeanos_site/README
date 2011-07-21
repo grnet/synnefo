@@ -38,15 +38,19 @@ Settings
   Defaults to "/"
 
 - OKEANOS_VIDEO_URL
-  Vimeo flash url.
-  Make the following steps to retrieve the appropriate url
+  
+  Since the transition to our custom html5 player the OKEANOS_VIDEO_URL should
+  be set to a dict containing the several videos added inside <video> html tag
 
-  - open vimeo video page
-  - click on the embed button 
-    (on the right side of the video container)
-  - click on "old embed code" to view the flash embedable html code
-  - extract the url from <embed src="<video url>"
+  Dict key should be the video format and its value another dict containing the
+  <source> tag attributes. At least `src` attribute should be set for video to
+  work.
 
+  A sample dict provided in `90-okeanos.conf.sample` file.
+
+  IE fallbacks to a flash video player called `flowplayer`. For video to work
+  on IE OKEANOS_VIDEO_URL setting should contain mp4 video source. The url of
+  mp4 should be an ABSOLUTE URL for flash player to work.
 
 Views
 -----

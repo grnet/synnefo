@@ -1238,8 +1238,8 @@ function machine_connect(serverIDs){
     }
     
     // prefer metadata values for specific options (username, domain)
-    var username_meta_key = 'User';
-    var domain_meta_key = "Domain";
+    var username_meta_key = 'user';
+    var domain_meta_key = "domain";
 
     var serverID = serverIDs.pop();
     var machine = get_machine(serverID);
@@ -1273,11 +1273,11 @@ function machine_connect(serverIDs){
         params_url += "&domain=" + domain;
     }
     
-    if ($.client.os == "Windows" && os == "windows") {
-        // request rdp file
-        window.open('machines/connect' + params_url + "&rdp=1");
-        return;
-    }
+    //if ($.client.os == "Windows" && os == "windows") {
+        //// request rdp file
+        //window.open('machines/connect' + params_url + "&rdp=1");
+        //return;
+    //}
     
     // FIXME: I18n ???
     var title = 'Connect to: ' + '<span class="machine-title"><img src="static/icons/machines/small/'+os+'-on.png" /> '+serverName+'</span>';

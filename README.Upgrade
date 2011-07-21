@@ -14,6 +14,9 @@ REMOVE SETTINGS
     * 90-okeanos.conf.sample:APP_INSTALL_URL
     * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
 
+NEW MIGRATIONS
+    * 0018_auto__add_field_virtualmachine_buildpercentage
+
 v0.5.1 -> v0.5.2
 NEW SETTINGS
     * 10-backend.py:GANETI_CREATEINSTANCE_KWARGS

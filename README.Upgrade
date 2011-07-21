@@ -13,6 +13,7 @@ REMOVE SETTINGS
     * 00-admins.conf:SYSTEM_EMAIL_ADDR
     * 90-okeanos.conf.sample:APP_INSTALL_URL
 
+
 v0.5.1 -> v0.5.2
 NEW SETTINGS
     * 10-backend.py:GANETI_CREATEINSTANCE_KWARGS

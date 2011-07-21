@@ -463,9 +463,8 @@ Synnefo deployment.
     to NFDHCPD's state directory, usually /var/lib/nfdhcpd.
 
 
-15. Create log file directories for Synnefo components, set appropriate
-    permissions. By default logic/dispatcher.py and ganeti/snf-ganeti-eventd.py
-    use /var/log/synnefo.
+15. See section "Logging" in README.admin, and edit logic/logging.conf
+    according to your OS and individual deployment characteristics.
 
 
 16. Optionally, read the okeanos_site/README file to setup ~okeanos introductory 

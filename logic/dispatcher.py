@@ -62,6 +62,12 @@ except:
 
 from synnefo.logic import callbacks
 
+# Queue names
+QUEUES = []
+
+# Queue bindings to exchanges
+BINDINGS = []
+
 class Dispatcher:
 
     logger = None
@@ -95,45 +101,8 @@ class Dispatcher:
         self.chan.close()
 
     def _init(self):
+        global QUEUES, BINDINGS
         self.logger.info("Initializing")
-
-        # Queue declarations
-        prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
-
-        QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
-        QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
-        QUEUE_CRON_CREDITS = "%s-credits" % prefix
-        QUEUE_EMAIL = "%s-email" % prefix
-        QUEUE_RECONC = "%s-reconciliation" % prefix
-        if settings.DEBUG is True:
-            QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
-
-        QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET,
-                  QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC)
-
-        if settings.DEBUG is True:
-            BINDINGS_DEBUG = [
-                # Queue       # Exchange          # RouteKey  # Handler
-                (QUEUE_DEBUG, settings.EXCHANGE_GANETI, '#',  'dummy_proc'),
-                (QUEUE_DEBUG, settings.EXCHANGE_CRON,   '#',  'dummy_proc'),
-                (QUEUE_DEBUG, settings.EXCHANGE_API,    '#',  'dummy_proc'),
-            ]
-            QUEUES += (QUEUE_DEBUG,)
-
-        # notifications of type "ganeti-op-status"
-        DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
-        # notifications of type "ganeti-net-status"
-        DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
-
-        BINDINGS = [
-        # Queue                   # Exchange                # RouteKey          # Handler
-        (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,  'update_db'),
-        (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net'),
-        (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',      'update_credits'),
-        (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',        'send_email'),
-        (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',        'send_email'),
-        (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*', 'trigger_status_update'),
-        ]
 
         # Connect to RabbitMQ
         conn = None
@@ -162,12 +131,6 @@ class Dispatcher:
 
         bindings = BINDINGS
 
-        # Special queue for debugging, should not appear in production
-        if self.debug and settings.DEBUG:
-            self.chan.queue_declare(queue=QUEUE_DEBUG, durable=True,
-                                    exclusive=False, auto_delete=False)
-            bindings += BINDINGS_DEBUG
-
         # Bind queues to handler methods
         for binding in bindings:
             try:
@@ -182,6 +145,48 @@ class Dispatcher:
             self.logger.debug("Binding %s(%s) to queue %s with handler %s" %
                               (binding[1], binding[2], binding[0], binding[3]))
             self.clienttags.append(tag)
+
+
+def _init_queues():
+    global QUEUES, BINDINGS
+
+    # Queue declarations
+    prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
+
+    QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
+    QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
+    QUEUE_CRON_CREDITS = "%s-credits" % prefix
+    QUEUE_EMAIL = "%s-email" % prefix
+    QUEUE_RECONC = "%s-reconciliation" % prefix
+    if settings.DEBUG is True:
+        QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
+
+    QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET,
+              QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC)
+
+    # notifications of type "ganeti-op-status"
+    DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
+    # notifications of type "ganeti-net-status"
+    DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
+
+    BINDINGS = [
+    # Queue                   # Exchange                # RouteKey          # Handler
+    (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,  'update_db'),
+    (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net'),
+    (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',      'update_credits'),
+    (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',        'send_email'),
+    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',        'send_email'),
+    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*', 'trigger_status_update'),
+    ]
+
+    if settings.DEBUG is True:
+        BINDINGS += [
+            # Queue       # Exchange          # RouteKey  # Handler
+            (QUEUE_DEBUG, settings.EXCHANGE_GANETI, '#',  'dummy_proc'),
+            (QUEUE_DEBUG, settings.EXCHANGE_CRON,   '#',  'dummy_proc'),
+            (QUEUE_DEBUG, settings.EXCHANGE_API,    '#',  'dummy_proc'),
+        ]
+        QUEUES += (QUEUE_DEBUG,)
 
 
 def _exit_handler(signum, frame):
@@ -237,15 +242,16 @@ def purge_queues() :
     """
         Delete declared queues from RabbitMQ. Use with care!
     """
+    global QUEUES, BINDINGS
     conn = get_connection()
     chan = conn.channel()
 
-    print "Queues to be deleted: ",  settings.QUEUES
+    print "Queues to be deleted: ", QUEUES
 
     if not get_user_confirmation():
         return
 
-    for queue in settings.QUEUES:
+    for queue in QUEUES:
         try:
             chan.queue_delete(queue=queue)
             print "Deleting queue %s" % queue
@@ -260,6 +266,7 @@ def purge_exchanges():
     """
         Delete declared exchanges from RabbitMQ, after removing all queues first
     """
+    global QUEUES, BINDINGS
     purge_queues()
 
     conn = get_connection()
@@ -283,10 +290,11 @@ def drain_queue(queue):
     """
         Strip a (declared) queue from all outstanding messages
     """
+    global QUEUES, BINDINGS
     if not queue:
         return
 
-    if not queue in settings.QUEUES:
+    if not queue in QUEUES:
         print "Queue %s not configured" % queue
         return
 
@@ -298,7 +306,7 @@ def drain_queue(queue):
     chan = conn.channel()
 
     # Register a temporary queue binding
-    for binding in settings.BINDINGS:
+    for binding in BINDINGS:
         if binding[0] == queue:
             exch = binding[1]
 
@@ -357,6 +365,9 @@ def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
     logger = log.get_logger("synnefo.dispatcher")
+
+    # Init the global variables containing the queues
+    _init_queues()
 
     # Special case for the clean up queues action
     if opts.purge_queues:

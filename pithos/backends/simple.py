@@ -343,7 +343,7 @@ class SimpleBackend(BaseBackend):
             raise NameError('Container already exists')
         if policy:
             self._check_policy(policy)
-        path = os.path.join(account, container)
+        path = '/'.join((account, container))
         version_id = self._put_version(path, user)[0]
         for k, v in self.default_policy.iteritems():
             if k not in policy:
@@ -388,12 +388,12 @@ class SimpleBackend(BaseBackend):
         if user != account:
             if until:
                 raise NotAllowedError
-            allowed = self._allowed_paths(user, os.path.join(account, container))
+            allowed = self._allowed_paths(user, '/'.join((account, container)))
             if not allowed:
                 raise NotAllowedError
         else:
             if shared:
-                allowed = self._shared_paths(os.path.join(account, container))
+                allowed = self._shared_paths('/'.join((account, container)))
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     
@@ -406,7 +406,7 @@ class SimpleBackend(BaseBackend):
         if user != account:
             if until:
                 raise NotAllowedError
-            allowed = self._allowed_paths(user, os.path.join(account, container))
+            allowed = self._allowed_paths(user, '/'.join((account, container)))
             if not allowed:
                 raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
@@ -513,7 +513,7 @@ class SimpleBackend(BaseBackend):
             ie.data = missing
             raise ie
         path = self._get_containerinfo(account, container)[0]
-        path = os.path.join(path, name)
+        path = '/'.join((path, name))
         if permissions is not None:
             r, w = self._check_permissions(path, permissions)
         src_version_id, dest_version_id = self._copy_version(user, path, path, not replace_meta, False)
@@ -539,9 +539,9 @@ class SimpleBackend(BaseBackend):
         if src_version is None:
             src_path = self._get_objectinfo(account, src_container, src_name)[0]
         else:
-            src_path = os.path.join(account, src_container, src_name)
+            src_path = '/'.join((account, src_container, src_name))
         dest_path = self._get_containerinfo(account, dest_container)[0]
-        dest_path = os.path.join(dest_path, dest_name)
+        dest_path = '/'.join((dest_path, dest_name))
         if permissions is not None:
             r, w = self._check_permissions(dest_path, permissions)
         src_version_id, dest_version_id = self._copy_version(user, src_path, dest_path, not replace_meta, True, src_version)
@@ -568,7 +568,7 @@ class SimpleBackend(BaseBackend):
             raise NotAllowedError
         
         if until is not None:
-            path = os.path.join(account, container, name)
+            path = '/'.join((account, container, name))
             sql = '''select version_id from versions where name = ? and tstamp <= ?'''
             c = self.con.execute(sql, (path, until))
             for v in [x[0] in c.fetchall()]:
@@ -592,7 +592,7 @@ class SimpleBackend(BaseBackend):
         logger.debug("list_versions: %s %s %s", account, container, name)
         self._can_read(user, account, container, name)
         # This will even show deleted versions.
-        path = os.path.join(account, container, name)
+        path = '/'.join((account, container, name))
         sql = '''select distinct version_id, tstamp from versions where name = ? and hide = 0'''
         c = self.con.execute(sql, (path,))
         return [(int(x[0]), int(x[1])) for x in c.fetchall()]
@@ -700,7 +700,7 @@ class SimpleBackend(BaseBackend):
             p = p[:p.index(None)]
         except ValueError:
             pass
-        path = os.path.join(*p)
+        path = '/'.join(p)
         sql = '''select version_id, tstamp, size from (%s) where name = ?'''
         sql = sql % self._sql_until(until)
         c = self.con.execute(sql, (path,))
@@ -724,7 +724,7 @@ class SimpleBackend(BaseBackend):
             raise NameError('Container does not exist')
     
     def _get_objectinfo(self, account, container, name, version=None):
-        path = os.path.join(account, container, name)
+        path = '/'.join((account, container, name))
         version_id, muser, mtime, size = self._get_version(path, version)
         return path, version_id, muser, mtime, size
     
@@ -936,7 +936,7 @@ class SimpleBackend(BaseBackend):
     def _is_allowed(self, user, account, container, name, op='read'):
         if user == account:
             return True
-        path = os.path.join(account, container, name)
+        path = '/'.join((account, container, name))
         if op == 'read' and self._get_public(path):
             return True
         perm_path, perms = self._get_permissions(path)

@@ -118,7 +118,7 @@ class TestAccount(unittest.TestCase):
             "modificationDate": 1223372769275,
             "lastLogin": 1223372769275}
         self.b.update_account_meta('test', self.account, meta)
-        p = os.path.join(self.basepath, self.account)
+        p = '/'.join((self.basepath, self.account))
         
         db_meta = self.b.get_account_meta('test', self.account)
         for k,v in meta.iteritems():

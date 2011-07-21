@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
 import logging
 import hashlib
 
@@ -121,10 +120,14 @@ def authenticate(request):
     if not x_auth_user or not x_auth_key:
         raise BadRequest('Missing X-Auth-User or X-Auth-Key header')
     response = HttpResponse(status=204)
+    
     inv_auth_tokens = dict((v, k) for k, v in settings.AUTH_TOKENS.items())
+    uri = request.build_absolute_uri()
+    if '?' in uri:
+        uri = uri[:uri.find('?')]
+    
     response['X-Auth-Token'] = inv_auth_tokens.get(x_auth_user, '0000')
-    response['X-Storage-Url'] = os.path.join(request.build_absolute_uri(),
-                                            x_auth_user)
+    response['X-Storage-Url'] = uri + (uri.endswith('/') and '' or '/') + x_auth_user
     return response
 
 @api_method('GET', format_allowed=True)

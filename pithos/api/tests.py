@@ -1273,7 +1273,7 @@ class ObjectMove(BaseTestCase):
     def test_move(self):
         #perform move
         meta = {'test':'testcopy'}
-        src_path = os.path.join('/', self.containers[0], self.obj['name'])
+        src_path = '/'.join(('/', self.containers[0], self.obj['name']))
         status = self.client.move_object(self.containers[0], self.obj['name'],
                                          self.containers[0], 'testcopy',
                                          meta)[0]

@@ -77,6 +77,10 @@ Development-specific guidelines on each step:
    backend, because it needs direct access to the hypervisor's VNC port on
    GANETI-NODEs.
 
+   Note: You still need to install the vncauthproxy package to satisfy
+   the dependency of the API on the vncauthproxy client. See Synnefo #807
+   for more details.
+
 
 13.The development Ganeti backend already has a number of OS Images available.
 

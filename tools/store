@@ -358,7 +358,7 @@ class PutObject(Command):
         #parser.add_option('-S', action='store',
         #                  dest='segment_size', default=False,
         #                  help='use for large file support')
-        parser.add_option('--manifest', action='store_true',
+        parser.add_option('--manifest', action='store',
                           dest='x_object_manifest', default=None,
                           help='upload a manifestation file')
         parser.add_option('--content-type', action='store',

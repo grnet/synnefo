@@ -421,14 +421,10 @@ def raw_input_socket(request):
     """Return the socket for reading the rest of the request."""
     
     server_software = request.META.get('SERVER_SOFTWARE')
-    if not server_software:
-        if 'wsgi.input' in request.environ:
-            return request.environ['wsgi.input']
-        raise ServiceUnavailable('Unknown server software')
-    if server_software.startswith('WSGIServer'):
-        return request.environ['wsgi.input']
-    elif server_software.startswith('mod_python'):
+    if server_software and server_software.startswith('mod_python'):
         return request._req
+    if 'wsgi.input' in request.environ:
+        return request.environ['wsgi.input']
     raise ServiceUnavailable('Unknown server software')
 
 MAX_UPLOAD_SIZE = 10 * (1024 * 1024) # 10MB

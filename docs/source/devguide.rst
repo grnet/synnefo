@@ -912,7 +912,7 @@ Clarifications/suggestions:
 * To avoid conflicts between objects and virtual directory markers in container listings, it is recommended that object names do not end with the delimiter used.
 * The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired reply format. The parameter overrides the header (**TBD**).
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
-* In headers, dates are formatted according to RFC 1123. In extended information listings, dates are formatted according to ISO 8601.
+* In headers, dates are formatted according to RFC 1123. In extended information listings, the ``last_modified`` field is formatted according to ISO 8601 (for OOS API compatibility). All other fields (Pithos extensions) use integer tiemstamps.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
 * A copy/move using ``PUT``/``COPY``/``MOVE`` will always update metadata, keeping all old values except the ones redefined in the request headers.
 * A ``HEAD`` or ``GET`` for an ``X-Object-Manifest`` object, will include modified ``Content-Length`` and ``ETag`` headers, according to the characteristics of the objects under the specified prefix. The ``Etag`` will be the MD5 hash of the corresponding ETags concatenated. In extended container listings there is no metadata processing.

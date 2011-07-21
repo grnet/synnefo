@@ -104,30 +104,37 @@ established using <a target="_blank" href="http://en.wikipedia.org/wiki/Remote_D
 To do so, open the following file with an appropriate remote desktop client.""")
 CONNECT_LINUX_WINDOWS_SUBMESSAGE = _("""If you don't have one already
 installed, we suggest the use of <a target="_blank" href="http://sourceforge.net/projects/tsclient/files/tsclient/tsclient-unstable/tsclient-2.0.1.tar.bz2/download">tsclient</a>.""")
-
 CONNECT_WINDOWS_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
 Open an ssh client such as PuTTY and type the following:""")
 CONNECT_WINDOWS_LINUX_SUBMESSAGE = _("""If you do not have an ssh client already installed,
 <a target="_blank" href="http://the.earth.li/~sgtatham/putty/latest/x86/putty.exe">Download PuTTY</a>""")
-CONNECT_WINDOWS_WINDOWS_MESSAGE = _("Trying to connect from windows to windows")
 
+CONNECT_WINDOWS_WINDOWS_MESSAGE = _("""A direct connection to this machine can be
+established using Remote Desktop. Click on the following link, and if asked open it using "Remote Desktop Connection" """)
+CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use""")
 
 # info/subinfo for all os combinations
 #
 # [0] info gets displayed on top of the message box
 # [1] subinfo gets displayed on the bottom as extra info
 # provided to the user when needed
-CONNECT_PROMT_MESSAGES = {
+CONNECT_PROMPT_MESSAGES = {
     'linux': {
             'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
             'windows': [CONNECT_LINUX_WINDOWS_MESSAGE, CONNECT_LINUX_WINDOWS_SUBMESSAGE]
         },
     'windows': {
             'linux': [CONNECT_WINDOWS_LINUX_MESSAGE, CONNECT_WINDOWS_LINUX_SUBMESSAGE],
-            'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE, ""]
+            'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE, CONNECT_WINDOWS_WINDOWS_SUBMESSAGE]
         }
     }
+
+# retrieve domain prefix from settings
+DOMAIN_PREFIX = getattr(settings, 'MACHINE_DOMAIN_PREFIX', getattr(settings, 'BACKEND_PREFIX_ID', ""))
+
+# domain template string
+DOMAIN_TPL = "%s%%s" % DOMAIN_PREFIX
 
 def machines_connect(request):
     ip_address = request.GET.get('ip_address','')
@@ -135,7 +142,7 @@ def machines_connect(request):
     server_id = request.GET.get('srv', 0)
     host_os = request.GET.get('host_os','Linux').lower()
     username = request.GET.get('username', None)
-    domain = request.GET.get("domain", "snf-%d" % int(server_id))
+    domain = request.GET.get("domain", DOMAIN_TPL % int(server_id))
 
     # guess host os
     if host_os != "windows":
@@ -189,8 +196,8 @@ def machines_connect(request):
 
         # try to find a specific message
         try:
-            connect_message = CONNECT_PROMT_MESSAGES[host_os][operating_system][0]
-            subinfo = CONNECT_PROMT_MESSAGES[host_os][operating_system][1]
+            connect_message = CONNECT_PROMPT_MESSAGES[host_os][operating_system][0]
+            subinfo = CONNECT_PROMPT_MESSAGES[host_os][operating_system][1]
         except KeyError:
             connect_message = _("You are trying to connect from a %s machine to a %s machine") % (host_os, operating_system)
             subinfo = ""

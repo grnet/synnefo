@@ -12,6 +12,7 @@ NEW SETTINGS
 REMOVE SETTINGS
     * 00-admins.conf:SYSTEM_EMAIL_ADDR
     * 90-okeanos.conf.sample:APP_INSTALL_URL
+    * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
 
 v0.5.1 -> v0.5.2
 NEW SETTINGS

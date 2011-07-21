@@ -1,6 +1,43 @@
 Changelog
 =========
 
+
+2011-07-19, v0.5.3.1
+    API:
+        * Fix bug with firewall code using inexistent, removed setting
+    GUI:
+        * Fix bug with invitations UI (#859)
+        * Fix bug with feedback form submission raising HTTP 500
+    Deployment:
+        * Fix bug with error reporting by the invitations app
+
+
+2011-07-19, v0.5.3
+
+FIXES:
+    GUI:
+        * Add separate LOGOUT_URL setting
+          fixes bug with URL in invitations mail
+    Deployment:
+        * Recode invitations email in UTF-8
+        * Use DEFAULT_FROM_EMAIL Django setting as From: header
+          for all emails
+
+
+2011-07-18, v0.5.2
+
+FIXES:
+    GUI:
+        * Improve IPv6 support in UI (#839, #841)
+        * Improve Connect messages, propose username (#801)
+        * Add "tag"/"value" headers in Modify tags popup (#845)
+    API:
+        * Support arbitrary arguments to RAPI CreateInstanceCall() (#835)
+    Admin tool:
+        * Support creation and modification of users, flavors, images (#827)
+        * Support sending invitations from the command line
+
+
 2011-07-14, v0.5.1
 
 FIXES:

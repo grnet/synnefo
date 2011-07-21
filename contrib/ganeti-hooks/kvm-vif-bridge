@@ -59,8 +59,14 @@ function routed_setup_firewall {
 		esac
 	done
 
-	iptables  -D FORWARD -o $INTERFACE -j $chain 2>/dev/null
-	ip6tables -D FORWARD -o $INTERFACE -j $chain 2>/dev/null
+	# Flush any old rules. We have to consider all chains, since
+	# we are not sure the instance was on the same chain, or had the same
+	# tap interface.
+	for oldchain in protected unprotected limited; do
+		iptables  -D FORWARD -o $INTERFACE -j $oldchain 2>/dev/null
+		ip6tables -D FORWARD -o $INTERFACE -j $oldchain 2>/dev/null
+	done
+
 	if [ "x$chain" != "x" ]; then
 		iptables  -A FORWARD -o $INTERFACE -j $chain
 		ip6tables -A FORWARD -o $INTERFACE -j $chain

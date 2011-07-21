@@ -409,8 +409,7 @@ class PutObject(Command):
         elif not f:
             self.client.create_zero_length_object(container, object, meta=meta, **args)
         else:
-            data = f.read()
-            self.client.create_object(container, object, data, meta=meta, **args)
+            self.client.create_object(container, object, f, meta=meta, **args)
         if f:
             f.close()
 

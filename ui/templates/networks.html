@@ -1070,6 +1070,15 @@ function update_networks_view(servers_data, networks_data){
                         if (!existing_private.length) {
                             var machine = $("#networks-pane #private-machine-template").clone().attr("id", "net-" + server_net.id + "-server-" + server.id).fadeIn("slow");
                             machine.find('span.name').text(fix_server_name(server.name, 25));
+
+                            // the id of the server the callback function will show connect message for
+                            var CONNECT_SERVER_ID = server.id;
+                            machine.find('.machine-connect').click(function(){
+                                // keep id in local scope
+                                var id = CONNECT_SERVER_ID;
+                                machine_connect([machine_connect, id])
+                            });
+
                             if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
                                 machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
                             } else {

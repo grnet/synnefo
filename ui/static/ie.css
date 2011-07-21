@@ -573,7 +573,12 @@ a.manage-metadata {
     margin-right: 5px;
 }
 
+.network-progress-indicator img {
+    bottom: 10px;
+}
+
 /*404 and 500 error pages*/
 .error_page .http_error {
     line-height: 7em;
 }
+

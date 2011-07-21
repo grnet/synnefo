@@ -4245,3 +4245,14 @@ div.state .shutdown, tbody.machines .shutdown {
 .error_404 .http_error .code {
     letter-spacing: -7px;
 }
+
+.network-progress-indicator {
+    position: relative;
+    display: none;
+}
+
+.network-progress-indicator img {
+    position: absolute;
+    bottom: 5px;
+    right: -250px;
+}

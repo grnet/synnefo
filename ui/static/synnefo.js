@@ -455,6 +455,7 @@ function update_servers_data(servers_update, data) {
                             }
                             status_changed = {'old': previous_value, 'new': v}; 
                         }
+
                         $(window).trigger("vm:attr:change", {'initial': initial, 'attr': key, 'newvalue': v});
                     }
                 }
@@ -478,6 +479,23 @@ function update_servers_data(servers_update, data) {
     // check server, if exists merge it with new values else add it
     $.each(servers_update, function(index, server) {
         var exists = server_exists(server);
+        var old_server = servers[exists[1]];
+
+        // reset network transition
+        try {
+            if (old_server.network_transition) {
+                if (old_server.network_transition == "NETWORK_CHANGE") {
+                    // network profile changed, servers data updated, so act if the change was made
+                    // this flag will trigger ui to remove any transiiton indicators
+                    // and hopefully apply the new value to the profile options
+                    old_server.network_transition = "CHANGED"
+                } else {
+                    // nothing happened
+                    old_server.network_transition = undefined;
+                };
+            }
+        } catch (err) { console.info(err) }
+
         if (exists !== false) {
             try {
                 servers[exists[1]] = merge(servers[exists[1]], server);
@@ -540,7 +558,6 @@ function update_networks(interval) {
                 try {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
-                    jQuery.parseJSON(data);
                     update_network_names(data);
                 } catch(err) { ajax_error(-5, "UI Error", 'Update networks', err);}
             } else if (jqXHR.status == 304) {
@@ -599,7 +616,6 @@ function update_network_names(servers_data) {
             if (jqXHR.status == 200 || jqXHR.status == 203) {
                 try {
                     networks = data.networks.values;
-                    jQuery.parseJSON(data);
                     update_networks_view(servers_data, data);
                 } catch(err) {
                     ajax_error(-5, "UI Error", 'Update network names', err);
@@ -1713,7 +1729,8 @@ function set_firewall(networkID, serverID, profile) {
     // prepare payload
     var payload = {
             "firewallProfile": { "profile": profile }
-        };
+    };
+
     // prepare ajax call
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/action',
@@ -1734,15 +1751,27 @@ function set_firewall(networkID, serverID, profile) {
                 try {
                     console.info('for server ' + serverID + ' set firewall profile to ' + profile);
                 } catch(err) {}
-                //remove progress gif and toggle the content
-                $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').html(VARIOUS["APPLY"]);
-                $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').attr("disabled", false);
-                $('div#net-' + networkID + '-server-' + serverID + ' div.firewall-header').click();
                 // toggle the reboot dialog
-                var serverName = $('div#net-' + networkID + '-server-' + serverID + ' div.machine-name-div span.name').text();
-                var serverState = $('div#net-' + networkID + '-server-' + serverID + ' img.logo').attr('src').split('-')[1];
-                serverState = serverState.split('.')[0];
-                display_reboot_dialog(networkID, serverID, serverName, serverState);
+                try {
+
+                    var serverName = $('div#net-' + networkID + '-server-' + serverID + ' div.machine-name-div span.name').text();
+                    var serverState = $('div#net-' + networkID + '-server-' + serverID + ' img.logo').attr('src').split('-')[1];
+                    serverState = serverState.split('.')[0];
+                    display_reboot_dialog(networkID, serverID, serverName, serverState);
+
+                    //remove progress gif and toggle the content
+                    $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').html(VARIOUS["APPLY"]);
+                    $('div#net-' + networkID + '-server-' + serverID + ' button.firewall-apply').attr("disabled", false);
+                    $('div#net-' + networkID + '-server-' + serverID + ' div.firewall-header').click();
+
+                } catch (err) {
+                }
+                
+                // api call was made, set transition state to get reset 
+                // on the next machines update api call
+                var vm = get_machine(serverID)
+                vm.network_transition = "NETWORK_CHANGE";
+                show_machine_network_indicator(vm.id, 'pub');
             } else {
                 ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
             }
@@ -2475,4 +2504,20 @@ function fix_server_name(str, limit, append) {
         str = str.substring(0,limit-append.length) + append;
     }
     return str;
+}
+
+function show_machine_network_indicator(vm_id, network_id) {
+    var el = $("div#net-" + network_id + '-server-' + vm_id);
+    el.find(".network-progress-indicator").show();
+}
+
+
+function get_firewall_profile(vm_id) {
+    var vm = get_machine(vm_id);
+
+    try {
+        return vm.addresses.values[0].firewallProfile;
+    } catch (err) {
+        return undefined;
+    }
 }

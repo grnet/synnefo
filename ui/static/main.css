@@ -1909,7 +1909,7 @@ input.machine {
     border-bottom: 5px solid #4085A5;
     min-height: 150px;
     top: 50px !important;
-    position: absolute !important;
+    position: absolute;
 }
 
 #error-success p, .notification-box p {

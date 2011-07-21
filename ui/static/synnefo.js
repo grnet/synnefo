@@ -1287,6 +1287,7 @@ function machine_connect(serverIDs){
         // open msg box
         msg_box({
             title:title, 
+            fixed: true,
             content:'loading...',
             extra:'', 'ajax':'machines/connect' + params_url,
             parse_data:function(data){
@@ -2282,21 +2283,28 @@ function msg_box(config) {
         sel(".password-container .password").html(config.extra);
         sel(".password-container").show();
     }
-
-    var triggers = $("a#msgbox").overlay({
+    
+    var conf = {
         // some mask tweaks suitable for modal dialogs
         mask: '#666',
         top: '10px',
         closeOnClick: false,
         oneInstance: false,
         load: false,
-        fixed: false,
+        fixed: config.fixed || false,
         onClose: function () {
             // With partial refresh working properly,
             // it is no longer necessary to refresh the whole page
             // choose_view();
         }
-    });
+    }
+    
+    var triggers = $("a#msgbox").overlay(conf);
+
+    try {
+        conf = $("a#msgbox").data('overlay').getConf();
+        conf.fixed = config.fixed || false;
+    } catch (err) {}
     $("a#msgbox").data('overlay').load();
     
     var parse_data = config.parse_data || false;
@@ -2400,8 +2408,15 @@ function show_invitations() {
     }
     
     // first time clicked (show the msg box with /invitations content)
-    msg_box({title:window.INVITATIONS_TITLE, content:'', ajax:INVITATIONS_URL, html:true, success: function(el){ 
-        handle_invitations(el)}
+    msg_box({
+        title:window.INVITATIONS_TITLE, 
+        content:'', 
+        fixed: false,
+        ajax:INVITATIONS_URL, 
+        html:true, 
+        success: function(el){ 
+            handle_invitations(el)
+        }
     });
 }
 

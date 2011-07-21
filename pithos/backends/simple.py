@@ -790,18 +790,16 @@ class SimpleBackend(BaseBackend):
             sql = sql % (self._sql_until(until), ', '.join('?' * len(keys)))
             param = (cont_prefix + prefix + '%',) + tuple(keys)
             if allowed:
-                for x in allowed:
-                    sql += ' and o.name like ?'
-                    param += (x,)
+                sql += ' and (' + ' or '.join(('o.name like ?',) * len(allowed)) + ')'
+                param += tuple([x + '%' for x in allowed])
             sql += ' order by o.name'
         else:
             sql = 'select name, version_id from (%s) where name like ?'
             sql = sql % self._sql_until(until)
             param = (cont_prefix + prefix + '%',)
             if allowed:
-                for x in allowed:
-                    sql += ' and name like ?'
-                    param += (x,)
+                sql += ' and (' + ' or '.join(('name like ?',) * len(allowed)) + ')'
+                param += tuple([x + '%' for x in allowed])
             sql += ' order by name'
         c = self.con.execute(sql, param)
         objects = [(x[0][len(cont_prefix):], x[1]) for x in c.fetchall()]

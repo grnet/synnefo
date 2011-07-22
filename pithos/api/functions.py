@@ -43,7 +43,7 @@ from xml.dom import minidom
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
-from pithos.api.util import (format_header_key, printable_header_dict, get_account_headers,
+from pithos.api.util import (rename_meta_key, format_header_key, printable_header_dict, get_account_headers,
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
@@ -162,6 +162,8 @@ def account_list(request):
         except NotAllowedError:
             raise Unauthorized('Access denied')
         else:
+            rename_meta_key(meta, 'modified', 'last_modified')
+            rename_meta_key(meta, 'until_timestamp', 'x_account_until_timestamp')
             for k, v in groups.iteritems():
                 meta['X-Container-Group-' + k] = ','.join(v)
             account_meta.append(printable_header_dict(meta))
@@ -270,6 +272,8 @@ def container_list(request, v_account):
         except NameError:
             pass
         else:
+            rename_meta_key(meta, 'modified', 'last_modified')
+            rename_meta_key(meta, 'until_timestamp', 'x_container_until_timestamp')
             for k, v in policy.iteritems():
                 meta['X-Container-Policy-' + k] = v
             container_meta.append(printable_header_dict(meta))
@@ -472,6 +476,10 @@ def object_list(request, v_account, v_container):
             except NameError:
                 pass
             else:
+                rename_meta_key(meta, 'modified', 'last_modified')
+                rename_meta_key(meta, 'modified_by', 'x_object_modified_by')
+                rename_meta_key(meta, 'version', 'x_object_version')
+                rename_meta_key(meta, 'version_timestamp', 'x_object_version_timestamp')
                 update_sharing_meta(permissions, v_account, v_container, x[0], meta)
                 update_public_meta(public, meta)
                 object_meta.append(printable_header_dict(meta))

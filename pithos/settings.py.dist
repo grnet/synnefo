@@ -143,8 +143,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
 #    'django.contrib.admin',
 #    'django.contrib.admindocs',
-    'api',
-	'public'
+    'pithos.api',
+    'pithos.public'
 )
 
 AUTH_TOKENS = {

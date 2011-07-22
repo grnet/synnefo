@@ -59,16 +59,20 @@ import uuid
 logger = logging.getLogger(__name__)
 
 
+def rename_meta_key(d, old, new):
+    if old not in d:
+        return
+    d[new] = d[old]
+    del(d[old])
+
 def printable_header_dict(d):
     """Format a meta dictionary for printing out json/xml.
     
-    Convert all keys to lower case and replace dashes to underscores.
-    Change 'modified' key from backend to 'last_modified' and format date.
+    Convert all keys to lower case and replace dashes with underscores.
+    Format 'last_modified' timestamp.
     """
     
-    if 'modified' in d:
-        d['last_modified'] = datetime.datetime.fromtimestamp(int(d['modified'])).isoformat()
-        del(d['modified'])
+    d['last_modified'] = datetime.datetime.fromtimestamp(int(d['last_modified'])).isoformat()
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 def format_header_key(k):
@@ -421,14 +425,10 @@ def raw_input_socket(request):
     """Return the socket for reading the rest of the request."""
     
     server_software = request.META.get('SERVER_SOFTWARE')
-    if not server_software:
-        if 'wsgi.input' in request.environ:
-            return request.environ['wsgi.input']
-        raise ServiceUnavailable('Unknown server software')
-    if server_software.startswith('WSGIServer'):
-        return request.environ['wsgi.input']
-    elif server_software.startswith('mod_python'):
+    if server_software and server_software.startswith('mod_python'):
         return request._req
+    if 'wsgi.input' in request.environ:
+        return request.environ['wsgi.input']
     raise ServiceUnavailable('Unknown server software')
 
 MAX_UPLOAD_SIZE = 10 * (1024 * 1024) # 10MB

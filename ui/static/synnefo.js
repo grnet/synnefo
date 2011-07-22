@@ -1345,7 +1345,7 @@ function machine_connect(serverIDs){
     //}
     
     // FIXME: I18n ???
-    var title = 'Connect to: ' + '<span class="machine-title"><img src="static/icons/machines/small/'+os+'-on.png" /> '+serverName+'</span>';
+    var title = 'Connect to: ' + '<span class="machine-title"><img src="static/icons/machines/small/'+os+'-on.png" /> ' + fix_server_name(serverName) + '</span>';
     
     // open msg box and fill it with json data retrieved from connect machine view
     try {

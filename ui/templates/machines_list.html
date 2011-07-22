@@ -300,7 +300,7 @@ function update_machines_view(data){
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
-                    tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
+                    tableData[current][2] = "<a class=name><span class=name>" + fix_server_name(server.name) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
                     tableData[current][5] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
@@ -312,7 +312,7 @@ function update_machines_view(data){
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
-                    tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
+                    tableData[current][2] = "<a class=name><span class=name>" + fix_server_name(server.name) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
                     tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
@@ -325,7 +325,7 @@ function update_machines_view(data){
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
-                    tableData[current][2] = "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>";
+                    tableData[current][2] = "<a class=name><span class=name>" + fix_server_name(server.name) + "</span></a>";
                     //tableData[current][4] = "group"; //TODO
                     tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
@@ -376,7 +376,7 @@ function update_machines_view(data){
                 "<input class=" + server.status + " id=" + server.id + " type=checkbox>",
                 "<span class=imagetag>" + osTag + "</span><img class=list-logo src=" + osIcon +
                     " title=" + osTag + ">",
-                "<a class=name><span class=name>" + server.name.substring(0,60) + "</span></a>",
+                "<a class=name><span class=name>" + fix_server_name(server.name) + "</span></a>",
                 "<a class=flavor><span>"+ flavorLabel + "</span></a>",
                 //"group",
                 "<span class=status>" + status_string + "</span>"

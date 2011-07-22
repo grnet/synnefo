@@ -314,6 +314,7 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
     $(this).parent().hide();
     $(this).closest('div.action-container').children('div.single-action').removeClass('selected');
     $(this).parent().parent().find('.state').children('.spinner').show();
+    update_transition_names();
     update_confirmations();
     return false;
 });
@@ -453,7 +454,7 @@ function update_machines_view(data){
             var server_image = "unknown"
         }
         // get server status message, if it exists
-        var current_message = existing.find(".state-label").text();
+        var current_message = existing.find(".state-label").text().replace(TRANSITION_STATE_APPEND, "");
 
         // server already exists in DOM
         if (existing.length){
@@ -583,7 +584,7 @@ function update_machines_view(data){
             }
             //show spinner while machine is building or rebooting
             if (server.status == 'BUILD' ||
-                [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
+                [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text().replace(TRANSITION_STATE_APPEND, "")) >= 0 ) {
                 machine.find(".column1 .state .spinner").show();
                 machine.find(".connect-border").hide();
                 machine.find(".connect-arrow").hide();
@@ -641,6 +642,7 @@ function update_machines_view(data){
         }
     });
 
+    update_transition_names();
     fix_v6_addresses();
     // hide pane spinner
     $("#machinesview-single.single > div.large-spinner").hide();
@@ -676,6 +678,23 @@ function update_machines_view(data){
     if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
         $("#machinesview-single.single .column3 .previous").addClass('disabled');
     }
+}
+
+// define these to avoid exceptions
+function display_reboot_success() {
+}
+
+function display_reboot_failure() {
+}
+
+// append string to transition states
+function update_transition_names() {
+    $(".state-label").each(function(index,el){
+    var tr_text = $(this).text().replace(TRANSITION_STATE_APPEND,"");
+    if (TRANSITION_STATES.indexOf(tr_text) >= 0) {
+            $(this).text(tr_text + TRANSITION_STATE_APPEND);
+        }
+    })
 }
 
 //get currently displayed serverId

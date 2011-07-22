@@ -1885,7 +1885,7 @@ function log_server_status_change(server_entry, new_status) {
                         ' to ' + STATUSES[new_status]);
         } else {
             console.info(server_entry.find("div.name span.name").text() +
-                        ' from ' + server_entry.find(".status").text() +
+                        ' from ' + server_entry.find(".status").text().replace(TRANSITION_STATE_APPEND, "") +
                         ' to ' + STATUSES[new_status]);
         }
     } catch(err) {}

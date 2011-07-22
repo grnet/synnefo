@@ -106,6 +106,17 @@ or implied, of GRNET S.A.
             '{% trans "Rebooting" %}',
             '{% trans "Destroying" %}'
         ];
+        
+        var TRANSITION_STATES = [
+            '{% trans "Building" %}',
+            '{% trans "Rebooting" %}',
+            '{% trans "Starting" %}',
+            '{% trans "Shutting down" %}',
+            '{% trans "Destroying" %}',
+            '{% trans "Connecting" %}',
+            '{% trans "Disconnectig" %}'
+        ]
+        var TRANSITION_STATE_APPEND = "...";
 
         var INACTIVE_STATES = [
             '{% trans "Unknown" %}',
@@ -319,7 +330,6 @@ or implied, of GRNET S.A.
 
                         setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
                     } catch (err) {
-                        console.log(err);
                         sel(".send-btn").hide();
                         sel(".errormsg").fadeIn();
                         window.FEEDBACK_PENDING = false;

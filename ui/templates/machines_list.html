@@ -282,7 +282,7 @@ function update_machines_view(data){
         if (current != -1) { // if it's there, update the values
             // get current status description, including non api states
             var server_row = $('#machinesview .list #' + server.id).parent().parent();
-            var status_desc = server_row.find('span.status').text();
+            var status_desc = server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "");
             // firebug console logging
             try {
                 console.info(server.name + ' from ' + status_desc + ' to ' + STATUSES[server.status]);
@@ -293,7 +293,7 @@ function update_machines_view(data){
             } else { // when server is not deleted, it should be updated
                 if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
                     [STATUSES['STOPPED'], STATUSES['ERROR'], STATUSES['UNKNOWN'],
-                     TRANSITIONS['Starting']].indexOf(server_row.find('span.status').text()) >= 0) {
+                     TRANSITIONS['Starting']].indexOf(server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) >= 0) {
                     // from stopped, on error or starting to building, active or rebooting
                     // starting is not an api state, it means the server is stopped or on error
                     tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
@@ -307,7 +307,7 @@ function update_machines_view(data){
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osIcon + "')", 1600);
                 } else if (['STOPPED','ERROR', 'UNKNOWN'].indexOf(server.status) >= 0 &&
                            [STATUSES['ACTIVE'], STATUSES['BUILD'], STATUSES['REBOOT'],
-                            TRANSITIONS['Shutting down']].indexOf(server_row.find('span.status').text()) >= 0) {
+                            TRANSITIONS['Shutting down']].indexOf(server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) >= 0) {
                     tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
@@ -317,10 +317,10 @@ function update_machines_view(data){
                     tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osTag + "-off.png')", 1600);
-                } else if ( STATUSES[server.status] == server_row.find('span.status').text()) {
+                } else if ( STATUSES[server.status] == server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) {
 
                 } else if (server.status == 'ACTIVE' &&
-                           [STATUSES['BUILD'],TRANSITIONS['Rebooting']].indexOf(server_row.find('span.status').text()) >= 0) {
+                           [STATUSES['BUILD'],TRANSITIONS['Rebooting']].indexOf(server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) >= 0) {
                     tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
@@ -382,8 +382,11 @@ function update_machines_view(data){
                 "<span class=status>" + status_string + "</span>"
             ]);
         }
-    });
+        });
+
+    update_transition_names();
     update_listview_actions();
+
     $("#machinesview .list > div.large-spinner").hide();
     // in case there are no data, leave the page empty
     if ($("#machinesview .list table.list-machines tbody").length > 0) {
@@ -409,6 +412,23 @@ function update_machines_view(data){
 
     $('#machinesview .list .dataTables_scrollHeadInner table').attr('style','');
     $('#machinesview .list .dataTables_scrollHeadInner th').attr('style','');
+}
+
+// define these to avoid exceptions
+function display_reboot_success() {
+}
+
+function display_reboot_failure() {
+}
+
+// append string to transition states
+function update_transition_names() {
+    $("td span.status").each(function(index,el){
+    var tr_text = $(this).text().replace(TRANSITION_STATE_APPEND,"");
+    if (TRANSITION_STATES.indexOf(tr_text) >= 0) {
+            $(this).text(tr_text + TRANSITION_STATE_APPEND);
+        }
+    })
 }
 
 function display_success(serverID) {

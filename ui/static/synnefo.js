@@ -36,11 +36,13 @@ var API_URL = "/api/v1.1";
 var changes_since = 0, deferred = 0, update_request = false, load_request = false, pending_actions = [];
 var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var networks = [], networks_changes_since = 0;
-
-
 var error_timeout = 20000;
+var last_request = {};
+
 $.ajaxSetup({
     'beforeSend': function(xhr) {
+          // save ajax settings, we might need them for error reporting
+          last_request = this;
           xhr.setRequestHeader("X-Auth-Token", $.cookie("X-Auth-Token"));
     },
 
@@ -48,13 +50,25 @@ $.ajaxSetup({
     // stop interaction and show only for the 5xx errors
     // refresh the page after 20secs
     error: function(jqXHR, textStatus, errorThrown) {
+
+        // check if xhr is in valid state (no status property)
+        try {
+            var status = jqXHR.status;
+        } catch (err) {
+            return false;
+        }
+
         // stop interaction for important (aka 500) error codes only
         if (jqXHR.status >= 500 && jqXHR.status < 600)
         {
             try {
                 ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText);
             } catch(err) {
-                ajax_error(-5, "UI Error", 'Unknown', err);
+                if (!isXhrException(err)) {
+                    ajax_error(-501, "UI Error", 'Generic error', err);
+                } else {
+                    return false;
+                }
             }
         }
 
@@ -62,6 +76,30 @@ $.ajaxSetup({
         window.setTimeout("window.location.reload()", window.error_timeout);
     }
 });
+
+function isXhrException(err) {
+
+    DOM_EXCEPTION_NAMES = [
+        "NS_ERROR_NOT_AVAILABLE", // Firefox
+        "INVALID_STATE_ERR" // Chrome
+    ];
+
+    try {
+        if (DOM_EXCEPTION_NAMES.indexOf(err.name) != -1) {
+            return true;
+        } 
+        
+        // ie !!!!
+        if (err.number == -2147467259) {
+            return true;
+        }
+
+    } catch(err) {
+        return false;
+    }
+
+    return false;
+}
 
 Object.prototype.toString = function(o){
     
@@ -371,12 +409,16 @@ function update_vms(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
-            } catch(err) {
-                ajax_error(-5, "UI Error", 'Update VMs', err);
-            }
-            return false;
+                try {
+                    ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+                } catch(err) {
+                    if (!isXhrException(err)) {
+                        ajax_error(-502, "UI Error", 'Update VMs', err);
+                    } else {
+                        return false;
+                    }
+                }
+                return false;
             },
         success: function(data, textStatus, jqXHR) {
             // create changes_since string if necessary
@@ -395,7 +437,7 @@ function update_vms(interval) {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
                     update_machines_view(data);
-                } catch(err) { ajax_error(-5, "UI Error", 'Update VMs', err);}
+                } catch (err) { ajax_error(-503, "UI Error", 'Update VMs', err);}
             } else if (jqXHR.status != 304){
                 try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -535,10 +577,15 @@ function update_networks(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
+
             try {
                 ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
             } catch(err) {
-                ajax_error(-5, "UI Error", 'Update networks', err);
+                if (!isXhrException(err)) {
+                    ajax_error(-504, "UI Error", 'Update networks', err);
+                } else {
+                    return false;
+                }
             }
             return false;
             },
@@ -559,7 +606,7 @@ function update_networks(interval) {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
                     update_network_names(data);
-                } catch(err) { ajax_error(-5, "UI Error", 'Update networks', err);}
+                } catch(err) { ajax_error(-505, "UI Error", 'Update networks', err);}
             } else if (jqXHR.status == 304) {
                 update_network_names();
             }
@@ -602,7 +649,7 @@ function update_network_names(servers_data) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
             } catch(err) {
-                ajax_error(-5, "UI Error", 'Update network names', err);
+                ajax_error(-506, "UI Error", 'Update network names', err);
             }
             return false;
             },
@@ -618,10 +665,10 @@ function update_network_names(servers_data) {
                     networks = data.networks.values;
                     update_networks_view(servers_data, data);
                 } catch(err) {
-                    ajax_error(-5, "UI Error", 'Update network names', err);
+                    ajax_error(-507, "UI Error", 'Update network names', err);
                 }
             } else if (jqXHR.status == 304) {
-                update_networks_view(servers_data);
+                    update_networks_view(servers_data);
             } else if (jqXHR.status != 304){
                 try { console.info('update_network_names callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -650,7 +697,7 @@ function update_images() {
                     try {
                         ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(-5, "UI error", 'Update Images', err);
+                        ajax_error(-508, "UI error", 'Update Images', err);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -776,7 +823,7 @@ function update_flavors() {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", "Update Flavors", err);
+                ajax_error(-509, "UI Error", "Update Flavors", err);
             }
             // start updating vm list
             update_vms(UPDATE_INTERVAL);
@@ -926,7 +973,9 @@ function create_vm(machineName, imageRef, flavorRef){
                     try {
                         ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(-5, "UI Error", 'Create VM', err);
+                        if (!isXhrException(err)) {
+                            ajax_error(-510, "UI Error", 'Create VM', err);
+                        }
                     }
            },
     success: function(data, textStatus, jqXHR) {
@@ -1386,7 +1435,11 @@ function get_metadata(serverID, keys_only) {
                 $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", "Get metadata", err);
+                if (!isXhrException(err)) {
+                    ajax_error(-511, "UI Error", "Get metadata", err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1418,7 +1471,11 @@ function delete_metadata(serverID, meta_key) {
                 $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", "Delete metadata", err);
+                if (!isXhrException(err)) {
+                    ajax_error(-512, "UI Error", "Delete metadata", err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1447,9 +1504,13 @@ function update_metadata(serverID, meta_key, meta_value) {
             try {
                 // close wizard and show error box
                 $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'add metadata', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Add metadata', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", "add metadata", err);
+                if (!isXhrException(err)) {
+                    ajax_error(-513, "UI Error", "Add metadata", err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1521,7 +1582,11 @@ function create_network(networkName){
                 $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", "Create network", err);
+                if (!isXhrException(err)) {
+                    ajax_error(-514, "UI Error", "Create network", err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1567,7 +1632,11 @@ function rename_network(networkID, networkName){
             try {
                 ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-1, "UI Error", 'Rename network', err);
+                if (!isXhrException(err)) {
+                    ajax_error(-515, "UI Error", 'Rename network', err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1654,7 +1723,11 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
                 $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", 'Add server to network', err);
+                if (!isXhrException(err)) {
+                    ajax_error(-516, "UI Error", 'Add server to network', err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1702,7 +1775,11 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
             try {
                 ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", 'Remove server form network', err);
+                if (!isXhrException(err)) {
+                    ajax_error(-517, "UI Error", 'Remove server form network', err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1743,7 +1820,11 @@ function set_firewall(networkID, serverID, profile) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-5, "UI Error", 'Set firewall profile', err);
+                if (!isXhrException(err)) {
+                    ajax_error(-518, "UI Error", 'Set firewall profile', err);
+                } else {
+                    return false;
+                }
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2249,7 +2330,7 @@ function show_feedback_form(msg, from_error) {
             return;
         }
 
-        $("textarea.data-text", this).val("").val(JSON.stringify(get_user_data()));
+        $("textarea.data-text", this).val("").val(get_user_data_json());
 
         $.ajax({
             url: FEEDBACK_URL,
@@ -2274,11 +2355,29 @@ function show_feedback_form(msg, from_error) {
 }
 
 function get_user_data(extra_data) {
+    try {
+        var last_req = $.extend({}, last_request);
+
+        // reset xhr, might raise exceptions while converting to JSON
+        last_req.xhr = {};
+    } catch (err) {
+        var last_req = {}
+    }
+
     return $.extend({
         'servers': $.extend({}, servers),
         'client': {'browser': $.browser, 'screen': $.extend({}, screen), 'client': $.client},
-        'dates': {'now': new Date, 'lastUpdate': changes_since_date}
+        'dates': {'now': new Date, 'lastUpdate': changes_since_date},
+        'last_request': last_req
     }, extra_data);
+}
+
+function get_user_data_json() {
+    try {
+        return JSON.stringify(get_user_data());
+    } catch (err) {
+        return JSON.stringify({'error': err});
+    }
 }
 
 function msg_box(config) {
@@ -2381,7 +2480,7 @@ function msg_box(config) {
                 }
             },
             error: function(xhr, status, err) {
-                ajax_error(-5, "UI Error", "Machine connect", err);
+                ajax_error(-519, "UI Error", "Machine connect", err);
             }
         }, config.ajax_config));
     }

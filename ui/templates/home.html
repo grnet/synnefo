@@ -287,7 +287,14 @@ or implied, of GRNET S.A.
                 btn.click(function(){
                     // wrap in its own try catch to avoid retriggering ajax_error
                     try {
-                        var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
+
+                        // fallback to error object
+                        try {
+                            var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
+                        } catch (err) {
+                            var data = {'error': err};
+                        }
+
                         var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
 
                         // we will close error overlay to display feedback form

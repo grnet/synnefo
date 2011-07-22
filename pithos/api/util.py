@@ -59,16 +59,20 @@ import uuid
 logger = logging.getLogger(__name__)
 
 
+def rename_meta_key(d, old, new):
+    if old not in d:
+        return
+    d[new] = d[old]
+    del(d[old])
+
 def printable_header_dict(d):
     """Format a meta dictionary for printing out json/xml.
     
-    Convert all keys to lower case and replace dashes to underscores.
-    Change 'modified' key from backend to 'last_modified' and format date.
+    Convert all keys to lower case and replace dashes with underscores.
+    Format 'last_modified' timestamp.
     """
     
-    if 'modified' in d:
-        d['last_modified'] = datetime.datetime.fromtimestamp(int(d['modified'])).isoformat()
-        del(d['modified'])
+    d['last_modified'] = datetime.datetime.fromtimestamp(int(d['last_modified'])).isoformat()
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 def format_header_key(k):

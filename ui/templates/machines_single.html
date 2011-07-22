@@ -148,7 +148,9 @@ or implied, of GRNET S.A.
                     {% trans "CPU Utilization" %}
                 </div>
                 <div class="cpu-graph">
-                    <img src="./static/icons/indicators/small/progress.gif" class="stats" />
+                    <img src="./static/icons/indicators/small/progress.gif" class="stats series" />
+                    <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                    <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                 </div>
             </div>
             <div class="single-network">
@@ -156,7 +158,9 @@ or implied, of GRNET S.A.
                     {% trans "Network Utilization" %}
                 </div>
                 <div class="network-graph">
-                    <img src="./static/icons/indicators/small/progress.gif" class="stats" />
+                    <img src="./static/icons/indicators/small/progress.gif" class="stats series" />
+                    <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                    <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                 </div>
             </div>
         </div>
@@ -620,6 +624,15 @@ function update_machines_view(data){
             //show the first machine and select it in the widget
             $('.single-container:eq(1)').show();
             $('.single .column3').find('.server-name:eq(1)').addClass('column3-selected');
+
+            // add stats images error events handlers
+            $(".cpu-graph img.stats, .network-graph img.stats").error(function(){
+                $(this).hide();
+                $(this).parent().find(".stat-error").show();
+            }).load(function(){
+                $(this).show();
+                $(this).parent().find(".stat-error").hide();
+            });
         }
         update_iconview_actions(server.id, server.status);
         if (!(server.metadata == undefined)) {

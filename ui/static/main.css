@@ -3261,6 +3261,11 @@ div.reboot-dialog button.details:hover {
     margin: 0;
 }
 
+.vm-stats div img.stat-busy {
+    margin-top: -7px;
+    margin-left: 90px;
+}
+
 .vm-stats div.stat-content img.busy {
     margin-left: 95px;
 }
@@ -3269,9 +3274,23 @@ div.reboot-dialog button.details:hover {
     display:none;
 }
 
+div.stat-error {
+    color: #f00;
+}
+
+.single div.stat-error {
+    text-align: center;
+    font-size: 0.8em;
+}
+
 .vm-details {
     width: 130px;
     margin-left:17px;
+}
+
+.single-container .lower .stat-busy {
+    margin-top: 10px;
+    margin-left: 325px;
 }
 
 .vm-metadata {

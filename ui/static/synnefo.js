@@ -1523,6 +1523,7 @@ function update_metadata(serverID, meta_key, meta_value) {
                 var os = os_icon_from_value(meta_value);
                 var state = $("#metadata-wizard div#on-off").text()
                 var state_single = $(".state", machine_single).hasClass("terminated-state") ? "off" : "on";
+
                 set_machine_os_image(machine_icon, "icon", state, os);
                 set_machine_os_image(machine_single, "single", state_single, os);
             }
@@ -1541,25 +1542,138 @@ function get_server_stats(serverID) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                // report error as text inline
-                $('#' + serverID + ' img.busy').hide();
-                $('#' + serverID + ' div.stat-error').show();
+            try {
+                ajax_error(jqXHR.status, undefined, 'Get server stats', jqXHR.responseText);
+            } catch(err) {
+                if (!isXhrException(err)) {
+                    ajax_error(-520, "UI Error", "Get server stats", err);
+                }
+            }
         },
         success: function(data, textStatus, jqXHR) {
-            // in icon view
-            if ( $.cookie('view') == 0 ) {
-                $('#' + serverID + ' img.busy').removeClass('busy');
-                $('#' + serverID + ' img.cpu').attr("src", data.stats.cpuBar);
-                $('#' + serverID + ' img.net').attr("src", data.stats.netBar);
-            }
-            // in single view
-            else if ( $.cookie('view') == 2 ) {
-                $('#' + serverID + ' div.cpu-graph img.stats').attr("src", data.stats.cpuTimeSeries);
-                $('#' + serverID + ' div.network-graph img.stats').attr("src", data.stats.netTimeSeries);
-            }
-        }
+            update_machine_stats(serverID, data);
+        },
+
+        // pass server id to ajax settings
+        serverID: serverID
     });
     return false;
+}
+
+// set timeout function to update machine stats
+function set_stats_update_handler(vm_id, interval) {
+    console.log("setting stats update interval:", vm_id, interval);
+    window.setTimeout(function(){
+        get_server_stats(vm_id);
+    }, interval * 1000);
+}
+
+// update machine stats
+// call set_stats_update_handler if machine stats are visible
+// to reupdate the stats (based on api interval)
+function update_machine_stats(vm_id, data) {
+    var els = get_current_view_stats_elements(vm_id);
+    var from_error = false;
+    var vm = get_machine(vm_id);    
+
+    // api error
+    if (!data) {
+        from_error = true;
+    }
+
+    // hide helpers
+    function hide_imgs(els) {
+        els.cpu.img.hide();
+        els.net.img.hide();
+    }
+
+    function hide_busy(els) {
+        els.cpu.busy.hide();
+        els.net.busy.hide();
+    }
+
+    function hide_errors(els) {
+        els.cpu.error.hide();
+        els.net.error.hide();
+    }
+
+    // apply logic
+    if (from_error) {
+        // api call returned error show error messages
+        return;
+    } else {
+        // no need to show stats while machine in building state
+        if (vm.status == "BUILD") {
+            hide_imgs(els);
+            hide_errors(els);
+            els.cpu.busy.show();
+            els.net.busy.show();
+        } else {
+            hide_busy(els);
+
+            // update stats, decide for series or bar image
+            // based on img class
+            if (els.cpu.img.hasClass("series")) {
+                els.cpu.img.attr("src", data.stats.cpuTimeSeries);
+            } else {
+                els.cpu.img.attr("src", data.stats.cpuBar);
+            }
+
+            if (els.net.img.hasClass("series")) {
+                els.net.img.attr("src", data.stats.netTimeSeries);
+            } else {
+                els.net.img.attr("src", data.stats.netBar);
+            }
+        }
+    }
+
+    // stats container is hidden
+    // do not update the stats
+    if (!els.cont.is(":visible")) {
+        return false;
+    }
+    
+    // set timeout to call the stats update
+    set_stats_update_handler(vm_id, data.stats.refresh);
+}
+
+
+// get stats elements based on current view
+function get_current_view_stats_elements(vm_id) {
+        // in icon view
+        if ( $.cookie('view') == 0 ) {
+            vm_el = $("#" + vm_id);
+            return {
+                'cont': vm_el.find('.vm-stats'),
+                'cpu': {
+                    'img': vm_el.find(' img.cpu'), 
+                    'busy': vm_el.find('.cpu-cont .stat-busy'),
+                    'error': vm_el.find('.cpu-cont .stat-error')
+                },
+                'net': { 
+                    'img': vm_el.find('img.net'),
+                    'busy': vm_el.find('.net-cont .stat-busy'),
+                    'error': vm_el.find('.net-cont .stat-error')
+                }
+            }
+        }
+        // in single view
+        else if ( $.cookie('view') == 2 ) {
+            vm_el = $("#" + vm_id);
+            return {
+                'cont': vm_el.find('.lower'),
+                'cpu': {
+                    'img': vm_el.find('div.cpu-graph img.stats'), 
+                    'busy': vm_el.find('div.cpu-graph img.stat-busy'),
+                    'error': vm_el.find('div.cpu-graph .stat-error')
+                },
+                'net': { 
+                    'img': vm_el.find('div.network-graph img.stats'),
+                    'busy': vm_el.find('div.network-graph img.stat-busy'),
+                    'error': vm_el.find('div.network-graph .stat-error')
+                }
+            }
+        }
 }
 
 // create network

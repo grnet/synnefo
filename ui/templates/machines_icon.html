@@ -76,14 +76,16 @@ or implied, of GRNET S.A.
                     </div>
                     <div class="vm-stats metadata-column">
                         <div class='stat-label'>{% trans "CPU" %}</div>
-                        <div class='stat-content'>
-                            <img src="./static/icons/indicators/small/progress.gif" class="cpu busy" />
-                            <div class='stat-error'>{% trans "Could not fetch CPU stats." %}</div>
+                        <div class='stat-content cpu-cont'>
+                            <img src="./static/icons/indicators/small/progress.gif" class="cpu bar" />
+                            <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                            <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                         </div>
                         <div class='stat-label'>{% trans "Net" %}</div>
-                        <div class='stat-content'>
-                            <img src="./static/icons/indicators/small/progress.gif" class="net busy" />
-                            <div class='stat-error'>{% trans "Could not fetch Net stats." %}</div>
+                        <div class='stat-content net-cont'>
+                            <img src="./static/icons/indicators/small/progress.gif" class="net bar" />
+                            <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                            <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                         </div>
                         <a href="#" class="stats-report">{% trans "Full report" %}</a>
                     </div>
@@ -264,8 +266,8 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
     } else {
         // reset stats
         $(this).closest('.machine-container').find('.vm-stats div.stat-error').hide();
-        $(this).closest('.machine-container').find('.vm-stats img.cpu').attr('src', './static/icons/indicators/small/progress.gif').addClass('busy').show();
-        $(this).closest('.machine-container').find('.vm-stats img.net').attr('src', './static/icons/indicators/small/progress.gif').addClass('busy').show();
+        $(this).closest('.machine-container').find('.vm-stats img.cpu').attr('src', './static/icons/indicators/small/progress.gif').show();
+        $(this).closest('.machine-container').find('.vm-stats img.net').attr('src', './static/icons/indicators/small/progress.gif').show();
         // get new stats
         var serverID = $(this).closest('.machine-container').attr('id');
         get_server_stats(serverID);
@@ -278,6 +280,7 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
     $(this).parent().parent().find(".info-content").slideToggle(600);
     return false;
 });
+
 
 // intercept manage metadata click
 $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
@@ -702,6 +705,15 @@ function update_machines_view(data) {
             var ips = get_public_ips(server);
             machine.find("span.ip span.public").text(ips['ip4']);
             machine.find("span.ip span.public.ipv6-text").text(ips['ip6']);
+
+            // add stats images error events handlers
+            $("img.cpu, img.net").error(function(){
+                $(this).hide();
+                $(this).parent().find(".stat-error").show();
+            }).load(function(){
+                $(this).show();
+                $(this).parent().find(".stat-error").hide();
+            });
         }
         /*
         Do some repeated actions that include:
@@ -724,8 +736,6 @@ function update_machines_view(data) {
                 $(existing).find('.wave').hide();
             }
         }
-
-
     });
     /*
     Do some standard stuff, repeated each time
@@ -818,6 +828,15 @@ function display_failure(status, serverID, action, responseText) {
     $('#machinesview-icon.standard #'+serverID+ ' .action_error .code').text(status);
     $('#machinesview-icon.standard #'+serverID+ ' .action_error .message').text(responseText);
     $('#machinesview-icon.standard #'+serverID+ ' .action_error').show();
+}
+
+// handle update stats
+function update_server_stats() {
+    // TODO: only reload images for expanded machines
+    $(".vm-stats").each(function(){
+        var serverID = $(this).closest(".machine-container").attr("id");
+        get_server_stats(serverID);
+    });
 }
 
 // basic functions executed on page load

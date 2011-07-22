@@ -1,8 +1,41 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2010 Greek Research and Technology Network
+# -*- coding: utf-8 -*-
 #
-"""Ganeti notification daemon with AMQP
+# Copyright 2011 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+#
+"""Ganeti notification daemon with AMQP support
 
 A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications to the ganeti exchange
@@ -39,7 +72,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger):
         pyinotify.ProcessEvent.__init__(self)
         self.logger = logger
-        self.chan = None 
+        self.chan = None
 
     def open_channel(self):
         conn = None
@@ -53,7 +86,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
                      virtual_host=settings.RABBIT_VHOST)
             except socket.error:
                 time.sleep(1)
-        
+
         handler_logger.info("Connection succesful, opening channel")
         return conn.channel()
 
@@ -109,10 +142,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
                     }
             if logmsg:
                 msg["message"] = logmsg
-            
-            instance = instances.split('-')[0]  
+
+            instance = instances.split('-')[0]
             routekey = "ganeti.%s.event.op" % instance
-            
+
             self.logger.debug("Delivering msg: %s (key=%s)",
                 json.dumps(msg), routekey)
             msg = amqp.Message(json.dumps(msg))

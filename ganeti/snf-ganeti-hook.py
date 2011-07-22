@@ -1,6 +1,39 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2010 Greek Research and Technology Network
+# -*- coding: utf-8 -*-
+#
+# Copyright 2011 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
 #
 """Ganeti hook for Synnefo
 
@@ -30,7 +63,7 @@ except ImportError:
 # "instance-stop", "instance-reboot", "instance-modify". See the Ganeti
 # documentation for a full list.
 
-# The operation and phase for which the hook run are determined from the 
+# The operation and phase for which the hook run are determined from the
 # values of the GANETI_HOOK_PATH and GANETI_HOOK_PHASE environment variables.
 # For each valid (operation, phase) pair control passes to the corresponding
 # Python function, based on the following dictionary.
@@ -57,9 +90,9 @@ def main():
     except KeyError:
         raise Exception("Environment missing one of: " \
             "GANETI_INSTANCE_NAME, GANETI_HOOKS_PATH, GANETI_HOOKS_PHASE")
-        
+
     prefix = instance.split('-')[0]
-  
+
     # FIXME: The hooks should only run for Synnefo instances.
     # Uncomment the following lines for a shared Ganeti deployment.
     # Currently, the following code is commented out because multiple

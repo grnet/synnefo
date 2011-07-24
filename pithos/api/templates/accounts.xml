@@ -1,0 +1,13 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+
+<accounts>
+  {% for account in accounts %}
+  <account>
+  {% for key, value in account.items %}
+    <{{ key }}>{{ value }}</{{ key }}>
+  {% endfor %}
+  </account>
+  {% endfor %}
+</accounts>
+{% endspaceless %}

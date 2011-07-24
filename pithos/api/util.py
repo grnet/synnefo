@@ -228,18 +228,24 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
     
-    if 'hash' not in meta:
-        return # TODO: Always return?
+    hash = meta.get('hash', None)
     
     if_match = request.META.get('HTTP_IF_MATCH')
-    if if_match is not None and if_match != '*':
-        if meta['hash'] not in [x.lower() for x in parse_etags(if_match)]:
-            raise PreconditionFailed('Resource Etag does not match')
+    if if_match is not None:
+        if hash is None:
+            raise PreconditionFailed('Resource does not exist')
+        if if_match != '*' and hash not in [x.lower() for x in parse_etags(if_match)]:
+            raise PreconditionFailed('Resource ETag does not match')
     
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
     if if_none_match is not None:
-        if if_none_match == '*' or meta['hash'] in [x.lower() for x in parse_etags(if_none_match)]:
-            raise NotModified('Resource Etag matches')
+        # TODO: If this passes, must ignore If-Modified-Since header.
+        if hash is not None:
+            if if_none_match == '*' or hash in [x.lower() for x in parse_etags(if_none_match)]:
+                # TODO: Continue if an If-Modified-Since header is present.
+                if request.method in ('HEAD', 'GET'):
+                    raise NotModified('Resource ETag matches')
+                raise PreconditionFailed('Resource exists or ETag matches')
 
 def split_container_object_string(s):
     if not len(s) > 0 or s[0] != '/':
@@ -262,7 +268,7 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
             backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions, src_version)
     except NotAllowedError:
         raise Unauthorized('Access denied')
-    except NameError, IndexError:
+    except (NameError, IndexError):
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')

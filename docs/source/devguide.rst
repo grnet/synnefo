@@ -25,13 +25,14 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.5 (July 21, 2011)        Object update from another object's data.
+0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
 \                          Purge container/object history.
 \                          List other accounts that share objects with a user.
 \                          List shared containers/objects.
 \                          Update implementation guidelines.
+\                          Check preconditions when creating/updating objects.
 0.4 (July 01, 2011)        Object permissions and account groups.
 \                          Control versioning behavior and container quotas with container policy directives.
 \                          Support updating/deleting individual metadata with ``POST``.
@@ -159,6 +160,15 @@ POST       Update account metadata
 HEAD
 """"
 
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+If-Modified-Since     Retrieve if account has changed since provided timestamp
+If-Unmodified-Since   Retrieve if account has not changed since provided timestamp
+====================  ===========================
+
+|
+
 ======================  ===================================
 Request Parameter Name  Value
 ======================  ===================================
@@ -247,20 +257,20 @@ Will use a ``200`` return code if the reply is of type json/xml.
 POST
 """"
 
-======================  ============================================
-Request Parameter Name  Value
-======================  ============================================
-update                  Do not replace metadata/groups (no value parameter)
-======================  ============================================
-
-|
-
 ====================  ===========================
 Request Header Name   Value
 ====================  ===========================
 X-Account-Group-*     Optional user defined groups
 X-Account-Meta-*      Optional user defined metadata
 ====================  ===========================
+
+|
+
+======================  ============================================
+Request Parameter Name  Value
+======================  ============================================
+update                  Do not replace metadata/groups (no value parameter)
+======================  ============================================
 
 No reply content/headers.
 
@@ -292,6 +302,15 @@ DELETE     Delete container
 
 HEAD
 """"
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+If-Modified-Since     Retrieve if container has changed since provided timestamp
+If-Unmodified-Since   Retrieve if container has not changed since provided timestamp
+====================  ===========================
+
+|
 
 ======================  ===================================
 Request Parameter Name  Value
@@ -437,20 +456,20 @@ Return Code       Description
 POST
 """"
 
-======================  ============================================
-Request Parameter Name  Value
-======================  ============================================
-update                  Do not replace metadata/policy (no value parameter)
-======================  ============================================
-
-|
-
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
 X-Container-Policy-*  Container behavior and limits
 X-Container-Meta-*    Optional user defined metadata
 ====================  ================================
+
+|
+
+======================  ============================================
+Request Parameter Name  Value
+======================  ============================================
+update                  Do not replace metadata/policy (no value parameter)
+======================  ============================================
 
 No reply content/headers.
 
@@ -505,6 +524,17 @@ DELETE     Delete object
 
 HEAD
 """"
+
+====================  ================================
+Request Header Name   Value
+====================  ================================
+If-Match              Retrieve if ETags match
+If-None-Match         Retrieve if ETags don't match
+If-Modified-Since     Retrieve if object has changed since provided timestamp
+If-Unmodified-Since   Retrieve if object has not changed since provided timestamp
+====================  ================================
+
+|
 
 ======================  ===================================
 Request Parameter Name  Value
@@ -645,6 +675,8 @@ PUT
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+If-Match              Put if ETags match with current object
+If-None-Match         Put if ETags don't match with current object
 ETag                  The MD5 hash of the object (optional to check written data)
 Content-Length        The size of the data written
 Content-Type          The MIME content type of the object
@@ -712,6 +744,8 @@ COPY
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+If-Match              Proceed if ETags match with object
+If-None-Match         Proceed if ETags don't match with object
 Destination           The destination path in the form ``/<container>/<object>``
 Content-Type          The MIME content type of the object (optional)
 Content-Encoding      The encoding of the object (optional)
@@ -744,17 +778,11 @@ Same as ``COPY``, without the ``X-Source-Version`` request header. The ``MOVE`` 
 POST
 """"
 
-======================  ============================================
-Request Parameter Name  Value
-======================  ============================================
-update                  Do not replace metadata (no value parameter)
-======================  ============================================
-
-|
-
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+If-Match              Proceed if ETags match with object
+If-None-Match         Proceed if ETags don't match with object
 Content-Length        The size of the data written (optional, to update)
 Content-Type          The MIME content type of the object (optional, to update)
 Content-Range         The range of data supplied (optional, to update)
@@ -769,6 +797,14 @@ X-Object-Sharing      Object permissions (optional)
 X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
+
+|
+
+======================  ============================================
+Request Parameter Name  Value
+======================  ============================================
+update                  Do not replace metadata (no value parameter)
+======================  ============================================
 
 The ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest`` and ``X-Object-Meta-*`` headers are considered to be user defined metadata. An operation without the ``update`` parameter will overwrite all previous values and remove any keys not supplied. When using ``update`` any metadata with an empty value will be deleted.
 
@@ -886,7 +922,7 @@ List of differences from the OOS API:
 * Container policies to manage behavior and limits.
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
-* At all levels, a ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
+* At all levels, a ``HEAD`` or ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
 * Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility.
 * Option to include only shared containers/objects in listings.
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
@@ -896,6 +932,7 @@ List of differences from the OOS API:
 * Object create using ``POST`` to support standard HTML forms.
 * Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Object ``MOVE`` support.
+* Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
 * Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
@@ -948,7 +985,7 @@ Some of these functions are performed by the client software and some by the Pit
 Implementation Guidelines
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Pithos clients should use the ``pithos`` and ``trash`` containers for active and inactive objects respectively. If any of these containers is not found, the client software should create it, without interrupting the user's workflow. The ``home`` element corresponds to ``pithos`` and the ``trash`` element to ``trash``. Use ``PUT`` with the ``X-Move-From`` header, or ``MOVE`` to transfer objects from one container to the other. Use ``DELETE`` to remove from ``pithos`` without trashing, or to remove from ``trash``. When moving objects, detect naming conflicts with the ``If-Match`` or ``If-None-Match`` headers (**TBD**). Such conflicts should be resolved by the user.
+Pithos clients should use the ``pithos`` and ``trash`` containers for active and inactive objects respectively. If any of these containers is not found, the client software should create it, without interrupting the user's workflow. The ``home`` element corresponds to ``pithos`` and the ``trash`` element to ``trash``. Use ``PUT`` with the ``X-Move-From`` header, or ``MOVE`` to transfer objects from one container to the other. Use ``DELETE`` to remove from ``pithos`` without trashing, or to remove from ``trash``. When moving objects, detect naming conflicts with the ``If-Match`` or ``If-None-Match`` headers. Such conflicts should be resolved by the user.
 
 Object names should use the ``/`` delimiter to impose a hierarchy of folders and files.
 

@@ -140,7 +140,7 @@ def update_build_progress(message):
     try:
         msg = json.loads(message.body)
 
-        if msg['type'] != "ganeti-create-progess":
+        if msg['type'] != "ganeti-create-progress":
             _logger.error("Message is of unknown type %s", msg["type"])
             return
 
@@ -148,7 +148,7 @@ def update_build_progress(message):
         vmid = msg['instance'].split('-')[1]
         vm = VirtualMachine.objects.get(id=vmid)
 
-        backend.process_create_progress(vm, msg['rprogress'], msg['wprogress'])
+        backend.process_create_progress(vm, msg['rprogress'], None)
         _logger.debug("Done processing ganeti-create-progress msg for vm %s.",
                       msg["instance"])
         message.channel.basic_ack(message.delivery_tag)

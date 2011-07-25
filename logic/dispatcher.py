@@ -95,6 +95,8 @@ class Dispatcher:
             except socket.error:
                 self.logger.error("Server went away, reconnecting...")
                 self._init()
+            except Exception, e:
+                self.logger.exception("Caught unexpected exception")
 
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
         self.chan.connection.close()
@@ -137,7 +139,7 @@ class Dispatcher:
                 callback = getattr(callbacks, binding[3])
             except AttributeError:
                 self.logger.error("Cannot find callback %s" % binding[3])
-                continue
+                raise SystemExit(1)
 
             self.chan.queue_bind(queue=binding[0], exchange=binding[1],
                                  routing_key=binding[2])
@@ -170,8 +172,8 @@ def _init_queues():
     DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
     # notifications of type "ganeti-net-status"
     DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
-    # Build process monitoring event
-    BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' %prefix
+    # notifications of type "ganeti-create-progress"
+    BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' % prefix
 
     BINDINGS = [
     # Queue                   # Exchange                # RouteKey              # Handler
@@ -268,16 +270,14 @@ def purge_queues() :
 
 
 def purge_exchanges():
-    """
-        Delete declared exchanges from RabbitMQ, after removing all queues first
-    """
+    """Delete declared exchanges from RabbitMQ, after removing all queues"""
     global QUEUES, BINDINGS
     purge_queues()
 
     conn = get_connection()
     chan = conn.channel()
 
-    print "Exchnages to be deleted: ", settings.EXCHANGES
+    print "Exchanges to be deleted: ", settings.EXCHANGES
 
     if not get_user_confirmation():
         return
@@ -292,9 +292,7 @@ def purge_exchanges():
 
 
 def drain_queue(queue):
-    """
-        Strip a (declared) queue from all outstanding messages
-    """
+    """Strip a (declared) queue from all outstanding messages"""
     global QUEUES, BINDINGS
     if not queue:
         return
@@ -340,10 +338,10 @@ def drain_queue(queue):
 
 
 def get_connection():
-    conn = amqp.Connection( host=settings.RABBIT_HOST,
-                        userid=settings.RABBIT_USERNAME,
-                        password=settings.RABBIT_PASSWORD,
-                        virtual_host=settings.RABBIT_VHOST)
+    conn = amqp.Connection(host=settings.RABBIT_HOST,
+                           userid=settings.RABBIT_USERNAME,
+                           password=settings.RABBIT_PASSWORD,
+                           virtual_host=settings.RABBIT_VHOST)
     return conn
 
 

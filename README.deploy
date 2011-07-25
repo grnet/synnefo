@@ -314,11 +314,6 @@ Synnefo deployment.
    username in settings.py. Several functional conventions within the system
    require this variable to include a dash at its end (e.g. snf-)
 
-   Fix the AMQP-specific settings based on the selected BACKEND_PREFIX_ID.
-   The fix_amqp_settings() function is called once at the end of
-   settings.py.dist, you must call it again if you change BACKEND_PREFIX_ID at
-   some later point.
-
 
 9. Installation of the Ganeti monitoring daemon, /ganeti/snf-ganeti-eventd:
    The Ganeti monitoring daemon must run on GANETI-MASTER.

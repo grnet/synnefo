@@ -3,13 +3,22 @@ README.Upgrade
 
 This file documents the upgrade to newer versions of the Synnefo software.
 
+
+v0.5.3 -> v0.5.4
+REMOVED SETTINGS
+    * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
+
+DB MIGRATIONS
+    * 0018_auto__add_field_virtualmachine_buildpercentage
+
+
 v0.5.2 -> v0.5.3
 NEW SETTINGS
     * 30-ui.conf:LOGOUT_URL
     * 00-admins.conf:DEFAULT_FROM_EMAIL
     * 90-okeanos.conf.sample:LOGOUT_URL
 
-REMOVE SETTINGS
+REMOVED SETTINGS
     * 00-admins.conf:SYSTEM_EMAIL_ADDR
     * 90-okeanos.conf.sample:APP_INSTALL_URL
 
@@ -18,7 +27,7 @@ v0.5.1 -> v0.5.2
 NEW SETTINGS
     * 10-backend.py:GANETI_CREATEINSTANCE_KWARGS
 
-REMOVE SETTINGS
+REMOVED SETTINGS
     * 10-backend.conf:GANETI_OS_PROVIDER
     * 20-api.conf:GANETI_DISK_TEMPLATE
 

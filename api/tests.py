@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -68,7 +68,7 @@ class APITestCase(TestCase):
     def setUp(self):
         self.client = AaiClient()
         settings.MAX_VMS_PER_USER = 5
-    
+
     def test_api_version(self):
         """Check API version."""
 
@@ -137,7 +137,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
-        self.assertTrue(response.status_code in [200,203])
+        self.assertTrue(response.status_code in [200, 203])
 
     def test_wrong_server(self):
         """Test 404 response if server does not exist."""
@@ -347,12 +347,14 @@ def create_users(n=1):
             name='User %d' % i,
             credit=0)
 
+
 def create_flavors(n=1):
     for i in range(n):
         Flavor.objects.create(
             cpu=randint(1, 4),
             ram=randint(1, 8) * 512,
             disk=randint(1, 40))
+
 
 def create_images(n=1):
     owner = SynnefoUser.objects.all()[0]
@@ -362,13 +364,15 @@ def create_images(n=1):
             state='ACTIVE',
             owner=owner)
 
+
 def create_image_metadata(n=1):
     images = Image.objects.all()
     for i in range(n):
         ImageMetadata.objects.create(
             meta_key='Key%d' % (i + 1),
             meta_value='Value %d' % (i + 1),
-            image = choice(images))
+            image=choice(images))
+
 
 def create_servers(n=1):
     owner = SynnefoUser.objects.all()[0]
@@ -382,13 +386,14 @@ def create_servers(n=1):
             hostid=str(i),
             flavor=choice(flavors))
 
+
 def create_server_metadata(n=1):
     servers = VirtualMachine.objects.all()
     for i in range(n):
         VirtualMachineMetadata.objects.create(
             meta_key='Key%d' % (i + 1),
             meta_value='Value %d' % (i + 1),
-            vm = choice(servers))
+            vm=choice(servers))
 
 
 class AssertInvariant(object):
@@ -432,7 +437,6 @@ class BaseTestCase(TestCase):
 
     def assertItemNotFound(self, response):
         self.assertFault(response, 404, 'itemNotFound')
-
 
     def list_images(self, detail=False):
         path = '/api/v1.1/images'
@@ -758,6 +762,7 @@ class ListImageMetadata(BaseTestCase):
             response = self.client.get('/api/v1.1/images/0/meta')
             self.assertItemNotFound(response)
 
+
 class UpdateImageMetadata(BaseTestCase):
     IMAGE_METADATA = 10
 
@@ -813,7 +818,7 @@ class ServerVNCConsole(BaseTestCase):
         vm.operstate = 'STARTED'
         vm.save()
         server_id = vm.id
-	
+
         path = '/api/v1.1/servers/%d/action' % server_id
         data = json.dumps({'console': {'type': 'vnc'}})
         response = self.client.post(path, data, content_type='application/json')
@@ -838,7 +843,7 @@ class AaiTestCase(TestCase):
         response = self.client.get(self.apibase + '/servers', {},
                                    **{'X-Auth-User': 'notme',
                                       'X-Auth-Key': '0xdeadbabe',
-                                      'TEST-AAI' : 'true'})
+                                      'TEST-AAI': 'true'})
         self.assertEquals(response.status_code, 401)
 
     def test_oapi_auth(self):
@@ -847,7 +852,7 @@ class AaiTestCase(TestCase):
         response = self.client.get(self.apibase + '/index.html', {},
                                    **{'X-Auth-User': 'testdbuser',
                                       'X-Auth-Key': 'test@synnefo.gr',
-                                      'TEST-AAI' : 'true'})
+                                      'TEST-AAI': 'true'})
         self.assertEquals(response.status_code, 204)
         self.assertNotEqual(response['X-Auth-Token'], None)
         self.assertEquals(response['X-Server-Management-Url'], '')
@@ -912,7 +917,7 @@ class CreateNetwork(BaseTestCase):
 
 class GetNetworkDetails(BaseTestCase):
     SERVERS = 5
-    
+
     def test_get_network_details(self):
         name = 'net'
         self.create_network(name)

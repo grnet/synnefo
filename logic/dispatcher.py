@@ -95,6 +95,8 @@ class Dispatcher:
             except socket.error:
                 self.logger.error("Server went away, reconnecting...")
                 self._init()
+            except Exception, e:
+                self.logger.exception("Caught unexpected exception")
 
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
         self.chan.connection.close()
@@ -137,7 +139,7 @@ class Dispatcher:
                 callback = getattr(callbacks, binding[3])
             except AttributeError:
                 self.logger.error("Cannot find callback %s" % binding[3])
-                continue
+                raise SystemExit(1)
 
             self.chan.queue_bind(queue=binding[0], exchange=binding[1],
                                  routing_key=binding[2])
@@ -155,6 +157,7 @@ def _init_queues():
 
     QUEUE_GANETI_EVENTS_OP = "%s-events-op" % prefix
     QUEUE_GANETI_EVENTS_NET = "%s-events-net" % prefix
+    QUEUE_GANETI_BUILD_PROGR = "%s-events-progress" % prefix
     QUEUE_CRON_CREDITS = "%s-credits" % prefix
     QUEUE_EMAIL = "%s-email" % prefix
     QUEUE_RECONC = "%s-reconciliation" % prefix
@@ -162,21 +165,25 @@ def _init_queues():
         QUEUE_DEBUG = "debug"       # Debug queue, retrieves all messages
 
     QUEUES = (QUEUE_GANETI_EVENTS_OP, QUEUE_GANETI_EVENTS_NET,
-              QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC)
+              QUEUE_CRON_CREDITS, QUEUE_EMAIL, QUEUE_RECONC,
+              QUEUE_GANETI_BUILD_PROGR)
 
     # notifications of type "ganeti-op-status"
     DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
     # notifications of type "ganeti-net-status"
     DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
+    # notifications of type "ganeti-create-progress"
+    BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' % prefix
 
     BINDINGS = [
-    # Queue                   # Exchange                # RouteKey          # Handler
-    (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,  'update_db'),
-    (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET, 'update_net'),
-    (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',      'update_credits'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',        'send_email'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',        'send_email'),
-    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*', 'trigger_status_update'),
+    # Queue                   # Exchange                # RouteKey              # Handler
+    (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
+    (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
+    (QUEUE_GANETI_BUILD_PROGR,settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
+    (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',          'update_credits'),
+    (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',            'send_email'),
+    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',            'send_email'),
+    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*',     'trigger_status_update'),
     ]
 
     if settings.DEBUG is True:
@@ -263,16 +270,14 @@ def purge_queues() :
 
 
 def purge_exchanges():
-    """
-        Delete declared exchanges from RabbitMQ, after removing all queues first
-    """
+    """Delete declared exchanges from RabbitMQ, after removing all queues"""
     global QUEUES, BINDINGS
     purge_queues()
 
     conn = get_connection()
     chan = conn.channel()
 
-    print "Exchnages to be deleted: ", settings.EXCHANGES
+    print "Exchanges to be deleted: ", settings.EXCHANGES
 
     if not get_user_confirmation():
         return
@@ -287,9 +292,7 @@ def purge_exchanges():
 
 
 def drain_queue(queue):
-    """
-        Strip a (declared) queue from all outstanding messages
-    """
+    """Strip a (declared) queue from all outstanding messages"""
     global QUEUES, BINDINGS
     if not queue:
         return
@@ -335,10 +338,10 @@ def drain_queue(queue):
 
 
 def get_connection():
-    conn = amqp.Connection( host=settings.RABBIT_HOST,
-                        userid=settings.RABBIT_USERNAME,
-                        password=settings.RABBIT_PASSWORD,
-                        virtual_host=settings.RABBIT_VHOST)
+    conn = amqp.Connection(host=settings.RABBIT_HOST,
+                           userid=settings.RABBIT_USERNAME,
+                           password=settings.RABBIT_PASSWORD,
+                           virtual_host=settings.RABBIT_VHOST)
     return conn
 
 

@@ -47,8 +47,8 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
-    get_int_parameter, get_content_length, get_content_range, raw_input_socket,
-    socket_read_iterator, object_data_response, put_object_block, hashmap_hash, api_method)
+    get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
+    object_data_response, put_object_block, hashmap_hash, api_method)
 from pithos.backends import backend
 from pithos.backends.base import NotAllowedError
 
@@ -706,8 +706,7 @@ def object_write(request, v_account, v_container, v_object):
     
     if request.serialization != 'text':
         data = ''
-        sock = raw_input_socket(request)
-        for block in socket_read_iterator(sock, content_length, backend.block_size):
+        for block in socket_read_iterator(request, content_length, backend.block_size):
             data = '%s%s' % (data, block)
         
         if request.serialization == 'json':
@@ -737,8 +736,7 @@ def object_write(request, v_account, v_container, v_object):
         md5 = hashlib.md5()
         size = 0
         hashmap = []
-        sock = raw_input_socket(request)
-        for data in socket_read_iterator(sock, content_length, backend.block_size):
+        for data in socket_read_iterator(request, content_length, backend.block_size):
             # TODO: Raise 408 (Request Timeout) if this takes too long.
             # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
             size += len(data)
@@ -1022,9 +1020,8 @@ def object_update(request, v_account, v_container, v_object):
                 length -= bytes
                 sbi += 1
     else:
-        sock = raw_input_socket(request)
         data = ''
-        for d in socket_read_iterator(sock, length, backend.block_size):
+        for d in socket_read_iterator(request, length, backend.block_size):
             # TODO: Raise 408 (Request Timeout) if this takes too long.
             # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
             data += d

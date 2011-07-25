@@ -439,14 +439,25 @@ def raw_input_socket(request):
 
 MAX_UPLOAD_SIZE = 10 * (1024 * 1024) # 10MB
 
-def socket_read_iterator(sock, length=0, blocksize=4096):
+def socket_read_iterator(request, length=0, blocksize=4096):
     """Return a maximum of blocksize data read from the socket in each iteration.
     
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
     """
     
+    sock = raw_input_socket(request)
     if length < 0: # Chunked transfers
+        # Small version (server does the dechunking).
+        if request.environ.get('mod_wsgi.input_chunked', None):
+            while length < MAX_UPLOAD_SIZE:
+                data = sock.read(blocksize)
+                if data == '':
+                    return
+                yield data
+            raise BadRequest('Maximum size is reached')
+        
+        # Long version (do the dechunking).
         data = ''
         while length < MAX_UPLOAD_SIZE:
             # Get chunk size.

@@ -120,7 +120,8 @@ def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
     if detail:
         d['status'] = get_rsapi_state(vm)
-        d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' else 0
+        d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
+                        else vm.buildpercentage
         d['hostId'] = vm.hostid
         d['updated'] = util.isoformat(vm.updated)
         d['created'] = util.isoformat(vm.created)

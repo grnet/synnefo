@@ -9,7 +9,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Adding field 'VirtualMachine.buildpercentage'
-        db.add_column('db_virtualmachine', 'buildpercentage', self.gf('django.db.models.fields.IntegerField')(null=True), keep_default=False)
+        db.add_column('db_virtualmachine', 'buildpercentage', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
 
 
     def backwards(self, orm):
@@ -60,7 +60,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']", 'null': 'True', 'blank': 'True'}),
-            'public': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'sourcevm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']", 'null': 'True'}),
             'state': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
@@ -74,7 +74,7 @@ class Migration(SchemaMigration):
         },
         'db.invitations': {
             'Meta': {'object_name': 'Invitations'},
-            'accepted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'accepted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'level': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
@@ -97,7 +97,7 @@ class Migration(SchemaMigration):
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'through': "orm['db.NetworkInterface']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']", 'null': 'True'}),
-            'public': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'state': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
@@ -116,7 +116,7 @@ class Migration(SchemaMigration):
         },
         'db.networklink': {
             'Meta': {'object_name': 'NetworkLink'},
-            'available': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
+            'available': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'index': ('django.db.models.fields.IntegerField', [], {}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
@@ -146,10 +146,10 @@ class Migration(SchemaMigration):
             'backendjobstatus': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
             'backendlogmsg': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'backendopcode': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
-            'buildpercentage': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'charged': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2011, 7, 21, 14, 39, 5, 753749)'}),
+            'buildpercentage': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'charged': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2011, 7, 25, 11, 3, 17, 877945)'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'flavor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Flavor']"}),
             'hostid': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -157,11 +157,11 @@ class Migration(SchemaMigration):
             'operstate': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']"}),
             'sourceimage': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Image']"}),
-            'suspended': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'suspended': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
         'db.virtualmachinegroup': {
-            'Meta': {'object_name': 'VirtualMachineGroup'},
+            'Meta': {'ordering': "['name']", 'object_name': 'VirtualMachineGroup'},
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'symmetrical': 'False'}),

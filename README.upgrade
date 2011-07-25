@@ -3,13 +3,15 @@ README.Upgrade
 
 This file documents the upgrade to newer versions of the Synnefo software.
 
-
 v0.5.3 -> v0.5.4
 REMOVED SETTINGS
     * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
 
 DB MIGRATIONS
     * 0018_auto__add_field_virtualmachine_buildpercentage
+
+NEW DEPENDENCIES:
+    * python-prctl: Used by the snf-progress-monitor [FIXME]
 
 
 v0.5.2 -> v0.5.3

@@ -134,26 +134,37 @@ def process_net_status(vm, nics):
             firewall_profile=firewall_profile)
     vm.save()
 
+
 @transaction.commit_on_success
-def process_progress_update(vm, pr_percentage):
+def process_create_progress(vm, rprogress, wprogress):
 
-    if not type(pr_percentage) == int:
-        raise TypeError("Percentage not an integer")
+    # XXX: This only uses the read progress for now.
+    #      Explore whether it would make sense to use the value of wprogress
+    #      somewhere.
+    percentage = int(rprogress)
 
-    if pr_percentage < 0 or pr_percentage > 100:
-        raise Exception("Percentage not in range (0, 100)")
+    if percentage < 0 or percentage > 100:
+        raise ValueError("Percentage not in range [0, 100]")
 
     last_update = vm.buildpercentage
 
-    if last_update > pr_percentage:
-        raise Exception("Build percentage should increase monotonically" \
-                        " (old=%d, new=%d)"%(last_update, pr_percentage))
+    if last_update > percentage:
+        raise ValueError("Build percentage should increase monotonically " \
+                        "(old = %d, new = %d)" % (last_update, percentage))
 
-    if not vm.operstate == 'BUILD':
-        raise VirtualMachine.IllegalState("VM is not in building state")
+    # This assumes that no message of type 'ganeti-create-progress' is going to
+    # arrive once OP_INSTANCE_CREATE has succeeded for a Ganeti instance and
+    # the instance is STARTED.  What if the two messages are processed by two
+    # separate dispatcher threads, and the 'ganeti-op-status' message for
+    # successful creation gets processed before the 'ganeti-create-progress'
+    # message? [vkoukis]
+    #
+    #if not vm.operstate == 'BUILD':
+    #    raise VirtualMachine.IllegalState("VM is not in building state")
 
-    vm.buildpercentage = pr_percentage
+    vm.buildpercentage = percentage
     vm.save()
+
 
 def start_action(vm, action):
     """Update the state of a VM when a new action is initiated."""
@@ -206,7 +217,7 @@ def create_instance(vm, flavor, image, password):
     # Handle arguments to CreateInstance() as a dictionary,
     # initialize it based on a deployment-specific value.
     # This enables the administrator to override deployment-specific
-    # arguments, such as the disk templatei to use, name of os provider
+    # arguments, such as the disk template to use, name of os provider
     # and hypervisor-specific parameters at will (see Synnefo #785, #835).
     #
     kw = settings.GANETI_CREATEINSTANCE_KWARGS
@@ -279,6 +290,7 @@ def get_instance_console(vm):
     return console
     # return rapi.GetInstanceConsole(vm.backend_id)
 
+
 def request_status_update(vm):
     return rapi.GetInstanceInfo(vm.backend_id)
 
@@ -289,6 +301,7 @@ def get_job_status(jobid):
 
 def update_status(vm, status):
     utils.update_state(vm, status)
+
 
 def create_network_link():
     try:
@@ -302,6 +315,7 @@ def create_network_link():
         return NetworkLink.objects.create(index=index, name=name,
                                             available=True)
     return None     # All link slots are filled
+
 
 @transaction.commit_on_success
 def create_network(name, owner):
@@ -324,6 +338,7 @@ def create_network(name, owner):
 
     return network
 
+
 @transaction.commit_on_success
 def delete_network(net):
     link = net.link
@@ -338,11 +353,13 @@ def delete_network(net):
     net.state = 'DELETED'
     net.save()
 
+
 def connect_to_network(vm, net):
     nic = {'mode': 'bridged', 'link': net.link.name}
     rapi.ModifyInstance(vm.backend_id,
         nics=[('add', nic)],
         dry_run=settings.TEST)
+
 
 def disconnect_from_network(vm, net):
     nics = vm.nics.filter(network__public=False).order_by('index')
@@ -355,6 +372,7 @@ def disconnect_from_network(vm, net):
             'mode': 'bridged',
             'link': nic.network.link.name}))
     rapi.ModifyInstance(vm.backend_id, nics=ops, dry_run=settings.TEST)
+
 
 def set_firewall_profile(vm, profile):
     try:

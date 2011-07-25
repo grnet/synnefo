@@ -337,8 +337,8 @@ class VirtualMachine(models.Model):
     class BuildingError(Exception):
         pass
 
-    class IllegalState(Exception):
-        pass
+    #class IllegalState(Exception):
+    #    pass
     
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""

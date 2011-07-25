@@ -30,20 +30,22 @@
 
 # Provides automated tests for logic module
 
+import time
+import hashlib
+from random import randint
+
+from django.test import TestCase
+from django.conf import settings
+
 from synnefo.db.models import *
 from synnefo.logic import backend
 from synnefo.logic import credits
 from synnefo.logic import users
 from synnefo.logic.utils import get_rsapi_state
 
-from django.test import TestCase
-from django.conf import settings
-
-import time
-import hashlib
 
 class CostsTestCase(TestCase):
-    fixtures = [ 'db_test_data' ]
+    fixtures = ['db_test_data']
 
     def test_get_costs(self):
         """Test the Flavor cost-related methods method"""
@@ -88,7 +90,7 @@ class CostsTestCase(TestCase):
 
         
 class ChargeTestCase(TestCase):
-    fixtures = [ 'db_test_data' ]
+    fixtures = ['db_test_data']
 
     def test_charge_method(self):
         """Test VirtualMachine.charge() method"""
@@ -110,7 +112,7 @@ class ChargeTestCase(TestCase):
 
 
 class DebitAccountTestCase(TestCase):
-    fixtures = [ 'db_test_data' ]
+    fixtures = ['db_test_data']
 
     def test_debit_account(self):
         """Test a SynnefoUser object"""
@@ -132,7 +134,7 @@ class DebitAccountTestCase(TestCase):
 
 
 class AuthTestCase(TestCase):
-    fixtures = [ 'db_test_data' ]
+    fixtures = ['db_test_data']
 
     def _register_user(self):
         users.register_student ("Jimmy Page", "jpage", "jpage@zoso.com")
@@ -281,6 +283,7 @@ class ProcessOpStatusTestCase(TestCase):
 
 class ProcessNetStatusTestCase(TestCase):
     fixtures = ['db_test_data']
+
     def test_set_ipv4(self):
         """Test reception of a net status notification"""
         msg = {'instance': 'instance-name',
@@ -307,7 +310,6 @@ class ProcessNetStatusTestCase(TestCase):
 
 
 class UsersTestCase(TestCase):
-
     def test_create_uname(self):
         username = users.create_uname("Donald Knuth")
         self.assertEquals(username, "knuthd")
@@ -318,23 +320,31 @@ class UsersTestCase(TestCase):
         username = users.create_uname(u'Γεώργιος Παπαγεωργίου')
         self.assertEquals(username, u'παπαγεωγ')
 
+
 class ProcessProgressUpdateTestCase(TestCase):
-    fixtures = [ 'db_test_data' ]
+    fixtures = ['db_test_data']
 
     def test_progress_update(self):
+        """Test reception of a create progress notification"""
 
-        # A VM in status BUILDING
+        # This machine is in BUILD
         vm = VirtualMachine.objects.get(pk=30002)
+        rprogress = randint(10, 100)
 
-        backend.process_progress_update(vm, 12)
-        self.assertEquals(vm.buildpercentage, 12)
+        backend.process_create_progress(vm, rprogress, 0)
+        self.assertEquals(vm.buildpercentage, rprogress)
 
-        self.assertRaises(Exception, backend.process_progress_update, vm, 10)
-        self.assertRaises(Exception, backend.process_progress_update, vm, -1)
-        self.assertRaises(Exception, backend.process_progress_update, vm, 102)
-        self.assertRaises(TypeError, backend.process_progress_update, vm, '1')
+        self.assertRaises(ValueError, backend.process_create_progress,
+                          vm, 9, 0)
+        self.assertRaises(ValueError, backend.process_create_progress,
+                          vm, -1, 0)
+        self.assertRaises(ValueError, backend.process_create_progress,
+                          vm, 102, 0)
+        self.assertRaises(ValueError, backend.process_create_progress,
+                          vm, 'a', 0)
 
-        # A VM in status RUNNING
-        vm = VirtualMachine.objects.get(pk=30000)
-        self.assertRaises(VirtualMachine.IllegalState,
-                          backend.process_progress_update, vm, 1)
+        # This machine is ACTIVE
+        #vm = VirtualMachine.objects.get(pk=30000)
+        #self.assertRaises(VirtualMachine.IllegalState,
+        #                  backend.process_create_progress, vm, 1)
+

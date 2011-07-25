@@ -1574,16 +1574,20 @@ function get_server_stats(serverID) {
 }
 
 // set timeout function to update machine stats
-function set_stats_update_handler(vm_id, interval) {
+function set_stats_update_handler(vm_id, interval, clear) {
     var vm = get_machine(vm_id);
 
-    if (vm.stats_timeout) {
-        window.clearTimeout(vm.stats_timeout);
+    if (clear) {
+        window.clearInterval(vm.stats_timeout);
+        vm.stats_timeout = false;
+        return;
     }
     
-    vm.stats_timeout = window.setTimeout(function(){
-        get_server_stats(vm_id);
-    }, interval * 1000);
+    if (!vm.stats_timeout) {
+        vm.stats_timeout = window.setInterval(function(){
+            get_server_stats(vm_id);
+        }, interval * 1000);
+    }
 }
 
 // update machine stats
@@ -1593,6 +1597,7 @@ function update_machine_stats(vm_id, data) {
     var els = get_current_view_stats_elements(vm_id);
     var from_error = false;
     var vm = get_machine(vm_id);    
+    var clear = false;
 
     // api error
     if (!data) {
@@ -1618,7 +1623,7 @@ function update_machine_stats(vm_id, data) {
     // apply logic
     if (from_error) {
         // api call returned error show error messages
-        return;
+        clear = true;
     } else {
         // no need to show stats while machine in building state
         if (vm.status == "BUILD") {
@@ -1648,11 +1653,11 @@ function update_machine_stats(vm_id, data) {
     // stats container is hidden
     // do not update the stats
     if (!els.cont.is(":visible")) {
-        return false;
+        clear = true;
     }
     
     // set timeout to call the stats update
-    set_stats_update_handler(vm_id, data.stats.refresh);
+    set_stats_update_handler(vm_id, data.stats.refresh, clear);
 }
 
 

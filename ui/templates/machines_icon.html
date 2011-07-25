@@ -77,13 +77,13 @@ or implied, of GRNET S.A.
                     <div class="vm-stats metadata-column">
                         <div class='stat-label'>{% trans "CPU" %}</div>
                         <div class='stat-content cpu-cont'>
-                            <img src="./static/icons/indicators/small/progress.gif" class="cpu bar" />
+                            <img src="./static/placeholder.png" class="cpu bar" />
                             <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
                             <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                         </div>
                         <div class='stat-label'>{% trans "Net" %}</div>
                         <div class='stat-content net-cont'>
-                            <img src="./static/icons/indicators/small/progress.gif" class="net bar" />
+                            <img src="./static/placeholder.png" class="net bar" />
                             <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
                             <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                         </div>
@@ -266,8 +266,6 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
     } else {
         // reset stats
         $(this).closest('.machine-container').find('.vm-stats div.stat-error').hide();
-        $(this).closest('.machine-container').find('.vm-stats img.cpu').attr('src', './static/icons/indicators/small/progress.gif').show();
-        $(this).closest('.machine-container').find('.vm-stats img.net').attr('src', './static/icons/indicators/small/progress.gif').show();
         // get new stats
         var serverID = $(this).closest('.machine-container').attr('id');
         get_server_stats(serverID);

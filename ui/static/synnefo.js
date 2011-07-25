@@ -1534,6 +1534,19 @@ function update_metadata(serverID, meta_key, meta_value) {
 
 // get stats
 function get_server_stats(serverID) {
+    
+    // do not update stats if machine in build state
+    var vm = get_machine(serverID);
+    if (vm.status == "BUILD" && vm.stats_timeout) {
+        els = get_current_view_stats_elements(vm.id);
+        els.cpu.img.hide();
+        els.net.img.hide();
+
+        els.cpu.busy.show();
+        els.net.busy.show();
+        return;
+    }
+
     $.ajax({
         url: API_URL + '/servers/' + serverID + '/stats',
         cache: false,
@@ -1562,8 +1575,13 @@ function get_server_stats(serverID) {
 
 // set timeout function to update machine stats
 function set_stats_update_handler(vm_id, interval) {
-    console.log("setting stats update interval:", vm_id, interval);
-    window.setTimeout(function(){
+    var vm = get_machine(vm_id);
+
+    if (vm.stats_timeout) {
+        window.clearTimeout(vm.stats_timeout);
+    }
+    
+    vm.stats_timeout = window.setTimeout(function(){
         get_server_stats(vm_id);
     }, interval * 1000);
 }

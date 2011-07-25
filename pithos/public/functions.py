@@ -36,7 +36,7 @@ import logging
 from django.http import HttpResponse
 
 from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
-from pithos.api.util import (put_object_meta, update_manifest_meta,
+from pithos.api.util import (put_object_headers, update_manifest_meta,
     validate_modification_preconditions, validate_matching_preconditions,
     object_data_response, api_method)
 from pithos.backends import backend
@@ -125,7 +125,7 @@ def object_read(request, v_account, v_container, v_object):
             raise ItemNotFound('Object does not exist')
     else:
         try:
-            s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object, version)
+            s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object)
             sizes.append(s)
             hashmaps.append(h)
         except:
@@ -134,5 +134,5 @@ def object_read(request, v_account, v_container, v_object):
     return object_data_response(request, sizes, hashmaps, meta, True)
 
 @api_method()
-def method_not_allowed(request):
+def method_not_allowed(request, **v_args):
     raise ItemNotFound('Object does not exist')

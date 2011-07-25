@@ -64,11 +64,7 @@ $.ajaxSetup({
             try {
                 ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText);
             } catch(err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-501, "UI Error", 'Generic error', err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Unknown', "NETWORK ERROR");
             }
         }
 
@@ -423,11 +419,7 @@ function update_vms(interval) {
                 try {
                     ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
                 } catch(err) {
-                    if (!isXhrException(err)) {
-                        ajax_error(-502, "UI Error", 'Update VMs', err);
-                    } else {
-                        return false;
-                    }
+                    ajax_error(-1, textStatus, 'Update VMs', "NETWORK ERROR");
                 }
                 return false;
             },
@@ -592,11 +584,7 @@ function update_networks(interval) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
             } catch(err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-504, "UI Error", 'Update networks', err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Update networks', "NETWORK ERROR");
             }
             return false;
             },
@@ -660,7 +648,7 @@ function update_network_names(servers_data) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
             } catch(err) {
-                ajax_error(-506, "UI Error", 'Update network names', err);
+                ajax_error(-1, textStatus, 'Update network names', "NETWORK ERROR");
             }
             return false;
             },
@@ -708,7 +696,7 @@ function update_images() {
                     try {
                         ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
                     } catch(err) {
-                        ajax_error(-508, "UI error", 'Update Images', err);
+                        ajax_error(-1, textStatus, 'Update Images', "NETWORK ERROR");
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -834,7 +822,7 @@ function update_flavors() {
             try {
                 ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText);
             } catch (err) {
-                ajax_error(-509, "UI Error", "Update Flavors", err);
+                ajax_error(-1, textStatus, "Update Flavors", "NETWORK ERROR");
             }
             // start updating vm list
             update_vms(UPDATE_INTERVAL);
@@ -984,9 +972,7 @@ function create_vm(machineName, imageRef, flavorRef){
                     try {
                         ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
                     } catch(err) {
-                        if (!isXhrException(err)) {
-                            ajax_error(-510, "UI Error", 'Create VM', err);
-                        }
+                        ajax_error(-1, textStatus, 'Create VM', "NETWORK ERROR");
                     }
            },
     success: function(data, textStatus, jqXHR) {
@@ -1446,11 +1432,7 @@ function get_metadata(serverID, keys_only) {
                 $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-511, "UI Error", "Get metadata", err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Get metadata', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1482,11 +1464,7 @@ function delete_metadata(serverID, meta_key) {
                 $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-512, "UI Error", "Delete metadata", err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Delete metadata', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1517,11 +1495,7 @@ function update_metadata(serverID, meta_key, meta_value) {
                 $("a#metadata-scrollable").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add metadata', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-513, "UI Error", "Add metadata", err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Add metadata', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1569,9 +1543,7 @@ function get_server_stats(serverID) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Get server stats', jqXHR.responseText);
             } catch(err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-520, "UI Error", "Get server stats", err);
-                }
+                ajax_error(-1, textStatus, 'Get server stats', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1730,11 +1702,7 @@ function create_network(networkName){
                 $("a#networkscreate").overlay().close();
                 ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-514, "UI Error", "Create network", err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Create network', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1780,11 +1748,7 @@ function rename_network(networkID, networkName){
             try {
                 ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-515, "UI Error", 'Rename network', err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Rename network', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1871,11 +1835,7 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
                 $("a#add-machines-overlay").data('overlay').close();
                 ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-516, "UI Error", 'Add server to network', err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Add server to network', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1921,13 +1881,9 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Remove server from network', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-517, "UI Error", 'Remove server form network', err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Remove server from network', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1968,11 +1924,7 @@ function set_firewall(networkID, serverID, profile) {
             try {
                 ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
             } catch (err) {
-                if (!isXhrException(err)) {
-                    ajax_error(-518, "UI Error", 'Set firewall profile', err);
-                } else {
-                    return false;
-                }
+                ajax_error(-1, textStatus, 'Set firewall profile', "NETWORK ERROR");
             }
         },
         success: function(data, textStatus, jqXHR) {

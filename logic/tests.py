@@ -339,8 +339,6 @@ class ProcessProgressUpdateTestCase(TestCase):
         self.assertRaises(ValueError, backend.process_create_progress,
                           vm, -1, 0)
         self.assertRaises(ValueError, backend.process_create_progress,
-                          vm, 102, 0)
-        self.assertRaises(ValueError, backend.process_create_progress,
                           vm, 'a', 0)
 
         # This machine is ACTIVE

@@ -143,8 +143,11 @@ def process_create_progress(vm, rprogress, wprogress):
     #      somewhere.
     percentage = int(rprogress)
 
-    if percentage < 0 or percentage > 100:
-        raise ValueError("Percentage not in range [0, 100]")
+    # The percentage may exceed 100%, due to the way
+    # snf-progress-monitor tracks bytes read by image handling processes
+    percentage = 100 if percentage > 100 else percentage
+    if percentage < 0:
+        raise ValueError("Percentage cannot be negative")
 
     last_update = vm.buildpercentage
 

@@ -77,6 +77,13 @@ or implied, of GRNET S.A.
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
+        
+        // building statuses
+        var BUILDING_STATUSES = {
+            'INIT': '{% trans "Initializing..." %}',
+            'IMAGE_COPY': '{% trans "{0} of {1} ({2}%)" %}',
+            'FINISH': '{% trans "Finalizing..." %}'
+        }
 
         // server statuses and transitions
         var STATUSES = {

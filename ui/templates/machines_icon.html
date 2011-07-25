@@ -58,6 +58,7 @@ or implied, of GRNET S.A.
                         <span class="ip-version-label">v6</span> <span class="public ipv6-text"></span>
                     </h5>
                 </span>
+                <span class="build-progress"></span>
             </div>
             <div class="info">
                 <div class="info-header">
@@ -723,16 +724,27 @@ function update_machines_view(data) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
 
-        // if machine in destroy state keep it that way
         var server = get_machine(server.id);
-        if (server.status == "DESTROY") {
-            existing = $('#machinesview-icon.standard #' + server.id);
-            if (existing.length) {
-                $(existing).find('.status').text(TRANSITIONS['Destroying']);
-                $(existing).find('.state').removeClass().addClass('state destroying-state');
-                $(existing).find('.spinner').show();
-                $(existing).find('.wave').hide();
-            }
+        existing = $('#machinesview-icon.standard #' + server.id);
+
+        // if machine in destroy state keep it that way
+        if (server.status == "DESTROY" && existing.length >0) {
+            $(existing).find('.status').text(TRANSITIONS['Destroying']);
+            $(existing).find('.state').removeClass().addClass('state destroying-state');
+            $(existing).find('.spinner').show();
+            $(existing).find('.wave').hide();
+        }
+
+        // update progress
+        if (server.status == 'BUILD' && existing.length > 0) {
+            // update bulding progress
+            var progress_details = get_progress_details(server.id);
+            existing.find("span.ip").hide();
+            existing.find("span.build-progress").show().text(progress_details.msg);
+        } else {
+            // hide building progress
+            existing.find("span.ip").show()
+            existing.find("span.build-progress").hide();
         }
     });
     /*

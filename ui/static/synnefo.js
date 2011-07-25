@@ -208,6 +208,17 @@ if(typeof String.prototype.trim !== 'function') {
     }
 }
 
+// simple string format helper (http://stackoverflow.com/questions/610406/javascript-equivalent-to-printf-string-format)
+String.prototype.format = function() {
+    var formatted = this;
+    for (var i = 0; i < arguments.length; i++) {
+        var regexp = new RegExp('\\{'+i+'\\}', 'gi');
+        formatted = formatted.replace(regexp, arguments[i]);
+    }
+    return formatted;
+};
+
+
 function update_confirmations() {
     // hide all confirm boxes to begin with
     $('#machines-pane div.confirm_single').hide();
@@ -2757,3 +2768,57 @@ function get_firewall_profile(vm_id) {
         return undefined;
     }
 }
+
+
+function get_progress_details(id) {
+    var vm = get_machine(id);
+    var progress = vm.progress;
+
+    // no details for active machines
+    if (!vm.status == "BUILD") {
+        return false;
+    }
+    
+    // check if images not loaded yet
+    try {
+        var image = get_image_params(vm.imageRef);
+        var size = image.size;
+    } catch (err) {
+        // images not loaded yet (can this really happen ??)
+        return;
+    }
+    
+    var to_copy = size;
+    var copied = (size * progress / 100).toFixed(2);
+    var status = "INIT"
+
+    // apply state
+    if (progress > 0) { status = "IMAGE_COPY" }
+    if (progress >= 100) { status = "FINISH" }
+    
+    // user information
+    var msg = BUILDING_STATUSES[status];
+
+    // image copy state display extended user information
+    if (status == "IMAGE_COPY") {
+        msg = msg.format(readablizeBytes(copied*(1024*1024)), readablizeBytes(to_copy*(1024*1024)), progress)
+    }
+
+    var progress_data = {
+        'percent': vm.progress,
+        'build_status': status,
+        'copied': copied,
+        'to_copy': size,
+        'msg': msg
+    }
+
+    return progress_data;
+}
+
+// display user friendly bytes amount
+function readablizeBytes(bytes) {
+    var s = ['bytes', 'kb', 'MB', 'GB', 'TB', 'PB'];
+    var e = Math.floor(Math.log(bytes)/Math.log(1024));
+    return (bytes/Math.pow(1024, Math.floor(e))).toFixed(2)+" "+s[e];
+}
+

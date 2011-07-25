@@ -56,6 +56,7 @@ or implied, of GRNET S.A.
                     <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
                     <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
                 </div>
+                    <div class="progress-message"><span class="build-progress"></span></div>
             </div>
             <div class="column2">
                 <div class="machine-labels">
@@ -641,9 +642,11 @@ function update_machines_view(data){
         if (server.id == current_serverId()) {
             get_server_stats(server.id);
         }
+        
+        server = get_machine(server.id);
+        existing = $('#machinesview-single.single div.#' + server.id);
 
         // if machine in destroy state keep it that way
-        var server = get_machine(server.id);
         if (server.status == "DESTROY") {
             existing = $('#machinesview-single.single #' + server.id);
             if (existing.length) {
@@ -653,6 +656,15 @@ function update_machines_view(data){
                 existing.find(".column1 .wave").hide();
             }
         }
+
+        // update progress
+        if (server.status == 'BUILD' && existing.length > 0) {
+            var progress_details = get_progress_details(server.id);
+            existing.find("span.build-progress").show().text(progress_details.msg);
+        } else {
+            existing.find("span.build-progress").hide();
+        }
+
     });
 
     update_transition_names();

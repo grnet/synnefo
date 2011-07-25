@@ -1012,7 +1012,7 @@ div.name:hover span.rename {
 .machine div.info {
     float:left;
     margin-bottom: 8px;
-    margin-top:3px;
+    margin-top:5px;
 }
 
 .machine div.info div.info-header {
@@ -4273,4 +4273,18 @@ div.state .shutdown, tbody.machines .shutdown {
     position: absolute;
     bottom: 5px;
     right: -250px;
+}
+
+
+.machine-container .build-progress {
+    font-size: 0.7em;
+    color: #222;
+    margin-bottom: 15px;
+}
+
+.single .progress-message {
+    margin-top: 90px;
+    font-size: 0.6em;
+    padding: 0 10px;
+    text-align: center;
 }

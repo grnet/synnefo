@@ -1,3 +1,5 @@
+#coding=utf8
+
 # Copyright 2011 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
@@ -56,6 +58,16 @@ DEFAULT_API = 'v1'
 DEFAULT_USER = 'test'
 DEFAULT_AUTH = '0000'
 
+OTHER_ACCOUNTS = {
+    '0001': 'verigak',
+    '0002': 'chazapis',
+    '0003': 'gtsouk',
+    '0004': 'papagian',
+    '0005': 'louridas',
+    '0006': 'chstath',
+    '0007': 'pkanavos',
+    '0008': 'mvasilak'}
+
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
@@ -110,7 +122,9 @@ class BaseTestCase(unittest.TestCase):
                 'name',
                 'count',
                 'bytes',
-                'last_modified'),
+                'last_modified',
+                'x_container_policy_quota',
+                'x_container_policy_versioning',),
             'object':(
                 'name',
                 'hash',
@@ -122,8 +136,14 @@ class BaseTestCase(unittest.TestCase):
     
     def tearDown(self):
         for c in self.client.list_containers():
-            for o in self.client.list_objects(c):
-                self.client.delete_object(c, o)
+            while True:
+                #list objects returns at most 10000 objects
+                #so repeat until there are no more objects
+                objects = self.client.list_objects(c)
+                if not objects:
+                    break
+                for o in objects:
+                    self.client.delete_object(c, o)
             self.client.delete_container(c)
     
     def assert_status(self, status, codes):
@@ -133,24 +153,6 @@ class BaseTestCase(unittest.TestCase):
         else:
             l.append(codes)
         self.assertTrue(status in l)
-    
-    #def assert_list(self, path, entity, limit=10000, format='text', params=None, **headers):
-    #    status, headers, data = self.client.get(path, format=format,
-    #                                            headers=headers, params=params)
-    #    
-    #    self.assert_status(status, [200, 204, 304, 412])
-    #    if format == 'text':
-    #        data = data.strip().split('\n') if data else []
-    #        self.assertTrue(len(data) <= limit)
-    #    else:
-    #        exp_content_type = self.contentTypes[format]
-    #        self.assertEqual(headers['content_type'].find(exp_content_type), 0)
-    #        #self.assert_extended(data, format, entity, limit)
-    #        if format == 'json':
-    #            data = json.loads(data) if data else []
-    #        elif format == 'xml':
-    #            data = minidom.parseString(data)
-    #    return status, headers, data
     
     #def assert_headers(self, headers, type, **exp_meta):
     #    prefix = 'x-%s-meta-' %type
@@ -162,7 +164,7 @@ class BaseTestCase(unittest.TestCase):
     #            k = k.split(prefix)[-1]
     #            self.assertEqual(v, exp_meta[k])
     
-    def assert_extended(self, data, format, type, size):
+    def assert_extended(self, data, format, type, size=10000):
         if format == 'xml':
             self._assert_xml(data, type, size)
         elif format == 'json':
@@ -190,7 +192,7 @@ class BaseTestCase(unittest.TestCase):
         self.assertTrue(len(entities) <= size)
         for e in entities:
             for item in info:
-                self.assertTrue(e.hasAttribute(item))
+                self.assertTrue(e.getElementsByTagName(item))
     
     def assert_raises_fault(self, status, callableObj, *args, **kwargs):
         """
@@ -198,7 +200,7 @@ class BaseTestCase(unittest.TestCase):
         when callableObj is called with the specific arguments
         """
         try:
-            callableObj(*args, **kwargs)
+            r = callableObj(*args, **kwargs)
             self.fail('Should never reach here')
         except Fault, f:
             self.failUnless(f.status == status)
@@ -244,9 +246,12 @@ class BaseTestCase(unittest.TestCase):
             args = {}
             args['etag'] = etag if etag else obj['hash']
             
-            guess = mimetypes.guess_type(name)
-            type = type if type else guess[0]
-            enc = enc if enc else guess[1]
+            try:
+                guess = mimetypes.guess_type(name)
+                type = type if type else guess[0]
+                enc = enc if enc else guess[1]
+            except:
+                pass
             args['content_type'] = type if type else 'plain/text'
             args['content_encoding'] = enc if enc else None
             
@@ -259,6 +264,9 @@ class BaseTestCase(unittest.TestCase):
             return obj
         except IOError:
             return
+class TopLevel(BaseTestCase):
+    def test_list_shared_by_other(self):
+        pass
 
 class AccountHead(BaseTestCase):
     def setUp(self):
@@ -333,7 +341,7 @@ class AccountHead(BaseTestCase):
         meta = self.client.retrieve_account_metadata(restricted=True,
                                                      until='kshfksfh')
         self.assertTrue('premium' in meta)
-
+    
 class AccountGet(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -381,7 +389,7 @@ class AccountGet(BaseTestCase):
         l = 2
         m = 'oranges'
         xml = self.client.list_containers(limit=l, marker=m, format='xml')
-        #self.assert_extended(xml, 'xml', 'container', l)
+        self.assert_extended(xml, 'xml', 'container', l)
         nodes = xml.getElementsByTagName('name')
         self.assertEqual(len(nodes), 1)
         self.assertEqual(nodes[0].childNodes[0].data, 'pears')
@@ -591,6 +599,30 @@ class ContainerGet(BaseTestCase):
         l.sort()
         self.assertEqual(objects, l)
     
+    def test_list_objects_containing_slash(self):
+        self.client.create_container('test')
+        self.upload_random_data('test', '/objectname')
+        
+        objects = self.client.list_objects('test')
+        self.assertEqual(objects, ['/objectname'])
+        
+        objects = self.client.list_objects('test', format='json')
+        self.assertEqual(objects[0]['name'], '/objectname')
+        
+        objects = self.client.list_objects('test', format='xml')
+        self.assert_extended(objects, 'xml', 'object')
+        node_name = objects.getElementsByTagName('name')[0]
+        self.assertEqual(node_name.firstChild.data, '/objectname')
+        
+        #objects = self.client.list_objects('test', prefix='/')
+        #self.assertEqual(objects, ['/objectname'])
+        #
+        #objects = self.client.list_objects('test', path='/')
+        #self.assertEqual(objects, ['/objectname'])
+        #
+        #objects = self.client.list_objects('test', prefix='/', delimiter='n')
+        #self.assertEqual(objects, ['/object'])
+
     def test_list_objects_with_limit_marker(self):
         objects = self.client.list_objects(self.container[0], limit=2)
         l = [elem['name'] for elem in self.obj[:8]]
@@ -609,6 +641,22 @@ class ContainerGet(BaseTestCase):
             end = start + limit
             end = len(l) >= end and end or len(l)
             self.assertEqual(objects, l[start:end])
+    
+    #takes too long
+    #def test_list_limit_exceeds(self):
+    #    self.client.create_container('pithos')
+    #    
+    #    for i in range(10001):
+    #        self.client.create_zero_length_object('pithos', i)
+    #    
+    #    self.assertEqual(10000, len(self.client.list_objects('pithos')))
+    
+    def test_list_empty_params(self):
+        objects = self.client.get('/%s' % self.container[0])[2]
+        if objects:
+            objects = objects.strip().split('\n')
+        self.assertEqual(objects,
+                         self.client.list_objects(self.container[0]))
     
     def test_list_pseudo_hierarchical_folders(self):
         objects = self.client.list_objects(self.container[1], prefix='photos',
@@ -635,6 +683,7 @@ class ContainerGet(BaseTestCase):
     def test_extended_list_xml(self):
         xml = self.client.list_objects(self.container[1], format='xml', limit=4,
                                        prefix='photos', delimiter='/')
+        self.assert_extended(xml, 'xml', 'object', size=4)
         dirs = xml.getElementsByTagName('subdir')
         self.assertEqual(len(dirs), 2)
         self.assertEqual(dirs[0].attributes['name'].value, 'photos/animals/')
@@ -1160,6 +1209,18 @@ class ObjectPut(BaseTestCase):
         #assert content-type
         self.assertEqual(h['content-type'], o['meta']['content_type'])
     
+    def test_maximum_upload_size_exceeds(self):
+        name = o_names[0]
+        meta = {'test':'test1'}
+        #upload 100MB
+        length=1024*1024*100
+        self.assert_raises_fault(400, self.upload_random_data, self.container,
+                                 name, length, **meta)
+        
+        ##d = get_random_data(length=1024*1024*100)
+        ##self.client.create_object_using_chunks(self.container, name, StringIO(d))
+        
+
     def test_upload_with_name_containing_slash(self):
         name = '/%s' % o_names[0]
         meta = {'test':'test1'}
@@ -1191,7 +1252,27 @@ class ObjectPut(BaseTestCase):
         
         uploaded_data = self.client.retrieve_object(self.container, objname)
         self.assertEqual(data, uploaded_data)
-
+    
+    def test_manifestation(self):
+        prefix = 'myobject/'
+        data = ''
+        for i in range(5):
+            part = '%s%d' %(prefix, i)
+            o = self.upload_random_data(self.container, part)
+            data += o['data']
+        
+        manifest = '%s/%s' %(self.container, prefix)
+        self.client.create_manifestation(self.container, 'large-object',
+                                         manifest)
+        
+        self.assert_object_exists(self.container, 'large-object')
+        self.assertEqual(data, self.client.retrieve_object(self.container,
+                                                           'large-object'))
+        
+        #wrong manifestation
+        self.client.create_manifestation(self.container, 'large-object',
+                                         'invalid')
+        
 class ObjectCopy(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -1200,6 +1281,9 @@ class ObjectCopy(BaseTestCase):
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
+    
+    def tearDown(self):
+        pass
     
     def test_copy(self):
         with AssertMappingInvariant(self.client.retrieve_object_metadata,
@@ -1259,7 +1343,6 @@ class ObjectCopy(BaseTestCase):
         self.assert_raises_fault(404, self.client.copy_object, self.containers[1],
                                  self.obj['name'], self.containers[1],
                                  'testcopy', meta)
-        
 
 class ObjectMove(BaseTestCase):
     def setUp(self):
@@ -1426,6 +1509,91 @@ class ObjectDelete(BaseTestCase):
         self.assert_raises_fault(404, self.client.delete_object, self.containers[1],
                                  self.obj['name'])
 
+class ListSharing(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        self.client.create_container('c')
+        for i in range(2):
+            self.upload_random_data('c', 'o%s' %i)
+        accounts = OTHER_ACCOUNTS.copy()
+        self.o1_sharing_with = accounts.popitem()
+        self.o1_sharing = [self.o1_sharing_with[1]]
+        self.client.share_object('c', 'o1', self.o1_sharing, read=True)
+        
+        l = []
+        for i in range(2):
+            l.append(accounts.popitem())
+        #self.client.set_account_groups({'pithos-dev':'chazapis,verigak,papagian'})
+        #self.o2_sharing = 'write=%s' % 
+        #self.client.share_object('c', 'o2', self.o2_sharing)
+    
+    def test_listing(self):
+        self.other = Pithos_Client(DEFAULT_HOST,
+                              self.o1_sharing_with[0],
+                              self.o1_sharing_with[1],
+                              DEFAULT_API)
+        self.assertTrue('test' in self.other.list_shared_by_others())
+
+class TestGreek(BaseTestCase):
+    def tearDown(self):
+        pass
+    
+    def test_create_container(self):
+        self.client.create_container('φάκελος')
+        self.assert_container_exists('φάκελος')
+    
+    def test_create_object(self):
+        self.client.create_container('φάκελος')
+        self.upload_random_data('φάκελος', 'αντικείμενο')
+        
+        self.assert_object_exists('φάκελος', 'αντικείμενο')
+    
+    def test_copy_object(self):
+        self.client.create_container('φάκελος')
+        self.upload_random_data('φάκελος', 'αντικείμενο')
+        
+        self.client.create_container('αντίγραφα')
+        self.client.copy_object('φάκελος', 'αντικείμενο', 'αντίγραφα',
+                                'αντικείμενο')
+        
+        self.assert_object_exists('αντίγραφα', 'αντικείμενο')
+        self.assert_object_exists('φάκελος', 'αντικείμενο')
+    
+    def test_move_object(self):
+        self.client.create_container('φάκελος')
+        self.upload_random_data('φάκελος', 'αντικείμενο')
+        
+        self.client.create_container('αντίγραφα')
+        self.client.copy_object('φάκελος', 'αντικείμενο', 'αντίγραφα',
+                                'αντικείμενο')
+        
+        self.assert_object_exists('αντίγραφα', 'αντικείμενο')
+        self.assert_object_not_exists('φάκελος', 'αντικείμενο')
+    
+    def test_delete_object(self):
+        pass
+    
+    def test_delete_container(self):
+        pass
+    
+    def test_account_meta(self):
+        pass
+    
+    def test_container_meta(self):
+        pass
+    
+    def test_obejct_meta(self):
+        pass
+    
+    def test_list_meta_filtering(self):
+        pass
+    
+    def test_groups(self):
+        pass
+    
+    def test_permissions(self):
+        pass
+    
 class AssertMappingInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable

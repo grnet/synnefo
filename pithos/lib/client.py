@@ -38,6 +38,7 @@ from xml.dom import minidom
 import json
 import types
 import socket
+import urllib
 import pithos.api.faults
 
 ERROR_CODES = {304:'Not Modified',
@@ -71,9 +72,11 @@ class Client(object):
         self.token = token
     
     def _req(self, method, path, body=None, headers={}, format='text',
-            params={}):
-        full_path = '/%s/%s%s?format=%s' % (self.api, self.account, path,
-                                            format)
+             params={}, top_level_req=False):
+        path = urllib.quote(path)
+        account = '' if top_level_req else self.account
+        full_path = '/%s/%s%s?format=%s' % (self.api, account, path, format)
+        
         for k,v in params.items():
             if v:
                 full_path = '%s&%s=%s' %(full_path, k, v)
@@ -97,11 +100,15 @@ class Client(object):
             kwargs['headers'].setdefault('content-type',
                                          'application/octet-stream')
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
-        try:
-            #print '*', method, full_path, kwargs
-            conn.request(method, full_path, **kwargs)
-        except socket.error, e:
-            raise Fault(status=503)
+        kwargs['headers'] = _encode_headers(kwargs['headers'])
+        #print '#', method, full_path, kwargs
+        conn.request(method, full_path, **kwargs)
+        
+        #try:
+        #    conn.request(method, full_path, **kwargs)
+        #except socket.error, e:
+        #    print '###', e[0], conn.auto_open
+        #    raise Fault(status=503)
             
         resp = conn.getresponse()
         headers = dict(resp.getheaders())
@@ -128,12 +135,13 @@ class Client(object):
     def delete(self, path, format='text', params={}):
         return self._req('DELETE', path, format=format, params=params)
     
-    def get(self, path, format='text', headers=None, params={}):
+    def get(self, path, format='text', headers={}, params={},
+            top_level_req=False):
         return self._req('GET', path, headers=headers, format=format,
-                        params=params)
+                        params=params, top_level_req=top_level_req)
     
     def head(self, path, format='text', params={}):
-        return self._req('HEAD', path, format=format, params=params)
+         return self._req('HEAD', path, format=format, params=params)
     
     def post(self, path, body=None, format='text', headers=None, params={}):
         return self._req('POST', path, body, headers=headers, format=format,
@@ -142,9 +150,11 @@ class Client(object):
     def put(self, path, body=None, format='text', headers=None):
         return self._req('PUT', path, body, headers=headers, format=format)
     
-    def _list(self, path, format='text', params={}, **headers):
+    def _list(self, path, format='text', params={}, top_level_req=False, 
+              **headers):
         status, headers, data = self.get(path, format=format, headers=headers,
-                                         params=params)
+                                         params=params,
+                                         top_level_req=top_level_req)
         if format == 'json':
             data = json.loads(data) if data else ''
         elif format == 'xml':
@@ -216,11 +226,9 @@ class OOS_Client(Client):
     
     # Storage Account Services
     
-    def list_containers(self, format='text', limit=10000, marker=None, params={},
+    def list_containers(self, format='text', limit=None, marker=None, params={},
                         **headers):
         """lists containers"""
-        if not params:
-            params = {}
         params.update({'limit':limit, 'marker':marker})
         return self._list('', format, params, **headers)
     
@@ -246,7 +254,7 @@ class OOS_Client(Client):
     def _filter_trashed(self, l):
         return self._filter(l, {'trash':'true'})
     
-    def list_objects(self, container, format='text', limit=10000, marker=None,
+    def list_objects(self, container, format='text', limit=None, marker=None,
                      prefix=None, delimiter=None, path=None,
                      include_trashed=False, params={}, **headers):
         """returns a list with the container objects"""
@@ -369,7 +377,7 @@ class OOS_Client(Client):
         path = '/%s/%s' % (dst_container, dst_object)
         headers = {} if not headers else headers
         for k, v in meta.items():
-            headers['x-object-meta-%s' % k] = v 
+            headers['x-object-meta-%s' % k] = v
         if remove:
             headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
         else:
@@ -440,13 +448,13 @@ class Pithos_Client(OOS_Client):
             block = f.read(blocksize)
             if block == '':
                 break
-            data = '%s\r\n%s\r\n' % (hex(len(block)), block)
+            data = '%x\r\n%s\r\n' % (len(block), block)
             try:
                 http.send(data)
             except:
                 #retry
                 http.send(data)
-        data = '0x0\r\n'
+        data = '0\r\n\r\n'
         try:
             http.send(data)
         except:
@@ -505,7 +513,7 @@ class Pithos_Client(OOS_Client):
                         if_unmodified_since=None, limit=1000, marker=None,
                         until=None):
         """returns a list with the account containers"""
-        params = {'until':until} if until else None
+        params = {'until':until} if until else {}
         headers = {'if-modified-since':if_modified_since,
                    'if-unmodified-since':if_unmodified_since}
         return OOS_Client.list_containers(self, format=format, limit=limit,
@@ -521,8 +529,8 @@ class Pithos_Client(OOS_Client):
     def set_account_groups(self, **groups):
         """create account groups"""
         headers = {}
-        for key, val in groups.items():
-            headers['x-account-group-%s' % key] = val
+        for k, v in groups.items():
+            headers['x-account-group-%s' % k] = v
         params = {'update':None}
         return self.post('', headers=headers, params=params)
     
@@ -551,15 +559,16 @@ class Pithos_Client(OOS_Client):
     def reset_account_groups(self, **groups):
         """overrides account groups"""
         headers = {}
-        for key, val in groups.items():
-            headers['x-account-group-%s' % key] = val
+        for k, v in groups.items():
+            v = v.strip()
+            headers['x-account-group-%s' % k] = v
         meta = self.retrieve_account_metadata()
         headers.update(meta)
         return self.post('', headers=headers)
     
     # Storage Container Services
     
-    def list_objects(self, container, format='text', limit=10000, marker=None,
+    def list_objects(self, container, format='text', limit=None, marker=None,
                      prefix=None, delimiter=None, path=None,
                      include_trashed=False, params={}, if_modified_since=None,
                      if_unmodified_since=None, meta={}, until=None):
@@ -672,7 +681,8 @@ class Pithos_Client(OOS_Client):
             headers.update({elem:eval(elem)})
         
         for k,v in meta.items():
-            headers['x-object-meta-%s' %k.strip()] = v.strip()
+            v = v.strip()
+            headers['x-object-meta-%s' %k.strip()] = v
         
         return self._chunked_transfer(path, 'PUT', f, headers=headers,
                                       blocksize=blocksize)
@@ -738,7 +748,8 @@ class Pithos_Client(OOS_Client):
             headers['content_range'] = 'bytes */*'
         
         for k,v in meta.items():
-            headers['x-object-meta-%s' %k.strip()] = v.strip()
+            v = v.strip()
+            headers['x-object-meta-%s' %k.strip()] = v
         
         return self._chunked_transfer(path, 'POST', f, headers=headers,
                                       blocksize=blocksize)
@@ -777,7 +788,7 @@ class Pithos_Client(OOS_Client):
         path = '/%s/%s' % (dst_container, dst_object)
         headers = {} if not headers else headers
         for k, v in meta.items():
-            headers['x-object-meta-%s' % k] = v 
+            headers['x-object-meta-%s' % k] = v
         if remove:
             headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
         else:
@@ -806,3 +817,24 @@ class Pithos_Client(OOS_Client):
         return OOS_Client.move_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
                                       **headers)
+    
+    def list_shared_by_others(self, limit=None, marker=None, format='text'):
+         l = ['limit', 'marker']
+         params = {}
+         for elem in [elem for elem in l if eval(elem)]:
+             params[elem] = eval(elem)
+         return self._list('', format, params, top_level_req=True)
+    
+    def share_object(self, container, object, l, read=True):
+        action = 'read' if read else 'write'
+        sharing = '%s=%s' % (action, ','.join(l))
+        self.update_object(container, object, f=None, x_object_sharing=sharing)
+
+def _encode_headers(headers):
+    h = {}
+    for k, v in headers.items():
+        k = urllib.quote(k)
+        if v and type(v) == types.StringType:
+            v = urllib.quote(v, '/=,-* :"')
+        h[k] = v
+    return h

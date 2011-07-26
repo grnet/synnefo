@@ -739,7 +739,7 @@ div.machine-details {
     float:left;
 }
 
-.machine span.name, .machine a.ip {
+.machine span.name, .machine span.ip {
     font-size: 75%;
     color: black;
     margin-top: 6px;
@@ -1012,7 +1012,7 @@ div.name:hover span.rename {
 .machine div.info {
     float:left;
     margin-bottom: 8px;
-    margin-top:3px;
+    margin-top:5px;
 }
 
 .machine div.info div.info-header {
@@ -1909,7 +1909,7 @@ input.machine {
     border-bottom: 5px solid #4085A5;
     min-height: 150px;
     top: 50px !important;
-    position: absolute !important;
+    position: absolute;
 }
 
 #error-success p, .notification-box p {
@@ -3261,6 +3261,11 @@ div.reboot-dialog button.details:hover {
     margin: 0;
 }
 
+.vm-stats div img.stat-busy {
+    margin-top: -7px;
+    margin-left: 90px;
+}
+
 .vm-stats div.stat-content img.busy {
     margin-left: 95px;
 }
@@ -3269,9 +3274,23 @@ div.reboot-dialog button.details:hover {
     display:none;
 }
 
+div.stat-error {
+    color: #f00;
+}
+
+.single div.stat-error {
+    text-align: center;
+    font-size: 0.8em;
+}
+
 .vm-details {
     width: 130px;
     margin-left:17px;
+}
+
+.single-container .lower .stat-busy {
+    margin-top: 10px;
+    margin-left: 325px;
 }
 
 .vm-metadata {
@@ -4144,7 +4163,6 @@ div.state .shutdown, tbody.machines .shutdown {
 
 .ipv6-text, .ipv4-text {
     font-size: 0.9em;
-    cursor: pointer;
 }
 
 .tooltip {
@@ -4244,4 +4262,29 @@ div.state .shutdown, tbody.machines .shutdown {
 
 .error_404 .http_error .code {
     letter-spacing: -7px;
+}
+
+.network-progress-indicator {
+    position: relative;
+    display: none;
+}
+
+.network-progress-indicator img {
+    position: absolute;
+    bottom: 5px;
+    right: -250px;
+}
+
+
+.machine-container .build-progress {
+    font-size: 0.7em;
+    color: #222;
+    margin-bottom: 15px;
+}
+
+.single .progress-message {
+    margin-top: 90px;
+    font-size: 0.6em;
+    padding: 0 10px;
+    text-align: center;
 }

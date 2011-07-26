@@ -6,11 +6,18 @@ OKEANOS_SITE_URL = getattr(settings, 'OKEANOS_SITE_URL', '/okeanos')
 OKEANOS_VIDEO_URL = getattr(settings, 'OKEANOS_VIDEO_URL', '')
 OKEANOS_APP_URL = getattr(settings, 'OKEANOS_APP_URL', '/')
 
+# needed for flash fallback video
+OKEANOS_MP4_VIDEO_URL = OKEANOS_VIDEO_URL.get('mp4', {}).get('src', False)
+
 context = {
     'OKEANOS_STATIC_URL': OKEANOS_STATIC,
     'OKEANOS_SITE_URL': OKEANOS_SITE_URL,
     'OKEANOS_VIDEO_URL': OKEANOS_VIDEO_URL,
-    'OKEANOS_APP_URL': OKEANOS_APP_URL
+    'OKEANOS_APP_URL': OKEANOS_APP_URL,
+    'OKEANOS_MP4_VIDEO_URL': OKEANOS_MP4_VIDEO_URL,
+    'OKEANOS_VIDEO_POSTER_IMAGE_URL': settings.OKEANOS_VIDEO_POSTER_IMAGE_URL,
+    'VIDEO_WIDTH': 640,
+    'VIDEO_HEIGHT': 360
 }
 
 def intro(request):

@@ -3,14 +3,32 @@
 {% block body_class %}style{% endblock %}
 
 {% block extra_head %}
-        <script src="{{ OKEANOS_STATIC_URL }}/js/index.js" type="text/javascript"></script>
+        <script src="{{ OKEANOS_STATIC_URL }}video/video.js" type="text/javascript" charset="utf-8"></script> 
+
+        <link rel="stylesheet" type="text/css" href="{{ OKEANOS_STATIC_URL }}video/video-js.css"/>
+
+        <script type="text/javascript" charset="utf-8">
+            VideoJS.setupAllWhenReady({
+              controlsBelow: false, // Display control bar below video instead of in front of
+              controlsHiding: true, // Hide controls when mouse is not over the video
+              defaultVolume: 0.85, // Will be overridden by user's last volume if available
+              flashVersion: 9, // Required flash version for fallback
+              linksHiding: true // Hide download links when video is supported
+            });
+            
+           VideoJS.DOMReady(function(){
+                  window.PLAYER = VideoJS.setup("intro_video", {});
+                  $("video").VideoJS();
+            }); 
+        </script>
+        <script src="{{ OKEANOS_STATIC_URL }}js/index.js" type="text/javascript"></script>
 {% endblock %}
 
 {% block main %}
 <div class="container">
 <div class="logo">
     <a href="{% url okeanos_index %}" title="{% trans "~okeanos project" %}">
-<img src="{{ OKEANOS_STATIC_URL }}images/okeanos-logo-alpha.png" alt="{% trans "Okeanos project" %}" />
+    <img src="{{ OKEANOS_STATIC_URL }}images/okeanos-logo-alpha.png" alt="{% trans "~okeanos project" %}" title="~okeanos project" />
 </a>
 </div>
 
@@ -25,21 +43,15 @@
         </div>
         <div class="page-cont">
             <div class="page-wrapper">
-                <div class="video page" id="video">
-                    <object width="640" height="360" id="player">
-                        <param name="allowfullscreen" value="true" />
-                        <param name="allowscriptaccess" value="always" />
-                        <param name="flashvars" value="api=1" />
-                        <param name="movie" value="{{ OKEANOS_VIDEO_URL }}" />
-                        <embed
-                        src="{{ OKEANOS_VIDEO_URL }}" type="application/x-shockwave-flash" allowfullscreen="true" allowscriptaccess="always" width="640" height="360">
-                        </embed>
-                    </object>
+                <div class="video page vim-css" id="video">
+                    <div class="video-js-box" id="intro_video">
+                        {% include "okeanos/video_partial.html" %}
+                    </div>
+                </div>
             </div>
             <div class="page text what" id="what">{% include "okeanos/pages/what.html" %}</div>
             <div class="page text why" id="why">{% include "okeanos/pages/why.html" %}</div>
             <div class="page text who" id="who">{% include "okeanos/pages/who.html" %}</div>
-</div>
         </div>
     </div>
     <div class="inner-bottom clearfix">

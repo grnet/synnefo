@@ -307,6 +307,7 @@ class VirtualMachine(models.Model):
     backendjobstatus = models.CharField(choices=BACKEND_STATUSES, max_length=30,
                                         null=True)
     backendlogmsg = models.TextField(null=True)
+    buildpercentage = models.IntegerField(default=0)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -334,6 +335,9 @@ class VirtualMachine(models.Model):
     
     class BuildingError(Exception):
         pass
+
+    #class IllegalState(Exception):
+    #    pass
     
     def __init__(self, *args, **kw):
         """Initialize state for just created VM instances."""

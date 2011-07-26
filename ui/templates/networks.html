@@ -167,6 +167,10 @@ or implied, of GRNET S.A.
                     (<span class="firewall-off">{% trans "Off" %}</span>)
                 </div>
                 <div class="toggler down"></div>
+
+                <div class="network-progress-indicator">
+                    <img src="/static/icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
+                </div>
             </div>
         </div>
         <div class="firewall-content">
@@ -657,10 +661,22 @@ $("#networks-pane .firewall-apply").live('click', function() {
     var serverID = $(this).closest('.network-machine').attr("id").split('-').pop();
     var networkID = $(this).closest('.network-machine').attr("id").split('-')[1];
     var profile = $(this).parent().find('input:checked').attr('value');
+
+    // Do not make api call if profile choice is the 
+    // same as current vm firewall profile
+    try {
+        if (profile == get_machine(serverID).addresses.values[0].firewallProfile) {
+            return;
+        }
+    } catch (err) {
+        console.info(err);
+    }
+    
     if (profile != undefined) {
         set_firewall(networkID, serverID, profile);
         $(this).attr("disabled", true);
         $(this).html('<img src="static/icons/indicators/medium/horizontal-progress.gif"></img>');
+        show_machine_network_indicator(serverID, "pub");
     }
     return false;
 });
@@ -1003,18 +1019,38 @@ function update_networks_view(servers_data, networks_data){
                             existing_public.find('.firewall-label span').addClass('firewall-on');
                             existing_public.find('.firewall-label span').html(VARIOUS["ON"]);
                         }
+                        existing_public.find(".firewall-apply").hide();
                      }
                 } catch (err) {
                     try{console.info('Server ' + server.id + ' has no network addresses')}catch(err){};
                 }
                 //TODO: server has changed OS
-            }
-            // If server does not exist in public network, create it
-            else {
+
+                // indicator handle
+                var vm = get_machine(server.id);
+                var networkID = "pub";
+                var serverID = server.id;
+                var network_el = existing_public;
+
+                network_el.find(".network-progress-indicator").hide();
+                if (vm.network_transition == "NETWORK_CHANGE") {
+                    network_el.find(".network-progress-indicator").show();
+                }
+
+                if (vm.network_transition == "CHANGED") {
+                    network_el.find(".network-progress-indicator").hide();
+                }
+            } else {
+                // If server does not exist in public network, create it
+
                 // quick fix to skip machines with no addresses
                 if (server.addresses) {
                     var machine = $("#networks-pane #public-machine-template").clone().attr("id", "net-pub-server-" + server.id).fadeIn("slow");
                     machine.find('span.name').text(fix_server_name(server.name,25));
+
+                    // unique radio group for each machine
+                    machine.find('input[type=radio]').attr({name:'firewall-'+server.id});
+
                     // find and display ips
                     var ips = get_public_ips(server);
                     if (ips['ip4'] == undefined) {
@@ -1047,10 +1083,40 @@ function update_networks_view(servers_data, networks_data){
                                 machine.find('.firewall-label span').addClass('firewall-on');
                                 machine.find('.firewall-label span').html(VARIOUS["ON"]);
                             }
-                         }
+                        }
+                        machine.find(".firewall-apply").hide();
                     } catch (err) {
                         try{console.info('Server ' + server.id + ' has no network addresses')}catch(err){};
                     }
+
+                    // indicator handle
+                    var vm = get_machine(server.id);
+                    var networkID = "pub";
+                    var serverID = server.id;
+                    var network_el = machine;
+                    
+                    network_el.find(".network-progress-indicator").hide();
+                    if (vm.network_transition == "NETWORK_CHANGE") {
+                        network_el.find(".network-progress-indicator").show();
+                    }
+
+                    if (vm.network_transition == "CHANGED") {
+                        network_el.find(".network-progress-indicator").hide();
+                    }
+
+                    // vm added. apply firewall options change handlers
+                    $(".firewall-content input[type=radio]", machine).change(function() {
+                        var vm = server;
+                        var el = $(this).closest(".firewall-content");
+                        var current_profile = get_firewall_profile(vm.id);
+                        var selected_profile = $(this).val();
+                        
+                        if (current_profile == selected_profile) {
+                            el.find(".firewall-apply").hide();
+                        } else {
+                            el.find(".firewall-apply").show();
+                        }
+                    })
                 }
             }
 
@@ -1070,6 +1136,15 @@ function update_networks_view(servers_data, networks_data){
                         if (!existing_private.length) {
                             var machine = $("#networks-pane #private-machine-template").clone().attr("id", "net-" + server_net.id + "-server-" + server.id).fadeIn("slow");
                             machine.find('span.name').text(fix_server_name(server.name, 25));
+
+                            // the id of the server the callback function will show connect message for
+                            var CONNECT_SERVER_ID = server.id;
+                            machine.find('.machine-connect').click(function(){
+                                // keep id in local scope
+                                var id = CONNECT_SERVER_ID;
+                                machine_connect([machine_connect, id])
+                            });
+
                             if (server.status=='BUILD' || server.status=='ACTIVE' ||server.status=='REBOOT') {
                                 machine.find("img.logo").attr("src","static/icons/machines/medium/" + server_image + '-on.png');
                             } else {
@@ -1135,6 +1210,7 @@ function update_net_ui() {
 
     //remove top margin from the first machine of each private network
     $(".private-networks").find(".network-contents .network-machine:first-child").css("margin-top","0");
+
 }
 
 // indicate that the requested action was not completed

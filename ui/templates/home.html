@@ -77,6 +77,13 @@ or implied, of GRNET S.A.
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
+        
+        // building statuses
+        var BUILDING_STATUSES = {
+            'INIT': '{% trans "Initializing..." %}',
+            'IMAGE_COPY': '{% trans "{0} of {1} ({2}%)" %}',
+            'FINISH': '{% trans "Finalizing..." %}'
+        }
 
         // server statuses and transitions
         var STATUSES = {
@@ -106,6 +113,17 @@ or implied, of GRNET S.A.
             '{% trans "Rebooting" %}',
             '{% trans "Destroying" %}'
         ];
+        
+        var TRANSITION_STATES = [
+            '{% trans "Building" %}',
+            '{% trans "Rebooting" %}',
+            '{% trans "Starting" %}',
+            '{% trans "Shutting down" %}',
+            '{% trans "Destroying" %}',
+            '{% trans "Connecting" %}',
+            '{% trans "Disconnectig" %}'
+        ]
+        var TRANSITION_STATE_APPEND = "...";
 
         var INACTIVE_STATES = [
             '{% trans "Unknown" %}',
@@ -287,7 +305,14 @@ or implied, of GRNET S.A.
                 btn.click(function(){
                     // wrap in its own try catch to avoid retriggering ajax_error
                     try {
-                        var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
+
+                        // fallback to error object
+                        try {
+                            var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
+                        } catch (err) {
+                            var data = {'error': err};
+                        }
+
                         var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
 
                         // we will close error overlay to display feedback form
@@ -312,7 +337,6 @@ or implied, of GRNET S.A.
 
                         setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
                     } catch (err) {
-                        console.log(err);
                         sel(".send-btn").hide();
                         sel(".errormsg").fadeIn();
                         window.FEEDBACK_PENDING = false;
@@ -371,7 +395,7 @@ or implied, of GRNET S.A.
                     $("#error-success .password-container").show();
 
                     $("#error-success .popup-details").html("</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG + "</div>");
-                    $("#error-success div.password").html("<div class=\"write-password\">" + SUCCESS["CREATE_VM_SUCCESS_TWO"] + "<div class=\"write-password-password\">" + password + "</div></div>");
+                    $("#error-success div.password").html("<div class=\"write-password\">" + SUCCESS["CREATE_VM_SUCCESS_TWO"] + "<div class=\"write-password-password\"> " + password + "</div></div>");
                     //$("#error-success div.write-password").html(SUCCESS["CREATE_VM_SUCCESS_TWO"]);
                     //$("#error-success div.write-password-details").html(CREATE_VM_SUCCESS_MSG);
                 } else {

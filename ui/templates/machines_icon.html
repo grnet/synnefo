@@ -52,12 +52,13 @@ or implied, of GRNET S.A.
                         </div>
                     </h5>
                 </div>
-                <a href="#" class="ip">
+                <span class="ip">
                     <h5>
                         {% trans "IP:" %} <span class="ip-version-label">v4</span> <span class="public ipv4-text"></span>
                         <span class="ip-version-label">v6</span> <span class="public ipv6-text"></span>
                     </h5>
-                </a>
+                </span>
+                <span class="build-progress"></span>
             </div>
             <div class="info">
                 <div class="info-header">
@@ -76,14 +77,16 @@ or implied, of GRNET S.A.
                     </div>
                     <div class="vm-stats metadata-column">
                         <div class='stat-label'>{% trans "CPU" %}</div>
-                        <div class='stat-content'>
-                            <img src="./static/icons/indicators/small/progress.gif" class="cpu busy" />
-                            <div class='stat-error'>{% trans "Could not fetch CPU stats." %}</div>
+                        <div class='stat-content cpu-cont'>
+                            <img src="./static/placeholder.png" class="cpu bar" />
+                            <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                            <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                         </div>
                         <div class='stat-label'>{% trans "Net" %}</div>
-                        <div class='stat-content'>
-                            <img src="./static/icons/indicators/small/progress.gif" class="net busy" />
-                            <div class='stat-error'>{% trans "Could not fetch Net stats." %}</div>
+                        <div class='stat-content net-cont'>
+                            <img src="./static/placeholder.png" class="net bar" />
+                            <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                            <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                         </div>
                         <a href="#" class="stats-report">{% trans "Full report" %}</a>
                     </div>
@@ -176,7 +179,7 @@ init_action_indicator_handlers('icon');
 // handle connect machine image states
 $("div.connect-arrow, div.running .machine .logo").live('mouseover',
     function() {
-        if ($(this).parent().parent().find('.status').text() != STATUSES['ACTIVE']) { return };
+        if ($(this).parent().parent().find('.status').text().replace(TRANSITION_STATE_APPEND, "") != STATUSES['ACTIVE']) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1);
         var parent = $(this).parent().parent();
         parent.find(".connect-arrow").show().addClass('border-hover');
@@ -184,7 +187,7 @@ $("div.connect-arrow, div.running .machine .logo").live('mouseover',
 
 $("div.connect-arrow, div.running .machine .logo").live('mouseleave',
     function() {
-        if ($(this).parent().parent().find('.status').text() != STATUSES['ACTIVE']) { return };
+        if ($(this).parent().parent().find('.status').text().replace(TRANSITION_STATE_APPEND, "") != STATUSES['ACTIVE']) { return };
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "hover");
         // mouseup outside the element is not fired
         set_machine_os_image($(this).parent().parent(), "icon", "hover", undefined, 1, "click");
@@ -207,7 +210,7 @@ $("div.connect-arrow, div.running .machine .logo").live('mouseup',
 // actions on machine mouseover
 $("#machinesview-icon.standard .machine").live('mouseover', function() {
     // show connect button only if the machine is active
-    if ($(this).find('.status').text() == STATUSES['ACTIVE']) {
+    if ($(this).find('.status').text().replace(TRANSITION_STATE_APPEND, "") == STATUSES['ACTIVE']) {
         $(this).find("div.connect-arrow").show();
         $(this).find("div.connect-border").show();
     }
@@ -264,8 +267,6 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
     } else {
         // reset stats
         $(this).closest('.machine-container').find('.vm-stats div.stat-error').hide();
-        $(this).closest('.machine-container').find('.vm-stats img.cpu').attr('src', './static/icons/indicators/small/progress.gif').addClass('busy').show();
-        $(this).closest('.machine-container').find('.vm-stats img.net').attr('src', './static/icons/indicators/small/progress.gif').addClass('busy').show();
         // get new stats
         var serverID = $(this).closest('.machine-container').attr('id');
         get_server_stats(serverID);
@@ -278,6 +279,7 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
     $(this).parent().parent().find(".info-content").slideToggle(600);
     return false;
 });
+
 
 // intercept manage metadata click
 $("#machinesview-icon.standard a.manage-metadata").live('click', function() {
@@ -510,10 +512,12 @@ $("#machinesview-icon.standard div.confirm_single button.yes").live('click', fun
             action[0]([action[1]]); // execute action
         }
     }
+
     $(this).parent().hide();
     $(this).closest('div.actions').find('a').removeClass('selected');
     $(this).closest("div.machine").children('.state').children('.spinner').show()
     $(this).closest("div.machine").children('div.actions').removeClass('display');
+    update_transition_names();
     update_confirmations();
     return false;
 });
@@ -557,7 +561,7 @@ function update_machines_view(data) {
             var server_image = "unknown"
         }
         // get server status message, if it exists
-        var current_message = existing.find(".status").text();
+        var current_message = existing.find(".status").text().replace(TRANSITION_STATE_APPEND,"");
         // if multiple machines exist in the DOM, delete all but one
         // defensive coding - that shouldn't happen normally
         while (existing.length > 1){
@@ -646,8 +650,8 @@ function update_machines_view(data) {
             }
             // find and display ips
             var ips = get_public_ips(server);
-            existing.find("a.ip span.public").text(ips['ip4']);
-            existing.find("a.ip span.public.ipv6-text").text(ips['ip6']);
+            existing.find("span.ip span.public").text(ips['ip4']);
+            existing.find("span.ip span.public.ipv6-text").text(ips['ip6']);
         }
         // if it doesn't exist and the server is not DELETED, make a new entry
         else if ( server.status != 'DELETED') {
@@ -698,8 +702,17 @@ function update_machines_view(data) {
             machine.find(".image-size-data").text(image_params['size']);
             // find and display ips
             var ips = get_public_ips(server);
-            machine.find("a.ip span.public").text(ips['ip4']);
-            machine.find("a.ip span.public.ipv6-text").text(ips['ip6']);
+            machine.find("span.ip span.public").text(ips['ip4']);
+            machine.find("span.ip span.public.ipv6-text").text(ips['ip6']);
+
+            // add stats images error events handlers
+            $("img.cpu, img.net").error(function(){
+                $(this).hide();
+                $(this).parent().find(".stat-error").show();
+            }).load(function(){
+                $(this).show();
+                $(this).parent().find(".stat-error").hide();
+            });
         }
         /*
         Do some repeated actions that include:
@@ -711,19 +724,28 @@ function update_machines_view(data) {
                 list_metadata_keys(server.id, server.metadata.values);
         }
 
-        // if machine in destroy state keep it that way
         var server = get_machine(server.id);
-        if (server.status == "DESTROY") {
-            existing = $('#machinesview-icon.standard #' + server.id);
-            if (existing.length) {
-                $(existing).find('.status').text(TRANSITIONS['Destroying']);
-                $(existing).find('.state').removeClass().addClass('state destroying-state');
-                $(existing).find('.spinner').show();
-                $(existing).find('.wave').hide();
-            }
+        existing = $('#machinesview-icon.standard #' + server.id);
+
+        // if machine in destroy state keep it that way
+        if (server.status == "DESTROY" && existing.length >0) {
+            $(existing).find('.status').text(TRANSITIONS['Destroying']);
+            $(existing).find('.state').removeClass().addClass('state destroying-state');
+            $(existing).find('.spinner').show();
+            $(existing).find('.wave').hide();
         }
 
-
+        // update progress
+        if (server.status == 'BUILD' && existing.length > 0) {
+            // update bulding progress
+            var progress_details = get_progress_details(server.id);
+            existing.find("span.ip").hide();
+            existing.find("span.build-progress").show().text(progress_details.msg);
+        } else {
+            // hide building progress
+            existing.find("span.ip").show()
+            existing.find("span.build-progress").hide();
+        }
     });
     /*
     Do some standard stuff, repeated each time
@@ -753,6 +775,8 @@ function update_machines_view(data) {
     } else {
         $('.confirm_multiple').removeClass('fixed');
     }
+
+    update_transition_names();
 }
 
 // reposition multiple confirmation box on window resize
@@ -785,6 +809,23 @@ function list_metadata_keys(serverID, keys) {
     $("#machinesview-icon.standard div.#" +serverID).find(".metadata-count").text(i);
 }
 
+// define these to avoid exceptions
+function display_reboot_success() {
+}
+
+function display_reboot_failure() {
+}
+
+// append string to transition states
+function update_transition_names() {
+    $(".state .status").each(function(index,el){
+    var tr_text = $(this).text().replace(TRANSITION_STATE_APPEND,"");
+    if (TRANSITION_STATES.indexOf(tr_text) >= 0) {
+            $(this).text(tr_text + TRANSITION_STATE_APPEND);
+        }
+    })
+}
+
 // indicate that the requested action was succesfully completed
 function display_success(serverID) {
 
@@ -797,6 +838,15 @@ function display_failure(status, serverID, action, responseText) {
     $('#machinesview-icon.standard #'+serverID+ ' .action_error .code').text(status);
     $('#machinesview-icon.standard #'+serverID+ ' .action_error .message').text(responseText);
     $('#machinesview-icon.standard #'+serverID+ ' .action_error').show();
+}
+
+// handle update stats
+function update_server_stats() {
+    // TODO: only reload images for expanded machines
+    $(".vm-stats").each(function(){
+        var serverID = $(this).closest(".machine-container").attr("id");
+        get_server_stats(serverID);
+    });
 }
 
 // basic functions executed on page load

@@ -42,10 +42,10 @@ _logger = log.get_logger("synnefo.dispatcher")
 
 
 def update_db(message):
-    """Process the status of a VM based on a ganeti status message"""
+    """Process a notification of type 'ganeti-op-status'"""
     _logger.debug("Processing ganeti-op-status msg: %s", message.body)
     try:
-        msg = _parse_json(message.body)
+        msg = json.loads(message.body)
 
         if msg["type"] != "ganeti-op-status":
             _logger.error("Message is of unknown type %s.", msg["type"])
@@ -78,10 +78,10 @@ def update_db(message):
 
 
 def update_net(message):
-    """Process a network status update notification from Ganeti"""
+    """Process a notification of type 'ganeti-net-status'"""
     _logger.debug("Processing ganeti-net-status msg: %s", message.body)
     try:
-        msg = _parse_json(message.body)
+        msg = json.loads(message.body)
 
         if msg["type"] != "ganeti-net-status":
             _logger.error("Message is of unknown type %s", msg["type"])
@@ -134,14 +134,38 @@ def update_credits(message):
     _logger.debug("Request to update credits")
     message.channel.basic_ack(message.delivery_tag)
 
+
+def update_build_progress(message):
+    """Process a create progress message"""
+    try:
+        msg = json.loads(message.body)
+
+        if msg['type'] != "ganeti-create-progress":
+            _logger.error("Message is of unknown type %s", msg["type"])
+            return
+
+        # XXX: The following assumes names like snf-12
+        vmid = msg['instance'].split('-')[1]
+        vm = VirtualMachine.objects.get(id=vmid)
+
+        backend.process_create_progress(vm, msg['rprogress'], None)
+        _logger.debug("Done processing ganeti-create-progress msg for vm %s.",
+                      msg["instance"])
+        message.channel.basic_ack(message.delivery_tag)
+    except KeyError:
+        _logger.error("Malformed incoming JSON, missing attributes: %s",
+                      message.body)
+    except Exception as e:
+        _logger.exception("Unexpected error")
+        raise
+
+
 def trigger_status_update(message):
-    """
-        Triggers a status update job for a specific VM id.
-    """
+    """Triggers a status update job for a specific VM id"""
     _logger.debug("Request to trigger status update: %s", message.body)
 
     try:
-        msg = _parse_json(message.body)
+        msg = json.loads(message.body)
 
         if msg["type"] != "reconcile":
              _logger.error("Message is of unknown type %s", msg["type"])
@@ -160,12 +184,11 @@ def trigger_status_update(message):
     except Exception as e:
         _logger.exception("Unexpected error")
 
-def status_job_finished (message):
-    """
-        Updates VM status based on a previously sent status update request
-    """
+
+def status_job_finished(message):
+    """Updates VM status based on a previously sent status update request"""
     try:
-        msg = _parse_json(message.body)
+        msg = json.loads(message.body)
 
         if msg["operation"] != 'OP_INSTANCE_QUERY_DATA':
             _logger.error("Message is of unknown type %s", msg["operation"])
@@ -208,6 +231,7 @@ def status_job_finished (message):
     except Exception as e:
         _logger.exception("Unexpected error")
 
+
 def dummy_proc(message):
     try:
         _logger.debug("Msg: %s" %(message.body))
@@ -215,10 +239,3 @@ def dummy_proc(message):
     except Exception as e:
         _logger.exception("Could not receive message")
         pass
-
-def _parse_json(data):
-    try:
-        return json.loads(data)
-    except Exception as e:
-        _logger.error("Could not parse JSON file: %s", e)
-        raise

@@ -56,6 +56,7 @@ or implied, of GRNET S.A.
                     <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
                     <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
                 </div>
+                    <div class="progress-message"><span class="build-progress"></span></div>
             </div>
             <div class="column2">
                 <div class="machine-labels">
@@ -148,7 +149,9 @@ or implied, of GRNET S.A.
                     {% trans "CPU Utilization" %}
                 </div>
                 <div class="cpu-graph">
-                    <img src="./static/icons/indicators/small/progress.gif" class="stats" />
+                    <img src="./static/placeholder.png" class="stats series" />
+                    <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                    <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                 </div>
             </div>
             <div class="single-network">
@@ -156,7 +159,9 @@ or implied, of GRNET S.A.
                     {% trans "Network Utilization" %}
                 </div>
                 <div class="network-graph">
-                    <img src="./static/icons/indicators/small/progress.gif" class="stats" />
+                    <img src="./static/placeholder.png" class="stats series" />
+                    <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                    <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                 </div>
             </div>
         </div>
@@ -314,6 +319,7 @@ $("#machinesview-single.single div.confirm_single .yes").live('click', function(
     $(this).parent().hide();
     $(this).closest('div.action-container').children('div.single-action').removeClass('selected');
     $(this).parent().parent().find('.state').children('.spinner').show();
+    update_transition_names();
     update_confirmations();
     return false;
 });
@@ -453,7 +459,7 @@ function update_machines_view(data){
             var server_image = "unknown"
         }
         // get server status message, if it exists
-        var current_message = existing.find(".state-label").text();
+        var current_message = existing.find(".state-label").text().replace(TRANSITION_STATE_APPEND, "");
 
         // server already exists in DOM
         if (existing.length){
@@ -557,7 +563,7 @@ function update_machines_view(data){
             //create and select the new one
             var machine = $("#machinesview-single.single #machine-container-template").clone().attr("id", server.id);
             machine.find(".scrollable").scrollable({vertical: true});
-            machine.find(".machine-details div.name").text(server.name.substring(0,30));
+            machine.find(".machine-details div.name").text(fix_server_name(server.name));
             set_machine_os_image(machine, "single", "on", server_image);
             machine.find("span.imagetag").text(server_image);
             machine.find(".column1 .state-label").text(STATUSES[server.status]);
@@ -583,7 +589,7 @@ function update_machines_view(data){
             }
             //show spinner while machine is building or rebooting
             if (server.status == 'BUILD' ||
-                [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text()) >= 0 ) {
+                [TRANSITIONS['Starting'], TRANSITIONS['Shutting down']].indexOf(existing.find(".status").text().replace(TRANSITION_STATE_APPEND, "")) >= 0 ) {
                 machine.find(".column1 .state .spinner").show();
                 machine.find(".connect-border").hide();
                 machine.find(".connect-arrow").hide();
@@ -619,6 +625,15 @@ function update_machines_view(data){
             //show the first machine and select it in the widget
             $('.single-container:eq(1)').show();
             $('.single .column3').find('.server-name:eq(1)').addClass('column3-selected');
+
+            // add stats images error events handlers
+            $(".cpu-graph img.stats, .network-graph img.stats").error(function(){
+                $(this).hide();
+                $(this).parent().find(".stat-error").show();
+            }).load(function(){
+                $(this).show();
+                $(this).parent().find(".stat-error").hide();
+            });
         }
         update_iconview_actions(server.id, server.status);
         if (!(server.metadata == undefined)) {
@@ -627,9 +642,11 @@ function update_machines_view(data){
         if (server.id == current_serverId()) {
             get_server_stats(server.id);
         }
+        
+        server = get_machine(server.id);
+        existing = $('#machinesview-single.single div.#' + server.id);
 
         // if machine in destroy state keep it that way
-        var server = get_machine(server.id);
         if (server.status == "DESTROY") {
             existing = $('#machinesview-single.single #' + server.id);
             if (existing.length) {
@@ -639,8 +656,18 @@ function update_machines_view(data){
                 existing.find(".column1 .wave").hide();
             }
         }
+
+        // update progress
+        if (server.status == 'BUILD' && existing.length > 0) {
+            var progress_details = get_progress_details(server.id);
+            existing.find("span.build-progress").show().text(progress_details.msg);
+        } else {
+            existing.find("span.build-progress").hide();
+        }
+
     });
 
+    update_transition_names();
     fix_v6_addresses();
     // hide pane spinner
     $("#machinesview-single.single > div.large-spinner").hide();
@@ -676,6 +703,23 @@ function update_machines_view(data){
     if ($("#machinesview-single.single .column3 .column3-selected").attr("id") == $("#machinesview-single.single .column3 .server-name:eq(1)").attr("id")) {
         $("#machinesview-single.single .column3 .previous").addClass('disabled');
     }
+}
+
+// define these to avoid exceptions
+function display_reboot_success() {
+}
+
+function display_reboot_failure() {
+}
+
+// append string to transition states
+function update_transition_names() {
+    $(".state-label").each(function(index,el){
+    var tr_text = $(this).text().replace(TRANSITION_STATE_APPEND,"");
+    if (TRANSITION_STATES.indexOf(tr_text) >= 0) {
+            $(this).text(tr_text + TRANSITION_STATE_APPEND);
+        }
+    })
 }
 
 //get currently displayed serverId

@@ -68,7 +68,7 @@
             "updated": "2011-02-06 19:33:00",
             "state": "ACTIVE",
             "backend_id": "debian_desktop-6.0.2.1-2",
-            "format": "dump"
+            "format": "dump",
             "public": 1
         }
     },
@@ -244,7 +244,7 @@
             "created": "2011-06-30 18:54:00",
             "updated": "2011-06-30 18:54:00",
             "state": "ACTIVE",
-            "backend_id": "fedora-15-3",
+            "backend_id": "fedora-15-4",
             "format": "dump",
             "public": 1
         }
@@ -272,7 +272,7 @@
         "pk": 23,
         "fields": {
             "meta_key": "size",
-            "meta_value": "2237",
+            "meta_value": "2460",
             "image": 5
         }
     },

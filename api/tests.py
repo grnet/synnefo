@@ -873,7 +873,7 @@ class ListNetworks(BaseTestCase):
         
         machines = VirtualMachine.objects.all()
         for network in Network.objects.all():
-            n = randint(0, self.SERVERS)
+            n = randint(0, self.SERVERS - 1)
             for machine in sample(machines, n):
                 machine.nics.create(network=network)
     

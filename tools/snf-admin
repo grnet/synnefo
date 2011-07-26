@@ -179,6 +179,7 @@ class CreateUser(Command):
                             help='set user type')
     
     def main(self, username, email):
+        username = username.decode('utf8')
         realname = self.realname or username
         type = self.type or 'USER'
         if type not in [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]:
@@ -219,6 +220,7 @@ class InviteUser(Command):
     description = 'invite a user'
     
     def main(self, inviter_id, name, email):
+        name = name.decode('utf8')
         inviter = get_user(inviter_id)
         inv = add_invitation(inviter, name, email)
         send_invitation(inv)

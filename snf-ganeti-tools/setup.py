@@ -10,11 +10,13 @@ setup(
     author_email="synnefo@lists.grnet.gr",
     license="BSD",
     url="http://code.grnet.gr/projects/synnefo",
+    namespace_packages=["synnefo"],
     packages=["synnefo", "synnefo.ganeti"],
     install_requires=[
         'daemon',
         'pyinotify',
         'amqplib',
+        'prctl',
         'ganeti',
     ],
     scripts=['snf-ganeti-eventd.py', 'snf-ganeti-hook.py',

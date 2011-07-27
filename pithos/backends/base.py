@@ -102,6 +102,14 @@ class BaseBackend(object):
         """
         return
     
+    def put_account(self, user, account):
+        """Create a new account with the given name.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
+        return
+    
     def delete_account(self, user, account):
         """Delete the account with the given name.
         

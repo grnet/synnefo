@@ -31,13 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from dbworker import DBWorker
 
-from simple import SimpleBackend
-from modular import ModularBackend
 
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
-	c = globals()[options[0]]
-	backend = c(*options[1])
+class Public(DBWorker):
+    """Paths can be marked as public."""
+    
+    def __init__(self, **params):
+        DBWorker.__init__(self, **params)
+        execute = self.execute
+        
+        execute(""" create table if not exists public
+                          ( path text primary key ) """)
+    
+    def public_set(self, path):
+        q = "insert or ignore into public (path) values (?)"
+        self.execute(q, (path,))
+    
+    def public_unset(self, path):
+        q = "delete from public where path = ?"
+        self.execute(q, (path,))
+    
+    def public_check(self, path):
+        q = "select 1 from public where path = ?"
+        self.execute(q, (path,))
+        return bool(self.fetchone())

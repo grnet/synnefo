@@ -114,10 +114,11 @@ Synnefo deployment.
     * python-ipy [IPy==0.75]
         also verified to work with python-ipy 0.70-1 as shipped with Squeeze
     * south [south==0.7.1]
-      WARNING: might not work with Debian squeeze's default south-0.7-1 package.
+      WARNING: might not work with Debian Squeeze's default south-0.7-1 package.
     * amqplib [amqplib==0.6.1]
     * lockfile [lockfile==0.8]
     * python-daemon [python-daemon==1.5.5]
+    * python-prctl [python-prctl==1.3.0]
 
    also, depending on the database engine of choice, on one of the following:
     * MySQL-python [MySQL-python==1.2.3]

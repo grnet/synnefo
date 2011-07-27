@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#
 # -*- coding: utf-8 -*-
 #
 # Copyright 2011 GRNET S.A. All rights reserved.
@@ -35,22 +34,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 #
+
 """Ganeti notification daemon with AMQP support
 
 A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications to the ganeti exchange
-
 """
-
-#from django.core.management import setup_environ
 
 import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-import synnefo.settings as settings
-
-#setup_environ(settings)
 
 import time
 import json
@@ -67,6 +61,15 @@ from ganeti import utils
 from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
+
+# XXX: this should be probably also moved to a command-line argument
+try:
+    conf_dir = os.environ["SYNNEFO_CONFIG_DIR"]
+    import config
+    settings = config.load(conf_dir)
+except KeyError:
+    import synnefo.settings as settings
+
 
 class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger):
@@ -180,15 +183,15 @@ def parse_arguments(args):
     parser.add_option("-d", "--debug", action="store_true", dest="debug",
                       help="Enable debugging information")
     parser.add_option("-l", "--log", dest="log_file",
-                      default=settings.GANETI_EVENTD_LOG_FILE,
+                      default="/var/log/snf-ganeti-eventd.log",
                       metavar="FILE",
                       help="Write log to FILE instead of %s" %
-                           settings.GANETI_EVENTD_LOG_FILE)
+                          "/var/log/snf-ganeti-eventd.log")
     parser.add_option('--pid-file', dest="pid_file",
-                      default=settings.GANETI_EVENTD_PID_FILE,
+                      default="/var/run/snf-ganeti-eventd.pid",
                       metavar='PIDFILE',
                       help="Save PID to file (default: %s)" %
-                           settings.GANETI_EVENTD_PID_FILE)
+                          "/var/run/snf-ganeti-eventd.pid")
 
     return parser.parse_args(args)
 

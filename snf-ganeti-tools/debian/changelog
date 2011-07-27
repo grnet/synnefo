@@ -1,0 +1,13 @@
+snf-ganeti-tools (0.5.4-1) UNRELEASED; urgency=low
+
+  * New version, import snf-progress-monitor
+  * Make synnefo a Python namespace package, move everything below it
+  * Update bootstrap scripts
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Wed, 27 Jul 2011 17:03:14 +0300
+
+snf-ganeti-tools (0.5-1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Faidon Liambotis <paravoid@debian.org>  Wed, 29 Jun 2011 18:41:49 +0300

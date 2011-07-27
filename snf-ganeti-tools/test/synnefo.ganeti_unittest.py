@@ -1,19 +1,62 @@
+#!/usr/bin/env python
 #
-# Unit Tests for the Ganeti-specific interfaces
+# -*- coding: utf-8 -*-
 #
-# Provides unit tests for the code implementing
-# the Ganeti notification daemon and the Ganeti hook in Synnefo.
+# Copyright 2011 GRNET S.A. All rights reserved.
 #
-# Copyright 2011 Greek Research and Technology Network
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
 #
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+#
+#
+
+"""Unit Tests for the Ganeti-specific interfaces in synnefo.ganeti
+
+Provides unit tests for the code implementing
+the Ganeti notification daemon and the Ganeti hook in Synnefo.
+
+"""
+
+# This assumes a test-specific configuration file
+# is in the same directory as the unit test script
+import os
+os.environ["SYNNEFO_CONFIG_DIR"] = os.path.dirname(__file__)
+
 import logging
+import unittest
 
-from django.test import TestCase
-from django.conf import settings
+from synnefo.ganeti.hook import ganeti_net_status
 
-from ganeti.hooks import ganeti_net_status
 
-class GanetiHookTestCase(TestCase):
+class GanetiHookTestCase(unittest.TestCase):
+
     def setUp(self):
         # Example Ganeti environment, based on from
         # http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#examples
@@ -66,3 +109,8 @@ class GanetiHookTestCase(TestCase):
         }
 
         self.assertEqual(ganeti_net_status(logging, e), expected)
+
+
+if __name__ == '__main__':
+    unittest.main()
+

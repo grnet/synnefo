@@ -4,6 +4,12 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 
 v0.5.3 -> v0.5.4
+REPOSITORY
+
+REMOVED APPS
+    * The ganeti/ app has been removed from the Django project completely.
+      Any explicit references to it in Django settings must be removed.
+
 REMOVED SETTINGS
     * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
 

@@ -98,9 +98,9 @@ Synnefo deployment.
 
 4. Installation of the Synnefo Django project:
    As of v0.5 the Synnefo Django project needs to be installed on nodes
-   of type APISERVER, LOGIC and on the GANETI-MASTER, with a properly
-   configured settings.py. In later revisions, the specific parts of the Django
-   project which need to run on each node type will be identified.
+   of type APISERVER, and LOGIC, with a properly configured settings.py. In
+   later revisions, the specific parts of the Django project which need to run
+   on each node type will be identified.
 
    Synnefo is written in Python 2.6 and depends on the following Python modules:
    [package versions confirmed to be compatible are in braces]
@@ -318,15 +318,17 @@ Synnefo deployment.
 
 9. Installation of the Ganeti monitoring daemon, /ganeti/snf-ganeti-eventd:
    The Ganeti monitoring daemon must run on GANETI-MASTER.
-   The Ganeti monitoring daemon has no dependency on Django.
 
-   Override all relevant settings in settings.d/99-snf-ganeti-eventd.conf,
-   GANETI_* variables.
-   Then, make sure PYTHONPATH contains the parent of the Django project,
-   and start the server on the Ganeti master as root.
+   The monitoring daemon is configured through /etc/synnefo/settings.conf.
+   An example is provided under snf-ganeti-tools/.
 
-     root:~# export PYTHONPATH=$PYTHONPATH:/opt
-     root:~# /opt/synnefo/ganeti/snf-ganeti-eventd.py
+   If run from the repository directory, make sure to have snf-ganeti-tools/
+   in the PYTHONPATH.
+
+   You may also build Debian packages directly from the repository:
+   $ cd snf-ganeti-tools
+   $ dpkg-buildpackage -b -uc -us
+   # dpkg -i ../snf-ganeti-tools-*deb
 
    TBD: how to handle master migration.
 
@@ -347,9 +349,8 @@ Synnefo deployment.
 
 
 11. Installation of the Synnefo Ganeti hook:
-    The bash wrapper ganeti/snf-ganeti-hook is the generic launcher for
-    Synnefo hooks in Ganeti. It resides in the ganeti/ directory under the
-    root of the Synnefo Django project.
+    The generic Synnefo Ganeti hook wrapper resides in the snf-ganeti-tools/
+    directory of the Synnefo repository.
 
     The hook needs to be enabled for phases post-{add,modify,reboot,start,stop}
     by *symlinking* in
@@ -357,16 +358,18 @@ Synnefo deployment.
     GANETI-MASTER, e.g.:
 
     root@ganeti-master:/etc/ganeti/hooks/instance-start-post.d# ls -l
-    lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/ganeti/snf-ganeti-hook
+    lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/snf-ganeti-hook/snf-ganeti-hook.py
 
     IMPORTANT: The link name may only contain "upper and lower case, digits,
     underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9_-]+$."
     See:
-     http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming
+    http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming
 
-    You need to set SYNNEFO_PROJECT_DIR in ganeti/snf-ganeti-hook. The bash
-    script modifies PYTHONPATH accordingly, before passing control to the
-    relevant Python code.
+    If run from the repository directory, make sure to have snf-ganeti-tools/
+    in the PYTHONPATH.
+
+    Alternative, build Debian packages which take care of building, installing
+    and activating the Ganeti hook automatically, see step. 9.
 
 
 12. Installation of the VNC authentication proxy, vncauthproxy:
@@ -408,6 +411,7 @@ Synnefo deployment.
     cd $SYNNEFO
     sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
 
+
 13. Installation of the customized Ganeti Instance Image for image deployment:
     For Synnefo to be able to launch VMs from specified Images, you need
     the gnt-instance-image OS Provider installed on the Ganeti backend.
@@ -416,6 +420,11 @@ Synnefo deployment.
     repository, at https://code.grnet.gr/git/gnt-instance-image. It's
     recommended to use the win-support branch (known good commit:
     970e7307a52cc50080f8f641faba27e03a64b533).
+
+    Make sure to enable progress monitoring, using the --with-progress-monitor
+    argument to configure. This requires the snf-progress-monitor tool,
+    provided in snf-ganeti-tools/ and also as part of the snf-ganeti-tools
+    Debian package.
 
     After installing gnt-instance-image do the following:
     1. root@ganeti-master$ cd /path-to-repo
@@ -435,11 +444,12 @@ Synnefo deployment.
        `hostname' hook too:
          chmod +x /et/ganeti/instance-image/hooks/{linux,windows}/hostname
 
-    Your Custom Images should be stored in a dump format under
+    Your custom Images should be stored in a dump format under
     /var/cache/ganeti-instance-image and their filenames should have the
     following format:
       {backend_id}-x86_64-root.dump
     e.g., debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
+
 
 14. Setup Synnefo-specific networking on the Ganeti backend:
     This part is deployment-specific and must be customized based on the

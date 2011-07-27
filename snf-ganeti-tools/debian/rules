@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python2
+
+override_dh_auto_install:
+	dh_auto_install
+
+	mkdir -p debian/snf-ganeti-tools/usr/sbin
+	-mv \
+	  debian/snf-ganeti-tools/usr/bin/snf-ganeti-eventd.py \
+	  debian/snf-ganeti-tools/usr/sbin/snf-ganeti-eventd
+	-mv \
+	  debian/snf-ganeti-tools/usr/bin/snf-ganeti-hook.py \
+	  debian/snf-ganeti-tools/usr/sbin/snf-ganeti-hook
+	-mv \
+	  debian/snf-ganeti-tools/usr/bin/snf-progress-monitor.py \
+	  debian/snf-ganeti-tools/usr/sbin/snf-progress-monitor
+	rmdir debian/snf-ganeti-tools/usr/bin

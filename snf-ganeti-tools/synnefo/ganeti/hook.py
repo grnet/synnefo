@@ -43,6 +43,7 @@ These are the individual Ganeti hooks for Synnefo.
 
 import sys
 import os
+import subprocess
 
 import time
 import json
@@ -51,8 +52,18 @@ import logging
 
 from amqplib import client_0_8 as amqp
 
-from synnefo.util.mac2eui64 import mac2eui64
-import synnefo.settings as settings
+try:
+    conf_dir = os.environ["SYNNEFO_CONFIG_DIR"]
+    import config
+    settings = config.load(conf_dir)
+except KeyError:
+    import synnefo.settings as settings
+
+
+def mac2eui64(mac, prefixstr):
+    process = subprocess.Popen(["mac2eui64", mac, prefixstr],
+                                stdout=subprocess.PIPE)
+    return process.stdout.read().rstrip()
 
 def ganeti_net_status(logger, environ):
     """Produce notifications of type 'Ganeti-net-status'
@@ -220,3 +231,42 @@ class PostStopHook(GanetiHook):
     def run(self):
         return 0
 
+
+def main():
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger("synnefo.ganeti")
+
+    try:
+        instance = os.environ['GANETI_INSTANCE_NAME']
+        op = os.environ['GANETI_HOOKS_PATH']
+        phase = os.environ['GANETI_HOOKS_PHASE']
+    except KeyError:
+        raise Exception("Environment missing one of: " \
+            "GANETI_INSTANCE_NAME, GANETI_HOOKS_PATH, GANETI_HOOKS_PHASE")
+
+    prefix = instance.split('-')[0]
+
+    # FIXME: The hooks should only run for Synnefo instances.
+    # Uncomment the following lines for a shared Ganeti deployment.
+    # Currently, the following code is commented out because multiple
+    # backend prefixes are used in the same Ganeti installation during development.
+    #if not instance.startswith(settings.BACKEND_PREFIX_ID):
+    #    logger.warning("Ignoring non-Synnefo instance %s", instance)
+    #    return 0
+
+    hooks = {
+        ("instance-add", "post"): PostStartHook,
+        ("instance-start", "post"): PostStartHook,
+        ("instance-reboot", "post"): PostStartHook,
+        ("instance-stop", "post"): PostStopHook,
+        ("instance-modify", "post"): PostStartHook
+    }
+
+    try:
+        hook = hooks[(op, phase)](logger, os.environ, instance, prefix)
+    except KeyError:
+        raise Exception("No hook found for operation = '%s', phase = '%s'" % (op, phase))
+    return hook.run()
+
+if __name__ == "__main__":
+    sys.exit(main())

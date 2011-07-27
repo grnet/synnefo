@@ -34,6 +34,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 #
+"""Utility to monitor the progress of image deployment
+
+A small utility to monitor the progress of image deployment
+by watching the contents of /proc/<pid>/io and producing
+notifications of type 'ganeti-create-progress' to the rest
+of the Synnefo infrastructure over AMQP.
+
+"""
+
 import os
 import sys
 import time
@@ -45,10 +54,11 @@ import socket
 from amqplib import client_0_8 as amqp
 
 try:
+    conf_dir = os.environ["SYNNEFO_CONFIG_DIR"]
+    import config
+    settings = config.load(conf_dir)
+except KeyError:
     import synnefo.settings as settings
-except ImportError:
-    raise Exception("Cannot import settings, make sure PYTHONPATH contains "
-                    "the parent directory of the Synnefo Django project.")
 
 
 class AMQPClient(object):

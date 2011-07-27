@@ -1,0 +1,5 @@
+snf-ganeti-tools (0.5-1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Faidon Liambotis <paravoid@debian.org>  Wed, 29 Jun 2011 18:41:49 +0300

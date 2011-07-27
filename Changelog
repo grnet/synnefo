@@ -2,7 +2,47 @@ Changelog
 =========
 
 
+2011-07-27, v0.5.4
+
+FIXES:
+    UI:
+        * Numerous bugfixes, most in response to user feedback from
+          the Alpha deployment
+        * #813 (Minor UI issues), #857 (long machine names),
+          #865 (problem when user has zero invitations),
+          #873 (generic 404 template), #895 (default username in RDP file),
+          #897 (show spinner for the public network), 899 (allow Connect
+          from the network UI), #901 (cannot select password for copying
+          with Chrome), #893 (firewall profile selection behaves as a single
+          list for all servers), #903 (cannot copy paste IPv4 in icon view),
+          #905 (Javascript throws exception when left idle), #907 (similar
+          issue with #907), #913 (list view alert message)
+    Images:
+        * ntfsclone does not use all of the available space on the target (#879)
+    Deployment:
+        * Move fix_amqp_settings to queue system init code (#809)
+    Admin:
+        * snf-admin user invite is not non-ascii friendly (#943)
+        * snf-user should show email addresses, even without any arguments (#871)
+
+
+FEATURES:
+    UI:
+        * Show completion percentage when a machine is being built (#887)
+    API:
+        * Report percentage completion for machines in BUILD (#891)
+    Images:
+        * The image deployment layer should report completion to the API layer
+          (#889)
+    Deployment:
+        * Drop ganeti-eventd & snf-ganeti-hook synnefo dependency (#691)
+        * Split Synnefo Ganeti tools to separate project under snf-ganeti-tools/
+        * Import code for building Debian packages, refactor repository (#691)
+
+
 2011-07-19, v0.5.3.1
+
+FIXES:
     API:
         * Fix bug with firewall code using inexistent, removed setting
     GUI:

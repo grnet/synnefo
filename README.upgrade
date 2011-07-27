@@ -13,6 +13,9 @@ DB MIGRATIONS
 NEW DEPENDENCIES:
     * python-prctl: Used by the snf-progress-monitor [FIXME]
 
+OKEANOS INTRO SITE:
+    * OKEANOS_VIDEO_URL: Changed from string to dict
+    * OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
 
 v0.5.2 -> v0.5.3
 NEW SETTINGS

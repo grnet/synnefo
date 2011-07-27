@@ -26,8 +26,8 @@ OKEANOS_SITE_URL = "/about"
 # the url of the synnefo web application (synnefo.ui.views.home)
 OKEANOS_APP_URL = "/ui"
 
-# video url (see okeanos_site/README)
-# mp4 should be absolute for flash player to work (flash video player 
+# video sources (see okeanos_site/README)
+# mp4 should be absolute url for flash player to work (flash video player 
 # is the fallback video player for IE)
 #
 # VIDEOS ARE NOT CONTAINED IN PROJECT FILES
@@ -42,4 +42,6 @@ OKEANOS_VIDEO_URL = {
     'ogg': {'src': 'http://host:port/okeanos_static/intro_video/intro_video.ogv', 'codecs': 'theora, vorbis'}
 }
 
+# The image placeholder url. Image gets displayed above video position
+# as a placeholder when the video is stopped
 OKEANOS_VIDEO_POSTER_IMAGE_URL = "/okeanos_static/intro_video/intro_video.jpg"

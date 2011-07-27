@@ -582,3 +582,6 @@ a.manage-metadata {
     line-height: 7em;
 }
 
+.vm-stats div img.stat-busy {
+    margin-top: -0px;
+}

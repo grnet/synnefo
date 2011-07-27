@@ -30,6 +30,9 @@ NEW DEPENDENCIES:
     * python-prctl: Needed by the snf-progress-monitor,
       specified as a dependency of the snf-ganeti-tools Debian package.
 
+OKEANOS INTRO SITE:
+    * OKEANOS_VIDEO_URL: Changed from string to dict
+    * OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
 
 v0.5.2 -> v0.5.3
 NEW SETTINGS

@@ -1635,7 +1635,7 @@ function update_machine_stats(vm_id, data) {
 
     // stats container is hidden
     // do not update the stats
-    if (!els.cont.is(":visible")) {
+    if (els.cont.length == 0 || !els.cont.is(":visible")) {
         clear = true;
     }
     

@@ -4277,9 +4277,11 @@ div.state .shutdown, tbody.machines .shutdown {
 
 
 .machine-container .build-progress {
-    font-size: 0.7em;
+    font-size: 0.67em;
     color: #222;
-    margin-bottom: 15px;
+    line-height: 17px;
+    position: relative;
+    top: -3px;
 }
 
 .single .progress-message {

@@ -78,11 +78,15 @@ def print_item(item):
     print '%d %s' % (item.id, item.name)
     print_dict(item.__dict__, exclude=('id', 'name'))
 
-def print_items(items, detail=False):
+def print_items(items, detail=False, keys=None):
+    keys = keys or ('id', 'name')
     for item in items:
-        print '%d %s' % (item.id, item.name)
+        for key in keys:
+            print getattr(item, key),
+        print
+        
         if detail:
-            print_dict(item.__dict__, exclude=('id', 'name'))
+            print_dict(item.__dict__, exclude=keys)
             print
 
 
@@ -175,6 +179,7 @@ class CreateUser(Command):
                             help='set user type')
     
     def main(self, username, email):
+        username = username.decode('utf8')
         realname = self.realname or username
         type = self.type or 'USER'
         if type not in [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]:
@@ -215,6 +220,7 @@ class InviteUser(Command):
     description = 'invite a user'
     
     def main(self, inviter_id, name, email):
+        name = name.decode('utf8')
         inviter = get_user(inviter_id)
         inv = add_invitation(inviter, name, email)
         send_invitation(inv)
@@ -235,7 +241,7 @@ class ListUsers(Command):
             users = [models.SynnefoUser.objects.get(id=user_id)]
         else:
             users = models.SynnefoUser.objects.order_by('id')
-        print_items(users, self.detail)
+        print_items(users, self.detail, keys=('id', 'name', 'uniq'))
 
 
 class ModifyUser(Command):

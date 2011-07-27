@@ -419,7 +419,7 @@ Synnefo deployment.
     Download and install gnt-instance-image in all Ganeti nodes from its own
     repository, at https://code.grnet.gr/git/gnt-instance-image. It's
     recommended to use the win-support branch (known good commit:
-    970e7307a52cc50080f8f641faba27e03a64b533).
+    e34560c859726ff9f2b7630c4b2d666082ce0e1a).
 
     Make sure to enable progress monitoring, using the --with-progress-monitor
     argument to configure. This requires the snf-progress-monitor tool,

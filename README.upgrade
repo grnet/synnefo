@@ -12,8 +12,13 @@ REMOVED APPS
     * The ganeti/ app has been removed from the Django project completely.
       Any explicit references to it in Django settings must be removed.
 
+ADDED SETTINGS
+    * snf-ganeti-tools is configured independently from Django,
+      need to add proper /etc/synnefo/settings.conf
+
 REMOVED SETTINGS
     * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
+    * settings.d/98-ganeti-* removed due to split snf-ganeti-tools
 
 DB MIGRATIONS
     * 0018_auto__add_field_virtualmachine_buildpercentage

@@ -12,13 +12,13 @@ REMOVED APPS
     * The ganeti/ app has been removed from the Django project completely.
       Any explicit references to it in Django settings must be removed.
 
-ADDED SETTINGS
+DJANGO SETTINGS
     * snf-ganeti-tools is configured independently from Django,
       need to add proper /etc/synnefo/settings.conf
-
-REMOVED SETTINGS
-    * 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
-    * settings.d/98-ganeti-* removed due to split snf-ganeti-tools
+    * Removed 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
+    * Removed settings.d/98-ganeti-* due to split of snf-ganeti-tools
+    * ~okeanos intro: OKEANOS_VIDEO_URL: Changed from string to dict
+    * ~okeanos intro: OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
 
 DB MIGRATIONS
     * 0018_auto__add_field_virtualmachine_buildpercentage
@@ -30,9 +30,6 @@ NEW DEPENDENCIES:
     * python-prctl: Needed by the snf-progress-monitor,
       specified as a dependency of the snf-ganeti-tools Debian package.
 
-OKEANOS INTRO SITE:
-    * OKEANOS_VIDEO_URL: Changed from string to dict
-    * OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
 
 v0.5.2 -> v0.5.3
 NEW SETTINGS

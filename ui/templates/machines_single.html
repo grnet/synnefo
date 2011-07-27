@@ -496,8 +496,14 @@ function update_machines_view(data){
                     existing.find(".connect-border").hide();
                     existing.find(".connect-arrow").hide();
                     existing.find(".column1 .state .spinner").hide();
+
+                    if (server.status == "STOPPED") {
+                        existing.find(".column1 .state").removeClass().addClass("state terminated-state");
+                    } else {
+                        existing.find(".column1 .state").removeClass().addClass("state error-state");
+                    }
+
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                    existing.find(".column1 .state").removeClass().addClass("state terminated-state");
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&
@@ -585,7 +591,12 @@ function update_machines_view(data){
                     set_machine_os_image(machine, "single", "off", server_image);
                     machine.find(".connect-border").hide();
                     machine.find(".connect-arrow").hide();
-                    machine.find(".column1 .state").removeClass().addClass("state terminated-state");
+                    if (server.status == "STOPPED") {
+                        machine.find(".column1 .state").removeClass().addClass("state terminated-state");
+                    } else {
+                        machine.find(".column1 .state").removeClass().addClass("state error-state");
+                    }
+
             }
             //show spinner while machine is building or rebooting
             if (server.status == 'BUILD' ||

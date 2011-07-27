@@ -599,7 +599,11 @@ function update_machines_view(data) {
                         $("div.terminated").show();
                     }
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
-                    existing.find('.state').removeClass().addClass('state terminated-state');
+                    if (server.status == "STOPPED") { //if server status us stopped is a different case than status unknown/error
+                        existing.find('.state').removeClass().addClass('state terminated-state');
+                    } else {
+                        existing.find('.state').removeClass().addClass('state error-state');
+                    }
                     setTimeout("$('#" + server.id +" .wave').attr('src','').hide()", 3000);
                 }
                 else if (INACTIVE_STATES.indexOf(current_message) >= 0 &&

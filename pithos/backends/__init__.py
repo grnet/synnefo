@@ -34,7 +34,7 @@
 from django.conf import settings
 
 from simple import SimpleBackend
-from modular import ModularBackend
+#from modular import ModularBackend
 
 backend = None
 options = getattr(settings, 'BACKEND', None)

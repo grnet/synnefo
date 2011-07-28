@@ -31,13 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from dbworker import DBWorker
 
-from simple import SimpleBackend
-from modular import ModularBackend
 
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
-	c = globals()[options[0]]
-	backend = c(*options[1])
+class Policy(DBWorker):
+    """Paths can be assigned key, value pairs, representing policy."""
+    
+    def __init__(self, **params):
+        DBWorker.__init__(self, **params)
+        execute = self.execute
+        
+        execute(""" create table if not exists policy
+                          ( path  text,
+                            key   text,
+                            value text,
+                            primary key (path, key) ) """)
+    
+    def policy_set(self, path, policy):
+        q = "insert or replace into policy (path, key, value) values (?, ?, ?)"
+        self.executemany(q, ((path, k, v) for k, v in policy.iteritems()))
+    
+    def policy_unset(self, path):
+        q = "delete from policy where path = ?"
+        self.execute(q, (path,))
+    
+    def policy_get(self, path):
+        q = "select key, value from policy where path = ?"
+        self.execute(q, (path,))
+        return dict(self.fetchall())

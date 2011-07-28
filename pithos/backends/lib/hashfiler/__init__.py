@@ -31,13 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from blocker import Blocker
+from mapper import Mapper
 
-from simple import SimpleBackend
-from modular import ModularBackend
-
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
-	c = globals()[options[0]]
-	backend = c(*options[1])

@@ -106,14 +106,14 @@ format                  Optional extended reply type (can be ``json`` or ``xml``
 ======================  =========================
 
 The reply is a list of account names.
-If a ``format=xml`` or ``format=json`` argument is given, extended information on the containers will be returned, serialized in the chosen format.
+If a ``format=xml`` or ``format=json`` argument is given, extended information on the accounts will be returned, serialized in the chosen format.
 For each account, the information will include the following (names will be in lower case and with hyphens replaced with underscores):
 
 ===========================  ============================
 Name                         Description
 ===========================  ============================
 name                         The name of the account
-last_modified                The last container modification date (regardless of ``until``)
+last_modified                The last account modification date (regardless of ``until``)
 ===========================  ============================
 
 Example ``format=json`` reply:
@@ -139,7 +139,7 @@ Example ``format=xml`` reply:
 Return Code                  Description
 ===========================  =====================
 200 (OK)                     The request succeeded
-204 (No Content)             The account has no containers (only for non-extended replies)
+204 (No Content)             The user has no access to other accounts (only for non-extended replies)
 ===========================  =====================
 
 Will use a ``200`` return code if the reply is of type json/xml.

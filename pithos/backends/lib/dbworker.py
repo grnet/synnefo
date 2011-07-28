@@ -31,13 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
 
-from simple import SimpleBackend
-from modular import ModularBackend
-
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
-	c = globals()[options[0]]
-	backend = c(*options[1])
+class DBWorker(object):
+    """Database connection handler."""
+    
+    def __init__(self, **params):
+        self.params = params
+        conn = params['connection']
+        cur = params['cursor']
+        self.execute = cur.execute
+        self.executemany = cur.executemany
+        self.fetchone = cur.fetchone
+        self.fetchall = cur.fetchall
+        self.cur = cur
+        self.conn = conn

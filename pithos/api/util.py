@@ -41,6 +41,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
+from django.utils.encoding import smart_str
 
 from pithos.api.compat import parse_http_date_safe, parse_http_date
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound,
@@ -77,7 +78,6 @@ def printable_header_dict(d):
 
 def format_header_key(k):
     """Convert underscores to dashes and capitalize intra-dash strings."""
-    
     return '-'.join([x.capitalize() for x in k.replace('_', '-').split('-')])
 
 def get_header_prefix(request, prefix):
@@ -106,12 +106,15 @@ def put_account_headers(response, meta, groups):
         response['X-Account-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
-        response[k.encode('utf-8')] = meta[k].encode('utf-8')
+        response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
     if 'until_timestamp' in meta:
         response['X-Account-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
     for k, v in groups.iteritems():
-        response[format_header_key('X-Account-Group-' + k).encode('utf-8')] = (','.join(v)).encode('utf-8')
-
+        k = smart_str(k, strings_only=True)
+        k = format_header_key('X-Account-Group-' + k)
+        v = smart_str(','.join(v), strings_only=True)
+        response[k] = v
+    
 def get_container_headers(request):
     meta = get_header_prefix(request, 'X-Container-Meta-')
     policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in get_header_prefix(request, 'X-Container-Policy-').iteritems()])
@@ -124,14 +127,15 @@ def put_container_headers(response, meta, policy):
         response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
-        response[k.encode('utf-8')] = meta[k].encode('utf-8')
-    response['X-Container-Object-Meta'] = ','.join([x[14:] for x in meta['object_meta'] if x.startswith('X-Object-Meta-')])
+        response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
+    l = [smart_str(x, strings_only=True) for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
+    response['X-Container-Object-Meta'] = ','.join([x[14:] for x in l])
     response['X-Container-Block-Size'] = backend.block_size
     response['X-Container-Block-Hash'] = backend.hash_algorithm
     if 'until_timestamp' in meta:
         response['X-Container-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
     for k, v in policy.iteritems():
-        response[format_header_key('X-Container-Policy-' + k).encode('utf-8')] = v.encode('utf-8')
+        response[smart_str(format_header_key('X-Container-Policy-' + k), strings_only=True)] = smart_str(v, strings_only=True)
 
 def get_object_headers(request):
     meta = get_header_prefix(request, 'X-Object-Meta-')
@@ -155,10 +159,10 @@ def put_object_headers(response, meta, restricted=False):
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
-            response[k.encode('utf-8')] = meta[k].encode('utf-8')
+            response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
         for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By', 'X-Object-Public'):
             if k in meta:
-                response[k] = meta[k]
+                response[k] = smart_str(meta[k], strings_only=True)
     else:
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:

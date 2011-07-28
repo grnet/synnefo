@@ -34,9 +34,9 @@
 # or implied, of GRNET S.A.
 
 from pithos.lib.client import Pithos_Client, Fault
-from django.utils import simplejson as json
 from xml.dom import minidom
 from StringIO import StringIO
+import json
 import unittest
 import time as _time
 import types
@@ -66,7 +66,8 @@ OTHER_ACCOUNTS = {
     '0005': 'louridas',
     '0006': 'chstath',
     '0007': 'pkanavos',
-    '0008': 'mvasilak'}
+    '0008': 'mvasilak',
+    '0009': 'κούκης'}
 
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
@@ -205,6 +206,16 @@ class BaseTestCase(unittest.TestCase):
         except Fault, f:
             self.failUnless(f.status == status)
     
+    def assert_not_raises_fault(self, status, callableObj, *args, **kwargs):
+        """
+        asserts that a Fault with a specific status is not raised
+        when callableObj is called with the specific arguments
+        """
+        try:
+            r = callableObj(*args, **kwargs)
+        except Fault, f:
+            self.failIf(f.status == status)
+    
     def assert_container_exists(self, container):
         """
         asserts the existence of a container
@@ -213,6 +224,13 @@ class BaseTestCase(unittest.TestCase):
             self.client.retrieve_container_metadata(container)
         except Fault, f:
             self.failIf(f.status == 404)
+    
+    def assert_container_not_exists(self, container):
+        """
+        asserts there is no such a container
+        """
+        self.assert_raises_fault(404, self.client.retrieve_container_metadata,
+                                 container)
     
     def assert_object_exists(self, container, object):
         """
@@ -264,9 +282,6 @@ class BaseTestCase(unittest.TestCase):
             return obj
         except IOError:
             return
-class TopLevel(BaseTestCase):
-    def test_list_shared_by_other(self):
-        pass
 
 class AccountHead(BaseTestCase):
     def setUp(self):
@@ -301,8 +316,6 @@ class AccountHead(BaseTestCase):
                 l.append(g)
         self.client.unset_account_groups(l)
         
-        #print '#', self.client.retrieve_account_groups()
-        #print '#', self.client.retrieve_account_metadata(restricted=True)
         BaseTestCase.tearDown(self)
     
     def test_get_account_meta(self):
@@ -481,8 +494,6 @@ class AccountPost(BaseTestCase):
                 l.append(g)
         self.client.unset_account_groups(l)
         
-        #print '#', self.client.retrieve_account_groups()
-        #print '#', self.client.retrieve_account_metadata(restricted=True)
         BaseTestCase.tearDown(self)
     
     def test_update_meta(self):
@@ -533,7 +544,8 @@ class AccountPost(BaseTestCase):
             self.client.set_account_groups(**more_groups)
             
             groups.update(more_groups)
-            self.assertEqual(groups, self.client.retrieve_account_groups())
+            self.assertEqual(set(groups['pithosdev']),
+                             set(self.client.retrieve_account_groups()['pithosdev']))
     
     def test_reset_account_groups(self):
         with AssertMappingInvariant(self.client.retrieve_account_metadata):
@@ -543,10 +555,12 @@ class AccountPost(BaseTestCase):
             
             self.assertEqual(groups, self.client.retrieve_account_groups())
             
-            groups = {'pithosdev':'verigak,gtsouk,chazapis, papagian'}
+            groups = {'pithosdev':'verigak,gtsouk,chazapis,papagian'}
             self.client.reset_account_groups(**groups)
             
-            self.assertTrue(groups, self.client.retrieve_account_groups())
+            print '#', groups, self.client.retrieve_account_groups()
+            self.assertEqual(groups['pithosdev'].split(','),
+                             self.client.retrieve_account_groups()['pithosdev'].split(','))
     
     def test_delete_account_groups(self):
         with AssertMappingInvariant(self.client.retrieve_account_metadata):
@@ -643,13 +657,13 @@ class ContainerGet(BaseTestCase):
             self.assertEqual(objects, l[start:end])
     
     #takes too long
-    #def test_list_limit_exceeds(self):
-    #    self.client.create_container('pithos')
-    #    
-    #    for i in range(10001):
-    #        self.client.create_zero_length_object('pithos', i)
-    #    
-    #    self.assertEqual(10000, len(self.client.list_objects('pithos')))
+    def _test_list_limit_exceeds(self):
+        self.client.create_container('pithos')
+        
+        for i in range(10001):
+            self.client.create_zero_length_object('pithos', i)
+        
+        self.assertEqual(10000, len(self.client.list_objects('pithos')))
     
     def test_list_empty_params(self):
         objects = self.client.get('/%s' % self.container[0])[2]
@@ -1209,18 +1223,14 @@ class ObjectPut(BaseTestCase):
         #assert content-type
         self.assertEqual(h['content-type'], o['meta']['content_type'])
     
-    def test_maximum_upload_size_exceeds(self):
+    def _test_maximum_upload_size_exceeds(self):
         name = o_names[0]
         meta = {'test':'test1'}
         #upload 100MB
         length=1024*1024*100
         self.assert_raises_fault(400, self.upload_random_data, self.container,
                                  name, length, **meta)
-        
-        ##d = get_random_data(length=1024*1024*100)
-        ##self.client.create_object_using_chunks(self.container, name, StringIO(d))
-        
-
+    
     def test_upload_with_name_containing_slash(self):
         name = '/%s' % o_names[0]
         meta = {'test':'test1'}
@@ -1535,61 +1545,142 @@ class ListSharing(BaseTestCase):
         self.assertTrue('test' in self.other.list_shared_by_others())
 
 class TestGreek(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        #keep track of initial account groups
+        self.initial_groups = self.client.retrieve_account_groups()
+        
+        #keep track of initial account meta
+        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
+    
     def tearDown(self):
-        pass
+        #delete additionally created meta
+        l = []
+        for m in self.client.retrieve_account_metadata(restricted=True):
+            if m not in self.initial_meta:
+                l.append(m)
+        self.client.delete_account_metadata(l)
+        
+        #delete additionally created groups
+        l = []
+        for g in self.client.retrieve_account_groups():
+            if g not in self.initial_groups:
+                l.append(g)
+        self.client.unset_account_groups(l)
+        
+        BaseTestCase.tearDown(self)
     
     def test_create_container(self):
         self.client.create_container('φάκελος')
         self.assert_container_exists('φάκελος')
+        
+        self.assertTrue('φάκελος' in self.client.list_containers())
     
     def test_create_object(self):
         self.client.create_container('φάκελος')
         self.upload_random_data('φάκελος', 'αντικείμενο')
         
         self.assert_object_exists('φάκελος', 'αντικείμενο')
+        self.assertTrue('αντικείμενο' in self.client.list_objects('φάκελος'))
     
     def test_copy_object(self):
-        self.client.create_container('φάκελος')
-        self.upload_random_data('φάκελος', 'αντικείμενο')
+        src_container = 'φάκελος'
+        src_object = 'αντικείμενο'
+        dest_container = 'αντίγραφα'
+        dest_object = 'ασφαλές-αντίγραφο'
         
-        self.client.create_container('αντίγραφα')
-        self.client.copy_object('φάκελος', 'αντικείμενο', 'αντίγραφα',
-                                'αντικείμενο')
+        self.client.create_container(src_container)
+        self.upload_random_data(src_container, src_object)
         
-        self.assert_object_exists('αντίγραφα', 'αντικείμενο')
-        self.assert_object_exists('φάκελος', 'αντικείμενο')
+        self.client.create_container(dest_container)
+        self.client.copy_object(src_container, src_object, dest_container,
+                                dest_object)
+        
+        self.assert_object_exists(src_container, src_object)
+        self.assert_object_exists(dest_container, dest_object)
+        self.assertTrue(dest_object in self.client.list_objects(dest_container))
     
     def test_move_object(self):
-        self.client.create_container('φάκελος')
-        self.upload_random_data('φάκελος', 'αντικείμενο')
+        src_container = 'φάκελος'
+        src_object = 'αντικείμενο'
+        dest_container = 'αντίγραφα'
+        dest_object = 'ασφαλές-αντίγραφο'
         
-        self.client.create_container('αντίγραφα')
-        self.client.copy_object('φάκελος', 'αντικείμενο', 'αντίγραφα',
-                                'αντικείμενο')
+        self.client.create_container(src_container)
+        self.upload_random_data(src_container, src_object)
         
-        self.assert_object_exists('αντίγραφα', 'αντικείμενο')
-        self.assert_object_not_exists('φάκελος', 'αντικείμενο')
+        self.client.create_container(dest_container)
+        self.client.move_object(src_container, src_object, dest_container,
+                                dest_object)
+        
+        self.assert_object_not_exists(src_container, src_object)
+        self.assert_object_exists(dest_container, dest_object)
+        self.assertTrue(dest_object in self.client.list_objects(dest_container))
     
     def test_delete_object(self):
-        pass
+        self.client.create_container('φάκελος')
+        self.upload_random_data('φάκελος', 'αντικείμενο')
+        self.assert_object_exists('φάκελος', 'αντικείμενο')
+    
+        self.client.delete_object('φάκελος', 'αντικείμενο')
+        self.assert_object_not_exists('φάκελος', 'αντικείμενο')
+        self.assertTrue('αντικείμενο' not in self.client.list_objects('φάκελος'))
     
     def test_delete_container(self):
-        pass
-    
+        self.client.create_container('φάκελος')
+        self.assert_container_exists('φάκελος')
+        
+        self.client.delete_container('φάκελος')
+        self.assert_container_not_exists('φάκελος')
+        self.assertTrue('φάκελος' not in self.client.list_containers())
+
     def test_account_meta(self):
-        pass
+        meta = {'ποιότητα':'ΑΑΑ'}
+        self.client.update_account_metadata(**meta)
+        meta = self.client.retrieve_account_metadata(restricted=True)
+        self.assertTrue('ποιότητα' in meta.keys())
+        self.assertEqual(meta['ποιότητα'], 'ΑΑΑ')
     
     def test_container_meta(self):
-        pass
+        meta = {'ποιότητα':'ΑΑΑ'}
+        self.client.create_container('φάκελος', **meta)
+        
+        meta = self.client.retrieve_container_metadata('φάκελος', restricted=True)
+        self.assertTrue('ποιότητα' in meta.keys())
+        self.assertEqual(meta['ποιότητα'], 'ΑΑΑ')
     
-    def test_obejct_meta(self):
-        pass
+    def test_object_meta(self):
+        self.client.create_container('φάκελος')
+        meta = {'ποιότητα':'ΑΑΑ'}
+        self.upload_random_data('φάκελος', 'αντικείμενο', **meta)
+        
+        meta = self.client.retrieve_object_metadata('φάκελος', 'αντικείμενο',
+                                                    restricted=True)
+        self.assertTrue('ποιότητα' in meta.keys())
+        self.assertEqual(meta['ποιότητα'], 'ΑΑΑ')    
     
     def test_list_meta_filtering(self):
-        pass
+        self.client.create_container('φάκελος')
+        meta = {'ποιότητα':'ΑΑΑ'}
+        self.upload_random_data('φάκελος', 'ο1', **meta)
+        self.upload_random_data('φάκελος', 'ο2')
+        self.upload_random_data('φάκελος', 'ο3')
+        
+        meta = {'ποσότητα':'μεγάλη'}
+        self.client.update_object_metadata('φάκελος', 'ο2', **meta)
+        objects = self.client.list_objects('φάκελος', meta='ποιότητα, ποσότητα')
+        self.assertTrue('ο1' in objects)
+        self.assertTrue('ο2' in objects)
+        self.assertTrue('ο3' not in objects)
     
     def test_groups(self):
-        pass
+        #create a group
+        groups = {'σεφς':'chazapis,κούκης'}
+        self.client.set_account_groups(**groups)
+        groups.update(self.initial_groups)
+        self.assertEqual(groups['σεφς'],
+                         self.client.retrieve_account_groups()['σεφς'])
+        
     
     def test_permissions(self):
         pass

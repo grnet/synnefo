@@ -39,6 +39,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
+from django.utils.encoding import smart_unicode, smart_str
 from xml.dom import minidom
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
@@ -439,7 +440,8 @@ def object_list(request, v_account, v_container):
     keys = request.GET.get('meta')
     if keys:
         keys = keys.split(',')
-        keys = [format_header_key('X-Object-Meta-' + x.strip()) for x in keys if x.strip() != '']
+        l = [smart_str(x) for x in keys if x.strip() != '']
+        keys = [format_header_key('X-Object-Meta-' + x.strip()) for x in l]
     else:
         keys = []
     
@@ -677,8 +679,8 @@ def object_write(request, v_account, v_container, v_object):
             meta = {}
         validate_matching_preconditions(request, meta)
     
-    copy_from = request.META.get('HTTP_X_COPY_FROM')
-    move_from = request.META.get('HTTP_X_MOVE_FROM')
+    copy_from = smart_unicode(request.META.get('HTTP_X_COPY_FROM'), strings_only=True)
+    move_from = smart_unicode(request.META.get('HTTP_X_MOVE_FROM'), strings_only=True)
     if copy_from or move_from:
         content_length = get_content_length(request) # Required by the API.
         

@@ -13,10 +13,10 @@ Get the source::
 
 Setup the files::
 
-  cd /pithos
-  python setup.py build_sphinx
   cd /pithos/pithos
   cp settings.py.dist settings.py
+  cd /pithos
+  python setup.py build_sphinx
 
 Edit ``/etc/apache2/sites-available/pithos``::
 

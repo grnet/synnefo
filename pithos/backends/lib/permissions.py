@@ -36,6 +36,10 @@ from groups import Groups
 from public import Public
 
 
+READ = 0
+WRITE = 1
+
+
 class Permissions(XFeatures, Groups, Public):
     
     def __init__(self, **params):
@@ -43,82 +47,70 @@ class Permissions(XFeatures, Groups, Public):
         Groups.__init__(self, **params)
         Public.__init__(self, **params)
     
-    def access_grant(self, access, path, member='all', members=()):
-        """Grant a member with an access to a path."""
-        xfeatures = self.xfeature_list(path)
-        xfl = len(xfeatures)
-        if xfl > 1 or (xfl == 1 and xfeatures[0][0] != path):
-            return xfeatures
-        if xfl == 0:
-            feature = self.alloc_serial()
-            self.xfeature_bestow(path, feature)
-        else:
-            fpath, feature = xfeatures[0]
-
-        if members:
-            self.feature_setmany(feature, access, members)
-        else:
-            self.feature_set(feature, access, member)
-
-        return ()
-
-    def access_revoke(self, access, path, member='all', members=()):
-        """Revoke access to path from members.
-           Note that this will not revoke access for members
-           that are indirectly granted access through group membership.
-        """
-        # XXX: Maybe provide a force_revoke that will kick out
-        #      all groups containing the given members?
-        xfeatures = self.xfeature_list(path)
-        xfl = len(xfeatures)
-        if xfl != 1 or xfeatures[0][0] != path:
-            return xfeatures
-
-        fpath, feature = xfeatures[0]
-
-        if members:
-            self.feature_unsetmany(feature, access, members=members)
-        else:
-            self.feature_unset(feature, access, member)
-
-        # XXX: provide a meaningful return value? 
-
-        return ()
-
-    def access_check(self, access, path, member):
+    def access_grant(self, path, access, members=()):
+        """Grant members with access to path."""
+        
+        feature = self.xfeature_create(path)
+        if feature is None:
+            return
+        self.feature_setmany(feature, access, members)
+    
+    def access_revoke_all(self, path):
+        """Revoke access to path."""
+        
+        self.xfeature_destroy(path)
+    
+    def access_check(self, path, access, member):
         """Return true if the member has this access to the path."""
+        
+        if access == READ and self.public_check(path):
+            return True
+        
         r = self.xfeature_inherit(path)
         if not r:
-            return 0
-
+            return False
         fpath, feature = r
-        memberset = set(self.feature_get(feature, access))
-        if member in memberset:
-            return 1
-
-        for group in self.group_parents(self, member):
-            if group in memberset:
-                return 1
-
-        return 0
-
+        members = self.feature_get(feature, access)
+        if member in members or '*' in members:
+            return True
+        for owner, group in self.group_parents(self, member):
+            if owner + ':' + group in members:
+                return True
+        return True
+    
+    def access_inherit(self, path):
+        """Return the inherited or assigned (path, permissions) pair for path."""
+        
+        r = self.xfeature_inherit(path)
+        if not r:
+            return (path, {})
+        fpath, feature = r
+        return (fpath, self.feature_dict(feature))
+    
     def access_list(self, path):
-        """Return the list of (access, member) pairs for the path."""
-        r = self.xfeature_inherit(path)
-        if not r:
-            return ()
-
-        fpath, feature = r
-        return self.feature_list(feature)
-
-    def access_list_paths(self, member):
-        """Return the list of (access, path) pairs granted to member."""
-        q = ("select distinct key, path from xfeatures inner join "
-             "   (select distinct feature, key from xfeaturevals inner join "
-             "      (select name as value from members "
+        """List all permission paths inherited by or inheriting from path."""
+        
+        return [x[0] for x in self.xfeature_list(path) if x[0] != path]
+    
+    def access_list_paths(self, member, prefix=None):
+        """Return the list of paths granted to member."""
+        
+        q = ("select distinct path from xfeatures inner join "
+             "   (select distinct feature_id, key from xfeaturevals inner join "
+             "      (select owner || ':' || name as value from members "
              "       where member = ? union select ?) "
              "    using (value)) "
-             "using (feature)")
-
-        self.execute(q, (member, member))
-        return self.fetchall()
+             "using (feature_id)")
+        p = (member, member)
+        if prefix:
+            q += " where path like ?"
+            p += (prefix + '%',)
+        self.execute(q, p)
+        return [r[0] for r in self.fetchall()]
+    
+    def access_list_shared(self, prefix=''):
+        """Return the list of shared paths."""
+        
+        q = "select path from xfeatures where path like ?"
+        self.execute(q, (prefix + '%',))
+        return [r[0] for r in self.fetchall()]

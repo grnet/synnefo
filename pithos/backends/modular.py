@@ -39,7 +39,7 @@ import hashlib
 import binascii
 
 from base import NotAllowedError, BaseBackend
-from lib.permissions import Permissions
+from lib.permissions import Permissions, READ, WRITE
 from lib.hashfiler import Mapper, Blocker
 
 
@@ -460,8 +460,8 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path = self._get_objectinfo(account, container, name)[0]
-        r, w = self._check_permissions(path, permissions)
-        self._put_permissions(path, r, w)
+        self._check_permissions(path, permissions)
+        self._put_permissions(path, permissions)
     
     @backend_method
     def get_object_public(self, user, account, container, name):
@@ -509,7 +509,7 @@ class ModularBackend(BaseBackend):
         path = self._get_containerinfo(account, container)[0]
         path = '/'.join((path, name))
         if permissions is not None:
-            r, w = self._check_permissions(path, permissions)
+            self._check_permissions(path, permissions)
         src_version_id, dest_version_id = self._copy_version(user, path, path, not replace_meta, False)
         sql = 'update versions set size = ? where version_id = ?'
         self.con.execute(sql, (size, dest_version_id))
@@ -518,7 +518,7 @@ class ModularBackend(BaseBackend):
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
-            self._put_permissions(path, r, w)
+            self._put_permissions(path, permissions)
     
     @backend_method
     def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
@@ -537,13 +537,13 @@ class ModularBackend(BaseBackend):
         dest_path = self._get_containerinfo(account, dest_container)[0]
         dest_path = '/'.join((dest_path, dest_name))
         if permissions is not None:
-            r, w = self._check_permissions(dest_path, permissions)
+            self._check_permissions(dest_path, permissions)
         src_version_id, dest_version_id = self._copy_version(user, src_path, dest_path, not replace_meta, True, src_version)
         for k, v in dest_meta.iteritems():
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
-            self._put_permissions(dest_path, r, w)
+            self._put_permissions(dest_path, permissions)
     
     @backend_method
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
@@ -836,12 +836,7 @@ class ModularBackend(BaseBackend):
         pass
     
     def _get_groups(self, account):
-        groups = {}
-        for row in self.permissions.group_list(account):
-            if group not in groups:
-                groups[group] = []
-            groups[group].append(member)
-        return groups
+        return self.permissions.group_dict(account)
     
     def _put_groups(self, account, groups, replace=False):
         if replace:
@@ -855,118 +850,64 @@ class ModularBackend(BaseBackend):
     def _del_groups(self, account):
         self.permissions.group_destroy(account)
     
-    # ---------------- UP TO HERE ----------------
-    
     def _check_permissions(self, path, permissions):
         # Check for existing permissions.
-        sql = '''select name from permissions
-                    where name != ? and (name like ? or ? like name || ?)'''
-        c = self.con.execute(sql, (path, path + '%', path, '%'))
-        row = c.fetchone()
-        if row:
+        paths = self.permissions.access_list(path)
+        if paths:
             ae = AttributeError()
-            ae.data = row[0]
+            ae.data = paths
             raise ae
         
-        # Format given permissions.
-        if len(permissions) == 0:
-            return [], []
-        r = permissions.get('read', [])
-        w = permissions.get('write', [])
         # Examples follow.
         # if True in [False or ',' in x for x in r]:
         #     raise ValueError('Bad characters in read permissions')
         # if True in [False or ',' in x for x in w]:
         #     raise ValueError('Bad characters in write permissions')
-        return r, w
+        pass
     
     def _get_permissions(self, path):
-        # Check for permissions at path or above.
-        sql = 'select name, op, user from permissions where ? like name || ?'
-        c = self.con.execute(sql, (path, '%'))
-        name = path
-        perms = {} # Return nothing, if nothing is set.
-        for row in c.fetchall():
-            name = row[0]
-            if row[1] not in perms:
-                perms[row[1]] = []
-            perms[row[1]].append(row[2])
-        return name, perms
+        self.permissions.access_inherit(path)
     
-    def _put_permissions(self, path, r, w):
-        sql = 'delete from permissions where name = ?'
-        self.con.execute(sql, (path,))
-        sql = 'insert into permissions (name, op, user) values (?, ?, ?)'
+    def _put_permissions(self, path, permissions):
+        self.permissions.access_revoke_all(path)
+        r = permissions.get('read', [])
         if r:
-            self.con.executemany(sql, [(path, 'read', x) for x in r])
+            self.permissions.access_grant(path, READ, r)
+        w = permissions.get('write', [])
         if w:
-            self.con.executemany(sql, [(path, 'write', x) for x in w])
+            self.permissions.access_grant(path, WRITE, w)
     
     def _get_public(self, path):
-        sql = 'select name from public where name = ?'
-        c = self.con.execute(sql, (path,))
-        row = c.fetchone()
-        if not row:
-            return False
-        return True
+        return self.permissions.public_check(path)
     
     def _put_public(self, path, public):
         if not public:
-            sql = 'delete from public where name = ?'
+            self.permissions.public_unset(path)
         else:
-            sql = 'insert or replace into public (name) values (?)'
-        self.con.execute(sql, (path,))
+            self.permissions.public_set(path)
     
     def _del_sharing(self, path):
-        sql = 'delete from permissions where name = ?'
-        self.con.execute(sql, (path,))
-        sql = 'delete from public where name = ?'
-        self.con.execute(sql, (path,))
+        self.permissions.access_revoke_all(path)
+        self.permissions.public_unset(path)
     
-    def _is_allowed(self, user, account, container, name, op='read'):
+    def _can_read(self, user, account, container, name):
         if user == account:
             return True
         path = '/'.join((account, container, name))
-        if op == 'read' and self._get_public(path):
-            return True
-        perm_path, perms = self._get_permissions(path)
-        
-        # Expand groups.
-        for x in ('read', 'write'):
-            g_perms = set()
-            for y in perms.get(x, []):
-                if ':' in y:
-                    g_account, g_name = y.split(':', 1)
-                    groups = self._get_groups(g_account)
-                    if g_name in groups:
-                        g_perms.update(groups[g_name])
-                else:
-                    g_perms.add(y)
-            perms[x] = g_perms
-        
-        if op == 'read' and ('*' in perms['read'] or user in perms['read']):
-            return True
-        if '*' in perms['write'] or user in perms['write']:
-            return True
-        return False
-    
-    def _can_read(self, user, account, container, name):
-        if not self._is_allowed(user, account, container, name, 'read'):
+        if not self.permissions.access_check(path, READ, user) and not self.permissions.access_check(path, WRITE, user):
             raise NotAllowedError
     
     def _can_write(self, user, account, container, name):
-        if not self._is_allowed(user, account, container, name, 'write'):
+        if user == account:
+            return True
+        path = '/'.join((account, container, name))
+        if not self.permissions.access_check(path, WRITE, user):
             raise NotAllowedError
     
     def _allowed_paths(self, user, prefix=None):
-        sql = '''select distinct name from permissions where (user = ?
-                    or user in (select account || ':' || gname from groups where user = ?))'''
-        param = (user, user)
         if prefix:
-            sql += ' and name like ?'
-            param += (prefix + '/%',)
-        c = self.con.execute(sql, param)
-        return [x[0] for x in c.fetchall()]
+            prefix += '/'
+        return self.permissions.access_list_paths(user, prefix)
     
     def _allowed_accounts(self, user):
         allow = set()
@@ -981,6 +922,5 @@ class ModularBackend(BaseBackend):
         return sorted(allow)
     
     def _shared_paths(self, prefix):
-        sql = 'select distinct name from permissions where name like ?'
-        c = self.con.execute(sql, (prefix + '/%',))
-        return [x[0] for x in c.fetchall()]
+        prefix += '/'
+        return self.permissions.access_list_shared(prefix)

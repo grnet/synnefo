@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from collections import defaultdict
+
 from dbworker import DBWorker
 
 
@@ -91,12 +93,15 @@ class XFeatures(DBWorker):
            If the path already inherits a feature or
            bestows to paths already inheriting a feature,
            create no feature and return None.
+           If the path has a feature, return it.
         """
         
         prefixes = self.xfeature_list(path)
         pl = len(prefixes)
         if (pl > 1) or (pl == 1 and prefixes[0][0] != path):
             return None
+        if pl == 1 and prefixes[0][0] == path:
+            return prefixes[0][1]
         q = "insert into xfeatures (path) values (?)"
         id = self.execute(q, (path,)).lastrowid
         return id
@@ -107,14 +112,15 @@ class XFeatures(DBWorker):
         q = "delete from xfeatures where path = ?"
         self.execute(q, (path,))
     
-    def feature_list(self, feature):
-        """Return the list of all key, value pairs
-           associated with a feature.
-        """
+    def feature_dict(self, feature):
+        """Return a dict mapping keys to list of values for feature."""
         
         q = "select key, value from xfeaturevals where feature = ?"
         self.execute(q, (feature,))
-        return self.fetchall()
+        d = defaultdict(list)
+        for key, value in self.fetchall():
+            d[key].append(value)
+        return d
     
     def feature_set(self, feature, key, value):
         """Associate a key, value pair with a feature."""

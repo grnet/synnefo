@@ -36,7 +36,7 @@ from os.path import isdir, realpath, exists, join
 from hashlib import new as newhasher
 from binascii import hexlify
 
-from pithos.lib.hashfiler.context_file import ContextFile, file_sync_read_chunks
+from context_file import ContextFile, file_sync_read_chunks
 
 
 class Blocker(object):

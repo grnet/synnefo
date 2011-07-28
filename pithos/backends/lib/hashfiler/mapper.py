@@ -35,7 +35,7 @@ from os.path import realpath, join, exists, isdir
 from os import makedirs, unlink
 from errno import ENOENT
 
-from pithos.lib.hashfiler.context_file import ContextFile
+from context_file import ContextFile
 
 
 class Mapper(object):

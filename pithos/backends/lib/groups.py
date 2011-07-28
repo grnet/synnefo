@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from collections import defaultdict
+
 from dbworker import DBWorker
 
 
@@ -56,12 +58,15 @@ class Groups(DBWorker):
         self.execute(q, (owner,))
         return [r[0] for r in self.fetchall()]
     
-    def group_list(self, owner):
-        """List all (group, member) tuples belonging to owner."""
+    def group_dict(self, owner):
+        """Return a dict mapping group names to member lists for owner."""
         
         q = "select name, member from groups where owner = ?"
         self.execute(q, (owner,))
-        return self.fetchall()
+        d = defaultdict(list)
+        for group, member in self.fetchall():
+            d[group].append(member)
+        return d
     
     def group_add(self, owner, group, member):
         """Add a member to a group."""

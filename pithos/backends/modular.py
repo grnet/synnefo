@@ -40,6 +40,7 @@ import binascii
 
 from base import NotAllowedError, BaseBackend
 from lib.permissions import Permissions, READ, WRITE
+from lib.policy import Policy
 from lib.hashfiler import Mapper, Blocker
 
 
@@ -106,10 +107,7 @@ class ModularBackend(BaseBackend):
                     foreign key (version_id) references versions(version_id)
                     on delete cascade)'''
         self.con.execute(sql)
-        sql = '''create table if not exists policy (
-                    name text, key text, value text, primary key (name, key))'''
-        self.con.execute(sql)
-                
+        
         self.con.commit()
         
         params = {'blocksize': self.block_size,
@@ -124,6 +122,7 @@ class ModularBackend(BaseBackend):
         params = {'connection': self.con,
                   'cursor': self.con.cursor()}
         self.permissions = Permissions(**params)
+        self.policy = Policy(**params)
     
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
@@ -195,7 +194,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         self._create_account(user, account)
-        return self._get_groups(account)
+        return self.permissions.group_dict(account)
     
     @backend_method
     def update_account_groups(self, user, account, groups, replace=False):
@@ -206,7 +205,13 @@ class ModularBackend(BaseBackend):
             raise NotAllowedError
         self._create_account(user, account)
         self._check_groups(groups)
-        self._put_groups(account, groups, replace)
+        if replace:
+            self.permissions.group_destroy(account)
+        for k, v in groups.iteritems():
+            if not replace: # If not already deleted.
+                self.permissions.group_delete(account, k)
+            if v:
+                self.permissions.group_addmany(account, k, v)
     
     @backend_method
     def put_account(self, user, account):
@@ -235,7 +240,7 @@ class ModularBackend(BaseBackend):
             raise IndexError('Account is not empty')
         sql = 'delete from versions where name = ?'
         self.con.execute(sql, (account,))
-        self._del_groups(account)
+        self.permissions.group_destroy(account)
     
     @backend_method
     def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
@@ -250,7 +255,7 @@ class ModularBackend(BaseBackend):
             return allowed[start:start + limit]
         else:
             if shared:
-                allowed = [x.split('/', 2)[1] for x in self._shared_paths(account)]
+                allowed = [x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)]
                 start, limit = self._list_limits(allowed, marker, limit)
                 return allowed[start:start + limit]
         return [x[0] for x in self._list_objects(account, '', '/', marker, limit, False, [], until)]
@@ -318,9 +323,7 @@ class ModularBackend(BaseBackend):
             for k, v in self.default_policy.iteritems():
                 if k not in policy:
                     policy[k] = v
-        for k, v in policy.iteritems():
-            sql = 'insert or replace into policy (name, key, value) values (?, ?, ?)'
-            self.con.execute(sql, (path, k, v))
+        self.policy.policy_set(path, policy)
     
     @backend_method
     def put_container(self, user, account, container, policy=None):
@@ -342,9 +345,7 @@ class ModularBackend(BaseBackend):
         for k, v in self.default_policy.iteritems():
             if k not in policy:
                 policy[k] = v
-        for k, v in policy.iteritems():
-            sql = 'insert or replace into policy (name, key, value) values (?, ?, ?)'
-            self.con.execute(sql, (path, k, v))
+        self.policy.policy_set(path, policy)
     
     @backend_method
     def delete_container(self, user, account, container, until=None):
@@ -369,8 +370,7 @@ class ModularBackend(BaseBackend):
             raise IndexError('Container is not empty')
         sql = 'delete from versions where name = ? or name like ?' # May contain hidden items.
         self.con.execute(sql, (path, path + '/%',))
-        sql = 'delete from policy where name = ?'
-        self.con.execute(sql, (path,))
+        self.policy.policy_unset(path)
         self._copy_version(user, account, account, True, False) # New account version (for timestamp update).
     
     @backend_method
@@ -382,12 +382,12 @@ class ModularBackend(BaseBackend):
         if user != account:
             if until:
                 raise NotAllowedError
-            allowed = self._allowed_paths(user, '/'.join((account, container)))
+            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
             if not allowed:
                 raise NotAllowedError
         else:
             if shared:
-                allowed = self._shared_paths('/'.join((account, container)))
+                allowed = self.permissions.access_list_shared('/'.join((account, container)))
         path, version_id, mtime = self._get_containerinfo(account, container, until)
         return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     
@@ -400,7 +400,7 @@ class ModularBackend(BaseBackend):
         if user != account:
             if until:
                 raise NotAllowedError
-            allowed = self._allowed_paths(user, '/'.join((account, container)))
+            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
             if not allowed:
                 raise NotAllowedError
         path, version_id, mtime = self._get_containerinfo(account, container, until)
@@ -450,7 +450,7 @@ class ModularBackend(BaseBackend):
         logger.debug("get_object_permissions: %s %s %s", account, container, name)
         self._can_read(user, account, container, name)
         path = self._get_objectinfo(account, container, name)[0]
-        return self._get_permissions(path)
+        return self.permissions.access_inherit(path)
     
     @backend_method
     def update_object_permissions(self, user, account, container, name, permissions):
@@ -461,7 +461,7 @@ class ModularBackend(BaseBackend):
             raise NotAllowedError
         path = self._get_objectinfo(account, container, name)[0]
         self._check_permissions(path, permissions)
-        self._put_permissions(path, permissions)
+        self.permissions.access_set(path, permissions)
     
     @backend_method
     def get_object_public(self, user, account, container, name):
@@ -470,7 +470,7 @@ class ModularBackend(BaseBackend):
         logger.debug("get_object_public: %s %s %s", account, container, name)
         self._can_read(user, account, container, name)
         path = self._get_objectinfo(account, container, name)[0]
-        if self._get_public(path):
+        if self.permissions.public_check(path):
             return '/public/' + path
         return None
     
@@ -481,7 +481,10 @@ class ModularBackend(BaseBackend):
         logger.debug("update_object_public: %s %s %s %s", account, container, name, public)
         self._can_write(user, account, container, name)
         path = self._get_objectinfo(account, container, name)[0]
-        self._put_public(path, public)
+        if not public:
+            self.permissions.public_unset(path)
+        else:
+            self.permissions.public_set(path)
     
     @backend_method
     def get_object_hashmap(self, user, account, container, name, version=None):
@@ -518,7 +521,7 @@ class ModularBackend(BaseBackend):
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
-            self._put_permissions(path, permissions)
+            self.permissions.access_set(path, permissions)
     
     @backend_method
     def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
@@ -543,7 +546,7 @@ class ModularBackend(BaseBackend):
             sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
-            self._put_permissions(dest_path, permissions)
+            self.permissions.access_set(dest_path, permissions)
     
     @backend_method
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
@@ -572,12 +575,12 @@ class ModularBackend(BaseBackend):
             except NameError:
                 pass
             else:
-                self._del_sharing(path)
+                self.permissions.access_clear(path)
             return
         
         path = self._get_objectinfo(account, container, name)[0]
         self._put_version(path, user, 0, 1)
-        self._del_sharing(path)
+        self.permissions.access_clear(path)
     
     @backend_method
     def list_versions(self, user, account, container, name):
@@ -761,9 +764,7 @@ class ModularBackend(BaseBackend):
                 raise ValueError
     
     def _get_policy(self, path):
-        sql = 'select key, value from policy where name = ?'
-        c = self.con.execute(sql, (path,))
-        return dict(c.fetchall())
+        return self.policy.policy_get(path)
     
     def _list_limits(self, listing, marker, limit):
         start = 0
@@ -829,66 +830,18 @@ class ModularBackend(BaseBackend):
     # Access control functions.
     
     def _check_groups(self, groups):
-        # Example follows.
-        # for k, v in groups.iteritems():
-        #     if True in [False or ',' in x for x in v]:
-        #         raise ValueError('Bad characters in groups')
+        # raise ValueError('Bad characters in groups')
         pass
     
-    def _get_groups(self, account):
-        return self.permissions.group_dict(account)
-    
-    def _put_groups(self, account, groups, replace=False):
-        if replace:
-            self.permissions.group_destroy(account)
-        for k, v in groups.iteritems():
-            if not replace: # If not already deleted.
-                self.permissions.group_delete(account, k)
-            if v:
-                self.permissions.group_addmany(account, k, v)
-    
-    def _del_groups(self, account):
-        self.permissions.group_destroy(account)
-    
     def _check_permissions(self, path, permissions):
+        # raise ValueError('Bad characters in permissions')
+        
         # Check for existing permissions.
         paths = self.permissions.access_list(path)
         if paths:
             ae = AttributeError()
             ae.data = paths
             raise ae
-        
-        # Examples follow.
-        # if True in [False or ',' in x for x in r]:
-        #     raise ValueError('Bad characters in read permissions')
-        # if True in [False or ',' in x for x in w]:
-        #     raise ValueError('Bad characters in write permissions')
-        pass
-    
-    def _get_permissions(self, path):
-        self.permissions.access_inherit(path)
-    
-    def _put_permissions(self, path, permissions):
-        self.permissions.access_revoke_all(path)
-        r = permissions.get('read', [])
-        if r:
-            self.permissions.access_grant(path, READ, r)
-        w = permissions.get('write', [])
-        if w:
-            self.permissions.access_grant(path, WRITE, w)
-    
-    def _get_public(self, path):
-        return self.permissions.public_check(path)
-    
-    def _put_public(self, path, public):
-        if not public:
-            self.permissions.public_unset(path)
-        else:
-            self.permissions.public_set(path)
-    
-    def _del_sharing(self, path):
-        self.permissions.access_revoke_all(path)
-        self.permissions.public_unset(path)
     
     def _can_read(self, user, account, container, name):
         if user == account:
@@ -904,23 +857,14 @@ class ModularBackend(BaseBackend):
         if not self.permissions.access_check(path, WRITE, user):
             raise NotAllowedError
     
-    def _allowed_paths(self, user, prefix=None):
-        if prefix:
-            prefix += '/'
-        return self.permissions.access_list_paths(user, prefix)
-    
     def _allowed_accounts(self, user):
         allow = set()
-        for path in self._allowed_paths(user):
+        for path in self.permissions.access_list_paths(user):
             allow.add(path.split('/', 1)[0])
         return sorted(allow)
     
     def _allowed_containers(self, user, account):
         allow = set()
-        for path in self._allowed_paths(user, account):
+        for path in self.permissions.access_list_paths(user, account):
             allow.add(path.split('/', 2)[1])
         return sorted(allow)
-    
-    def _shared_paths(self, prefix):
-        prefix += '/'
-        return self.permissions.access_list_shared(prefix)

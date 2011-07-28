@@ -48,17 +48,30 @@ class Permissions(XFeatures, Groups, Public):
         Public.__init__(self, **params)
     
     def access_grant(self, path, access, members=()):
-        """Grant members with access to path."""
+        """Grant members with access to path.
+           Members can also be '*' (all),
+           or some group specified as 'owner:group'."""
         
+        if not members:
+            return
         feature = self.xfeature_create(path)
         if feature is None:
             return
         self.feature_setmany(feature, access, members)
     
-    def access_revoke_all(self, path):
-        """Revoke access to path."""
+    def access_set(self, path, permissions):
+        """Set permissions for path. The permissions dict
+           maps 'read', 'write' keys to member lists."""
         
         self.xfeature_destroy(path)
+        self.access_grant(path, READ, permissions.get('read', []))
+        self.access_grant(path, WRITE, permissions.get('write', []))
+    
+    def access_clear(self, path):
+        """Revoke access to path (both permissions and public)."""
+        
+        self.xfeature_destroy(path)
+        self.public_unset(path)
     
     def access_check(self, path, access, member):
         """Return true if the member has this access to the path."""
@@ -85,7 +98,14 @@ class Permissions(XFeatures, Groups, Public):
         if not r:
             return (path, {})
         fpath, feature = r
-        return (fpath, self.feature_dict(feature))
+        permissions = self.feature_dict(feature)
+        if READ in permissions:
+            permissions['read'] = permissions[READ]
+            del(permissions[READ])
+        if WRITE in permissions:
+            permissions['write'] = permissions[WRITE]
+            del(permissions[WRITE])
+        return (fpath, permissions)
     
     def access_list(self, path):
         """List all permission paths inherited by or inheriting from path."""
@@ -97,7 +117,7 @@ class Permissions(XFeatures, Groups, Public):
         
         q = ("select distinct path from xfeatures inner join "
              "   (select distinct feature_id, key from xfeaturevals inner join "
-             "      (select owner || ':' || name as value from members "
+             "      (select owner || ':' || name as value from groups "
              "       where member = ? union select ?) "
              "    using (value)) "
              "using (feature_id)")

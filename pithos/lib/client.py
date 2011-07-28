@@ -40,6 +40,7 @@ import types
 import socket
 import urllib
 import pithos.api.faults
+import datetime
 
 ERROR_CODES = {304:'Not Modified',
                400:'Bad Request',
@@ -73,7 +74,7 @@ class Client(object):
     
     def _req(self, method, path, body=None, headers={}, format='text',
              params={}, top_level_req=False):
-        path = urllib.quote(path)
+        #path = urllib.quote(path)
         account = '' if top_level_req else self.account
         full_path = '/%s/%s%s?format=%s' % (self.api, account, path, format)
         
@@ -100,17 +101,15 @@ class Client(object):
             kwargs['headers'].setdefault('content-type',
                                          'application/octet-stream')
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
-        kwargs['headers'] = _encode_headers(kwargs['headers'])
+        #kwargs['headers'] = _encode_headers(kwargs['headers'])
+        
         #print '#', method, full_path, kwargs
+        t1 = datetime.datetime.utcnow()
         conn.request(method, full_path, **kwargs)
         
-        #try:
-        #    conn.request(method, full_path, **kwargs)
-        #except socket.error, e:
-        #    print '###', e[0], conn.auto_open
-        #    raise Fault(status=503)
-            
         resp = conn.getresponse()
+        t2 = datetime.datetime.utcnow()
+        #print 'response time:', str(t2-t1)
         headers = dict(resp.getheaders())
         
         if self.verbose:
@@ -126,7 +125,6 @@ class Client(object):
             print
         
         if int(resp.status) in ERROR_CODES.keys():
-            #print '**', resp.status
             raise Fault(data, int(resp.status))
         
         #print '**',  resp.status, headers, data
@@ -414,10 +412,16 @@ class OOS_Client(Client):
         return self._get_metadata(path, prefix, params=params)
     
     def update_object_metadata(self, container, object, **meta):
+        """
+        updates object's metadata
+        """
         path = '/%s/%s' % (container, object)
         return self._update_metadata(path, 'object', **meta)
     
     def delete_object_metadata(self, container, object, meta=[]):
+        """
+        deletes object's metadata
+        """
         path = '/%s/%s' % (container, object)
         return self._delete_metadata(path, 'object', meta)
     
@@ -562,8 +566,11 @@ class Pithos_Client(OOS_Client):
         for k, v in groups.items():
             v = v.strip()
             headers['x-account-group-%s' % k] = v
-        meta = self.retrieve_account_metadata()
-        headers.update(meta)
+        meta = self.retrieve_account_metadata(restricted=True)
+        prefix = 'x-account-meta-'
+        for k,v in meta.items():
+            k = '%s%s' % (prefix, k)
+            headers[k] = v
         return self.post('', headers=headers)
     
     # Storage Container Services
@@ -571,7 +578,7 @@ class Pithos_Client(OOS_Client):
     def list_objects(self, container, format='text', limit=None, marker=None,
                      prefix=None, delimiter=None, path=None,
                      include_trashed=False, params={}, if_modified_since=None,
-                     if_unmodified_since=None, meta={}, until=None):
+                     if_unmodified_since=None, meta='', until=None):
         """returns a list with the container objects"""
         params = {'until':until, 'meta':meta}
         args = locals()
@@ -819,6 +826,7 @@ class Pithos_Client(OOS_Client):
                                       **headers)
     
     def list_shared_by_others(self, limit=None, marker=None, format='text'):
+         """lists other accounts that share objects to the user"""
          l = ['limit', 'marker']
          params = {}
          for elem in [elem for elem in l if eval(elem)]:
@@ -826,6 +834,7 @@ class Pithos_Client(OOS_Client):
          return self._list('', format, params, top_level_req=True)
     
     def share_object(self, container, object, l, read=True):
+        """gives access(read by default) to an object to a user/group list"""
         action = 'read' if read else 'write'
         sharing = '%s=%s' % (action, ','.join(l))
         self.update_object(container, object, f=None, x_object_sharing=sharing)

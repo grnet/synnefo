@@ -388,6 +388,7 @@ def main():
 
     # Debug mode, process messages without spawning workers
     if opts.debug:
+        log.console_output(logger)
         debug_mode()
         return
 

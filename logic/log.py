@@ -52,3 +52,6 @@ logging.config.fileConfig(logconf)
 
 def get_logger(logger):
     return logging.getLogger(logger)
+
+def console_output(logger):
+    return logger.addHandler(logging.StreamHandler())

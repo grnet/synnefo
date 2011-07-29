@@ -30,6 +30,7 @@
 
 
 from datetime import timedelta
+import datetime
 import base64
 import time
 import urllib
@@ -181,15 +182,17 @@ def login(request):
 
     inv = invitations[0]
 
-    valid = timedelta(days = settings.INVITATION_VALID_DAYS)
+    valid = timedelta(days=settings.INVITATION_VALID_DAYS)
     valid_until = inv.created + valid
+    now = datetime.datetime.now()
 
-    if (time.time() -
-        time.mktime(inv.created.timetuple()) -
-        settings.INVITATION_VALID_DAYS * 3600) > 0:
+    if now > valid_until:
         return render_login_error("40",
-                                  "Invitation expired (was valid until %s)"%
-                                  valid_until.strftime('%A, %d %B %Y'))
+                                  "Invitation has expired (was valid until " \
+                                  "%s, now is %s" %
+                                  (valid_until.strftime('%A, %d %B %Y'),
+                                   now.strftime('%A, %d %B %Y')))
+
     #if inv.accepted == False:
     #    return render_login_error("60", "Invitation already accepted")
 

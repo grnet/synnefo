@@ -658,7 +658,7 @@ def hashmap_hash(hashmap):
     if len(hashmap) == 0:
         return hexlify(subhash(''))
     if len(hashmap) == 1:
-        return hexlify(subhash(hashmap[0]))
+        return hexlify(hashmap[0])
     s = 2
     while s < len(hashmap):
         s = s * 2

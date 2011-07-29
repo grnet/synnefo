@@ -25,6 +25,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.6 (July 29, 2011)        Reply with Merkle hash as the ETag when updating objects.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -822,7 +823,7 @@ To update an object's data:
 
 Optionally, truncate the updated object to the desired length with the ``X-Object-Bytes`` header.
 
-A data update will trigger an ETag change. The new ETag will not correspond to the object's MD5 sum (**TBD**) and will be included in reply headers.
+A data update will trigger an ETag change. Updated ETags correspond to the single Merkle hash of the object's hashmap (refer to http://bittorrent.org/beps/bep_0030.html for more information).
 
 No reply content. No reply headers if only metadata is updated.
 
@@ -930,7 +931,7 @@ List of differences from the OOS API:
 * Object hashmap retrieval through ``GET`` and the ``format`` parameter.
 * Object create via hashmap through ``PUT`` and the ``format`` parameter.
 * Object create using ``POST`` to support standard HTML forms.
-* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
+* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``. New ETag corresponds to the Merkle hash of the object's hashmap.
 * Object ``MOVE`` support.
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
 * Time-variant account/container listings via the ``until`` parameter.

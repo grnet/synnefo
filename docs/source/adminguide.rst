@@ -1,6 +1,11 @@
 Administrator Guide
 ===================
 
+Simple Setup
+------------
+
+Assuming a clean debian squeeze (stable) installation, use the following steps to run the software.
+
 Install packages::
 
   apt-get install git python-django python-setuptools python-sphinx
@@ -11,14 +16,14 @@ Get the source::
   cd /
   git clone https://code.grnet.gr/git/pithos
 
-Setup the files::
+Setup the files (choose where to store data in ``settings.py``)::
 
   cd /pithos/pithos
   cp settings.py.dist settings.py
   cd /pithos
   python setup.py build_sphinx
 
-Edit ``/etc/apache2/sites-available/pithos``::
+Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directive)::
 
   <VirtualHost *:80>
 	ServerAdmin webmaster@pithos.dev.grnet.gr
@@ -65,7 +70,7 @@ Edit ``/etc/apache2/sites-available/pithos``::
 
   </VirtualHost>
 
-Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/private/pithos.dev.key`` and ``/etc/ssl/certs/pithos.dev.crt``)::
+Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/private/pithos.dev.key`` and ``/etc/ssl/certs/pithos.dev.crt`` - change the ``ServerName`` directive)::
 
   <IfModule mod_ssl.c>
   <VirtualHost _default_:443>
@@ -250,3 +255,38 @@ Configure and run apache::
   mkdir /var/www/pithos
   mkdir /var/www/pithos_web_client
   /etc/init.d/apache2 restart
+
+Useful alias to add in ``~/.bashrc``::
+
+  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx'
+
+MySQL Setup
+-----------
+
+If using MySQL instead of SQLite for the database engine, consider the following.
+
+Server side::
+
+  apt-get install mysql-server
+
+Edit ``/etc/mysql/my.cnf`` to allow network connections and restart the server.
+
+Create database and user::
+
+  CREATE DATABASE pithos;
+  GRANT ALL ON pithos.* TO pithos@localhost IDENTIFIED BY 'password';
+  GRANT ALL ON pithos.* TO pithos@'%' IDENTIFIED BY 'password';
+
+Client side::
+
+  apt-get install mysql-client
+
+It helps to create a ``~/.my.cnf`` file, for automatically connecting to the server::
+
+  [client]
+  user = pithos
+  password = 'password'
+  host = pithos-storage.dev.grnet.gr
+
+  [mysql]
+  database = pithos

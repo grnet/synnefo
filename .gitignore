@@ -1,5 +1,6 @@
 settings.py
 docs/build
+pithos/data
 *.db
 *.pyc
 .DS_Store

@@ -19,6 +19,7 @@ DJANGO SETTINGS
     * Removed settings.d/98-ganeti-* due to split of snf-ganeti-tools
     * ~okeanos intro: OKEANOS_VIDEO_URL: Changed from string to dict
     * ~okeanos intro: OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
+    * ~okeanos intro: OKEANOS_VIDEO_FLOWPLAYER_URL: New setting
 
 DB MIGRATIONS
     * 0018_auto__add_field_virtualmachine_buildpercentage

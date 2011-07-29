@@ -9,9 +9,9 @@
         class="vjs-flash-fallback" 
         width="{{ VIDEO_WIDTH }}" height="{{ VIDEO_HEIGHT }}" 
         type="application/x-shockwave-flash" 
-        data="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf">
+        data="{{ OKEANOS_VIDEO_FLOWPLAYER_URL }}">
 
-        <param name="movie" value="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf" />
+        <param name="movie" value="{{ OKEANOS_VIDEO_FLOWPLAYER_URL }}" />
         <param name="allowfullscreen" value="true" />
         <param name="flashvars" value='config={"playlist":["{{ OKEANOS_VIDEO_POSTER_IMAGE_URL }}", {"url": "{{ OKEANOS_MP4_VIDEO_URL }}","autoPlay":false,"autoBuffering":true}]}' />
 

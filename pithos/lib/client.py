@@ -39,7 +39,6 @@ import json
 import types
 import socket
 import urllib
-import pithos.api.faults
 import datetime
 
 ERROR_CODES = {304:'Not Modified',

@@ -75,11 +75,17 @@ class Blocker(object):
         self.emptyhash = emptyhash
 
     def get_rear_block(self, blkhash, create=0):
-        name = join(self.blockpath, hexlify(blkhash))
+        filename = hexlify(blkhash)
+        dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
+        if not exists(dir):
+            makedirs(dir)
+        name = join(dir, filename)
         return ContextFile(name, create)
 
     def check_rear_block(self, blkhash):
-        name = join(self.blockpath, hexlify(blkhash))
+        filename = hexlify(blkhash)
+        dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
+        name = join(dir, filename)
         return exists(name)
 
     def block_hash(self, data):

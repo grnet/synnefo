@@ -39,7 +39,7 @@ import hashlib
 import binascii
 
 from base import NotAllowedError, BaseBackend
-from pithos.lib.hashfiler import Mapper, Blocker
+from lib.hashfiler import Mapper, Blocker
 
 
 logger = logging.getLogger(__name__)

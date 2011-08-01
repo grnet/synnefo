@@ -40,7 +40,7 @@ import binascii
 
 from base import NotAllowedError, BaseBackend
 from lib.hashfiler import Mapper, Blocker
-
+from django.utils.encoding import smart_unicode, smart_str
 
 logger = logging.getLogger(__name__)
 
@@ -661,7 +661,7 @@ class SimpleBackend(BaseBackend):
             row = c.fetchone()
             if not row:
                 raise IndexError('Version does not exist')
-        return str(row[0]), str(row[1]), int(row[2]), int(row[3])
+        return smart_str(row[0]), smart_str(row[1]), int(row[2]), int(row[3])
     
     def _put_version(self, path, user, size=0, hide=0):
         tstamp = int(time.time())
@@ -845,10 +845,10 @@ class SimpleBackend(BaseBackend):
         sql = 'select gname, user from groups where account = ?'
         c = self.con.execute(sql, (account,))
         groups = {}
-        for row in c.fetchall():
-            if row[0] not in groups:
-                groups[row[0]] = []
-            groups[row[0]].append(row[1])
+        for gname, user in c.fetchall():
+            if gname not in groups:
+                groups[gname] = []
+            groups[gname].append(user)
         return groups
     
     def _put_groups(self, account, groups, replace=False):
@@ -895,10 +895,15 @@ class SimpleBackend(BaseBackend):
         name = path
         perms = {} # Return nothing, if nothing is set.
         for row in c.fetchall():
+            #name = smart_str(row[0], strings_only=True)
+            #op = smart_str(row[1], strings_only=True)
+            #user = smart_str(row[2], strings_only=True)
             name = row[0]
-            if row[1] not in perms:
-                perms[row[1]] = []
-            perms[row[1]].append(row[2])
+            op = row[1]
+            user = row[2]
+            if op not in perms:
+                perms[op] = []
+            perms[op].append(user)
         return name, perms
     
     def _put_permissions(self, path, r, w):
@@ -932,7 +937,7 @@ class SimpleBackend(BaseBackend):
         self.con.execute(sql, (path,))
     
     def _is_allowed(self, user, account, container, name, op='read'):
-        if user == account:
+        if smart_unicode(user) == smart_unicode(account):
             return True
         path = '/'.join((account, container, name))
         if op == 'read' and self._get_public(path):
@@ -946,12 +951,13 @@ class SimpleBackend(BaseBackend):
                 if ':' in y:
                     g_account, g_name = y.split(':', 1)
                     groups = self._get_groups(g_account)
-                    if g_name in groups:
+                    if g_name in groups.keys():
                         g_perms.update(groups[g_name])
                 else:
                     g_perms.add(y)
             perms[x] = g_perms
         
+        user = smart_unicode(user, strings_only=True)
         if op == 'read' and ('*' in perms['read'] or user in perms['read']):
             return True
         if '*' in perms['write'] or user in perms['write']:

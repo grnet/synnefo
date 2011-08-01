@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #coding=utf8
 
 # Copyright 2011 GRNET S.A. All rights reserved.
@@ -33,7 +34,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.lib.client import Pithos_Client, Fault
+from lib.client import Pithos_Client, Fault
+from lib.util import get_user, get_auth, get_server, get_api
 from xml.dom import minidom
 from StringIO import StringIO
 import json
@@ -41,7 +43,6 @@ import unittest
 import time as _time
 import types
 import hashlib
-import os
 import mimetypes
 import random
 import datetime
@@ -52,12 +53,6 @@ DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
                 "%A, %d-%b-%y %H:%M:%S GMT",
                 "%a, %d %b %Y %H:%M:%S GMT"]
 
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
-#DEFAULT_HOST = '127.0.0.1:8000'
-DEFAULT_API = 'v1'
-DEFAULT_USER = 'test'
-DEFAULT_AUTH = '0000'
-
 OTHER_ACCOUNTS = {
     '0001': 'verigak',
     '0002': 'chazapis',
@@ -67,19 +62,15 @@ OTHER_ACCOUNTS = {
     '0006': 'chstath',
     '0007': 'pkanavos',
     '0008': 'mvasilak',
-    '0009': 'κούκης'}
+    '0009': 'διογένης'}
 
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
-        self.client = Pithos_Client(DEFAULT_HOST,
-                                    DEFAULT_AUTH,
-                                    DEFAULT_USER,
-                                    DEFAULT_API)
-        self.invalid_client = Pithos_Client(DEFAULT_HOST,
-                                                  DEFAULT_AUTH,
-                                                  'invalid',
-                                                  DEFAULT_API)
+        self.client = Pithos_Client(get_server(), get_auth(), get_user(),
+                                    get_api())
+        self.invalid_client = Pithos_Client(get_server(), get_auth(), 'invalid',
+                                            get_api())
         #self.headers = {
         #    'account': ('x-account-container-count',
         #                'x-account-bytes-used',
@@ -214,7 +205,7 @@ class BaseTestCase(unittest.TestCase):
         try:
             r = callableObj(*args, **kwargs)
         except Fault, f:
-            self.failIf(f.status == status)
+            self.failIfEqual(f.status, status)
     
     def assert_container_exists(self, container):
         """
@@ -558,7 +549,6 @@ class AccountPost(BaseTestCase):
             groups = {'pithosdev':'verigak,gtsouk,chazapis,papagian'}
             self.client.reset_account_groups(**groups)
             
-            print '#', groups, self.client.retrieve_account_groups()
             self.assertEqual(groups['pithosdev'].split(','),
                              self.client.retrieve_account_groups()['pithosdev'].split(','))
     
@@ -666,7 +656,7 @@ class ContainerGet(BaseTestCase):
         self.assertEqual(10000, len(self.client.list_objects('pithos')))
     
     def test_list_empty_params(self):
-        objects = self.client.get('/%s' % self.container[0])[2]
+        objects = self.client.get('/%s/%s' % (get_user(), self.container[0]))[2]
         if objects:
             objects = objects.strip().split('\n')
         self.assertEqual(objects,
@@ -1272,8 +1262,7 @@ class ObjectPut(BaseTestCase):
             data += o['data']
         
         manifest = '%s/%s' %(self.container, prefix)
-        self.client.create_manifestation(self.container, 'large-object',
-                                         manifest)
+        self.client.create_manifestation(self.container, 'large-object', manifest)
         
         self.assert_object_exists(self.container, 'large-object')
         self.assertEqual(data, self.client.retrieve_object(self.container,
@@ -1281,8 +1270,10 @@ class ObjectPut(BaseTestCase):
         
         #wrong manifestation
         self.client.create_manifestation(self.container, 'large-object',
-                                         'invalid')
-        
+                                         '%s/invalid' % self.container)
+        self.assertEqual('', self.client.retrieve_object(self.container,
+                                                         'large-object'))
+    
 class ObjectCopy(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -1500,6 +1491,17 @@ class ObjectPost(BaseTestCase):
                                               self.obj['name'])
         self.assertEqual(content[0:dl], data)
         self.assertEqual(content[dl:fl], self.obj['data'][dl:fl])
+    
+    def test_update_from_other_object(self):
+        data = self.upload_random_data(self.containers[0], o_names[1])['data']
+        source_object = '/%s/%s' % (self.containers[0], o_names[0])
+        self.client.update_from_other_source(self.containers[0], o_names[1],
+                                             source_object)
+        
+        self.assertEqual(
+            self.client.retrieve_object(self.containers[0], o_names[0]),
+            self.client.retrieve_object(self.containers[0], o_names[1]))
+    
 
 class ObjectDelete(BaseTestCase):
     def setUp(self):
@@ -1538,10 +1540,10 @@ class ListSharing(BaseTestCase):
         #self.client.share_object('c', 'o2', self.o2_sharing)
     
     def test_listing(self):
-        self.other = Pithos_Client(DEFAULT_HOST,
+        self.other = Pithos_Client(get_server(),
                               self.o1_sharing_with[0],
                               self.o1_sharing_with[1],
-                              DEFAULT_API)
+                              get_api())
         self.assertTrue('test' in self.other.list_shared_by_others())
 
 class TestGreek(BaseTestCase):
@@ -1675,16 +1677,122 @@ class TestGreek(BaseTestCase):
     
     def test_groups(self):
         #create a group
-        groups = {'σεφς':'chazapis,κούκης'}
+        groups = {'σεφς':'chazapis,διογένης'}
         self.client.set_account_groups(**groups)
         groups.update(self.initial_groups)
         self.assertEqual(groups['σεφς'],
                          self.client.retrieve_account_groups()['σεφς'])
         
+        #check read access
+        self.client.create_container('φάκελος')
+        o = self.upload_random_data('φάκελος', 'ο1')
+        self.client.share_object('φάκελος', 'ο1', ['test:σεφς'])
+        chef = Pithos_Client(get_server(),
+                            '0009',
+                            'διογένης',
+                            get_api())
+        self.assert_not_raises_fault(401, chef.retrieve_object_metadata,
+                                     'φάκελος', 'ο1', account=get_user())
+        
+        #check write access
+        self.client.share_object('φάκελος', 'ο1', ['διογένης'], read=False)
+        new_data = get_random_data()
+        self.assert_not_raises_fault(401, chef.update_object,
+                                     'φάκελος', 'ο1', StringIO(new_data),
+                                     account=get_user())
+        
+        server_data = self.client.retrieve_object('φάκελος', 'ο1')
+        self.assertEqual(server_data[:len(o['data'])], o['data'])
+        self.assertEqual(server_data[len(o['data']):], new_data)
     
-    def test_permissions(self):
-        pass
+    def test_manifestation(self):
+        self.client.create_container('κουβάς')
+        prefix = 'μέρη/'
+        data = ''
+        for i in range(5):
+            part = '%s%d' %(prefix, i)
+            o = self.upload_random_data('κουβάς', part)
+            data += o['data']
+        
+        self.client.create_container('φάκελος')
+        manifest = '%s/%s' %('κουβάς', prefix)
+        self.client.create_manifestation('φάκελος', 'άπαντα', manifest)
+        
+        self.assert_object_exists('φάκελος', 'άπαντα')
+        self.assertEqual(data, self.client.retrieve_object('φάκελος',
+                                                           'άπαντα'))
+        
+        #wrong manifestation
+        self.client.create_manifestation('φάκελος', 'άπαντα', 'κουβάς/άκυρο')
+        self.assertEqual('', self.client.retrieve_object('φάκελος', 'άπαντα'))
     
+    def test_update_from_another_object(self):
+        self.client.create_container('κουβάς')
+        src_data = self.upload_random_data('κουβάς', 'πηγή')['data']
+        initial_data = self.upload_random_data('κουβάς', 'νέο')['data']
+        source_object = '/%s/%s' % ('κουβάς', 'πηγή')
+        self.client.update_from_other_source('κουβάς', 'νέο', source_object)
+        
+        self.assertEqual(
+            self.client.retrieve_object('κουβάς', 'νέο'),
+            '%s%s' % (initial_data, self.client.retrieve_object('κουβάς', 'πηγή')))
+
+class TestPermissions(BaseTestCase):
+    def setUp(self):
+        BaseTestCase.setUp(self)
+        #keep track of initial account groups
+        self.initial_groups = self.client.retrieve_account_groups()
+        #keep track of initial account meta
+        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
+        
+        #create a group
+        self.authorized = ['chazapis', 'verigak', 'gtsouk', 'papagian']
+        groups = {'pithosdev':','.join(self.authorized)}
+        self.client.set_account_groups(**groups)
+    
+    def tearDown(self):
+        #delete additionally created meta
+        l = []
+        for m in self.client.retrieve_account_metadata(restricted=True):
+            if m not in self.initial_meta:
+                l.append(m)
+        self.client.delete_account_metadata(l)
+        
+        #delete additionally created groups
+        l = []
+        for g in self.client.retrieve_account_groups():
+            if g not in self.initial_groups:
+                l.append(g)
+        self.client.unset_account_groups(l)
+        
+        BaseTestCase.tearDown(self)
+    
+    def test_read_access(self):
+        self.client.create_container('c')
+        o = self.upload_random_data('c', 'o')
+        self.client.share_object('c', 'o', ['test:pithosdev'])
+        for token, account in OTHER_ACCOUNTS.items():
+            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            if account in self.authorized:
+                self.assert_not_raises_fault(401, cl.retrieve_object_metadata,
+                                             'c', 'o', account=get_user())
+            else:
+                self.assert_raises_fault(401, cl.retrieve_object_metadata,
+                                         'c', 'o', account=get_user())
+        
+    
+    #def test_write_access(self):
+    #    self.client.share_object('φάκελος', 'ο1', ['διογένης'], read=False)
+    #    new_data = get_random_data()
+    #    chef.update_object('φάκελος', 'ο1', StringIO(new_data))
+    #    self.assert_not_raises_fault(401, chef.update_object,
+    #                                 'φάκελος', 'ο1', StringIO(new_data),
+    #                                 account=get_user())
+    #    
+    #    server_data = self.client.retrieve_object('φάκελος', 'ο1')
+    #    self.assertEqual(server_data[:len(o['data'])], o['data'])
+    #    self.assertEqual(server_data[len(o['data']):], new_data)
+
 class AssertMappingInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable

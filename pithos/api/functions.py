@@ -956,6 +956,8 @@ def object_update(request, v_account, v_container, v_object):
         raise RangeNotSatisfiable('Supplied offset is beyond object limits')
     if src_object:
         src_container, src_name = split_container_object_string(src_object)
+        src_container = smart_unicode(src_container, strings_only=True)
+        src_name = smart_unicode(src_name, strings_only=True)
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
             src_size, src_hashmap = backend.get_object_hashmap(request.user, v_account, src_container, src_name, src_version)

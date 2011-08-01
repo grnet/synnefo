@@ -1586,6 +1586,18 @@ function update_machine_stats(vm_id, data) {
     var vm = get_machine(vm_id);    
     var clear = false;
 
+    // stats container is hidden
+    // do not update the stats
+    if (!els || els.cont.length == 0 || !els.cont.is(":visible")) {
+        clear = true;
+    }
+    
+    // view changed and vm stats not visible now, clear interval
+    if (clear) {
+        set_stats_update_handler(vm_id, data.stats.refresh, clear);
+        return;
+    }
+    
     // api error
     if (!data) {
         from_error = true;
@@ -1637,11 +1649,6 @@ function update_machine_stats(vm_id, data) {
         }
     }
 
-    // stats container is hidden
-    // do not update the stats
-    if (els.cont.length == 0 || !els.cont.is(":visible")) {
-        clear = true;
-    }
     
     // set timeout to call the stats update
     set_stats_update_handler(vm_id, data.stats.refresh, clear);

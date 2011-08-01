@@ -791,14 +791,13 @@ class Pithos_Client(OOS_Client):
                       content_type=None, content_range=None,
                       content_encoding=None, content_disposition=None,
                       x_object_bytes=None, x_object_manifest=None,
-                      x_object_sharing=None, x_object_public=None, account=None):
+                      x_object_sharing=None, x_object_public=None,
+                      x_source_object=None, account=None):
         """updates an object"""
         account = account or self.account
-        spath = '/%s/%s/%s' % (account, container, object)
         args = locals()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
-        
         return OOS_Client.update_object(self, container, object, **args)
         
     def update_object_using_chunks(self, container, object, f=stdin,
@@ -828,6 +827,20 @@ class Pithos_Client(OOS_Client):
             headers['x-object-meta-%s' %k.strip()] = v
         return self._chunked_transfer(path, 'POST', f, headers=headers,
                                       blocksize=blocksize)
+    
+    def update_from_other_source(self, container, object, source,
+                      offset=None, meta={}, content_range=None,
+                      content_encoding=None, content_disposition=None,
+                      x_object_bytes=None, x_object_manifest=None,
+                      x_object_sharing=None, x_object_public=None, account=None):
+        """updates an object"""
+        account = account or self.account
+        args = locals()
+        for elem in ['self', 'container', 'object', 'source']:
+            args.pop(elem)
+        
+        args['x_source_object'] = source
+        return self.update_object(container, object, f=None, **args)
     
     def delete_object(self, container, object, until=None, account=None):
         """deletes an object or the object history until the date provided"""

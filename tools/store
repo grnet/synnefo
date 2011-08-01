@@ -37,8 +37,9 @@ from getpass import getuser
 from optparse import OptionParser
 from os import environ
 from sys import argv, exit, stdin, stdout
-from pithos.lib.client import Pithos_Client, Fault
 from datetime import datetime
+from lib.client import Pithos_Client, Fault
+from lib.util import get_user, get_auth, get_server, get_api
 
 import json
 import logging
@@ -46,10 +47,6 @@ import types
 import re
 import time as _time
 import os
-
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
-#DEFAULT_HOST = '127.0.0.1:8000'
-DEFAULT_API = 'v1'
 
 _cli_commands = {}
 
@@ -70,15 +67,15 @@ class Command(object):
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
         parser.add_option('--host', dest='host', metavar='HOST',
-                          default=_get_server(), help='use server HOST')
+                          default=get_server(), help='use server HOST')
         parser.add_option('--user', dest='user', metavar='USERNAME',
-                          default=_get_user(),
+                          default=get_user(),
                           help='use account USERNAME')
         parser.add_option('--token', dest='token', metavar='AUTH',
-                          default=_get_auth(),
+                          default=get_auth(),
                           help='use account AUTH')
         parser.add_option('--api', dest='api', metavar='API',
-                          default=DEFAULT_API, help='use api API')
+                          default=get_api(), help='use api API')
         parser.add_option('-v', action='store_true', dest='verbose',
                           default=False, help='use verbose output')
         parser.add_option('-d', action='store_true', dest='debug',
@@ -715,24 +712,6 @@ def print_versions(data, f=stdout):
     f.write('versions:\n')
     for id, t in data['versions']:
         f.write('%s @ %s\n' % (str(id).rjust(30), datetime.fromtimestamp(t)))
-
-def _get_user():
-        try:
-            return os.environ['PITHOS_USER']
-        except KeyError:
-            return getuser()
-
-def _get_auth():
-        try:
-            return os.environ['PITHOS_AUTH']
-        except KeyError:
-            return '0000'
-
-def _get_server():
-    try:
-        return os.environ['PITHOS_SERVER']
-    except KeyError:
-        return DEFAULT_HOST
 
 def main():
     try:

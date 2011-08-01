@@ -1499,8 +1499,10 @@ class ObjectPost(BaseTestCase):
                                              source_object)
         
         self.assertEqual(
-            self.client.retrieve_object(self.containers[0], o_names[0]),
-            self.client.retrieve_object(self.containers[0], o_names[1]))
+            self.client.retrieve_object(self.containers[0], o_names[1]),
+            '%s%s' % (data,
+                      self.client.retrieve_object(self.containers[0], o_names[0])))
+    
     
 
 class ObjectDelete(BaseTestCase):

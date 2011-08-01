@@ -895,9 +895,6 @@ class SimpleBackend(BaseBackend):
         name = path
         perms = {} # Return nothing, if nothing is set.
         for row in c.fetchall():
-            #name = smart_str(row[0], strings_only=True)
-            #op = smart_str(row[1], strings_only=True)
-            #user = smart_str(row[2], strings_only=True)
             name = row[0]
             op = row[1]
             user = row[2]

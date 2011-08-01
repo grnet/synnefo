@@ -1781,17 +1781,24 @@ class TestPermissions(BaseTestCase):
                                          'c', 'o', account=get_user())
         
     
-    #def test_write_access(self):
-    #    self.client.share_object('φάκελος', 'ο1', ['διογένης'], read=False)
-    #    new_data = get_random_data()
-    #    chef.update_object('φάκελος', 'ο1', StringIO(new_data))
-    #    self.assert_not_raises_fault(401, chef.update_object,
-    #                                 'φάκελος', 'ο1', StringIO(new_data),
-    #                                 account=get_user())
-    #    
-    #    server_data = self.client.retrieve_object('φάκελος', 'ο1')
-    #    self.assertEqual(server_data[:len(o['data'])], o['data'])
-    #    self.assertEqual(server_data[len(o['data']):], new_data)
+    def test_write_access(self):
+        self.client.create_container('c')
+        o = self.upload_random_data('c', 'o')
+        self.client.share_object('c', 'o', ['chazapis'], read=False)
+        for token, account in OTHER_ACCOUNTS.items():
+            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            new_data = get_random_data()
+            if account == 'chazapis':
+                self.assert_not_raises_fault(401, cl.update_object,
+                                             'c', 'o', StringIO(new_data),
+                                             account=get_user())
+                server_data = self.client.retrieve_object('c', 'o')
+                self.assertEqual(o['data'], server_data[:len(o['data'])])
+                self.assertEqual(new_data, server_data[len(o['data']):])
+            else:
+                self.assert_raises_fault(401, cl.update_object,
+                                             'c', 'o', StringIO(new_data),
+                                             account=get_user())
 
 class AssertMappingInvariant(object):
     def __init__(self, callable, *args, **kwargs):

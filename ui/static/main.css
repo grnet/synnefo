@@ -3671,6 +3671,10 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     margin-left: 82px;
 }
 
+.single div.lower img.stats {
+    display: none;
+}
+
 .single .single-image {
     width: 126px;
     height: 136px;

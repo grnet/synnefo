@@ -642,6 +642,11 @@ function update_machines_view(data){
                 $(this).hide();
                 $(this).parent().find(".stat-error").show();
             }).load(function(){
+                // skip initial image
+                if ($(this).attr("src") == "./static/placeholder.png") {
+                    $(this).hide();
+                    return;
+                }
                 $(this).show();
                 $(this).parent().find(".stat-error").hide();
             });
@@ -721,6 +726,9 @@ function display_reboot_success() {
 }
 
 function display_reboot_failure() {
+}
+
+function display_success() {
 }
 
 // append string to transition states

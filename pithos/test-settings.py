@@ -1,3 +1,5 @@
+#coding=utf8
+
 # Copyright 2011 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
@@ -150,4 +152,5 @@ AUTH_TOKENS = {
     '0005': 'louridas',
     '0006': 'chstath',
     '0007': 'pkanavos',
-    '0008': 'mvasilak'}
+    '0008': 'mvasilak',
+    '0009': 'διογένης'}

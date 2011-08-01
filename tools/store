@@ -744,15 +744,14 @@ def main():
     
     cmd = cls(name, argv[2:])
     
-    cmd.execute(*cmd.args)
-    #try:
-    #    cmd.execute(*cmd.args)
-    #except TypeError, e:
-    #    cmd.parser.print_help()
-    #    exit(1)
-    #except Fault, f:
-    #    status = f.status and '%s ' % f.status or ''
-    #    print '%s%s' % (status, f.data)
+    try:
+        cmd.execute(*cmd.args)
+    except TypeError, e:
+        cmd.parser.print_help()
+        exit(1)
+    except Fault, f:
+        status = f.status and '%s ' % f.status or ''
+        print '%s%s' % (status, f.data)
 
 if __name__ == '__main__':
     main()

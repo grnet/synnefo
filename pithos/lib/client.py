@@ -71,11 +71,8 @@ class Client(object):
         self.debug = debug
         self.token = token
     
-    def _req(self, method, path, body=None, headers={}, format='text',
-             params={}, top_level_req=False):
-        #path = urllib.quote(path)
-        account = '' if top_level_req else self.account
-        full_path = '/%s/%s%s?format=%s' % (self.api, account, path, format)
+    def _req(self, method, path, body=None, headers={}, format='text', params={}):
+        full_path = '/%s%s?format=%s' % (self.api, path, format)
         
         for k,v in params.items():
             if v:
@@ -100,7 +97,6 @@ class Client(object):
             kwargs['headers'].setdefault('content-type',
                                          'application/octet-stream')
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
-        #kwargs['headers'] = _encode_headers(kwargs['headers'])
         
         #print '#', method, full_path, kwargs
         t1 = datetime.datetime.utcnow()
@@ -132,10 +128,9 @@ class Client(object):
     def delete(self, path, format='text', params={}):
         return self._req('DELETE', path, format=format, params=params)
     
-    def get(self, path, format='text', headers={}, params={},
-            top_level_req=False):
+    def get(self, path, format='text', headers={}, params={}):
         return self._req('GET', path, headers=headers, format=format,
-                        params=params, top_level_req=top_level_req)
+                        params=params)
     
     def head(self, path, format='text', params={}):
          return self._req('HEAD', path, format=format, params=params)
@@ -147,11 +142,9 @@ class Client(object):
     def put(self, path, body=None, format='text', headers=None):
         return self._req('PUT', path, body, headers=headers, format=format)
     
-    def _list(self, path, format='text', params={}, top_level_req=False, 
-              **headers):
+    def _list(self, path, format='text', params={}, **headers):
         status, headers, data = self.get(path, format=format, headers=headers,
-                                         params=params,
-                                         top_level_req=top_level_req)
+                                         params=params)
         if format == 'json':
             data = json.loads(data) if data else ''
         elif format == 'xml':
@@ -223,103 +216,131 @@ class OOS_Client(Client):
     
     # Storage Account Services
     
-    def list_containers(self, format='text', limit=None, marker=None, params={},
-                        **headers):
+    def list_containers(self, format='text', limit=None,
+                        marker=None, params={}, account=None, **headers):
         """lists containers"""
+        account = account or self.account
+        path = '/%s' % account
         params.update({'limit':limit, 'marker':marker})
-        return self._list('', format, params, **headers)
+        return self._list(path, format, params, **headers)
     
-    def retrieve_account_metadata(self, restricted=False, **params):
+    def retrieve_account_metadata(self, restricted=False, account=None, **params):
         """returns the account metadata"""
+        account = account or self.account
+        path = '/%s' % account
         prefix = 'x-account-meta-' if restricted else None
-        return self._get_metadata('', prefix, params)
+        return self._get_metadata(path, prefix, params)
     
-    def update_account_metadata(self, **meta):
+    def update_account_metadata(self, account=None, **meta):
         """updates the account metadata"""
-        return self._update_metadata('', 'account', **meta)
+        account = account or self.account
+        path = '/%s' % account
+        return self._update_metadata(path, 'account', **meta)
         
-    def delete_account_metadata(self, meta=[]):
+    def delete_account_metadata(self, meta=[], account=None):
         """deletes the account metadata"""
-        return self._delete_metadata('', 'account', meta)
+        account = account or self.account
+        path = '/%s' % account
+        return self._delete_metadata(path, 'account', meta)
     
-    def reset_account_metadata(self, **meta):
+    def reset_account_metadata(self, account=None, **meta):
         """resets account metadata"""
-        return self._reset_metadata('', 'account', **meta)
+        account = account or self.account
+        path = '/%s' % account
+        return self._reset_metadata(path, 'account', **meta)
     
     # Storage Container Services
     
     def _filter_trashed(self, l):
         return self._filter(l, {'trash':'true'})
     
-    def list_objects(self, container, format='text', limit=None, marker=None,
-                     prefix=None, delimiter=None, path=None,
-                     include_trashed=False, params={}, **headers):
+    def list_objects(self, container, format='text',
+                     limit=None, marker=None, prefix=None, delimiter=None,
+                     path=None, include_trashed=False, params={}, account=None,
+                     **headers):
         """returns a list with the container objects"""
+        account = account or self.account
         params.update({'limit':limit, 'marker':marker, 'prefix':prefix,
                        'delimiter':delimiter, 'path':path})
-        l = self._list('/' + container, format, params, **headers)
+        l = self._list('/%s/%s' % (account, container), format, params,
+                       **headers)
         #TODO support filter trashed with xml also
         if format != 'xml' and not include_trashed:
             l = self._filter_trashed(l)
         return l
     
-    def create_container(self, container, **meta):
+    def create_container(self, container, account=None, **meta):
         """creates a container"""
+        account = account or self.account
         headers = {}
         for k,v in meta.items():
             headers['x-container-meta-%s' %k.strip().upper()] = v.strip()
-        status, header, data = self.put('/' + container, headers=headers)
+        status, header, data = self.put('/%s/%s' % (account, container),
+                                        headers=headers)
         if status == 202:
             return False
         elif status != 201:
             raise Fault(data, int(status))
         return True
     
-    def delete_container(self, container, params={}):
+    def delete_container(self, container, params={}, account=None):
         """deletes a container"""
-        return self.delete('/' + container, params=params)
+        account = account or self.account
+        return self.delete('/%s/%s' % (account, container), params=params)
     
-    def retrieve_container_metadata(self, container, restricted=False, **params):
+    def retrieve_container_metadata(self, container, restricted=False,
+                                    account=None, **params):
         """returns the container metadata"""
+        account = account or self.account
         prefix = 'x-container-meta-' if restricted else None
-        return self._get_metadata('/%s' % container, prefix, params)
+        return self._get_metadata('/%s/%s' % (account, container), prefix,
+                                  params)
     
-    def update_container_metadata(self, container, **meta):
+    def update_container_metadata(self, container, account=None, **meta):
         """unpdates the container metadata"""
-        return self._update_metadata('/' + container, 'container', **meta)
+        account = account or self.account
+        return self._update_metadata('/%s/%s' % (account, container),
+                                     'container', **meta)
         
-    def delete_container_metadata(self, container, meta=[]):
+    def delete_container_metadata(self, container, meta=[], account=None):
         """deletes the container metadata"""
-        path = '/%s' % (container)
+        account = account or self.account
+        path = '/%s/%s' % (account, container)
         return self._delete_metadata(path, 'container', meta)
     
     # Storage Object Services
     
     def request_object(self, container, object, format='text', params={},
-                        **headers):
+                       account=None, **headers):
         """returns tuple containing the status, headers and data response for an object request"""
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         status, headers, data = self.get(path, format, headers, params)
         return status, headers, data
     
     def retrieve_object(self, container, object, format='text', params={},
-                             **headers):
+                        account=None, **headers):
         """returns an object's data"""
-        t = self.request_object(container, object, format, params, **headers)
+        account = account or self.account
+        t = self.request_object(container, object, format, params, account,
+                                **headers)
         return t[2]
     
-    def create_directory_marker(self, container, object):
+    def create_directory_marker(self, container, object, account=None):
         """creates a dierectory marker"""
+        account = account or self.account
         if not object:
             raise Fault('Directory markers have to be nested in a container')
         h = {'content_type':'application/directory'}
-        return self.create_zero_length_object(container, object, **h)
+        return self.create_zero_length_object(container, object, account=account,
+                                              **h)
     
     def create_object(self, container, object, f=stdin, format='text', meta={},
                       etag=None, content_type=None, content_encoding=None,
-                      content_disposition=None, **headers):
+                      content_disposition=None, account=None, **headers):
         """creates a zero-length object"""
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         for k, v  in headers.items():
             if not v:
                 headers.pop(k)
@@ -336,18 +357,21 @@ class OOS_Client(Client):
     
     def create_zero_length_object(self, container, object, meta={}, etag=None,
                                   content_type=None, content_encoding=None,
-                                  content_disposition=None, **headers):
+                                  content_disposition=None, account=None,
+                                  **headers):
+        account = account or self.account
         args = locals()
-        for elem in ['self', 'container', 'headers']:
+        for elem in ['self', 'container', 'headers', 'account']:
             args.pop(elem)
         args.update(headers)
-        return self.create_object(container, f=None, **args)
+        return self.create_object(container, account=account, f=None, **args)
     
-    def update_object(self, container, object, f=stdin, offset=None, meta={},
-                      content_length=None, content_type=None,
-                      content_encoding=None, content_disposition=None,
-                      **headers):
-        path = '/%s/%s' % (container, object)
+    def update_object(self, container, object, f=stdin,
+                      offset=None, meta={}, content_length=None,
+                      content_type=None, content_encoding=None,
+                      content_disposition=None,  account=None, **headers):
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         for k, v  in headers.items():
             if not v:
                 headers.pop(k)
@@ -370,8 +394,10 @@ class OOS_Client(Client):
         return self.post(path, data, headers=headers)
     
     def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False, meta={}, **headers):
-        path = '/%s/%s' % (dst_container, dst_object)
+                             dst_object, remove=False, meta={}, account=None,
+                             **headers):
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, dst_container, dst_object)
         headers = {} if not headers else headers
         for k, v in meta.items():
             headers['x-object-meta-%s' % k] = v
@@ -383,45 +409,55 @@ class OOS_Client(Client):
         return self.put(path, headers=headers)
     
     def copy_object(self, src_container, src_object, dst_container, dst_object,
-                    meta, **headers):
+                   meta={}, account=None, **headers):
         """copies an object"""
+        account = account or self.account
         return self._change_obj_location(src_container, src_object,
-                                   dst_container, dst_object, remove=False,
-                                   meta=meta, **headers)
+                                   dst_container, dst_object, account=account,
+                                   remove=False, meta=meta, **headers)
     
     def move_object(self, src_container, src_object, dst_container,
-                             dst_object, meta={}, **headers):
+                             dst_object, meta={}, account=None,
+                             **headers):
         """moves an object"""
+        account = account or self.account
         return self._change_obj_location(src_container, src_object,
-                                         dst_container, dst_object, remove=True,
+                                         dst_container, dst_object,
+                                         account=account, remove=True,
                                          meta=meta, **headers)
     
-    def delete_object(self, container, object, params={}):
+    def delete_object(self, container, object, params={}, account=None):
         """deletes an object"""
-        return self.delete('/%s/%s' % (container, object), params=params)
+        account = account or self.account
+        return self.delete('/%s/%s/%s' % (account, container, object),
+                           params=params)
     
     def retrieve_object_metadata(self, container, object, restricted=False,
-                                 version=None):
+                                 version=None, account=None):
         """
         set restricted to True to get only user defined metadata
         """
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         prefix = 'x-object-meta-' if restricted else None
         params = {'version':version} if version else {}
         return self._get_metadata(path, prefix, params=params)
     
-    def update_object_metadata(self, container, object, **meta):
+    def update_object_metadata(self, container, object, account=None,
+                               **meta):
         """
         updates object's metadata
         """
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         return self._update_metadata(path, 'object', **meta)
     
-    def delete_object_metadata(self, container, object, meta=[]):
+    def delete_object_metadata(self, container, object, meta=[], account=None):
         """
         deletes object's metadata
         """
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s' % (account, container, object)
         return self._delete_metadata(path, 'object', meta)
     
 class Pithos_Client(OOS_Client):
@@ -433,7 +469,7 @@ class Pithos_Client(OOS_Client):
         http = HTTPConnection(self.host)
         
         # write header
-        path = '/%s/%s%s' % (self.api, self.account, path)
+        path = '/%s%s' % (self.api, path)
         http.putrequest(method, path)
         http.putheader('x-auth-token', self.token)
         http.putheader('content-type', 'application/octet-stream')
@@ -514,32 +550,39 @@ class Pithos_Client(OOS_Client):
     
     def list_containers(self, format='text', if_modified_since=None,
                         if_unmodified_since=None, limit=1000, marker=None,
-                        until=None):
+                        until=None, account=None):
         """returns a list with the account containers"""
+        account = account or self.account
         params = {'until':until} if until else {}
         headers = {'if-modified-since':if_modified_since,
                    'if-unmodified-since':if_unmodified_since}
-        return OOS_Client.list_containers(self, format=format, limit=limit,
-                                          marker=marker, params=params,
-                                          **headers)
+        return OOS_Client.list_containers(self, account=account, format=format,
+                                          limit=limit, marker=marker,
+                                          params=params, **headers)
     
-    def retrieve_account_metadata(self, restricted=False, until=None):
+    def retrieve_account_metadata(self, restricted=False, until=None,
+                                  account=None):
         """returns the account metadata"""
+        account = account or self.account
         params = {'until':until} if until else {}
-        return OOS_Client.retrieve_account_metadata(self, restricted=restricted,
-                                                   **params)
+        return OOS_Client.retrieve_account_metadata(self, account=account,
+                                                    restricted=restricted,
+                                                    **params)
     
-    def set_account_groups(self, **groups):
+    def set_account_groups(self, account=None, **groups):
         """create account groups"""
+        account = account or self.account
+        path = '/%s' % account
         headers = {}
         for k, v in groups.items():
             headers['x-account-group-%s' % k] = v
         params = {'update':None}
-        return self.post('', headers=headers, params=params)
+        return self.post(path, headers=headers, params=params)
     
-    def retrieve_account_groups(self):
+    def retrieve_account_groups(self, account=None):
         """returns the account groups"""
-        meta = self.retrieve_account_metadata()
+        account = account or self.account
+        meta = self.retrieve_account_metadata(account=account)
         prefix = 'x-account-group-'
         prefixlen = len(prefix)
         groups = {}
@@ -551,16 +594,20 @@ class Pithos_Client(OOS_Client):
             groups[key] = val
         return groups
     
-    def unset_account_groups(self, groups=[]):
+    def unset_account_groups(self, groups=[], account=None):
         """delete account groups"""
+        account = account or self.account
+        path = '/%s' % account
         headers = {}
         for elem in groups:
             headers['x-account-group-%s' % elem] = ''
         params = {'update':None}
-        return self.post('', headers=headers, params=params)
+        return self.post(path, headers=headers, params=params)
     
-    def reset_account_groups(self, **groups):
+    def reset_account_groups(self, account=None, **groups):
         """overrides account groups"""
+        account = account or self.account
+        path = '/%s' % account
         headers = {}
         for k, v in groups.items():
             v = v.strip()
@@ -570,77 +617,89 @@ class Pithos_Client(OOS_Client):
         for k,v in meta.items():
             k = '%s%s' % (prefix, k)
             headers[k] = v
-        return self.post('', headers=headers)
+        return self.post(path, headers=headers)
     
     # Storage Container Services
     
-    def list_objects(self, container, format='text', limit=None, marker=None,
-                     prefix=None, delimiter=None, path=None,
-                     include_trashed=False, params={}, if_modified_since=None,
-                     if_unmodified_since=None, meta='', until=None):
+    def list_objects(self, container, format='text',
+                     limit=None, marker=None, prefix=None, delimiter=None,
+                     path=None, include_trashed=False, params={},
+                     if_modified_since=None, if_unmodified_since=None, meta='',
+                     until=None, account=None):
         """returns a list with the container objects"""
+        account = account or self.account
         params = {'until':until, 'meta':meta}
         args = locals()
         for elem in ['self', 'container', 'params', 'until', 'meta']:
             args.pop(elem)
-        return OOS_Client.list_objects(self, container, params=params, 
-                                       **args)
+        return OOS_Client.list_objects(self, container, params=params, **args)
     
     def retrieve_container_metadata(self, container, restricted=False,
-                                    until=None):
+                                    until=None, account=None):
         """returns container's metadata"""
+        account = account or self.account
         params = {'until':until} if until else {}
         return OOS_Client.retrieve_container_metadata(self, container,
+                                                      account=account,
                                                       restricted=restricted,
                                                       **params)
     
-    def set_container_policies(self, container, **policies):
+    def set_container_policies(self, container, account=None,
+                               **policies):
         """sets containers policies"""
-        path = '/%s' % (container)
+        account = account or self.account
+        path = '/%s/%s' % (account, container)
         headers = {}
-        print ''
         for key, val in policies.items():
             headers['x-container-policy-%s' % key] = val
         return self.post(path, headers=headers)
     
-    def delete_container(self, container, until=None):
+    def delete_container(self, container, until=None, account=None):
         """deletes a container or the container history until the date provided"""
+        account = account or self.account
         params = {'until':until} if until else {}
-        return OOS_Client.delete_container(self, container, params)
+        return OOS_Client.delete_container(self, container, account=account,
+                                           params=params)
     
     # Storage Object Services
     
-    def retrieve_object(self, container, object, params={}, format='text', range=None,
-                        if_range=None, if_match=None, if_none_match=None,
+    def retrieve_object(self, container, object, params={}, format='text',
+                        range=None, if_range=None,
+                        if_match=None, if_none_match=None,
                         if_modified_since=None, if_unmodified_since=None,
-                        **headers):
+                        account=None, **headers):
         """returns an object"""
+        account = account or self.account
         headers={}
         l = ['range', 'if_range', 'if_match', 'if_none_match',
              'if_modified_since', 'if_unmodified_since']
         l = [elem for elem in l if eval(elem)]
         for elem in l:
             headers.update({elem:eval(elem)})
-        return OOS_Client.retrieve_object(self, container, object, format=format,
+        return OOS_Client.retrieve_object(self, container, object,
+                                          account=account, format=format,
                                           params=params, **headers)
     
-    def retrieve_object_version(self, container, object, version, detail=False,
-                                range=None, if_range=None, if_match=None,
-                                if_none_match=None, if_modified_since=None,
-                                if_unmodified_since=None):
+    def retrieve_object_version(self, container, object, version,
+                                detail=False, range=None, if_range=None,
+                                if_match=None, if_none_match=None,
+                                if_modified_since=None, if_unmodified_since=None,
+                                account=None):
         """returns a specific object version"""
+        account = account or self.account
         args = locals()
         l = ['self', 'container', 'object']
         for elem in l:
             args.pop(elem)
         params = {'version':version}
-        return self.retrieve_object(container, object, params, **args)
+        return self.retrieve_object(container, object, params=params, **args)
     
     def retrieve_object_versionlist(self, container, object, range=None,
                                     if_range=None, if_match=None,
                                     if_none_match=None, if_modified_since=None,
-                                    if_unmodified_since=None):
+                                    if_unmodified_since=None, account=None):
         """returns the object version list"""
+        account = account or self.account
         args = locals()
         l = ['self', 'container', 'object']
         for elem in l:
@@ -649,36 +708,41 @@ class Pithos_Client(OOS_Client):
         return self.retrieve_object_version(container, object, version='list',
                                             detail=True, **args)
     
-    def create_zero_length_object(self, container, object, meta={},
-                      etag=None, content_type=None, content_encoding=None,
-                      content_disposition=None, x_object_manifest=None,
-                      x_object_sharing=None, x_object_public=None):
+    def create_zero_length_object(self, container, object,
+                                  meta={}, etag=None, content_type=None,
+                                  content_encoding=None,
+                                  content_disposition=None,
+                                  x_object_manifest=None, x_object_sharing=None,
+                                  x_object_public=None, account=None):
         """createas a zero length object"""
+        account = account or self.account
         args = locals()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
         return OOS_Client.create_zero_length_object(self, container, object,
                                                     **args)
     
-    def create_object(self, container, object, f=stdin, meta={},
-                      etag=None, content_type=None, content_encoding=None,
-                      content_disposition=None, x_object_manifest=None,
-                      x_object_sharing=None, x_object_public=None):
+    def create_object(self, container, object, f=stdin, 
+                      meta={}, etag=None, content_type=None,
+                      content_encoding=None, content_disposition=None,
+                      x_object_manifest=None, x_object_sharing=None,
+                      x_object_public=None, account=None):
         """creates an object"""
+        account = account or self.account
         args = locals()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
         return OOS_Client.create_object(self, container, object, **args)
         
-    def create_object_using_chunks(self, container, object, f=stdin,
-                                    blocksize=1024, meta={}, etag=None,
-                                    content_type=None, content_encoding=None,
-                                    content_disposition=None, 
-                                    x_object_sharing=None,
-                                    x_object_manifest=None, 
-                                    x_object_public=None):
+    def create_object_using_chunks(self, container, object,
+                                   f=stdin, blocksize=1024, meta={}, etag=None,
+                                   content_type=None, content_encoding=None,
+                                   content_disposition=None,
+                                   x_object_sharing=None, x_object_manifest=None,
+                                   x_object_public=None, account=None):
         """creates an object (incremental upload)"""
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         headers = {}
         l = ['etag', 'content_type', 'content_encoding', 'content_disposition', 
              'x_object_sharing', 'x_object_manifest', 'x_object_public']
@@ -697,8 +761,9 @@ class Pithos_Client(OOS_Client):
                                  meta={}, etag=None, content_encoding=None,
                                  content_disposition=None, content_type=None,
                                  x_object_sharing=None, x_object_manifest=None,
-                                 x_object_public = None):
+                                 x_object_public = None, account=None):
         """creates an object by uploading hashes representing data instead of data"""
+        account = account or self.account
         args = locals()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
@@ -714,18 +779,22 @@ class Pithos_Client(OOS_Client):
         #TODO check with xml
         return self.create_object(container, object, **args)
     
-    def create_manifestation(self, container, object, manifest):
+    def create_manifestation(self, container, object, manifest, account=None):
         """creates a manifestation"""
+        account = account or self.account
         headers={'x_object_manifest':manifest}
-        return self.create_object(container, object, f=None, **headers)
+        return self.create_object(container, object, f=None, account=account,
+                                  **headers)
     
-    def update_object(self, container, object, f=stdin, offset=None, meta={},
-                      content_length=None, content_type=None, content_range=None,
+    def update_object(self, container, object, f=stdin,
+                      offset=None, meta={}, content_length=None,
+                      content_type=None, content_range=None,
                       content_encoding=None, content_disposition=None,
                       x_object_bytes=None, x_object_manifest=None,
-                      x_object_sharing=None, x_object_public=None):
+                      x_object_sharing=None, x_object_public=None, account=None):
         """updates an object"""
-        spath = '/%s/%s' % (container, object)
+        account = account or self.account
+        spath = '/%s/%s/%s' % (account, container, object)
         args = locals()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
@@ -733,13 +802,14 @@ class Pithos_Client(OOS_Client):
         return OOS_Client.update_object(self, container, object, **args)
         
     def update_object_using_chunks(self, container, object, f=stdin,
-                                    blocksize=1024, offset=None, meta={},
-                                    content_type=None, content_encoding=None,
-                                    content_disposition=None, x_object_bytes=None,
-                                    x_object_manifest=None, x_object_sharing=None,
-                                    x_object_public=None):
+                                   blocksize=1024, offset=None, meta={},
+                                   content_type=None, content_encoding=None,
+                                   content_disposition=None, x_object_bytes=None,
+                                   x_object_manifest=None, x_object_sharing=None,
+                                   x_object_public=None, account=None):
         """updates an object (incremental upload)"""
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         headers = {}
         l = ['content_type', 'content_encoding', 'content_disposition',
              'x_object_bytes', 'x_object_manifest', 'x_object_sharing',
@@ -756,42 +826,48 @@ class Pithos_Client(OOS_Client):
         for k,v in meta.items():
             v = v.strip()
             headers['x-object-meta-%s' %k.strip()] = v
-        
         return self._chunked_transfer(path, 'POST', f, headers=headers,
                                       blocksize=blocksize)
     
-    def delete_object(self, container, object, until=None):
+    def delete_object(self, container, object, until=None, account=None):
         """deletes an object or the object history until the date provided"""
+        account = account or self.account
         params = {'until':until} if until else {}
-        return OOS_Client.delete_object(self, container, object, params)
+        return OOS_Client.delete_object(self, container, object, params, account)
     
     def trash_object(self, container, object):
         """trashes an object"""
+        account = account or self.account
         path = '/%s/%s' % (container, object)
         meta = {'trash':'true'}
         return self._update_metadata(path, 'object', **meta)
     
-    def restore_object(self, container, object):
+    def restore_object(self, container, object, account=None):
         """restores a trashed object"""
-        return self.delete_object_metadata(container, object, ['trash'])
+        account = account or self.account
+        return self.delete_object_metadata(container, object, account, ['trash'])
     
-    def publish_object(self, container, object):
+    def publish_object(self, container, object, account=None):
         """sets a previously created object publicly accessible"""
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (container, object)
         headers = {'content_range':'bytes */*'}
         headers['x_object_public'] = True
         return self.post(path, headers=headers)
     
-    def unpublish_object(self, container, object):
+    def unpublish_object(self, container, object, account=None):
         """unpublish an object"""
-        path = '/%s/%s' % (container, object)
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
         headers = {'content_range':'bytes */*'}
         headers['x_object_public'] = False
         return self.post(path, headers=headers)
     
     def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False, meta={}, **headers):
-        path = '/%s/%s' % (dst_container, dst_object)
+                             dst_object, remove=False,
+                             meta={}, account=None, **headers):
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, dst_container, dst_object)
         headers = {} if not headers else headers
         for k, v in meta.items():
             headers['x-object-meta-%s' % k] = v
@@ -803,18 +879,20 @@ class Pithos_Client(OOS_Client):
         return self.put(path, headers=headers)
     
     def copy_object(self, src_container, src_object, dst_container, dst_object,
-                    meta={}, public=False, version=None):
+                    meta={}, public=False, version=None, account=None):
         """copies an object"""
+        account = account or self.account
         headers = {}
         headers['x_object_public'] = public
         if version:
             headers['x_object_version'] = version
         return OOS_Client.copy_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
-                                      **headers)
+                                      account=account,**headers)
     
     def move_object(self, src_container, src_object, dst_container,
-                             dst_object, meta={}, public=False, version=None):
+                             dst_object, meta={}, public=False, version=None,
+                             account=None):
         """moves an object"""
         headers = {}
         headers['x_object_public'] = public
@@ -822,15 +900,15 @@ class Pithos_Client(OOS_Client):
             headers['x_object_version'] = version
         return OOS_Client.move_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
-                                      **headers)
+                                      account=account, **headers)
     
     def list_shared_by_others(self, limit=None, marker=None, format='text'):
-         """lists other accounts that share objects to the user"""
-         l = ['limit', 'marker']
-         params = {}
-         for elem in [elem for elem in l if eval(elem)]:
-             params[elem] = eval(elem)
-         return self._list('', format, params, top_level_req=True)
+        """lists other accounts that share objects to the user"""
+        l = ['limit', 'marker']
+        params = {}
+        for elem in [elem for elem in l if eval(elem)]:
+            params[elem] = eval(elem)
+        return self._list('', format, params)
     
     def share_object(self, container, object, l, read=True):
         """gives access(read by default) to an object to a user/group list"""

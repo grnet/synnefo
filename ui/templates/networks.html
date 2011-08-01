@@ -1211,6 +1211,9 @@ function update_net_ui() {
     //remove top margin from the first machine of each private network
     $(".private-networks").find(".network-contents .network-machine:first-child").css("margin-top","0");
 
+    // if some network block got resized confirmation box could have been moved 
+    // out of the bottom of the page, fix its position to static if needed
+    update_network_confirmations_position();
 }
 
 // indicate that the requested action was not completed
@@ -1222,8 +1225,7 @@ function display_failure(status, networkID, action, responseText) {
     $('#networks-container #net-'+networkID+ ' .action_error').show();
 }
 
-// reposition multiple confirmation box on window resize
-$(window).resize(function(){
+function update_network_confirmations_position() {
     if (this.innerHeight - 220 < $('#networks-pane #networks-container').height()) {
         $('#networks-pane .confirm_multiple').addClass('fixed');
         $('div.reboot-dialog').addClass('fixed');
@@ -1231,6 +1233,10 @@ $(window).resize(function(){
         $('#networks-pane .confirm_multiple').removeClass('fixed');
         $('div.reboot-dialog').removeClass('fixed');
     }
+}
+// reposition multiple confirmation box on window resize
+$(window).resize(function(){
+    update_network_confirmations_position();
 });
 
 // basic functions executed on page load

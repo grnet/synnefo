@@ -276,7 +276,9 @@ $("#machinesview-icon.standard div.info-header").live('click', function() {
         $(this).find('.info-label').addClass('darker');
         $(this).parent().parent().addClass('light-background');
     }
-    $(this).parent().parent().find(".info-content").slideToggle(600);
+
+    // toggling resizes the main content, check the confirmations box position
+    $(this).parent().parent().find(".info-content").slideToggle(600, update_confirmations_position);
     return false;
 });
 
@@ -773,22 +775,25 @@ function update_machines_view(data) {
     } else {
         hideWelcome();
     }
+
     // set confirm box position
-    if (window.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon.standard').height()) {
+    update_confirmations_position();
+    update_transition_names();
+}
+
+function update_confirmations_position() {
+    // ie fix
+    var height = window.innerHeight || window.document.body.clientHeight;
+    if (height - CONFIRMBOX_OFFSET < $('#machinesview-icon').height()) {
         $('.confirm_multiple').addClass('fixed');
     } else {
         $('.confirm_multiple').removeClass('fixed');
     }
-
-    update_transition_names();
 }
 
 // reposition multiple confirmation box on window resize
 $(window).resize(function(){
-    if (this.innerHeight - CONFIRMBOX_OFFSET < $('#machinesview-icon').height())
-        $('.confirm_multiple').addClass('fixed');
-    else
-        $('.confirm_multiple').removeClass('fixed');
+    update_confirmations_position();
 });
 
 // update metadata list
@@ -846,7 +851,7 @@ function display_failure(status, serverID, action, responseText) {
 
 // handle update stats
 function update_server_stats() {
-    // TODO: only reload images for expanded machines
+// TODO: only reload images for expanded machines
     $(".vm-stats").each(function(){
         var serverID = $(this).closest(".machine-container").attr("id");
         get_server_stats(serverID);

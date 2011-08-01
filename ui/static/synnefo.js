@@ -264,6 +264,10 @@ function update_network_confirmations(){
         $('#networks-pane div.confirm_multiple span.actionLen').text(pending_actions.length);
         $('#networks-pane div.confirm_multiple').show();
     }
+
+    try {
+        update_network_confirmations_position();
+    } catch (err) { console.error(err) };
 }
 
 function list_view() {

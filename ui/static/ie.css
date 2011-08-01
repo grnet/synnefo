@@ -585,3 +585,16 @@ a.manage-metadata {
 .vm-stats div img.stat-busy {
     margin-top: -0px;
 }
+
+h5.namecontainer {
+    height: 10px;
+}
+
+span.rename {
+    height: 15px;
+    width: 20px;
+}
+
+span.rename_hovered {
+    margin-top:0;
+}

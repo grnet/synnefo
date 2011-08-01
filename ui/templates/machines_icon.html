@@ -936,4 +936,15 @@ $(".stats-report").live('click', function(){
     $.cookie('server', srvID);
     $('a#single').click();
 })
+
+
+// machine rename hover handlers
+if ($.browser.msie) {
+    $(".machine .name, .machine .namecontainer, .machine span.name").live('mouseover', function() {
+        $(this).parent().find("span.rename").addClass("rename_hovered");
+    })
+    $(".machine .name").live('mouseout', function() {
+        $(this).parent().find("span.rename").removeClass("rename_hovered");
+    })
+}
 </script>

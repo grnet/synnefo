@@ -525,6 +525,29 @@ function update_servers_data(servers_update, data) {
         }
     });
     
+    // check if server is in transition, apply appropriate logic
+    function update_server_transition(vm) {
+        if (vm.state_transition == "DESTROY" && vm.status != "DELETE") {
+            return;
+        }
+
+        if (vm.state_transition == "SHUTDOWN" && vm.state_transition == "ACTIVE") {
+            return;
+        } else {
+            // clear transition
+            vm.state_transition = false;
+            return;
+        }
+
+        if (vm.state_transition == "START" && vm.state_transition == "STOPPED") {
+            return;
+        } else {
+            // clear transition
+            vm.state_transition = false;
+            return;
+        }
+    }
+
     // check server, if exists merge it with new values else add it
     $.each(servers_update, function(index, server) {
         var exists = server_exists(server);
@@ -548,6 +571,7 @@ function update_servers_data(servers_update, data) {
         if (exists !== false) {
             try {
                 servers[exists[1]] = merge(servers[exists[1]], server);
+                update_server_transition(servers[exists[1]]);
             } catch (err) {
             }
         } else {
@@ -885,8 +909,53 @@ function get_machine(serverID) {
     return 0;
 }
 
+// helper function, returns the name of the current view
+function get_current_view() {
+    
+    if ($.cookie('pane') == 1) {
+        return "network"
+    }
+
+    if ($.cookie('pane') == 2) {
+        return "disks"
+    }
+    
+    switch ($.cookie('view')) {
+        case "0":
+            return "icon";
+            break;
+        case "1":
+            return "list";
+            break;
+        case "2":
+            return "single";
+            break;
+    }
+
+    return false;
+}
+
+// update vms actions based on current view
+function update_machine_actions(serverID, server_status) {
+    var view = get_current_view();
+    
+    // call the proper update actions method
+    if (['icon', 'single'].indexOf(view) > -1) {
+        update_iconview_actions(serverID, server_status);
+    } else if (['list'].indexOf(view) > -1) {
+        update_listview_actions();
+    }
+}
+
 // update the actions in icon view, per server
 function update_iconview_actions(serverID, server_status) {
+
+    // vm in destroy status ???
+    var vm = get_machine(serverID)
+    if (vm.state_transition == "DESTROY") {
+        server_status = "DESTROY";
+    }
+
     if ($.cookie("view")=='2') {
         // remove .disable from all actions to begin with
         $('#machinesview-single #' + serverID + ' div.single-action').show();
@@ -922,7 +991,15 @@ function update_listview_actions() {
 
     // check the states of selected machines
     checked.each(function(i,checkbox) {
-        states[states.length] = checkbox.className;
+
+        // force destroy mode
+        var vm = get_machine(checkbox.id);
+        if (vm.state_transition == "DESTROY") {
+            states[states.length] = "DESTROY";
+        } else {
+            states[states.length] = checkbox.className;
+        }
+
         var ip = $("#" + checkbox.id.replace('input-','') + ".ip span.public").text();
         if (ip.replace('undefined','').length)
             states[states.length] = 'network';
@@ -1086,6 +1163,9 @@ function shutdown(serverIDs) {
                             console.info('suspended ' + serverID);
                         } catch(err) {}
                         // indicate that the action succeeded
+                        var vm = get_machine(serverID);
+                        vm.state_transition = "SHUTDOWN";
+
                         display_success(serverID);
                         // continue with the rest of the servers
                         shutdown(serverIDs);
@@ -1131,6 +1211,10 @@ function destroy(serverIDs) {
                         // update status on local storage object
                         vm = get_machine(serverID);
                         vm.status = "DESTROY";
+                        vm.state_transition = "DESTROY";
+                        
+                        // state changed, update actions
+                        update_machine_actions(serverID, vm.status);
 
                         // indicate that the action succeeded
                         display_success(serverID);
@@ -1176,6 +1260,8 @@ function start(serverIDs){
                         try {
                             console.info('started ' + serverID);
                         } catch(err) {}
+                        var vm = get_machine(serverID);
+                        vm.state_transition = "START";
                         // indicate that the action succeeded
                         display_success(serverID);
                         // continue with the rest of the servers

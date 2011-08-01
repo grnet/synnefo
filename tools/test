@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #coding=utf8
 
 # Copyright 2011 GRNET S.A. All rights reserved.
@@ -33,7 +34,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.lib.client import Pithos_Client, Fault
+from lib.client import Pithos_Client, Fault
 from xml.dom import minidom
 from StringIO import StringIO
 import json
@@ -52,8 +53,8 @@ DATE_FORMATS = ["%a %b %d %H:%M:%S %Y",
                 "%A, %d-%b-%y %H:%M:%S GMT",
                 "%a, %d %b %Y %H:%M:%S GMT"]
 
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
-#DEFAULT_HOST = '127.0.0.1:8000'
+#DEFAULT_HOST = 'pithos.dev.grnet.gr'
+DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1'
 DEFAULT_USER = 'test'
 DEFAULT_AUTH = '0000'
@@ -1724,7 +1725,15 @@ class TestGreek(BaseTestCase):
         self.client.create_manifestation('φάκελος', 'άπαντα', 'κουβάς/άκυρο')
         self.assertEqual('', self.client.retrieve_object('φάκελος', 'άπαντα'))
     
+    def test_update_from_another_object(self):
         pass
+
+#class TestUnicode(BaseTestCase):
+#    def test_create_container(self):
+#        self.client.create_container(u'φάκελος')
+#        self.assert_container_exists(u'φάκελος')
+#        
+#        self.assertTrue(u'φάκελος' in self.client.list_containers())
 
 class TestPermissions(BaseTestCase):
     def setUp(self):
@@ -1770,6 +1779,18 @@ class TestPermissions(BaseTestCase):
                                          'c', 'o', account=DEFAULT_USER)
         
     
+    #def test_write_access(self):
+    #    self.client.share_object('φάκελος', 'ο1', ['διογένης'], read=False)
+    #    new_data = get_random_data()
+    #    chef.update_object('φάκελος', 'ο1', StringIO(new_data))
+    #    self.assert_not_raises_fault(401, chef.update_object,
+    #                                 'φάκελος', 'ο1', StringIO(new_data),
+    #                                 account=DEFAULT_USER)
+    #    
+    #    server_data = self.client.retrieve_object('φάκελος', 'ο1')
+    #    self.assertEqual(server_data[:len(o['data'])], o['data'])
+    #    self.assertEqual(server_data[len(o['data']):], new_data)
+
 class AssertMappingInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable

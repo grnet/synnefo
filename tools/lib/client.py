@@ -122,7 +122,7 @@ class Client(object):
         if int(resp.status) in ERROR_CODES.keys():
             raise Fault(data, int(resp.status))
         
-        #print '**',  resp.status, headers, data
+        #print '**',  resp.status, headers, data, '\n'
         return resp.status, headers, data
     
     def delete(self, path, format='text', params={}):
@@ -324,7 +324,21 @@ class OOS_Client(Client):
         account = account or self.account
         t = self.request_object(container, object, format, params, account,
                                 **headers)
-        return t[2]
+        data = t[2]
+        if format == 'json':
+            data = json.loads(data) if data else ''
+        elif format == 'xml':
+            data = minidom.parseString(data)
+        return data
+    
+    def retrieve_object_hashmap(self, container, object, params={},
+                        account=None, **headers):
+        """returns the hashmap representing object's data"""
+        args = locals()
+        for elem in ['self', 'container', 'object']:
+            args.pop(elem)
+        data = self.retrieve_object(container, object, format='json', **args)
+        return data['hashes']
     
     def create_directory_marker(self, container, object, account=None):
         """creates a dierectory marker"""

@@ -411,8 +411,9 @@ function update_vms(interval) {
 
     if (changes_since != 0)
         uri+='?changes-since='+changes_since
-
+    
     update_request = $.ajax({
+        repeated: true,
         cache: false,
         url: uri,
         type: "GET",
@@ -439,7 +440,7 @@ function update_vms(interval) {
                 changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
                 changes_since = ISODateString(changes_since_date);
             }
-
+            
             if (interval) {
                 clearTimeout(deferred);    // clear old deferred calls
                 deferred = setTimeout(function() {update_vms(interval);},interval,interval);
@@ -603,6 +604,7 @@ function update_networks(interval) {
         uri+='?changes-since='+changes_since
 
     update_request = $.ajax({
+        repeated: true,
         cache: false,
         url: uri,
         type: "GET",
@@ -612,7 +614,7 @@ function update_networks(interval) {
             // don't forget to try again later
             if (interval) {
                 clearTimeout(deferred);    // clear old deferred calls
-                deferred = setTimeout(function() {update_networks(interval);},interval,interval);
+                deferred = setTimeout(function() {update_networks(interval);},interval);
             }
             // as for now, just show an error message
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
@@ -1984,6 +1986,7 @@ function get_server_stats(serverID) {
     }
 
     $.ajax({
+        repeated: true,
         url: API_URL + '/servers/' + serverID + '/stats',
         cache: false,
         type: "GET",

@@ -4346,3 +4346,7 @@ div.state .shutdown, tbody.machines .shutdown {
     color: #fff;
     font-size: 1.1em;
 }
+
+#disks-pane {
+    margin-top: 58px;
+}

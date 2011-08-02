@@ -239,7 +239,7 @@ div.machine .actions .destroy {
 
 #ie-fix-view-select {
     position: relative;
-    z-index: 1000;
+    z-index: 630;
 }
 
 #view-select {
@@ -440,6 +440,7 @@ div#user .usermenu {
     height: 26px;
     position: relative;
     width: 190px;
+    z-index: 1000;
 }
 
 div#user .username {
@@ -597,4 +598,9 @@ span.rename {
 
 span.rename_hovered {
     margin-top:0;
+}
+
+#header {
+    position: relative;
+    z-index: 8000;
 }

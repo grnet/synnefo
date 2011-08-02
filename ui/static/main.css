@@ -4336,3 +4336,12 @@ div.state .shutdown, tbody.machines .shutdown {
     font-size: 0.8em;
     color: #888;
 }
+
+.api_overlay_template {
+    display: none;
+}
+
+.api_content .password-container .password {
+    color: #fff;
+    font-size: 1.1em;
+}

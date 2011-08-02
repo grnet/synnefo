@@ -77,6 +77,9 @@ or implied, of GRNET S.A.
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
+
+        var API_OVERLAY_TITLE = "{% trans "API access" %}";
+        var API_OVERLAY_SUBCONTENT = "{% trans "API key provide full access to your <em>~okeanos</em> account, so always keep it private." %}";
         
         // building statuses
         var BUILDING_STATUSES = {
@@ -172,8 +175,8 @@ or implied, of GRNET S.A.
 
         var SUGGESTED_FLAVORS = {
             'small': {cpu:1, ram:1024, disk:20},
-            'medium': {cpu:2, ram:2048, disk:30},
-            'large': {cpu:4, ram:4096, disk:40}
+            'medium': {cpu:2, ram:2048, disk:40},
+            'large': {cpu:4, ram:4096, disk:80}
         }
 
         var SUCCESS = {
@@ -440,6 +443,7 @@ or implied, of GRNET S.A.
                     <ul class="useractions">
                         <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
                         <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
+                        <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -563,7 +567,7 @@ or implied, of GRNET S.A.
 
             $(".usermenu .invitations").click(show_invitations);
             $(".usermenu .feedback").click(show_feedback_form);
-                
+            $(".usermenu .api").click(show_api_overlay);
         });
     </script>
     <!-- base notification for error/success reporting -->
@@ -628,6 +632,13 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
                 <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
             </div>
             </div>
+        </div>
+    </div>
+    
+    <div class="api_overlay_template">
+        <div class="api_overlay_content">
+            <p>With the following API key you will be able to take advantage of the <a href="{{ EXTERNAL_CLIENT_URL }}">kamaki client</a>, a helper tool which allows you
+            to manage your cloud resources from outside this page.</p>
         </div>
     </div>
 

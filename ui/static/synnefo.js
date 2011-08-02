@@ -947,7 +947,7 @@ function handle_image_choice_changed() {
         repaint_flavor_choices();
         update_suggested_flavors();
     } catch (err) {
-        console.error(err);
+        //console.error(err);
     }
 }
 
@@ -2932,14 +2932,16 @@ function get_user_data_json() {
     }
 }
 
-function msg_box(config) {
-    var config = $.extend({'title':'Info message', 'content': 'this is an info message', 'ajax': false, 'extra':false}, config);
+function msg_box(user_config) {
+    var defaults = {'title':'Info message', 'content': 'this is an info message', 'ajax': false, 'extra':false};
+    var config = $.extend(defaults, user_config);
+
     // prepare the error message
     // bring up success notification
-
     var box = $("#notification-box");
     box.addClass("notification-box");
     box.addClass('success');
+    box.addClass(config.cls || '');
     box.removeClass('error');
 
     var sel = function(s){return $(s, box)};
@@ -2948,11 +2950,11 @@ function msg_box(config) {
     sel(".sub-text").html("");
     sel(".password-container .password").html("");
     sel("div.machine-now-building").html("");
-    
 
     // apply msg box contents
     sel("h3 span.header-box").html(config.title);
     sel("div.machine-now-building").html(config.content);
+    sel(".sub-text").html(config.sub_content || '');
     sel(".popup-header").removeClass("popup-header-error");
     box.removeClass("popup-border-error");
     sel(".popup-details").removeClass("popup-details-error");
@@ -2971,6 +2973,7 @@ function msg_box(config) {
         closeOnClick: false,
         oneInstance: false,
         load: false,
+        onLoad: config.onLoad || false,
         fixed: config.fixed || false,
         onClose: function () {
             // With partial refresh working properly,
@@ -2978,7 +2981,7 @@ function msg_box(config) {
             // choose_view();
         }
     }
-    
+
     var triggers = $("a#msgbox").overlay(conf);
 
     try {
@@ -2993,7 +2996,7 @@ function msg_box(config) {
     config.ajax = config.ajax || {};
 
     // requested to show remote data in msg_box
-    if (config.ajax) {
+    if (config.ajax && !$.isEmptyObject(config.ajax)) {
         $.ajax($.extend({ 
             url:config.ajax, 
             success: function(data){
@@ -3039,6 +3042,18 @@ function msg_box(config) {
     return false;
 }
 
+
+function show_api_overlay() {
+    var config = {
+        title: window.API_OVERLAY_TITLE,
+        content: $(".api_overlay_content").html().replace("$api_key", $.cookie("X-Auth-Token")),
+        extra: $.cookie("X-Auth-Token"),
+        sub_content: window.API_OVERLAY_SUBCONTENT,
+        cls: "api_content",
+        ajax: false
+    }
+    msg_box(config);
+}
 
 function show_invitations() {
 

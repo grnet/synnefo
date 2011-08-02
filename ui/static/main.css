@@ -24,6 +24,7 @@ body {
     background: url(./body-bg.png) repeat-x scroll 0 0 #FFFFFF;
     height: 100%;
     text-align:center;
+    font-size: 16px;
 }
 
 #container {

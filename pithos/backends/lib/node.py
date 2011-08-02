@@ -38,7 +38,7 @@ from dbworker import DBWorker
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, SIZE, SOURCE, MTIME, CLUSTER ) = range(6)
+( SERIAL, NODE, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(7)
 
 inf = float('inf')
 
@@ -87,13 +87,14 @@ _propnames = {
     'size'      : 2,
     'source'    : 3,
     'mtime'     : 4,
-    'cluster'   : 5,
+    'muser'     : 5,
+    'cluster'   : 6,
 }
 
 
 class Node(DBWorker):
     """Nodes store path organization.
-       Versions store obejct history.
+       Versions store object history.
        Attributes store metadata.
     """
     
@@ -105,7 +106,7 @@ class Node(DBWorker):
         execute(""" create table if not exists nodes
                           ( node       integer primary key,
                             parent     integer not null default 0,
-                            path       text    not null default ''
+                            path       text    not null default '',
                             foreign key (parent)
                             references nodes(node)
                             on update cascade
@@ -118,6 +119,7 @@ class Node(DBWorker):
                             population integer not null default 0,
                             size       integer not null default 0,
                             mtime      integer,
+                            muser      text    not null default '',
                             cluster    integer not null default 0,
                             primary key (node, cluster)
                             foreign key (node)
@@ -153,6 +155,28 @@ class Node(DBWorker):
         
         q = "insert or ignore into nodes(node, parent) values (?, ?)"
         execute(q, (ROOTNODE, ROOTNODE))
+    
+    def node_create(self, parent, path):
+        """Create a new node from the given properties.
+           Return the node identifier of the new node.
+        """
+        
+        q = ("insert into nodes (parent, path) "
+             "values (?, ?)")
+        props = (parent, path)
+        return self.execute(q, props).lastrowid
+    
+    def node_lookup(self, path):
+        """Lookup the current node of the given path.
+           Return None if the path is not found.
+        """
+        
+        q = ("select node from nodes where path = ?")
+        self.execute(q, (path,))
+        r = self.fetchone()
+        if r is not None:
+            return r[0]
+        return None
     
     def node_update_ancestors(self, node, population, size, mtime, cluster=0):
         """Update the population properties of the given node.
@@ -202,18 +226,15 @@ class Node(DBWorker):
             return (0, 0, 0)
         return r
     
-    def version_create(self, node, size, source, cluster=0):
-        """Create a new version from the given properties.
-           Return the (serial, mtime) of the new version.
-        """
+    def node_children(self, node):
+        """Return node's child count."""
         
-        q = ("insert into nodes (node, size, source, mtime, cluster) "
-             "values (?, ?, ?, ?, ?)")
-        mtime = time()
-        props = (node, path, size, source, mtime, cluster)
-        serial = self.execute(q, props).lastrowid
-        self.node_update_ancestors(node, 1, size, mtime, cluster)
-        return serial, mtime
+        q = "select count(node) from nodes where parent = ?"
+        self.execute(q, (node,))
+        r = fetchone()
+        if r is None:
+            return 0
+        return r
     
 #     def node_remove(self, serial, recursive=0):
 #         """Remove the node specified by serial.
@@ -236,14 +257,46 @@ class Node(DBWorker):
 #         self.node_update_ancestors(parent, -pop-1, -size-popsize)
 #         return True
     
+    def version_create(self, node, size, source, muser, cluster=0):
+        """Create a new version from the given properties.
+           Return the (serial, mtime) of the new version.
+        """
+        
+        q = ("insert into nodes (node, size, source, mtime, muser, cluster) "
+             "values (?, ?, ?, ?, ?)")
+        mtime = time()
+        props = (node, path, size, source, mtime, muser, cluster)
+        serial = self.execute(q, props).lastrowid
+        self.node_update_ancestors(node, 1, size, mtime, cluster)
+        return serial, mtime
+    
+    def version_lookup(self, node, before=inf, cluster=0):
+        """Lookup the current version of the given node.
+           Return a list with its properties:
+           (serial, node, size, source, mtime, muser, cluster)
+           or None if the current version is not found in the given cluster.
+        """
+        
+        q = ("select serial, node, size, source, mtime, muser, cluster "
+             "from versions "
+             "where serial = (select max(serial) "
+                             "from versions "
+                             "where node = ? and mtime < ?) "
+             "and cluster = ?")
+        self.execute(q, (node, before, cluster))
+        props = self.fetchone()
+        if props is not None:
+            return props
+        return None
+    
     def version_get_properties(self, serial, keys=(), propnames=_propnames):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, cluster).
+           (serial, node, size, source, mtime, muser, cluster).
         """
         
-        q = ("select serial, node, path, size, source, mtime, cluster "
+        q = ("select serial, node, path, size, source, mtime, muser, cluster "
              "from nodes "
              "where serial = ?")
         self.execute(q, (serial,))
@@ -273,45 +326,59 @@ class Node(DBWorker):
 #         vals += (serial,)
 #         self.execute(q, vals)
     
-    def version_lookup(self, node, before=inf, cluster=0):
-        """Lookup the current version of the given node.
-           Return a list with its properties:
-           (serial, node, size, source, mtime, cluster)
-           or None if the version is not found.
+    def version_recluster(self, serial, cluster):
+        """Move the version into another cluster."""
+        
+        props = self.node_get_properties(source)
+        node = props[NODE]
+        size = props[SIZE]
+        mtime = props[MTIME]
+        oldcluster = props[CLUSTER]
+        if cluster == oldcluster:
+            return
+        
+        self.node_update_ancestors(node, -1, -size, mtime, oldcluster)
+        self.node_update_ancestors(node, 1, size, mtime, cluster)
+
+        q = "update nodes set parent = ?, path = ? where serial = ?"
+        self.execute(q, (parent, path, source))
+    
+#     def version_copy(self, serial, node, muser, copy_attr=True):
+#         """Copy the version specified by serial into
+#            a new version of node. Optionally copy attributes.
+#            Return the (serial, mtime) of the new version.
+#         """
+#         
+#         props = self.version_get_properties(serial)
+#         if props is None:
+#             return None
+#         size = props[SIZE]
+#         cluster = props[CLUSTER]
+#         new_serial, mtime = self.version_create(node, size, serial, muser, cluster)
+#         if copy_attr:
+#             self.attribute_copy(serial, new_serial)
+#         return (new_serial, mtime)
+    
+    def path_statistics(self, prefix, before=inf, except_cluster=0):
+        """Return population, total size and last mtime
+           for all latest versions under prefix that
+           do not belong to the cluster.
         """
         
-        q = ("select serial, node, size, source, mtime, cluster "
-             "from nodes "
+        q = ("select count(serial), sum(size), max(mtime) "
+             "from versions v "
              "where serial = (select max(serial) "
-                             "from nodes "
-                             "where node = ? and cluster = ? and mtime < ?)")
-        self.execute(q, (node, cluster, before))
-        props = self.fetchone()
-        if props is not None:
-            return props
-        return None
-    
-    def node_lookup(self, path):
-        """Lookup the current node of the given path.
-           Return None if the path is not found.
-        """
-        
-        q = ("select node from nodes where path = ?")
-        self.execute(q, (path,))
-        r = self.fetchone()
-        if r is not None:
-            return r[0]
-        return None
-    
-    def node_create(self, parent, path):
-        """Create a new node from the given properties.
-           Return the node identifier of the new node.
-        """
-        
-        q = ("insert into nodes (parent, path) "
-             "values (?, ?)")
-        props = (parent, path)
-        return self.execute(q, props).lastrowid
+                             "from versions "
+                             "where node = v.node and mtime < ?) "
+             "and cluster != ? "
+             "and node in (select node "
+                          "from nodes "
+                          "where path like ?")
+        self.execute(q, (before, except_cluster, prefix + '%'))
+        r = fetchone()
+        if r is None:
+            return (0, 0, 0)
+        return r
     
     def parse_filters(self, filterq):
         preterms = filterq.split(',')
@@ -538,44 +605,9 @@ class Node(DBWorker):
 #              "and path = ? and mtime between ? and ?")
 #         execute(q, args)
 #         return serials
-
-#     def node_move(self, source, parent, path):
-#         """Move the source node into another path,
-#            possibly, in another parent's namespace.
-#            The node is moved with its namespace.
-#         """
-#         props = self.node_get_properties(source)
-# 
-#         oldparent = props[PARENT]
-#         size = props[SIZE]
-#         population = props[POPULATION]
-#         popsize = props[POPSIZE]
-# 
-#         sizedelta = size + popsize
-#         popdelta = population + 1
-#         node_update_ancestors = self.node_update_ancestors
-#         node_update_ancestors(oldparent, -popdelta, -sizedelta)
-#         node_update_ancestors(parent, popdelta, sizedelta)
-# 
-#         q = "update nodes set parent = ?, path = ? where serial = ?"
-#         self.execute(q, (parent, path, source))
-
-    def version_copy(self, serial, node=None, copy_attr=True):
-        """Copy the version specified by serial into
-           a new version of node. Optionally copy attributes.
-           Return the (serial, mtime) of the new version.
-        """
-        
-        props = self.version_get_properties(serial)
-        size = props[SIZE]
-        cluster = props[CLUSTER]
-        new_serial, mtime = self.version_create(node, path, size, serial, cluster)
-        if copy_attr:
-            self.attr_copy(serial, new_serial)
-        return (new_serial, mtime)
     
-    def node_get_attributes(self, serial, keys=()):
-        """Return a list of (key, value) pairs of the node specified by serial.
+    def attribute_get(self, serial, keys=()):
+        """Return a list of (key, value) pairs of the version specified by serial.
            If keys is empty, return all attributes.
            Othwerise, return only those specified.
         """
@@ -591,8 +623,8 @@ class Node(DBWorker):
             execute(q, (serial,))
         return self.fetchall()
     
-    def attr_set(self, serial, items):
-        """Set the attributes of the node specified by serial.
+    def attribute_set(self, serial, items):
+        """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
         
@@ -600,8 +632,8 @@ class Node(DBWorker):
              "values (?, ?, ?)")
         self.executemany(q, ((serial, k, v) for k, v in items))
     
-    def attr_del(self, serial, keys=()):
-        """Delete attributes of the node specified by serial.
+    def attribute_del(self, serial, keys=()):
+        """Delete attributes of the version specified by serial.
            If keys is empty, delete all attributes.
            Otherwise delete those specified.
         """
@@ -623,7 +655,7 @@ class Node(DBWorker):
 #         self.execute(q, (parent,))
 #         return [r[0] for r in self.fetchall()]
     
-    def attr_copy(self, source, dest):
+    def attribute_copy(self, source, dest):
         q = ("insert or replace into attributes "
              "select ?, key, value from attributes "
              "where serial = ?")

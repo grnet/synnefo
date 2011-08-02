@@ -1171,9 +1171,8 @@ class ObjectGet(BaseTestCase):
         fname = 'largefile'
         o = self.upload_random_data(self.containers[1], fname, l)
         if o:
-            data = self.client.retrieve_object(self.containers[1], fname,
+            body = self.client.retrieve_object(self.containers[1], fname,
                                                format='json')
-            body = json.loads(data)
             hashes = body['hashes']
             block_size = body['block_size']
             block_hash = body['block_hash']
@@ -1274,6 +1273,18 @@ class ObjectPut(BaseTestCase):
         self.assertEqual('', self.client.retrieve_object(self.container,
                                                          'large-object'))
     
+    def test_create_zero_length_object(self):
+        c = self.container
+        o = 'object'
+        zero = self.client.create_zero_length_object(c, o)
+        zero_meta = self.client.retrieve_object_metadata(c, o)
+        zero_hash = self.client.retrieve_object_hashmap(c, o)
+        zero_data = self.client.retrieve_object(c, o)
+        
+        self.assertEqual(int(zero_meta['content-length']), 0)
+        self.assertEqual(zero_hash, [])
+        self.assertEqual(zero_data, '')
+
 class ObjectCopy(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -1382,20 +1393,22 @@ class ObjectPost(BaseTestCase):
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
-        self.obj = self.upload_random_data(self.containers[0], o_names[0])
+        self.obj = []
+        for i in range(2):
+            self.obj.append(self.upload_random_data(self.containers[0], o_names[i]))
     
     def test_update_meta(self):
         #perform update metadata
         more = {'foo':'foo', 'bar':'bar'}
         status = self.client.update_object_metadata(self.containers[0],
-                                                    self.obj['name'],
+                                                    self.obj[0]['name'],
                                                     **more)[0]
         #assert request accepted
         self.assertEqual(status, 202)
         
         #assert old metadata are still there
         headers = self.client.retrieve_object_metadata(self.containers[0],
-                                                       self.obj['name'],
+                                                       self.obj[0]['name'],
                                                        restricted=True)
         #assert new metadata have been updated
         for k,v in more.items():
@@ -1407,19 +1420,19 @@ class ObjectPost(BaseTestCase):
                            last_byte_pos=499,
                            instance_length = True,
                            content_length = 500):
-        l = len(self.obj['data'])
-        length = l if instance_length else '*'
+        l = len(self.obj[0]['data'])
         range = 'bytes %d-%d/%s' %(first_byte_pos,
                                        last_byte_pos,
-                                       length)
+                                        l if instance_length else '*')
         partial = last_byte_pos - first_byte_pos + 1
+        length = first_byte_pos + partial
         data = get_random_data(partial)
         args = {'content_type':'application/octet-stream',
                 'content_range':'%s' %range}
         if content_length:
             args['content_length'] = content_length
         
-        status = self.client.update_object(self.containers[0], self.obj['name'],
+        status = self.client.update_object(self.containers[0], self.obj[0]['name'],
                                   StringIO(data), **args)[0]
         
         if partial < 0 or (instance_length and l <= last_byte_pos):
@@ -1428,81 +1441,191 @@ class ObjectPost(BaseTestCase):
             self.assertEqual(status, 204)           
             #check modified object
             content = self.client.retrieve_object(self.containers[0],
-                                              self.obj['name'])
-            self.assertEqual(content[0:partial], data)
-            self.assertEqual(content[partial:l], self.obj['data'][partial:l])
+                                              self.obj[0]['name'])
+            self.assertEqual(content[:first_byte_pos], self.obj[0]['data'][:first_byte_pos])
+            self.assertEqual(content[first_byte_pos:last_byte_pos+1], data)
+            self.assertEqual(content[last_byte_pos+1:], self.obj[0]['data'][last_byte_pos+1:])
+    
+    def test_update_object_lt_blocksize(self):
+        self.test_update_object(10, 20, content_length=None)
+    
+    def test_update_object_gt_blocksize(self):
+        o = self.upload_random_data(self.containers[0], o_names[1],
+                                length=4*1024*1024+5)
+        c = self.containers[0]
+        o_name = o['name']
+        o_data = o['data']
+        first_byte_pos = 4*1024*1024+1
+        last_byte_pos = 4*1024*1024+4
+        l = last_byte_pos - first_byte_pos + 1
+        data = get_random_data(l)
+        range = 'bytes %d-%d/*' %(first_byte_pos, last_byte_pos)
+        self.client.update_object(c, o_name, StringIO(data), content_range=range)
+        content = self.client.retrieve_object(c, o_name)
+        self.assertEqual(content[:first_byte_pos], o_data[:first_byte_pos])
+        self.assertEqual(content[first_byte_pos:last_byte_pos+1], data)
+        self.assertEqual(content[last_byte_pos+1:], o_data[last_byte_pos+1:])    
+    
+    def test_update_object_divided_by_blocksize(self):
+        o = self.upload_random_data(self.containers[0], o_names[1],
+                                length=4*1024*1024+5)
+        c = self.containers[0]
+        o_name = o['name']
+        o_data = o['data']
+        first_byte_pos = 4*1024*1024
+        last_byte_pos = 5*1024*1024
+        l = last_byte_pos - first_byte_pos + 1
+        data = get_random_data(l)
+        range = 'bytes %d-%d/*' %(first_byte_pos, last_byte_pos)
+        self.client.update_object(c, o_name, StringIO(data), content_range=range)
+        content = self.client.retrieve_object(c, o_name)
+        self.assertEqual(content[:first_byte_pos], o_data[:first_byte_pos])
+        self.assertEqual(content[first_byte_pos:last_byte_pos+1], data)
+        self.assertEqual(content[last_byte_pos+1:], o_data[last_byte_pos+1:])    
     
     def test_update_object_no_content_length(self):
         self.test_update_object(content_length = None)
     
     def test_update_object_invalid_content_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
-                                    self.containers[0], self.obj['name']):
+                                    self.containers[0], self.obj[0]['name']):
             self.assert_raises_fault(400, self.test_update_object,
                                      content_length = 1000)
     
     def test_update_object_invalid_range(self):
         with AssertContentInvariant(self.client.retrieve_object,
-                                    self.containers[0], self.obj['name']):
+                                    self.containers[0], self.obj[0]['name']):
             self.assert_raises_fault(416, self.test_update_object, 499, 0, True)
     
     def test_update_object_invalid_range_and_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
-                                    self.containers[0], self.obj['name']):
+                                    self.containers[0], self.obj[0]['name']):
             self.assert_raises_fault(416, self.test_update_object, 499, 0, True,
                                      -1)
     
     def test_update_object_invalid_range_with_no_content_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
-                                    self.containers[0], self.obj['name']):
+                                    self.containers[0], self.obj[0]['name']):
             self.assert_raises_fault(416, self.test_update_object, 499, 0, True,
                                      content_length = None)
     
     def test_update_object_out_of_limits(self):    
         with AssertContentInvariant(self.client.retrieve_object,
-                                    self.containers[0], self.obj['name']):
-            l = len(self.obj['data'])
+                                    self.containers[0], self.obj[0]['name']):
+            l = len(self.obj[0]['data'])
             self.assert_raises_fault(416, self.test_update_object, 0, l+1, True)
     
     def test_append(self):
         data = get_random_data(500)
         headers = {}
-        self.client.update_object(self.containers[0], self.obj['name'],
+        self.client.update_object(self.containers[0], self.obj[0]['name'],
                                   StringIO(data), content_length=500,
                                   content_type='application/octet-stream')
         
         content = self.client.retrieve_object(self.containers[0],
-                                              self.obj['name'])
-        self.assertEqual(len(content), len(self.obj['data']) + 500)
-        self.assertEqual(content[:-500], self.obj['data'])
+                                              self.obj[0]['name'])
+        self.assertEqual(len(content), len(self.obj[0]['data']) + 500)
+        self.assertEqual(content[:-500], self.obj[0]['data'])
     
     def test_update_with_chunked_transfer(self):
         data = get_random_data(500)
         dl = len(data)
-        fl = len(self.obj['data'])
+        fl = len(self.obj[0]['data'])
         
         self.client.update_object_using_chunks(self.containers[0],
-                                               self.obj['name'], StringIO(data),
+                                               self.obj[0]['name'],
+                                               StringIO(data),
                                                offset=0,
                                                content_type='application/octet-stream')
         
         #check modified object
         content = self.client.retrieve_object(self.containers[0],
-                                              self.obj['name'])
+                                              self.obj[0]['name'])
         self.assertEqual(content[0:dl], data)
-        self.assertEqual(content[dl:fl], self.obj['data'][dl:fl])
+        self.assertEqual(content[dl:fl], self.obj[0]['data'][dl:fl])
     
     def test_update_from_other_object(self):
-        data = self.upload_random_data(self.containers[0], o_names[1])['data']
-        source_object = '/%s/%s' % (self.containers[0], o_names[0])
-        self.client.update_from_other_source(self.containers[0], o_names[1],
-                                             source_object)
+        c = self.containers[0]
+        src = o_names[0]
+        dest = 'object'
         
-        self.assertEqual(
-            self.client.retrieve_object(self.containers[0], o_names[0]),
-            self.client.retrieve_object(self.containers[0], o_names[1]))
+        source_data = self.client.retrieve_object(c, src)
+        source_meta = self.client.retrieve_object_metadata(c, src)
+        source_hash = self.client.retrieve_object_hashmap(c, src)
+        
+        #update zero length object
+        self.client.create_zero_length_object(c, dest)
+        source_object = '/%s/%s' % (c, src)
+        self.client.update_from_other_source(c, dest, source_object)
+        dest_data = self.client.retrieve_object(c, src)
+        dest_meta = self.client.retrieve_object_metadata(c, dest)
+        dest_hash = self.client.retrieve_object_hashmap(c, src)
+        self.assertEqual(source_data, dest_data)
+        self.assertEqual(source_hash, dest_hash)
+        
+        #test append
+        self.client.update_from_other_source(c, dest, source_object)
+        content = self.client.retrieve_object(c, dest)
+        self.assertEqual(source_data * 2, content)
     
-
+    def test_update_range_from_other_object(self):
+        c = self.containers[0]
+        dest = 'object'
+        
+        #test update range
+        src = self.obj[1]['name']
+        src_data = self.client.retrieve_object(c, src)
+        
+        #update zero length object
+        prev_data = self.upload_random_data(c, dest, length=4*1024*1024+10)['data']
+        source_object = '/%s/%s' % (c, src)
+        first_byte_pos = 4*1024*1024+1
+        last_byte_pos = 4*1024*1024+4
+        range = 'bytes %d-%d/*' %(first_byte_pos, last_byte_pos)
+        self.client.update_from_other_source(c, dest, source_object,
+                                             content_range=range)
+        content = self.client.retrieve_object(c, dest)
+        self.assertEqual(content[:first_byte_pos], prev_data[:first_byte_pos])
+        self.assertEqual(content[first_byte_pos:last_byte_pos+1], src_data[:last_byte_pos - first_byte_pos + 1])
+        self.assertEqual(content[last_byte_pos+1:], prev_data[last_byte_pos+1:])
+    
+    def test_update_hashes_from_other_object(self):
+        c = self.containers[0]
+        dest = 'object'
+        
+        #test update range
+        src_data = self.upload_random_data(c, o_names[0], length=1024*1024+10)['data']
+        
+        #update zero length object
+        prev_data = self.upload_random_data(c, dest, length=5*1024*1024+10)['data']
+        source_object = '/%s/%s' % (c, o_names[0])
+        first_byte_pos = 4*1024*1024
+        last_byte_pos = 5*1024*1024
+        range = 'bytes %d-%d/*' %(first_byte_pos, last_byte_pos)
+        self.client.update_from_other_source(c, dest, source_object,
+                                             content_range=range)
+        content = self.client.retrieve_object(c, dest)
+        self.assertEqual(content[:first_byte_pos], prev_data[:first_byte_pos])
+        self.assertEqual(content[first_byte_pos:last_byte_pos+1], src_data[:last_byte_pos - first_byte_pos + 1])
+        self.assertEqual(content[last_byte_pos+1:], prev_data[last_byte_pos+1:])
+    
+    
+    def test_update_zero_length_object(self):
+        c = self.containers[0]
+        o = 'object'
+        other = 'other'
+        zero = self.client.create_zero_length_object(c, o)
+        
+        data = get_random_data()
+        self.client.update_object(c, o, StringIO(data))
+        self.client.create_object(c, other, StringIO(data))
+        
+        self.assertEqual(self.client.retrieve_object(c, o),
+                         self.client.retrieve_object(c, other))
+        
+        self.assertEqual(self.client.retrieve_object_hashmap(c, o),
+                         self.client.retrieve_object_hashmap(c, other))
+    
 class ObjectDelete(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -1781,17 +1904,24 @@ class TestPermissions(BaseTestCase):
                                          'c', 'o', account=get_user())
         
     
-    #def test_write_access(self):
-    #    self.client.share_object('φάκελος', 'ο1', ['διογένης'], read=False)
-    #    new_data = get_random_data()
-    #    chef.update_object('φάκελος', 'ο1', StringIO(new_data))
-    #    self.assert_not_raises_fault(401, chef.update_object,
-    #                                 'φάκελος', 'ο1', StringIO(new_data),
-    #                                 account=get_user())
-    #    
-    #    server_data = self.client.retrieve_object('φάκελος', 'ο1')
-    #    self.assertEqual(server_data[:len(o['data'])], o['data'])
-    #    self.assertEqual(server_data[len(o['data']):], new_data)
+    def test_write_access(self):
+        self.client.create_container('c')
+        o = self.upload_random_data('c', 'o')
+        self.client.share_object('c', 'o', ['chazapis'], read=False)
+        for token, account in OTHER_ACCOUNTS.items():
+            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            new_data = get_random_data()
+            if account == 'chazapis':
+                self.assert_not_raises_fault(401, cl.update_object,
+                                             'c', 'o', StringIO(new_data),
+                                             account=get_user())
+                server_data = self.client.retrieve_object('c', 'o')
+                self.assertEqual(o['data'], server_data[:len(o['data'])])
+                self.assertEqual(new_data, server_data[len(o['data']):])
+            else:
+                self.assert_raises_fault(401, cl.update_object,
+                                             'c', 'o', StringIO(new_data),
+                                             account=get_user())
 
 class AssertMappingInvariant(object):
     def __init__(self, callable, *args, **kwargs):

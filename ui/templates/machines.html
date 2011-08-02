@@ -92,6 +92,7 @@ or implied, of GRNET S.A.
             <!-- pages -->
             <div class="page page1">
                 <h2>{% trans "Select an OS" %}</h2>
+                <p class="desc">{% blocktrans %}Choose your preferred image{% endblocktrans %}</p>
                 <hr class="topruler" />
                 <div id="tabscontainer">
                     <ul class="tabs">
@@ -123,6 +124,7 @@ or implied, of GRNET S.A.
                     </ul>
                     <ul class="pane" id="custom-images">
                         <!-- custom images -->
+                        <p class="desc">{% blocktrans %}No custom images available{% endblocktrans %}</p>
                     </ul>
                 </div>
                 <hr class="bottomruler" />
@@ -131,6 +133,7 @@ or implied, of GRNET S.A.
             </div>
             <div class="page page2">
                 <h2>{% trans "Select CPUs, RAM and Disk Size" %}</h2>
+                <p class="desc">{% blocktrans %}Available options are filtered based on the selected image{% endblocktrans %}</p>
                 <hr class="topruler" />
                 <ul>
                     <li id="machinetype">
@@ -191,6 +194,7 @@ or implied, of GRNET S.A.
             </div>
             <div class="page page3">
                 <h2>{% trans "Confirm your settings" %}</h2>
+                <p class="desc">{% blocktrans %}Confirm that the options you have selected are correct{% endblocktrans %}</p>
                 <hr class="topruler" />
                 <ul id="page3-container">
                     <li class="required" id="label-name">
@@ -358,6 +362,10 @@ $("#machines-pane a#create").click(function(){
         $('#machines-pane a#create').data('overlay').load();
         // enable submit button
         $("#wizard #start").removeAttr('disabled');
+
+        try {
+            handle_image_choice_changed();
+        } catch (err) {};
     } else if (images.length == 0 ) {
         ajax_error('NO_IMAGES');
         return false;
@@ -482,100 +490,53 @@ $('#machines-pane .radio').live('click' ,function() {
     }
 });
 
+var v2p = range_value_to_percentage;
 // validate cpu input box
-$("#cpu-indicator").live('change',function(){
-    var v = Number(this.value);
-    var i = cpus.indexOf(v);
-    if (isNaN(v)) {
-        $(this).value = cpus[0];
-        $("#cpu").data('rangeinput').setValue(0);
-    } else if (i == -1) {
-        for (var j=0; j < cpus.length; j++)
-            if (v<cpus[j])
-                break;
-        $("#cpu").data('rangeinput').setValue(j);
-    } else {
-        $("#cpu").data('rangeinput').setValue(i);
-    }
+$("#cpu-indicator").live('change',function() {
+    $("#cpu").data('rangeinput').setValue(get_closest_from_value(this.value, cpus));
+    validate_selected_flavor_options();
     return false;
 });
 
 // validate ram input box
-$("#ram-indicator").live('change',function(){
-    var v = Number(this.value);
-    var i = ram.indexOf(v);
-    if (isNaN(v)) {
-        $(this).value = cpus[0];
-        $("#ram").data('rangeinput').setValue(0);
-    } else if (i == -1) {
-        for (var j=0; j < ram.length; j++)
-            if (v<ram[j])
-                break;
-        $("#ram").data('rangeinput').setValue(j);
-    } else {
-        $("#ram").data('rangeinput').setValue(i);
-    }
+$("#ram-indicator").live('change',function() {
+    $("#ram").data('rangeinput').setValue(get_closest_from_value(this.value, ram));
+    validate_selected_flavor_options();
     return false;
 });
 
 // validate storage input box
 $("#storage-indicator").live('change',function(){
-    var v = Number(this.value);
-    var i = disks.indexOf(v);
-    if (isNaN(v)) {
-        $(this).value = disks[0];
-        $("#storage").data('rangeinput').setValue(0);
-    } else if (i == -1) {
-        for (var j=0; j < disks.length; j++)
-            if (v<disks[j])
-                break;
-        $("#storage").data('rangeinput').setValue(j);
-    } else {
-        $("#storage").data('rangeinput').setValue(i);
-    }
+    $("#storage").data('rangeinput').setValue(get_closest_from_value(this.value, disks));
+    validate_selected_flavor_options();
     return false;
 });
 
 // selecting the small size
 $("#small").click(function(){
-    $("#cpu").data('rangeinput').setValue(0);
-    $("#ram").data('rangeinput').setValue(0);
-    $("#storage").data('rangeinput').setValue(0);
-    $("#cpu-indicator")[0].value = cpus[0];
-    $("#ram-indicator")[0].value = ram[0];
-    $("#storage-indicator")[0].value = disks[0];
-    $("#small").addClass("active");
-    $("#medium").removeClass("active");
-    $("#large").removeClass("active");
-    $("#custom").removeClass("active");
+    if ($(this).find("input:disabled").length == 1) { return };
+    var flavor = SUGGESTED_FLAVORS[$(this).attr("id")];
+    $(this).parent().parent().parent().find("label").removeClass("active");
+    $(this).addClass("active");
+    set_flavor_sliders_values(flavor.cpu, flavor.disk, flavor.ram);
 });
 
 // selecting the medium size
 $("#medium").click(function(){
-    $("#cpu").data('rangeinput').setValue(1);
-    $("#ram").data('rangeinput').setValue(1);
-    $("#storage").data('rangeinput').setValue(1);
-    $("#cpu-indicator")[0].value = cpus[1];
-    $("#ram-indicator")[0].value = ram[1];
-    $("#storage-indicator")[0].value = disks[1];
-    $("#medium").addClass("active");
-    $("#small").removeClass("active");
-    $("#large").removeClass("active");
-    $("#custom").removeClass("active");
+    if ($(this).find("input:disabled").length == 1) { return };
+    var flavor = SUGGESTED_FLAVORS[$(this).attr("id")];
+    $(this).parent().parent().parent().find("label").removeClass("active");
+    $(this).addClass("active");
+    set_flavor_sliders_values(flavor.cpu, flavor.disk, flavor.ram);
 });
 
 // selecting the large size
 $("#large").click(function(){
-    $("#cpu").data('rangeinput').setValue(2);
-    $("#ram").data('rangeinput').setValue(2);
-    $("#storage").data('rangeinput').setValue(2);
-    $("#cpu-indicator")[0].value = cpus[2];
-    $("#ram-indicator")[0].value = ram[2];
-    $("#storage-indicator")[0].value = disks[2];
-    $("#large").addClass("active");
-    $("#medium").removeClass("active");
-    $("#small").removeClass("active");
-    $("#custom").removeClass("active");
+    if ($(this).find("input:disabled").length == 1) { return };
+    var flavor = SUGGESTED_FLAVORS[$(this).attr("id")];
+    $(this).parent().parent().parent().find("label").removeClass("active");
+    $(this).addClass("active");
+    set_flavor_sliders_values(flavor.cpu, flavor.disk, flavor.ram);
 });
 
 // selecting the custom flavor enables the sliders

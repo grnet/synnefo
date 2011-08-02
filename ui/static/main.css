@@ -309,7 +309,7 @@ div#footer-text{
 /* server wizard scrollable root element and network wizard */
 #wizard, #networks-wizard {
     font-size:75%;
-    height:405px;
+    height:425px;
     width:453px;
     overflow:hidden;
     position:absolute !important;
@@ -562,7 +562,7 @@ div#footer-text{
     background-color: #387693;
     height: 5px;
     margin-left: -14px;
-    margin-top: 362px;
+    margin-top: 382px;
     width: 550px;
 }
 
@@ -1207,6 +1207,10 @@ div.machine-type {
 
 .machine-type .active {
     color: #FFFFFF
+}
+
+div.machine-type label.disabled {
+    color: #aaa !important;
 }
 
 #machinesview {
@@ -3808,7 +3812,7 @@ div.console-footer {
     height: 6px;
     width: 479px;
     margin-left: -13px;
-    margin-top: 22px;
+    margin-top: 19px;
 }
 
 .red {
@@ -4293,4 +4297,42 @@ div.state .shutdown, tbody.machines .shutdown {
     font-size: 0.6em;
     padding: 0 10px;
     text-align: center;
+}
+
+.slider .slider-point {
+    width: 4px;
+    height: 3px;
+    margin-left: 1px;
+    background-color: transparent;
+    display: block;
+    position: absolute;
+    z-index: 10;
+    bottom: 0px;
+}
+
+.slider .slider-point-light {
+    background-color: transparent;
+}
+
+.slider-point-text {
+    font-size: 0.6em;
+    position: absolute;
+    top: 4px;
+    border-top: 5px solid #C5DEE9;
+    padding: 3px;
+    color: #4085A5;
+    display: block;
+    min-width: 6px;
+    text-align: middle;
+}
+
+.slider .handle {
+    z-index: 50;
+}
+
+.modal p.desc {
+    margin: 5px 0;
+    margin-left: 37px;
+    font-size: 0.8em;
+    color: #888;
 }

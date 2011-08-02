@@ -566,7 +566,9 @@ function update_servers_data(servers_update, data) {
                     old_server.network_transition = undefined;
                 };
             }
-        } catch (err) { console.info(err) }
+        } catch (err) {
+            // no old server
+        }
 
         if (exists !== false) {
             try {
@@ -732,6 +734,10 @@ function update_images() {
                 images = data.images.values;
                 jQuery.parseJSON(data);
                 update_wizard_images();
+
+                // update images options
+                update_image_flavor_options();
+                handle_image_choice_changed();
             } catch(err){
                 ajax_error("NO_IMAGES");
             }
@@ -740,6 +746,7 @@ function update_images() {
     return false;
 }
 
+// update images panel
 function update_wizard_images() {
     if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
         $.each(images, function(i,image){
@@ -768,58 +775,395 @@ function update_wizard_images() {
                 img.appendTo("ul#standard-images");
             }
         });
+        
+        $(".image-container input[type=radio]").change(function(){
+            handle_image_choice_changed();
+        });
     }
 }
 
+
+// get closest value from specified percentage
+function get_closest_option(perc, map) {
+    min = 1;
+    max = Math.max.apply(Math, map);
+    
+    // create a map with percentages
+    perc_map = [];
+    $.each(map, function(i,v) {
+        perc_map[i] = parseInt(range_value_to_percentage(v, map));
+
+    })
+    
+    perc_map = perc_map.sort(function(a,b){return a>b});
+    // find closest percentage
+    var close = perc_map[0];
+    found = close;
+    found_pos = 0;
+    diff = Math.abs(close - perc);
+    
+    // get closest based on map values
+    for (var i=1; i< perc_map.length; i++) {
+        if (Math.abs(perc_map[i] - perc) > diff) {
+            break;
+        } else {
+            found = perc_map[i];
+            found_pos = i;
+            diff = Math.abs(perc_map[i] - perc);
+        }
+    }
+    
+    var val = range_percentage_to_value(perc_map[found_pos], map);
+    return val;
+}
+
+// get closest percentage from specified value
+function get_closest_from_value(value, map) {
+    var perc = range_value_to_percentage(value, map, false);
+    var close_val = get_closest_option(perc, map);
+    var value = range_value_to_percentage(close_val, map);
+    return value;
+}
+
+// convert a range value (e.g. ram 1024) to percentage
+function range_value_to_percentage(value, map, valid) {
+    if (valid == undefined) { valid = true }
+    var pos = map.indexOf(value)
+    
+    // do we need to validate that value is in the map
+    if (pos == -1 && valid ) { return 0 }
+    if (value == 1) { return 0; }
+    if (pos == map.length -1) { return 100; }
+
+    perc = value * (100 / Math.max.apply(Math, map));
+
+    // fix for small fragmentations
+    min = 1; max = Math.max.apply(Math, map);
+    if (max - min <= 4) {
+        perc = perc - 12
+    }
+
+    return perc;
+} 
+
+// get range value to display based on the percentage value
+// of the range control
+function range_percentage_to_value(value, map) {
+    min = 0; max = Math.max.apply(Math, map);
+    ret = Math.round(value * max / 100);
+    
+    // fix for small fragmentations
+    if (max - min <= 4) { ret = ret; }
+    if (ret < min) { ret = min; }
+    if (ret >= max) { ret = max; }
+    ret = ret;
+    // 0 is not an option
+    ret = ret == 0 ? 1: ret;
+    return ret;
+}
+
+// get flavor unique index key
+function get_flavor_index_key(flv) {
+    return "cpu:" + flv.cpu + ":ram:" + flv.ram + ":disk:" + flv.disk
+}
+
+// create a map with available flavors for each image
+function update_image_flavor_options() {
+    // invalid state, do not update, 
+    // wait for both images and flavors to get filled/updated
+    if (!window.images || !window.flavors) {
+        return
+    }
+    
+    // create images flavors map
+    var images_options = {};
+    $.each(images, function(i, img) {
+        images_options[img.id] = {flavors:{}, options:{cpu:[], ram:[], disk:[]}};
+        // check disk usage
+        var disk_limit = img.metadata.values.size;
+        var image_flavors = {};
+        var image_options = {cpu:[], ram:[], disk:[]};
+        var flavor_combinations = [];
+        var default_flavor = undefined;
+        $.each(flavors, function(j, flv) {
+            var disk = flv.disk * 1000;
+            // flavor size can contain image size
+            if (disk > disk_limit) {
+                image_flavors[flv.id] = flv;
+                image_options.cpu.push(flv.cpu)
+                image_options.ram.push(flv.ram)
+                image_options.disk.push(flv.disk)
+                
+                // create combinations indexes
+                flavor_combinations.push(get_flavor_index_key(flv));
+                default_flavor = default_flavor || flv;
+            } else {
+            }
+        });
+        
+        // update image suggested flavors
+        var suggested = [];
+        $.each(SUGGESTED_FLAVORS, function(i, el) {
+            // image contains suggested flavor ???
+            if (flavor_combinations.indexOf(get_flavor_index_key(el)) > -1){
+                suggested.push(i);
+            }
+        });
+
+        // unique data
+        image_options.cpu = image_options.cpu.unique();
+        image_options.ram = image_options.ram.unique();
+        image_options.disk = image_options.disk.unique();
+        flavor_combinations = flavor_combinations.unique();
+        
+        // sort data
+        var numeric_sort = function(a,b){return a>b};
+        image_options.cpu = image_options.cpu.sort(numeric_sort);
+        image_options.ram = image_options.ram.sort(numeric_sort);
+        image_options.disk = image_options.disk.sort(numeric_sort);
+
+        // append data
+        images_options[img.id].flavors = image_flavors;
+        images_options[img.id].options = image_options;
+        images_options[img.id].image = img;
+        images_options[img.id].flavors_index = flavor_combinations;
+        images_options[img.id].default_flavor = default_flavor;
+        images_options[img.id].suggested = suggested;
+    })
+    
+    // export it to global namespace
+    window.IMAGES_DATA = images_options;
+}
+
+// is flavor available for the specified image ???
+function image_flavor_available(image_ref, flavor_object) {
+    return IMAGES_DATA[image_ref].flavors_index.indexOf(get_flavor_index_key(flavor_object)) > -1;
+}
+
+// update sliders and flavor choices on ui
+function handle_image_choice_changed() {
+    try {
+        validate_selected_flavor_options();
+        repaint_flavor_choices();
+        update_suggested_flavors();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// disable/enable suggested flavor options (small/medium/large)
+function update_suggested_flavors() {
+    var img_id = get_selected_image_id();
+    var img = IMAGES_DATA[img_id];
+    
+    // disable all
+    $("#machinetype input[type=radio]").attr("disabled", "disabled").parent().addClass("disabled");
+    
+    $.each(SUGGESTED_FLAVORS, function(i, el) {
+        if (img.suggested.indexOf(i) != -1) {
+            $("#machinetype label input[value="+i+"]").attr("disabled", "").parent().removeClass("disabled");
+        }
+    })
+    $("#machinetype label input[value=custom]").attr("disabled", "").parent().removeClass("disabled");
+
+    // select first enabled
+    $($("#machinetype input[type=radio]").not(":disabled")[0]).click();
+}
+
+// clear points
+function clean_flavor_choice_points() {
+    $(".slider-container .slider .slider-point").remove();
+}
+
+function repaint_flavor_choices() {
+    clean_flavor_choice_points();
+    var img = IMAGES_DATA[get_selected_image_id()];
+    function paint_slider_points(slider, points) {
+        $.each(points, function(i, point) {
+             // proper width
+             var width = slider.width() - slider.find(".handle").width();
+             // progress number
+             var progress = slider.find(".progress").width();
+             // percentage based on value
+             var perc = range_value_to_percentage(point, points);
+             // position
+             var pos = perc*width/100;
+            
+             // handlers
+             var last = false;
+             var first = false;
+             if (pos == 0) { first - true; pos = 2}
+             if (pos == width) { last = true; }
+            
+             // create pointer container and text
+             var text = $('<span class="slider-point-text">' + point + '</span>');
+             var span = $('<span class="slider-point"></span>').css("left", pos + "px").addClass(pos <= progress ? "slider-point-light": "");
+             span.append(text);
+             
+             // wait for element to get dimensions
+             setTimeout(function() {
+                 // choose text pointer position
+                 move = "-" + ($(text).width()/2 + 1) + "px";
+                 if (last) { move = "-" + ($(text).width() - 2) +  "px"; }
+                 if (first) { move = "0px"; }
+                 $(text).css("margin-left", move);
+             }, 100);
+             // append to slider
+             slider.append(span);
+        });
+    }
+    
+    // paint points for each slider
+    paint_slider_points($("#cpu-indicator").parent().find(".slider"), img.options.cpu);
+    paint_slider_points($("#storage-indicator").parent().find(".slider"), img.options.disk);
+    paint_slider_points($("#ram-indicator").parent().find(".slider"), img.options.ram);
+}
+
+function validate_selected_flavor_options(selected) {
+    var img = IMAGES_DATA[get_selected_image_id()];
+    if (!check_selected_flavor_values()) {
+        var flv = img.default_flavor;
+        set_flavor_sliders_values(flv.cpu, flv.disk, flv.ram);
+    }
+}
+
+// check if selected values are available
+// as a flavor for the image
+function check_selected_flavor_values() {
+    var img = IMAGES_DATA[get_selected_image_id()];
+    var values = get_flavor_sliders_values();
+    var found = false;
+    
+    // index lookup
+    if (img.flavors_index.indexOf(get_flavor_index_key(values)) > -1) {
+        // return flavor id
+        return identify_flavor(values.cpu, values.disk, values.ram);
+    }
+    
+    return false;
+}
+
+// find which image is selected
+// return the options requested available for this image
+function get_selected_image_options(opt_name) {
+    var img_id = get_selected_image_id();
+    var img = IMAGES_DATA[img_id];
+    return img.options[opt_name];
+}
+
+// identify selected image
+function get_selected_image_id() {
+    return $(".image-container input:checked").attr("id").replace("img-radio-", "");
+}
+
 function update_wizard_flavors(){
+    
+    // find max range values
+    cpus_max = Math.max.apply(Math, cpus); 
+    cpus_min = 1;
+
+    disks_max = Math.max.apply(Math, disks);
+    disks_min = 1;
+
+    ram_max = Math.max.apply(Math, ram);
+    ram_min = 1;
+    
     // sliders for selecting VM flavor
-    $("#cpu:range").rangeinput({min:0,
+    $("#cpu:range").rangeinput({min:1,
                                value:0,
                                step:1,
                                progress: true,
-                               max:cpus.length-1});
+                               max:100});
 
-    $("#storage:range").rangeinput({min:0,
+    $("#storage:range").rangeinput({min:1,
                                value:0,
                                step:1,
                                progress: true,
-                               max:disks.length-1});
+                               max:100});
 
-    $("#ram:range").rangeinput({min:0,
+    $("#ram:range").rangeinput({min:1,
                                value:0,
                                step:1,
                                progress: true,
-                               max:ram.length-1});
-    $("#small").click();
+                               max:100});
 
     // update the indicators when sliding
     $("#cpu:range").data().rangeinput.onSlide(function(event,value){
-        $("#cpu-indicator")[0].value = cpus[Number(value)];
+        var cpus = get_selected_image_options("cpu");
+        $("#cpu-indicator")[0].value = range_percentage_to_value(value, cpus);
         $("#cpu-indicator").addClass('selectedrange');
     });
     $("#cpu:range").data().rangeinput.change(function(event,value){
-        $("#cpu-indicator")[0].value = cpus[Number(value)];
+        var cpus = get_selected_image_options("cpu");
+        $("#cpu-indicator")[0].value = range_percentage_to_value(value, cpus);
+        normal_value = range_value_to_percentage(get_closest_option(value, cpus), cpus);
+        if (this.getValue() != normal_value) {
+            this.setValue(normal_value);
+        }
         $("#custom").click();
         $("#cpu-indicator").removeClass('selectedrange');
+        validate_selected_flavor_options("cpu");
     });
     $("#ram:range").data().rangeinput.onSlide(function(event,value){
-        $("#ram-indicator")[0].value = ram[Number(value)];
+        var ram = get_selected_image_options("ram");
+        $("#ram-indicator")[0].value = range_percentage_to_value(value, ram);
         $("#ram-indicator").addClass('selectedrange');
     });
     $("#ram:range").data().rangeinput.change(function(event,value){
-        $("#ram-indicator")[0].value = ram[Number(value)];
+        var ram = get_selected_image_options("ram");
+        $("#ram-indicator")[0].value = range_percentage_to_value(value, ram);
+        normal_value = range_value_to_percentage(get_closest_option(value, ram), ram);
+        if (this.getValue() != normal_value) {
+            this.setValue(normal_value);
+        }
         $("#custom").click();
         $("#ram-indicator").removeClass('selectedrange');
+        validate_selected_flavor_options("ram");
     });
     $("#storage:range").data().rangeinput.onSlide(function(event,value){
-        $("#storage-indicator")[0].value = disks[Number(value)];
+        var disks = get_selected_image_options("disk")
+        $("#storage-indicator")[0].value = range_percentage_to_value(value, disks);
         $("#storage-indicator").addClass('selectedrange');
     });
     $("#storage:range").data().rangeinput.change(function(event,value){
-        $("#storage-indicator")[0].value = disks[Number(value)];
+        var disks = get_selected_image_options("disk")
+        $("#storage-indicator")[0].value = range_percentage_to_value(value, disks);
+        normal_value = range_value_to_percentage(get_closest_option(value, disks), disks);
+        if (this.getValue() != normal_value) {
+            this.setValue(normal_value);
+        }
         $("#custom").click();
         $("#storage-indicator").removeClass('selectedrange');
+        validate_selected_flavor_options("disk");
     });
+}
+
+function get_flavor_slider(name) {
+    return $("#" + name + ":range").data().rangeinput;
+}
+
+// utility function to grab the value of the slider
+function get_flavor_slider_value(name) {
+    var maps = {
+        'cpu': cpus,
+        'ram': ram,
+        'storage': disks
+    }
+    return range_percentage_to_value(get_flavor_slider(name).getValue(), maps[name]);
+}
+
+function set_flavor_sliders_values(cpu, disk, ram) {
+    get_flavor_slider("cpu").setValue(range_value_to_percentage(cpu, get_selected_image_options("cpu")));
+    get_flavor_slider("storage").setValue(range_value_to_percentage(disk, get_selected_image_options("disk")));
+    get_flavor_slider("ram").setValue(range_value_to_percentage(ram, get_selected_image_options("ram")));
+}
+
+function get_flavor_sliders_values() {
+    return {
+        'cpu': get_flavor_slider_value("cpu"),
+        'ram': get_flavor_slider_value("ram"),
+        'disk': get_flavor_slider_value("storage")
+    }
 }
 
 Array.prototype.unique = function () {
@@ -865,10 +1209,21 @@ function update_flavors() {
                     disks[i] = flavor['disk'];
                     ram[i] = flavor['ram'];
                 });
+
+                // we only need unique and sorted arrays
                 cpus = cpus.unique();
                 disks = disks.unique();
                 ram = ram.unique();
+                
+                // sort arrays
+                var numeric_sort = function(a,b) { return a>b};
+                disks.sort(numeric_sort);
+                cpus.sort(numeric_sort);
+                ram.sort(numeric_sort);
+            
+                // ui update handlers
                 update_wizard_flavors();
+                update_image_flavor_options();
             } catch(err){
                 ajax_error("NO_FLAVORS");
             }

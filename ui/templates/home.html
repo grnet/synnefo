@@ -170,6 +170,12 @@ or implied, of GRNET S.A.
             'NO_DETAILS' : '{% trans "Νο advanced details provided" %}'
         };
 
+        var SUGGESTED_FLAVORS = {
+            'small': {cpu:1, ram:1024, disk:20},
+            'medium': {cpu:2, ram:2048, disk:30},
+            'large': {cpu:4, ram:4096, disk:40}
+        }
+
         var SUCCESS = {
             'HEADER' : '{% trans "Success" %}',
             'DEFAULT' : '{% trans "Your request has been succefully executed." %}',

@@ -36,7 +36,7 @@ a.enabled {
 }
 
 #wizard {
-    height: 450px;
+    height: 468px;
 }
 
 #wizard .topruler, #networks-wizard .topruler {
@@ -135,7 +135,7 @@ div.image {
 
 #wizard .separator-end {
     font-size: 2%;
-    margin-top: 383px;
+    margin-top: 401px;
 }
 
 div.confirm_single {
@@ -288,7 +288,7 @@ div.machine .actions .destroy {
 }
 
 #networks-wizard .separator-end {
-    margin-top: 5px;
+    margin-top: 8px;
 }
 
 .private-networks .state div {

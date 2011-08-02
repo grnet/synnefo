@@ -69,7 +69,7 @@ or implied, of GRNET S.A.
         var os_icons = {{image_icons|safe}};
 
         // timeout value from settings.py
-        var TIMEOUT = {{timeout}};
+        var TIMEOUT = {{ timeout }};
         var UPDATE_INTERVAL = {{update_interval}};
         var LOGOUT_REDIRECT = '{{ logout_redirect }}';
         var INVITATIONS_URL = "{% url invitations %}";
@@ -199,7 +199,12 @@ or implied, of GRNET S.A.
         };
 
         // ajax error checking
-        function ajax_error(status, serverID, action, responseText) {
+        function ajax_error(status, serverID, action, responseText, ajax_settings) {
+            var error_date = new Date();
+            if (!ajax_settings) {
+                ajax_settings = {};
+            }
+
              // close existing overlays to begin with
             close_all_overlays();
             // clear old deferred calls (stops all auto-updates)
@@ -314,16 +319,24 @@ or implied, of GRNET S.A.
                 btn.click(function(){
                     // wrap in its own try catch to avoid retriggering ajax_error
                     try {
-
+                        
+                        var data = {};
                         // fallback to error object
                         try {
                             var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
                         } catch (err) {
                             var data = {'error': err};
                         }
-
+                        
+                        try {
+                            // make it text then again object to be sure it can be
+                            // converted to text
+                            var ajax_data = {'ajax_settings': JSON.parse(JSON.stringify(ajax_settings))};
+                        } catch (err) {
+                            var ajax_data = {'ajax_settings': err};
+                        }
+                        
                         var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
-
                         // we will close error overlay to display feedback form
                         // set feedback pending flag to not reload the window url
                         // unless the user is done with the feedback
@@ -344,7 +357,12 @@ or implied, of GRNET S.A.
                                     "Data: " + errorData + "\n\n" + 
                                     "Please describe the actions that triggered the error:\n";
 
-                        setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
+                        // append error date to extra user info
+                        var extra_user_data = $.extend(ajax_data, {'error_date': error_date});
+                        setTimeout(function() {
+                            show_feedback_form(fdb_msg, 1, extra_user_data); 
+                            $("#exposeMask").show();
+                            }, 400);
                     } catch (err) {
                         sel(".send-btn").hide();
                         sel(".errormsg").fadeIn();

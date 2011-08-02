@@ -44,6 +44,12 @@ $.ajaxSetup({
           // save ajax settings, we might need them for error reporting
           last_request = this;
           xhr.setRequestHeader("X-Auth-Token", $.cookie("X-Auth-Token"));
+
+          // append the date the request initialized to the ajax settings
+          try {
+            this.date_sent = new Date();
+          } catch (err) {
+          }
     },
 
     // catch uncaught error requests
@@ -62,9 +68,9 @@ $.ajaxSetup({
         if (jqXHR.status >= 500 && jqXHR.status < 600)
         {
             try {
-                ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText, this);
             } catch(err) {
-                ajax_error(-1, textStatus, 'Unknown', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Unknown', "NETWORK ERROR", this);
             }
         }
 
@@ -421,9 +427,9 @@ function update_vms(interval) {
             // as for now, just show an error message
             try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
                 try {
-                    ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
+                    ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText, this);
                 } catch(err) {
-                    ajax_error(-1, textStatus, 'Update VMs', "NETWORK ERROR");
+                    ajax_error(-1, textStatus, 'Update VMs', "NETWORK ERROR", this);
                 }
                 return false;
             },
@@ -444,7 +450,7 @@ function update_vms(interval) {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
                     update_machines_view(data);
-                } catch (err) { ajax_error(-503, "UI Error", 'Update VMs', err);}
+                } catch (err) { ajax_error(-503, "UI Error", 'Update VMs', err, this);}
             } else if (jqXHR.status != 304){
                 try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -612,9 +618,9 @@ function update_networks(interval) {
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
 
             try {
-                ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText, this);
             } catch(err) {
-                ajax_error(-1, textStatus, 'Update networks', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Update networks', "NETWORK ERROR", this);
             }
             return false;
             },
@@ -635,7 +641,7 @@ function update_networks(interval) {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
                     update_network_names(data);
-                } catch(err) { ajax_error(-505, "UI Error", 'Update networks', err);}
+                } catch(err) { ajax_error(-505, "UI Error", 'Update networks', err, this);}
             } else if (jqXHR.status == 304) {
                 update_network_names();
             }
@@ -676,9 +682,9 @@ function update_network_names(servers_data) {
                 console.info('update_network names errback:' + jqXHR.status )
             } catch(err) {}
             try {
-                ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText, this);
             } catch(err) {
-                ajax_error(-1, textStatus, 'Update network names', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Update network names', "NETWORK ERROR", this);
             }
             return false;
             },
@@ -694,7 +700,7 @@ function update_network_names(servers_data) {
                     networks = data.networks.values;
                     update_networks_view(servers_data, data);
                 } catch(err) {
-                    ajax_error(-507, "UI Error", 'Update network names', err);
+                    ajax_error(-507, "UI Error", 'Update network names', err, this);
                 }
             } else if (jqXHR.status == 304) {
                     update_networks_view(servers_data);
@@ -724,9 +730,9 @@ function update_images() {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
                     try {
-                        ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
+                        ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText, this);
                     } catch(err) {
-                        ajax_error(-1, textStatus, 'Update Images', "NETWORK ERROR");
+                        ajax_error(-1, textStatus, 'Update Images', "NETWORK ERROR", this);
                     }
                 },
         success: function(data, textStatus, jqXHR) {
@@ -1192,9 +1198,9 @@ function update_flavors() {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, "Update Flavors", "NETWORK ERROR");
+                ajax_error(-1, textStatus, "Update Flavors", "NETWORK ERROR", this);
             }
             // start updating vm list
             update_vms(UPDATE_INTERVAL);
@@ -1406,9 +1412,9 @@ function create_vm(machineName, imageRef, flavorRef){
                 // close wizard and show error box
                 $('#machines-pane a#create').data('overlay').close();
                     try {
-                        ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
+                        ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText, this);
                     } catch(err) {
-                        ajax_error(-1, textStatus, 'Create VM', "NETWORK ERROR");
+                        ajax_error(-1, textStatus, 'Create VM', "NETWORK ERROR", this);
                     }
            },
     success: function(data, textStatus, jqXHR) {
@@ -1417,7 +1423,7 @@ function create_vm(machineName, imageRef, flavorRef){
                 } else {
                     // close wizard and show error box
                     $('#machines-pane a#create').data('overlay').close();
-                    ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
+                    ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText, this);
                 }
             }
     });
@@ -1478,7 +1484,7 @@ function reboot(serverIDs){
                         // continue with the rest of the servers
                         reboot(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Reboot', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1525,7 +1531,7 @@ function shutdown(serverIDs) {
                         // continue with the rest of the servers
                         shutdown(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1576,7 +1582,7 @@ function destroy(serverIDs) {
                         // continue with the rest of the servers
                         destroy(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Destroy', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1622,7 +1628,7 @@ function start(serverIDs){
                         // continue with the rest of the servers
                         start(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Start', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Start', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1717,7 +1723,7 @@ function open_console(serverIDs){
                         // continue with the rest of the servers
                         open_console(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Console', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Console', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1855,7 +1861,7 @@ function rename(serverID, serverName){
                         // indicate that the action succeeded
                         display_success(serverID);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1875,9 +1881,9 @@ function get_metadata(serverID, keys_only) {
             try {
                 // close wizard and show error box
                 $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Get metadata', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Get metadata', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1907,9 +1913,9 @@ function delete_metadata(serverID, meta_key) {
             try {
                 // close wizard and show error box
                 $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Delete metadata', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Delete metadata', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1938,9 +1944,9 @@ function update_metadata(serverID, meta_key, meta_value) {
             try {
                 // close wizard and show error box
                 $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add metadata', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Add metadata', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Add metadata', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Add metadata', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -1986,9 +1992,9 @@ function get_server_stats(serverID) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Get server stats', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Get server stats', jqXHR.responseText, this);
             } catch(err) {
-                ajax_error(-1, textStatus, 'Get server stats', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Get server stats', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2152,9 +2158,9 @@ function create_network(networkName){
             try {
                 // close wizard and show error box
                 $("a#networkscreate").overlay().close();
-                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Create network', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Create network', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2171,7 +2177,7 @@ function create_network(networkName){
             } else {
                 // close wizard and show error box
                 $("a#networkscreate").overlay().close();
-                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText, this);
             }
         }
     });
@@ -2198,9 +2204,9 @@ function rename_network(networkID, networkName){
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Rename network', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Rename network', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2209,7 +2215,7 @@ function rename_network(networkID, networkName){
                     console.info('renamed network' + networkID);
                 } catch(err) {}
             } else {
-                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText, this);
             }
         }
     });
@@ -2285,9 +2291,9 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
             try {
                 // close wizard and show error box
                 $("a#add-machines-overlay").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Add server to network', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Add server to network', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2302,7 +2308,7 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
             } else {
                 // close wizard and show error box
                 $("a#add-machines-overlay").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText, this);
             }
         }
     });
@@ -2333,9 +2339,9 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Remove server from network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Remove server from network', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Remove server from network', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Remove server from network', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2348,7 +2354,7 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
                 // continue with the rest of the servers
                 remove_server_form_network(networkIDs, serverIDs, serverNames, serverStates);
             } else {
-                ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText, this);
             }
         }
     });
@@ -2374,9 +2380,9 @@ function set_firewall(networkID, serverID, profile) {
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
             try {
-                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText, this);
             } catch (err) {
-                ajax_error(-1, textStatus, 'Set firewall profile', "NETWORK ERROR");
+                ajax_error(-1, textStatus, 'Set firewall profile', "NETWORK ERROR", this);
             }
         },
         success: function(data, textStatus, jqXHR) {
@@ -2406,7 +2412,7 @@ function set_firewall(networkID, serverID, profile) {
                 vm.network_transition = "NETWORK_CHANGE";
                 show_machine_network_indicator(vm.id, 'pub');
             } else {
-                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText, this);
             }
         }
     });
@@ -2841,7 +2847,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
 
 
 // generic info box
-function show_feedback_form(msg, from_error) {
+function show_feedback_form(msg, from_error, extra_data) {
     var box = $("#feedback-form");
     box.addClass("notification-box");
 
@@ -2868,10 +2874,11 @@ function show_feedback_form(msg, from_error) {
         box.find("textarea").val(initial_msg);
         $("a#feedbackbox").overlay().onClose(function(){window.location.reload()});
         box.find("textarea").height(200);
-        $("a#feedbackbox").overlay().onLoad(function(){box.find("textarea").focus().setCursorPosition(500);});
+        $("a#feedbackbox").overlay().onLoad(function(){box.find("textarea").focus().setCursorPosition(1500);});
         
     }
-
+    
+    var extra_data = extra_data;
     $("#feedback-form form").unbind("submit");
     $("#feedback-form form").submit(function(event) {
         event.preventDefault();
@@ -2882,7 +2889,8 @@ function show_feedback_form(msg, from_error) {
             return;
         }
 
-        $("textarea.data-text", this).val("").val(get_user_data_json());
+        // fill the textarea with user information jsonified
+        $("textarea.data-text", this).val("").val(get_user_data_json(extra_data));
 
         $.ajax({
             url: FEEDBACK_URL,
@@ -2913,9 +2921,10 @@ function get_user_data(extra_data) {
         // reset xhr, might raise exceptions while converting to JSON
         last_req.xhr = {};
     } catch (err) {
-        var last_req = {}
+        var last_req = err;
     }
-
+    
+    var changes_since_date = changes_since_date || false;
     return $.extend({
         'servers': $.extend({}, servers),
         'client': {'browser': $.browser, 'screen': $.extend({}, screen), 'client': $.client},
@@ -2924,9 +2933,9 @@ function get_user_data(extra_data) {
     }, extra_data);
 }
 
-function get_user_data_json() {
+function get_user_data_json(extra) {
     try {
-        return JSON.stringify(get_user_data());
+        return JSON.stringify(get_user_data(extra));
     } catch (err) {
         return JSON.stringify({'error': err});
     }
@@ -3035,7 +3044,7 @@ function msg_box(user_config) {
                 }
             },
             error: function(xhr, status, err) {
-                ajax_error(-519, "UI Error", "Machine connect", err);
+                ajax_error(-519, "UI Error", "Machine connect", err, this);
             }
         }, config.ajax_config));
     }

@@ -4052,7 +4052,7 @@ div.state .shutdown, tbody.machines .shutdown {
 #notification-box .cmd {
     color: #fff;
     font-family: monospace;
-    font-size: 1.6em;
+    font-size: 1.4em;
 }
 
 .machine-container .separator {

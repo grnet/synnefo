@@ -105,7 +105,8 @@ class Image(models.Model):
     FORMATS = (
         ('dump', 'ext3 dump'),
         ('lvm', 'lvm snapshot'),
-        ('ntfsclone', 'Windows Image produced by ntfsclone')
+        ('ntfsclone', 'Windows Image produced by ntfsclone'),
+        ('ntfsdump', 'Raw NTFS dump')
     )
 
     name = models.CharField('Image name', max_length=255)

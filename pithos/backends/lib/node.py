@@ -98,6 +98,8 @@ class Node(DBWorker):
        Attributes store metadata.
     """
     
+    # TODO: Keep size of object in one place.
+    
     def __init__(self, **params):
         execute = self.execute
         
@@ -226,15 +228,123 @@ class Node(DBWorker):
             return (0, 0, 0)
         return r
     
-    def node_children(self, node):
+    def node_count_children(self, node):
         """Return node's child count."""
         
-        q = "select count(node) from nodes where parent = ?"
+        q = "select count(node) from nodes where parent = ? and node != 0"
         self.execute(q, (node,))
         r = fetchone()
         if r is None:
             return 0
         return r
+    
+    def node_purge_children(self, parent, before=inf, cluster=0):
+        """Delete all versions with the specified
+           parent and cluster, and return
+           the serials of versions deleted.
+           Clears out nodes with no remaining versions.
+        """
+        
+        execute = self.execute
+        q = ("select count(serial), sum(size) from versions "
+             "where node in (select node "
+                            "from nodes "
+                            "where parent = ?) "
+             "and cluster = ? "
+             "and mtime <= ?")
+        args = (parent, cluster, before)
+        execute(q, args)
+        nr, size = self.fetchone()
+        if not nr:
+            return ()
+        # TODO: Statistics for nodes (children) will be wrong.
+        self.node_update_ancestors(parent, -nr, -size, cluster)
+        
+        q = ("select serial from versions "
+             "where node in (select node "
+                            "from nodes "
+                            "where parent = ?) "
+             "and cluster = ? "
+             "and mtime <= ?")
+        execute(q, args)
+        serials = [r[SERIAL] for r in self.fetchall()]
+        q = ("delete from versions "
+             "where node in (select node "
+                            "from nodes "
+                            "where parent = ?) "
+             "and cluster = ? "
+             "and mtime <= ?")
+        execute(q, args)
+        q = ("delete from nodes n "
+             "where (select count(serial) "
+                    "from versions "
+                    "where node = n.node) = 0 "
+             "and parent = ?")
+        execute(q, parent)
+        return serials
+    
+    def node_purge(self, node, before=inf, cluster=0):
+        """Delete all versions with the specified
+           node and cluster, and return
+           the serials of versions deleted.
+           Clears out the node if it has no remaining versions.
+        """
+        
+        execute = self.execute
+        q = ("select count(serial), sum(size) from versions "
+             "where node = ? "
+             "and cluster = ? "
+             "and mtime <= ?")
+        args = (node, cluster, before)
+        execute(q, args)
+        nr, size = self.fetchone()
+        if not nr:
+            return ()
+        self.node_update_ancestors(node, -nr, -size, cluster)
+        
+        q = ("select serial from versions "
+             "where node = ? "
+             "and cluster = ? "
+             "and mtime <= ?")
+        execute(q, args)
+        serials = [r[SERIAL] for r in self.fetchall()]
+        q = ("delete from versions "
+             "where node = ? "
+             "and cluster = ? "
+             "and mtime <= ?")
+        execute(q, args)
+        q = ("delete from nodes n "
+             "where (select count(serial) "
+                    "from versions "
+                    "where node = n.node) = 0 "
+             "and node = ?")
+        execute(q, node)
+        return serials
+    
+    def node_remove(self, node):
+        """Remove the node specified.
+           Return false if the node has children or is not found.
+        """
+        
+        if self.node_children(node):
+            return False
+        
+        q = "select parent from node where node = ?"
+        self.execute(q, (node,))
+        r = self.fetchone()
+        if r is None:
+            return False
+        parent = r[0]
+        
+        mtime = time()
+        q = "select population, size, cluster from statistics where node = ?"
+        self.execute(q, (node,))
+        for population, size, cluster in self.fetchall():
+            self.node_update_ancestors(parent, -population, -size, mtime, cluster)
+        
+        q = "delete from nodes where node = ?"
+        self.execute(q, (node,))
+        return True
     
 #     def node_remove(self, serial, recursive=0):
 #         """Remove the node specified by serial.
@@ -340,8 +450,8 @@ class Node(DBWorker):
         self.node_update_ancestors(node, -1, -size, mtime, oldcluster)
         self.node_update_ancestors(node, 1, size, mtime, cluster)
 
-        q = "update nodes set parent = ?, path = ? where serial = ?"
-        self.execute(q, (parent, path, source))
+        q = "update nodes set cluster = ? where serial = ?"
+        self.execute(q, (cluster, serial))
     
 #     def version_copy(self, serial, node, muser, copy_attr=True):
 #         """Copy the version specified by serial into
@@ -373,7 +483,7 @@ class Node(DBWorker):
              "and cluster != ? "
              "and node in (select node "
                           "from nodes "
-                          "where path like ?")
+                          "where path like ?)")
         self.execute(q, (before, except_cluster, prefix + '%'))
         r = fetchone()
         if r is None:
@@ -550,61 +660,6 @@ class Node(DBWorker):
 #             execute(q, args)
 # 
 #         return matches, prefixes
-
-#     def node_delete(self, parent, prefix,
-#                     start='', delimiter=None,
-#                     after=0.0, before=inf,
-#                     filterq=None, versions=0,
-#                     cluster=0, limit=10000):
-#         """Delete the matching version for each
-#            of the matching paths in the parent's namespace.
-#            Return empty if nothing is deleted, else return matches.
-#            The paths matching are those that would
-#            be returned by .node_list() with the same arguments.
-#            Note that only paths are deleted, not prefixes.
-# 
-#         """
-#         r = self.node_list(parent, prefix,
-#                            start=start, delimiter=delimiter,
-#                            after=after, before=before,
-#                            filterq=filterq, versions=versions,
-#                            cluster=cluster, limit=limit)
-#         matches, prefixes = r
-#         if not matches:
-#             return ()
-# 
-#         q = "delete from nodes where serial = ?"
-#         self.executemany(q, ((props[SERIAL],) for props in matches))
-#         # TODO: Update sizes.
-#         return matches
-
-#     def node_purge(self, parent, path, after=0, before=inf, cluster=0):
-#         """Delete all nodes with the specified
-#            parent, cluster and path, and return
-#            the serials of nodes deleted.
-#         """
-#         execute = self.execute
-#         q = ("select count(serial), total(size), "
-#                     "total(population), total(popsize) "
-#              "from nodes "
-#              "where parent = ? and cluster = ? "
-#              "and path = ? and mtime between ? and ?")
-#         args = (parent, cluster, path, after, before)
-#         execute(q, args)
-#         nr, size, pop, popsize = self.fetchone()
-#         if not nr:
-#             return ()
-#         self.node_update_ancestors(parent, -pop-nr, -size-popsize)
-#         q = ("select serial from nodes "
-#              "where parent = ? and cluster = ? "
-#              "and path = ? and mtime between ? and ?")
-#         execute(q, args)
-#         serials = [r[SERIAL] for r in self.fetchall()]
-#         q = ("delete from nodes where "
-#              "parent = ? and cluster = ? "
-#              "and path = ? and mtime between ? and ?")
-#         execute(q, args)
-#         return serials
     
     def attribute_get(self, serial, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.

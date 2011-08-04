@@ -31,11 +31,43 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+# Business Logic for working with users
 
-urlpatterns = patterns('',
-    (r'^v1(?:$|/)', include('pithos.api.urls')),
-    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'^public(?:$|/)', include('pithos.public.urls')),
-    (r'^login(?:$|/)', 'pithos.aai.functions.login')
-)
+from hashlib import md5
+from time import asctime
+from datetime import datetime, timedelta
+
+from django.conf import settings
+from django.db import transaction
+
+from models import PithosUser
+
+
+@transaction.commit_on_success
+def register_user(uniq, realname, affiliation):
+    user = PithosUser()
+    user.uniq = uniq
+    user.realname = realname
+    user.affiliation = affiliation
+    user.save()
+    create_auth_token(user)
+    return user
+
+@transaction.commit_on_success
+def delete_user(user):
+    if user is not None:
+        user.delete()
+
+@transaction.commit_on_success
+def create_auth_token(user):
+    md5 = md5()
+    md5.update(user.uniq)
+    md5.update(user.realname.encode('ascii', 'ignore'))
+    md5.update(asctime())
+
+    user.auth_token = md5.hexdigest()
+    user.auth_token_created = datetime.now()
+    user.auth_token_expires = user.auth_token_created + \
+                              timedelta(hours=settings.AUTH_TOKEN_DURATION)
+    user.save()
+

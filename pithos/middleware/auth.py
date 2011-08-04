@@ -31,12 +31,34 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from time import time, mktime
+
 from django.conf import settings
 
+from pithos.aai.models import PithosUser
 
-class DummyAuthMiddleware(object):
+
+class AuthMiddleware(object):
     def process_request(self, request):
-        token = request.META.get('HTTP_X_AUTH_TOKEN', None)
-        if token is None:
+        request.user = None
+        
+        # Try to find token in a cookie, in a request header, or as a parameter.
+        token = request.COOKIES.get('X-Auth-Token', None)
+        if not token:
+            token = request.META.get('HTTP_X_AUTH_TOKEN', None)
+        if not token:
             token = request.REQUEST.get('X-Auth-Token', None)
-        request.user = settings.AUTH_TOKENS.get(token, None)
+        if not token:
+            return
+        
+        # Token was found, retrieve user from backing store.
+        try:
+            user = PithosUser.objects.get(auth_token=token)
+        except:
+            return
+        
+        # Check if the token has expired.
+        if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
+            return
+            
+        request.user = user.uniq

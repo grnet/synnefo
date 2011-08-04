@@ -31,11 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.db import models
 
-urlpatterns = patterns('',
-    (r'^v1(?:$|/)', include('pithos.api.urls')),
-    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'^public(?:$|/)', include('pithos.public.urls')),
-    (r'^login(?:$|/)', 'pithos.aai.functions.login')
-)
+from pithos import settings
+
+
+class PithosUser(models.Model):
+    uniq = models.CharField('Unique ID', max_length=255, null=True)
+    realname = models.CharField('Real Name', max_length=255, default='')
+    affiliation = models.CharField('Affiliation', max_length=255, default='')
+    quota = models.IntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
+    auth_token = models.CharField('Authentication Token', max_length=32, null=True)
+    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True)
+    auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True)
+    created = models.DateTimeField('Time of creation', auto_now_add=True)
+    updated = models.DateTimeField('Time of last update', auto_now=True)
+
+    class Meta:
+        verbose_name = u'Pithos User'
+
+    def __unicode__(self):
+        return self.uniq

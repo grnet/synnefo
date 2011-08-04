@@ -121,7 +121,6 @@ class Node(DBWorker):
                             population integer not null default 0,
                             size       integer not null default 0,
                             mtime      integer,
-                            muser      text    not null default '',
                             cluster    integer not null default 0,
                             primary key (node, cluster)
                             foreign key (node)
@@ -135,6 +134,7 @@ class Node(DBWorker):
                             size       integer not null default 0,
                             source     integer,
                             mtime      integer,
+                            muser      text    not null default '',
                             cluster    integer not null default 0,
                             foreign key (node)
                             references nodes(node)
@@ -173,60 +173,22 @@ class Node(DBWorker):
            Return None if the path is not found.
         """
         
-        q = ("select node from nodes where path = ?")
+        q = "select node from nodes where path = ?"
         self.execute(q, (path,))
         r = self.fetchone()
         if r is not None:
             return r[0]
         return None
     
-    def node_update_ancestors(self, node, population, size, mtime, cluster=0):
-        """Update the population properties of the given node.
-           Population properties keep track the population and total
-           size of objects in the node's namespace.
-           May be zero or positive or negative numbers.
-        """
+    def node_parent(self, node):
+        """Return the node's parent or None if the node is not found."""
         
-        qs = ("select population, size from statistics"
-              "where node = ? and cluster = ?")
-        qu = ("insert or replace into statistics (node, population, size, mtime, cluster) "
-              "values (?, ?, ?, ?, ?)")
-        qp = "select parent from nodes where serial = ?"
-        execute = self.execute
-        fetchone = self.fetchone
-        while 1:
-            execute(qs, (node, cluster))
-            r = fetchone()
-            if r is None:
-                prepopulation, presize = (0, 0)
-            else:
-                prepopulation, presize = r
-            population += prepopulation
-            size += presize
-            
-            execute(qu, (node, population, size, mtime, cluster))
-            if node == 0:
-                break
-            
-            population = 0 # Population isn't recursive
-            execute(qp, (node,))
-            r = fetchone()
-            if r is None:
-                break
-            node = r[0]
-    
-    def node_statistics(self, node, cluster=0):
-        """Return population, total size and last mtime
-           for all versions under node that belong to the cluster.
-        """
-        
-        q = ("select population, size, mtime from statistics"
-             "where node = ? and cluster = ?")
-        self.execute(q, (node, cluster))
-        r = fetchone()
-        if r is None:
-            return (0, 0, 0)
-        return r
+        q = "select parent from node where node = ?"
+        self.execute(q, (node,))
+        r = self.fetchone()
+        if r is not None:
+            return r[0]
+        return None
     
     def node_count_children(self, node):
         """Return node's child count."""
@@ -257,8 +219,8 @@ class Node(DBWorker):
         nr, size = self.fetchone()
         if not nr:
             return ()
-        # TODO: Statistics for nodes (children) will be wrong.
-        self.node_update_ancestors(parent, -nr, -size, cluster)
+        self.statistics_update(parent, -nr, -size, cluster)
+        self.statistics_update_ancestors(parent, -nr, -size, cluster)
         
         q = ("select serial from versions "
              "where node in (select node "
@@ -300,7 +262,7 @@ class Node(DBWorker):
         nr, size = self.fetchone()
         if not nr:
             return ()
-        self.node_update_ancestors(node, -nr, -size, cluster)
+        self.statistics_update_ancestors(node, -nr, -size, cluster)
         
         q = ("select serial from versions "
              "where node = ? "
@@ -326,46 +288,70 @@ class Node(DBWorker):
            Return false if the node has children or is not found.
         """
         
-        if self.node_children(node):
+        if self.node_count_children(node):
             return False
-        
-        q = "select parent from node where node = ?"
-        self.execute(q, (node,))
-        r = self.fetchone()
-        if r is None:
-            return False
-        parent = r[0]
         
         mtime = time()
-        q = "select population, size, cluster from statistics where node = ?"
+        q = ("select sum(serial), count(size), cluster "
+             "from versions "
+             "where node = ? "
+             "group by cluster")
         self.execute(q, (node,))
         for population, size, cluster in self.fetchall():
-            self.node_update_ancestors(parent, -population, -size, mtime, cluster)
+            self.statistics_update_ancestors(node, -population, -size, mtime, cluster)
         
         q = "delete from nodes where node = ?"
         self.execute(q, (node,))
         return True
     
-#     def node_remove(self, serial, recursive=0):
-#         """Remove the node specified by serial.
-#            Return false if the node is not found,
-#            or has ancestors and recursive is not set.
-#         """
-#         
-#         props = self.node_get_properties(serial)
-#         if props is None:
-#             return False
-#         size = props[SIZE]
-#         parent = props[PARENT]
-#         pop = props[POPULATION]
-#         popsize = props[POPSIZE]
-#         if pop and not recursive:
-#             return False
-#         
-#         q = ("delete from nodes where serial = ?")
-#         self.execute(q, (serial,))
-#         self.node_update_ancestors(parent, -pop-1, -size-popsize)
-#         return True
+    def statistics_get(self, node, cluster=0):
+        """Return population, total size and last mtime
+           for all versions under node that belong to the cluster.
+        """
+        
+        q = ("select population, size, mtime from statistics"
+             "where node = ? and cluster = ?")
+        self.execute(q, (node, cluster))
+        r = fetchone()
+        if r is None:
+            return (0, 0, 0)
+        return r
+    
+    def statistics_update(self, node, population, size, mtime, cluster=0):
+        """Update the statistics of the given node.
+           Statistics keep track the population, total
+           size of objects and mtime in the node's namespace.
+           May be zero or positive or negative numbers.
+        """
+        
+        qs = ("select node, population, size from statistics "
+              "where node = ? and cluster = ?")
+        qu = ("insert or replace into statistics (node, population, size, mtime, cluster) "
+              "values (?, ?, ?, ?, ?)")
+        self.execute(qs, (node, cluster))
+        r = self.fetchone()
+        if r is None:
+            prepopulation, presize = (0, 0)
+        else:
+            prepopulation, presize = r
+        population += prepopulation
+        size += presize
+        self.execute(qu, (node, population, size, mtime, cluster))
+    
+    def statistics_update_ancestors(self, node, population, size, mtime, cluster=0):
+        """Update the statistics of the given node's parent.
+           Then recursively update all parents up to the root.
+           Population is not recursive.
+        """
+        
+        while True:
+            if node == 0:
+                break
+            node = self.node_parent(node)
+            if node is None:
+                break
+            self.statistics_update(node, population, size, mtime, cluster)
+            population = 0 # Population isn't recursive
     
     def version_create(self, node, size, source, muser, cluster=0):
         """Create a new version from the given properties.
@@ -377,7 +363,7 @@ class Node(DBWorker):
         mtime = time()
         props = (node, path, size, source, mtime, muser, cluster)
         serial = self.execute(q, props).lastrowid
-        self.node_update_ancestors(node, 1, size, mtime, cluster)
+        self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
     
     def version_lookup(self, node, before=inf, cluster=0):
@@ -447,9 +433,9 @@ class Node(DBWorker):
         if cluster == oldcluster:
             return
         
-        self.node_update_ancestors(node, -1, -size, mtime, oldcluster)
-        self.node_update_ancestors(node, 1, size, mtime, cluster)
-
+        self.statistics_update_ancestors(node, -1, -size, mtime, oldcluster)
+        self.statistics_update_ancestors(node, 1, size, mtime, cluster)
+        
         q = "update nodes set cluster = ? where serial = ?"
         self.execute(q, (cluster, serial))
     

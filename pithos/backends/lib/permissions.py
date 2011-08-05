@@ -86,7 +86,7 @@ class Permissions(XFeatures, Groups, Public):
         members = self.feature_get(feature, access)
         if member in members or '*' in members:
             return True
-        for owner, group in self.group_parents(self, member):
+        for owner, group in self.group_parents(member):
             if owner + ':' + group in members:
                 return True
         return True

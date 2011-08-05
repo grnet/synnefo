@@ -529,14 +529,15 @@ class AccountPost(BaseTestCase):
             groups = {'pithosdev':'verigak,gtsouk,chazapis'}
             self.client.set_account_groups(**groups)
             
-            self.assertEqual(groups, self.client.retrieve_account_groups())
+            self.assertEqual(set(groups['pithosdev']),
+                             set(self.client.retrieve_account_groups()['pithosdev']))
             
             more_groups = {'clientsdev':'pkanavos,mvasilak'}
             self.client.set_account_groups(**more_groups)
             
             groups.update(more_groups)
-            self.assertEqual(set(groups['pithosdev']),
-                             set(self.client.retrieve_account_groups()['pithosdev']))
+            self.assertEqual(set(groups['clientsdev']),
+                             set(self.client.retrieve_account_groups()['clientsdev']))
     
     def test_reset_account_groups(self):
         with AssertMappingInvariant(self.client.retrieve_account_metadata):
@@ -544,13 +545,16 @@ class AccountPost(BaseTestCase):
                       'clientsdev':'pkanavos,mvasilak'}
             self.client.set_account_groups(**groups)
             
-            self.assertEqual(groups, self.client.retrieve_account_groups())
+            self.assertEqual(set(groups['pithosdev'].split(',')),
+                             set(self.client.retrieve_account_groups()['pithosdev'].split(',')))
+            self.assertEqual(set(groups['clientsdev'].split(',')),
+                             set(self.client.retrieve_account_groups()['clientsdev'].split(',')))
             
             groups = {'pithosdev':'verigak,gtsouk,chazapis,papagian'}
             self.client.reset_account_groups(**groups)
             
-            self.assertEqual(groups['pithosdev'].split(','),
-                             self.client.retrieve_account_groups()['pithosdev'].split(','))
+            self.assertEqual(set(groups['pithosdev'].split(',')),
+                             set(self.client.retrieve_account_groups()['pithosdev'].split(',')))
     
     def test_delete_account_groups(self):
         with AssertMappingInvariant(self.client.retrieve_account_metadata):

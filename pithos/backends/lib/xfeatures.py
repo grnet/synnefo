@@ -115,7 +115,7 @@ class XFeatures(DBWorker):
     def feature_dict(self, feature):
         """Return a dict mapping keys to list of values for feature."""
         
-        q = "select key, value from xfeaturevals where feature = ?"
+        q = "select key, value from xfeaturevals where feature_id = ?"
         self.execute(q, (feature,))
         d = defaultdict(list)
         for key, value in self.fetchall():

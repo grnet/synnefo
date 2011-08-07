@@ -70,4 +70,3 @@ def create_auth_token(user):
     user.auth_token_expires = user.auth_token_created + \
                               timedelta(hours=settings.AUTH_TOKEN_DURATION)
     user.save()
-

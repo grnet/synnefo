@@ -74,7 +74,4 @@ def register_shibboleth_user(tokens):
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
 
-    register_user(eppn, realname, affiliation)
-
-    return True
-
+    return register_user(eppn, realname, affiliation)

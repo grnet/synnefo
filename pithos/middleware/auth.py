@@ -60,5 +60,5 @@ class AuthMiddleware(object):
         # Check if the token has expired.
         if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
             return
-            
+        
         request.user = user.uniq

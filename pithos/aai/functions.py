@@ -34,84 +34,56 @@
 from time import time, mktime
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.utils.http import urlencode
 from django.utils.cache import patch_vary_headers
 
 from models import PithosUser
 from shibboleth import Tokens, register_shibboleth_user
+from util import create_auth_token
 
 
 def login(request):
-    return HttpResponse('login')
-
-#     # Special case for testing purposes, delivers the cookie for the
-#     # test user on first access
-#     if settings.BYPASS_AUTHENTICATION and \
-#        request.GET.get('test') is not None:
-#         u = PithosUser.objects.get(
-#             auth_token='46e427d657b20defe352804f0eb6f8a2')
-#         return _redirect_shib_auth_user(user = u)
-# 
-#     token = None
-# 
-#     # Try to find token in a cookie
-#     token = request.COOKIES.get('X-Auth-Token', None)
-# 
-#     # Try to find token in request header
-#     if not token:
-#         token = request.META.get('HTTP_X_AUTH_TOKEN', None)
-# 
-#     if token:
-#         # token was found, retrieve user from backing store
-#         try:
-#             user = PithosUser.objects.get(auth_token=token)
-# 
-#         except PithosUser.DoesNotExist:
-#             return HttpResponseRedirect(settings.LOGIN_URL)
-#         # check user's auth token validity
-#         if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-#             # the user's token has expired, prompt to re-login
-#             return HttpResponseRedirect(settings.LOGIN_URL)
-# 
-#         request.user = user
-#         return
-# 
-#     # token was not found but user authenticated by Shibboleth
-#     if Tokens.SHIB_EPPN in request.META and \
-#        Tokens.SHIB_SESSION_ID in request.META:
-#         try:
-#             user = PithosUser.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
-#             return _redirect_shib_auth_user(user)
-#         except PithosUser.DoesNotExist:
-#             if register_shibboleth_user(request.META):
-#                 user = PithosUser.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
-#                 return _redirect_shib_auth_user(user)
-#             else:
-#                 return HttpResponseRedirect(settings.LOGIN_URL)
-# 
-#     if settings.TEST and 'TEST-AAI' in request.META:
-#         return HttpResponseRedirect(settings.LOGIN_URL)
-# 
-#     if request.path.endswith(settings.LOGIN_URL):
-#         # avoid redirect loops
-#         return
-#     else:
-#         # no authentication info found in headers, redirect back
-#         return HttpResponseRedirect(settings.LOGIN_URL)
-# 
-# def process_response(request, response):
-#     # Tell proxies and other interested parties that the request varies
-#     # based on X-Auth-Token, to avoid caching of results
-#     patch_vary_headers(response, ('X-Auth-Token',))
-#     return response
-# 
-# def _redirect_shib_auth_user(user):
-#     expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-# 
-#     response = HttpResponse()
-#     response.set_cookie('X-Auth-Token', value=user.auth_token,
-#                         expires=expire_fmt, path='/')
-#     response['X-Auth-Token'] = user.auth_token
-#     response['Location'] = settings.APP_INSTALL_URL
-#     response.status_code = 302
-#     return response
+    """Register a user into the internal database
+       and issue a token for subsequent requests.
+       Users are authenticated by Shibboleth.
+       
+       Return the unique username and the token
+       as 'X-Auth-User' and 'X-Auth-Token' headers,
+       or redirect to the URL provided in 'next'
+       with the 'user' and 'token' as parameters.
+       
+       Reissue the token even if it has not yet
+       expired, if the 'renew' parameter is present.
+    """
+    
+    try:
+        user = PithosUser.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
+    except:
+        user = None
+    if user is None:
+        try:
+            user = register_shibboleth_user(request.META)
+        except:
+            return HttpResponseBadRequest('Missing necessary Shibboleth headers')
+    
+    if 'renew' in request.GET:
+        create_auth_token(user)
+    next = request.GET.get('next')
+    if next is not None:
+        # TODO: Avoid redirect loops.
+        if '?' in next:
+            next = next[:next.find('?')]
+        next += '?' + urlencode({'user': user.uniq,
+                                 'token': user.auth_token})
+    
+    response = HttpResponse()
+    if not next:
+        response['X-Auth-User'] = user.uniq
+        response['X-Auth-Token'] = user.auth_token
+        response.content = user.uniq + '\n' + user.auth_token + '\n'
+        response.status_code = 200
+    else:
+        response['Location'] = next
+        response.status_code = 302
+    return response

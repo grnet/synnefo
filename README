@@ -18,6 +18,8 @@ Running the server
 ------------------
 
 Enter the pithos dir and run:
+    python manage.py syncdb
+    python manage.py loaddata aai/fixtures/auth_test_data.json (to load sample users)
     python manage.py runserver
 
 This server is useful during development, but should not be used for deployment.

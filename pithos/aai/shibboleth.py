@@ -57,12 +57,12 @@ class NoRealName(BaseException):
 
 def register_shibboleth_user(tokens):
     """Registers a Shibboleth user using the input hash as a source for data."""
-
+    
     try:
         eppn = tokens[Tokens.SHIB_EPPN]
     except KeyError:
         raise NoUniqueToken("Authentication does not return a unique token")
-
+    
     if Tokens.SHIB_DISPLAYNAME in tokens:
         realname = tokens[Tokens.SHIB_DISPLAYNAME]
     elif Tokens.SHIB_CN in tokens:
@@ -71,10 +71,7 @@ def register_shibboleth_user(tokens):
         realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
     else:
         raise NoRealName("Authentication does not return the user's name")
-
+    
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-
-    register_user(eppn, realname, affiliation)
-
-    return True
-
+    
+    return register_user(eppn, realname, affiliation)

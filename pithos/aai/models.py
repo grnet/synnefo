@@ -46,9 +46,9 @@ class PithosUser(models.Model):
     auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-
+    
     class Meta:
         verbose_name = u'Pithos User'
-
+    
     def __unicode__(self):
         return self.uniq

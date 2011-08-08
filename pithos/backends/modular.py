@@ -74,10 +74,8 @@ def backend_method(func=None, autocommit=1):
 class ModularBackend(BaseBackend):
     """A modular backend.
     
-    Uses SQLite for storage.
+    Uses modules for SQL functions and storage.
     """
-    
-    # TODO: Create account if not present in all functions.
     
     def __init__(self, db):
         self.hash_algorithm = 'sha256'
@@ -129,31 +127,24 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
         try:
             props = self._get_properties(node, until)
-            version_id = props[SERIAL]
             mtime = props[MTIME]
         except NameError:
-            # Account does not exist before until.
-            version_id = None
+            props = None
             mtime = until
-        object_count, bytes, tstamp = self._get_statistics(node, path, until)
-        tstamp = max(mtime, tstamp)
+        count, bytes, tstamp = self._get_statistics(node, until)
+        tstamp = max(tstamp, mtime)
         if until is None:
             modified = tstamp
         else:
-            modified = self._get_statistics(node, path)[2] # Overall last modification.
-            modified = max(mtime, modified)
-        
-        # Proper count.
-        # TODO: Fix this to count until.
-        count = self.node.node_count_children(node)
-        object_count -= count
+            modified = self._get_statistics(node)[2] # Overall last modification.
+            modified = max(modified, mtime)
         
         if user != account:
             meta = {'name': account}
         else:
             meta = {}
-            if version_id is not None:
-                meta.update(dict(self.node.attribute_get(version_id)))
+            if props is not None:
+                meta.update(dict(self.node.attribute_get(props[SERIAL])))
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
@@ -209,7 +200,7 @@ class ModularBackend(BaseBackend):
         node = self.node.node_lookup(account)
         if node is not None:
             raise NameError('Account already exists')
-        self._put_path(ROOTNODE, account)
+        self._put_path(user, ROOTNODE, account)
     
     @backend_method
     def delete_account(self, user, account):
@@ -225,23 +216,23 @@ class ModularBackend(BaseBackend):
             raise IndexError('Account is not empty')
         self.permissions.group_destroy(account)
     
-#     @backend_method
-#     def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
-#         """Return a list of containers existing under an account."""
-#         
-#         logger.debug("list_containers: %s %s %s %s", account, marker, limit, until)
-#         if user != account:
-#             if until or account not in self._allowed_accounts(user):
-#                 raise NotAllowedError
-#             allowed = self._allowed_containers(user, account)
-#             start, limit = self._list_limits(allowed, marker, limit)
-#             return allowed[start:start + limit]
-#         else:
-#             if shared:
-#                 allowed = [x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)]
-#                 start, limit = self._list_limits(allowed, marker, limit)
-#                 return allowed[start:start + limit]
-#         return [x[0] for x in self._list_objects(account, '', '/', marker, limit, False, [], until)]
+    @backend_method
+    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None):
+        """Return a list of containers existing under an account."""
+        
+        logger.debug("list_containers: %s %s %s %s %s", account, marker, limit, shared, until)
+        if user != account:
+            if until or account not in self._allowed_accounts(user):
+                raise NotAllowedError
+            allowed = self._allowed_containers(user, account)
+            start, limit = self._list_limits(allowed, marker, limit)
+            return allowed[start:start + limit]
+        if shared:
+            allowed = [x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)]
+            start, limit = self._list_limits(allowed, marker, limit)
+            return allowed[start:start + limit]
+        node = self.node.node_lookup(account)
+        return [x[0] for x in self._list_objects(node, account, '', '/', marker, limit, False, [], until)]
     
     @backend_method
     def get_container_meta(self, user, account, container, until=None):
@@ -253,13 +244,14 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
         path, node = self._lookup_container(account, container)
         props = self._get_properties(node, until)
-        count, bytes, tstamp = self._get_statistics(node, path, until)
-        tstamp = max(mtime, tstamp)
+        mtime = props[MTIME]
+        count, bytes, tstamp = self._get_statistics(node, until)
+        tstamp = max(tstamp, mtime)
         if until is None:
             modified = tstamp
         else:
-            modified = self._get_statistics(node, path)[2] # Overall last modification.
-            modified = max(mtime, modified)
+            modified = self._get_statistics(node)[2] # Overall last modification.
+            modified = max(modified, mtime)
         
         if user != account:
             meta = {'name': container}
@@ -324,7 +316,7 @@ class ModularBackend(BaseBackend):
         if policy:
             self._check_policy(policy)
         path = '/'.join((account, container))
-        self._put_path(self._lookup_account(account, True)[1], path)
+        self._put_path(user, self._lookup_account(account, True)[1], path)
         for k, v in self.default_policy.iteritems():
             if k not in policy:
                 policy[k] = v
@@ -346,56 +338,48 @@ class ModularBackend(BaseBackend):
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             return
         
-        if self._get_statistics(node, path)[0] > 0:
+        if self._get_statistics(node)[0] > 0:
             raise IndexError('Container is not empty')
-        versions = self.node.node_purge_children(node, until, CLUSTER_HISTORY)
+        versions = self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
         for v in versions:
             self.mapper.map_remv(v)
-        self.node.node_purge_children(node, until, CLUSTER_DELETED)
+        self.node.node_purge_children(node, inf, CLUSTER_DELETED)
         self.node.node_remove(node)
         self.policy.policy_unset(path)
     
-#     @backend_method
-#     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):
-#         """Return a list of objects existing under a container."""
-#         
-#         logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, shared, until)
-#         allowed = []
-#         if user != account:
-#             if until:
-#                 raise NotAllowedError
-#             allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
-#             if not allowed:
-#                 raise NotAllowedError
-#         else:
-#             if shared:
-#                 allowed = self.permissions.access_list_shared('/'.join((account, container)))
-#         path, version_id, mtime = self._get_containerinfo(account, container, until)
-#         return self._list_objects(path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
+    @backend_method
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):
+        """Return a list of objects existing under a container."""
+        
+        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, shared, until)
+        allowed = []
+        if user != account:
+            if until:
+                raise NotAllowedError
+            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
+            if not allowed:
+                raise NotAllowedError
+        else:
+            if shared:
+                allowed = self.permissions.access_list_shared('/'.join((account, container)))
+        path, node = self._lookup_container(account, container)
+        return self._list_objects(node, path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     
-#     @backend_method
-#     def list_object_meta(self, user, account, container, until=None):
-#         """Return a list with all the container's object meta keys."""
-#         
-#         logger.debug("list_object_meta: %s %s %s", account, container, until)
-#         allowed = []
-#         if user != account:
-#             if until:
-#                 raise NotAllowedError
-#             allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
-#             if not allowed:
-#                 raise NotAllowedError
-#         path, version_id, mtime = self._get_containerinfo(account, container, until)
-#         sql = '''select distinct m.key from (%s) o, metadata m
-#                     where m.version_id = o.version_id and o.name like ?'''
-#         sql = sql % self._sql_until(until)
-#         param = (path + '/%',)
-#         if allowed:
-#             for x in allowed:
-#                 sql += ' and o.name like ?'
-#                 param += (x,)
-#         c = self.con.execute(sql, param)
-#         return [x[0] for x in c.fetchall()]
+    @backend_method
+    def list_object_meta(self, user, account, container, until=None):
+        """Return a list with all the container's object meta keys."""
+        
+        logger.debug("list_object_meta: %s %s %s", account, container, until)
+        allowed = []
+        if user != account:
+            if until:
+                raise NotAllowedError
+            allowed = self.permissions.access_list_paths(user, '/'.join((account, container)))
+            if not allowed:
+                raise NotAllowedError
+        path, node = self._lookup_container(account, container)
+        # TODO: Implement.
+        return []
     
     @backend_method
     def get_object_meta(self, user, account, container, name, version=None):
@@ -408,8 +392,7 @@ class ModularBackend(BaseBackend):
         if version is None:
             modified = props[MTIME]
         else:
-            # TODO: Use latest version if stop keeping statistics for leaves.
-            modified = self._get_statistics(node, path)[2] # Overall last modification.
+            modified = self._get_version(node)[MTIME] # Overall last modification.
         
         meta = dict(self.node.attribute_get(props[SERIAL]))
         meta.update({'name': name, 'bytes': props[SIZE]})
@@ -496,13 +479,11 @@ class ModularBackend(BaseBackend):
             raise ie
         if permissions is not None:
             self._check_permissions(path, permissions)
-        path, node = self._put_object_path(account, container, name)
-        src_version_id, dest_version_id = self._copy_version(user, node, node, not replace_meta, False)
-        # TODO: Set size.
-#         sql = 'update versions set size = ? where version_id = ?'
-#         self.con.execute(sql, (size, dest_version_id))
+        path, node = self._put_object_node(account, container, name)
+        src_version_id, dest_version_id = self._copy_version(user, node, None, node, size)
         self.mapper.map_stor(dest_version_id, [binascii.unhexlify(x) for x in hashmap])
-        # TODO: Check if can update meta with empty values.
+        if not replace_meta and src_version_id is not None:
+            self.node.attribute_copy(src_version_id, dest_version_id)
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
         if permissions is not None:
             self.permissions.access_set(path, permissions)
@@ -517,13 +498,15 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, src_container, src_name)
         self._can_write(user, account, dest_container, dest_name)
         src_path, src_node = self._lookup_object(account, src_container, src_name)
-        src_props = self._get_version(src_node)
         if permissions is not None:
             self._check_permissions(dest_path, permissions)
-        dest_path, dest_node = self._put_object_path(account, dest_container, dest_name)
-        src_version_id, dest_version_id = self._copy_version(user, src_node, dest_node, not replace_meta, True, src_version)
-        # TODO: Check if can update meta with empty values.
-        self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
+        dest_path, dest_node = self._put_object_node(account, dest_container, dest_name)
+        src_version_id, dest_version_id = self._copy_version(user, src_node, src_version, dest_node)
+        if src_version_id is not None:
+            self._copy_data(src_version_id, dest_version_id)
+        if not replace_meta and src_version_id is not None:
+            self.node.attribute_copy(src_version_id, dest_version_id)
+        self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
         if permissions is not None:
             self.permissions.access_set(dest_path, permissions)
     
@@ -562,20 +545,17 @@ class ModularBackend(BaseBackend):
             return
         
         path, node = self._lookup_object(account, container, name)
-        self._copy_version(user, node, node, False, False, None, CLUSTER_DELETED)
+        self._copy_version(user, node, None, node, 0, CLUSTER_DELETED)
         self.permissions.access_clear(path)
     
-#     @backend_method
-#     def list_versions(self, user, account, container, name):
-#         """Return a list of all (version, version_timestamp) tuples for an object."""
-#         
-#         logger.debug("list_versions: %s %s %s", account, container, name)
-#         self._can_read(user, account, container, name)
-#         # This will even show deleted versions.
-#         path = '/'.join((account, container, name))
-#         sql = '''select distinct version_id, tstamp from versions where name = ? and hide = 0'''
-#         c = self.con.execute(sql, (path,))
-#         return [(int(x[0]), int(x[1])) for x in c.fetchall()]
+    @backend_method
+    def list_versions(self, user, account, container, name):
+        """Return a list of all (version, version_timestamp) tuples for an object."""
+        
+        logger.debug("list_versions: %s %s %s", account, container, name)
+        self._can_read(user, account, container, name)
+        # TODO: Implement.
+        return []
     
     @backend_method(autocommit=0)
     def get_block(self, hash):
@@ -620,6 +600,23 @@ class ModularBackend(BaseBackend):
             else:
                 raise ValueError
     
+    def _sql_until(self, parent, until=None):
+        """Return the sql to get the latest versions until the timestamp given."""
+        
+        if until is None:
+            until = time.time()
+        sql = ("select v.serial, n.path, v.mtime, v.size "
+               "from versions v, nodes n "
+               "where v.serial = (select max(serial) "
+                                 "from versions "
+                                 "where node = v.node and mtime < %s) "
+               "and v.cluster != %s "
+               "and v.node = n.node "
+               "and v.node in (select node "
+                              "from nodes "
+                              "where parent = %s)")
+        return sql % (until, CLUSTER_DELETED, parent)
+    
     def _list_limits(self, listing, marker, limit):
         start = 0
         if marker:
@@ -631,9 +628,9 @@ class ModularBackend(BaseBackend):
             limit = 10000
         return start, limit
     
-#     def _list_objects(self, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None, allowed=[]):
-#         cont_prefix = path + '/'
-#         if keys and len(keys) > 0:
+    def _list_objects(self, parent, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], until=None, allowed=[]):
+        cont_prefix = path + '/'
+        if keys and len(keys) > 0:
 #             sql = '''select distinct o.name, o.version_id from (%s) o, metadata m where o.name like ? and
 #                         m.version_id = o.version_id and m.key in (%s)'''
 #             sql = sql % (self._sql_until(until), ', '.join('?' * len(keys)))
@@ -642,47 +639,44 @@ class ModularBackend(BaseBackend):
 #                 sql += ' and (' + ' or '.join(('o.name like ?',) * len(allowed)) + ')'
 #                 param += tuple([x + '%' for x in allowed])
 #             sql += ' order by o.name'
-#         else:
-#             sql = 'select name, version_id from (%s) where name like ?'
-#             sql = sql % self._sql_until(until)
-#             param = (cont_prefix + prefix + '%',)
-#             if allowed:
-#                 sql += ' and (' + ' or '.join(('name like ?',) * len(allowed)) + ')'
-#                 param += tuple([x + '%' for x in allowed])
-#             sql += ' order by name'
-#         c = self.con.execute(sql, param)
-#         objects = [(x[0][len(cont_prefix):], x[1]) for x in c.fetchall()]
-#         if delimiter:
-#             pseudo_objects = []
-#             for x in objects:
-#                 pseudo_name = x[0]
-#                 i = pseudo_name.find(delimiter, len(prefix))
-#                 if not virtual:
-#                     # If the delimiter is not found, or the name ends
-#                     # with the delimiter's first occurence.
-#                     if i == -1 or len(pseudo_name) == i + len(delimiter):
-#                         pseudo_objects.append(x)
-#                 else:
-#                     # If the delimiter is found, keep up to (and including) the delimiter.
-#                     if i != -1:
-#                         pseudo_name = pseudo_name[:i + len(delimiter)]
-#                     if pseudo_name not in [y[0] for y in pseudo_objects]:
-#                         if pseudo_name == x[0]:
-#                             pseudo_objects.append(x)
-#                         else:
-#                             pseudo_objects.append((pseudo_name, None))
-#             objects = pseudo_objects
-#         
-#         start, limit = self._list_limits([x[0] for x in objects], marker, limit)
-#         return objects[start:start + limit]
+            return []
+        else:
+            sql = 'select path, serial from (%s) where path like ?'
+            sql = sql % self._sql_until(parent, until)
+            param = (cont_prefix + prefix + '%',)
+            if allowed:
+                sql += ' and (' + ' or '.join(('name like ?',) * len(allowed)) + ')'
+                param += tuple([x + '%' for x in allowed])
+            sql += ' order by path'
+        c = self.con.execute(sql, param)
+        objects = [(x[0][len(cont_prefix):], x[1]) for x in c.fetchall()]
+        if delimiter:
+            pseudo_objects = []
+            for x in objects:
+                pseudo_name = x[0]
+                i = pseudo_name.find(delimiter, len(prefix))
+                if not virtual:
+                    # If the delimiter is not found, or the name ends
+                    # with the delimiter's first occurence.
+                    if i == -1 or len(pseudo_name) == i + len(delimiter):
+                        pseudo_objects.append(x)
+                else:
+                    # If the delimiter is found, keep up to (and including) the delimiter.
+                    if i != -1:
+                        pseudo_name = pseudo_name[:i + len(delimiter)]
+                    if pseudo_name not in [y[0] for y in pseudo_objects]:
+                        if pseudo_name == x[0]:
+                            pseudo_objects.append(x)
+                        else:
+                            pseudo_objects.append((pseudo_name, None))
+            objects = pseudo_objects
+        
+        start, limit = self._list_limits([x[0] for x in objects], marker, limit)
+        return objects[start:start + limit]
     
     # Path functions.
     
-    def _put_path(self, parent, path):
-        node = self.node.node_create(parent, path)
-        self.node.version_create(node, 0, None, path, CLUSTER_NORMAL)
-    
-    def _put_object_path(self, account, container, name):
+    def _put_object_node(self, account, container, name):
         path, parent = self._lookup_container(account, container)
         path = '/'.join((path, name))
         node = self.node.node_lookup(path)
@@ -690,10 +684,15 @@ class ModularBackend(BaseBackend):
             node = self.node.node_create(parent, path)
         return path, node
     
+    def _put_path(self, user, parent, path):
+        node = self.node.node_create(parent, path)
+        self.node.version_create(node, 0, None, user, CLUSTER_NORMAL)
+        return node
+    
     def _lookup_account(self, account, create=True):
         node = self.node.node_lookup(account)
         if node is None and create:
-            self._put_path(ROOTNODE, account)
+            node = self._put_path(account, ROOTNODE, account) # User is account.
         return account, node
     
     def _lookup_container(self, account, container):
@@ -715,22 +714,22 @@ class ModularBackend(BaseBackend):
         
         before = until if until is not None else inf
         props = self.node.version_lookup(node, before, CLUSTER_NORMAL)
-        # TODO: Do one lookup.
         if props is None and until is not None:
             props = self.node.version_lookup(node, before, CLUSTER_HISTORY)
         if props is None:
             raise NameError('Path does not exist')
         return props
     
-    def _get_statistics(self, node, path, until=None):
-        """Return count, sum of size and latest timestamp of everything under node/path."""
-        
-        # TODO: Remove this function.
+    def _get_statistics(self, node, until=None):
+        """Return count, sum of size and latest timestamp of everything under node."""
         
         if until is None:
-            return self.node.node_statistics(node, CLUSTER_NORMAL)
+            stats = self.node.statistics_get(node, CLUSTER_NORMAL)
         else:
-            return self.node.path_statistics(path + '/', until, CLUSTER_DELETED)
+            stats = self.node.statistics_latest(node, until, CLUSTER_DELETED)
+        if stats is None:
+            stats = (0, 0, 0)
+        return stats
     
     def _get_version(self, node, version=None):
         if version is None:
@@ -739,13 +738,11 @@ class ModularBackend(BaseBackend):
                 raise NameError('Object does not exist')
         else:
             props = self.node.version_get_properties(version)
-            if props is None or props[CLUSTER] == CLUSTER_DELETE:
+            if props is None or props[CLUSTER] == CLUSTER_DELETED:
                 raise IndexError('Version does not exist')
         return props
     
-    def _copy_version(self, user, src_node, dest_node, copy_meta=True, copy_data=True, src_version=None, dest_cluster=CLUSTER_NORMAL):
-        
-        # TODO: Break this into two functions - one that creates and one that copies.
+    def _copy_version(self, user, src_node, src_version, dest_node, dest_size=None, dest_cluster=CLUSTER_NORMAL):
         
         # Get source serial and size.
         if src_version is not None:
@@ -761,8 +758,8 @@ class ModularBackend(BaseBackend):
             except NameError:
                 src_version_id = None
                 size = 0
-        if not copy_data:
-            size = 0
+        if dest_size is not None:
+            size = dest_size
         
         # Move the latest version at destination to CLUSTER_HISTORY and create new.
         if src_node == dest_node and src_version is None and src_version_id is not None:
@@ -773,14 +770,11 @@ class ModularBackend(BaseBackend):
                 self.node.version_recluster(dest_props[SERIAL], CLUSTER_HISTORY)
         dest_version_id, mtime = self.node.version_create(dest_node, size, src_version_id, user, dest_cluster)
         
-        # Copy meta and data.
-        if copy_meta and src_version_id is not None:
-            self.attribute_copy(src_version_id, dest_version_id)
-        if copy_data and src_version_id is not None:
-            hashmap = self.mapper.map_retr(src_version_id)
-            self.mapper.map_stor(dest_version_id, hashmap)
-        
         return src_version_id, dest_version_id
+    
+    def _copy_data(self, src_version, dest_version):
+        hashmap = self.mapper.map_retr(src_version)
+        self.mapper.map_stor(dest_version, hashmap)
     
     def _get_metadata(self, version):
         if version is None:
@@ -790,12 +784,16 @@ class ModularBackend(BaseBackend):
     def _put_metadata(self, user, node, meta, replace=False, copy_data=True):
         """Create a new version and store metadata."""
         
-        src_version_id, dest_version_id = self._copy_version(user, node, node, not replace, copy_data)
+        src_version_id, dest_version_id = self._copy_version(user, node, None, node)
         if not replace:
+            if src_version_id is not None:
+                self.node.attribute_copy(src_version_id, dest_version_id)
             self.node.attribute_del(dest_version_id, (k for k, v in meta.iteritems() if v == ''))
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems() if v != ''))
         else:
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
+        if copy_data and src_version_id is not None:
+            self._copy_data(src_version_id, dest_version_id)
     
     # Access control functions.
     

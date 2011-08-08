@@ -20,6 +20,7 @@ Setup the files (choose where to store data in ``settings.py``)::
 
   cd /pithos/pithos
   cp settings.py.dist settings.py
+  python manage.py syncdb
   cd /pithos
   python setup.py build_sphinx
 
@@ -50,6 +51,7 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
 	RewriteEngine On
 	RewriteRule ^/v(.*) /api/v$1 [PT]
 	RewriteRule ^/public(.*) /api/public$1 [PT]
+	RewriteRule ^/login(.*) /api/login$1 [PT]
 
 	<Directory /pithos/pithos/wsgi/>
 		Order allow,deny
@@ -70,7 +72,7 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
 
   </VirtualHost>
 
-Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/private/pithos.dev.key`` and ``/etc/ssl/certs/pithos.dev.crt`` - change the ``ServerName`` directive)::
+Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/private/pithos.dev.grnet.gr.key`` and ``/etc/ssl/certs/pithos.dev.grnet.gr.crt`` - change the ``ServerName`` directive)::
 
   <IfModule mod_ssl.c>
   <VirtualHost _default_:443>
@@ -98,6 +100,7 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
 	RewriteEngine On
 	RewriteRule ^/v(.*) /api/v$1 [PT]
 	RewriteRule ^/public(.*) /api/public$1 [PT]
+	RewriteRule ^/login(.*) /api/login$1 [PT]
 
         <Directory /pithos/pithos/wsgi/>
                 Order allow,deny
@@ -122,8 +125,8 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
 	#   /usr/share/doc/apache2.2-common/README.Debian.gz for more info.
 	#   If both key and certificate are stored in the same file, only the
 	#   SSLCertificateFile directive is needed.
-	SSLCertificateFile    /etc/ssl/certs/pithos.dev.crt
-	SSLCertificateKeyFile /etc/ssl/private/pithos.dev.key
+	SSLCertificateFile    /etc/ssl/certs/pithos.dev.grnet.gr.crt
+	SSLCertificateKeyFile /etc/ssl/private/pithos.dev.grnet.gr.key
 
 	#   Server Certificate Chain:
 	#   Point SSLCertificateChainFile at a file containing the

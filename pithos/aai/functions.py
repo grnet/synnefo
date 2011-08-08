@@ -54,7 +54,7 @@ def login(request):
        with the 'user' and 'token' as parameters.
        
        Reissue the token even if it has not yet
-       expired, if the 'reissue' parameter is present.
+       expired, if the 'renew' parameter is present.
     """
     
     try:
@@ -67,7 +67,7 @@ def login(request):
         except:
             return HttpResponseBadRequest('Missing necessary Shibboleth headers')
     
-    if 'reissue' in request.GET:
+    if 'renew' in request.GET:
         create_auth_token(user)
     next = request.GET.get('next')
     if next is not None:

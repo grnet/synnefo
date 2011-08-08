@@ -74,8 +74,8 @@ def login(request):
         # TODO: Avoid redirect loops.
         if '?' in next:
             next = next[:next.find('?')]
-        next += '?user=' + urlencode(user.uniq)
-        next += '&' + urlencode(user.auth_token)
+        next += '?' + urlencode({'user': user.uniq,
+                                 'token': user.auth_token})
     
     response = HttpResponse()
     if not next:

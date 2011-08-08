@@ -112,6 +112,7 @@ class ModularBackend(BaseBackend):
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
         
+        logger.debug("list_accounts: %s %s", user, marker, limit)
         allowed = self._allowed_accounts(user)
         start, limit = self._list_limits(allowed, marker, limit)
         return allowed[start:start + limit]
@@ -378,8 +379,8 @@ class ModularBackend(BaseBackend):
             if not allowed:
                 raise NotAllowedError
         path, node = self._lookup_container(account, container)
-        # TODO: Implement.
-        return []
+        before = until if until is not None else inf
+        return self.node.latest_attribute_keys(node, before, CLUSTER_DELETED, allowed)
     
     @backend_method
     def get_object_meta(self, user, account, container, name, version=None):
@@ -554,8 +555,7 @@ class ModularBackend(BaseBackend):
         
         logger.debug("list_versions: %s %s %s", account, container, name)
         self._can_read(user, account, container, name)
-        # TODO: Implement.
-        return []
+        return self.node.node_get_versions(node, ['serial', 'mtime'])
     
     @backend_method(autocommit=0)
     def get_block(self, hash):

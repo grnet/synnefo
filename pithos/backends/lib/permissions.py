@@ -89,7 +89,7 @@ class Permissions(XFeatures, Groups, Public):
         for owner, group in self.group_parents(member):
             if owner + ':' + group in members:
                 return True
-        return True
+        return False
     
     def access_inherit(self, path):
         """Return the inherited or assigned (path, permissions) pair for path."""

@@ -190,6 +190,24 @@ class Node(DBWorker):
         self.execute(q, (node,))
         return self.fetchone()
     
+    def node_get_versions(self, node, keys=(), propnames=_propnames):
+        """Return the properties of all versions at node.
+           If keys is empty, return all properties in the order
+           (serial, node, size, source, mtime, muser, cluster).
+        """
+        
+        q = ("select serial, node, size, source, mtime, muser, cluster "
+             "from versions "
+             "where node = ?")
+        self.execute(q, (serial,))
+        r = self.fetchall()
+        if r is None:
+            return r
+        
+        if not keys:
+            return r
+        return [[p[propnames[k]] for k in keys if k in propnames] for p in r]
+    
     def node_count_children(self, node):
         """Return node's child count."""
         
@@ -360,6 +378,9 @@ class Node(DBWorker):
            do not belong to the cluster.
         """
         
+        execute = self.execute
+        fetchone = self.fetchone
+        
         # The node.
         props = self.node_get_properties(node)
         if props is None:
@@ -373,8 +394,8 @@ class Node(DBWorker):
                              "from versions "
                              "where node = ? and mtime < ?) "
              "and cluster != ?")
-        self.execute(q, (node, before, except_cluster))
-        props = self.fetchone()
+        execute(q, (node, before, except_cluster))
+        props = fetchone()
         if props is None:
             return None
         mtime = props[MTIME]
@@ -389,7 +410,7 @@ class Node(DBWorker):
              "and node in (select node "
                           "from nodes "
                           "where parent = ?)")
-        self.execute(q, (before, except_cluster, parent))
+        execute(q, (before, except_cluster, node))
         r = fetchone()
         if r is None:
             return None
@@ -408,7 +429,7 @@ class Node(DBWorker):
              "and node in (select node "
                           "from nodes "
                           "where path like ?)")
-        self.execute(q, (before, except_cluster, path + '%'))
+        execute(q, (before, except_cluster, path + '%'))
         r = fetchone()
         if r is None:
             return None
@@ -713,18 +734,33 @@ class Node(DBWorker):
             q = "delete from attributes where serial = ?"
             self.execute(q, (serial,))
     
-#     def node_get_attribute_keys(self, parent):
-#         """Return a list with all keys pairs defined
-#            for the namespace of the node specified.
-#         """
-#         
-#         q = ("select distinct key from attributes a, versions v, nodes n "
-#              "where a.serial = v.serial and v.node = n.node and n.parent = ?")
-#         self.execute(q, (parent,))
-#         return [r[0] for r in self.fetchall()]
-    
     def attribute_copy(self, source, dest):
         q = ("insert or replace into attributes "
              "select ?, key, value from attributes "
              "where serial = ?")
         self.execute(q, (dest, source))
+    
+    def latest_attribute_keys(self, parent, before=inf, except_cluster=0, allowed_paths=[]):
+        """Return a list with all keys pairs defined
+           for all latest versions under parent that
+           do not belong to the cluster.
+        """
+        
+        # TODO: Use another table to store before=inf results.
+        q = ("select a.key "
+             "from attributes a, versions v, nodes n "
+             "where v.serial = (select max(serial) "
+                              "from versions "
+                              "where node = v.node and mtime < ?) "
+             "and v.cluster != ? "
+             "and v.node in (select node "
+                           "from nodes "
+                           "where parent = ?) "
+             "and a.serial = v.serial "
+             "and n.node = v.node")
+        args = (before, except_cluster, parent)
+        for path in allowed_paths:
+            q += ' and n.path like ?'
+            args += (path + '%',)
+        self.execute(q, args)
+        return [r[0] for r in self.fetchall()]

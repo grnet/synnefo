@@ -31,9 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-# Business Logic for working with users
+import hashlib
 
-from hashlib import md5
 from time import asctime
 from datetime import datetime, timedelta
 
@@ -60,11 +59,11 @@ def delete_user(user):
 
 @transaction.commit_on_success
 def create_auth_token(user):
-    md5 = md5()
+    md5 = hashlib.md5()
     md5.update(user.uniq)
     md5.update(user.realname.encode('ascii', 'ignore'))
     md5.update(asctime())
-
+    
     user.auth_token = md5.hexdigest()
     user.auth_token_created = datetime.now()
     user.auth_token_expires = user.auth_token_created + \

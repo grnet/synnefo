@@ -34,7 +34,7 @@
 from time import time, mktime
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.http import urlencode
 from django.utils.cache import patch_vary_headers
 
@@ -81,7 +81,8 @@ def login(request):
     if not next:
         response['X-Auth-User'] = user.uniq
         response['X-Auth-Token'] = user.auth_token
-        response.status_code = 204
+        response.content = user.uniq + '\n' + user.auth_token + '\n'
+        response.status_code = 200
     else:
         response['Location'] = next
         response.status_code = 302

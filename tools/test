@@ -277,7 +277,6 @@ class BaseTestCase(unittest.TestCase):
 class AccountHead(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in self.containers:
             self.client.create_container(item)
@@ -349,7 +348,6 @@ class AccountHead(BaseTestCase):
 class AccountGet(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         #create some containers
         self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in self.containers:
@@ -455,7 +453,6 @@ class AccountGet(BaseTestCase):
 class AccountPost(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
         for item in self.containers:
             self.client.create_container(item)
@@ -569,7 +566,6 @@ class AccountPost(BaseTestCase):
 class ContainerHead(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.container = 'apples'
         self.client.create_container(self.container)
     
@@ -591,7 +587,6 @@ class ContainerHead(BaseTestCase):
 class ContainerGet(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.container = ['pears', 'apples']
         for c in self.container:
             self.client.create_container(c)
@@ -801,7 +796,6 @@ class ContainerGet(BaseTestCase):
 class ContainerPut(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
     
     def test_create(self):
@@ -817,7 +811,6 @@ class ContainerPut(BaseTestCase):
 class ContainerPost(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.container = 'apples'
         self.client.create_container(self.container)
     
@@ -834,7 +827,6 @@ class ContainerPost(BaseTestCase):
 class ContainerDelete(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
@@ -857,7 +849,6 @@ class ObjectHead(BaseTestCase):
 class ObjectGet(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
         #create some containers
         for c in self.containers:
@@ -1193,7 +1184,6 @@ class ObjectGet(BaseTestCase):
 class ObjectPut(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.container = 'c1'
         self.client.create_container(self.container)
     
@@ -1292,7 +1282,6 @@ class ObjectPut(BaseTestCase):
 class ObjectCopy(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
@@ -1363,7 +1352,6 @@ class ObjectCopy(BaseTestCase):
 class ObjectMove(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
@@ -1393,7 +1381,6 @@ class ObjectMove(BaseTestCase):
 class ObjectPost(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
@@ -1633,7 +1620,6 @@ class ObjectPost(BaseTestCase):
 class ObjectDelete(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        self.account = 'test'
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
@@ -1671,7 +1657,7 @@ class ListSharing(BaseTestCase):
                               self.o1_sharing_with[0],
                               self.o1_sharing_with[1],
                               get_api())
-        self.assertTrue('test' in self.other.list_shared_by_others())
+        self.assertTrue(get_user() in self.other.list_shared_by_others())
 
 class TestGreek(BaseTestCase):
     def setUp(self):
@@ -1813,7 +1799,7 @@ class TestGreek(BaseTestCase):
         #check read access
         self.client.create_container('φάκελος')
         o = self.upload_random_data('φάκελος', 'ο1')
-        self.client.share_object('φάκελος', 'ο1', ['test:σεφς'])
+        self.client.share_object('φάκελος', 'ο1', ['%s:σεφς' % get_user()])
         chef = Pithos_Client(get_server(),
                             '0009',
                             'διογένης',
@@ -1897,7 +1883,7 @@ class TestPermissions(BaseTestCase):
     def test_read_access(self):
         self.client.create_container('c')
         o = self.upload_random_data('c', 'o')
-        self.client.share_object('c', 'o', ['test:pithosdev'])
+        self.client.share_object('c', 'o', ['%s:pithosdev' % get_user()])
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_server(), token, account, get_api()) 
             if account in self.authorized:

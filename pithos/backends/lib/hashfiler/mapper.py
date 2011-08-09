@@ -57,11 +57,11 @@ class Mapper(object):
                 raise ValueError("Variable mappath '%s' is not a directory" % (mappath,))
         self.mappath = mappath
 
-    def get_rear_map(self, name, create=0):
+    def _get_rear_map(self, name, create=0):
         name = join(self.mappath, hex(int(name)))
         return ContextFile(name, create)
 
-    def delete_rear_map(self, name):
+    def _delete_rear_map(self, name):
         name = join(self.mappath, hex(int(name)))
         try:
             unlink(name)
@@ -79,7 +79,7 @@ class Mapper(object):
         namelen = self.namelen
         hashes = ()
 
-        with self.get_rear_map(name, 0) as rmap:
+        with self._get_rear_map(name, 0) as rmap:
             if rmap:
                 hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
         return hashes
@@ -87,16 +87,16 @@ class Mapper(object):
     def map_stor(self, name, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map, replacing the old ones."""
         namelen = self.namelen
-        with self.get_rear_map(name, 1) as rmap:
+        with self._get_rear_map(name, 1) as rmap:
             rmap.sync_write_chunks(namelen, blkoff, hashes, None)
 
 #     def map_copy(self, src, dst):
 #         """Copy a hashes map to another one, replacing it."""
-#         with self.get_rear_map(src, 0) as rmap:
+#         with self._get_rear_map(src, 0) as rmap:
 #             if rmap:
 #                 rmap.copy_to(dst)
 
     def map_remv(self, name):
         """Remove a hashes map. Returns true if the map was found and removed."""
-        return self.delete_rear_map(name)
+        return self._delete_rear_map(name)
 

@@ -44,7 +44,7 @@ inf = float('inf')
 
 
 def strnextling(prefix):
-    """return the first unicode string
+    """Return the first unicode string
        greater than but not starting with given prefix.
        strnextling('hello') -> 'hellp'
     """
@@ -64,7 +64,7 @@ def strnextling(prefix):
     return s
 
 def strprevling(prefix):
-    """return an approximation of the last unicode string
+    """Return an approximation of the last unicode string
        less than but not starting with given prefix.
        strprevling(u'hello') -> u'helln\\xffff'
     """
@@ -78,9 +78,6 @@ def strprevling(prefix):
     return s
 
 
-import re
-_regexfilter = re.compile('(!?)\s*([\w-]+)\s*(=|!=|<=|>=|<|>)?\s*(.*)$', re.UNICODE)
-
 _propnames = {
     'serial'    : 0,
     'node'      : 1,
@@ -93,12 +90,12 @@ _propnames = {
 
 
 class Node(DBWorker):
-    """Nodes store path organization.
-       Versions store object history.
+    """Nodes store path organization and have multiple versions.
+       Versions store object history and have multiple attributes.
        Attributes store metadata.
     """
     
-    # TODO: Keep size of object in one place.
+    # TODO: Provide an interface for included and excluded clusters.
     
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
@@ -141,8 +138,9 @@ class Node(DBWorker):
                             references nodes(node)
                             on update cascade
                             on delete cascade ) """)
-        # execute(""" create index if not exists idx_versions_path
-        #             on nodes(cluster, node, path) """)
+        execute(""" create index if not exists idx_versions_node
+                    on nodes(node) """)
+        # TODO: Sort out if more indexes are needed.
         # execute(""" create index if not exists idx_versions_mtime
         #             on nodes(mtime) """)
         
@@ -199,7 +197,7 @@ class Node(DBWorker):
         q = ("select serial, node, size, source, mtime, muser, cluster "
              "from versions "
              "where node = ?")
-        self.execute(q, (serial,))
+        self.execute(q, (node,))
         r = self.fetchall()
         if r is None:
             return r
@@ -237,8 +235,9 @@ class Node(DBWorker):
         nr, size = self.fetchone()
         if not nr:
             return ()
-        self.statistics_update(parent, -nr, -size, cluster)
-        self.statistics_update_ancestors(parent, -nr, -size, cluster)
+        mtime = time()
+        self.statistics_update(parent, -nr, -size, mtime, cluster)
+        self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
         
         q = ("select serial from versions "
              "where node in (select node "
@@ -281,7 +280,8 @@ class Node(DBWorker):
         nr, size = self.fetchone()
         if not nr:
             return ()
-        self.statistics_update_ancestors(node, -nr, -size, cluster)
+        mtime = time()
+        self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
         
         q = ("select serial from versions "
              "where node = ? "
@@ -420,6 +420,7 @@ class Node(DBWorker):
             return (0, 0, mtime)
         
         # All children (get size and mtime).
+        # XXX: This is why the full path is stored.
         q = ("select count(serial), sum(size), max(mtime) "
              "from versions v "
              "where serial = (select max(serial) "
@@ -524,177 +525,6 @@ class Node(DBWorker):
         self.execute(q, (serial,))
         return True
     
-    def parse_filters(self, filterq):
-        preterms = filterq.split(',')
-        included = []
-        excluded = []
-        opers = []
-        match = _regexfilter.match
-        for term in preterms:
-            m = match(term)
-            if m is None:
-                continue
-            neg, key, op, value = m.groups()
-            if neg:
-                excluded.append(key)
-            elif not value:
-                included.append(key)
-            elif op:
-                opers.append((key, op, value))
-        
-        return included, excluded, opers
-    
-    def construct_filters(self, filterq):
-        subqlist = []
-        append = subqlist.append
-        included, excluded, opers = self.parse_filters(filterq)
-        args = []
-        
-        if included:
-            subq = "key in ("
-            subq += ','.join(('?' for x in included)) + ")"
-            args += included
-            append(subq)
-        
-        if excluded:
-            subq = "key not in ("
-            subq += ','.join(('?' for x in exluded)) + ")"
-            args += excluded
-            append(subq)
-        
-        if opers:
-            t = (("(key = %s and value %s %s)" % (k, o, v)) for k, o, v in opers)
-            subq = "(" + ' or '.join(t) + ")"
-            args += opers
-        
-        if not subqlist:
-            return None, None
-        
-        subq = " and serial in (select serial from attributes where "
-        subq += ' and '.join(subqlist)
-        subq += ")"
-        
-        return subq, args
-    
-#     def node_list(self, parent, prefix='',
-#                    start='', delimiter=None,
-#                    after=0.0, before=inf,
-#                    filterq=None, versions=0,
-#                    cluster=0, limit=10000):
-#         """Return (a list of property tuples, a list of common prefixes)
-#            for the current versions of the paths with the given parent,
-#            matching the following criteria.
-#            
-#            The property tuple for a version is returned if all
-#            of these conditions are true:
-#            
-#                 a. parent (and cluster) matches
-#                 
-#                 b. path > start
-#                 
-#                 c. path starts with prefix
-#                 
-#                 d. i  [versions=true]  version is in (after, before)
-#                    ii [versions=false] version is the max in (after, before)
-#                 
-#                 e. the path does not have the delimiter occuring
-#                    after the prefix.
-#                 
-#                 f. serial matches the attribute filter query.
-#                    
-#                    A filter query is a comma-separated list of
-#                    terms in one of these three forms:
-#                    
-#                    key
-#                        an attribute with this key must exist
-#                    
-#                    !key
-#                        an attribute with this key must not exist
-#                    
-#                    key ?op value
-#                        the attribute with this key satisfies the value
-#                        where ?op is one of ==, != <=, >=, <, >.
-#            
-#            matching up to the first delimiter after prefix,
-#            and are reported only once, as "virtual directories".
-#            The delimiter is included in the prefixes.
-#            Prefixes do appear from (e) even if no paths would match in (f).
-#            
-#            If arguments are None, then the corresponding matching rule
-#            will always match.
-#         """
-#         
-#         execute = self.execute
-# 
-#         if start < prefix:
-#             start = strprevling(prefix)
-# 
-#         nextling = strnextling(prefix)
-# 
-#         q = ("select serial, parent, path, size, "
-#                     "population, popsize, source, mtime, cluster "
-#              "from nodes "
-#              "where parent = ? and path > ? and path < ? "
-#              "and mtime > ? and mtime < ? and cluster = ?")
-#         args = [parent, start, nextling, after, before, cluster]
-# 
-#         if filterq:
-#             subq, subargs = self.construct_filters(filterq)
-#             if subq is not None:
-#                 q += subq
-#                 args += subargs
-#         q += " order by path"
-# 
-#         if delimiter is None:
-#             q += " limit ?"
-#             args.append(limit)
-#             execute(q, args)
-#             return self.fetchall(), ()
-# 
-#         pfz = len(prefix)
-#         dz = len(delimiter)
-#         count = 0
-#         fetchone = self.fetchone
-#         prefixes = []
-#         pappend = prefixes.append
-#         matches = []
-#         mappend = matches.append
-#         
-#         execute(q, args)
-#         while 1:
-#             props = fetchone()
-#             if props is None:
-#                 break
-#             path = props[PATH]
-#             idx = path.find(delimiter, pfz)
-#             if idx < 0:
-#                 mappend(props)
-#                 count += 1
-#                 if count >= limit:
-#                     break
-#                 continue
-# 
-#             pf = path[:idx + dz]
-#             pappend(pf)
-#             count += 1
-#             ## XXX: if we break here due to limit,
-#             ##      but a path would also be matched below,
-#             ##      the path match would be lost since the
-#             ##      next call with start=path would skip both of them.
-#             ##      In this case, it is impossible to obey the limit,
-#             ##      therefore we will break later, at limit + 1.
-#             if idx + dz == len(path):
-#                 mappend(props)
-#                 count += 1
-# 
-#             if count >= limit: 
-#                 break
-# 
-#             args[1] = strnextling(pf) # new start
-#             execute(q, args)
-# 
-#         return matches, prefixes
-    
     def attribute_get(self, serial, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.
            If keys is empty, return all attributes.
@@ -740,14 +570,36 @@ class Node(DBWorker):
              "where serial = ?")
         self.execute(q, (dest, source))
     
-    def latest_attribute_keys(self, parent, before=inf, except_cluster=0, allowed_paths=[]):
+    def _construct_filters(self, filterq):
+        if not filterq:
+            return None, None
+        
+        args = filterq.split(',')
+        subq = " and a.key in ("
+        subq += ','.join(('?' for x in args))
+        subq += ")"
+        
+        return subq, args
+    
+    def _construct_paths(self, pathq):
+        if not pathq:
+            return None, None
+        
+        subq = " and ("
+        subq += ' or '.join(('n.path like ?' for x in pathq))
+        subq += ")"
+        args = tuple([x + '%' for x in pathq])
+        
+        return subq, args
+    
+    def latest_attribute_keys(self, parent, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
         """
         
         # TODO: Use another table to store before=inf results.
-        q = ("select a.key "
+        q = ("select distinct a.key "
              "from attributes a, versions v, nodes n "
              "where v.serial = (select max(serial) "
                               "from versions "
@@ -759,8 +611,134 @@ class Node(DBWorker):
              "and a.serial = v.serial "
              "and n.node = v.node")
         args = (before, except_cluster, parent)
-        for path in allowed_paths:
-            q += ' and n.path like ?'
-            args += (path + '%',)
+        subq, subargs = self._construct_paths(pathq)
+        if subq is not None:
+            q += subq
+            args += subargs
         self.execute(q, args)
         return [r[0] for r in self.fetchall()]
+    
+    def latest_version_list(self, parent, prefix='', delimiter=None,
+                            start='', limit=10000, before=inf,
+                            except_cluster=0, pathq=[], filterq=None):
+        """Return a (list of (path, serial) tuples, list of common prefixes)
+           for the current versions of the paths with the given parent,
+           matching the following criteria.
+           
+           The property tuple for a version is returned if all
+           of these conditions are true:
+                
+                a. parent matches
+                
+                b. path > start
+                
+                c. path starts with prefix (and paths in pathq)
+                
+                d. version is the max up to before
+                
+                e. version is not in cluster
+                
+                f. the path does not have the delimiter occuring
+                   after the prefix, or ends with the delimiter
+                
+                g. serial matches the attribute filter query.
+                   
+                   A filter query is a comma-separated list of
+                   terms in one of these three forms:
+                   
+                   key
+                       an attribute with this key must exist
+                   
+                   !key
+                       an attribute with this key must not exist
+                   
+                   key ?op value
+                       the attribute with this key satisfies the value
+                       where ?op is one of ==, != <=, >=, <, >.
+           
+           The list of common prefixes includes the prefixes
+           matching up to the first delimiter after prefix,
+           and are reported only once, as "virtual directories".
+           The delimiter is included in the prefixes.
+           
+           If arguments are None, then the corresponding matching rule
+           will always match.
+           
+           Limit applies to the first list of tuples returned.
+        """
+        
+        execute = self.execute
+        
+        if not start or start < prefix:
+            start = strprevling(prefix)
+        nextling = strnextling(prefix)
+        
+        q = ("select distinct n.path, v.serial "
+             "from attributes a, versions v, nodes n "
+             "where v.serial = (select max(serial) "
+                              "from versions "
+                              "where node = v.node and mtime < ?) "
+             "and v.cluster != ? "
+             "and v.node in (select node "
+                           "from nodes "
+                           "where parent = ?) "
+             "and a.serial = v.serial "
+             "and n.node = v.node "
+             "and n.path > ? and n.path < ?")
+        args = [before, except_cluster, parent, start, nextling]
+        
+        subq, subargs = self._construct_paths(pathq)
+        if subq is not None:
+            q += subq
+            args += subargs
+        subq, subargs = self._construct_filters(filterq)
+        if subq is not None:
+            q += subq
+            args += subargs
+        else:
+            q = q.replace("attributes a, ", "")
+            q = q.replace("and a.serial = v.serial ", "")
+        q += " order by n.path"
+        
+        if not delimiter:
+            q += " limit ?"
+            args.append(limit)
+            execute(q, args)
+            return self.fetchall(), ()
+        
+        pfz = len(prefix)
+        dz = len(delimiter)
+        count = 0
+        fetchone = self.fetchone
+        prefixes = []
+        pappend = prefixes.append
+        matches = []
+        mappend = matches.append
+        
+        execute(q, args)
+        while True:
+            props = fetchone()
+            if props is None:
+                break
+            path, serial = props
+            idx = path.find(delimiter, pfz)
+            
+            if idx < 0:
+                mappend(props)
+                count += 1
+                if count >= limit:
+                    break
+                continue
+            
+            pf = path[:idx + dz]
+            pappend(pf)
+            if idx + dz == len(path):
+                mappend(props)
+                count += 1
+            if count >= limit: 
+                break
+            
+            args[3] = strnextling(pf) # New start.
+            execute(q, args)
+        
+        return matches, prefixes

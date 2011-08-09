@@ -17,7 +17,9 @@ Then find the plain text version of the docs in docs/build/text.
 Running the server
 ------------------
 
-Enter the pithos dir and run:
+Enter the pithos dir, copy settings.py.dist to settings.py and change the SECRET_KEY inside.
+
+Then run:
     python manage.py syncdb
     python manage.py loaddata aai/fixtures/auth_test_data.json (to load sample users)
     python manage.py runserver

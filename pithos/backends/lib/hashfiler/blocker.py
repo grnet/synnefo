@@ -74,7 +74,7 @@ class Blocker(object):
         self.hashlen = len(emptyhash)
         self.emptyhash = emptyhash
 
-    def get_rear_block(self, blkhash, create=0):
+    def _get_rear_block(self, blkhash, create=0):
         filename = hexlify(blkhash)
         dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
         if not exists(dir):
@@ -82,7 +82,7 @@ class Blocker(object):
         name = join(dir, filename)
         return ContextFile(name, create)
 
-    def check_rear_block(self, blkhash):
+    def _check_rear_block(self, blkhash):
         filename = hexlify(blkhash)
         dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
         name = join(dir, filename)
@@ -101,7 +101,7 @@ class Blocker(object):
         missing = []
         append = missing.append
         for i, h in enumerate(hashes):
-            if not self.check_rear_block(h):
+            if not self._check_rear_block(h):
                 append(i)
         return missing
 
@@ -113,7 +113,7 @@ class Blocker(object):
         block = None
 
         for h in hashes:
-            with self.get_rear_block(h, 0) as rbl:
+            with self._get_rear_block(h, 0) as rbl:
                 if not rbl:
                     break
                 for block in rbl.sync_read_chunks(blocksize, 1, 0):
@@ -135,7 +135,7 @@ class Blocker(object):
         mf = None
         missing = self.block_ping(hashlist)
         for i in missing:
-            with self.get_rear_block(hashlist[i], 1) as rbl:
+            with self._get_rear_block(hashlist[i], 1) as rbl:
                  rbl.sync_write(blocklist[i]) #XXX: verify?
 
         return hashlist, missing

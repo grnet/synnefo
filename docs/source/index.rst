@@ -4,12 +4,12 @@ Pithos Documentation
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    
    devguide
    adminguide
    backends
-   clients
+   clientlib
 
 Indices and tables
 ==================

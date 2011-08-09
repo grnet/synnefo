@@ -46,6 +46,7 @@ class BaseBackend(object):
     
     The following variables should be available:
         'hash_algorithm': Suggested is 'sha256'
+        
         'block_size': Suggested is 4MB
     """
     
@@ -54,6 +55,7 @@ class BaseBackend(object):
         
         Parameters:
             'marker': Start list from the next item after 'marker'
+            
             'limit': Number of containers to return
         """
         return []
@@ -63,9 +65,13 @@ class BaseBackend(object):
         
         The keys returned are all user-defined, except:
             'name': The account name
+            
             'count': The number of containers (or 0)
+            
             'bytes': The total data size (or 0)
+            
             'modified': Last modification timestamp (overall)
+            
             'until_timestamp': Last modification until the timestamp provided
         
         Raises:
@@ -78,6 +84,7 @@ class BaseBackend(object):
         
         Parameters:
             'meta': Dictionary with metadata to update
+            
             'replace': Replace instead of update
         
         Raises:
@@ -98,6 +105,7 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             ValueError: Invalid data in groups
         """
         return
@@ -115,6 +123,7 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             IndexError: Account is not empty
         """
         return
@@ -124,8 +133,11 @@ class BaseBackend(object):
         
         Parameters:
             'marker': Start list from the next item after 'marker'
+            
             'limit': Number of containers to return
+            
             'shared': Only list containers with permissions set
+            
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -137,13 +149,18 @@ class BaseBackend(object):
         
         The keys returned are all user-defined, except:
             'name': The container name
+            
             'count': The number of objects
+            
             'bytes': The total data size
+            
             'modified': Last modification timestamp (overall)
+            
             'until_timestamp': Last modification until the timestamp provided
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
         """
         return {}
@@ -153,10 +170,12 @@ class BaseBackend(object):
         
         Parameters:
             'meta': Dictionary with metadata to update
+            
             'replace': Replace instead of update
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
         """
         return
@@ -166,10 +185,12 @@ class BaseBackend(object):
         
         The keys returned are:
             'quota': The maximum bytes allowed (default is 0 - unlimited)
+            
             'versioning': Can be 'auto', 'manual' or 'none' (default is 'manual')
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
         """
         return {}
@@ -179,7 +200,9 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
+            
             ValueError: Invalid policy defined
         """
         return
@@ -189,7 +212,9 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container already exists
+            
             ValueError: Invalid policy defined
         """
         return
@@ -199,7 +224,9 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
+            
             IndexError: Container is not empty
         """
         return
@@ -209,19 +236,26 @@ class BaseBackend(object):
         
         Parameters:
             'prefix': List objects starting with 'prefix'
+            
             'delimiter': Return unique names before 'delimiter' and after 'prefix'
+            
             'marker': Start list from the next item after 'marker'
+            
             'limit': Number of objects to return
-            'virtual': If not set, the result will only include names starting\
-                       with 'prefix' and ending without a 'delimiter' or with\
-                       the first occurance of the 'delimiter' after 'prefix'.\
-                       If set, the result will include all names after 'prefix',\
+            
+            'virtual': If not set, the result will only include names starting
+                       with 'prefix' and ending without a 'delimiter' or with
+                       the first occurance of the 'delimiter' after 'prefix'.
+                       If set, the result will include all names after 'prefix',
                        up to and including the 'delimiter' if it is found
+            
             'keys': Include objects that have meta with the keys in the list
+            
             'shared': Only list objects with permissions set
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
         """
         return []
@@ -231,6 +265,7 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
         """
         return []
@@ -240,15 +275,22 @@ class BaseBackend(object):
         
         The keys returned are all user-defined, except:
             'name': The object name
+            
             'bytes': The total data size
+            
             'modified': Last modification timestamp (overall)
+            
             'modified_by': The user that committed the object (version requested)
+            
             'version': The version identifier
+            
             'version_timestamp': The version's modification timestamp
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
+            
             IndexError: Version does not exist
         """
         return {}
@@ -258,24 +300,28 @@ class BaseBackend(object):
         
         Parameters:
             'meta': Dictionary with metadata to update
+            
             'replace': Replace instead of update
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
         """
         return
     
     def get_object_permissions(self, user, account, container, name):
-        """Return the path from which this object gets its permissions from,\
+        """Return the path from which this object gets its permissions from,
         along with a dictionary containing the permissions.
         
         The keys are:
             'read': The object is readable by the users/groups in the list
+            
             'write': The object is writable by the users/groups in the list
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
         """
         return {}
@@ -288,11 +334,14 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
+            
             ValueError: Invalid users/groups in permissions
-            AttributeError: Can not set permissions, as this object\
-                is already shared/private by another object higher\
-                in the hierarchy, or setting permissions here will\
+            
+            AttributeError: Can not set permissions, as this object
+                is already shared/private by another object higher
+                in the hierarchy, or setting permissions here will
                 invalidate other permissions deeper in the hierarchy
         """
         return
@@ -302,6 +351,7 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
         """
         return None
@@ -314,6 +364,7 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
         """
         return
@@ -323,7 +374,9 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
+            
             IndexError: Version does not exist
         """
         return 0, []
@@ -333,13 +386,18 @@ class BaseBackend(object):
         
         Parameters:
             'dest_meta': Dictionary with metadata to change
+            
             'replace_meta': Replace metadata instead of update
+            
             'permissions': Updated object permissions
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container does not exist
+            
             ValueError: Invalid users/groups in permissions
+            
             AttributeError: Can not set permissions
         """
         return
@@ -349,15 +407,22 @@ class BaseBackend(object):
         
         Parameters:
             'dest_meta': Dictionary with metadata to change from source to destination
+            
             'replace_meta': Replace metadata instead of update
+            
             'permissions': New object permissions
+            
             'src_version': Copy from the version provided
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
+            
             IndexError: Version does not exist
+            
             ValueError: Invalid users/groups in permissions
+            
             AttributeError: Can not set permissions
         """
         return
@@ -367,13 +432,18 @@ class BaseBackend(object):
         
         Parameters:
             'dest_meta': Dictionary with metadata to change from source to destination
+            
             'replace_meta': Replace metadata instead of update
+            
             'permissions': New object permissions
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
+            
             ValueError: Invalid users/groups in permissions
+            
             AttributeError: Can not set permissions
         """
         return
@@ -383,6 +453,7 @@ class BaseBackend(object):
         
         Raises:
             NotAllowedError: Operation not permitted
+            
             NameError: Container/object does not exist
         """
         return

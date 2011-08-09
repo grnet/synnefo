@@ -609,7 +609,7 @@ class SimpleBackend(BaseBackend):
     
     @backend_method(autocommit=0)
     def put_block(self, data):
-        """Create a block and return the hash."""
+        """Store a block and return the hash."""
         
         logger.debug("put_block: %s", len(data))
         hashes, absent = self.blocker.block_stor((data,))

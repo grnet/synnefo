@@ -16,7 +16,7 @@ Get the source::
   cd /
   git clone https://code.grnet.gr/git/pithos
 
-Setup the files (choose where to store data in ``settings.py``)::
+Setup the files (choose where to store data in ``settings.py`` and change ``SECRET_KEY``)::
 
   cd /pithos/pithos
   cp settings.py.dist settings.py

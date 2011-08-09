@@ -307,6 +307,7 @@ class GetObject(Command):
         if self.versionlist:
             if 'detail' in args.keys():
                 args.pop('detail')
+            args.pop('format')
             data = self.client.retrieve_object_versionlist(container, object, **args)
         elif self.version:
             data = self.client.retrieve_object_version(container, object,

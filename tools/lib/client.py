@@ -695,7 +695,7 @@ class Pithos_Client(OOS_Client):
                                           params=params, **headers)
     
     def retrieve_object_version(self, container, object, version,
-                                detail=False, range=None, if_range=None,
+                                format='text', range=None, if_range=None,
                                 if_match=None, if_none_match=None,
                                 if_modified_since=None, if_unmodified_since=None,
                                 account=None):
@@ -720,7 +720,7 @@ class Pithos_Client(OOS_Client):
             args.pop(elem)
             
         return self.retrieve_object_version(container, object, version='list',
-                                            detail=True, **args)
+                                            format='json', **args)
     
     def create_zero_length_object(self, container, object,
                                   meta={}, etag=None, content_type=None,

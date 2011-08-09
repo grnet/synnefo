@@ -1898,16 +1898,18 @@ class TestPermissions(BaseTestCase):
         self.client.create_container('c')
         o = self.upload_random_data('c', 'o')
         self.client.share_object('c', 'o', ['chazapis'], read=False)
+        o_data = o['data']
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_server(), token, account, get_api()) 
             new_data = get_random_data()
-            if account == 'chazapis':
+            if account in [get_user(), 'chazapis']:
                 self.assert_not_raises_fault(401, cl.update_object,
                                              'c', 'o', StringIO(new_data),
                                              account=get_user())
                 server_data = self.client.retrieve_object('c', 'o')
-                self.assertEqual(o['data'], server_data[:len(o['data'])])
-                self.assertEqual(new_data, server_data[len(o['data']):])
+                self.assertEqual(o_data, server_data[:len(o_data)])
+                self.assertEqual(new_data, server_data[len(o_data):])
+                o_data = server_data
             else:
                 self.assert_raises_fault(401, cl.update_object,
                                              'c', 'o', StringIO(new_data),

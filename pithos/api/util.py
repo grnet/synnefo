@@ -155,7 +155,7 @@ def put_object_headers(response, meta, restricted=False):
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     if not restricted:
-        response['X-Object-Modified-By'] = meta['modified_by']
+        response['X-Object-Modified-By'] = smart_str(meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:

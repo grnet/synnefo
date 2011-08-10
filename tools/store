@@ -308,6 +308,7 @@ class GetObject(Command):
             if 'detail' in args.keys():
                 args.pop('detail')
             args.pop('format')
+            self.detail = True
             data = self.client.retrieve_object_versionlist(container, object, **args)
         elif self.version:
             data = self.client.retrieve_object_version(container, object,
@@ -317,7 +318,6 @@ class GetObject(Command):
         
         f = self.file and open(self.file, 'w') or stdout
         if self.detail:
-            data = json.loads(data)
             if self.versionlist:
                 print_versions(data, f=f)
             else:

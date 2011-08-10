@@ -94,8 +94,7 @@ class Client(object):
         kwargs['headers']['X-Auth-Token'] = self.token
         if body:
             kwargs['body'] = body
-            kwargs['headers'].setdefault('content-type',
-                                         'application/octet-stream')
+            kwargs['headers'].setdefault('content-type', 'application/octet-stream')
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
         
         #print '#', method, full_path, kwargs
@@ -363,7 +362,8 @@ class OOS_Client(Client):
         l = [elem for elem in l if eval(elem)]
         for elem in l:
             headers.update({elem:eval(elem)})
-            
+        headers.setdefault('content-type', 'application/octet-stream')
+        
         for k,v in meta.items():
             headers['x-object-meta-%s' %k.strip()] = v.strip()
         data = f.read() if f else None
@@ -767,6 +767,7 @@ class Pithos_Client(OOS_Client):
         l = [elem for elem in l if eval(elem)]
         for elem in l:
             headers.update({elem:eval(elem)})
+        headers.setdefault('content-type', 'application/octet-stream')
         
         for k,v in meta.items():
             v = v.strip()

@@ -389,6 +389,9 @@ def get_sharing(request):
     if permissions is None:
         return None
     
+    # TODO: Document or remove '~' replacing.
+    permissions = permissions.replace('~', '')
+    
     ret = {}
     permissions = permissions.replace(' ', '')
     if permissions == '':

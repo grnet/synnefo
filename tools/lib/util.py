@@ -7,16 +7,10 @@ DEFAULT_USER = 'test'
 DEFAULT_AUTH = '0000'
 
 def get_user():
-    try:
-        return os.environ['PITHOS_USER']
-    except KeyError:
-        return DEFAULT_USER
+    return DEFAULT_USER
 
 def get_auth():
-    try:
-        return os.environ['PITHOS_AUTH']
-    except KeyError:
-        return DEFAULT_AUTH
+    return DEFAULT_AUTH
 
 def get_server():
     try:

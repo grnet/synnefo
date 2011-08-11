@@ -139,10 +139,10 @@ class Node(DBWorker):
                             on update cascade
                             on delete cascade ) """)
         execute(""" create index if not exists idx_versions_node
-                    on nodes(node) """)
+                    on versions(node) """)
         # TODO: Sort out if more indexes are needed.
         # execute(""" create index if not exists idx_versions_mtime
-        #             on nodes(mtime) """)
+        #             on versions(mtime) """)
         
         execute(""" create table if not exists attributes
                           ( serial integer,

@@ -730,11 +730,12 @@ class Node(DBWorker):
                     break
                 continue
             
-            pf = path[:idx + dz]
-            pappend(pf)
             if idx + dz == len(path):
                 mappend(props)
                 count += 1
+                continue # Get one more, in case there is a path.
+            pf = path[:idx + dz]
+            pappend(pf)
             if count >= limit: 
                 break
             

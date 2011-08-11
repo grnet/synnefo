@@ -889,6 +889,39 @@ function get_flavor_index_key(flv) {
     return "cpu:" + flv.cpu + ":ram:" + flv.ram + ":disk:" + flv.disk
 }
 
+// update last creation step information
+function update_creating_vm_details() {
+    var flavor = get_flavor_sliders_values();
+    var image = IMAGES_DATA[get_selected_image_id()].image;
+
+    var cont = $("#page3-container");
+    var image_name = cont.find("#machine_image-label");
+    var cpu = cont.find("#machine_cpu-label");
+    var ram = cont.find("#machine_ram-label");
+    var disk = cont.find("#machine_storage-label");
+
+    image_name.text(image.name);
+    cpu.text(flavor.cpu);
+    ram.text(flavor.ram);
+    disk.text(flavor.disk);
+
+    var name = "My " + image.name + " server";
+    
+    // check if server with predefined name already exists
+    j = 2;
+    if (servers) {
+        var predefined_name = name;
+        $.each(servers, function(index, el) {
+            console.log(el.name, name);
+            if (el.name == name) {
+                name = predefined_name + " " + j;
+                j++;
+            }
+        })
+    }
+    cont.find("input[type=text][name=machine_name]").val(name);
+}
+
 // create a map with available flavors for each image
 function update_image_flavor_options() {
     // invalid state, do not update, 
@@ -1047,6 +1080,8 @@ function validate_selected_flavor_options(selected) {
         var flv = img.default_flavor;
         set_flavor_sliders_values(flv.cpu, flv.disk, flv.ram);
     }
+
+    update_creating_vm_details();
 }
 
 // check if selected values are available

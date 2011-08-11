@@ -215,12 +215,12 @@ or implied, of GRNET S.A.
                     <li>
                         <span>{% trans "System Disk:" %}</span> <span id="machine_storage-label">10</span><span>GB</span>
                     </li>
-                    <li>
-                        <span>{% trans "Cost per Hour:" %}</span> <span>40 {% trans "credits" %}</span>
-                    </li>
-                    <li>
-                        <span>{% trans "Credits in Wallet:" %}</span> <span>10.000</span>
-                    </li>
+                    <!--<li>-->
+                        <!--<span>{% trans "Cost per Hour:" %}</span> <span>40 {% trans "credits" %}</span>-->
+                    <!--</li>-->
+                    <!--<li>-->
+                        <!--<span>{% trans "Credits in Wallet:" %}</span> <span>10.000</span>-->
+                    <!--</li>-->
                 </ul>
                 <hr class="bottomruler" />
                 <button type="button" class="prev"><img src="static/prev.png" class="img-prev" />{% trans "Back" %}</button>
@@ -419,20 +419,6 @@ $(function() {
                 return false;
             // everything is good
             }
-        }
-        // update confirm step
-        if (api.getIndex()==0) {
-            var image = $("input[type=radio][name=image-id]:checked");
-            var imageRef = image.length ? image[0].id : false
-            if (imageRef) {
-                var imageName = $("label[for=" + imageRef + "] .image-title").text();
-                $("#machine_image-label")[0].textContent = imageName;
-                $("input[type=text][name=machine_name]")[0].value = "My " + imageName + " server";
-            }
-        } else if (api.getIndex()==1) {
-            $("#machine_cpu-label")[0].textContent = $("#cpu-indicator")[0].value;
-            $("#machine_ram-label")[0].textContent = $("#ram-indicator")[0].value;
-            $("#machine_storage-label")[0].textContent = $("#storage-indicator")[0].value;
         }
 
         // remove focus from create button

@@ -2083,4 +2083,5 @@ o_names = ['kate.jpg',
            'photos/me.jpg']
 
 if __name__ == "__main__":
-    unittest.main()
+    if get_user() == 'test':
+        unittest.main()

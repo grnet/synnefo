@@ -2069,6 +2069,7 @@ input.machine {
     border: 2px solid #FF7F2A;
     float: left;
     margin-left: 10px;
+    margin-right: 10px;
     padding: 2px;
 }
 

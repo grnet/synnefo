@@ -38,6 +38,7 @@ var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var networks = [], networks_changes_since = 0;
 var error_timeout = 20000;
 var last_request = {};
+var CHANGES_SINCE_ERRORS = 0;
 
 $.ajaxSetup({
     'beforeSend': function(xhr) {
@@ -49,6 +50,10 @@ $.ajaxSetup({
           try {
             this.date_sent = new Date();
           } catch (err) {
+          }
+            
+          if (CHANGES_SINCE_ERRORS > 0 && changes_since) {
+            CHANGES_SINCE_ERRORS = 0;
           }
     },
 
@@ -67,11 +72,7 @@ $.ajaxSetup({
         // stop interaction for important (aka 500) error codes only
         if (jqXHR.status >= 500 && jqXHR.status < 600)
         {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText, this);
-            } catch(err) {
-                ajax_error(-11, textStatus, 'Unknown', "NETWORK ERROR", this);
-            }
+            handle_api_error(-11, undefined, 'Unknown', jqXHR, textStatus, errorThrown, this);
         }
 
         // refresh after 10 seconds
@@ -79,28 +80,55 @@ $.ajaxSetup({
     }
 });
 
-function isXhrException(err) {
-
-    DOM_EXCEPTION_NAMES = [
-        "NS_ERROR_NOT_AVAILABLE", // Firefox
-        "INVALID_STATE_ERR" // Chrome
-    ];
-
-    try {
-        if (DOM_EXCEPTION_NAMES.indexOf(err.name) != -1) {
-            return true;
-        } 
-        
-        // ie !!!!
-        if (err.number == -2147467259) {
-            return true;
+// generic api error handler
+//
+// code: error code (uid or http status)
+// context: something to identify the object 
+//          that the error occured to (e.g. vm id) 
+// xhr: xhr object
+// jquery_error_status: error identified by the jquery ("timeout", "error" etc.)
+// jquery_error: error identified by the jquery ("timeout", "error" etc.)
+// ajax_settings: the settings 
+// 
+function handle_api_error(code, context, action, xhr, 
+                          jquery_error_status, jquery_error, ajax_settings) {
+    
+    // handle timeouts (only for repeated requests)
+    if (jquery_error_status == "timeout" && ajax_settings && ajax_settings.repeated) {
+        // do not show error for the first timeout
+        if (TIMEOUTS_OCCURED < SKIP_TIMEOUTS) {
+            TIMEOUTS_OCCURED += 1;
+            return;
         }
-
-    } catch(err) {
-        return false;
     }
 
-    return false;
+    if (jquery_error_status == "timeout") {
+        ajax_settings.disable_report = true;
+        ajax_error("TIMEOUT", context, action, "", ajax_settings);
+        return;
+    }
+
+    try {
+        // malformed changes-since request, skip only first request
+        // then ui will try to get requests with no changes-since parameter set
+        // if for some reason server responds with 400/changes-since error
+        // fallback to error message
+        if (xhr.status === 400 && xhr.responseText.indexOf("changes-since") > -1 && CHANGES_SINCE_ERRORS == 0) {
+            CHANGES_SINCE_ERRORS += 1;
+            changes_since = 0;
+            return;
+        }
+
+        // 413 no need to show report
+        if (xhr.status === 413) {
+            ajax_settings.disable_report = true;
+            ajax_settings.no_details = false;
+        }
+
+        ajax_error(xhr.status, context, action, xhr.responseText, ajax_settings);
+    } catch (err) {
+        ajax_error(code, context, action, "NETWORK ERROR", ajax_settings);
+    }
 }
 
 Object.prototype.toString = function(o){
@@ -427,13 +455,10 @@ function update_vms(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-                try {
-                    ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText, this);
-                } catch(err) {
-                    ajax_error(-12, textStatus, 'Update VMs', "NETWORK ERROR", this);
-                }
-                return false;
-            },
+
+            handle_api_error(-12, undefined, 'Update VMs', jqXHR, textStatus, errorThrown, this);
+            return false;
+        },
         success: function(data, textStatus, jqXHR) {
             // create changes_since string if necessary
             if (jqXHR.getResponseHeader('Date') != null){
@@ -619,11 +644,7 @@ function update_networks(interval) {
             // as for now, just show an error message
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
 
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText, this);
-            } catch(err) {
-                ajax_error(-13, textStatus, 'Update networks', "NETWORK ERROR", this);
-            }
+            handle_api_error(-13, undefined, 'Update networks', jqXHR, textStatus, errorThrown, this);
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -683,13 +704,10 @@ function update_network_names(servers_data) {
             try {
                 console.info('update_network names errback:' + jqXHR.status )
             } catch(err) {}
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText, this);
-            } catch(err) {
-                ajax_error(-14, textStatus, 'Update network names', "NETWORK ERROR", this);
-            }
+
+            handle_api_error(-14, undefined, 'Update network names', jqXHR, textStatus, errorThrown, this);
             return false;
-            },
+        },
         success: function(data, textStatus, jqXHR) {
             // create changes_since string if necessary
             if (jqXHR.getResponseHeader('Date') != null){
@@ -731,12 +749,8 @@ function update_images() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    try {
-                        ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText, this);
-                    } catch(err) {
-                        ajax_error(-15, textStatus, 'Update Images', "NETWORK ERROR", this);
-                    }
-                },
+            handle_api_error(-15, undefined, 'Update images', jqXHR, textStatus, errorThrown, this);
+        },
         success: function(data, textStatus, jqXHR) {
             try {
                 images = data.images.values;
@@ -1199,13 +1213,7 @@ function update_flavors() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-16, textStatus, "Update Flavors", "NETWORK ERROR", this);
-            }
-            // start updating vm list
-            update_vms(UPDATE_INTERVAL);
+            handle_api_error(-16, undefined, 'Update flavors', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
 
@@ -1413,11 +1421,7 @@ function create_vm(machineName, imageRef, flavorRef){
     error: function(jqXHR, textStatus, errorThrown) {
                 // close wizard and show error box
                 $('#machines-pane a#create').data('overlay').close();
-                    try {
-                        ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText, this);
-                    } catch(err) {
-                        ajax_error(-17, textStatus, 'Create VM', "NETWORK ERROR", this);
-                    }
+                handle_api_error(-17, undefined, 'Create VM', jqXHR, textStatus, errorThrown, this);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
@@ -1880,13 +1884,8 @@ function get_metadata(serverID, keys_only) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-18, textStatus, 'Get metadata', "NETWORK ERROR", this);
-            }
+            $("a#metadata-scrollable").data('overlay').close();
+            handle_api_error(-18, undefined, 'Get metadata', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             // to list the new results in the edit dialog
@@ -1912,13 +1911,8 @@ function delete_metadata(serverID, meta_key) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-19, textStatus, 'Delete metadata', "NETWORK ERROR", this);
-            }
+            $("a#metadata-scrollable").data('overlay').close();
+            handle_api_error(-19, undefined, 'Delete metadata', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
                     // success: Do nothing, the UI is already updated
@@ -1943,13 +1937,8 @@ function update_metadata(serverID, meta_key, meta_value) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add metadata', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-20, textStatus, 'Add metadata', "NETWORK ERROR", this);
-            }
+            $("a#metadata-scrollable").data('overlay').close();
+            handle_api_error(-20, undefined, 'Update metadata', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             // success: Update icons if meta key is OS
@@ -1994,11 +1983,7 @@ function get_server_stats(serverID) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Get server stats', jqXHR.responseText, this);
-            } catch(err) {
-                ajax_error(-21, textStatus, 'Get server stats', "NETWORK ERROR", this);
-            }
+            handle_api_error(-21, undefined, 'Get server stats', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             update_machine_stats(serverID, data);
@@ -2158,13 +2143,8 @@ function create_network(networkName){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#networkscreate").overlay().close();
-                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-22, textStatus, 'Create network', "NETWORK ERROR", this);
-            }
+            $("a#networkscreate").overlay().close();
+            handle_api_error(-22, undefined, 'Create network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -2206,11 +2186,7 @@ function rename_network(networkID, networkName){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-23, textStatus, 'Rename network', "NETWORK ERROR", this);
-            }
+            handle_api_error(-23, undefined, 'Rename network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '204') {
@@ -2291,13 +2267,8 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#add-machines-overlay").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-24, textStatus, 'Add server to network', "NETWORK ERROR", this);
-            }
+            $("a#add-machines-overlay").data('overlay').close();
+            handle_api_error(-24, undefined, 'Add server to network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -2341,11 +2312,7 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Remove server from network', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-25, textStatus, 'Remove server from network', "NETWORK ERROR", this);
-            }
+            handle_api_error(-25, undefined, 'Remove server from network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -2382,11 +2349,7 @@ function set_firewall(networkID, serverID, profile) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText, this);
-            } catch (err) {
-                ajax_error(-26, textStatus, 'Set firewall profile', "NETWORK ERROR", this);
-            }
+            handle_api_error(-26, undefined, 'Set firewall profile', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {

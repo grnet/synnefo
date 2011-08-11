@@ -153,6 +153,8 @@ or implied, of GRNET S.A.
             'DEFAULT' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
             // bad request
             '400' : '{% trans "Malformed request." %}',
+            // Unauthorized
+            '401' : '{% trans "Unauthorized" %}',
             // not found
             '404' : '{% trans "Your request has failed. Resource not found." %}',
             // internal server error
@@ -172,7 +174,8 @@ or implied, of GRNET S.A.
             // error box title
             'GENERIC_POPUP_HEADER' : '{% trans "Something seems to have gone wrong :( Here is what happened:" %}',
             // no advanced details
-            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}'
+            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}',
+            'TIMEOUT' : '{% trans "It seems that connection with the server takes to long to respond, please check your network connectivity" %}'
         };
 
         var SUGGESTED_FLAVORS = {{ suggested_flavors|safe }};
@@ -198,17 +201,11 @@ or implied, of GRNET S.A.
 
         // ajax error checking
         function ajax_error(status, serverID, action, responseText, ajax_settings) {
-            
-            // ugly way to identify the type of the request
-            // that caused the timeout
-            if (serverID == "timeout" && status < 0 && ajax_settings && ajax_settings.repeated) {
-                // do not show error for the first timeout
-                if (TIMEOUTS_OCCURED < SKIP_TIMEOUTS) {
-                    TIMEOUTS_OCCURED += 1;
-                    return;
-                }
-            }
 
+            // flag to display or not error report link
+            var allow_report = ajax_settings.disable_report ? false : true;
+            var no_details = ajax_settings.no_details === undefined || ajax_settings.no_details === false ? false : true;
+            
             var error_date = new Date();
             if (!ajax_settings) {
                 ajax_settings = {};
@@ -253,6 +250,11 @@ or implied, of GRNET S.A.
                     }
                 } else {
                     details = errors[0].details;
+                }
+                
+                // fallback to predefined message
+                if (ERRORS[status] !== undefined) {
+                    errors[0].message = ERRORS[status];
                 }
 
                 $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
@@ -396,8 +398,24 @@ or implied, of GRNET S.A.
                        location.reload();
                     }
                 },
+                onBeforeLoad: function() {
+                    if (allow_report) {
+                        $(".error-report .send-btn").show();
+                    } else {
+                        $(".error-report .send-btn").hide();
+                    }
+
+                    if (no_details) {
+                        $(".expand-details").hide();
+                    } else {
+                        $(".expand-details").show();
+                    }
+                },
                 onLoad: function() {
-                    initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
+                    if (allow_report) {
+                        initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
+                    } else {
+                    }
                 }
 
             });

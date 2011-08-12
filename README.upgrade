@@ -8,6 +8,7 @@ v0.5.4 -> v0.5.5
 
 NEW SETTINGS
     * 30-ui.conf:SUGGESTED_FLAVORS
+    * 30-ui.conf:VM_IMAGE_COMMON_METADATA
 
 
 v0.5.3 -> v0.5.4

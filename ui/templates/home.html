@@ -89,6 +89,8 @@ or implied, of GRNET S.A.
             'IMAGE_COPY': '{% trans "{0} of {1} ({2}%)" %}',
             'FINISH': '{% trans "Finalizing... (approx. 10 minutes remaining)" %}'
         }
+        
+        var VM_IMAGE_COMMON_METADATA = {{ vm_image_common_metadata|safe }};
 
         // server statuses and transitions
         var STATUSES = {

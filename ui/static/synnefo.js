@@ -1431,18 +1431,41 @@ function update_listview_actions() {
     }
 }
 
+// return a metadata dict containing the metadata
+// that should be cloned from image to vm
+function get_image_metadata_to_copy(imageRef) {
+    var image = IMAGES_DATA[imageRef].image;
+    var metadata = image.metadata;
+
+    // if no metadata return empty object
+    if (!metadata || !metadata.values) {
+        return {};
+    }
+    
+    var vm_meta = {};
+    // find existing keys, copy their values to the server
+    // metadata object
+    $.each(VM_IMAGE_COMMON_METADATA, function(index, key) {
+        if (metadata.values[key] !== undefined) {
+            vm_meta[key] = metadata.values[key];
+        }
+    })
+
+    return vm_meta;
+}
 //create server action
-function create_vm(machineName, imageRef, flavorRef){
+function create_vm(machineName, imageRef, flavorRef) {
     var image_logo = os_icon(get_image(imageRef).metadata);
     var uri = API_URL + '/servers';
+
+    var vm_meta = get_image_metadata_to_copy(imageRef);
+
     var payload = {
         "server": {
             "name": machineName,
             "imageRef": imageRef,
             "flavorRef" : flavorRef,
-            "metadata" : {
-                "OS" : image_logo
-            }
+            "metadata" : vm_meta
         }
     };
 
@@ -1792,8 +1815,8 @@ function machine_connect(serverIDs){
     }
     
     // prefer metadata values for specific options (username, domain)
-    var username_meta_key = 'user';
-    var domain_meta_key = "domain";
+    var username_meta_key = 'loginname';
+    var domain_meta_key = "logindomain";
 
     var serverID = serverIDs.pop();
     var machine = get_machine(serverID);

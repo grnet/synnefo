@@ -51,6 +51,7 @@ UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 SUGGESTED_FLAVORS = getattr(settings, "SUGGESTED_FLAVORS", {})
+VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -67,6 +68,7 @@ def home(request):
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
+               'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
                'DEBUG': settings.DEBUG}
     return template('home', context)
 

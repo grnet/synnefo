@@ -235,17 +235,7 @@ def send_invitation(invitation):
     valid = timedelta(days = settings.INVITATION_VALID_DAYS)
     valid_until = invitation.created + valid
     email['valid_until'] = valid_until.strftime('%A, %d %B %Y')
-
-    PADDING = '{'
-    pad = lambda s: s + (32 - len(s) % 32) * PADDING
-    EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
-
-    cipher = AES.new(settings.INVITATION_ENCR_KEY)
-    encoded = EncodeAES(cipher, invitation.target.auth_token)
-
-    url_safe = urllib.urlencode({'key': encoded})
-
-    email['url'] = settings.APP_INSTALL_URL + "/invitations/login?" + url_safe
+    email['url'] = enconde_inv_url(invitation)
 
     data = render_to_string('invitation.txt', {'email': email})
 
@@ -257,6 +247,19 @@ def send_invitation(invitation):
         subject = _('Invitation to ~okeanos IaaS service'),
         body = data
     )
+
+def enconde_inv_url(invitation):
+    PADDING = '{'
+    pad = lambda s: s + (32 - len(s) % 32) * PADDING
+    EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
+
+    cipher = AES.new(settings.INVITATION_ENCR_KEY)
+    encoded = EncodeAES(cipher, invitation.target.auth_token)
+
+    url_safe = urllib.urlencode({'key': encoded})
+    url = settings.APP_INSTALL_URL + "/invitations/login?" + url_safe
+
+    return url
 
 def get_invitee_level(source):
     return get_user_inv_level(source) + 1

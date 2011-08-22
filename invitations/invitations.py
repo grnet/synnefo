@@ -77,6 +77,7 @@ def process_form(request):
             errors += ["Invitation to %s <%s> not sent. Reason: %s" %
                        (name, email, e.messages[0])]
         except Exception as e:
+            remove_invitation()
             _logger.exception(e)
             errors += ["Invitation to %s <%s> not sent. Reason: %s" %
                        (name, email, e.message)]
@@ -317,22 +318,21 @@ def add_invitation(source, name, email):
     inv.save()
     return inv
 
-
-@transaction.commit_on_success
-def invitation_accepted(invitation):
-    """
-        Mark an invitation as accepted
-    """
-    invitation.accepted = True
-    invitation.save()
-
-
 def get_invitations_left(user):
     """
     Get user invitations left
     """
     num_inv = Invitations.objects.filter(source = user).count()
     return user.max_invitations - num_inv
+
+def remove_invitation(invitation):
+    """
+    Removes an invitation and the invited user
+    """
+    if invitation is not None:
+        if invitation.target is not None:
+            invitation.target.delete()
+        invitation.delete()
 
 class InvitationException(Exception):
     def __init__(self, msg):

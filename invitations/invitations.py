@@ -32,7 +32,6 @@
 from datetime import timedelta
 import datetime
 import base64
-import time
 import urllib
 
 from django.conf import settings
@@ -192,6 +191,12 @@ def login(request):
                                   "%s, now is %s" %
                                   (valid_until.strftime('%A, %d %B %Y'),
                                    now.strftime('%A, %d %B %Y')))
+
+    # Since the invitation is valid, renew the user's auth token. This also
+    # takes care of cases where the user re-uses the invitation to
+    # login when the original token has expired
+    from synnefo.logic import users # redefine 'users'
+    users.set_auth_token_expires(user, valid_until)
 
     #if inv.accepted == False:
     #    return render_login_error("60", "Invitation already accepted")

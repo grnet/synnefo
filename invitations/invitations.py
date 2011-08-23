@@ -33,11 +33,12 @@ from datetime import timedelta
 import datetime
 import base64
 import urllib
+import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseServerError
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
@@ -128,6 +129,7 @@ def invitations_for_user(request):
         invitation['target'] = inv.target.uniq
         invitation['accepted'] = inv.accepted
         invitation['sent'] = inv.created
+        invitation['id'] = inv.id
 
         invitations.append(invitation)
 
@@ -266,6 +268,38 @@ def enconde_inv_url(invitation):
     url = settings.APP_INSTALL_URL + "/invitations/login?" + url_safe
 
     return url
+
+
+def resend(request):
+    """
+    Resend an invitation that has been already sent
+    """
+
+    if not request.method == 'POST':
+        return method_not_allowed(request)
+
+    invid = request.POST["invid"]
+
+    matcher = re.compile('^[0-9]+$')
+
+    # XXX: Assumes numeric DB keys
+    if not matcher.match(invid):
+        return HttpResponseBadRequest("Invalid content for parameter [invid]")
+
+    try:
+        inv = Invitations.objects.get(id = invid)
+    except Exception:
+        return HttpResponseBadRequest("Invitation to resend does not exist")
+
+    if not request.user == inv.source:
+        return HttpResponseBadRequest("Invitation does not belong to user")
+
+    try:
+        send_invitation(inv)
+    except Exception:
+        return HttpResponseServerError("Error sending invitation email")
+
+    return HttpResponse("Invitation has been resent")
 
 def get_invitee_level(source):
     return get_user_inv_level(source) + 1

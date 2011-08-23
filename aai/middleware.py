@@ -34,7 +34,7 @@ from synnefo.db.models import SynnefoUser
 from synnefo.aai.shibboleth import Tokens, register_shibboleth_user
 import time
 
-DONT_CHECK = getattr(settings, "AAI_SKIP_AUTH_URLS", ['/api', '/invitations/login'])
+DONT_CHECK = getattr(settings, "AAI_SKIP_AUTH_URLS", ['/api', '/invitations/'])
 
 class SynnefoAuthMiddleware(object):
 

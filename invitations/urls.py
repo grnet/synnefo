@@ -34,5 +34,6 @@ import os
 urlpatterns = patterns('',
     url(r'^$', 'synnefo.invitations.invitations.inv_demux', name="invitations"),
     (r'^static/(.*)$', 'django.views.static.serve', {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
-    (r'^login/?$', 'synnefo.invitations.invitations.login')
+    (r'^login/?$', 'synnefo.invitations.invitations.login'),
+    (r'^resend/?$', 'synnefo.invitations.invitations.resend'),
 )

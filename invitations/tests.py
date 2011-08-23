@@ -89,6 +89,7 @@ class InvitationsTestCase(TestCase):
         self.assertEqual(inv.target.max_invitations,
                          settings.INVITATIONS_PER_LEVEL[1])
 
+
     def test_invitation_login(self):
         """
             Basic login by invitation checks
@@ -165,6 +166,29 @@ class InvitationsTestCase(TestCase):
             invitations.remove_invitation(inv)
         except Exception:
             self.assertTrue(False)
+
+
+    def test_resend_invitation(self):
+        """
+        Tests the resend invitation method
+        """
+        inv = self._add_invitation()
+
+        resp = self.client.post("/invitations/resend",
+                                {'invid':inv.id},
+                                **{'HTTP_X_AUTH_TOKEN': self.token})
+        self.assertEquals(resp.status_code, 200)
+
+
+        resp = self.client.post("/invitations/resend",
+                                {'invid':'1;delete from db_invitations;'},
+                                **{'HTTP_X_AUTH_TOKEN': self.token})
+        self.assertEquals(resp.status_code, 400)
+
+        resp = self.client.post("/invitations/resend",
+                                {'invid':inv.id},
+                                **{'HTTP_X_AUTH_TOKEN': inv.target.auth_token})
+        self.assertEquals(resp.status_code, 400)
 
 
     def _add_invitation(self):

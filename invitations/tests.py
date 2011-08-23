@@ -160,6 +160,12 @@ class InvitationsTestCase(TestCase):
         except Exception:
             self.assertTrue(False)
 
+        try:
+            invitation = "Invitation"
+            invitations.remove_invitation(inv)
+        except Exception:
+            self.assertTrue(False)
+
 
     def _add_invitation(self):
         source = SynnefoUser.objects.filter(auth_token = self.token)[0]

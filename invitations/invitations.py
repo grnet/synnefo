@@ -329,9 +329,10 @@ def remove_invitation(invitation):
     Removes an invitation and the invited user
     """
     if invitation is not None:
-        if invitation.target is not None:
-            invitation.target.delete()
-        invitation.delete()
+        if isinstance(invitation, Invitations):
+            if invitation.target is not None:
+                invitation.target.delete()
+            invitation.delete()
 
 class InvitationException(Exception):
     def __init__(self, msg):

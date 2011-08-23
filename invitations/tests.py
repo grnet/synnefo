@@ -43,19 +43,33 @@ class InvitationsTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
+
     def test_add_invitation(self):
         """
             Tests whether invitations can be added
         """
-        self._add_invitation()
+        inv = self._add_invitation()
+        source = inv.source
 
         # Re-adding an existing invitation
         try:
-            source = SynnefoUser.objects.filter(auth_token = self.token)[0]
             invitations.add_invitation(source, u'', "test@gmail.com")
             self.assertTrue(False)
         except invitations.AlreadyInvited:
             self.assertTrue(True)
+        except Exception:
+            self.assertTrue(False)
+
+        # Hit the invitation limit
+        try:
+            source.max_invitations = 0
+            source.save()
+            self._add_invitation()
+        except invitations.TooManyInvitations:
+            self.assertTrue(True)
+        except Exception:
+            self.assertTrue(False)
+
 
     def test_get_invitee_level(self):
         """
@@ -79,9 +93,8 @@ class InvitationsTestCase(TestCase):
         """
             Basic login by invitation checks
         """
-        user = self._add_invitation()
-        inv = Invitations.objects.filter(target = user)[0]
-        self.assertNotEqual(inv, None)
+        inv = self._add_invitation()
+        user = inv.target
 
         url = invitations.enconde_inv_url(inv)
 
@@ -100,8 +113,8 @@ class InvitationsTestCase(TestCase):
         """
             Checks whether a user can login when his auth token has expired
         """
-        user = self._add_invitation()
-        inv = Invitations.objects.filter(target = user)[0]
+        inv = self._add_invitation()
+        user = inv.target
 
         # Expire the user's token
         user.auth_token_expires = datetime.now()
@@ -130,6 +143,24 @@ class InvitationsTestCase(TestCase):
         valid = timedelta(days = settings.INVITATION_VALID_DAYS)
         self.assertTrue(inv.created + valid >= user.auth_token_expires)
 
+
+    def test_remove_invitation(self):
+        """
+        Tests the remove invitation method
+        """
+        inv = self._add_invitation()
+
+        try:
+            invitations.remove_invitation(inv)
+            user = SynnefoUser.objects.filter(uniq = 'test@gmail.com').count()
+            self.assertEquals(user, 0)
+
+            inv = Invitations.objects.filter(target = user).count()
+            self.assertEquals(inv, 0)
+        except Exception:
+            self.assertTrue(False)
+
+
     def _add_invitation(self):
         source = SynnefoUser.objects.filter(auth_token = self.token)[0]
         invitations.add_invitation(source, "Test", "test@gmail.com")
@@ -139,4 +170,8 @@ class InvitationsTestCase(TestCase):
 
         self.assertNotEquals(user, None)
         self.assertEqual(user.uniq, 'test@gmail.com')
-        return user
+
+        inv = Invitations.objects.filter(target = user)[0]
+        self.assertNotEquals(inv, None)
+
+        return inv

@@ -72,7 +72,6 @@ def process_form(request):
             inv = add_invitation(request.user, name, email)
             send_invitation(inv)
 
-        # FIXME: Delete invitation and user on error
         except (InvitationException, ValidationError) as e:
             errors += ["Invitation to %s <%s> not sent. Reason: %s" %
                        (name, email, e.messages[0])]

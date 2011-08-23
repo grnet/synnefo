@@ -49,13 +49,19 @@ You have no invitations left in your account.
 <div id="invsent">
 
     <h3 class="clearfix">{% trans "Sent invitations" %}
-        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span></h3>
+        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
+        <span>(<img src="/static/invitation_resend.png" width="16" height="16" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
+    </h3>
     <div>
         <ul>
         {% for inv in invitations %}
         <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
                 {% if inv.accepted %}
-                <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accpeted" %}">
+                <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}">
+                {% else %}
+                    <span class="resend-invitation" id="inv-{{ inv.id }}">
+                        <img class="resend-invitation" src="/static/invitation_resend.png" width="16" height="16" alt="{% trans "Resend invitation" %}">
+                    </span>
                 {% endif %}
                 <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
             </li>

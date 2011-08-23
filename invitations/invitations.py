@@ -56,6 +56,7 @@ _logger = log.get_logger("synnefo.invitations")
 def process_form(request):
     errors = []
     valid_inv = filter(lambda x: x.startswith("name_"), request.POST.keys())
+    invitation = None
 
     for inv in valid_inv:
         (name, inv_id) = inv.split('_')
@@ -69,17 +70,17 @@ def process_form(request):
             validate_name(name)
             validate_email(email)
 
-            inv = add_invitation(request.user, name, email)
-            send_invitation(inv)
+            invitation = add_invitation(request.user, name, email)
+            send_invitation(invitation)
 
         except (InvitationException, ValidationError) as e:
             errors += ["Invitation to %s <%s> not sent. Reason: %s" %
                        (name, email, e.messages[0])]
         except Exception as e:
-            remove_invitation()
+            remove_invitation(invitation)
             _logger.exception(e)
-            errors += ["Invitation to %s <%s> not sent. Reason: %s" %
-                       (name, email, e.message)]
+            errors += ["Invitation to %s <%s> could not be sent. Reason: %s" %
+                       (name, email, e)]
 
     respose = None
     if errors:

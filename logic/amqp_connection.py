@@ -39,6 +39,8 @@ _logger = log.get_logger("amqplib")
 
 def _connect():
     global _conn, _chan
+    # Force the _conn object to re-initialize
+    _conn = None
     while _conn == None:
         try:
             _conn = amqp.Connection(host=settings.RABBIT_HOST,
@@ -46,6 +48,7 @@ def _connect():
                                    password=settings.RABBIT_PASSWORD,
                                    virtual_host=settings.RABBIT_VHOST)
         except socket.error:
+            _logger.warn("Failed to establish connection to AMQP. Retrying...")
             time.sleep(1)
     _chan = _conn.channel()
 

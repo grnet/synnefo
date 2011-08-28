@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block body %}
+<table class="zebra-striped id-sorted">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>CPUs</th>
+      <th>RAM</th>
+      <th>Disk</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for flavor in flavors %}
+    <tr>
+      <td><a href="/admin/flavors/{{ flavor.id }}">{{ flavor.id }}</a></td>
+      <td><a href="/admin/flavors/{{ flavor.id }}">{{ flavor.name }}</a></td>
+      <td>{{ flavor.cpu }}</td>
+      <td>{{ flavor.ram }} MiB</td>
+      <td>{{ flavor.disk }} GiB</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a class="btn success" href="/admin/flavors/create">Create a new Flavor</a>
+{% endblock body %}

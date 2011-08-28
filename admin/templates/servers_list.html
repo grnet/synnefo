@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block body %}
+<table class="zebra-striped id-sorted">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Owner</th>
+      <th>State</th>
+      <th>Flavor</th>
+      <th>Image</th>
+      <th>Deleted</th>
+      <th>Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for vm in vms %}
+    <tr>
+      <td>{{ vm.id }}</td>
+      <td>{{ vm.name }}</td>
+      <td>{{ vm.owner.id }}</td>
+      <td>{{ vm.operstate }}</td>
+      <td>{{ vm.flavor.name }}</td>
+      <td>{{ vm.image.name }}</td>
+      <td>{{ vm.deleted }}</td>
+      <td>{{ vm.updated }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock body %}

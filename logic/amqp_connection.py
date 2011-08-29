@@ -48,7 +48,7 @@ def _connect():
                                    password=settings.RABBIT_PASSWORD,
                                    virtual_host=settings.RABBIT_VHOST)
         except socket.error:
-            _logger.warn("Failed to establish connection to AMQP. Retrying...")
+            _logger.exception("Failed to establish connection to AMQP. Retrying...")
             time.sleep(1)
     _chan = _conn.channel()
 
@@ -88,7 +88,7 @@ def send(payload, exchange, key):
             if _conn is None:
                _connect()
             else:
-                _logger.exception('Caught unexpected exception (msg: %s)'%msg)
+                _logger.exception('Caught unexpected exception (msg: %s)' % msg)
                 raise AMQPError("Error sending message to exchange %s with \
                                 key %s.Payload: %s. Error was: %s",
                                 (exchange, key, payload, e.message))

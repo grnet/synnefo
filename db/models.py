@@ -104,6 +104,7 @@ class Image(models.Model):
     # The list of supported Image formats
     FORMATS = (
         ('dump', 'ext3 dump'),
+        ('extdump', 'Raw ext2/3/4 dump'),
         ('lvm', 'lvm snapshot'),
         ('ntfsclone', 'Windows Image produced by ntfsclone'),
         ('ntfsdump', 'Raw NTFS dump')

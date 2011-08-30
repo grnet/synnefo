@@ -80,9 +80,8 @@ def process_form(request):
         except Exception as e:
             remove_invitation(invitation)
             _logger.exception(e)
-            errors += ["Invitation to %s <%s> could not be sent. " +
-                       "An unexpected error occurred. Please try again later." %
-                       (name, email)]
+            errors += ["Invitation to %s <%s> could not be sent. An unexpected\
+                        error occurred. Please try again later." %(name, email)]
 
     respose = None
     if errors:

@@ -1,3 +1,37 @@
+<script type="text/javascript">
+$(document).ready(function(){
+    $(".resend-invitation").click(function() {
+
+        var invid = $(this).attr("id");
+
+        if (invid == null)
+            return;
+
+        var id = invid.split("-")[1];
+
+        if (id == null)
+            return;
+
+        var child = $(this).find("img");
+        child.attr('src', '/static/icons/indicators/small/progress.gif');
+
+        $.ajax({
+            type: "POST",
+            url : "/invitations/resend",
+            data : {invid : id},
+            success: function(msg) {
+                alert("Invitation has been resent");
+                child.attr('src', '/static/icons/actions/medium/reboot.png');
+            },
+            error : function(xhr, status, error) {
+                alert("Something seems to have gone wrong. " +
+                      "Please try again in a few minutes.");
+                child.attr('src', '/static/icons/actions/medium/reboot.png');
+            }
+        });
+    });
+});
+</script>
 {% load i18n %}
 <div class="invitations-left">({% blocktrans count invitations_left as left %}
 {{ left }} invitation left
@@ -50,7 +84,7 @@ You have no invitations left in your account.
 
     <h3 class="clearfix">{% trans "Sent invitations" %}
         <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
-        <span>(<img src="/static/invitation_resend.png" width="16" height="16" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
+        <span>(<img src="/static/icons/actions/medium/reboot.png" width="16" height="16" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
     </h3>
     <div>
         <ul>
@@ -60,7 +94,7 @@ You have no invitations left in your account.
                 <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}">
                 {% else %}
                     <span class="resend-invitation" id="inv-{{ inv.id }}">
-                        <img class="resend-invitation" src="/static/invitation_resend.png" width="16" height="16" alt="{% trans "Resend invitation" %}">
+                        <img src="/static/icons/actions/medium/reboot.png" width="16" height="16" alt="{% trans "Resend invitation" %}">
                     </span>
                 {% endif %}
                 <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>

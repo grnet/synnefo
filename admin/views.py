@@ -15,7 +15,22 @@ def render(template, tab, **kwargs):
 
 
 def index(request):
-    html = render('index.html', 'home')
+    stats = {}
+    stats['users'] = models.SynnefoUser.objects.count()
+    stats['images'] = models.Image.objects.exclude(state='DELETED').count()
+    stats['flavors'] = models.Flavor.objects.count()
+    stats['vms'] = models.VirtualMachine.objects.filter(deleted=False).count()
+    stats['networks'] = models.Network.objects.exclude(state='DELETED').count()
+    stats['invitations'] = models.Invitations.objects.count()
+
+    images = []
+    for image in models.Image.objects.exclude(state='DELETED'):
+        vms = models.VirtualMachine.objects.filter(sourceimage=image)
+        count = vms.filter(deleted=False).count()
+        images.append((count, image.name))
+    images.sort(reverse=True)
+
+    html = render('index.html', 'home', stats=stats, images=images)
     return HttpResponse(html)
 
 

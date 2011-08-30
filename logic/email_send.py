@@ -53,14 +53,7 @@ def send_async(frm = settings.DEFAULT_FROM_EMAIL,
     msg['body'] = body
 
     routekey = "logic.email.outgoing"
-    try:
-        amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
-    except Exception as e:
-        if e.message is not None:
-            e.message = ("Queue error: %s",e.message)
-            raise e
-        else:
-            raise Exception("Queue error")
+    amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
 
 
 def send (sender = settings.DEFAULT_FROM_EMAIL,

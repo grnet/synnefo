@@ -296,7 +296,8 @@ def resend(request):
 
     try:
         send_invitation(inv)
-    except Exception:
+    except Exception as e:
+        _logger.exception(e)
         return HttpResponseServerError("Error sending invitation email")
 
     return HttpResponse("Invitation has been resent")

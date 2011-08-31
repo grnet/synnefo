@@ -43,7 +43,6 @@ class InvitationsTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-
     def test_add_invitation(self):
         """
             Tests whether invitations can be added
@@ -70,7 +69,6 @@ class InvitationsTestCase(TestCase):
         except Exception:
             self.assertTrue(False)
 
-
     def test_get_invitee_level(self):
         """
             Checks whether invitation levels and their limits are being respected
@@ -88,7 +86,6 @@ class InvitationsTestCase(TestCase):
         self.assertEqual(invitations.get_user_inv_level(inv.target), 1)
         self.assertEqual(inv.target.max_invitations,
                          settings.INVITATIONS_PER_LEVEL[1])
-
 
     def test_invitation_login(self):
         """
@@ -108,7 +105,6 @@ class InvitationsTestCase(TestCase):
         url[35] = '@'
         resp = self.client.get("".join(url))
         self.assertEqual(resp.status_code, 404)
-
 
     def test_relogin_with_expired_token(self):
         """
@@ -144,7 +140,6 @@ class InvitationsTestCase(TestCase):
         valid = timedelta(days = settings.INVITATION_VALID_DAYS)
         self.assertTrue(inv.created + valid >= user.auth_token_expires)
 
-
     def test_remove_invitation(self):
         """
         Tests the remove invitation method
@@ -167,7 +162,6 @@ class InvitationsTestCase(TestCase):
         except Exception:
             self.assertTrue(False)
 
-
     def test_resend_invitation(self):
         """
         Tests the resend invitation method
@@ -189,7 +183,6 @@ class InvitationsTestCase(TestCase):
                                 {'invid':inv.id},
                                 **{'HTTP_X_AUTH_TOKEN': inv.target.auth_token})
         self.assertEquals(resp.status_code, 400)
-
 
     def _add_invitation(self):
         source = SynnefoUser.objects.filter(auth_token = self.token)[0]

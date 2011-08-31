@@ -17,6 +17,10 @@ QUEUES
 
       and run the amqp-deleteq tool for each declared queue. Alternatively,
       amqp-utils can be installed with: sudo gem install amqp-utils.
+UI
+    * Feedback form now uses django native send_mail for sending emails.
+      Proper django settings should be set for feedback mails to work
+      (https://docs.djangoproject.com/en/dev/topics/email/)
 
 v0.5.3 -> v0.5.4
 REPOSITORY

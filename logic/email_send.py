@@ -61,16 +61,16 @@ def send (sender = settings.DEFAULT_FROM_EMAIL,
           recipient = None, subject = None, body = None):
 
     attempts = 0
-
+    last_exception = None
     while attempts < 3:
         try:
             send_mail(subject, body, sender, [recipient])
-            return True
+            return
         except Exception as e:
+            last_exception = e
             _logger.exception("Error sending email")
         finally:
             attempts += 1
 
     _logger.warn("Failed all %d attempts to send email, aborting", attempts)
-    return False
-
+    raise last_exception

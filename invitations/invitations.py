@@ -46,7 +46,7 @@ from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
 from django.utils.translation import ugettext as _
 
-from synnefo.logic.email_send import send_async
+from synnefo.logic.email_send import send_async, send
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users, log
@@ -252,12 +252,18 @@ def send_invitation(invitation):
 
     _logger.debug("Invitation URL: %s" % email['url'])
 
-    send_async(
-        frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
-        to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
+    # send_async(
+    #    frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
+    #    to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
+    #    subject = _('Invitation to ~okeanos IaaS service'),
+    #    body = data
+    #)
+    send (
+        recipient = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
         subject = _('Invitation to ~okeanos IaaS service'),
         body = data
     )
+
 
 def enconde_inv_url(invitation):
     PADDING = '{'

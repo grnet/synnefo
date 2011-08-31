@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 
 from synnefo.db import models
 from synnefo.invitations.invitations import add_invitation, send_invitation
+from synnefo.logic import backend
 
 
 def render(template, tab, **kwargs):
@@ -23,6 +24,10 @@ def index(request):
     stats['networks'] = models.Network.objects.exclude(state='DELETED').count()
     stats['invitations'] = models.Invitations.objects.count()
 
+    stats['ganeti_instances'] = len(backend.get_ganeti_instances())
+    stats['ganeti_nodes'] = len(backend.get_ganeti_nodes())
+    stats['ganeti_jobs'] = len(backend.get_ganeti_jobs())
+    
     images = []
     for image in models.Image.objects.exclude(state='DELETED'):
         vms = models.VirtualMachine.objects.filter(sourceimage=image)

@@ -394,3 +394,11 @@ def set_firewall_profile(vm, profile):
     rapi.ModifyInstance(vm.backend_id,
                         os_name=settings.GANETI_CREATEINSTANCE_KWARGS['os'])
 
+def get_ganeti_instances():
+    return rapi.GetInstances()
+
+def get_ganeti_nodes():
+    return rapi.GetNodes()
+
+def get_ganeti_jobs():
+    return rapi.GetJobs()

@@ -38,6 +38,7 @@ import amqp_connection
 from synnefo.logic import log
 
 _logger = log.get_logger("synnefo.logic")
+_prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
 
 def send_async(frm = settings.DEFAULT_FROM_EMAIL,
                to = None, subject = None, body = None):
@@ -52,7 +53,7 @@ def send_async(frm = settings.DEFAULT_FROM_EMAIL,
     msg['subject'] = subject
     msg['body'] = body
 
-    routekey = "logic.email.outgoing"
+    routekey = "logic.%s.email.outgoing" % _prefix
     amqp_connection.send(json.dumps(msg), settings.EXCHANGE_API, routekey)
 
 

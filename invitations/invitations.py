@@ -38,7 +38,8 @@ import re
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseRedirect, \
+    HttpResponseBadRequest, HttpResponseServerError
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
@@ -53,6 +54,7 @@ from synnefo.logic import users, log
 from Crypto.Cipher import AES
 
 _logger = log.get_logger("synnefo.invitations")
+
 
 def process_form(request):
     errors = []
@@ -80,10 +82,11 @@ def process_form(request):
         except Exception as e:
             remove_invitation(invitation)
             _logger.exception(e)
-            errors += ["Invitation to %s <%s> could not be sent. An unexpected\
-                        error occurred. Please try again later." %(name, email)]
+            errors += ["Invitation to %s <%s> could not be sent. An unexpected"
+                       " error occurred. Please try again later." %
+                       (name, email)]
 
-    respose = None
+    response = None
     if errors:
         data = render_to_string('invitations.html',
                                 {'invitations': invitations_for_user(request),
@@ -92,8 +95,8 @@ def process_form(request):
                                 },
                                 context_instance=RequestContext(request))
         response =  HttpResponse(data)
-        _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
-                                                             email, errors))
+        _logger.warn("Error adding invitation %s -> %s: %s" %
+                     (request.user.uniq, email, errors))
     else:
         # form submitted
         data = render_to_string('invitations.html',
@@ -102,7 +105,7 @@ def process_form(request):
                                 },
                                 context_instance=RequestContext(request))
         response = HttpResponse(data)
-        _logger.info("Added invitation %s -> %s"%(request.user.uniq, email))
+        _logger.info("Added invitation %s -> %s" % (request.user.uniq, email))
 
     return response
 

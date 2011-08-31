@@ -8,7 +8,19 @@ v0.5.4 -> v0.5.5
 LOGGING
     * Changed the default logging settings for the dispatcher to also log
       to /var/log/synnefo/dispatcher.log, redirecting stderr and stdout there
+QUEUES
+    * Changed default routing key naming for queues. Queues must be redeclared.
+      The suggested upgrade path is to delete ALL (even obsolete) existing
+      queues and restart the dispatcher. To do so, download amqp-utils from
 
+          https://github.com/dougbarth/amqp-utils
+
+      and run the amqp-deleteq tool for each declared queue. Alternatively,
+      amqp-utils can be installed with: sudo gem install amqp-utils.
+UI
+    * Feedback form now uses django native send_mail for sending emails.
+      Proper django settings should be set for feedback mails to work
+      (https://docs.djangoproject.com/en/dev/topics/email/)
 
 v0.5.3 -> v0.5.4
 REPOSITORY

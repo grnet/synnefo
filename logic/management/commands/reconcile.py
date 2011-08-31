@@ -42,6 +42,7 @@ import json
 import sys
 
 class Command(BaseCommand):
+    prefix = settings.BACKEND_PREFIX_ID.split('-')[0]
     help = 'Reconcile VM status with the backend'
 
     option_list = BaseCommand.option_list +  (
@@ -73,7 +74,7 @@ class Command(BaseCommand):
             msg = dict(type = "reconcile", vmid = vmid)
             try:
                 amqp_connection.send(json.dumps(msg), settings.EXCHANGE_CRON,
-                                 "reconciliation.%s" % vmid)
+                                 "reconciliation.%s.%s" % (self.prefix,vmid))
             except AMQPError as e:
                 print >> sys.stderr, 'Error sending reconciliation request: %s' % e
                 raise

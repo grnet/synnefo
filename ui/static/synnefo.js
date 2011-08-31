@@ -2589,6 +2589,54 @@ function msg_box(config) {
 
 
 function show_invitations() {
+    
+    function display_resend_success(msg) {
+        clear_resend_messages();
+        $("#invsent .message.success").text(msg).show();
+    }
+
+    function display_resend_error(msg) {
+        clear_resend_messages();
+        $("#invsent .message.errormsg").text(msg).show();
+    }
+
+    // clear resent messages
+    function clear_resend_messages() {
+        $("#invsent .message").hide();
+    }
+
+    // register resent click handlers
+    function register_invitation_resends() {
+        $(".invitations .resend-invitation").click(function() {
+            var invid = $(this).attr("id");
+
+            if (invid == null)
+                return;
+
+            var id = invid.split("-")[1];
+
+            if (id == null)
+                return;
+
+            var child = $(this).find("img");
+            child.attr('src', '/static/progress-tiny.gif');
+
+            $.ajax({
+                type: "POST",
+                url : "/invitations/resend",
+                data : {invid : id},
+                success: function(msg) {
+                    display_resend_success("Invitation has been resent");
+                    child.attr('src', '/static/resend.png');
+                },
+                error : function(xhr, status, error) {
+                    display_resend_error("Something seems to have gone wrong. " +
+                          "Please try again in a few minutes.");
+                    child.attr('src', '/static/resend.png');
+                }
+            });
+        });
+    }
 
     handle_invitations = function(el) {
 
@@ -2613,14 +2661,30 @@ function show_invitations() {
         
         // we copy/paste it on the title no need to show it twice
         $(".invitations-left").hide();
+        
+        // sending finished or first invitations view
+        $(".invitations .sending").hide();
+        $(".invitations .submit").show();
+        $(".invitations #fieldheaders").show();
+        $(".invitations #fields").show();
 
         // reset title
         $("#notification-box .header-box").html("");
         $("#notification-box .header-box").html(window.INVITATIONS_TITLE + " " + $($(".invitations-left")[0]).text());
+    
+        // resend buttons
+        register_invitation_resends();
+        clear_resend_messages();
 
         // handle form submit
         form.submit(function(evn){
             evn.preventDefault();
+            
+            // sending...
+            $(".invitations .sending").show();
+            $(".invitations .submit").hide();
+            $(".invitations #fieldheaders").hide();
+            $(".invitations #fields").hide();
 
             // do the post
             $.post(form.attr("action"), form.serialize(), function(data) {

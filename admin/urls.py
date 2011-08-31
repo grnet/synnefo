@@ -22,6 +22,7 @@ urlpatterns = patterns('synnefo.admin.views',
     (r'^/users/invite/?$', 'users_invite'),
     (r'^/users/(\d+)/?$', 'users_info'),
     (r'^/users/(\d+)/modify/?$', 'users_modify'),
+    (r'^/users/(\d+)/delete/?$', 'users_delete'),
 )
 
 urlpatterns += patterns('',

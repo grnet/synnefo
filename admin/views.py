@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 
 from synnefo.db import models
 from synnefo.invitations.invitations import add_invitation, send_invitation
-from synnefo.logic import backend
+from synnefo.logic import backend, users
 
 
 def render(template, tab, **kwargs):
@@ -178,3 +178,8 @@ def users_modify(request, user_id):
     user.max_invitations = int(invitations) if invitations else None
     user.save()
     return redirect(users_info, user.id)
+
+def users_delete(request, user_id):
+    user = models.SynnefoUser.objects.get(id=user_id)
+    users.delete_user(user)
+    return redirect(users_list)

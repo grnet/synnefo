@@ -27,7 +27,7 @@ def index(request):
     stats['ganeti_instances'] = len(backend.get_ganeti_instances())
     stats['ganeti_nodes'] = len(backend.get_ganeti_nodes())
     stats['ganeti_jobs'] = len(backend.get_ganeti_jobs())
-    
+
     images = []
     for image in models.Image.objects.exclude(state='DELETED'):
         vms = models.VirtualMachine.objects.filter(sourceimage=image)
@@ -103,8 +103,13 @@ def images_info(request, image_id):
     formats = [x[0] for x in models.Image.FORMATS]
     if not image.format:
         formats = [''] + formats
+    
+    metadata = image.imagemetadata_set.order_by('meta_key')
     html = render('images_info.html', 'images',
-                    image=image, states=states, formats=formats)
+                    image=image,
+                    states=states,
+                    formats=formats,
+                    metadata=metadata)
     return HttpResponse(html)
 
 def images_modify(request, image_id):
@@ -119,8 +124,16 @@ def images_modify(request, image_id):
     image.format = request.POST.get('format')
     image.public = True if request.POST.get('public') else False
     image.save()
+    
+    keys = request.POST.getlist('key')
+    vals = request.POST.getlist('value')
+    meta = dict(zip(keys, vals))
+    image.imagemetadata_set.all().delete()
+    for key, val in meta.items():
+        if key:
+            image.imagemetadata_set.create(meta_key=key, meta_value=val)
+    
     return redirect(images_info, image.id)
-
 
 def servers_list(request):
     vms = models.VirtualMachine.objects.order_by('id')

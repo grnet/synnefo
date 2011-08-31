@@ -22,6 +22,7 @@ UI
       Proper django settings should be set for feedback mails to work
       (https://docs.djangoproject.com/en/dev/topics/email/)
 
+
 v0.5.3 -> v0.5.4
 REPOSITORY
     * Split Synnefo Ganeti tools to snf-ganeti-tools, with Debian packaging

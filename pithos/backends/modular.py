@@ -112,7 +112,7 @@ class ModularBackend(BaseBackend):
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
         
-        logger.debug("list_accounts: %s %s", user, marker, limit)
+        logger.debug("list_accounts: %s %s %s", user, marker, limit)
         allowed = self._allowed_accounts(user)
         start, limit = self._list_limits(allowed, marker, limit)
         return allowed[start:start + limit]

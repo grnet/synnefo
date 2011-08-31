@@ -21,6 +21,9 @@ UI
     * Feedback form now uses django native send_mail for sending emails.
       Proper django settings should be set for feedback mails to work
       (https://docs.djangoproject.com/en/dev/topics/email/)
+COMPONENTS
+    * snf-ganeti-tools must be rebuilt, see snf-ganeti-tools/debian/
+      for Debian packaging.
 
 
 v0.5.3 -> v0.5.4

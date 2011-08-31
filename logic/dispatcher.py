@@ -70,6 +70,7 @@ QUEUES = []
 # Queue bindings to exchanges
 BINDINGS = []
 
+
 class Dispatcher:
 
     logger = None
@@ -77,7 +78,7 @@ class Dispatcher:
     debug = False
     clienttags = []
 
-    def __init__(self, debug = False):
+    def __init__(self, debug=False):
 
         # Initialize logger
         self.logger = log.get_logger('synnefo.dispatcher')
@@ -119,7 +120,7 @@ class Dispatcher:
                                        password=settings.RABBIT_PASSWORD,
                                        virtual_host=settings.RABBIT_VHOST)
             except socket.error:
-                self.logger.error("Failed to connect to %s, retrying in 10s...",
+                self.logger.error("Failed to connect to %s, retrying in 10s",
                                   settings.RABBIT_HOST)
                 time.sleep(10)
 
@@ -173,21 +174,29 @@ def _init_queues():
               QUEUE_GANETI_BUILD_PROGR)
 
     # notifications of type "ganeti-op-status"
-    DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
+    DB_HANDLER_KEY_OP = 'ganeti.%s.event.op' % prefix
     # notifications of type "ganeti-net-status"
-    DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
+    DB_HANDLER_KEY_NET = 'ganeti.%s.event.net' % prefix
     # notifications of type "ganeti-create-progress"
     BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' % prefix
 
     BINDINGS = [
-    # Queue                   # Exchange                # RouteKey              # Handler
-    (QUEUE_GANETI_EVENTS_OP,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,      'update_db'),
-    (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
-    (QUEUE_GANETI_BUILD_PROGR,settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
-    (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',          'update_credits'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',            'send_email'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',            'send_email'),
-    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*',     'trigger_status_update'),
+    # Queue                    # Exchange                # RouteKey
+    # Handler
+    (QUEUE_GANETI_EVENTS_OP,   settings.EXCHANGE_GANETI, DB_HANDLER_KEY_OP,
+     'update_db'),
+    (QUEUE_GANETI_EVENTS_NET,  settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,
+     'update_net'),
+    (QUEUE_GANETI_BUILD_PROGR, settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,
+     'update_build_progress'),
+    (QUEUE_CRON_CREDITS,       settings.EXCHANGE_CRON,   '*.credits.*',
+     'update_credits'),
+    (QUEUE_EMAIL,              settings.EXCHANGE_API,    '*.email.*',
+     'send_email'),
+    (QUEUE_EMAIL,              settings.EXCHANGE_CRON,   '*.email.*',
+     'send_email'),
+    (QUEUE_RECONC,             settings.EXCHANGE_CRON,   'reconciliation.*',
+     'trigger_status_update'),
     ]
 
     if settings.DEBUG is True:
@@ -323,7 +332,7 @@ def drain_queue(queue):
         print "Queue not bound to any exchange: %s" % queue
         return
 
-    chan.queue_bind(queue=queue, exchange=exch,routing_key='#')
+    chan.queue_bind(queue=queue, exchange=exch, routing_key='#')
     tag = chan.basic_consume(queue=queue, callback=callbacks.dummy_proc)
 
     print "Queue draining about to start, hit Ctrl+c when done"
@@ -362,7 +371,7 @@ def get_user_confirmation():
 
 
 def debug_mode():
-    disp = Dispatcher(debug = True)
+    disp = Dispatcher(debug=True)
     signal(SIGINT, _exit_handler)
     signal(SIGTERM, _exit_handler)
 

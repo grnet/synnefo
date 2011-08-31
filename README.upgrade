@@ -4,6 +4,12 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+v0.5.4 -> v0.5.5
+LOGGING
+    * Changed the default logging settings for the dispatcher to also log
+      to /var/log/synnefo/dispatcher.log, redirecting stderr and stdout there
+
+
 v0.5.3 -> v0.5.4
 REPOSITORY
     * Split Synnefo Ganeti tools to snf-ganeti-tools, with Debian packaging

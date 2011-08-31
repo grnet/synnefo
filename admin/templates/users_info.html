@@ -74,8 +74,15 @@
     <button type="submit" class="btn primary">Save Changes</button>
     <button type="reset" class="btn">Reset</button>
         &nbsp;&nbsp;
-    <a class="btn danger" href="/admin/users/{{ user.id }}/delete">Delete User</a>
+    <a class="btn danger needs-confirm" href="/admin/users/{{ user.id }}/delete">Delete User</a>
+  </div>
+
+  <div class="alert-message block-message error">
+    <p><strong>WARNING:</strong> Deleting a user is a very destructive operation. Any objects with foreign keys pointing to this user will be deleted as well.</p>
+    <div class="alert-actions">
+      <a class="btn danger" href="/admin/users/{{ user.id }}/delete">Delete</a>
+      <a class="btn alert-close">Cancel</a>
+    </div>
   </div>
 </form>
-
 {% endblock body %}

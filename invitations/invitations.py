@@ -89,20 +89,23 @@ def process_form(request):
     response = None
     if errors:
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request),
-                                    'errors': errors,
-                                    'invitations_left': get_invitations_left(request.user)
-                                },
+                                {'invitations':
+                                     invitations_for_user(request),
+                                 'errors':
+                                     errors,
+                                 'invitations_left':
+                                     get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
-        response =  HttpResponse(data)
+        response = HttpResponse(data)
         _logger.warn("Error adding invitation %s -> %s: %s" %
                      (request.user.uniq, email, errors))
     else:
         # form submitted
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request),
-                                    'invitations_left': get_invitations_left(request.user)
-                                },
+                                {'invitations':
+                                    invitations_for_user(request),
+                                 'invitations_left':
+                                    get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
         response = HttpResponse(data)
         _logger.info("Added invitation %s -> %s" % (request.user.uniq, email))
@@ -123,7 +126,7 @@ def validate_name(name):
 def invitations_for_user(request):
     invitations = []
 
-    for inv in Invitations.objects.filter(source = request.user):
+    for inv in Invitations.objects.filter(source=request.user):
         invitation = {}
 
         invitation['sourcename'] = inv.source.realname
@@ -144,11 +147,12 @@ def inv_demux(request):
 
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                {'invitations': invitations_for_user(request),
-                    'invitations_left': get_invitations_left(request.user)
-                },
+                                {'invitations':
+                                     invitations_for_user(request),
+                                 'invitations_left':
+                                     get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
-        return  HttpResponse(data)
+        return HttpResponse(data)
     elif request.method == 'POST':
         return process_form(request)
     else:
@@ -174,13 +178,13 @@ def login(request):
     except Exception:
         return render_login_error("20", "Required key is invalid")
 
-    users = SynnefoUser.objects.filter(auth_token = decoded)
+    users = SynnefoUser.objects.filter(auth_token=decoded)
 
     if users.count() is 0:
         return render_login_error("20", "Required key is invalid")
 
     user = users[0]
-    invitations = Invitations.objects.filter(target = user)
+    invitations = Invitations.objects.filter(target=user)
 
     if invitations.count() is 0:
         return render_login_error("30", "Non-existent invitation")
@@ -201,7 +205,7 @@ def login(request):
     # Since the invitation is valid, renew the user's auth token. This also
     # takes care of cases where the user re-uses the invitation to
     # login when the original token has expired
-    from synnefo.logic import users # redefine 'users'
+    from synnefo.logic import users   # redefine 'users'
     users.set_auth_token_expires(user, valid_until)
 
     #if inv.accepted == False:
@@ -210,7 +214,7 @@ def login(request):
     inv.accepted = True
     inv.save()
 
-    _logger.info("Invited user %s logged in"%(inv.target.uniq))
+    _logger.info("Invited user %s logged in", inv.target.uniq)
 
     data = dict()
     data['user'] = user.realname
@@ -220,8 +224,9 @@ def login(request):
 
     response = HttpResponse(welcome)
 
-    response.set_cookie('X-Auth-Token', value=user.auth_token,
-                        expires = valid_until.strftime('%a, %d-%b-%Y %H:%M:%S %Z'),
+    response.set_cookie('X-Auth-Token',
+                        value=user.auth_token,
+                        expires=valid_until.strftime('%a, %d-%b-%Y %H:%M:%S %Z'),
                         path='/')
     response['X-Auth-Token'] = user.auth_token
     return response
@@ -243,7 +248,7 @@ def send_invitation(invitation):
     email['invitee'] = invitation.target.realname
     email['inviter'] = invitation.source.realname
 
-    valid = timedelta(days = settings.INVITATION_VALID_DAYS)
+    valid = timedelta(days=settings.INVITATION_VALID_DAYS)
     valid_until = invitation.created + valid
     email['valid_until'] = valid_until.strftime('%A, %d %B %Y')
     email['url'] = enconde_inv_url(invitation)
@@ -258,11 +263,10 @@ def send_invitation(invitation):
     #    subject = _('Invitation to ~okeanos IaaS service'),
     #    body = data
     #)
-    send (
-        recipient = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
-        subject = _('Invitation to ~okeanos IaaS service'),
-        body = data
-    )
+    send(recipient="%s <%s>" % (invitation.target.realname,
+                                invitation.target.uniq),
+         subject=_('Invitation to ~okeanos IaaS service'),
+         body=data)
 
 
 def enconde_inv_url(invitation):
@@ -296,7 +300,7 @@ def resend(request):
         return HttpResponseBadRequest("Invalid content for parameter [invid]")
 
     try:
-        inv = Invitations.objects.get(id = invid)
+        inv = Invitations.objects.get(id=invid)
     except Exception:
         return HttpResponseBadRequest("Invitation to resend does not exist")
 
@@ -311,12 +315,13 @@ def resend(request):
 
     return HttpResponse("Invitation has been resent")
 
+
 def get_invitee_level(source):
     return get_user_inv_level(source) + 1
 
 
 def get_user_inv_level(u):
-    inv = Invitations.objects.filter(target = u)
+    inv = Invitations.objects.filter(target=u)
 
     if not inv:
         raise Exception("User without invitation", u)
@@ -330,20 +335,20 @@ def add_invitation(source, name, email):
         Adds an invitation, if the source user has not gone over his/her
         invitation limit or the target user has not been invited already
     """
-    num_inv = Invitations.objects.filter(source = source).count()
+    num_inv = Invitations.objects.filter(source=source).count()
 
     if num_inv >= source.max_invitations:
         raise TooManyInvitations("User invitation limit (%d) exhausted" %
                                  source.max_invitations)
 
-    target = SynnefoUser.objects.filter(uniq = email)
+    target = SynnefoUser.objects.filter(uniq=email)
 
     if target.count() is not 0:
         raise AlreadyInvited("User with email %s already invited" % (email))
 
     users.register_user(name, email)
 
-    target = SynnefoUser.objects.filter(uniq = email)
+    target = SynnefoUser.objects.filter(uniq=email)
 
     r = list(target[:1])
     if not r:
@@ -362,12 +367,14 @@ def add_invitation(source, name, email):
     inv.save()
     return inv
 
+
 def get_invitations_left(user):
     """
     Get user invitations left
     """
-    num_inv = Invitations.objects.filter(source = user).count()
+    num_inv = Invitations.objects.filter(source=user).count()
     return user.max_invitations - num_inv
+
 
 def remove_invitation(invitation):
     """
@@ -379,12 +386,15 @@ def remove_invitation(invitation):
                 invitation.target.delete()
             invitation.delete()
 
+
 class InvitationException(Exception):
     def __init__(self, msg):
         self.messages = [msg]
 
+
 class TooManyInvitations(InvitationException):
     pass
+
 
 class AlreadyInvited(InvitationException):
     pass

@@ -363,6 +363,8 @@ class ModularBackend(BaseBackend):
         else:
             if shared:
                 allowed = self.permissions.access_list_shared('/'.join((account, container)))
+                if not allowed:
+                    return []
         path, node = self._lookup_container(account, container)
         return self._list_objects(node, path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     

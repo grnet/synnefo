@@ -44,6 +44,7 @@ _logger = log.get_logger("synnefo.dispatcher")
 def update_db(message):
     """Process a notification of type 'ganeti-op-status'"""
     _logger.debug("Processing ganeti-op-status msg: %s", message.body)
+    msg = None
     try:
         msg = json.loads(message.body)
 
@@ -74,12 +75,13 @@ def update_db(message):
         _logger.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
     except Exception as e:
-        _logger.exception("Unexpected error")
+        _logger.exception("Unexpected error, msg: %s", msg)
 
 
 def update_net(message):
     """Process a notification of type 'ganeti-net-status'"""
     _logger.debug("Processing ganeti-net-status msg: %s", message.body)
+    msg = None
     try:
         msg = json.loads(message.body)
 
@@ -104,12 +106,12 @@ def update_net(message):
         _logger.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
     except Exception as e:
-        _logger.exception("Unexpected error")
+        _logger.exception("Unexpected error, msg: %s", msg)
 
 
 def send_email(message):
     """Process an email submission request"""
-
+    msg = None
     try:
         msg = json.loads(message.body)
 
@@ -126,7 +128,7 @@ def send_email(message):
     except socket.error as e:
         _logger.error("Cannot connect to SMTP server:%s\n", e)
     except Exception as e:
-        _logger.exception("Unexpected error")
+        _logger.exception("Unexpected error, msg: %s", msg)
         raise
 
 
@@ -137,6 +139,8 @@ def update_credits(message):
 
 def update_build_progress(message):
     """Process a create progress message"""
+    _logger.debug("Processing ganeti-create-progress msg: %s", message.body)
+    msg = None
     try:
         msg = json.loads(message.body)
 
@@ -156,14 +160,14 @@ def update_build_progress(message):
         _logger.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
     except Exception as e:
-        _logger.exception("Unexpected error")
+        _logger.exception("Unexpected error, msg: %s", msg)
         raise
 
 
 def trigger_status_update(message):
     """Triggers a status update job for a specific VM id"""
     _logger.debug("Request to trigger status update: %s", message.body)
-
+    msg = None
     try:
         msg = json.loads(message.body)
 
@@ -182,11 +186,12 @@ def trigger_status_update(message):
     except KeyError as k:
         _logger.error("Malformed incoming JSON, missing attributes: %s", k)
     except Exception as e:
-        _logger.exception("Unexpected error")
+        _logger.exception("Unexpected error, msg: %s", msg)
 
 
 def status_job_finished(message):
     """Updates VM status based on a previously sent status update request"""
+    msg = None
     try:
         msg = json.loads(message.body)
 
@@ -229,12 +234,12 @@ def status_job_finished(message):
     except KeyError as k:
         _logger.error("Malformed incoming JSON, missing attributes: %s", k)
     except Exception as e:
-        _logger.exception("Unexpected error")
+        _logger.exception("Unexpected error, msg: %s", msg)
 
 
 def dummy_proc(message):
     try:
-        _logger.debug("Msg: %s" %(message.body))
+        _logger.debug("Msg: %s", message.body)
         message.channel.basic_ack(message.delivery_tag)
     except Exception as e:
         _logger.exception("Could not receive message")

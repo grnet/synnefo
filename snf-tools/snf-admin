@@ -75,7 +75,8 @@ def print_dict(d, exclude=()):
         print '%s: %s' % (key.rjust(margin), val)
 
 def print_item(item):
-    print '%d %s' % (item.id, item.name)
+    name = getattr(item, 'name', '')
+    print '%d %s' % (item.id, name)
     print_dict(item.__dict__, exclude=('id', 'name'))
 
 def print_items(items, detail=False, keys=None):
@@ -521,6 +522,31 @@ class ShowStats(Command):
         print_dict(stats)
 
 
+class ListInvitations(Command):
+    group = 'invitation'
+    name = 'list'
+    syntax = '[invitation id]'
+    description = 'list invitations'
+    
+    def main(self, invitation_id=None):
+        if invitation_id:
+            invitations = [models.Invitations.objects.get(id=invitation_id)]
+        else:
+            invitations = models.Invitations.objects.order_by('id')
+        print_items(invitations, detail=True, keys=('id',))
+
+
+class ResendInviation(Command):
+    group = 'invitation'
+    name = 'resend'
+    syntax = '<invitation id>'
+    description = 'resend an invitation'
+
+    def main(self, invitation_id):
+        invitation = models.Invitations.objects.get(id=invitation_id)
+        send_invitation(invitation)
+
+
 def print_usage(exe, groups, group=None, shortcut=False):
     nop = Command(exe, [])
     nop.parser.print_help()
@@ -534,7 +560,7 @@ def print_usage(exe, groups, group=None, shortcut=False):
         for command, cls in sorted(commands.items()):
             if cls.hidden:
                 continue
-            name = '  %s %s' % (group, command)
+            name = '  %s %s' % (group, command or '')
             print '%s %s' % (name.ljust(22), cls.description)
         print
 

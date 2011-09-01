@@ -183,3 +183,15 @@ def users_delete(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
     users.delete_user(user)
     return redirect(users_list)
+
+
+def invitations_list(request):
+    invitations = models.Invitations.objects.order_by('id')
+    html = render('invitations_list.html', 'invitations',
+                     invitations=invitations)
+    return HttpResponse(html)
+
+def invitations_resend(request, invitation_id):
+    invitation = models.Invitations.objects.get(id=invitation_id)
+    send_invitation(invitation)
+    return redirect(invitations_list)

@@ -27,6 +27,9 @@
       <li{% ifequal tab "users" %} class="active"{% endifequal %}>
         <a href="/admin/users">Users</a>
       </li>
+      <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
+        <a href="/admin/invitations">Invitations</a>
+      </li>
     </ul>
 
     {% block body %}{% endblock %}

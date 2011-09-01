@@ -52,7 +52,7 @@ from os.path import basename
 
 from synnefo.db import models
 from synnefo.invitations.invitations import add_invitation, send_invitation
-from synnefo.logic.users import _register_user, delete_user
+from synnefo.logic import backend, users
 
 
 def get_user(uid):
@@ -186,7 +186,7 @@ class CreateUser(Command):
             print 'Invalid type'
             return
         
-        user = _register_user(realname, username, email, type)
+        user = users._register_user(realname, username, email, type)
         print_item(user)
 
 
@@ -204,7 +204,7 @@ class DeleteUser(Command):
     def main(self, user_id):
         if self.force:
             user = get_user(user_id)
-            delete_user(user)
+            users.delete_user(user)
         else:
             print "WARNING: Deleting a user is a very destructive operation."
             print "Any objects with foreign keys pointing to this user will" \
@@ -498,6 +498,27 @@ class ListFlavors(Command):
         else:
             flavors = models.Flavor.objects.order_by('id')
         print_items(flavors, self.detail)
+
+
+class ShowStats(Command):
+    group = 'stats'
+    name = None
+    description = 'show statistics'
+
+    def main(self):
+        stats = {}
+        stats['Users'] = models.SynnefoUser.objects.count()
+        stats['Images'] = models.Image.objects.exclude(state='DELETED').count()
+        stats['Flavors'] = models.Flavor.objects.count()
+        stats['VMs'] = models.VirtualMachine.objects.filter(deleted=False).count()
+        stats['Networks'] = models.Network.objects.exclude(state='DELETED').count()
+        stats['Invitations'] = models.Invitations.objects.count()
+        
+        stats['Ganeti Instances'] = len(backend.get_ganeti_instances())
+        stats['Ganeti Nodes'] = len(backend.get_ganeti_nodes())
+        stats['Ganeti Jobs'] = len(backend.get_ganeti_jobs())
+        
+        print_dict(stats)
 
 
 def print_usage(exe, groups, group=None, shortcut=False):

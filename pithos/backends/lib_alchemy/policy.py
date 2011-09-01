@@ -43,8 +43,7 @@ class Policy(DBWorker):
         DBWorker.__init__(self, **params)
         metadata = MetaData()
         columns=[]
-        #columns.append(Column('path', String(2048), primary_key=True))
-        columns.append(Column('path', String(255), primary_key=True))
+        columns.append(Column('path', String(2048), primary_key=True))
         columns.append(Column('key', String(255), primary_key=True))
         columns.append(Column('value', String(255)))
         self.policies = Table('policy', metadata, *columns)

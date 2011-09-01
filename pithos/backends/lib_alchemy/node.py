@@ -32,13 +32,13 @@
 # or implied, of GRNET S.A.
 
 from time import time
-from sqlalchemy import Table, Integer, Column, String, MetaData, ForeignKey
+from sqlalchemy import Table, Integer, Float, Column, String, MetaData, ForeignKey
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, null, select, bindparam
-
+from duplicate import insertOnDuplicate
 from dbworker import DBWorker
 
-ROOTNODE  = 1
+ROOTNODE  = 0
 
 ( SERIAL, NODE, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(7)
 
@@ -76,7 +76,8 @@ def strprevling(prefix):
     s = prefix[:-1]
     c = ord(prefix[-1])
     if c > 0:
-        s += unichr(c-1) + unichr(0xffff)
+        #s += unichr(c-1) + unichr(0xffff)
+        s += unichr(c-1)
     return s
 
 
@@ -111,8 +112,7 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               autoincrement=False))
-        #columns.append(Column('path', String(2048), default='', nullable=False))
-        columns.append(Column('path', String(255), default='', nullable=False))
+        columns.append(Column('path', String(2048), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns)
         # place an index on path
         Index('idx_nodes_path', self.nodes.c.path, unique=True)
@@ -126,7 +126,7 @@ class Node(DBWorker):
                               primary_key=True))
         columns.append(Column('population', Integer, nullable=False, default=0))
         columns.append(Column('size', Integer, nullable=False, default=0))
-        columns.append(Column('mtime', Integer))
+        columns.append(Column('mtime', Float))
         columns.append(Column('cluster', Integer, nullable=False, default=0,
                               primary_key=True))
         self.statistics = Table('statistics', metadata, *columns)
@@ -140,7 +140,7 @@ class Node(DBWorker):
                                          onupdate='CASCADE')))
         columns.append(Column('size', Integer, nullable=False, default=0))
         columns.append(Column('source', Integer))
-        columns.append(Column('mtime', Integer))
+        columns.append(Column('mtime', Float))
         columns.append(Column('muser', String(255), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
         self.versions = Table('versions', metadata, *columns)
@@ -162,8 +162,8 @@ class Node(DBWorker):
         
         metadata.create_all(self.engine)
         
-        s = self.nodes.select().where(and_(self.nodes.c.node == 1,
-                                           self.nodes.c.parent == 1))
+        s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
+                                           self.nodes.c.parent == ROOTNODE))
         r = self.conn.execute(s).fetchone()
         if not r:
             s = self.nodes.insert().values(node=ROOTNODE, parent=ROOTNODE)
@@ -387,8 +387,17 @@ class Node(DBWorker):
         population += prepopulation
         size += presize
         
-        ins = self.statistics.insert().values(node, population, size, mtime, cluster)
-        self.conn.execute(ins).close()
+        #insert or replace
+        u = self.statistics.update().where(and_(self.statistics.c.node==node,
+                                           self.statistics.c.cluster==cluster))
+        u = u.values(population=population, size=size, mtime=mtime)
+        rp = self.conn.execute(u)
+        rp.close()
+        if rp.rowcount == 0:
+            ins = self.statistics.insert()
+            ins = ins.values(node=node, population=population, size=size,
+                             mtime=mtime, cluster=cluster)
+            self.conn.execute(ins).close()
     
     def statistics_update_ancestors(self, node, population, size, mtime, cluster=0):
         """Update the statistics of the given node's parent.
@@ -412,9 +421,6 @@ class Node(DBWorker):
            for all latest versions under node that
            do not belong to the cluster.
         """
-        
-        execute = self.execute
-        fetchone = self.fetchone
         
         # The node.
         props = self.node_get_properties(node)
@@ -603,7 +609,6 @@ class Node(DBWorker):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
-        
         values = [{'serial':serial, 'key':k, 'value':v} for k, v in items]
         self.conn.execute(self.attributes.insert(), values).close()
     
@@ -724,8 +729,7 @@ class Node(DBWorker):
            Limit applies to the first list of tuples returned.
         """
         
-        execute = self.execute
-        
+        print '#', locals()
         if not start or start < prefix:
             start = strprevling(prefix)
         nextling = strnextling(prefix)
@@ -747,7 +751,6 @@ class Node(DBWorker):
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
         conj = []
         for x in pathq:
-            print '#', x
             conj.append(n.c.path.like(x + '%'))
         
         if conj:
@@ -768,7 +771,6 @@ class Node(DBWorker):
         pfz = len(prefix)
         dz = len(delimiter)
         count = 0
-        fetchone = self.fetchone
         prefixes = []
         pappend = prefixes.append
         matches = []
@@ -789,11 +791,12 @@ class Node(DBWorker):
                     break
                 continue
             
-            pf = path[:idx + dz]
-            pappend(pf)
             if idx + dz == len(path):
                 mappend(props)
                 count += 1
+                continue # Get one more, in case there is a path.
+            pf = path[:idx + dz]
+            pappend(pf)
             if count >= limit: 
                 break
             

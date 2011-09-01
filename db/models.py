@@ -265,7 +265,14 @@ class VirtualMachine(models.Model):
         'OP_INSTANCE_SHUTDOWN': 'STOPPED',
         'OP_INSTANCE_REBOOT': 'STARTED',
         'OP_INSTANCE_SET_PARAMS': None,
-        'OP_INSTANCE_QUERY_DATA': None
+        'OP_INSTANCE_QUERY_DATA': None,
+        'OP_INSTANCE_REINSTALL' : None,
+        'OP_INSTANCE_ACTIVATE_DISKS' : None,
+        'OP_INSTANCE_DEACTIVATE_DISKS': None,
+        'OP_INSTANCE_REPLACE_DISKS' : None,
+        'OP_INSTANCE_MIGRATE': None,
+        'OP_INSTANCE_CONSOLE': None,
+        'OP_INSTANCE_RECREATE_DISKS': None
     }
 
     # This dictionary contains the correspondence between

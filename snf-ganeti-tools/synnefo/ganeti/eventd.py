@@ -159,6 +159,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
                     self.chan.basic_publish(msg,
                             exchange=settings.EXCHANGE_GANETI,
                             routing_key=routekey)
+                    self.logger.debug("Message published to AMQP successfully")
                     return
                 except socket.error:
                     self.logger.exception("Server went away, reconnecting...")

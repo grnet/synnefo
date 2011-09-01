@@ -1,3 +1,9 @@
+snf-ganeti-tools (0.5.5) UNRELEASED; urgency=low
+
+  * New version, minor bugfixes.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Wed, 31 Aug 2011 17:38:09 +0300
+
 snf-ganeti-tools (0.5.4-1) UNRELEASED; urgency=low
 
   * New version, import snf-progress-monitor

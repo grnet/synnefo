@@ -32,20 +32,21 @@
 from datetime import timedelta
 import datetime
 import base64
-import time
 import urllib
+import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, \
+    HttpResponseBadRequest, HttpResponseServerError
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.core.validators import validate_email
 from django.views.decorators.csrf import csrf_protect
 from django.utils.translation import ugettext as _
 
-from synnefo.logic.email_send import send_async
+from synnefo.logic.email_send import send_async, send
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
 from synnefo.logic import users, log
@@ -54,9 +55,11 @@ from Crypto.Cipher import AES
 
 _logger = log.get_logger("synnefo.invitations")
 
+
 def process_form(request):
     errors = []
     valid_inv = filter(lambda x: x.startswith("name_"), request.POST.keys())
+    invitation = None
 
     for inv in valid_inv:
         (name, inv_id) = inv.split('_')
@@ -70,38 +73,42 @@ def process_form(request):
             validate_name(name)
             validate_email(email)
 
-            inv = add_invitation(request.user, name, email)
-            send_invitation(inv)
+            invitation = add_invitation(request.user, name, email)
+            send_invitation(invitation)
 
-        # FIXME: Delete invitation and user on error
         except (InvitationException, ValidationError) as e:
             errors += ["Invitation to %s <%s> not sent. Reason: %s" %
                        (name, email, e.messages[0])]
         except Exception as e:
+            remove_invitation(invitation)
             _logger.exception(e)
-            errors += ["Invitation to %s <%s> not sent. Reason: %s" %
-                       (name, email, e.message)]
+            errors += ["Invitation to %s <%s> could not be sent. An unexpected"
+                       " error occurred. Please try again later." %
+                       (name, email)]
 
-    respose = None
+    response = None
     if errors:
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request),
-                                    'errors': errors,
-                                    'invitations_left': get_invitations_left(request.user)
-                                },
+                                {'invitations':
+                                     invitations_for_user(request),
+                                 'errors':
+                                     errors,
+                                 'invitations_left':
+                                     get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
-        response =  HttpResponse(data)
-        _logger.warn("Error adding invitation %s -> %s: %s"%(request.user.uniq,
-                                                             email, errors))
+        response = HttpResponse(data)
+        _logger.warn("Error adding invitation %s -> %s: %s" %
+                     (request.user.uniq, email, errors))
     else:
         # form submitted
         data = render_to_string('invitations.html',
-                                {'invitations': invitations_for_user(request),
-                                    'invitations_left': get_invitations_left(request.user)
-                                },
+                                {'invitations':
+                                    invitations_for_user(request),
+                                 'invitations_left':
+                                    get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
         response = HttpResponse(data)
-        _logger.info("Added invitation %s -> %s"%(request.user.uniq, email))
+        _logger.info("Added invitation %s -> %s" % (request.user.uniq, email))
 
     return response
 
@@ -119,7 +126,7 @@ def validate_name(name):
 def invitations_for_user(request):
     invitations = []
 
-    for inv in Invitations.objects.filter(source = request.user):
+    for inv in Invitations.objects.filter(source=request.user):
         invitation = {}
 
         invitation['sourcename'] = inv.source.realname
@@ -128,6 +135,7 @@ def invitations_for_user(request):
         invitation['target'] = inv.target.uniq
         invitation['accepted'] = inv.accepted
         invitation['sent'] = inv.created
+        invitation['id'] = inv.id
 
         invitations.append(invitation)
 
@@ -139,11 +147,12 @@ def inv_demux(request):
 
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                {'invitations': invitations_for_user(request),
-                    'invitations_left': get_invitations_left(request.user)
-                },
+                                {'invitations':
+                                     invitations_for_user(request),
+                                 'invitations_left':
+                                     get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
-        return  HttpResponse(data)
+        return HttpResponse(data)
     elif request.method == 'POST':
         return process_form(request)
     else:
@@ -169,13 +178,13 @@ def login(request):
     except Exception:
         return render_login_error("20", "Required key is invalid")
 
-    users = SynnefoUser.objects.filter(auth_token = decoded)
+    users = SynnefoUser.objects.filter(auth_token=decoded)
 
     if users.count() is 0:
         return render_login_error("20", "Required key is invalid")
 
     user = users[0]
-    invitations = Invitations.objects.filter(target = user)
+    invitations = Invitations.objects.filter(target=user)
 
     if invitations.count() is 0:
         return render_login_error("30", "Non-existent invitation")
@@ -193,13 +202,19 @@ def login(request):
                                   (valid_until.strftime('%A, %d %B %Y'),
                                    now.strftime('%A, %d %B %Y')))
 
+    # Since the invitation is valid, renew the user's auth token. This also
+    # takes care of cases where the user re-uses the invitation to
+    # login when the original token has expired
+    from synnefo.logic import users   # redefine 'users'
+    users.set_auth_token_expires(user, valid_until)
+
     #if inv.accepted == False:
     #    return render_login_error("60", "Invitation already accepted")
 
     inv.accepted = True
     inv.save()
 
-    _logger.info("Invited user %s logged in"%(inv.target.uniq))
+    _logger.info("Invited user %s logged in", inv.target.uniq)
 
     data = dict()
     data['user'] = user.realname
@@ -209,8 +224,9 @@ def login(request):
 
     response = HttpResponse(welcome)
 
-    response.set_cookie('X-Auth-Token', value=user.auth_token,
-                        expires = valid_until.strftime('%a, %d-%b-%Y %H:%M:%S %Z'),
+    response.set_cookie('X-Auth-Token',
+                        value=user.auth_token,
+                        expires=valid_until.strftime('%a, %d-%b-%Y %H:%M:%S %Z'),
                         path='/')
     response['X-Auth-Token'] = user.auth_token
     return response
@@ -232,10 +248,28 @@ def send_invitation(invitation):
     email['invitee'] = invitation.target.realname
     email['inviter'] = invitation.source.realname
 
-    valid = timedelta(days = settings.INVITATION_VALID_DAYS)
+    valid = timedelta(days=settings.INVITATION_VALID_DAYS)
     valid_until = invitation.created + valid
     email['valid_until'] = valid_until.strftime('%A, %d %B %Y')
+    email['url'] = enconde_inv_url(invitation)
 
+    data = render_to_string('invitation.txt', {'email': email})
+
+    _logger.debug("Invitation URL: %s" % email['url'])
+
+    # send_async(
+    #    frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
+    #    to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
+    #    subject = _('Invitation to ~okeanos IaaS service'),
+    #    body = data
+    #)
+    send(recipient="%s <%s>" % (invitation.target.realname,
+                                invitation.target.uniq),
+         subject=_('Invitation to ~okeanos IaaS service'),
+         body=data)
+
+
+def enconde_inv_url(invitation):
     PADDING = '{'
     pad = lambda s: s + (32 - len(s) % 32) * PADDING
     EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
@@ -244,26 +278,50 @@ def send_invitation(invitation):
     encoded = EncodeAES(cipher, invitation.target.auth_token)
 
     url_safe = urllib.urlencode({'key': encoded})
+    url = settings.APP_INSTALL_URL + "/invitations/login?" + url_safe
 
-    email['url'] = settings.APP_INSTALL_URL + "/invitations/login?" + url_safe
+    return url
 
-    data = render_to_string('invitation.txt', {'email': email})
 
-    _logger.debug("Invitation URL: %s" % email['url'])
+def resend(request):
+    """
+    Resend an invitation that has been already sent
+    """
 
-    send_async(
-        frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
-        to = "%s <%s>"%(invitation.target.realname,invitation.target.uniq),
-        subject = _('Invitation to ~okeanos IaaS service'),
-        body = data
-    )
+    if not request.method == 'POST':
+        return method_not_allowed(request)
+
+    invid = request.POST["invid"]
+
+    matcher = re.compile('^[0-9]+$')
+
+    # XXX: Assumes numeric DB keys
+    if not matcher.match(invid):
+        return HttpResponseBadRequest("Invalid content for parameter [invid]")
+
+    try:
+        inv = Invitations.objects.get(id=invid)
+    except Exception:
+        return HttpResponseBadRequest("Invitation to resend does not exist")
+
+    if not request.user == inv.source:
+        return HttpResponseBadRequest("Invitation does not belong to user")
+
+    try:
+        send_invitation(inv)
+    except Exception as e:
+        _logger.exception(e)
+        return HttpResponseServerError("Error sending invitation email")
+
+    return HttpResponse("Invitation has been resent")
+
 
 def get_invitee_level(source):
     return get_user_inv_level(source) + 1
 
 
 def get_user_inv_level(u):
-    inv = Invitations.objects.filter(target = u)
+    inv = Invitations.objects.filter(target=u)
 
     if not inv:
         raise Exception("User without invitation", u)
@@ -277,20 +335,20 @@ def add_invitation(source, name, email):
         Adds an invitation, if the source user has not gone over his/her
         invitation limit or the target user has not been invited already
     """
-    num_inv = Invitations.objects.filter(source = source).count()
+    num_inv = Invitations.objects.filter(source=source).count()
 
     if num_inv >= source.max_invitations:
         raise TooManyInvitations("User invitation limit (%d) exhausted" %
                                  source.max_invitations)
 
-    target = SynnefoUser.objects.filter(uniq = email)
+    target = SynnefoUser.objects.filter(uniq=email)
 
     if target.count() is not 0:
         raise AlreadyInvited("User with email %s already invited" % (email))
 
     users.register_user(name, email)
 
-    target = SynnefoUser.objects.filter(uniq = email)
+    target = SynnefoUser.objects.filter(uniq=email)
 
     r = list(target[:1])
     if not r:
@@ -310,28 +368,33 @@ def add_invitation(source, name, email):
     return inv
 
 
-@transaction.commit_on_success
-def invitation_accepted(invitation):
-    """
-        Mark an invitation as accepted
-    """
-    invitation.accepted = True
-    invitation.save()
-
-
 def get_invitations_left(user):
     """
     Get user invitations left
     """
-    num_inv = Invitations.objects.filter(source = user).count()
+    num_inv = Invitations.objects.filter(source=user).count()
     return user.max_invitations - num_inv
+
+
+def remove_invitation(invitation):
+    """
+    Removes an invitation and the invited user
+    """
+    if invitation is not None:
+        if isinstance(invitation, Invitations):
+            if invitation.target is not None:
+                invitation.target.delete()
+            invitation.delete()
+
 
 class InvitationException(Exception):
     def __init__(self, msg):
         self.messages = [msg]
 
+
 class TooManyInvitations(InvitationException):
     pass
+
 
 class AlreadyInvited(InvitationException):
     pass

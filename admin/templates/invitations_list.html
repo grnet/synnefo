@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block body %}
+<table class="zebra-striped id-sorted">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Source</th>
+      <th>Target</th>
+      <th>Accepted</th>
+      <th>Level</th>
+      <th>Created</th>
+      <th>Updated</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for invitation in invitations %}
+    <tr>
+      <td>{{ invitation.id }}</td>
+      <td>
+        <a href="/admin/users/{{ invitation.source.id }}">{{ invitation.source }}</a>
+        <br />
+        {{ invitation.source.uniq }}
+      </td>
+      <td>
+        <a href="/admin/users/{{ invitation.target.id }}">{{ invitation.target }}</a>
+        <br />
+        {{ invitation.target.uniq }}
+      </td>
+      <td>{{ invitation.accepted }}</td>
+      <td>{{ invitation.level }}</td>
+      <td>{{ invitation.created }}</td>
+      <td>{{ invitation.updated }}</td>
+      <td><a class="btn info" href="/admin/invitations/{{ invitation.id }}/resend">Resend</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock body %}

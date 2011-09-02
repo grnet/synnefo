@@ -3918,26 +3918,34 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-top: 5px;
 }
 
+.invitations #errors {
+    padding: 5px;
+    background-color: #800000;
+}
+
 .invitations #errors p {
     margin-bottom: 10px;
     font-size: 0.95em;
+    padding-top:0;
+    margin-top:0;
+    color: #fff;
 }
 
 .invitations #errors li {
     font-size: 0.85em;
-    color: #800000;
+    color: #ddd;
 }
 
 .invitations #errors {
     font-size: 100%;
-    color: #f00;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 #invsent .message {
     font-size: 0.9em;
-    padding: 5px;
+    padding: 5px 0;
     margin-top: 10px;
+    margin-bottom: -10px;
     color: #5CAD54;
 }
 
@@ -3947,6 +3955,10 @@ div.state .shutdown, tbody.machines .shutdown {
 
 #add-name-container {
     margin-bottom: 10px;   
+}
+
+.remove-field-trigger, .add-field-trigger {
+    cursor: pointer;
 }
 
 .add-field-trigger img {
@@ -4375,4 +4387,65 @@ div.state .shutdown, tbody.machines .shutdown {
 
 #disks-pane {
     margin-top: 58px;
+}
+
+span.resend-msg {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.success-msg {
+    background-color: #5CAD54;
+    color: #fff;
+    padding: 0.4em;
+    border: 1px solid #ddd;
+}
+
+.error-msg {
+    background-color: #800000;
+    color: #fff;
+    padding: 0.4em;
+    border: 1px solid #ddd;
+}
+
+.success-msg em, .error-msg em {
+    font-weight: bold;
+    font-style: normal;
+    font-size: 0.9em;
+}
+
+.pagination {
+            font-size: 80%;
+        }
+        
+.pagination a {
+    text-decoration: none;
+	border: solid 1px #AAE;
+	color: #15B;
+}
+
+.pagination a, .pagination span {
+    display: block;
+    float: left;
+    padding: 0.3em 0.5em;
+    margin-right: 5px;
+	margin-bottom: 5px;
+	min-width:1em;
+	text-align:center;
+}
+
+.pagination .current {
+    background: #4085A5;
+    color: #fff;
+	border: solid 1px #AAE;
+}
+
+.pagination .current.prev, .pagination .current.next{
+	color:#999;
+	border-color:#999;
+	background:#fff;
+}
+
+#invsent .pagination {
+    margin-top: 10px;
 }

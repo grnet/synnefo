@@ -10,7 +10,7 @@
     {% csrf_token %}
     
     {% if errors %}
-    <div id="errors">
+    <div id="errors" class="error-msg">
         <p>{% trans "Invite error(s) occured" %}</p>
 
         <ul>
@@ -65,7 +65,7 @@ You have no invitations left in your account.
     </div>
     
     <div>
-        <ul>
+        <ul class="invsent-list">
         {% for inv in invitations %}
         <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
                 {% if inv.accepted %}
@@ -78,6 +78,8 @@ You have no invitations left in your account.
                 <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
             </li>
         {% endfor %}
-        </ul>
+    </ul>
+
+    <div class="pages"></div>
     </div>
 </div>

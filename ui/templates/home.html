@@ -55,6 +55,7 @@ or implied, of GRNET S.A.
     <script src="static/jquery.client.js"></script>
     <script src="static/json2.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
+    <script src="static/jquery.pagination.js"></script>
     <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
 
@@ -79,9 +80,9 @@ or implied, of GRNET S.A.
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
-
         var API_OVERLAY_TITLE = "{% trans "API access" %}";
         var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
+        var INVITATIONS_PER_PAGE = {% if invitations_per_page %} {{ invitations_per_page }} {% else %} 10 {% endif %};
         
         // building statuses
         var BUILDING_STATUSES = {

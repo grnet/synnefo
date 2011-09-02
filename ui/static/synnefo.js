@@ -3090,14 +3090,41 @@ function show_api_overlay() {
 
 function show_invitations() {
     
-    function display_resend_success(msg) {
-        clear_resend_messages();
-        $("#invsent .message.success").text(msg).show();
+    var invsent_per_page = INVITATIONS_PER_PAGE;
+    function handle_pagination(p) {
+        show_sent_page(p, invsent_per_page);
+        return false;
+    }
+    
+    function show_sent_page(i, per_page) {
+        $("#invsent ul li").hide();
+        start = i * per_page;
+        end = start + per_page;
+
+        var i = start;
+        while(i < start + per_page) {
+            $($("#invsent ul li")[i]).show();
+            i++;
+        }
     }
 
-    function display_resend_error(msg) {
-        clear_resend_messages();
-        $("#invsent .message.errormsg").text(msg).show();
+    function paginate_sent() {
+        var per_page = invsent_per_page;
+        var total = $(".invitations #invsent ul li").length;
+        $(".invitations .pages").pagination(total, {callback: handle_pagination, items_per_page: per_page});
+        show_sent_page(0, per_page);
+    }
+
+    function display_resend_msg(msg, cls) {
+        el = $("<span class='resend-msg "+cls+"'>"+msg+"</span>");
+        
+        (function(el) {
+            var element = el;
+            window.setTimeout(function(){
+                element.fadeOut(1000).delay(2000).remove();
+            }, 4000);
+        })(el)
+        $("#invsent .message.success").append(el).show();
     }
 
     // clear resent messages
@@ -3125,13 +3152,15 @@ function show_invitations() {
                 type: "POST",
                 url : "/invitations/resend",
                 data : {invid : id},
+                invid: id,
                 success: function(msg) {
-                    display_resend_success("Invitation has been resent");
+                    inv_email = $(".resend-invitation#inv-" + this.invid).parent().find(".email").text();
+                    display_resend_msg("Invitation to <em>'"+inv_email+"'</em> has been resent", "success-msg");
                     child.attr('src', '/static/resend.png');
                 },
                 error : function(xhr, status, error) {
-                    display_resend_error("Something seems to have gone wrong. " +
-                          "Please try again in a few minutes.");
+                    inv_email = $(".resend-invitation#inv-" + this.invid).parent().find(".email").text();
+                    display_resend_msg("Invitation to <em>'"+inv_email+"'</em> failed to send", "error-msg");
                     child.attr('src', '/static/resend.png');
                 }
             });
@@ -3139,7 +3168,10 @@ function show_invitations() {
     }
 
     handle_invitations = function(el) {
-
+        
+        if ($("div.invitations").length > 1) {
+            $($("div.invitations")[0]).remove();
+        }
         // proper class to identify the overlay block
         el.addClass("invitations");
 
@@ -3167,14 +3199,17 @@ function show_invitations() {
         $(".invitations .submit").show();
         $(".invitations #fieldheaders").show();
         $(".invitations #fields").show();
+        $("#fields input[name=name_1]").focus();
 
         // reset title
         $("#notification-box .header-box").html("");
         $("#notification-box .header-box").html(window.INVITATIONS_TITLE + " " + $($(".invitations-left")[0]).text());
-    
+        
         // resend buttons
         register_invitation_resends();
         clear_resend_messages();
+
+        paginate_sent();
 
         // handle form submit
         form.submit(function(evn){

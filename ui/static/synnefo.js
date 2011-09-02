@@ -1406,9 +1406,11 @@ function update_listview_actions() {
             states[states.length] = checkbox.className;
         }
 
-        var ip = $("#" + checkbox.id.replace('input-','') + ".ip span.public").text();
-        if (ip.replace('undefined','').length)
-            states[states.length] = 'network';
+        if (vm_has_public_ip(vm) && vm.status == "ACTIVE") { 
+            states = ['network'];
+            if (checked.length>1)
+                states[states.length] = 'multiple';
+        }
     });
 
     // decide which actions should be enabled
@@ -3379,3 +3381,22 @@ function readablizeBytes(bytes) {
     return (bytes/Math.pow(1024, Math.floor(e))).toFixed(2)+" "+s[e];
 }
 
+// find closest to the given element vm
+function iconview_closest_vm(el) {
+    id = $(el).closest(".machine-container").attr("id");
+    return get_machine(id);
+}
+
+// find closest to the given element vm
+function singleview_closest_vm(el) {
+    id = $(el).closest(".single-container").attr("id");
+    return get_machine(id);
+}
+
+function vm_has_public_ip(vm) {
+    try {
+        var serverIP = vm.addresses.values[0].values[0].addr;
+        return serverIP;
+    } catch (err) { return false }
+
+}

@@ -198,9 +198,10 @@ $("#machinesview-single.single .tags-content").hide();
 
 // handle connect machine image states
 $("div.connect-arrow, .single-image").live('mouseenter',
-    function() {
+function() {
+        has_ip = vm_has_public_ip(singleview_closest_vm(this));
         // ugly check to see if machine is running
-        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
+        if ($(this).parent().find(".connect-arrow:visible").length == 0 || !has_ip) { return };
         set_machine_os_image($(this).parent().parent(), "single", "hover", undefined, 1);
         var parent = $(this).parent().parent();
         parent.find(".connect-arrow").show().addClass('border-hover');
@@ -208,7 +209,8 @@ $("div.connect-arrow, .single-image").live('mouseenter',
 
 $("div.connect-arrow, .single-image").live('mouseleave',
     function() {
-        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
+        has_ip = vm_has_public_ip(singleview_closest_vm(this));
+        if ($(this).parent().find(".connect-arrow:visible").length == 0 || !has_ip) { return };
         set_machine_os_image($(this).parent().parent(), "single", "hover", undefined, 1, "hover");
         set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1, "click");
         var parent = $(this).parent().parent();
@@ -217,13 +219,15 @@ $("div.connect-arrow, .single-image").live('mouseleave',
 
 $("div.connect-arrow, .single-image").live('mousedown',
     function() {
-        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
+        has_ip = vm_has_public_ip(singleview_closest_vm(this));
+        if ($(this).parent().find(".connect-arrow:visible").length == 0 || !has_ip) { return };
         set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1);
     });
 
 $("div.connect-arrow, .single-image").live('mouseup',
     function() {
-        if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
+        has_ip = vm_has_public_ip(singleview_closest_vm(this));
+        if ($(this).parent().find(".connect-arrow:visible").length == 0 || !has_ip) { return };
         set_machine_os_image($(this).parent().parent(), "single", "click", undefined, 1, "click");
     });
 
@@ -415,6 +419,8 @@ $("#machinesview-single.single div.action-console").live('click', function(){
 // connect to machine on machine logo click
 $("#machinesview-single.single div.single-image").live('click', function(){
     if ($(this).parent().find(".connect-arrow:visible").length == 0) { return };
+    has_ip = vm_has_public_ip(singleview_closest_vm(this));
+    if (!has_ip) { return }
     var serverID = $(this).closest(".single-container").attr("id");
     machine_connect([machine_connect, serverID]);
     return false;
@@ -512,8 +518,18 @@ function update_machines_view(data){
                     log_server_status_change(existing, server.status);
                     set_machine_os_image(existing, "single", "on", server_image);
                     existing.find(".column1 .state-label").text(STATUSES[server.status]);
-                    existing.find(".connect-border").show();
-                    existing.find(".connect-arrow").show();
+
+                    vm = get_machine(existing.attr("id"));
+                    has_ip = vm_has_public_ip(vm);
+
+                    if (has_ip) {
+                        existing.find(".connect-border").show();
+                        existing.find(".connect-arrow").show();
+                    } else {
+                        existing.find(".connect-border").hide();
+                        existing.find(".connect-arrow").hide();
+                    }
+
                     existing.find(".column1 .state .spinner").hide();
                     existing.find(' .wave').attr('src','static/icons/indicators/medium/wave.gif').show();
                     existing.find(".column1 .state").removeClass().addClass("state running-state");
@@ -529,8 +545,16 @@ function update_machines_view(data){
                         // if it has been rebooted or just created
                         log_server_status_change(existing, server.status);
                         existing.find(".column1 .state-label").text(STATUSES[server.status]);
-                        existing.find(".connect-border").show();
-                        existing.find(".connect-arrow").show();
+                        vm = get_machine(existing.attr("id"));
+                        has_ip = vm_has_public_ip(vm);
+
+                        if (has_ip) {
+                            existing.find(".connect-border").show();
+                            existing.find(".connect-arrow").show();
+                        } else {
+                            existing.find(".connect-border").hide();
+                            existing.find(".connect-arrow").hide();
+                        }
                         existing.find(".column1 .state .spinner").hide();
                         existing.find(".column1 .state").attr('src','static/icons/indicators/medium/wave.gif').show();
                         existing.find(".column1 .state").removeClass().addClass("state running-state");
@@ -622,8 +646,18 @@ function update_machines_view(data){
             if (server.status == 'ACTIVE') {
                 $('#machinesview-single.single div.#' + server.id + ' div.action-console').show();
                 $('#machinesview-single.single div.#' + server.id + ' div.action-start').hide();
-                machine.find(".connect-border").show();
-                machine.find(".connect-arrow").show();
+
+                vm = get_machine(machine.attr("id"));
+                has_ip = vm_has_public_ip(vm);
+
+                if (has_ip) {
+                    machine.find(".connect-border").show();
+                    machine.find(".connect-arrow").show();
+                } else {
+                    machine.find(".connect-border").hide();
+                    machine.find(".connect-arrow").hide();
+                }
+
             } else if (server.status == 'REBOOT'){
                 $('#machinesview-single.single div.#' + server.id + ' div.action-console').hide();
             } else {

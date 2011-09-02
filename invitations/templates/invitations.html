@@ -54,10 +54,7 @@ You have no invitations left in your account.
 
 <div id="invsent">
     
-    <h3 class="clearfix">{% trans "Sent invitations" %}
-        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
-        <span>(<img src="/static/resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
-    </h3>
+    <h3 class="clearfix overlay-inner-title">{% trans "Sent invitations" %}</h3>
 
     <div class="messages">
         <div class="message errormsg"></div>
@@ -80,6 +77,11 @@ You have no invitations left in your account.
         {% endfor %}
     </ul>
 
-    <div class="pages"></div>
+    <div class="pages clearfix"></div>
+
+    <div class="icons-info">
+        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
+        <span>(<img src="/static/resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
+    </div>
     </div>
 </div>

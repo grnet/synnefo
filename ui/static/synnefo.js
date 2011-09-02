@@ -3121,7 +3121,12 @@ function show_invitations() {
         (function(el) {
             var element = el;
             window.setTimeout(function(){
-                element.fadeOut(1000).delay(2000).remove();
+                element.fadeOut(200, function() { 
+                    $(this).remove()
+                    if ($(".message.success span").length == 1) {
+                        $(".message.success").hide();
+                    } 
+                });
             }, 4000);
         })(el)
         $("#invsent .message.success").append(el).show();
@@ -3172,6 +3177,7 @@ function show_invitations() {
         if ($("div.invitations").length > 1) {
             $($("div.invitations")[0]).remove();
         }
+
         // proper class to identify the overlay block
         el.addClass("invitations");
 

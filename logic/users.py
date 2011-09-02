@@ -88,8 +88,24 @@ def create_auth_token(user):
 
     user.auth_token = md5.hexdigest()
     user.auth_token_created = datetime.now()
-    user.auth_token_expires = user.auth_token_created + \
-                              timedelta(hours=settings.AUTH_TOKEN_DURATION)
+    user.save()
+
+    set_auth_token_expires(user)
+
+@transaction.commit_on_success
+def set_auth_token_expires(user, max_date = None):
+
+    exp_date = datetime.now() + \
+               timedelta(hours=settings.AUTH_TOKEN_DURATION)
+
+    if not max_date:
+        user.auth_token_expires = exp_date
+    else:
+        if max_date <= exp_date:
+            exp_date = max_date
+
+        user.auth_token_expires = exp_date
+
     user.save()
 
 @transaction.commit_on_success

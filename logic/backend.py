@@ -151,9 +151,10 @@ def process_create_progress(vm, rprogress, wprogress):
 
     last_update = vm.buildpercentage
 
-    if last_update > percentage:
-        raise ValueError("Build percentage should increase monotonically " \
-                        "(old = %d, new = %d)" % (last_update, percentage))
+    # FIXME: log a warning here, see #1033
+#   if last_update > percentage:
+#       raise ValueError("Build percentage should increase monotonically " \
+#                        "(old = %d, new = %d)" % (last_update, percentage))
 
     # This assumes that no message of type 'ganeti-create-progress' is going to
     # arrive once OP_INSTANCE_CREATE has succeeded for a Ganeti instance and

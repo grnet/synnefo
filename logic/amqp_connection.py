@@ -39,6 +39,9 @@ _logger = log.get_logger("amqplib")
 
 def _connect():
     global _conn, _chan
+    # Force the _conn object to re-initialize
+    _conn = None
+    retry = 0
     while _conn == None:
         try:
             _conn = amqp.Connection(host=settings.RABBIT_HOST,
@@ -46,7 +49,12 @@ def _connect():
                                    password=settings.RABBIT_PASSWORD,
                                    virtual_host=settings.RABBIT_VHOST)
         except socket.error:
-            time.sleep(1)
+            retry += 1
+            if retry < 5 :
+                _logger.exception("Cannot establish connection to AMQP. Retrying...")
+                time.sleep(1)
+            else:
+                raise AMQPError("Queue error")
     _chan = _conn.channel()
 
 
@@ -85,7 +93,7 @@ def send(payload, exchange, key):
             if _conn is None:
                _connect()
             else:
-                _logger.exception('Caught unexpected exception (msg: %s)'%msg)
+                _logger.exception('Caught unexpected exception (msg: %s)' % msg)
                 raise AMQPError("Error sending message to exchange %s with \
                                 key %s.Payload: %s. Error was: %s",
                                 (exchange, key, payload, e.message))
@@ -94,7 +102,5 @@ def send(payload, exchange, key):
 def __init__():
     _connect()
 
-
 class AMQPError(Exception):
-    def __init__(self, msg):
-        self.message = msg
+    pass

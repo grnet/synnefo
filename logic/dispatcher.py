@@ -54,6 +54,8 @@ import time
 import socket
 from daemon import daemon
 
+import traceback
+
 # Take care of differences between python-daemon versions.
 try:
     from daemon import pidfile
@@ -68,6 +70,7 @@ QUEUES = []
 # Queue bindings to exchanges
 BINDINGS = []
 
+
 class Dispatcher:
 
     logger = None
@@ -75,8 +78,8 @@ class Dispatcher:
     debug = False
     clienttags = []
 
-    def __init__(self, debug = False):
-        
+    def __init__(self, debug=False):
+
         # Initialize logger
         self.logger = log.get_logger('synnefo.dispatcher')
 
@@ -117,7 +120,9 @@ class Dispatcher:
                                        password=settings.RABBIT_PASSWORD,
                                        virtual_host=settings.RABBIT_VHOST)
             except socket.error:
-                time.sleep(1)
+                self.logger.error("Failed to connect to %s, retrying in 10s",
+                                  settings.RABBIT_HOST)
+                time.sleep(10)
 
         self.logger.info("Connection succesful, opening channel")
         self.chan = conn.channel()
@@ -169,11 +174,15 @@ def _init_queues():
               QUEUE_GANETI_BUILD_PROGR)
 
     # notifications of type "ganeti-op-status"
-    DB_HANDLER_KEY_OP ='ganeti.%s.event.op' % prefix
+    DB_HANDLER_KEY_OP = 'ganeti.%s.event.op' % prefix
     # notifications of type "ganeti-net-status"
-    DB_HANDLER_KEY_NET ='ganeti.%s.event.net' % prefix
+    DB_HANDLER_KEY_NET = 'ganeti.%s.event.net' % prefix
     # notifications of type "ganeti-create-progress"
     BUILD_MONITOR_HANDLER = 'ganeti.%s.event.progress' % prefix
+    # email
+    EMAIL_HANDLER = 'logic.%s.email.*' % prefix
+    # reconciliation
+    RECONC_HANDLER = 'reconciliation.%s.*' % prefix
 
     BINDINGS = [
     # Queue                   # Exchange                # RouteKey              # Handler
@@ -181,9 +190,9 @@ def _init_queues():
     (QUEUE_GANETI_EVENTS_NET, settings.EXCHANGE_GANETI, DB_HANDLER_KEY_NET,     'update_net'),
     (QUEUE_GANETI_BUILD_PROGR,settings.EXCHANGE_GANETI, BUILD_MONITOR_HANDLER,  'update_build_progress'),
     (QUEUE_CRON_CREDITS,      settings.EXCHANGE_CRON,   '*.credits.*',          'update_credits'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_API,    '*.email.*',            'send_email'),
-    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   '*.email.*',            'send_email'),
-    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   'reconciliation.*',     'trigger_status_update'),
+    (QUEUE_EMAIL,             settings.EXCHANGE_API,    EMAIL_HANDLER,          'send_email'),
+    (QUEUE_EMAIL,             settings.EXCHANGE_CRON,   EMAIL_HANDLER,          'send_email'),
+    (QUEUE_RECONC,            settings.EXCHANGE_CRON,   RECONC_HANDLER,         'trigger_status_update'),
     ]
 
     if settings.DEBUG is True:
@@ -197,15 +206,17 @@ def _init_queues():
 
 
 def _exit_handler(signum, frame):
-    """"Catch exit signal in children processes."""
-    print "%d: Caught signal %d, will raise SystemExit" % (os.getpid(), signum)
+    """"Catch exit signal in children processes"""
+    global logger
+    logger.info("Caught signal %d, will raise SystemExit", signum)
     raise SystemExit
 
 
 def _parent_handler(signum, frame):
     """"Catch exit signal in parent process and forward it to children."""
-    global children
-    print "Caught signal %d, sending kill signal to children" % signum
+    global children, logger
+    logger.info("Caught signal %d, sending SIGTERM to children %s",
+                signum, children)
     [os.kill(pid, SIGTERM) for pid in children]
 
 
@@ -214,7 +225,7 @@ def child(cmdline):
 
     # Cmd line argument parsing
     (opts, args) = parse_arguments(cmdline)
-    disp = Dispatcher(debug = opts.debug)
+    disp = Dispatcher(debug=opts.debug)
 
     # Start the event loop
     disp.wait()
@@ -245,7 +256,7 @@ def parse_arguments(args):
     return parser.parse_args(args)
 
 
-def purge_queues() :
+def purge_queues():
     """
         Delete declared queues from RabbitMQ. Use with care!
     """
@@ -317,7 +328,7 @@ def drain_queue(queue):
         print "Queue not bound to any exchange: %s" % queue
         return
 
-    chan.queue_bind(queue=queue, exchange=exch,routing_key='#')
+    chan.queue_bind(queue=queue, exchange=exch, routing_key='#')
     tag = chan.basic_consume(queue=queue, callback=callbacks.dummy_proc)
 
     print "Queue draining about to start, hit Ctrl+c when done"
@@ -356,15 +367,62 @@ def get_user_confirmation():
 
 
 def debug_mode():
-    disp = Dispatcher(debug = True)
+    disp = Dispatcher(debug=True)
     signal(SIGINT, _exit_handler)
     signal(SIGTERM, _exit_handler)
 
     disp.wait()
 
 
-def main():
+def daemon_mode(opts):
     global children, logger
+
+    # Create pidfile,
+    # take care of differences between python-daemon versions
+    try:
+        pidf = pidfile.TimeoutPIDLockFile(opts.pid_file, 10)
+    except:
+        pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+
+    pidf.acquire()
+
+    logger.info("Became a daemon")
+
+    # Fork workers
+    children = []
+
+    i = 0
+    while i < opts.workers:
+        newpid = os.fork()
+
+        if newpid == 0:
+            signal(SIGINT, _exit_handler)
+            signal(SIGTERM, _exit_handler)
+            child(sys.argv[1:])
+            sys.exit(1)
+        else:
+            pids = (os.getpid(), newpid)
+            logger.debug("%d, forked child: %d" % pids)
+            children.append(pids[1])
+        i += 1
+
+    # Catch signals to ensure graceful shutdown
+    signal(SIGINT, _parent_handler)
+    signal(SIGTERM, _parent_handler)
+
+    # Wait for all children processes to die, one by one
+    try:
+        for pid in children:
+            try:
+                os.waitpid(pid, 0)
+            except Exception:
+                pass
+    finally:
+        pidf.release()
+
+
+def main():
+    global logger
     (opts, args) = parse_arguments(sys.argv[1:])
 
     logger = log.get_logger("synnefo.dispatcher")
@@ -388,58 +446,36 @@ def main():
 
     # Debug mode, process messages without spawning workers
     if opts.debug:
+        log.console_output(logger)
         debug_mode()
         return
 
-    # Become a daemon
+    # Redirect stdout and stderr to the fileno of the first
+    # file-based handler for this logger
+    stdout_stderr_handler = None
+    files_preserve = None
+    for handler in logger.handlers:
+        if hasattr(handler, 'stream') and hasattr(handler.stream, 'fileno'):
+            stdout_stderr_handler = handler.stream
+            files_preserve = [handler.stream]
+            break
+
     daemon_context = daemon.DaemonContext(
-        stdout=sys.stdout,
-        stderr=sys.stderr,
+        stdout=stdout_stderr_handler,
+        stderr=stdout_stderr_handler,
+        files_preserve=files_preserve,
         umask=022)
 
     daemon_context.open()
 
-    # Create pidfile. Take care of differences between python-daemon versions.
+    # Catch every exception, make sure it gets logged properly
     try:
-        pidf = pidfile.TimeoutPIDLockFile(opts.pid_file, 10)
-    except:
-        pidf = pidlockfile.TimeoutPIDLockFile(opts.pid_file, 10)
+        daemon_mode(opts)
+    except Exception:
+        exc = "".join(traceback.format_exception(*sys.exc_info()))
+        logger.critical(exc)
+        raise
 
-    pidf.acquire()
-
-    logger.info("Became a daemon")
-
-    # Fork workers
-    children = []
-
-    i = 0
-    while i < opts.workers:
-        newpid = os.fork()
-
-        if newpid == 0:
-            signal(SIGINT,  _exit_handler)
-            signal(SIGTERM, _exit_handler)
-            child(sys.argv[1:])
-            sys.exit(1)
-        else:
-            pids = (os.getpid(), newpid)
-            logger.debug("%d, forked child: %d" % pids)
-            children.append(pids[1])
-        i += 1
-
-    # Catch signals to ensure graceful shutdown
-    signal(SIGINT,  _parent_handler)
-    signal(SIGTERM, _parent_handler)
-
-    # Wait for all children processes to die, one by one
-    try :
-        for pid in children:
-            try:
-                os.waitpid(pid, 0)
-            except Exception:
-                pass
-    finally:
-        pidf.release()
 
 if __name__ == "__main__":
     sys.exit(main())

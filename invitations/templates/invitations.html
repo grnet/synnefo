@@ -10,10 +10,12 @@
     {% csrf_token %}
     
     {% if errors %}
-        <div id="errors">
+    <div id="errors">
+        <p>{% trans "Invite error(s) occured" %}</p>
+
         <ul>
         {% for error in errors %}
-            <li>{{ error }}</li>
+            <li>- {{ error }}</li>
         {% endfor %}
         </ul>
         </div>
@@ -33,7 +35,11 @@
         </span>
         </div>
     </div>
-    <p><input class="submit" type="submit" value="{% trans "Send invitations" %}" /></p>
+    
+    <p>
+    <input class="submit" type="submit" value="{% trans "Send invitations" %}" />
+    <img src="/static/progress-tiny.gif" class="sending" />
+    </p>
 </form>
 {% else %}
 
@@ -47,15 +53,27 @@ You have no invitations left in your account.
 {% endif %}
 
 <div id="invsent">
-
+    
     <h3 class="clearfix">{% trans "Sent invitations" %}
-        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span></h3>
+        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
+        <span>(<img src="/static/resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
+    </h3>
+
+    <div class="messages">
+        <div class="message errormsg"></div>
+        <div class="message success"></div>
+    </div>
+    
     <div>
         <ul>
         {% for inv in invitations %}
         <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
                 {% if inv.accepted %}
-                <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accpeted" %}">
+                <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}">
+                {% else %}
+                    <span class="resend-invitation" id="inv-{{ inv.id }}">
+                        <img src="/static/resend.png" alt="{% trans "Resend invitation" %}" class="resend">
+                    </span>
                 {% endif %}
                 <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
             </li>

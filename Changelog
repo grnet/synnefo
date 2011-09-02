@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2011-08-29, v0.5.5
+
+FIXES:
+    Logic:
+        * Bugfixes, reconnect to AMQP properly when connection drops,
+          added more DEBUG- and INFO-level logging messages.
+
 
 2011-07-27, v0.5.4
 

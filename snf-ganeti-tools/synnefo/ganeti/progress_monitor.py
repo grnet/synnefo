@@ -82,8 +82,7 @@ class AMQPClient(object):
 
         if self.conn:
             sys.stderr.write("Connection succesful, opening channel\n")
-
-        self.chan = self.conn.channel()
+            self.chan = self.conn.channel()
 
     def send_message(self, msg):
         sys.stderr.write("Delivering msg with key=%s:\n%s\n" %

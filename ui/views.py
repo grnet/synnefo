@@ -42,7 +42,7 @@ from django.shortcuts import render_to_response
 from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
 
-from synnefo.logic.email_send import send_async
+from django.core.mail import send_mail
 
 from django.http import Http404
 
@@ -240,13 +240,8 @@ def feedback_submit(request):
     if settings.DEBUG:
         print mail_subject, mail_content
 
-    for email in FEEDBACK_CONTACTS:
-        send_async(
-                frm = FEEDBACK_EMAIL_FROM,
-                to = "%s <%s>" % (email[0], email[1]),
-                subject = mail_subject,
-                body = mail_content
-        )
+    send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
+            dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 
     return HttpResponse("ok");
 

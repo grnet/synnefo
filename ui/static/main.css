@@ -3918,10 +3918,31 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-top: 5px;
 }
 
+.invitations #errors p {
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.invitations #errors li {
+    font-size: 0.85em;
+    color: #800000;
+}
+
 .invitations #errors {
-    font-size: 75%;
+    font-size: 100%;
     color: #f00;
     margin-bottom: 20px;
+}
+
+#invsent .message {
+    font-size: 0.9em;
+    padding: 5px;
+    margin-top: 10px;
+    color: #5CAD54;
+}
+
+#invsent .errormsg {
+    color: #AE2B34;
 }
 
 #add-name-container {
@@ -3997,6 +4018,10 @@ div.state .shutdown, tbody.machines .shutdown {
 #invsent li img {
     margin-left: -20px;
     margin-top: 1px;
+}
+
+#invsent li img.resend {
+    cursor: pointer;
 }
 
 .invitations #field_email_name {

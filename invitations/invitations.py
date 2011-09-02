@@ -126,7 +126,7 @@ def validate_name(name):
 def invitations_for_user(request):
     invitations = []
 
-    for inv in Invitations.objects.filter(source=request.user):
+    for inv in Invitations.objects.filter(source=request.user).order_by("-id"):
         invitation = {}
 
         invitation['sourcename'] = inv.source.realname

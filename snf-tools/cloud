@@ -33,17 +33,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from httplib import HTTPConnection
+from httplib import HTTPConnection, HTTPSConnection
 from optparse import OptionParser
 from os.path import basename
 from sys import argv, exit
+from urlparse import urlparse
 
 import json
 
-DEFAULT_HOST = '127.0.0.1:8000'
-DEFAULT_API = 'v1.1'
 
-TOKEN = '46e427d657b20defe352804f0eb6f8a2'
+DEFAULT_API_URL = 'http://127.0.0.1:8000/api/v1.1'
+DEFAULT_TOKEN = '46e427d657b20defe352804f0eb6f8a2'
 
 MARGIN = 14
 
@@ -84,11 +84,20 @@ def print_dict(d, show_empty=True):
 class Command(object):
     def __init__(self, argv):
         parser = OptionParser()
-        parser.add_option('--host', dest='host', metavar='HOST', default=DEFAULT_HOST,
-                            help='use server HOST')
-        parser.add_option('--api', dest='api', metavar='API', default=DEFAULT_API,
+        parser.add_option('--apiurl',
+                            dest='apiurl',
+                            metavar='URL',
+                            default=DEFAULT_API_URL,
                             help='use api API')
-        parser.add_option('-v', action='store_true', dest='verbose', default=False,
+        parser.add_option('--token',
+                            dest='token',
+                            metavar='TOKEN',
+                            default=DEFAULT_TOKEN,
+                            help='use user token TOKEN')
+        parser.add_option('-v',
+                            action='store_true',
+                            dest='verbose',
+                            default=False,
                             help='use verbose output')
         self.add_options(parser)
         options, args = parser.parse_args(argv)
@@ -109,14 +118,18 @@ class Command(object):
         pass
     
     def http_cmd(self, method, path, body=None, expected_status=200):
-        conn = HTTPConnection(self.host)
+        p = urlparse(self.apiurl)
+        if p.scheme == 'https':
+            conn = HTTPSConnection(p.netloc)
+        else:
+            conn = HTTPConnection(p.netloc)
 
         kwargs = {}
-        kwargs['headers'] = {'X-Auth-Token': TOKEN}
+        kwargs['headers'] = {'X-Auth-Token': self.token}
         if body:
             kwargs['headers']['Content-Type'] = 'application/json'
             kwargs['body'] = body
-        conn.request(method, path, **kwargs)
+        conn.request(method, p.path + path, **kwargs)
 
         resp = conn.getresponse()
         if self.verbose:
@@ -174,10 +187,7 @@ class ListServers(Command):
                             help='include empty values')
     
     def execute(self):
-        path = '/api/%s/servers' % self.api
-        if self.detail:
-            path += '/detail'
-
+        path = '/servers/detail' if self.detail else '/servers'
         reply = self.http_get(path)
 
         for server in reply['servers']['values']:
@@ -201,7 +211,7 @@ class GetServerDetails(Command):
                             help='include empty values')
     
     def execute(self, server_id):
-        path = '/api/%s/servers/%d' % (self.api, int(server_id))
+        path = '/servers/%d' % int(server_id)
         reply = self.http_get(path)
         server = reply['server']
         server.pop('id')
@@ -220,10 +230,12 @@ class CreateServer(Command):
                             help='use image IMAGE_ID')
     
     def execute(self, name):
-        path = '/api/%s/servers' % self.api
-        server = {'name': name, 'flavorRef': self.flavor, 'imageRef': self.image}
+        server = {
+            'name': name,
+            'flavorRef': self.flavor,
+            'imageRef': self.image}
         body = json.dumps({'server': server})
-        reply = self.http_post(path, body)
+        reply = self.http_post('/servers', body)
         server = reply['server']
         print_dict(server)
 
@@ -234,7 +246,7 @@ class UpdateServerName(Command):
     syntax = '<server id> <new name>'
     
     def execute(self, server_id, name):
-        path = '/api/%s/servers/%d' % (self.api, int(server_id))
+        path = '/servers/%d' % int(server_id)
         body = json.dumps({'server': {'name': name}})
         self.http_put(path, body)
 
@@ -245,7 +257,7 @@ class DeleteServer(Command):
     syntax = '<server id>'
     
     def execute(self, server_id):
-        path = '/api/%s/servers/%d' % (self.api, int(server_id))
+        path = '/servers/%d' % int(server_id)
         self.http_delete(path)
 
 
@@ -259,7 +271,7 @@ class RebootServer(Command):
                             help='perform a hard reboot')
     
     def execute(self, server_id):
-        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        path = '/servers/%d/action' % int(server_id)
         type = 'HARD' if self.hard else 'SOFT'
         body = json.dumps({'reboot': {'type': type}})
         self.http_post(path, body)
@@ -271,7 +283,7 @@ class StartServer(Command):
     syntax = '<server id>'
     
     def execute(self, server_id):
-        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'start': {}})
         self.http_post(path, body)
 
@@ -282,7 +294,7 @@ class StartServer(Command):
     syntax = '<server id>'
     
     def execute(self, server_id):
-        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'shutdown': {}})
         self.http_post(path, body)
 
@@ -293,7 +305,7 @@ class ServerConsole(Command):
     syntax = '<server id>'
     
     def execute(self, server_id):
-        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'console': {'type': 'vnc'}})
         reply = self.http_cmd('POST', path, body, 200)
         print_dict(reply['console'])
@@ -305,7 +317,7 @@ class SetFirewallProfile(Command):
     syntax = '<server id> <profile>'
     
     def execute(self, server_id, profile):
-        path = '/api/%s/servers/%d/action' % (self.api, int(server_id))
+        path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'firewallProfile': {'profile': profile}})
         self.http_cmd('POST', path, body, 202)
 
@@ -316,7 +328,7 @@ class ListAddresses(Command):
     syntax = '<server id> [network]'
     
     def execute(self, server_id, network=None):
-        path = '/api/%s/servers/%d/ips' % (self.api, int(server_id))
+        path = '/servers/%d/ips' % int(server_id)
         if network:
             path += '/%s' % network
         reply = self.http_get(path)
@@ -334,9 +346,7 @@ class ListFlavors(Command):
                             help='show detailed output')
     
     def execute(self):
-        path = '/api/%s/flavors' % self.api
-        if self.detail:
-            path += '/detail'
+        path = '/flavors/detail' if self.detail else '/flavors'
         reply = self.http_get(path)
         
         for flavor in reply['flavors']['values']:
@@ -352,7 +362,7 @@ class GetFlavorDetails(Command):
     syntax = '<flavor id>'
     
     def execute(self, flavor_id):
-        path = '/api/%s/flavors/%d' % (self.api, int(flavor_id))
+        path = '/flavors/%d' % int(flavor_id)
         reply = self.http_get(path)
         
         flavor = reply['flavor']
@@ -371,9 +381,7 @@ class ListImages(Command):
                             help='show detailed output')
     
     def execute(self):
-        path = '/api/%s/images' % self.api
-        if self.detail:
-            path += '/detail'
+        path = '/images/detail' if self.detail else '/images'
         reply = self.http_get(path)
         
         for image in reply['images']['values']:
@@ -393,7 +401,7 @@ class GetImageDetails(Command):
     syntax = '<image id>'
     
     def execute(self, image_id):
-        path = '/api/%s/images/%d' % (self.api, int(image_id))
+        path = '/images/%d' % int(image_id)
         reply = self.http_get(path)
         image = reply['image']
         image.pop('id')
@@ -406,10 +414,9 @@ class CreateImage(Command):
     syntax = '<server id> <image name>'
     
     def execute(self, server_id, name):
-        path = '/api/%s/images' % self.api
         image = {'name': name, 'serverRef': int(server_id)}
         body = json.dumps({'image': image})
-        reply = self.http_post(path, body)
+        reply = self.http_post('/images', body)
         print_dict(reply['image'])
 
 @command_name('deleteimg')
@@ -418,7 +425,7 @@ class DeleteImage(Command):
     syntax = '<image id>'
     
     def execute(self, image_id):
-        path = '/api/%s/images/%d' % (self.api, int(image_id))
+        path = '/images/%d' % int(image_id)
         self.http_delete(path)
 
 @command_name('lsmeta')
@@ -427,7 +434,7 @@ class ListServerMeta(Command):
     syntax = '<server id> [key]'
 
     def execute(self, server_id, key=None):
-        path = '/api/%s/servers/%d/meta' % (self.api, int(server_id))
+        path = '/servers/%d/meta' % int(server_id)
         if key:
             path += '/' + key
         reply = self.http_get(path)
@@ -442,7 +449,7 @@ class UpdateServerMeta(Command):
     syntax = '<server id> <key> <val>'
 
     def execute(self, server_id, key, val):
-        path = '/api/%s/servers/%d/meta' % (self.api, int(server_id))
+        path = '/servers/%d/meta' % int(server_id)
         metadata = {key: val}
         body = json.dumps({'metadata': metadata})
         reply = self.http_post(path, body, expected_status=201)
@@ -454,7 +461,7 @@ class CreateServerMeta(Command):
     syntax = '<server id> <key> <val>'
 
     def execute(self, server_id, key, val):
-        path = '/api/%s/servers/%d/meta/%s' % (self.api, int(server_id), key)
+        path = '/servers/%d/meta/%s' % (int(server_id), key)
         meta = {key: val}
         body = json.dumps({'meta': meta})
         reply = self.http_put(path, body, expected_status=201)
@@ -466,7 +473,7 @@ class DeleteServerMeta(Command):
     syntax = '<server id> <key>'
 
     def execute(self, server_id, key):
-        path = '/api/%s/servers/%d/meta/%s' % (self.api, int(server_id), key)
+        path = '/servers/%d/meta/%s' % (int(server_id), key)
         reply = self.http_delete(path)
 
 @command_name('lsimgmeta')
@@ -475,7 +482,7 @@ class ListImageMeta(Command):
     syntax = '<image id> [key]'
 
     def execute(self, image_id, key=None):
-        path = '/api/%s/images/%d/meta' % (self.api, int(image_id))
+        path = '/images/%d/meta' % int(image_id)
         if key:
             path += '/' + key
         reply = self.http_get(path)
@@ -490,7 +497,7 @@ class UpdateImageMeta(Command):
     syntax = '<image id> <key> <val>'
 
     def execute(self, image_id, key, val):
-        path = '/api/%s/images/%d/meta' % (self.api, int(image_id))
+        path = '/images/%d/meta' % int(image_id)
         metadata = {key: val}
         body = json.dumps({'metadata': metadata})
         reply = self.http_post(path, body, expected_status=201)
@@ -502,7 +509,7 @@ class CreateImageMeta(Command):
     syntax = '<image id> <key> <val>'
 
     def execute(self, image_id, key, val):
-        path = '/api/%s/images/%d/meta/%s' % (self.api, int(image_id), key)
+        path = '/images/%d/meta/%s' % (int(image_id), key)
         meta = {key: val}
         body = json.dumps({'meta': meta})
         reply = self.http_put(path, body, expected_status=201)
@@ -514,7 +521,7 @@ class DeleteImageMeta(Command):
     syntax = '<image id> <key>'
 
     def execute(self, image_id, key):
-        path = '/api/%s/images/%d/meta/%s' % (self.api, int(image_id), key)
+        path = '/images/%d/meta/%s' % (int(image_id), key)
         reply = self.http_delete(path)
 
 
@@ -527,9 +534,7 @@ class ListNetworks(Command):
                             help='show detailed output')
 
     def execute(self):
-        path = '/api/%s/networks' % self.api
-        if self.detail:
-            path += '/detail'
+        path = '/networks/detail' if self.detail else '/networks'
         reply = self.http_get(path)
 
         for network in reply['networks']['values']:
@@ -549,10 +554,9 @@ class CreateNetwork(Command):
     syntax = '<network name>'
 
     def execute(self, name):
-        path = '/api/%s/networks' % self.api
         network = {'name': name}
         body = json.dumps({'network': network})
-        reply = self.http_post(path, body)
+        reply = self.http_post('/networks', body)
         print_dict(reply['network'])
 
 
@@ -562,7 +566,7 @@ class GetNetworkDetails(Command):
     syntax = '<network id>'
 
     def execute(self, network_id):
-        path = '/api/%s/networks/%d' % (self.api, int(network_id))
+        path = '/networks/%d' % int(network_id)
         reply = self.http_get(path)
         net = reply['network']
         name = net.pop('id')
@@ -575,7 +579,7 @@ class UpdateNetworkName(Command):
     syntax = '<network_id> <new name>'
 
     def execute(self, network_id, name):
-        path = '/api/%s/networks/%d' % (self.api, int(network_id))
+        path = '/networks/%d' % int(network_id)
         body = json.dumps({'network': {'name': name}})
         self.http_put(path, body)
 
@@ -586,7 +590,7 @@ class DeleteNetwork(Command):
     syntax = '<network id>'
 
     def execute(self, network_id):
-        path = '/api/%s/networks/%d' % (self.api, int(network_id))
+        path = '/networks/%d' % int(network_id)
         self.http_delete(path)
 
 
@@ -596,7 +600,7 @@ class AddNetwork(Command):
     syntax = '<server id> <network id>'
 
     def execute(self, server_id, network_id):
-        path = '/api/%s/networks/%d/action' % (self.api, int(network_id))
+        path = '/networks/%d/action' % int(network_id)
         body = json.dumps({'add': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 
@@ -607,7 +611,7 @@ class RemoveNetwork(Command):
     syntax = '<server id> <network id>'
 
     def execute(self, server_id, network_id):
-        path = '/api/%s/networks/%s/action' % (self.api, int(network_id))
+        path = '/networks/%s/action' % int(network_id)
         body = json.dumps({'remove': {'serverRef': server_id}})
         self.http_post(path, body, expected_status=202)
 
@@ -617,7 +621,7 @@ class ServerStats(Command):
     syntax = '<server id>'
 
     def execute(self, server_id):
-        path = '/api/%s/servers/%d/stats' % (self.api, int(server_id))
+        path = '/servers/%d/stats' % int(server_id)
         reply = self.http_get(path)
         stats = reply['stats']
         stats.pop('serverRef')

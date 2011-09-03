@@ -66,7 +66,7 @@ class AMQPClient(object):
         self.conn = None
         self.chan = None
         self.routekey = routekey
-  
+
     def open_channel(self):
         if not self.conn:
             try:
@@ -185,10 +185,10 @@ def main():
     if pid == 0:
         # In child process:
 
-        # Make sure we die we the parent and are not left behind
+        # Make sure we die with the parent and are not left behind
         # WARNING: This uses the prctl(2) call and is Linux-specific.
         prctl.set_pdeathsig(signal.SIGHUP)
-        
+
         # exec command specified in arguments,
         # searching the $PATH, keeping all environment
         os.execvpe(args[0], args, os.environ)
@@ -224,15 +224,15 @@ def main():
         msg = dict(type="ganeti-create-progress",
                    instance=opts.instance_name)
         if opts.read_bytes:
-            msg['rprogress'] =  float("%2.2f" %
-                                      (rchar * 100.0 / opts.read_bytes))
+            msg['rprogress'] = float("%2.2f" %
+                                     (rchar * 100.0 / opts.read_bytes))
         if opts.write_bytes:
-            msg['wprogress'] =  float("%2.2f" %
-                                      (wchar * 100.0 / opts.write_bytes))
+            msg['wprogress'] = float("%2.2f" %
+                                     (wchar * 100.0 / opts.write_bytes))
 
         # and send it over AMQP
         amqp.send_message(msg)
-    
+
         # Sleep for a while
         time.sleep(3)
 

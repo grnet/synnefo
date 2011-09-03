@@ -69,6 +69,7 @@ def demux(request):
     else:
         return method_not_allowed(request)
 
+
 def server_demux(request, server_id):
     if request.method == 'GET':
         return get_server_details(request, server_id)
@@ -79,6 +80,7 @@ def server_demux(request, server_id):
     else:
         return method_not_allowed(request)
 
+
 def metadata_demux(request, server_id):
     if request.method == 'GET':
         return list_metadata(request, server_id)
@@ -86,6 +88,7 @@ def metadata_demux(request, server_id):
         return update_metadata(request, server_id)
     else:
         return method_not_allowed(request)
+
 
 def metadata_item_demux(request, server_id, key):
     if request.method == 'GET':
@@ -112,9 +115,11 @@ def nic_to_dict(nic):
             d['values'].append({'version': 6, 'addr': nic.ipv6})
     return d
 
+
 def metadata_to_dict(vm):
     vm_meta = vm.virtualmachinemetadata_set.all()
     return dict((meta.meta_key, meta.meta_value) for meta in vm_meta)
+
 
 def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
@@ -178,6 +183,7 @@ def list_servers(request, detail=False):
 
     return HttpResponse(data, status=200)
 
+
 @util.api_method('POST')
 def create_server(request):
     # Normal Response Code: 202
@@ -238,6 +244,7 @@ def create_server(request):
     server['adminPass'] = password
     return render_server(request, server, status=202)
 
+
 @util.api_method('GET')
 def get_server_details(request, server_id):
     # Normal Response Codes: 200, 203
@@ -251,6 +258,7 @@ def get_server_details(request, server_id):
     vm = util.get_vm(server_id, request.user)
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
+
 
 @util.api_method('PUT')
 def update_server_name(request, server_id):
@@ -277,6 +285,7 @@ def update_server_name(request, server_id):
 
     return HttpResponse(status=204)
 
+
 @util.api_method('DELETE')
 def delete_server(request, server_id):
     # Normal Response Codes: 204
@@ -291,6 +300,7 @@ def delete_server(request, server_id):
     vm = util.get_vm(server_id, request.user)
     delete_instance(vm)
     return HttpResponse(status=204)
+
 
 @util.api_method('POST')
 def server_action(request, server_id):
@@ -310,6 +320,7 @@ def server_action(request, server_id):
     except AssertionError:
         raise faults.BadRequest("Invalid argument")
 
+
 @util.api_method('GET')
 def list_addresses(request, server_id):
     # Normal Response Codes: 200, 203
@@ -328,6 +339,7 @@ def list_addresses(request, server_id):
         data = json.dumps({'addresses': {'values': addresses}})
 
     return HttpResponse(data, status=200)
+
 
 @util.api_method('GET')
 def list_addresses_by_network(request, server_id, network_id):
@@ -352,6 +364,7 @@ def list_addresses_by_network(request, server_id, network_id):
 
     return HttpResponse(data, status=200)
 
+
 @util.api_method('GET')
 def list_metadata(request, server_id):
     # Normal Response Codes: 200, 203
@@ -364,6 +377,7 @@ def list_metadata(request, server_id):
     vm = util.get_vm(server_id, request.user)
     metadata = metadata_to_dict(vm)
     return util.render_metadata(request, metadata, use_values=True, status=200)
+
 
 @util.api_method('POST')
 def update_metadata(request, server_id):
@@ -400,6 +414,7 @@ def update_metadata(request, server_id):
     
     return util.render_metadata(request, updated, status=201)
 
+
 @util.api_method('GET')
 def get_metadata_item(request, server_id, key):
     # Normal Response Codes: 200, 203
@@ -413,6 +428,7 @@ def get_metadata_item(request, server_id, key):
     vm = util.get_vm(server_id, request.user)
     meta = util.get_vm_meta(vm, key)
     return util.render_meta(request, meta, status=200)
+
 
 @util.api_method('PUT')
 def create_metadata_item(request, server_id, key):
@@ -445,6 +461,7 @@ def create_metadata_item(request, server_id, key):
     vm.save()
     return util.render_meta(request, meta, status=201)
 
+
 @util.api_method('DELETE')
 def delete_metadata_item(request, server_id, key):
     # Normal Response Code: 204
@@ -462,6 +479,7 @@ def delete_metadata_item(request, server_id, key):
     meta.delete()
     vm.save()
     return HttpResponse(status=204)
+
 
 @util.api_method('GET')
 def server_stats(request, server_id):

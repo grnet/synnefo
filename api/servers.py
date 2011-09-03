@@ -222,7 +222,7 @@ def create_server(request):
         create_instance(vm, flavor, image, password)
     except GanetiApiError:
         vm.delete()
-        raise faults.ServiceUnavailable("Could not create server")
+        raise
 
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(

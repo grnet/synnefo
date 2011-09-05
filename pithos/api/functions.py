@@ -689,14 +689,16 @@ def object_write(request, v_account, v_container, v_object):
                 src_container, src_name = split_container_object_string(move_from)
             except ValueError:
                 raise BadRequest('Invalid X-Move-From header')
-            copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=True)
+            version_id = copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=True)
         else:
             try:
                 src_container, src_name = split_container_object_string(copy_from)
             except ValueError:
                 raise BadRequest('Invalid X-Copy-From header')
-            copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
-        return HttpResponse(status=201)
+            version_id = copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
+        response = HttpResponse(status=201)
+        response['X-Object-Version'] = version_id
+        return response
     
     meta, permissions, public = get_object_headers(request)
     content_length = -1
@@ -751,7 +753,7 @@ def object_write(request, v_account, v_container, v_object):
             raise UnprocessableEntity('Object ETag does not match')
     
     try:
-        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True, permissions)
+        version_id = backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True, permissions)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except IndexError, e:
@@ -772,6 +774,7 @@ def object_write(request, v_account, v_container, v_object):
     
     response = HttpResponse(status=201)
     response['ETag'] = meta['hash']
+    response['X-Object-Version'] = version_id
     return response
 
 @api_method('POST')
@@ -800,7 +803,7 @@ def object_write_form(request, v_account, v_container, v_object):
     meta['hash'] = md5.hexdigest().lower()
     
     try:
-        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True)
+        version_id = backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, True)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -808,6 +811,7 @@ def object_write_form(request, v_account, v_container, v_object):
     
     response = HttpResponse(status=201)
     response['ETag'] = meta['hash']
+    response['X-Object-Version'] = version_id
     return response
 
 @api_method('COPY')
@@ -837,8 +841,10 @@ def object_copy(request, v_account, v_container, v_object):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
-    copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=False)
-    return HttpResponse(status=201)
+    version_id = copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=False)
+    response = HttpResponse(status=201)
+    response['X-Object-Version'] = version_id
+    return response
 
 @api_method('MOVE')
 def object_move(request, v_account, v_container, v_object):
@@ -866,8 +872,10 @@ def object_move(request, v_account, v_container, v_object):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
-    copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=True)
-    return HttpResponse(status=201)
+    version_id = copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=True)
+    response = HttpResponse(status=201)
+    response['X-Object-Version'] = version_id
+    return response
 
 @api_method('POST')
 def object_update(request, v_account, v_container, v_object):
@@ -925,12 +933,15 @@ def object_update(request, v_account, v_container, v_object):
             except NameError:
                 raise ItemNotFound('Object does not exist')
         try:
-            backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
+            version_id = backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Object does not exist')
-        return HttpResponse(status=202)
+        
+        response = HttpResponse(status=202)
+        response['X-Object-Version'] = version_id
+        return response
     
     # Single range update. Range must be in Content-Range.
     # Based on: http://code.google.com/p/gears/wiki/ContentRangePostProposal
@@ -1042,7 +1053,7 @@ def object_update(request, v_account, v_container, v_object):
         hashmap = hashmap[:(int((size - 1) / backend.block_size) + 1)]
     meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.
     try:
-        backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, replace, permissions)
+        version_id = backend.update_object_hashmap(request.user, v_account, v_container, v_object, size, hashmap, meta, replace, permissions)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except NameError:
@@ -1061,6 +1072,7 @@ def object_update(request, v_account, v_container, v_object):
     
     response = HttpResponse(status=204)
     response['ETag'] = meta['hash']
+    response['X-Object-Version'] = version_id
     return response
 
 @api_method('DELETE')

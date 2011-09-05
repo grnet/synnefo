@@ -25,7 +25,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.6 (July 29, 2011)        Reply with Merkle hash as the ETag when updating objects.
+0.6 (Sept 05, 2011)        Reply with Merkle hash as the ETag when updating objects.
+\                          Include version id in object replace/change replies.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -725,6 +726,7 @@ Example ``format=xml`` request:
 Reply Header Name           Value
 ==========================  ===============================
 ETag                        The MD5 hash of the object (on create)
+X-Object-Version            The object's new version
 ==========================  ===============================
 
 The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separated user/group list, or a ``write=...`` comma-separated user/group list, or both separated by a semicolon (``;``). Groups are specified as ``<account>:<group>``. To publish the object, set ``X-Object-Public`` to ``true``. To unpublish, set to ``false``, or use an empty header value.
@@ -760,7 +762,13 @@ X-Object-Meta-*       Optional user defined metadata
 
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 
-No reply content/headers.
+==========================  ===============================
+Reply Header Name           Value
+==========================  ===============================
+X-Object-Version            The object's new version
+==========================  ===============================
+
+|
 
 ===========================  ==============================
 Return Code                  Description
@@ -831,6 +839,7 @@ No reply content. No reply headers if only metadata is updated.
 Reply Header Name           Value
 ==========================  ===============================
 ETag                        The new ETag of the object (data updated)
+X-Object-Version            The object's new version
 ==========================  ===============================
 
 |
@@ -859,6 +868,7 @@ This will create/override the object with the given name, as if using ``PUT``. T
 Reply Header Name           Value
 ==========================  ===============================
 ETag                        The MD5 hash of the object
+X-Object-Version            The object's new version
 ==========================  ===============================
 
 |
@@ -932,6 +942,7 @@ List of differences from the OOS API:
 * Object create via hashmap through ``PUT`` and the ``format`` parameter.
 * Object create using ``POST`` to support standard HTML forms.
 * Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``. New ETag corresponds to the Merkle hash of the object's hashmap.
+* Include new version identifier in replies for object replace/change requests.
 * Object ``MOVE`` support.
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
 * Time-variant account/container listings via the ``until`` parameter.

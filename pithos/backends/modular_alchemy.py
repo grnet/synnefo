@@ -411,7 +411,7 @@ class ModularBackend(BaseBackend):
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
         self._can_write(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
-        self._put_metadata(user, node, meta, replace)
+        return self._put_metadata(user, node, meta, replace)
     
     @backend_method
     def get_object_permissions(self, user, account, container, name):
@@ -491,6 +491,7 @@ class ModularBackend(BaseBackend):
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
         if permissions is not None:
             self.permissions.access_set(path, permissions)
+        return dest_version_id
     
     @backend_method
     def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
@@ -513,14 +514,16 @@ class ModularBackend(BaseBackend):
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
         if permissions is not None:
             self.permissions.access_set(dest_path, permissions)
+        return dest_version_id
     
     @backend_method
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
         logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
-        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
+        dest_version_id = self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
         self.delete_object(user, account, src_container, src_name)
+        return dest_version_id
     
     @backend_method
     def delete_object(self, user, account, container, name, until=None):
@@ -709,6 +712,7 @@ class ModularBackend(BaseBackend):
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
         if copy_data and src_version_id is not None:
             self._copy_data(src_version_id, dest_version_id)
+        return dest_version_id
     
     def _list_limits(self, listing, marker, limit):
         start = 0

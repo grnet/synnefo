@@ -267,9 +267,9 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')    
     try:
         if move:
-            backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions)
+            version_id = backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions)
         else:
-            backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions, src_version)
+            version_id = backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions, src_version)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except (NameError, IndexError):
@@ -285,6 +285,7 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
             raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Object does not exist')
+    return version_id
 
 def get_int_parameter(p):
     if p is not None:

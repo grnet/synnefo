@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block body %}
-<form action="/admin/flavors/create" method="post">
+<form action="{% url admin.views.flavors_create %}" method="post">
   <div class="clearfix">
     <label for="flavor-cpu">CPUs</label>
     <div class="input">

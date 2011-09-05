@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action="/admin/images/register" method="post">
+<form action="{% url admin.views.images_register %}" method="post">
   <div class="clearfix">
     <label for="image-name">Name</label>
     <div class="input">

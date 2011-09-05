@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action="/admin/flavors/{{ flavor.id }}/modify" method="post">
+<form action="{% url admin.views.flavors_modify flavor.id %}" method="post">
   <div class="clearfix">
     <label for="flavor-id">ID</label>
     <div class="input">
@@ -48,7 +48,7 @@
     <button type="submit" class="btn primary">Save Changes</button>
     <button type="reset" class="btn">Reset</button>
     &nbsp;&nbsp;
-    <a class="btn danger" href="/admin/flavors/{{ flavor.id }}/delete">Delete Flavor</a>
+    <a class="btn danger" href="{% url admin.views.flavors_delete flavor.id %}">Delete Flavor</a>
   </div>
 </form>
 

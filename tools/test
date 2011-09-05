@@ -2085,3 +2085,5 @@ o_names = ['kate.jpg',
 if __name__ == "__main__":
     if get_user() == 'test':
         unittest.main()
+    else:
+        print 'Will not run tests as any other user except \'test\' (current user: %s).' % get_user()

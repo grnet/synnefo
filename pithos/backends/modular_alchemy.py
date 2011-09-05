@@ -91,7 +91,8 @@ class ModularBackend(BaseBackend):
             raise RuntimeError("Cannot open database at '%s'" % (db,))
         
         connection_str = 'postgresql://%s:%s@%s/%s' % db_options
-        engine = create_engine(connection_str, echo=True)
+        #engine = create_engine(connection_str, echo=True)
+        engine = create_engine(connection_str)
         self.con = engine.connect()
         
         params = {'blocksize': self.block_size,
@@ -234,7 +235,9 @@ class ModularBackend(BaseBackend):
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         node = self.node.node_lookup(account)
-        return [x[0] for x in self._list_objects(node, account, '', '/', marker, limit, False, [], until)]
+        l = [x[0] for x in self._list_objects(node, account, '', '/', marker, limit, False, [], until)]
+        l.sort()
+        return l
     
     @backend_method
     def get_container_meta(self, user, account, container, until=None):
@@ -738,7 +741,9 @@ class ModularBackend(BaseBackend):
         objects = [(x[0][len(cont_prefix):], x[1]) for x in objects]
         
         start, limit = self._list_limits([x[0] for x in objects], marker, limit)
-        return objects[start:start + limit]
+        l = objects[start:start + limit]
+        l.sort()
+        return l
     
     # Policy functions.
     

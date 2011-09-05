@@ -240,7 +240,6 @@ class Node(DBWorker):
            Clears out nodes with no remaining versions.
         """
         #update statistics
-        #TODO handle before=inf
         c1 = select([self.nodes.c.node],
             self.nodes.c.parent == parent)
         where_clause = and_(self.versions.c.node.in_(c1),
@@ -275,9 +274,9 @@ class Node(DBWorker):
             and_(self.nodes.c.parent == parent,
                  select([func.count(self.versions.c.serial)],
                     self.versions.c.node == self.nodes.c.node).as_scalar() == 0))
-        r = self.conn.execute(s)
-        nodes = r.fetchall()
-        r.close()
+        rp = self.conn.execute(s)
+        nodes = [r[0] for r in rp.fetchall()]
+        rp.close()
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
         
@@ -388,6 +387,7 @@ class Node(DBWorker):
         size += presize
         
         #insert or replace
+        #TODO better upsert
         u = self.statistics.update().where(and_(self.statistics.c.node==node,
                                            self.statistics.c.cluster==cluster))
         u = u.values(population=population, size=size, mtime=mtime)
@@ -522,7 +522,7 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         props = r.fetchone()
         r.close()
-        if not props:
+        if props:
             return props
         return None
     
@@ -590,7 +590,6 @@ class Node(DBWorker):
            Othwerise, return only those specified.
         """
         
-        execute = self.execute
         if keys:
             attrs = self.attributes.alias()
             s = select([attrs.c.key, attrs.c.value])
@@ -609,8 +608,19 @@ class Node(DBWorker):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
-        values = [{'serial':serial, 'key':k, 'value':v} for k, v in items]
-        self.conn.execute(self.attributes.insert(), values).close()
+        #insert or replace
+        #TODO better upsert
+        for k, v in items:
+            s = self.attributes.update()
+            s = s.where(and_(self.attributes.c.serial == serial,
+                             self.attributes.c.key == k))
+            s = s.values(value = v)
+            rp = self.conn.execute(s)
+            rp.close()
+            if rp.rowcount == 0:
+                s = self.attributes.insert()
+                s = s.values(serial=serial, key=k, value=v)
+                self.conn.execute(s).close()
     
     def attribute_del(self, serial, keys=()):
         """Delete attributes of the version specified by serial.
@@ -676,9 +686,9 @@ class Node(DBWorker):
         if conj:
             s = s.where(or_(*conj))
         rp = self.conn.execute(s)
-        r = rp.fetchall()
+        rows = rp.fetchall()
         rp.close()
-        return [r[0] for r in self.fetchall()]
+        return [r[0] for r in rows]
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,

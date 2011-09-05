@@ -1331,10 +1331,7 @@ class ObjectCopy(BaseTestCase):
         for c in self.containers:
             self.client.create_container(c)
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
-    
-    def tearDown(self):
-        pass
-    
+        
     def test_copy(self):
         with AssertMappingInvariant(self.client.retrieve_object_metadata,
                              self.containers[0], self.obj['name']):

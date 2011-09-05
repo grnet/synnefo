@@ -27,6 +27,7 @@ Revision                   Description
 =========================  ================================
 0.6 (Sept 05, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
+\                          Change conflict (409) replies format to text.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -702,7 +703,7 @@ Request Parameter Name  Value
 format                  Optional extended request type (can be ``json``) to create the object by suppling its hashmap instead
 ======================  ===================================
 
-The request is the object's data (or part of it), except if a hashmap is provided with the ``format`` parameter.  If format is used and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts. 
+The request is the object's data (or part of it), except if a hashmap is provided with the ``format`` parameter.  If format is used and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts (in a simple text format, with one hash per line). 
 
 Hashmaps expose the underlying storage format of the object.
 
@@ -735,7 +736,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                  Description
 ===========================  ==============================
 201 (Created)                The object has been created
-409 (Conflict)               The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a conflicting sharing path will be included in the reply - in JSON format)
+409 (Conflict)               The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply - in simple text format)
 411 (Length Required)        Missing ``Content-Length`` or ``Content-Type`` in the request
 422 (Unprocessable Entity)   The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
 ===========================  ==============================
@@ -774,7 +775,7 @@ X-Object-Version            The object's new version
 Return Code                  Description
 ===========================  ==============================
 201 (Created)                The object has been created
-409 (Conflict)               There are conflicting permissions (a conflicting sharing path will be included in the reply - in JSON format)
+409 (Conflict)               There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
 ===========================  ==============================
 
 
@@ -849,7 +850,7 @@ Return Code                  Description
 ===========================  ==============================
 202 (Accepted)               The request has been accepted (not a data update)
 204 (No Content)             The request succeeded (data updated)
-409 (Conflict)               There are conflicting permissions (a conflicting sharing path will be included in the reply - in JSON format)
+409 (Conflict)               There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
 411 (Length Required)        Missing ``Content-Length`` in the request
 416 (Range Not Satisfiable)  The supplied range is invalid
 ===========================  ==============================

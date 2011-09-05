@@ -874,10 +874,10 @@ class SimpleBackend(BaseBackend):
         sql = '''select name from permissions
                     where name != ? and (name like ? or ? like name || ?)'''
         c = self.con.execute(sql, (path, path + '%', path, '%'))
-        row = c.fetchone()
-        if row:
+        rows = c.fetchall()
+        if rows:
             ae = AttributeError()
-            ae.data = row[0]
+            ae.data = rows
             raise ae
         
         # Format given permissions.

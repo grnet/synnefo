@@ -757,13 +757,13 @@ def object_write(request, v_account, v_container, v_object):
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except IndexError, e:
-        raise Conflict(json.dumps(e.data))
+        raise Conflict('\n'.join(e.data) + '\n')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict(json.dumps(e.data))
+        raise Conflict('\n'.join(e.data) + '\n')
     if public is not None:
         try:
             backend.update_object_public(request.user, v_account, v_container, v_object, public)
@@ -924,7 +924,7 @@ def object_update(request, v_account, v_container, v_object):
             except ValueError:
                 raise BadRequest('Invalid sharing header')
             except AttributeError, e:
-                raise Conflict(json.dumps(e.data))
+                raise Conflict('\n'.join(e.data) + '\n')
         if public is not None:
             try:
                 backend.update_object_public(request.user, v_account, v_container, v_object, public)
@@ -1061,7 +1061,7 @@ def object_update(request, v_account, v_container, v_object):
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict(json.dumps(e.data))
+        raise Conflict('\n'.join(e.data) + '\n')
     if public is not None:
         try:
             backend.update_object_public(request.user, v_account, v_container, v_object, public)

@@ -883,17 +883,19 @@ class Pithos_Client(OOS_Client):
         """sets a previously created object publicly accessible"""
         account = account or self.account
         path = '/%s/%s/%s' % (account, container, object)
-        headers = {'content_range':'bytes */*'}
+        headers = {}
         headers['x_object_public'] = True
-        return self.post(path, headers=headers)
+        params = {'update':None}
+        return self.post(path, headers=headers, params=params)
     
     def unpublish_object(self, container, object, account=None):
         """unpublish an object"""
         account = account or self.account
         path = '/%s/%s/%s' % (account, container, object)
-        headers = {'content_range':'bytes */*'}
+        headers = {}
         headers['x_object_public'] = False
-        return self.post(path, headers=headers)
+        params = {'update':None}
+        return self.post(path, headers=headers, params=params)
     
     def _change_obj_location(self, src_container, src_object, dst_container,
                              dst_object, remove=False,

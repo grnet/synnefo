@@ -15,6 +15,16 @@ def render(template, tab, **kwargs):
     return render_to_string(template, kwargs)
 
 
+def requires_admin(func):
+    @wraps(func)
+    def wrapper(request, *args):
+        if not request.user or request.user.type != 'ADMIN':
+            return HttpResponse('Unauthorized', status=401)
+        return func(request, *args)
+    return wrapper
+
+
+@requires_admin
 def index(request):
     stats = {}
     stats['users'] = models.SynnefoUser.objects.count()
@@ -39,11 +49,14 @@ def index(request):
     return HttpResponse(html)
 
 
+@requires_admin
 def flavors_list(request):
     flavors = models.Flavor.objects.order_by('id')
     html = render('flavors_list.html', 'flavors', flavors=flavors)
     return HttpResponse(html)
 
+
+@requires_admin
 def flavors_create(request):
     if request.method == 'GET':
         html = render('flavors_create.html', 'flavors')
@@ -56,11 +69,15 @@ def flavors_create(request):
         flavor.save()
         return redirect(flavors_info, flavor.id)
 
+
+@requires_admin
 def flavors_info(request, flavor_id):
     flavor = models.Flavor.objects.get(id=flavor_id)
     html = render('flavors_info.html', 'flavors', flavor=flavor)
     return HttpResponse(html)
 
+
+@requires_admin
 def flavors_modify(request, flavor_id):
     flavor = models.Flavor.objects.get(id=flavor_id)
     flavor.cpu = request.POST.get('cpu')
@@ -69,17 +86,22 @@ def flavors_modify(request, flavor_id):
     flavor.save()
     return redirect(flavors_info, flavor.id)
 
+
+@requires_admin
 def flavors_delete(request, flavor_id):
     flavor = models.Flavor.objects.get(id=flavor_id)
     flavor.delete()
     return redirect(flavors_list)
 
 
+@requires_admin
 def images_list(request):
     images = models.Image.objects.order_by('id')
     html = render('images_list.html', 'images', images=images)
     return HttpResponse(html)
 
+
+@requires_admin
 def images_register(request):
     if request.method == 'GET':
         html = render('images_register.html', 'images')
@@ -95,6 +117,8 @@ def images_register(request):
         image.save()
         return redirect(images_info, image.id)
 
+
+@requires_admin
 def images_info(request, image_id):
     image = models.Image.objects.get(id=image_id)
     states = [x[0] for x in models.Image.IMAGE_STATES]
@@ -112,6 +136,8 @@ def images_info(request, image_id):
                     metadata=metadata)
     return HttpResponse(html)
 
+
+@requires_admin
 def images_modify(request, image_id):
     image = models.Image.objects.get(id=image_id)
     image.name = request.POST.get('name')
@@ -135,17 +161,22 @@ def images_modify(request, image_id):
     
     return redirect(images_info, image.id)
 
+
+@requires_admin
 def servers_list(request):
     vms = models.VirtualMachine.objects.order_by('id')
     html = render('servers_list.html', 'servers', vms=vms)
     return HttpResponse(html)
 
 
+@requires_admin
 def users_list(request):
     users = models.SynnefoUser.objects.order_by('id')
     html = render('users_list.html', 'users', users=users)
     return HttpResponse(html)
 
+
+@requires_admin
 def users_invite(request):
     if request.method == 'GET':
         html = render('users_invite.html', 'users')
@@ -159,6 +190,8 @@ def users_invite(request):
         send_invitation(inv)
         return redirect(users_list)
 
+
+@requires_admin
 def users_info(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
     types = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
@@ -167,6 +200,8 @@ def users_info(request, user_id):
     html = render('users_info.html', 'users', user=user, types=types)
     return HttpResponse(html)
 
+
+@requires_admin
 def users_modify(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
     user.name = request.POST.get('name')
@@ -179,18 +214,23 @@ def users_modify(request, user_id):
     user.save()
     return redirect(users_info, user.id)
 
+
+@requires_admin
 def users_delete(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
     users.delete_user(user)
     return redirect(users_list)
 
 
+@requires_admin
 def invitations_list(request):
     invitations = models.Invitations.objects.order_by('id')
     html = render('invitations_list.html', 'invitations',
                      invitations=invitations)
     return HttpResponse(html)
 
+
+@requires_admin
 def invitations_resend(request, invitation_id):
     invitation = models.Invitations.objects.get(id=invitation_id)
     send_invitation(invitation)

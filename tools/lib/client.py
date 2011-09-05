@@ -882,7 +882,7 @@ class Pithos_Client(OOS_Client):
     def publish_object(self, container, object, account=None):
         """sets a previously created object publicly accessible"""
         account = account or self.account
-        path = '/%s/%s' % (container, object)
+        path = '/%s/%s/%s' % (account, container, object)
         headers = {'content_range':'bytes */*'}
         headers['x_object_public'] = True
         return self.post(path, headers=headers)

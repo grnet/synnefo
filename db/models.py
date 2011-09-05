@@ -41,7 +41,8 @@ class SynnefoUser(models.Model):
         ('STUDENT', 'Student'),
         ('PROFESSOR', 'Professor'),
         ('USER', 'Generic User'),
-        ('HELPDESK', 'Helpdesk User')
+        ('HELPDESK', 'Helpdesk User'),
+        ('ADMIN', 'Admin User')
     )
 
     name = models.CharField('Synnefo Username', max_length=255, default='')

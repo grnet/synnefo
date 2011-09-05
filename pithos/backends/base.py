@@ -296,7 +296,7 @@ class BaseBackend(object):
         return {}
     
     def update_object_meta(self, user, account, container, name, meta, replace=False):
-        """Update the metadata associated with the object.
+        """Update the metadata associated with the object and return the new version.
         
         Parameters:
             'meta': Dictionary with metadata to update
@@ -308,7 +308,7 @@ class BaseBackend(object):
             
             NameError: Container/object does not exist
         """
-        return
+        return ''
     
     def get_object_permissions(self, user, account, container, name):
         """Return the path from which this object gets its permissions from,
@@ -382,7 +382,7 @@ class BaseBackend(object):
         return 0, []
     
     def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
-        """Create/update an object with the specified size and partial hashes.
+        """Create/update an object with the specified size and partial hashes and return the new version.
         
         Parameters:
             'dest_meta': Dictionary with metadata to change
@@ -400,10 +400,10 @@ class BaseBackend(object):
             
             AttributeError: Can not set permissions
         """
-        return
+        return ''
     
     def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
-        """Copy an object's data and metadata.
+        """Copy an object's data and metadata and return the new version.
         
         Parameters:
             'dest_meta': Dictionary with metadata to change from source to destination
@@ -425,10 +425,10 @@ class BaseBackend(object):
             
             AttributeError: Can not set permissions
         """
-        return
+        return ''
     
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
-        """Move an object's data and metadata.
+        """Move an object's data and metadata and return the new version.
         
         Parameters:
             'dest_meta': Dictionary with metadata to change from source to destination
@@ -446,7 +446,7 @@ class BaseBackend(object):
             
             AttributeError: Can not set permissions
         """
-        return
+        return ''
     
     def delete_object(self, user, account, container, name, until=None):
         """Delete/purge an object.

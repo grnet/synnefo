@@ -446,7 +446,7 @@ class SimpleBackend(BaseBackend):
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
         self._can_write(user, account, container, name)
         path, version_id, muser, mtime, size = self._get_objectinfo(account, container, name)
-        self._put_metadata(user, path, meta, replace)
+        return self._put_metadata(user, path, meta, replace)
     
     @backend_method
     def get_object_permissions(self, user, account, container, name):
@@ -525,6 +525,7 @@ class SimpleBackend(BaseBackend):
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
             self._put_permissions(path, r, w)
+        return dest_version_id
     
     @backend_method
     def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
@@ -550,14 +551,16 @@ class SimpleBackend(BaseBackend):
             self.con.execute(sql, (dest_version_id, k, v))
         if permissions is not None:
             self._put_permissions(dest_path, r, w)
+        return dest_version_id
     
     @backend_method
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
         logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
-        self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
+        dest_version_id = self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
         self.delete_object(user, account, src_container, src_name)
+        return dest_version_id
     
     @backend_method
     def delete_object(self, user, account, container, name, until=None):
@@ -750,6 +753,7 @@ class SimpleBackend(BaseBackend):
             else:
                 sql = 'insert or replace into metadata (version_id, key, value) values (?, ?, ?)'
                 self.con.execute(sql, (dest_version_id, k, v))
+        return dest_version_id
     
     def _check_policy(self, policy):
         for k in policy.keys():

@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 from time import time
+from sqlalchemy import Table, Integer, Column, String, MetaData, ForeignKey
+from sqlalchemy.schema import Index
 
 from dbworker import DBWorker
 
@@ -99,63 +101,76 @@ class Node(DBWorker):
     
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
-        execute = self.execute
+        metadata = MetaData()
         
-        execute(""" pragma foreign_keys = on """)
+        #create nodes table
+        columns=[]
+        columns.append(Column('node', Integer, primary_key=True))
+        columns.append(Column('parent', Integer,
+                              ForeignKey('nodes.node',
+                                         ondelete='CASCADE',
+                                         onupdate='CASCADE'),
+                              autoincrement=False, default=0))
+        #columns.append(Column('path', String(2048), default='', nullable=False))
+        columns.append(Column('path', String(255), default='', nullable=False))
+        self.nodes = Table('nodes', metadata, *columns)
+        # place an index on path
+        Index('idx_nodes_path', self.nodes.c.path, unique=True)
         
-        execute(""" create table if not exists nodes
-                          ( node       integer primary key,
-                            parent     integer default 0,
-                            path       text    not null default '',
-                            foreign key (parent)
-                            references nodes(node)
-                            on update cascade
-                            on delete cascade )""")
-        execute(""" create unique index if not exists idx_nodes_path
-                    on nodes(path) """)
+        #create statistics table
+        columns=[]
+        columns.append(Column('node', Integer,
+                              ForeignKey('nodes.node',
+                                         ondelete='CASCADE',
+                                         onupdate='CASCADE'),
+                              primary_key=True))
+        columns.append(Column('population', Integer, nullable=False,
+                              autoincrement=False, default=0))
+        columns.append(Column('size', Integer, nullable=False,
+                              autoincrement=False, default=0))
+        columns.append(Column('mtime', Integer, autoincrement=False))
+        columns.append(Column('cluster', Integer, nullable=False,
+                              autoincrement=False, default=0, primary_key=True))
+        self.statistics = Table('statistics', metadata, *columns)
         
-        execute(""" create table if not exists statistics
-                          ( node       integer,
-                            population integer not null default 0,
-                            size       integer not null default 0,
-                            mtime      integer,
-                            cluster    integer not null default 0,
-                            primary key (node, cluster)
-                            foreign key (node)
-                            references nodes(node)
-                            on update cascade
-                            on delete cascade )""")
-        
-        execute(""" create table if not exists versions
-                          ( serial     integer primary key,
-                            node       integer,
-                            size       integer not null default 0,
-                            source     integer,
-                            mtime      integer,
-                            muser      text    not null default '',
-                            cluster    integer not null default 0,
-                            foreign key (node)
-                            references nodes(node)
-                            on update cascade
-                            on delete cascade ) """)
-        execute(""" create index if not exists idx_versions_node
-                    on versions(node) """)
+        #create versions table
+        columns=[]
+        columns.append(Column('serial', Integer, autoincrement=False,
+                              primary_key=True))
+        columns.append(Column('node', Integer,
+                              ForeignKey('nodes.node',
+                                         ondelete='CASCADE',
+                                         onupdate='CASCADE'),
+                              autoincrement=False))
+        columns.append(Column('size', Integer, nullable=False,
+                              autoincrement=False, default=0))
+        columns.append(Column('source', Integer, autoincrement=False))
+        columns.append(Column('mtime', Integer, autoincrement=False))
+        columns.append(Column('muser', String(255), nullable=False, default=''))
+        columns.append(Column('cluster', Integer, nullable=False,
+                              autoincrement=False, default=0))
+        self.versions = Table('versions', metadata, *columns)
+        # place an index on node
+        Index('idx_versions_node', self.versions.c.mtime)
         # TODO: Sort out if more indexes are needed.
-        # execute(""" create index if not exists idx_versions_mtime
-        #             on versions(mtime) """)
+        #Index('idx_versions_node', self.versions.c.node)
         
-        execute(""" create table if not exists attributes
-                          ( serial integer,
-                            key    text,
-                            value  text,
-                            primary key (serial, key)
-                            foreign key (serial)
-                            references versions(serial)
-                            on update cascade
-                            on delete cascade ) """)
+        #create attributes table
+        columns = []
+        columns.append(Column('serial', Integer,
+                              ForeignKey('versions.serial',
+                                         ondelete='CASCADE',
+                                         onupdate='CASCADE'),
+                              autoincrement=False,
+                              primary_key=True))
+        columns.append(Column('key', String(255), primary_key=True))
+        columns.append(Column('value', String(255)))
+        self.attributes = Table('attributes', metadata, *columns)
         
-        q = "insert or ignore into nodes(node, parent) values (?, ?)"
-        execute(q, (ROOTNODE, ROOTNODE))
+        metadata.create_all(self.engine)
+        
+        s = self.nodes.insert(node=ROOTNODE, parent=ROOTNODE)
+        self.conn.execute(s)
     
     def node_create(self, parent, path):
         """Create a new node from the given properties.
@@ -730,12 +745,11 @@ class Node(DBWorker):
                     break
                 continue
             
+            pf = path[:idx + dz]
+            pappend(pf)
             if idx + dz == len(path):
                 mappend(props)
                 count += 1
-                continue # Get one more, in case there is a path.
-            pf = path[:idx + dz]
-            pappend(pf)
             if count >= limit: 
                 break
             

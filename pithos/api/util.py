@@ -416,6 +416,15 @@ def get_sharing(request):
                 raise BadRequest('Bad X-Object-Sharing header value')
         else:
             raise BadRequest('Bad X-Object-Sharing header value')
+    
+    # Keep duplicates only in write list.
+    dups = [x for x in ret.get('read', []) if x in ret.get('write', []) and x != '*']
+    if dups:
+        for x in dups:
+            ret['read'].remove(x)
+        if len(ret['read']) == 0:
+            del(ret['read'])
+    
     return ret
 
 def get_public(request):

@@ -78,7 +78,7 @@ class Client(object):
             if v:
                 full_path = '%s&%s=%s' %(full_path, k, v)
             else:
-                full_path = '%s&%s' %(full_path, k)
+                full_path = '%s&%s=' %(full_path, k)
         conn = HTTPConnection(self.host)
         
         #encode whitespace
@@ -563,7 +563,7 @@ class Pithos_Client(OOS_Client):
     # Storage Account Services
     
     def list_containers(self, format='text', if_modified_since=None,
-                        if_unmodified_since=None, limit=1000, marker=None,
+                        if_unmodified_since=None, limit=None, marker=None,
                         shared=False, until=None, account=None):
         """returns a list with the account containers"""
         account = account or self.account
@@ -882,7 +882,7 @@ class Pithos_Client(OOS_Client):
     def publish_object(self, container, object, account=None):
         """sets a previously created object publicly accessible"""
         account = account or self.account
-        path = '/%s/%s/%s' % (container, object)
+        path = '/%s/%s' % (container, object)
         headers = {'content_range':'bytes */*'}
         headers['x_object_public'] = True
         return self.post(path, headers=headers)

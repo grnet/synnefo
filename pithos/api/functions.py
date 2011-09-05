@@ -214,10 +214,11 @@ def account_update(request, v_account):
             raise Unauthorized('Access denied')
         except ValueError:
             raise BadRequest('Invalid groups header')
-    try:
-        backend.update_account_meta(request.user, v_account, meta, replace)
-    except NotAllowedError:
-        raise Unauthorized('Access denied')
+    if meta or replace:
+        try:
+            backend.update_account_meta(request.user, v_account, meta, replace)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
     return HttpResponse(status=202)
 
 @api_method('GET', format_allowed=True)
@@ -363,12 +364,13 @@ def container_update(request, v_account, v_container):
             raise ItemNotFound('Container does not exist')
         except ValueError:
             raise BadRequest('Invalid policy header')
-    try:
-        backend.update_container_meta(request.user, v_account, v_container, meta, replace)
-    except NotAllowedError:
-        raise Unauthorized('Access denied')
-    except NameError:
-        raise ItemNotFound('Container does not exist')
+    if meta or replace:
+        try:
+            backend.update_container_meta(request.user, v_account, v_container, meta, replace)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Container does not exist')
     return HttpResponse(status=202)
 
 @api_method('DELETE')
@@ -913,6 +915,8 @@ def object_update(request, v_account, v_container, v_object):
     # A Content-Type or X-Source-Object header indicates data updates.
     src_object = request.META.get('HTTP_X_SOURCE_OBJECT')
     if (not content_type or content_type != 'application/octet-stream') and not src_object:
+        response = HttpResponse(status=202)
+        
         # Do permissions first, as it may fail easier.
         if permissions is not None:
             try:
@@ -932,15 +936,15 @@ def object_update(request, v_account, v_container, v_object):
                 raise Unauthorized('Access denied')
             except NameError:
                 raise ItemNotFound('Object does not exist')
-        try:
-            version_id = backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
-        except NotAllowedError:
-            raise Unauthorized('Access denied')
-        except NameError:
-            raise ItemNotFound('Object does not exist')
+        if meta or replace:
+            try:
+                version_id = backend.update_object_meta(request.user, v_account, v_container, v_object, meta, replace)
+            except NotAllowedError:
+                raise Unauthorized('Access denied')
+            except NameError:
+                raise ItemNotFound('Object does not exist')        
+            response['X-Object-Version'] = version_id
         
-        response = HttpResponse(status=202)
-        response['X-Object-Version'] = version_id
         return response
     
     # Single range update. Range must be in Content-Range.

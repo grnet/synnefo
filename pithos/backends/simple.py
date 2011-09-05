@@ -72,7 +72,7 @@ class SimpleBackend(BaseBackend):
     
     # TODO: Create account if not present in all functions.
     
-    def __init__(self, db):
+    def __init__(self, db, db_options):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         

@@ -974,8 +974,10 @@ class SimpleBackend(BaseBackend):
             raise NotAllowedError
     
     def _allowed_paths(self, user, prefix=None):
-        sql = '''select distinct name from permissions where (user = ?
-                    or user in (select account || ':' || gname from groups where user = ?))'''
+        sql = '''select distinct name from permissions 
+                 where (user = '*' or
+                        user = ? or
+                        user in (select account || ':' || gname from groups where user = ?))'''
         param = (user, user)
         if prefix:
             sql += ' and name like ?'

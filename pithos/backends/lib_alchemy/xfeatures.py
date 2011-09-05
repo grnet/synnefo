@@ -60,8 +60,8 @@ class XFeatures(DBWorker):
                               ForeignKey('xfeatures.feature_id',
                                          ondelete='CASCADE'),
                               primary_key=True))
-        columns.append(Column('key', Integer, autoincrement=False,
-                              primary_key=True))
+        columns.append(Column('key', Integer, primary_key=True,
+                              autoincrement=False))
         columns.append(Column('value', String(255), primary_key=True))
         self.xfeaturevals = Table('xfeaturevals', metadata, *columns)
         

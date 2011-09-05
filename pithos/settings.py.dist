@@ -65,10 +65,15 @@ DATABASES = {
 }
 
 # The backend to use and its initilization options.
+dbuser = ''
+dbpass = ''
+dbhost = ''
+dbname = ''
+db_options = (dbuser, dbpass, dbhost, dbname,)
 if TEST:
-    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/test/'),))
+    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/test/'), db_options,))
 else:
-    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/pithos/'),))
+    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/pithos/'), db_options,))
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

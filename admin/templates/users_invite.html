@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action="/admin/users/invite" method="post">
+<form action="{% url admin.views.users_invite %}" method="post">
   <div class="clearfix">
     <label for="user-inviter">Inviter ID</label>
     <div class="input">

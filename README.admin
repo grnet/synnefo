@@ -11,37 +11,33 @@ Database
 MySQL: manage.py dbshell seems to ignore the setting of 'init_command'
        in settings.DATABASES
 
+
 Reconciliation mechanism
 ========================
 
 On certain occasions, such as a Ganeti or RabbitMQ failure, the VM state in the
 system's database may differ from that in the Ganeti installation. The
 reconciliation process is designed to bring the system's database in sync with
-what Ganeti knows about each VM.
+what Ganeti knows about each VM, and is able to detect the following three
+conditions:
 
-The administrator can trigger reconciliation manually, by issuing a Ganeti
-OP_INSTANCE_QUERY_DATA command, using gnt-instance info.
+ * Stale DB servers without corresponding Ganeti instances
+ * Orphan Ganeti instances, without corresponding DB entries
+ * Out-of-sync operstate for DB entries wrt to Ganeti instances
 
-Alternatively, the reconciliation process can be triggered for all VMs using the
-command
+The reconciliation mechanism runs as a management command, e.g., as follows:
+[PYTHONPATH needs to contain the parent of the synnefo Django project
+directory]:
 
-  ./manage.py reconcile --all
+/srv/synnefo$ export PYTHONPATH=/srv:$PYTHONPATH
+vkoukis@dev67:~/synnefo [reconc]$ ./manage.py reconcile --detect-all -v 2
 
-It is advised, though not strictly necessary, to run the reconciliation process
-periodically, through cron. To avoid overloading the Ganeti master, the periodic
-reconciliation process takes a staggered approach to updating the VMs, which is
-configured through the following parameters:
+Please see ./manage.py reconcile --help for all the details.
 
-* The settings.py RECONCILIATION_MIN parameter, which specifies the maximum time
-  a VM can remain ``non-reconciled''. (default: 30 mins)
+The administrator can also trigger reconciliation of operating state manually,
+by issuing a Ganeti OP_INSTANCE_QUERY_DATA command on a Synnefo VM, using
+gnt-instance info.
 
-* The --interval option to the reconcile command, which declares the interval
-  time between reconciliation attempts (default: 1 min)
-
-On each invocation of the reconcile command, the system will trigger a
-reconciliation for ((num_all_vms/RECONCILIATION_MIN) * interval) machines.
-Obviously the lower the interval value and the higher the setting of
-RECONCILIATION_MIN, the less load is going to be put on Ganeti.
 
 Logging
 =======

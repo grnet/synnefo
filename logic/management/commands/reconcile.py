@@ -30,8 +30,8 @@
 """Reconciliation management command
 
 Management command to reconcile the contents of the Synnefo DB with
-the state of the Ganeti backend. See docstring on top of logic/reconcile.py
-for a description of reconciliation rules.
+the state of the Ganeti backend. See docstring on top of
+logic/reconciliation.py for a description of reconciliation rules.
 
 """
 import sys

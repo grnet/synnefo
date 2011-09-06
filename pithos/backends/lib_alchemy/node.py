@@ -437,6 +437,7 @@ class Node(DBWorker):
         s = select([self.versions.c.serial,
                     self.versions.c.node,
                     self.versions.c.size,
+                    self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
                     self.versions.c.cluster])

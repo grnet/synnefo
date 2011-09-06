@@ -35,6 +35,7 @@ from django.conf import settings
 
 from simple import SimpleBackend
 from modular import ModularBackend
+from modular_alchemy import AlchemyBackend
 
 backend = None
 options = getattr(settings, 'BACKEND', None)

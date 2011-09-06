@@ -72,8 +72,8 @@ def backend_method(func=None, autocommit=1):
     return fn
 
 
-class ModularBackend(BaseBackend):
-    """A modular backend.
+class AlchemyBackend(BaseBackend):
+    """A backend based on ModularBackend that uses SQLAlchemy.
     
     Uses modules for SQL functions and storage.
     """

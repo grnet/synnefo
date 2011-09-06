@@ -293,3 +293,33 @@ It helps to create a ``~/.my.cnf`` file, for automatically connecting to the ser
 
   [mysql]
   database = pithos
+
+PostgreSQL Setup
+----------------
+
+If using PostgreSQL instead of SQLite for the database engine, consider the following.
+
+Server side::
+
+  apt-get install postgresql
+
+Edit ``/etc/postgresql/8.4/main/postgresql.conf`` and ``/etc/postgresql/8.4/main/pg_hba.conf`` to allow network connections and restart the server.
+
+Create database and user::
+
+  CREATE DATABASE pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
+  CREATE USER pithos WITH PASSWORD 'password';
+  GRANT ALL PRIVILEGES ON DATABASE pithos TO pithos;
+
+Client side::
+
+  apt-get install postgresql-client
+
+It helps to create a ``~/.pgpass`` file, for automatically passing the password to the server::
+
+  pithos-storage.dev.grnet.gr:5432:pithos:pithos:password
+
+Connect with::
+
+  psql -h pithos-storage.dev.grnet.gr -U pithos
+

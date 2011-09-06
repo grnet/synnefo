@@ -125,10 +125,10 @@ class Permissions(XFeatures, Groups, Public):
             self.groups.c.member == member)
         
         members = select([literal(member).label('value')])
+        any = select([literal('*').label('value')])
         
-        extended_member_groups = member_groups.union(members).alias()
         inner_join = join(xfeatures_xfeaturevals,
-                    extended_member_groups,
+                    union(member_groups, members, any),
                     self.xfeaturevals.c.value == extended_member_groups.c.value)
         s = select([self.xfeatures.c.path], from_obj=[inner_join]).distinct()
         if prefix:

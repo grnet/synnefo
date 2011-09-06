@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from sqlalchemy.sql import select, literal
-from sqlalchemy.sql.expression import join
+from sqlalchemy.sql.expression import join, union
 
 from xfeatures import XFeatures
 from groups import Groups

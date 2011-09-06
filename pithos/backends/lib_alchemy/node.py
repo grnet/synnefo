@@ -35,7 +35,12 @@ from time import time
 from sqlalchemy import Table, Integer, Float, Column, String, MetaData, ForeignKey
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, null, select, bindparam
-from duplicate import insertOnDuplicate
+from sqlalchemy.ext.compiler import compiles
+try:
+    from sqlalchemy.sql.expression import _UpdateBase
+except:
+    from sqlalchemy.sql.expression import UpdateBase as _UpdateBase
+
 from dbworker import DBWorker
 
 ROOTNODE  = 0
@@ -641,10 +646,7 @@ class Node(DBWorker):
             self.conn.execute(s).close()
     
     def attribute_copy(self, source, dest):
-        from sqlalchemy.ext.compiler import compiles
-        from sqlalchemy.sql.expression import UpdateBase
-                
-        class InsertFromSelect(UpdateBase):
+        class InsertFromSelect(_UpdateBase):
             def __init__(self, table, select):
                 self.table = table
                 self.select = select

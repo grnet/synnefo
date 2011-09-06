@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from sqlalchemy.sql import select, literal
-from sqlalchemy.sql.expression import join
+from sqlalchemy.sql.expression import join, union
 
 from xfeatures import XFeatures
 from groups import Groups
@@ -127,9 +127,9 @@ class Permissions(XFeatures, Groups, Public):
         members = select([literal(member).label('value')])
         any = select([literal('*').label('value')])
         
-        inner_join = join(xfeatures_xfeaturevals,
-                    union(member_groups, members, any),
-                    self.xfeaturevals.c.value == extended_member_groups.c.value)
+        u = union(member_groups, members, any)
+        inner_join = join(xfeatures_xfeaturevals, u,
+                    self.xfeaturevals.c.value == u.c.value).alias()
         s = select([self.xfeatures.c.path], from_obj=[inner_join]).distinct()
         if prefix:
             s = s.where(self.xfeatures.c.path.like(prefix + '%'))

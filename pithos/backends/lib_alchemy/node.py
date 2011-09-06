@@ -739,7 +739,6 @@ class Node(DBWorker):
            Limit applies to the first list of tuples returned.
         """
         
-        print '#', locals()
         if not start or start < prefix:
             start = strprevling(prefix)
         nextling = strnextling(prefix)

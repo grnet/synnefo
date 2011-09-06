@@ -419,39 +419,57 @@ Synnefo deployment.
 
 13. Installation of the customized Ganeti Instance Image for image deployment:
     For Synnefo to be able to launch VMs from specified Images, you need
-    the gnt-instance-image OS Provider installed on the Ganeti backend.
+    the gnt-instance-image OS Provider installed on *all* Ganeti nodes.
+    There are 2 different ways to install gnt-instance-image on a node:
 
-    Download and install gnt-instance-image in all Ganeti nodes from its own
-    repository, at https://code.grnet.gr/git/gnt-instance-image. It's
-    recommended to use the win-support branch (known good commit:
-    e34560c859726ff9f2b7630c4b2d666082ce0e1a).
+    1.As a debian package (recommended)
+        
+        Download and install the debian package found here:
+        https://code.grnet.gr/attachments/download/323/ganeti-instance-image_0.5.1-1-snf1_amd64.deb
+        You can do this by running the following:
+        
+        $ wget https://code.grnet.gr/attachments/download/323/ganeti-instance-image_0.5.1-1-snf1_amd64.deb
+        # dpkg -i ganeti-instance-image_0.5.1-1-snf1_amd64.deb
 
-    Make sure to enable progress monitoring, using the --with-progress-monitor
-    argument to configure. This requires the snf-progress-monitor tool,
-    provided in snf-ganeti-tools/ and also as part of the snf-ganeti-tools
-    Debian package.
+        Make any additional configuration changes in 
+        /etc/default/ganeti-instance-image.
+        It is recommended to change the default IMAGE_DIR from 
+        /var/cache/ganeti-instance-image to something like /srv/example_images_repo
 
-    After installing gnt-instance-image do the following:
-    1. root@ganeti-master$ cd /path-to-repo
-       root@ganeti-master$ cp ./defaults /etc/default/ganeti-instance-image
-    2. Uncomment the following in /etc/default/ganeti-instance-image:
-         SWAP=no
-         ARCH="x86_64"
-    3. In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
-       run during instance creation process have execute permission.
-       For linux you will need at lease `grub' and `root_passwd' to make the
-       instance usable:
-         chmod +x /etc/ganeti/instance-image/hooks/linux/{grub,root_passwd}
-       For security reasons make sure `ssh' hook is also enabled.
-       For windows you will need `mbr' and `admin_passwd':
-         chmod +x /etc/ganeti/instance-image/hooks/windows/{mbr,admin_passwd}
-       For both architectures it is also highly recommended to enable
-       `hostname' hook too:
-         chmod +x /et/ganeti/instance-image/hooks/{linux,windows}/hostname
+	Be sure to have all the package's needed dependencies installed 
+        on your system.
+
+    2.From source    
+
+        Download and install gnt-instance-image from its own repository,
+        at https://code.grnet.gr/git/gnt-instance-image. It's
+        recommended to use the win-support branch (known good commit:
+        d4d9f7c910115f98e2ad1c24b57d9b2d1965c20a).
+
+        Make sure to enable progress monitoring, using the --with-progress-monitor
+        argument to configure. This requires the snf-progress-monitor tool,
+        provided in snf-ganeti-tools/ and also as part of the snf-ganeti-tools
+        Debian package.
+
+        After installing gnt-instance-image do the following:
+        1. $ cd /path-to-repo
+           # cp ./defaults /etc/default/ganeti-instance-image
+        2. In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
+           run during the instance creation process have execute permission.
+           For linux you will need at lease `grub' and `root_passwd' to make the
+           instance usable:
+           chmod +x /etc/ganeti/instance-image/hooks/linux/{grub,root_passwd}
+           For security reasons make sure `ssh' hook is also enabled.
+           For windows you will need `mbr' and `admin_passwd':
+           chmod +x /etc/ganeti/instance-image/hooks/windows/{mbr,admin_passwd}
+           For both architectures it is also highly recommended to enable the
+           `hostname' hook too:
+           chmod +x /et/ganeti/instance-image/hooks/{linux,windows}/hostname
 
     Your custom Images should be stored in a dump format under
-    /var/cache/ganeti-instance-image and their filenames should have the
-    following format:
+    /var/cache/ganeti-instance-image (default) or a different directory of your
+    choice, accordingly set in /etc/default/ganeti-instance-image. The latter
+    is recommended. Their filenames should have the following format:
       {backend_id}-x86_64-root.dump
     e.g., debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
 

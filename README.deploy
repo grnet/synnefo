@@ -425,11 +425,11 @@ Synnefo deployment.
     1.As a debian package (recommended)
         
         Download and install the debian package found here:
-        https://code.grnet.gr/attachments/download/323/ganeti-instance-image_0.5.1-1-snf1_amd64.deb
+        https://code.grnet.gr/attachments/download/331/ganeti-instance-image_0.5.1-1-snf1_all.deb
         You can do this by running the following:
         
-        $ wget https://code.grnet.gr/attachments/download/323/ganeti-instance-image_0.5.1-1-snf1_amd64.deb
-        # dpkg -i ganeti-instance-image_0.5.1-1-snf1_amd64.deb
+        $ wget https://code.grnet.gr/attachments/download/331/ganeti-instance-image_0.5.1-1-snf1_all.deb
+        # dpkg -i ganeti-instance-image_0.5.1-1-snf1_all.deb
 
         Make any additional configuration changes in 
         /etc/default/ganeti-instance-image.
@@ -444,7 +444,7 @@ Synnefo deployment.
         Download and install gnt-instance-image from its own repository,
         at https://code.grnet.gr/git/gnt-instance-image. It's
         recommended to use the win-support branch (known good commit:
-        d4d9f7c910115f98e2ad1c24b57d9b2d1965c20a).
+        2fdc766d4c0c571536939ed6096016b58f2a1433).
 
         Make sure to enable progress monitoring, using the --with-progress-monitor
         argument to configure. This requires the snf-progress-monitor tool,

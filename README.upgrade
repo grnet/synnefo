@@ -14,7 +14,7 @@ RECONCILIATION
 GANETI-INSTANCE-IMAGE
     * A new version of ganeti-instance-image is required (v0.5.1-1-snf1).
       The new version is available for download as a debian package:
-      https://code.grnet.gr/attachments/download/323/ganeti-instance-image_0.5.1-1-snf1_amd64.deb
+      https://code.grnet.gr/attachments/download/331/ganeti-instance-image_0.5.1-1-snf1_all.deb
 
 
 v0.5.4 -> v0.5.5

@@ -721,20 +721,20 @@ def object_write(request, v_account, v_container, v_object):
                 raise BadRequest('Invalid data formating')
             try:
                 hashmap = d['hashes']
-                size = d['bytes']
-            except KeyError:
+                size = int(d['bytes'])
+            except:
                 raise BadRequest('Invalid data formatting')
         elif request.serialization == 'xml':
             try:
                 xml = minidom.parseString(data)
                 obj = xml.getElementsByTagName('object')[0]
-                size = obj.attributes['bytes'].value
+                size = int(obj.attributes['bytes'].value)
                 
                 hashes = xml.getElementsByTagName('hash')
                 hashmap = []
                 for hash in hashes:
                     hashmap.append(hash.firstChild.data)
-            except Exception:
+            except:
                 raise BadRequest('Invalid data formatting')
         
         meta.update({'hash': hashmap_hash(hashmap)}) # Update ETag.

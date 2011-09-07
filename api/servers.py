@@ -215,7 +215,7 @@ def create_server(request):
     
     count = VirtualMachine.objects.filter(owner=owner, deleted=False).count()
     if count >= settings.MAX_VMS_PER_USER:
-        raise faults.OverLimit("Maximum number of servers reached")
+        raise faults.OverLimit("Server count limit exceeded for your account.")
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(

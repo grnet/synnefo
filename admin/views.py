@@ -19,7 +19,7 @@ def requires_admin(func):
     @wraps(func)
     def wrapper(request, *args):
         if not request.user or request.user.type != 'ADMIN':
-            return HttpResponse('Unauthorized', status=401)
+            return HttpResponse('Forbidden', status=403)
         return func(request, *args)
     return wrapper
 

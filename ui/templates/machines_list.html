@@ -139,15 +139,15 @@ $("#machinesview .list table.list-machines thead tr th.selection .expand-icon").
 
 // TODO: This should be populated with more rules for all available states
 //a key represents an action, while values are lists with permitted states to which the action can be applied
-var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
-                'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT', 'multiple'],
-                'connect':       ['UNKOWN', 'ACTIVE'],
+var actions = { 'reboot':        ['UNKOWN', 'ACTIVE', 'REBOOT', 'network', 'multiple'],
+                'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT', 'network', 'multiple'],
+                'connect':       ['UNKOWN', 'network'],
                 //'network-connect':       ['UNKOWN', 'ACTIVE'],
                 //'network-disconnect':    ['UNKOWN', 'ACTIVE', 'network'],
-                'console':       ['UNKOWN', 'ACTIVE', 'multiple'],
-                'details':       ['UNKOWN', 'ACTIVE', 'REBOOT', 'STOPPED'],
+                'console':       ['UNKOWN', 'ACTIVE', 'multiple', 'network'],
+                'details':       ['UNKOWN', 'ACTIVE', 'REBOOT', 'STOPPED', 'network'],
                 'start':         ['UNKOWN', 'STOPPED', 'multiple'],
-                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD', 'multiple']
+                'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD', 'network', 'multiple']
                 //'group':         ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT','multiple'],
                };
 
@@ -263,17 +263,19 @@ function update_machines_view(data){
     Go through the servers in the input data. Update existing entries, add
     new ones to the list
     */
+    console.log("updating", data);
     tableData = vmTable.fnGetData();
 
     $.each(data.servers.values, function(i,server){
-
+        
         current = -1;
         // check server status to select the appropriate OS icon, defaults to on state
         osTag = os_icon(server.metadata);
         var osIcon = osTag + "-on.png", imgStr, imgSrc;
         // check if the server already exists in the datatable
         if (tableData.length > 0) {
-            tableData.forEach(function(row,index){
+            // ie does not support forEach use jquery helper to iterate data
+            $.each(tableData, function(index, row){
                 if (row[0].split(' ')[2].replace('id=','') == server.id){
                     current = index;
                 }
@@ -290,14 +292,26 @@ function update_machines_view(data){
             // when server is in deleted status it must be removed from the list
             if (server.status == "DELETED") {
                 vmTable.fnDeleteRow(current);
-            } else { // when server is not deleted, it should be updated
-                if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
-                    [STATUSES['STOPPED'], STATUSES['ERROR'], STATUSES['UNKNOWN'],
-                     TRANSITIONS['Starting']].indexOf(server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) >= 0) {
+                } else { // when server is not deleted, it should be updated
+                
+                var current_status = server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "");
+
+                if (['BUILD', 'REBOOT'].indexOf(server.status) >= 0 && [TRANSITIONS['Starting'],STATUSES['ACTIVE']].indexOf(current_status) >= 0) {
+                    // from running to reboot (or building which should never happen)
+                    imgSrc = "static/icons/indicators/small/progress.gif";
+                    tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
+                    imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
+                    tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
+                    tableData[current][2] = "<a class=name><span class=name>" + fix_server_name(server.name) + "</span></a>";
+                    //tableData[current][4] = "group"; //TODO
+                    tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
+                    vmTable.fnUpdate(tableData[current],current);
+                } else if (['BUILD','ACTIVE','REBOOT'].indexOf(server.status) >= 0 &&
+                    [STATUSES['STOPPED'], STATUSES['ERROR'], STATUSES['UNKNOWN'], TRANSITIONS['Starting']].indexOf(current_status) >= 0) {
                     // from stopped, on error or starting to building, active or rebooting
                     // starting is not an api state, it means the server is stopped or on error
-                    tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/icons/indicators/small/wave.gif";
+                    tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
                     tableData[current][1] = "<span class=imagetag>" + osTag + "</span>" + imgStr;
                     tableData[current][2] = "<a class=name><span class=name>" + fix_server_name(server.name) + "</span></a>";
@@ -307,7 +321,7 @@ function update_machines_view(data){
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osIcon + "')", 1600);
                 } else if (['STOPPED','ERROR', 'UNKNOWN'].indexOf(server.status) >= 0 &&
                            [STATUSES['ACTIVE'], STATUSES['BUILD'], STATUSES['REBOOT'],
-                            TRANSITIONS['Shutting down']].indexOf(server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) >= 0) {
+                            TRANSITIONS['Shutting down']].indexOf(current_status) >= 0) {
                     tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
@@ -317,10 +331,10 @@ function update_machines_view(data){
                     tableData[current][4] = "<span class=status>" + STATUSES[server.status] + "</span>";
                     vmTable.fnUpdate(tableData[current],current);
                     setTimeout("$('#machinesview .list #"+server.id+"').parent().parent().find('.list-logo').attr('src','static/icons/machines/small/" + osTag + "-off.png')", 1600);
-                } else if ( STATUSES[server.status] == server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) {
+                } else if ( STATUSES[server.status] == current_status) {
 
                 } else if (server.status == 'ACTIVE' &&
-                           [STATUSES['BUILD'],TRANSITIONS['Rebooting']].indexOf(server_row.find('span.status').text().replace(TRANSITION_STATE_APPEND, "")) >= 0) {
+                           [STATUSES['BUILD'],TRANSITIONS['Rebooting']].indexOf(current_status) >= 0) {
                     tableData[current][0] = "<input class="+server.status+" id="+server.id+" type=checkbox>";
                     imgSrc = "static/icons/indicators/small/wave.gif";
                     imgStr = "<img class=list-logo src=" + imgSrc + " title=" + osTag + "></img>";
@@ -337,7 +351,7 @@ function update_machines_view(data){
             // check server status to select the appropriate OS icon
             if (['ERROR', 'STOPPED', 'UNKNOWN'].indexOf(server.status) >= 0) {
                 osIcon = "static/icons/machines/small/" + osTag + "-off.png";
-            } else if ( server.status == 'BUILD' || server.status == "DESTROY" ) {
+            } else if ( server.status == 'BUILD' || server.status == "DESTROY" || server.status == "REBOOT") {
                 osIcon = "static/icons/indicators/small/progress.gif";
             } else {
                 osIcon = "static/icons/machines/small/" + osTag + "-on.png";

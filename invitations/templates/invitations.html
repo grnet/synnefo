@@ -10,7 +10,7 @@
     {% csrf_token %}
     
     {% if errors %}
-    <div id="errors">
+    <div id="errors" class="error-msg">
         <p>{% trans "Invite error(s) occured" %}</p>
 
         <ul>
@@ -54,10 +54,7 @@ You have no invitations left in your account.
 
 <div id="invsent">
     
-    <h3 class="clearfix">{% trans "Sent invitations" %}
-        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
-        <span>(<img src="/static/resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
-    </h3>
+    <h3 class="clearfix overlay-inner-title">{% trans "Sent invitations" %}</h3>
 
     <div class="messages">
         <div class="message errormsg"></div>
@@ -65,7 +62,7 @@ You have no invitations left in your account.
     </div>
     
     <div>
-        <ul>
+        <ul class="invsent-list">
         {% for inv in invitations %}
         <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
                 {% if inv.accepted %}
@@ -78,6 +75,13 @@ You have no invitations left in your account.
                 <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
             </li>
         {% endfor %}
-        </ul>
+    </ul>
+
+    <div class="pages clearfix"></div>
+
+    <div class="icons-info">
+        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
+        <span>(<img src="/static/resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
+    </div>
     </div>
 </div>

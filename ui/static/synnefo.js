@@ -38,12 +38,23 @@ var flavors = [], images = [], servers = [], disks = [], cpus = [], ram = [];
 var networks = [], networks_changes_since = 0;
 var error_timeout = 20000;
 var last_request = {};
+var CHANGES_SINCE_ERRORS = 0;
 
 $.ajaxSetup({
     'beforeSend': function(xhr) {
           // save ajax settings, we might need them for error reporting
           last_request = this;
           xhr.setRequestHeader("X-Auth-Token", $.cookie("X-Auth-Token"));
+
+          // append the date the request initialized to the ajax settings
+          try {
+            this.date_sent = new Date();
+          } catch (err) {
+          }
+            
+          if (CHANGES_SINCE_ERRORS > 0 && changes_since) {
+            CHANGES_SINCE_ERRORS = 0;
+          }
     },
 
     // catch uncaught error requests
@@ -61,11 +72,7 @@ $.ajaxSetup({
         // stop interaction for important (aka 500) error codes only
         if (jqXHR.status >= 500 && jqXHR.status < 600)
         {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Unknown', jqXHR.responseText);
-            } catch(err) {
-                ajax_error(-1, textStatus, 'Unknown', "NETWORK ERROR");
-            }
+            handle_api_error(-11, undefined, 'Unknown', jqXHR, textStatus, errorThrown, this);
         }
 
         // refresh after 10 seconds
@@ -73,28 +80,55 @@ $.ajaxSetup({
     }
 });
 
-function isXhrException(err) {
-
-    DOM_EXCEPTION_NAMES = [
-        "NS_ERROR_NOT_AVAILABLE", // Firefox
-        "INVALID_STATE_ERR" // Chrome
-    ];
-
-    try {
-        if (DOM_EXCEPTION_NAMES.indexOf(err.name) != -1) {
-            return true;
-        } 
-        
-        // ie !!!!
-        if (err.number == -2147467259) {
-            return true;
+// generic api error handler
+//
+// code: error code (uid or http status)
+// context: something to identify the object 
+//          that the error occured to (e.g. vm id) 
+// xhr: xhr object
+// jquery_error_status: error identified by the jquery ("timeout", "error" etc.)
+// jquery_error: error identified by the jquery ("timeout", "error" etc.)
+// ajax_settings: the settings 
+// 
+function handle_api_error(code, context, action, xhr, 
+                          jquery_error_status, jquery_error, ajax_settings) {
+    
+    // handle timeouts (only for repeated requests)
+    if (jquery_error_status == "timeout" && ajax_settings && ajax_settings.repeated) {
+        // do not show error for the first timeout
+        if (TIMEOUTS_OCCURED < SKIP_TIMEOUTS) {
+            TIMEOUTS_OCCURED += 1;
+            return;
         }
-
-    } catch(err) {
-        return false;
     }
 
-    return false;
+    if (jquery_error_status == "timeout") {
+        ajax_settings.disable_report = true;
+        ajax_error("TIMEOUT", context, action, "", ajax_settings);
+        return;
+    }
+
+    try {
+        // malformed changes-since request, skip only first request
+        // then ui will try to get requests with no changes-since parameter set
+        // if for some reason server responds with 400/changes-since error
+        // fallback to error message
+        if (xhr.status === 400 && xhr.responseText.indexOf("changes-since") > -1 && CHANGES_SINCE_ERRORS == 0) {
+            CHANGES_SINCE_ERRORS += 1;
+            changes_since = 0;
+            return;
+        }
+
+        // 413 no need to show report
+        if (xhr.status === 413) {
+            ajax_settings.disable_report = true;
+            ajax_settings.no_details = false;
+        }
+
+        ajax_error(xhr.status, context, action, xhr.responseText, ajax_settings);
+    } catch (err) {
+        ajax_error(code, context, action, "NETWORK ERROR", ajax_settings);
+    }
 }
 
 Object.prototype.toString = function(o){
@@ -264,6 +298,10 @@ function update_network_confirmations(){
         $('#networks-pane div.confirm_multiple span.actionLen').text(pending_actions.length);
         $('#networks-pane div.confirm_multiple').show();
     }
+
+    try {
+        update_network_confirmations_position();
+    } catch (err) { console.error(err) };
 }
 
 function list_view() {
@@ -401,8 +439,9 @@ function update_vms(interval) {
 
     if (changes_since != 0)
         uri+='?changes-since='+changes_since
-
+    
     update_request = $.ajax({
+        repeated: true,
         cache: false,
         url: uri,
         type: "GET",
@@ -416,20 +455,17 @@ function update_vms(interval) {
             }
             // as for now, just show an error message
             try { console.info('update_vms errback:' + jqXHR.status ) } catch(err) {}
-                try {
-                    ajax_error(jqXHR.status, undefined, 'Update VMs', jqXHR.responseText);
-                } catch(err) {
-                    ajax_error(-1, textStatus, 'Update VMs', "NETWORK ERROR");
-                }
-                return false;
-            },
+
+            handle_api_error(-12, undefined, 'Update VMs', jqXHR, textStatus, errorThrown, this);
+            return false;
+        },
         success: function(data, textStatus, jqXHR) {
             // create changes_since string if necessary
             if (jqXHR.getResponseHeader('Date') != null){
                 changes_since_date = new Date(jqXHR.getResponseHeader('Date'));
                 changes_since = ISODateString(changes_since_date);
             }
-
+            
             if (interval) {
                 clearTimeout(deferred);    // clear old deferred calls
                 deferred = setTimeout(function() {update_vms(interval);},interval,interval);
@@ -440,7 +476,7 @@ function update_vms(interval) {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
                     update_machines_view(data);
-                } catch (err) { ajax_error(-503, "UI Error", 'Update VMs', err);}
+                } catch (err) { ajax_error(-503, "UI Error", 'Update VMs', err, this);}
             } else if (jqXHR.status != 304){
                 try { console.info('update_vms callback:' + jqXHR.status ) } catch(err) {}
                 /*
@@ -521,6 +557,29 @@ function update_servers_data(servers_update, data) {
         }
     });
     
+    // check if server is in transition, apply appropriate logic
+    function update_server_transition(vm) {
+        if (vm.state_transition == "DESTROY" && vm.status != "DELETE") {
+            return;
+        }
+
+        if (vm.state_transition == "SHUTDOWN" && vm.state_transition == "ACTIVE") {
+            return;
+        } else {
+            // clear transition
+            vm.state_transition = false;
+            return;
+        }
+
+        if (vm.state_transition == "START" && vm.state_transition == "STOPPED") {
+            return;
+        } else {
+            // clear transition
+            vm.state_transition = false;
+            return;
+        }
+    }
+
     // check server, if exists merge it with new values else add it
     $.each(servers_update, function(index, server) {
         var exists = server_exists(server);
@@ -539,11 +598,14 @@ function update_servers_data(servers_update, data) {
                     old_server.network_transition = undefined;
                 };
             }
-        } catch (err) { console.info(err) }
+        } catch (err) {
+            // no old server
+        }
 
         if (exists !== false) {
             try {
                 servers[exists[1]] = merge(servers[exists[1]], server);
+                update_server_transition(servers[exists[1]]);
             } catch (err) {
             }
         } else {
@@ -567,6 +629,7 @@ function update_networks(interval) {
         uri+='?changes-since='+changes_since
 
     update_request = $.ajax({
+        repeated: true,
         cache: false,
         url: uri,
         type: "GET",
@@ -576,16 +639,12 @@ function update_networks(interval) {
             // don't forget to try again later
             if (interval) {
                 clearTimeout(deferred);    // clear old deferred calls
-                deferred = setTimeout(function() {update_networks(interval);},interval,interval);
+                deferred = setTimeout(function() {update_networks(interval);},interval);
             }
             // as for now, just show an error message
             try { console.info('update_networks errback:' + jqXHR.status ) } catch(err) {}
 
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update networks', jqXHR.responseText);
-            } catch(err) {
-                ajax_error(-1, textStatus, 'Update networks', "NETWORK ERROR");
-            }
+            handle_api_error(-13, undefined, 'Update networks', jqXHR, textStatus, errorThrown, this);
             return false;
             },
         success: function(data, textStatus, jqXHR) {
@@ -605,7 +664,7 @@ function update_networks(interval) {
                     //servers = data.servers.values;
                     update_servers_data(data.servers.values, data);
                     update_network_names(data);
-                } catch(err) { ajax_error(-505, "UI Error", 'Update networks', err);}
+                } catch(err) { ajax_error(-505, "UI Error", 'Update networks', err, this);}
             } else if (jqXHR.status == 304) {
                 update_network_names();
             }
@@ -645,13 +704,10 @@ function update_network_names(servers_data) {
             try {
                 console.info('update_network names errback:' + jqXHR.status )
             } catch(err) {}
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update network names', jqXHR.responseText);
-            } catch(err) {
-                ajax_error(-1, textStatus, 'Update network names', "NETWORK ERROR");
-            }
+
+            handle_api_error(-14, undefined, 'Update network names', jqXHR, textStatus, errorThrown, this);
             return false;
-            },
+        },
         success: function(data, textStatus, jqXHR) {
             // create changes_since string if necessary
             if (jqXHR.getResponseHeader('Date') != null){
@@ -664,7 +720,7 @@ function update_network_names(servers_data) {
                     networks = data.networks.values;
                     update_networks_view(servers_data, data);
                 } catch(err) {
-                    ajax_error(-507, "UI Error", 'Update network names', err);
+                    ajax_error(-507, "UI Error", 'Update network names', err, this);
                 }
             } else if (jqXHR.status == 304) {
                     update_networks_view(servers_data);
@@ -693,17 +749,17 @@ function update_images() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-                    try {
-                        ajax_error(jqXHR.status, undefined, 'Update Images', jqXHR.responseText);
-                    } catch(err) {
-                        ajax_error(-1, textStatus, 'Update Images', "NETWORK ERROR");
-                    }
-                },
+            handle_api_error(-15, undefined, 'Update images', jqXHR, textStatus, errorThrown, this);
+        },
         success: function(data, textStatus, jqXHR) {
             try {
                 images = data.images.values;
                 jQuery.parseJSON(data);
                 update_wizard_images();
+
+                // update images options
+                update_image_flavor_options();
+                handle_image_choice_changed();
             } catch(err){
                 ajax_error("NO_IMAGES");
             }
@@ -712,6 +768,7 @@ function update_images() {
     return false;
 }
 
+// update images panel
 function update_wizard_images() {
     if ($("ul#standard-images li").toArray().length + $("ul#custom-images li").toArray().length == 0) {
         $.each(images, function(i,image){
@@ -740,58 +797,430 @@ function update_wizard_images() {
                 img.appendTo("ul#standard-images");
             }
         });
+        
+        $(".image-container input[type=radio]").change(function(){
+            handle_image_choice_changed();
+        });
     }
 }
 
+
+// get closest value from specified percentage
+function get_closest_option(perc, map) {
+    min = 1;
+    max = Math.max.apply(Math, map);
+    
+    // create a map with percentages
+    perc_map = [];
+    $.each(map, function(i,v) {
+        perc_map[i] = parseInt(range_value_to_percentage(v, map));
+
+    })
+    
+    perc_map = perc_map.sort(function(a,b){return a>b});
+    // find closest percentage
+    var close = perc_map[0];
+    found = close;
+    found_pos = 0;
+    diff = Math.abs(close - perc);
+    
+    // get closest based on map values
+    for (var i=1; i< perc_map.length; i++) {
+        if (Math.abs(perc_map[i] - perc) > diff) {
+            break;
+        } else {
+            found = perc_map[i];
+            found_pos = i;
+            diff = Math.abs(perc_map[i] - perc);
+        }
+    }
+    
+    var val = range_percentage_to_value(perc_map[found_pos], map);
+    return val;
+}
+
+// get closest percentage from specified value
+function get_closest_from_value(value, map) {
+    var perc = range_value_to_percentage(value, map, false);
+    var close_val = get_closest_option(perc, map);
+    var value = range_value_to_percentage(close_val, map);
+    return value;
+}
+
+// convert a range value (e.g. ram 1024) to percentage
+function range_value_to_percentage(value, map, valid) {
+    if (valid == undefined) { valid = true }
+    var pos = map.indexOf(value)
+    
+    // do we need to validate that value is in the map
+    if (pos == -1 && valid ) { return 0 }
+    if (value == 1) { return 0; }
+    if (pos == map.length -1) { return 100; }
+
+    perc = value * (100 / Math.max.apply(Math, map));
+
+    // fix for small fragmentations
+    min = 1; max = Math.max.apply(Math, map);
+    if (max - min <= 4) {
+        perc = perc - 12
+    }
+
+    return perc;
+} 
+
+// get range value to display based on the percentage value
+// of the range control
+function range_percentage_to_value(value, map) {
+    min = 0; max = Math.max.apply(Math, map);
+    ret = Math.round(value * max / 100);
+    
+    // fix for small fragmentations
+    if (max - min <= 4) { ret = ret; }
+    if (ret < min) { ret = min; }
+    if (ret >= max) { ret = max; }
+    ret = ret;
+    // 0 is not an option
+    ret = ret == 0 ? 1: ret;
+    return ret;
+}
+
+// get flavor unique index key
+function get_flavor_index_key(flv) {
+    return "cpu:" + flv.cpu + ":ram:" + flv.ram + ":disk:" + flv.disk
+}
+
+// update last creation step information
+function update_creating_vm_details() {
+    var flavor = get_flavor_sliders_values();
+    var image = IMAGES_DATA[get_selected_image_id()].image;
+
+    var cont = $("#page3-container");
+    var image_name = cont.find("#machine_image-label");
+    var cpu = cont.find("#machine_cpu-label");
+    var ram = cont.find("#machine_ram-label");
+    var disk = cont.find("#machine_storage-label");
+
+    image_name.text(image.name);
+    cpu.text(flavor.cpu);
+    ram.text(flavor.ram);
+    disk.text(flavor.disk);
+
+    var name = "My " + image.name + " server";
+    
+    // check if server with predefined name already exists
+    j = 2;
+    if (servers) {
+        var predefined_name = name;
+        $.each(servers, function(index, el) {
+            console.log(el.name, name);
+            if (el.name == name) {
+                name = predefined_name + " " + j;
+                j++;
+            }
+        })
+    }
+    cont.find("input[type=text][name=machine_name]").val(name);
+}
+
+// create a map with available flavors for each image
+function update_image_flavor_options() {
+    // invalid state, do not update, 
+    // wait for both images and flavors to get filled/updated
+    if (!window.images || !window.flavors) {
+        return
+    }
+    
+    // create images flavors map
+    var images_options = {};
+    $.each(images, function(i, img) {
+        images_options[img.id] = {flavors:{}, options:{cpu:[], ram:[], disk:[]}};
+        // check disk usage
+        var disk_limit = img.metadata.values.size;
+        var image_flavors = {};
+        var image_options = {cpu:[], ram:[], disk:[]};
+        var flavor_combinations = [];
+        var default_flavor = undefined;
+        $.each(flavors, function(j, flv) {
+            var disk = flv.disk * 1000;
+            // flavor size can contain image size
+            if (disk > disk_limit) {
+                image_flavors[flv.id] = flv;
+                image_options.cpu.push(flv.cpu)
+                image_options.ram.push(flv.ram)
+                image_options.disk.push(flv.disk)
+                
+                // create combinations indexes
+                flavor_combinations.push(get_flavor_index_key(flv));
+                default_flavor = default_flavor || flv;
+            } else {
+            }
+        });
+        
+        // update image suggested flavors
+        var suggested = [];
+        $.each(SUGGESTED_FLAVORS, function(i, el) {
+            // image contains suggested flavor ???
+            if (flavor_combinations.indexOf(get_flavor_index_key(el)) > -1){
+                suggested.push(i);
+            }
+        });
+
+        // unique data
+        image_options.cpu = image_options.cpu.unique();
+        image_options.ram = image_options.ram.unique();
+        image_options.disk = image_options.disk.unique();
+        flavor_combinations = flavor_combinations.unique();
+        
+        // sort data
+        var numeric_sort = function(a,b){return a>b};
+        image_options.cpu = image_options.cpu.sort(numeric_sort);
+        image_options.ram = image_options.ram.sort(numeric_sort);
+        image_options.disk = image_options.disk.sort(numeric_sort);
+
+        // append data
+        images_options[img.id].flavors = image_flavors;
+        images_options[img.id].options = image_options;
+        images_options[img.id].image = img;
+        images_options[img.id].flavors_index = flavor_combinations;
+        images_options[img.id].default_flavor = default_flavor;
+        images_options[img.id].suggested = suggested;
+    })
+    
+    // export it to global namespace
+    window.IMAGES_DATA = images_options;
+}
+
+// is flavor available for the specified image ???
+function image_flavor_available(image_ref, flavor_object) {
+    return IMAGES_DATA[image_ref].flavors_index.indexOf(get_flavor_index_key(flavor_object)) > -1;
+}
+
+// update sliders and flavor choices on ui
+function handle_image_choice_changed() {
+    try {
+        validate_selected_flavor_options();
+        repaint_flavor_choices();
+        update_suggested_flavors();
+    } catch (err) {
+        //console.error(err);
+    }
+}
+
+// disable/enable suggested flavor options (small/medium/large)
+function update_suggested_flavors() {
+    var img_id = get_selected_image_id();
+    var img = IMAGES_DATA[img_id];
+    
+    // disable all
+    $("#machinetype input[type=radio]").attr("disabled", "disabled").parent().addClass("disabled");
+    
+    $.each(SUGGESTED_FLAVORS, function(i, el) {
+        if (img.suggested.indexOf(i) != -1) {
+            $("#machinetype label input[value="+i+"]").attr("disabled", "").parent().removeClass("disabled");
+        }
+    })
+    $("#machinetype label input[value=custom]").attr("disabled", "").parent().removeClass("disabled");
+
+    // select first enabled
+    $($("#machinetype input[type=radio]").not(":disabled")[0]).click();
+}
+
+// clear points
+function clean_flavor_choice_points() {
+    $(".slider-container .slider .slider-point").remove();
+}
+
+function repaint_flavor_choices() {
+    clean_flavor_choice_points();
+    var img = IMAGES_DATA[get_selected_image_id()];
+    function paint_slider_points(slider, points) {
+        $.each(points, function(i, point) {
+             // proper width
+             var width = slider.width() - slider.find(".handle").width();
+             // progress number
+             var progress = slider.find(".progress").width();
+             // percentage based on value
+             var perc = range_value_to_percentage(point, points);
+             // position
+             var pos = perc*width/100;
+            
+             // handlers
+             var last = false;
+             var first = false;
+             if (pos == 0) { first - true; pos = 2}
+             if (pos == width) { last = true; }
+            
+             // create pointer container and text
+             var text = $('<span class="slider-point-text">' + point + '</span>');
+             var span = $('<span class="slider-point"></span>').css("left", pos + "px").addClass(pos <= progress ? "slider-point-light": "");
+             span.append(text);
+             
+             // wait for element to get dimensions
+             setTimeout(function() {
+                 // choose text pointer position
+                 move = "-" + ($(text).width()/2 + 1) + "px";
+                 if (last) { move = "-" + ($(text).width() - 2) +  "px"; }
+                 if (first) { move = "0px"; }
+                 $(text).css("margin-left", move);
+             }, 100);
+             // append to slider
+             slider.append(span);
+        });
+    }
+    
+    // paint points for each slider
+    paint_slider_points($("#cpu-indicator").parent().find(".slider"), img.options.cpu);
+    paint_slider_points($("#storage-indicator").parent().find(".slider"), img.options.disk);
+    paint_slider_points($("#ram-indicator").parent().find(".slider"), img.options.ram);
+}
+
+function validate_selected_flavor_options(selected) {
+    var img = IMAGES_DATA[get_selected_image_id()];
+    if (!check_selected_flavor_values()) {
+        var flv = img.default_flavor;
+        set_flavor_sliders_values(flv.cpu, flv.disk, flv.ram);
+    }
+
+    update_creating_vm_details();
+}
+
+// check if selected values are available
+// as a flavor for the image
+function check_selected_flavor_values() {
+    var img = IMAGES_DATA[get_selected_image_id()];
+    var values = get_flavor_sliders_values();
+    var found = false;
+    
+    // index lookup
+    if (img.flavors_index.indexOf(get_flavor_index_key(values)) > -1) {
+        // return flavor id
+        return identify_flavor(values.cpu, values.disk, values.ram);
+    }
+    
+    return false;
+}
+
+// find which image is selected
+// return the options requested available for this image
+function get_selected_image_options(opt_name) {
+    var img_id = get_selected_image_id();
+    var img = IMAGES_DATA[img_id];
+    return img.options[opt_name];
+}
+
+// identify selected image
+function get_selected_image_id() {
+    return $(".image-container input:checked").attr("id").replace("img-radio-", "");
+}
+
 function update_wizard_flavors(){
+    
+    // find max range values
+    cpus_max = Math.max.apply(Math, cpus); 
+    cpus_min = 1;
+
+    disks_max = Math.max.apply(Math, disks);
+    disks_min = 1;
+
+    ram_max = Math.max.apply(Math, ram);
+    ram_min = 1;
+    
     // sliders for selecting VM flavor
-    $("#cpu:range").rangeinput({min:0,
+    $("#cpu:range").rangeinput({min:1,
                                value:0,
                                step:1,
                                progress: true,
-                               max:cpus.length-1});
+                               max:100});
 
-    $("#storage:range").rangeinput({min:0,
+    $("#storage:range").rangeinput({min:1,
                                value:0,
                                step:1,
                                progress: true,
-                               max:disks.length-1});
+                               max:100});
 
-    $("#ram:range").rangeinput({min:0,
+    $("#ram:range").rangeinput({min:1,
                                value:0,
                                step:1,
                                progress: true,
-                               max:ram.length-1});
-    $("#small").click();
+                               max:100});
 
     // update the indicators when sliding
     $("#cpu:range").data().rangeinput.onSlide(function(event,value){
-        $("#cpu-indicator")[0].value = cpus[Number(value)];
+        var cpus = get_selected_image_options("cpu");
+        $("#cpu-indicator")[0].value = range_percentage_to_value(value, cpus);
         $("#cpu-indicator").addClass('selectedrange');
     });
     $("#cpu:range").data().rangeinput.change(function(event,value){
-        $("#cpu-indicator")[0].value = cpus[Number(value)];
+        var cpus = get_selected_image_options("cpu");
+        $("#cpu-indicator")[0].value = range_percentage_to_value(value, cpus);
+        normal_value = range_value_to_percentage(get_closest_option(value, cpus), cpus);
+        if (this.getValue() != normal_value) {
+            this.setValue(normal_value);
+        }
         $("#custom").click();
         $("#cpu-indicator").removeClass('selectedrange');
+        validate_selected_flavor_options("cpu");
     });
     $("#ram:range").data().rangeinput.onSlide(function(event,value){
-        $("#ram-indicator")[0].value = ram[Number(value)];
+        var ram = get_selected_image_options("ram");
+        $("#ram-indicator")[0].value = range_percentage_to_value(value, ram);
         $("#ram-indicator").addClass('selectedrange');
     });
     $("#ram:range").data().rangeinput.change(function(event,value){
-        $("#ram-indicator")[0].value = ram[Number(value)];
+        var ram = get_selected_image_options("ram");
+        $("#ram-indicator")[0].value = range_percentage_to_value(value, ram);
+        normal_value = range_value_to_percentage(get_closest_option(value, ram), ram);
+        if (this.getValue() != normal_value) {
+            this.setValue(normal_value);
+        }
         $("#custom").click();
         $("#ram-indicator").removeClass('selectedrange');
+        validate_selected_flavor_options("ram");
     });
     $("#storage:range").data().rangeinput.onSlide(function(event,value){
-        $("#storage-indicator")[0].value = disks[Number(value)];
+        var disks = get_selected_image_options("disk")
+        $("#storage-indicator")[0].value = range_percentage_to_value(value, disks);
         $("#storage-indicator").addClass('selectedrange');
     });
     $("#storage:range").data().rangeinput.change(function(event,value){
-        $("#storage-indicator")[0].value = disks[Number(value)];
+        var disks = get_selected_image_options("disk")
+        $("#storage-indicator")[0].value = range_percentage_to_value(value, disks);
+        normal_value = range_value_to_percentage(get_closest_option(value, disks), disks);
+        if (this.getValue() != normal_value) {
+            this.setValue(normal_value);
+        }
         $("#custom").click();
         $("#storage-indicator").removeClass('selectedrange');
+        validate_selected_flavor_options("disk");
     });
+}
+
+function get_flavor_slider(name) {
+    return $("#" + name + ":range").data().rangeinput;
+}
+
+// utility function to grab the value of the slider
+function get_flavor_slider_value(name) {
+    var maps = {
+        'cpu': cpus,
+        'ram': ram,
+        'storage': disks
+    }
+    return range_percentage_to_value(get_flavor_slider(name).getValue(), maps[name]);
+}
+
+function set_flavor_sliders_values(cpu, disk, ram) {
+    get_flavor_slider("cpu").setValue(range_value_to_percentage(cpu, get_selected_image_options("cpu")));
+    get_flavor_slider("storage").setValue(range_value_to_percentage(disk, get_selected_image_options("disk")));
+    get_flavor_slider("ram").setValue(range_value_to_percentage(ram, get_selected_image_options("ram")));
+}
+
+function get_flavor_sliders_values() {
+    return {
+        'cpu': get_flavor_slider_value("cpu"),
+        'ram': get_flavor_slider_value("ram"),
+        'disk': get_flavor_slider_value("storage")
+    }
 }
 
 Array.prototype.unique = function () {
@@ -819,13 +1248,7 @@ function update_flavors() {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Update Flavors', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, "Update Flavors", "NETWORK ERROR");
-            }
-            // start updating vm list
-            update_vms(UPDATE_INTERVAL);
+            handle_api_error(-16, undefined, 'Update flavors', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
 
@@ -837,10 +1260,21 @@ function update_flavors() {
                     disks[i] = flavor['disk'];
                     ram[i] = flavor['ram'];
                 });
+
+                // we only need unique and sorted arrays
                 cpus = cpus.unique();
                 disks = disks.unique();
                 ram = ram.unique();
+                
+                // sort arrays
+                var numeric_sort = function(a,b) { return a>b};
+                disks.sort(numeric_sort);
+                cpus.sort(numeric_sort);
+                ram.sort(numeric_sort);
+            
+                // ui update handlers
                 update_wizard_flavors();
+                update_image_flavor_options();
             } catch(err){
                 ajax_error("NO_FLAVORS");
             }
@@ -881,8 +1315,53 @@ function get_machine(serverID) {
     return 0;
 }
 
+// helper function, returns the name of the current view
+function get_current_view() {
+    
+    if ($.cookie('pane') == 1) {
+        return "network"
+    }
+
+    if ($.cookie('pane') == 2) {
+        return "disks"
+    }
+    
+    switch ($.cookie('view')) {
+        case "0":
+            return "icon";
+            break;
+        case "1":
+            return "list";
+            break;
+        case "2":
+            return "single";
+            break;
+    }
+
+    return false;
+}
+
+// update vms actions based on current view
+function update_machine_actions(serverID, server_status) {
+    var view = get_current_view();
+    
+    // call the proper update actions method
+    if (['icon', 'single'].indexOf(view) > -1) {
+        update_iconview_actions(serverID, server_status);
+    } else if (['list'].indexOf(view) > -1) {
+        update_listview_actions();
+    }
+}
+
 // update the actions in icon view, per server
 function update_iconview_actions(serverID, server_status) {
+
+    // vm in destroy status ???
+    var vm = get_machine(serverID)
+    if (vm.state_transition == "DESTROY") {
+        server_status = "DESTROY";
+    }
+
     if ($.cookie("view")=='2') {
         // remove .disable from all actions to begin with
         $('#machinesview-single #' + serverID + ' div.single-action').show();
@@ -918,10 +1397,20 @@ function update_listview_actions() {
 
     // check the states of selected machines
     checked.each(function(i,checkbox) {
-        states[states.length] = checkbox.className;
-        var ip = $("#" + checkbox.id.replace('input-','') + ".ip span.public").text();
-        if (ip.replace('undefined','').length)
-            states[states.length] = 'network';
+
+        // force destroy mode
+        var vm = get_machine(checkbox.id);
+        if (vm.state_transition == "DESTROY") {
+            states[states.length] = "DESTROY";
+        } else {
+            states[states.length] = checkbox.className;
+        }
+
+        if (vm_has_public_ip(vm) && vm.status == "ACTIVE") { 
+            states = ['network'];
+            if (checked.length>1)
+                states[states.length] = 'multiple';
+        }
     });
 
     // decide which actions should be enabled
@@ -944,18 +1433,41 @@ function update_listview_actions() {
     }
 }
 
+// return a metadata dict containing the metadata
+// that should be cloned from image to vm
+function get_image_metadata_to_copy(imageRef) {
+    var image = IMAGES_DATA[imageRef].image;
+    var metadata = image.metadata;
+
+    // if no metadata return empty object
+    if (!metadata || !metadata.values) {
+        return {};
+    }
+    
+    var vm_meta = {};
+    // find existing keys, copy their values to the server
+    // metadata object
+    $.each(VM_IMAGE_COMMON_METADATA, function(index, key) {
+        if (metadata.values[key] !== undefined) {
+            vm_meta[key] = metadata.values[key];
+        }
+    })
+
+    return vm_meta;
+}
 //create server action
-function create_vm(machineName, imageRef, flavorRef){
+function create_vm(machineName, imageRef, flavorRef) {
     var image_logo = os_icon(get_image(imageRef).metadata);
     var uri = API_URL + '/servers';
+
+    var vm_meta = get_image_metadata_to_copy(imageRef);
+
     var payload = {
         "server": {
             "name": machineName,
             "imageRef": imageRef,
             "flavorRef" : flavorRef,
-            "metadata" : {
-                "OS" : image_logo
-            }
+            "metadata" : vm_meta
         }
     };
 
@@ -969,11 +1481,7 @@ function create_vm(machineName, imageRef, flavorRef){
     error: function(jqXHR, textStatus, errorThrown) {
                 // close wizard and show error box
                 $('#machines-pane a#create').data('overlay').close();
-                    try {
-                        ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
-                    } catch(err) {
-                        ajax_error(-1, textStatus, 'Create VM', "NETWORK ERROR");
-                    }
+                handle_api_error(-17, undefined, 'Create VM', jqXHR, textStatus, errorThrown, this);
            },
     success: function(data, textStatus, jqXHR) {
                 if ( jqXHR.status == '202') {
@@ -981,7 +1489,7 @@ function create_vm(machineName, imageRef, flavorRef){
                 } else {
                     // close wizard and show error box
                     $('#machines-pane a#create').data('overlay').close();
-                    ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText);
+                    ajax_error(jqXHR.status, undefined, 'Create VM', jqXHR.responseText, this);
                 }
             }
     });
@@ -1042,7 +1550,7 @@ function reboot(serverIDs){
                         // continue with the rest of the servers
                         reboot(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Reboot', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Reboot', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1082,11 +1590,14 @@ function shutdown(serverIDs) {
                             console.info('suspended ' + serverID);
                         } catch(err) {}
                         // indicate that the action succeeded
+                        var vm = get_machine(serverID);
+                        vm.state_transition = "SHUTDOWN";
+
                         display_success(serverID);
                         // continue with the rest of the servers
                         shutdown(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Shutdown', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1127,13 +1638,17 @@ function destroy(serverIDs) {
                         // update status on local storage object
                         vm = get_machine(serverID);
                         vm.status = "DESTROY";
+                        vm.state_transition = "DESTROY";
+                        
+                        // state changed, update actions
+                        update_machine_actions(serverID, vm.status);
 
                         // indicate that the action succeeded
                         display_success(serverID);
                         // continue with the rest of the servers
                         destroy(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Destroy', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Destroy', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1172,12 +1687,14 @@ function start(serverIDs){
                         try {
                             console.info('started ' + serverID);
                         } catch(err) {}
+                        var vm = get_machine(serverID);
+                        vm.state_transition = "START";
                         // indicate that the action succeeded
                         display_success(serverID);
                         // continue with the rest of the servers
                         start(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Start', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Start', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1272,7 +1789,7 @@ function open_console(serverIDs){
                         // continue with the rest of the servers
                         open_console(serverIDs);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Console', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Console', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1300,8 +1817,8 @@ function machine_connect(serverIDs){
     }
     
     // prefer metadata values for specific options (username, domain)
-    var username_meta_key = 'user';
-    var domain_meta_key = "domain";
+    var username_meta_key = 'loginname';
+    var domain_meta_key = "logindomain";
 
     var serverID = serverIDs.pop();
     var machine = get_machine(serverID);
@@ -1410,7 +1927,7 @@ function rename(serverID, serverName){
                         // indicate that the action succeeded
                         display_success(serverID);
                     } else {
-                        ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText);
+                        ajax_error(jqXHR.status, serverID, 'Rename', jqXHR.responseText, this);
                     }
                 }
     });
@@ -1427,13 +1944,8 @@ function get_metadata(serverID, keys_only) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Get metadata', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Get metadata', "NETWORK ERROR");
-            }
+            $("a#metadata-scrollable").data('overlay').close();
+            handle_api_error(-18, undefined, 'Get metadata', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             // to list the new results in the edit dialog
@@ -1459,13 +1971,8 @@ function delete_metadata(serverID, meta_key) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Delete metadata', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Delete metadata', "NETWORK ERROR");
-            }
+            $("a#metadata-scrollable").data('overlay').close();
+            handle_api_error(-19, undefined, 'Delete metadata', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
                     // success: Do nothing, the UI is already updated
@@ -1490,13 +1997,8 @@ function update_metadata(serverID, meta_key, meta_value) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#metadata-scrollable").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add metadata', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Add metadata', "NETWORK ERROR");
-            }
+            $("a#metadata-scrollable").data('overlay').close();
+            handle_api_error(-20, undefined, 'Update metadata', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             // success: Update icons if meta key is OS
@@ -1533,6 +2035,7 @@ function get_server_stats(serverID) {
     }
 
     $.ajax({
+        repeated: true,
         url: API_URL + '/servers/' + serverID + '/stats',
         cache: false,
         type: "GET",
@@ -1540,11 +2043,7 @@ function get_server_stats(serverID) {
         dataType: "json",
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Get server stats', jqXHR.responseText);
-            } catch(err) {
-                ajax_error(-1, textStatus, 'Get server stats', "NETWORK ERROR");
-            }
+            handle_api_error(-21, undefined, 'Get server stats', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             update_machine_stats(serverID, data);
@@ -1582,6 +2081,18 @@ function update_machine_stats(vm_id, data) {
     var vm = get_machine(vm_id);    
     var clear = false;
 
+    // stats container is hidden
+    // do not update the stats
+    if (!els || els.cont.length == 0 || !els.cont.is(":visible")) {
+        clear = true;
+    }
+    
+    // view changed and vm stats not visible now, clear interval
+    if (clear) {
+        set_stats_update_handler(vm_id, data.stats.refresh, clear);
+        return;
+    }
+    
     // api error
     if (!data) {
         from_error = true;
@@ -1633,11 +2144,6 @@ function update_machine_stats(vm_id, data) {
         }
     }
 
-    // stats container is hidden
-    // do not update the stats
-    if (els.cont.length == 0 || !els.cont.is(":visible")) {
-        clear = true;
-    }
     
     // set timeout to call the stats update
     set_stats_update_handler(vm_id, data.stats.refresh, clear);
@@ -1697,13 +2203,8 @@ function create_network(networkName){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#networkscreate").overlay().close();
-                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Create network', "NETWORK ERROR");
-            }
+            $("a#networkscreate").overlay().close();
+            handle_api_error(-22, undefined, 'Create network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -1719,7 +2220,7 @@ function create_network(networkName){
             } else {
                 // close wizard and show error box
                 $("a#networkscreate").overlay().close();
-                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Create network', jqXHR.responseText, this);
             }
         }
     });
@@ -1745,11 +2246,7 @@ function rename_network(networkID, networkName){
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Rename network', "NETWORK ERROR");
-            }
+            handle_api_error(-23, undefined, 'Rename network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '204') {
@@ -1757,7 +2254,7 @@ function rename_network(networkID, networkName){
                     console.info('renamed network' + networkID);
                 } catch(err) {}
             } else {
-                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Rename network', jqXHR.responseText, this);
             }
         }
     });
@@ -1830,13 +2327,8 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                // close wizard and show error box
-                $("a#add-machines-overlay").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Add server to network', "NETWORK ERROR");
-            }
+            $("a#add-machines-overlay").data('overlay').close();
+            handle_api_error(-24, undefined, 'Add server to network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -1850,7 +2342,7 @@ function add_server_to_network(networkID, serverIDs, serverNames, serverStates) 
             } else {
                 // close wizard and show error box
                 $("a#add-machines-overlay").data('overlay').close();
-                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Add server to network', jqXHR.responseText, this);
             }
         }
     });
@@ -1880,11 +2372,7 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Remove server from network', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Remove server from network', "NETWORK ERROR");
-            }
+            handle_api_error(-25, undefined, 'Remove server from network', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -1896,7 +2384,7 @@ function remove_server_from_network(networkIDs, serverIDs, serverNames, serverSt
                 // continue with the rest of the servers
                 remove_server_form_network(networkIDs, serverIDs, serverNames, serverStates);
             } else {
-                ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Remove server form network', jqXHR.responseText, this);
             }
         }
     });
@@ -1921,11 +2409,7 @@ function set_firewall(networkID, serverID, profile) {
         data: JSON.stringify(payload),
         timeout: TIMEOUT,
         error: function(jqXHR, textStatus, errorThrown) {
-            try {
-                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
-            } catch (err) {
-                ajax_error(-1, textStatus, 'Set firewall profile', "NETWORK ERROR");
-            }
+            handle_api_error(-26, undefined, 'Set firewall profile', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
             if ( jqXHR.status == '202') {
@@ -1954,7 +2438,7 @@ function set_firewall(networkID, serverID, profile) {
                 vm.network_transition = "NETWORK_CHANGE";
                 show_machine_network_indicator(vm.id, 'pub');
             } else {
-                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText);
+                ajax_error(jqXHR.status, undefined, 'Set firewall profile', jqXHR.responseText, this);
             }
         }
     });
@@ -2389,7 +2873,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
 
 
 // generic info box
-function show_feedback_form(msg, from_error) {
+function show_feedback_form(msg, from_error, extra_data) {
     var box = $("#feedback-form");
     box.addClass("notification-box");
 
@@ -2416,10 +2900,11 @@ function show_feedback_form(msg, from_error) {
         box.find("textarea").val(initial_msg);
         $("a#feedbackbox").overlay().onClose(function(){window.location.reload()});
         box.find("textarea").height(200);
-        $("a#feedbackbox").overlay().onLoad(function(){box.find("textarea").focus().setCursorPosition(500);});
+        $("a#feedbackbox").overlay().onLoad(function(){box.find("textarea").focus().setCursorPosition(1500);});
         
     }
-
+    
+    var extra_data = extra_data;
     $("#feedback-form form").unbind("submit");
     $("#feedback-form form").submit(function(event) {
         event.preventDefault();
@@ -2430,7 +2915,8 @@ function show_feedback_form(msg, from_error) {
             return;
         }
 
-        $("textarea.data-text", this).val("").val(get_user_data_json());
+        // fill the textarea with user information jsonified
+        $("textarea.data-text", this).val("").val(get_user_data_json(extra_data));
 
         $.ajax({
             url: FEEDBACK_URL,
@@ -2461,9 +2947,10 @@ function get_user_data(extra_data) {
         // reset xhr, might raise exceptions while converting to JSON
         last_req.xhr = {};
     } catch (err) {
-        var last_req = {}
+        var last_req = err;
     }
-
+    
+    var changes_since_date = changes_since_date || false;
     return $.extend({
         'servers': $.extend({}, servers),
         'client': {'browser': $.browser, 'screen': $.extend({}, screen), 'client': $.client},
@@ -2472,22 +2959,24 @@ function get_user_data(extra_data) {
     }, extra_data);
 }
 
-function get_user_data_json() {
+function get_user_data_json(extra) {
     try {
-        return JSON.stringify(get_user_data());
+        return JSON.stringify(get_user_data(extra));
     } catch (err) {
         return JSON.stringify({'error': err});
     }
 }
 
-function msg_box(config) {
-    var config = $.extend({'title':'Info message', 'content': 'this is an info message', 'ajax': false, 'extra':false}, config);
+function msg_box(user_config) {
+    var defaults = {'title':'Info message', 'content': 'this is an info message', 'ajax': false, 'extra':false};
+    var config = $.extend(defaults, user_config);
+
     // prepare the error message
     // bring up success notification
-
     var box = $("#notification-box");
     box.addClass("notification-box");
     box.addClass('success');
+    box.addClass(config.cls || '');
     box.removeClass('error');
 
     var sel = function(s){return $(s, box)};
@@ -2496,11 +2985,11 @@ function msg_box(config) {
     sel(".sub-text").html("");
     sel(".password-container .password").html("");
     sel("div.machine-now-building").html("");
-    
 
     // apply msg box contents
     sel("h3 span.header-box").html(config.title);
     sel("div.machine-now-building").html(config.content);
+    sel(".sub-text").html(config.sub_content || '');
     sel(".popup-header").removeClass("popup-header-error");
     box.removeClass("popup-border-error");
     sel(".popup-details").removeClass("popup-details-error");
@@ -2519,6 +3008,7 @@ function msg_box(config) {
         closeOnClick: false,
         oneInstance: false,
         load: false,
+        onLoad: config.onLoad || false,
         fixed: config.fixed || false,
         onClose: function () {
             // With partial refresh working properly,
@@ -2526,7 +3016,7 @@ function msg_box(config) {
             // choose_view();
         }
     }
-    
+
     var triggers = $("a#msgbox").overlay(conf);
 
     try {
@@ -2541,7 +3031,7 @@ function msg_box(config) {
     config.ajax = config.ajax || {};
 
     // requested to show remote data in msg_box
-    if (config.ajax) {
+    if (config.ajax && !$.isEmptyObject(config.ajax)) {
         $.ajax($.extend({ 
             url:config.ajax, 
             success: function(data){
@@ -2580,7 +3070,7 @@ function msg_box(config) {
                 }
             },
             error: function(xhr, status, err) {
-                ajax_error(-519, "UI Error", "Machine connect", err);
+                ajax_error(-519, "UI Error", "Machine connect", err, this);
             }
         }, config.ajax_config));
     }
@@ -2588,16 +3078,60 @@ function msg_box(config) {
 }
 
 
+function show_api_overlay() {
+    var config = {
+        title: window.API_OVERLAY_TITLE,
+        content: $(".api_overlay_content").html().replace("$api_key", $.cookie("X-Auth-Token")),
+        extra: $.cookie("X-Auth-Token"),
+        sub_content: window.API_OVERLAY_SUBCONTENT,
+        cls: "api_content",
+        ajax: false
+    }
+    msg_box(config);
+}
+
 function show_invitations() {
     
-    function display_resend_success(msg) {
-        clear_resend_messages();
-        $("#invsent .message.success").text(msg).show();
+    var invsent_per_page = INVITATIONS_PER_PAGE;
+    function handle_pagination(p) {
+        show_sent_page(p, invsent_per_page);
+        return false;
+    }
+    
+    function show_sent_page(i, per_page) {
+        $("#invsent ul li").hide();
+        start = i * per_page;
+        end = start + per_page;
+
+        var i = start;
+        while(i < start + per_page) {
+            $($("#invsent ul li")[i]).show();
+            i++;
+        }
     }
 
-    function display_resend_error(msg) {
-        clear_resend_messages();
-        $("#invsent .message.errormsg").text(msg).show();
+    function paginate_sent() {
+        var per_page = invsent_per_page;
+        var total = $(".invitations #invsent ul li").length;
+        $(".invitations .pages").pagination(total, {callback: handle_pagination, items_per_page: per_page});
+        show_sent_page(0, per_page);
+    }
+
+    function display_resend_msg(msg, cls) {
+        el = $("<span class='resend-msg "+cls+"'>"+msg+"</span>");
+        
+        (function(el) {
+            var element = el;
+            window.setTimeout(function(){
+                element.fadeOut(200, function() { 
+                    $(this).remove()
+                    if ($(".message.success span").length == 1) {
+                        $(".message.success").hide();
+                    } 
+                });
+            }, 4000);
+        })(el)
+        $("#invsent .message.success").append(el).show();
     }
 
     // clear resent messages
@@ -2625,13 +3159,15 @@ function show_invitations() {
                 type: "POST",
                 url : "/invitations/resend",
                 data : {invid : id},
+                invid: id,
                 success: function(msg) {
-                    display_resend_success("Invitation has been resent");
+                    inv_email = $(".resend-invitation#inv-" + this.invid).parent().find(".email").text();
+                    display_resend_msg("Invitation to <em>'"+inv_email+"'</em> has been resent", "success-msg");
                     child.attr('src', '/static/resend.png');
                 },
                 error : function(xhr, status, error) {
-                    display_resend_error("Something seems to have gone wrong. " +
-                          "Please try again in a few minutes.");
+                    inv_email = $(".resend-invitation#inv-" + this.invid).parent().find(".email").text();
+                    display_resend_msg("Invitation to <em>'"+inv_email+"'</em> failed to send", "error-msg");
                     child.attr('src', '/static/resend.png');
                 }
             });
@@ -2639,6 +3175,10 @@ function show_invitations() {
     }
 
     handle_invitations = function(el) {
+        
+        if ($("div.invitations").length > 1) {
+            $($("div.invitations")[0]).remove();
+        }
 
         // proper class to identify the overlay block
         el.addClass("invitations");
@@ -2667,14 +3207,17 @@ function show_invitations() {
         $(".invitations .submit").show();
         $(".invitations #fieldheaders").show();
         $(".invitations #fields").show();
+        $("#fields input[name=name_1]").focus();
 
         // reset title
         $("#notification-box .header-box").html("");
         $("#notification-box .header-box").html(window.INVITATIONS_TITLE + " " + $($(".invitations-left")[0]).text());
-    
+        
         // resend buttons
         register_invitation_resends();
         clear_resend_messages();
+
+        paginate_sent();
 
         // handle form submit
         form.submit(function(evn){
@@ -2838,3 +3381,22 @@ function readablizeBytes(bytes) {
     return (bytes/Math.pow(1024, Math.floor(e))).toFixed(2)+" "+s[e];
 }
 
+// find closest to the given element vm
+function iconview_closest_vm(el) {
+    id = $(el).closest(".machine-container").attr("id");
+    return get_machine(id);
+}
+
+// find closest to the given element vm
+function singleview_closest_vm(el) {
+    id = $(el).closest(".single-container").attr("id");
+    return get_machine(id);
+}
+
+function vm_has_public_ip(vm) {
+    try {
+        var serverIP = vm.addresses.values[0].values[0].addr;
+        return serverIP;
+    } catch (err) { return false }
+
+}

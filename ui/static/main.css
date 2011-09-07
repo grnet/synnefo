@@ -24,6 +24,7 @@ body {
     background: url(./body-bg.png) repeat-x scroll 0 0 #FFFFFF;
     height: 100%;
     text-align:center;
+    font-size: 16px;
 }
 
 #container {
@@ -309,7 +310,7 @@ div#footer-text{
 /* server wizard scrollable root element and network wizard */
 #wizard, #networks-wizard {
     font-size:75%;
-    height:405px;
+    height:425px;
     width:453px;
     overflow:hidden;
     position:absolute !important;
@@ -562,7 +563,7 @@ div#footer-text{
     background-color: #387693;
     height: 5px;
     margin-left: -14px;
-    margin-top: 362px;
+    margin-top: 382px;
     width: 550px;
 }
 
@@ -1002,7 +1003,7 @@ span.rename {
     cursor: pointer;
 }
 
-div.name:hover span.rename {
+div.name:hover span.rename, span.rename_hovered {
     color: #3D3D3D;
     margin-top: 0.4em;
     background-image: url(./pencil.png);
@@ -1207,6 +1208,10 @@ div.machine-type {
 
 .machine-type .active {
     color: #FFFFFF
+}
+
+div.machine-type label.disabled {
+    color: #aaa !important;
 }
 
 #machinesview {
@@ -2064,6 +2069,7 @@ input.machine {
     border: 2px solid #FF7F2A;
     float: left;
     margin-left: 10px;
+    margin-right: 10px;
     padding: 2px;
 }
 
@@ -3671,6 +3677,10 @@ div.single div.column3 div.server-name:hover, .single .column3 .column3-selected
     margin-left: 82px;
 }
 
+.single div.lower img.stats {
+    display: none;
+}
+
 .single .single-image {
     width: 126px;
     height: 136px;
@@ -3804,7 +3814,7 @@ div.console-footer {
     height: 6px;
     width: 479px;
     margin-left: -13px;
-    margin-top: 22px;
+    margin-top: 19px;
 }
 
 .red {
@@ -3908,26 +3918,69 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-top: 5px;
 }
 
+.invitations #errors {
+    padding: 5px;
+    background-color: #800000;
+}
+
 .invitations #errors p {
     margin-bottom: 10px;
     font-size: 0.95em;
+    padding-top:0;
+    margin-top:0;
+    color: #fff;
 }
 
 .invitations #errors li {
     font-size: 0.85em;
-    color: #800000;
+    color: #ddd;
 }
 
 .invitations #errors {
     font-size: 100%;
-    color: #f00;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+}
+
+#invsent {
+    padding-top: 10px;
+}
+
+#invsent h3.overlay-inner-title {
+    font-size: 1.2em;
+    font-weight: normal;
+    border-bottom: 1px solid #B0D0E0;
+}
+
+#invsent .icons-info img {
+    vertical-align: middle;
+}
+
+#invsent .icons-info {
+    margin-top: 10px;
+    font-size: 0.7em;
+}
+
+#invsent .icons-info span {
+    margin-right: 10px;
+}
+
+.notification-box .invitations {
+    padding-bottom: 0;
+}
+.notification-box .invitations .sub-text {
+    display: none;
+}
+
+h3.overlay-inner-title {
+    color: #4085A5;
+    font-size: 2em;
 }
 
 #invsent .message {
     font-size: 0.9em;
-    padding: 5px;
-    margin-top: 10px;
+    padding: 5px 0;
+    margin-top: 5px;
+    margin-bottom: -10px;
     color: #5CAD54;
 }
 
@@ -3939,12 +3992,16 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-bottom: 10px;   
 }
 
+.remove-field-trigger, .add-field-trigger {
+    cursor: pointer;
+}
+
 .add-field-trigger img {
     vertical-align: middle;
 }
 
 .invitations form {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 #invsent h3 {
@@ -3961,7 +4018,7 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 #invsent ul {
-    margin-top: 10px;
+    margin-top: 3px;
 }
 
 #invsent li {
@@ -4068,7 +4125,7 @@ div.state .shutdown, tbody.machines .shutdown {
 #notification-box .cmd {
     color: #fff;
     font-family: monospace;
-    font-size: 1.6em;
+    font-size: 1.4em;
 }
 
 .machine-container .separator {
@@ -4314,4 +4371,116 @@ div.state .shutdown, tbody.machines .shutdown {
     font-size: 0.6em;
     padding: 0 10px;
     text-align: center;
+}
+
+.slider .slider-point {
+    width: 4px;
+    height: 3px;
+    margin-left: 1px;
+    background-color: transparent;
+    display: block;
+    position: absolute;
+    z-index: 10;
+    bottom: 0px;
+}
+
+.slider .slider-point-light {
+    background-color: transparent;
+}
+
+.slider-point-text {
+    font-size: 0.6em;
+    position: absolute;
+    top: 4px;
+    border-top: 5px solid #C5DEE9;
+    padding: 3px;
+    color: #4085A5;
+    display: block;
+    min-width: 6px;
+    text-align: middle;
+}
+
+.slider .handle {
+    z-index: 50;
+}
+
+.modal p.desc {
+    margin: 5px 0;
+    margin-left: 37px;
+    font-size: 0.8em;
+    color: #888;
+}
+
+.api_overlay_template {
+    display: none;
+}
+
+.api_content .password-container .password {
+    color: #fff;
+    font-size: 1.1em;
+}
+
+#disks-pane {
+    margin-top: 58px;
+}
+
+span.resend-msg {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.success-msg {
+    background-color: #5CAD54;
+    color: #fff;
+    padding: 0.4em;
+    border: 1px solid #ddd;
+}
+
+.error-msg {
+    background-color: #800000;
+    color: #fff;
+    padding: 0.4em;
+    border: 1px solid #ddd;
+}
+
+.success-msg em, .error-msg em {
+    font-weight: bold;
+    font-style: normal;
+    font-size: 0.9em;
+}
+
+.pagination {
+            font-size: 80%;
+        }
+        
+.pagination a {
+    text-decoration: none;
+	border: solid 1px #AAE;
+	color: #15B;
+}
+
+.pagination a, .pagination span {
+    display: block;
+    float: left;
+    padding: 0.3em 0.5em;
+    margin-right: 5px;
+	margin-bottom: 5px;
+	min-width:1em;
+	text-align:center;
+}
+
+.pagination .current {
+    background: #4085A5;
+    color: #fff;
+	border: solid 1px #AAE;
+}
+
+.pagination .current.prev, .pagination .current.next{
+	color:#999;
+	border-color:#999;
+	background:#fff;
+}
+
+#invsent .pagination {
+    margin-top: 10px;
 }

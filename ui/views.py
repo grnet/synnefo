@@ -50,6 +50,9 @@ TIMEOUT = settings.TIMEOUT
 UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
+SUGGESTED_FLAVORS = getattr(settings, "SUGGESTED_FLAVORS", {})
+VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
+INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -65,6 +68,9 @@ def home(request):
                'update_interval': UPDATE_INTERVAL,
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
+               'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
+               'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
+               'invitations_per_page': INVITATIONS_PER_PAGE,
                'DEBUG': settings.DEBUG}
     return template('home', context)
 

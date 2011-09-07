@@ -16,6 +16,10 @@ GANETI-INSTANCE-IMAGE
       The new version is available for download as a debian package:
       https://code.grnet.gr/attachments/download/331/ganeti-instance-image_0.5.1-1-snf1_all.deb
 
+NEW SETTINGS
+    * 30-ui.conf:SUGGESTED_FLAVORS
+    * 30-ui.conf:VM_IMAGE_COMMON_METADATA
+
 
 v0.5.4 -> v0.5.5
 LOGGING
@@ -57,6 +61,7 @@ DJANGO SETTINGS
     * Removed settings.d/98-ganeti-* due to split of snf-ganeti-tools
     * ~okeanos intro: OKEANOS_VIDEO_URL: Changed from string to dict
     * ~okeanos intro: OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
+    * ~okeanos intro: OKEANOS_VIDEO_FLOWPLAYER_URL: New setting
 
 DB MIGRATIONS
     * 0018_auto__add_field_virtualmachine_buildpercentage

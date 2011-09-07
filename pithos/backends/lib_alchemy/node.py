@@ -217,6 +217,7 @@ class Node(DBWorker):
         """
         
         s = select(['*'], self.versions.c.node == node)
+        s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
         if not rows:

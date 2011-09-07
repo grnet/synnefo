@@ -510,7 +510,7 @@ class SimpleBackend(BaseBackend):
         missing = self.blocker.block_ping([binascii.unhexlify(x) for x in hashmap])
         if missing:
             ie = IndexError()
-            ie.data = missing
+            ie.data = [binascii.hexlify(x) for x in missing]
             raise ie
         path = self._get_containerinfo(account, container)[0]
         path = '/'.join((path, name))

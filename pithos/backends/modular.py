@@ -478,7 +478,7 @@ class ModularBackend(BaseBackend):
         missing = self.blocker.block_ping([binascii.unhexlify(x) for x in hashmap])
         if missing:
             ie = IndexError()
-            ie.data = missing
+            ie.data = [binascii.hexlify(x) for x in missing]
             raise ie
         if permissions is not None:
             self._check_permissions(path, permissions)

@@ -98,12 +98,7 @@ class Blocker(object):
         """Check hashes for existence and
            return those missing from block storage.
         """
-        missing = []
-        append = missing.append
-        for i, h in enumerate(hashes):
-            if not self._check_rear_block(h):
-                append(i)
-        return missing
+        return [h for h in hashes if not self._check_rear_block(h)]
 
     def block_retr(self, hashes):
         """Retrieve blocks from storage by their hashes."""

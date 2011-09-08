@@ -36,7 +36,7 @@ a.enabled {
 }
 
 #wizard {
-    height: 450px;
+    height: 468px;
 }
 
 #wizard .topruler, #networks-wizard .topruler {
@@ -135,7 +135,7 @@ div.image {
 
 #wizard .separator-end {
     font-size: 2%;
-    margin-top: 383px;
+    margin-top: 401px;
 }
 
 div.confirm_single {
@@ -239,7 +239,7 @@ div.machine .actions .destroy {
 
 #ie-fix-view-select {
     position: relative;
-    z-index: 1000;
+    z-index: 630;
 }
 
 #view-select {
@@ -288,7 +288,7 @@ div.machine .actions .destroy {
 }
 
 #networks-wizard .separator-end {
-    margin-top: 5px;
+    margin-top: 8px;
 }
 
 .private-networks .state div {
@@ -440,6 +440,7 @@ div#user .usermenu {
     height: 26px;
     position: relative;
     width: 190px;
+    z-index: 1000;
 }
 
 div#user .username {
@@ -584,4 +585,22 @@ a.manage-metadata {
 
 .vm-stats div img.stat-busy {
     margin-top: -0px;
+}
+
+h5.namecontainer {
+    height: 10px;
+}
+
+span.rename {
+    height: 15px;
+    width: 20px;
+}
+
+span.rename_hovered {
+    margin-top:0;
+}
+
+#header {
+    position: relative;
+    z-index: 8000;
 }

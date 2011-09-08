@@ -141,7 +141,7 @@ def create_network(request):
     
     network = backend.create_network(name, request.user)
     if not network:
-        raise OverLimit('Maximum number of networks reached.')
+        raise OverLimit('Network count limit exceeded for your account.')
     
     networkdict = network_to_dict(network)
     return render_network(request, networkdict, status=202)

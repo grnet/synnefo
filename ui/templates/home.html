@@ -55,6 +55,7 @@ or implied, of GRNET S.A.
     <script src="static/jquery.client.js"></script>
     <script src="static/json2.js"></script>
     <script src="static/jquery.dataTables.min.js"></script>
+    <script src="static/jquery.pagination.js"></script>
     <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
 
@@ -69,14 +70,19 @@ or implied, of GRNET S.A.
         var os_icons = {{image_icons|safe}};
 
         // timeout value from settings.py
-        var TIMEOUT = {{timeout}};
-        var UPDATE_INTERVAL = {{update_interval}};
+        var TIMEOUT = {{ timeout }};
+        var TIMEOUTS_OCCURED = 0;
+        var SKIP_TIMEOUTS = 1;
+        var UPDATE_INTERVAL = {{ update_interval }};
         var LOGOUT_REDIRECT = '{{ logout_redirect }}';
         var INVITATIONS_URL = "{% url invitations %}";
         var INVITATIONS_TITLE = "{% trans "Invite people" %}";
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
         var FEEDBACK_URL = "{% url feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
+        var API_OVERLAY_TITLE = "{% trans "API access" %}";
+        var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
+        var INVITATIONS_PER_PAGE = {% if invitations_per_page %} {{ invitations_per_page }} {% else %} 10 {% endif %};
         
         // building statuses
         var BUILDING_STATUSES = {
@@ -84,6 +90,8 @@ or implied, of GRNET S.A.
             'IMAGE_COPY': '{% trans "{0} of {1} ({2}%)" %}',
             'FINISH': '{% trans "Finalizing... (approx. 10 minutes remaining)" %}'
         }
+        
+        var VM_IMAGE_COMMON_METADATA = {{ vm_image_common_metadata|safe }};
 
         // server statuses and transitions
         var STATUSES = {
@@ -148,6 +156,8 @@ or implied, of GRNET S.A.
             'DEFAULT' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
             // bad request
             '400' : '{% trans "Malformed request." %}',
+            // Unauthorized
+            '401' : '{% trans "Unauthorized" %}',
             // not found
             '404' : '{% trans "Your request has failed. Resource not found." %}',
             // internal server error
@@ -167,8 +177,11 @@ or implied, of GRNET S.A.
             // error box title
             'GENERIC_POPUP_HEADER' : '{% trans "Something seems to have gone wrong :( Here is what happened:" %}',
             // no advanced details
-            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}'
+            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}',
+            'TIMEOUT' : '{% trans "It seems the server takes too long to respond, please check your network connectivity" %}'
         };
+
+        var SUGGESTED_FLAVORS = {{ suggested_flavors|safe }};
 
         var SUCCESS = {
             'HEADER' : '{% trans "Success" %}',
@@ -190,7 +203,17 @@ or implied, of GRNET S.A.
         };
 
         // ajax error checking
-        function ajax_error(status, serverID, action, responseText) {
+        function ajax_error(status, serverID, action, responseText, ajax_settings) {
+
+            // flag to display or not error report link
+            var allow_report = ajax_settings.disable_report ? false : true;
+            var no_details = ajax_settings.no_details === undefined || ajax_settings.no_details === false ? false : true;
+            
+            var error_date = new Date();
+            if (!ajax_settings) {
+                ajax_settings = {};
+            }
+
              // close existing overlays to begin with
             close_all_overlays();
             // clear old deferred calls (stops all auto-updates)
@@ -230,6 +253,11 @@ or implied, of GRNET S.A.
                     }
                 } else {
                     details = errors[0].details;
+                }
+                
+                // fallback to predefined message
+                if (ERRORS[status] !== undefined) {
+                    errors[0].message = ERRORS[status];
                 }
 
                 $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
@@ -305,16 +333,24 @@ or implied, of GRNET S.A.
                 btn.click(function(){
                     // wrap in its own try catch to avoid retriggering ajax_error
                     try {
-
+                        
+                        var data = {};
                         // fallback to error object
                         try {
                             var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
                         } catch (err) {
                             var data = {'error': err};
                         }
-
+                        
+                        try {
+                            // make it text then again object to be sure it can be
+                            // converted to text
+                            var ajax_data = {'ajax_settings': JSON.parse(JSON.stringify(ajax_settings))};
+                        } catch (err) {
+                            var ajax_data = {'ajax_settings': err};
+                        }
+                        
                         var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
-
                         // we will close error overlay to display feedback form
                         // set feedback pending flag to not reload the window url
                         // unless the user is done with the feedback
@@ -335,7 +371,12 @@ or implied, of GRNET S.A.
                                     "Data: " + errorData + "\n\n" + 
                                     "Please describe the actions that triggered the error:\n";
 
-                        setTimeout('show_feedback_form(fdb_msg, 1); $("#exposeMask").show();', 400);
+                        // append error date to extra user info
+                        var extra_user_data = $.extend(ajax_data, {'error_date': error_date});
+                        setTimeout(function() {
+                            show_feedback_form(fdb_msg, 1, extra_user_data); 
+                            $("#exposeMask").show();
+                            }, 400);
                     } catch (err) {
                         sel(".send-btn").hide();
                         sel(".errormsg").fadeIn();
@@ -360,8 +401,24 @@ or implied, of GRNET S.A.
                        location.reload();
                     }
                 },
+                onBeforeLoad: function() {
+                    if (allow_report) {
+                        $(".error-report .send-btn").show();
+                    } else {
+                        $(".error-report .send-btn").hide();
+                    }
+
+                    if (no_details) {
+                        $(".expand-details").hide();
+                    } else {
+                        $(".expand-details").show();
+                    }
+                },
                 onLoad: function() {
-                    initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
+                    if (allow_report) {
+                        initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
+                    } else {
+                    }
                 }
 
             });
@@ -434,6 +491,7 @@ or implied, of GRNET S.A.
                     <ul class="useractions">
                         <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
                         <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
+                        <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -557,7 +615,7 @@ or implied, of GRNET S.A.
 
             $(".usermenu .invitations").click(show_invitations);
             $(".usermenu .feedback").click(show_feedback_form);
-                
+            $(".usermenu .api").click(show_api_overlay);
         });
     </script>
     <!-- base notification for error/success reporting -->
@@ -622,6 +680,12 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
                 <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
             </div>
             </div>
+        </div>
+    </div>
+    
+    <div class="api_overlay_template">
+        <div class="api_overlay_content">
+            <p>Use the following API key along with the <a href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage your cloud resources from outside this page.</p>
         </div>
     </div>
 

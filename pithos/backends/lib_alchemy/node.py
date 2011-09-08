@@ -654,6 +654,7 @@ class Node(DBWorker):
         attributes = rp.fetchall()
         rp.close()
         for dest, k, v in attributes:
+            #insert or replace
             s = self.attributes.update().where(and_(
                 self.attributes.c.serial == dest,
                 self.attributes.c.key == k))

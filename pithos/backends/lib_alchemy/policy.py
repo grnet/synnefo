@@ -52,6 +52,7 @@ class Policy(DBWorker):
         metadata.bind = self.engine
     
     def policy_set(self, path, policy):
+        #insert or replace
         for k, v in policy.iteritems():
             s = self.policies.update().where(and_(self.policies.c.path == path,
                                                   self.policies.c.key == k))

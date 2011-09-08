@@ -4,17 +4,23 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
-v0.5.5 -> v0.5.6
+v0.5.5 -> v0.6
+ADMIN INTERFACE
+    * A new Web-based admin interface is available under /admin.
+      It is accessible by users of type 'ADMIN' in the DB, with
+      their authentication token. "snf-admin user modify" may be used
+      to change the type of a specific user.
+
 RECONCILIATION
     * Implemented new reconciliation management command, please see
-      ./manage.py reconcile --help for more info.
+      ./manage.py reconcile --help and README.admin for more info.
       Recommended to run ./manage.py reconcile --detect-all periodically,
       via cron.
 
 GANETI-INSTANCE-IMAGE
     * A new version of ganeti-instance-image is required (v0.5.1-1-snf1).
       The new version is available for download as a debian package:
-      https://code.grnet.gr/attachments/download/331/ganeti-instance-image_0.5.1-1-snf1_all.deb
+      https://code.grnet.gr/projects/gnt-instance-image/files
 
 NEW SETTINGS
     * 30-ui.conf:SUGGESTED_FLAVORS

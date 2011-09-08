@@ -149,10 +149,8 @@ class Node(DBWorker):
         columns.append(Column('muser', String(255), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
         self.versions = Table('versions', metadata, *columns)
-        # place an index on node
-        Index('idx_versions_node', self.versions.c.node)
-        # TODO: Sort out if more indexes are needed.
-        #Index('idx_versions_node', self.versions.c.mtime)
+        Index('idx_versions_node_mtime', self.versions.c.node,
+              self.versions.c.mtime)
         
         #create attributes table
         columns = []

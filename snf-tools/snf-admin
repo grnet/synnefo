@@ -183,8 +183,10 @@ class CreateUser(Command):
         username = username.decode('utf8')
         realname = self.realname or username
         type = self.type or 'USER'
-        if type not in [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]:
-            print 'Invalid type'
+        types = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
+        if type not in types:
+            valid = ', '.join(types)
+            print 'Invalid type. Must be one of:', valid
             return
         
         user = users._register_user(realname, username, email, type)
@@ -252,6 +254,8 @@ class ModifyUser(Command):
     description = 'modify a user'
     
     def add_options(self, parser):
+        types = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_TYPE)
+        
         parser.add_option('--credit', dest='credit', metavar='VALUE',
                             help='set user credits')
         parser.add_option('--invitations', dest='invitations',
@@ -259,7 +263,7 @@ class ModifyUser(Command):
         parser.add_option('--realname', dest='realname', metavar='NAME',
                             help='set real name of user')
         parser.add_option('--type', dest='type', metavar='TYPE',
-                            help='set user type')
+                            help='set user type (%s)' % types)
         parser.add_option('--uniq', dest='uniq', metavar='ID',
                             help='set external unique ID')
         parser.add_option('--username', dest='username', metavar='NAME',
@@ -277,7 +281,8 @@ class ModifyUser(Command):
         if self.type:
             allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
             if self.type not in allowed:
-                print 'Invalid type'
+                valid = ', '.join(allowed)
+                print 'Invalid type. Must be one of:', valid
                 return
             user.type = self.type
         if self.uniq:
@@ -312,7 +317,7 @@ class ListImages(Command):
 class RegisterImage(Command):
     group = 'image'
     name = 'register'
-    syntax = '<name> <backend id>'
+    syntax = '<name> <backend id> <format>'
     description = 'register an image'
     
     def add_options(self, parser):
@@ -321,7 +326,13 @@ class RegisterImage(Command):
         parser.add_option('-u', dest='uid', metavar='UID',
                             help='assign image to user with id UID')
     
-    def main(self, name, backend_id):
+    def main(self, name, backend_id, format):
+        formats = [x[0] for x in models.Image.FORMATS]
+        if format not in formats:
+            valid = ', '.join(formats)
+            print 'Invalid format. Must be one of:', valid
+            return
+        
         user = None
         if self.uid:
             user = get_user(self.uid)
@@ -334,6 +345,7 @@ class RegisterImage(Command):
             state='ACTIVE',
             owner=user,
             backend_id=backend_id,
+            format=format,
             public=self.public)
         
         print_item(image)
@@ -346,18 +358,21 @@ class ModifyImage(Command):
     description = 'modify an image'
     
     def add_options(self, parser):
+        states = ', '.join(x[0] for x in models.Image.IMAGE_STATES)
+        formats = ', '.join(x[0] for x in models.Image.FORMATS)
+
         parser.add_option('-b', dest='backend_id', metavar='BACKEND_ID',
                             help='set image backend id')
         parser.add_option('-f', dest='format', metavar='FORMAT',
-                            help='set image format')
+                            help='set image format (%s)' % formats)
         parser.add_option('-n', dest='name', metavar='NAME',
                             help='set image name')
         parser.add_option('--public', action='store_true', dest='public',
                             default=False, help='make image public')
         parser.add_option('--nopublic', action='store_true', dest='private',
                             default=False, help='make image private')
-        parser.add_option('-s', dest='state', metavar='STATE',
-                            default=False, help='set image state')
+        parser.add_option('-s', dest='state', metavar='STATE', default=False,
+                            help='set image state (%s)' % states)
         parser.add_option('-u', dest='uid', metavar='UID',
                             help='assign image to user with id UID')
     
@@ -373,7 +388,8 @@ class ModifyImage(Command):
         if self.format:
             allowed = [x[0] for x in models.Image.FORMATS]
             if self.format not in allowed:
-                print 'Invalid format'
+                valid = ', '.join(allowed)
+                print 'Invalid format. Must be one of:', valid
                 return
             image.format = self.format
         if self.name:
@@ -385,7 +401,8 @@ class ModifyImage(Command):
         if self.state:
             allowed = [x[0] for x in models.Image.IMAGE_STATES]
             if self.state not in allowed:
-                print 'Invalid state'
+                valid = ', '.join(allowed)
+                print 'Invalid state. Must be one of:', valid
                 return
             image.state = self.state
         if self.uid:

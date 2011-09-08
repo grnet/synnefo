@@ -676,9 +676,8 @@ def hashmap_hash(hashmap):
     while s < len(hashmap):
         s = s * 2
     h = hashmap + ([('\x00' * len(hashmap[0]))] * (s - len(hashmap)))
-    h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
     while len(h) > 1:
-        h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
+        h = [subhash(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
     return hexlify(h[0])
 
 def update_response_headers(request, response):

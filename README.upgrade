@@ -22,6 +22,10 @@ GANETI-INSTANCE-IMAGE
       The new version is available for download as a debian package:
       https://code.grnet.gr/projects/gnt-instance-image/files
 
+COMPONENTS
+    * snf-ganeti-tools must be rebuilt, see snf-ganeti-tools/debian/
+      for Debian packaging.
+
 NEW SETTINGS
     * 30-ui.conf:SUGGESTED_FLAVORS
     * 30-ui.conf:VM_IMAGE_COMMON_METADATA

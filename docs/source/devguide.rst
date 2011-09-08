@@ -25,9 +25,10 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.6 (Sept 05, 2011)        Reply with Merkle hash as the ETag when updating objects.
+0.6 (Sept 08, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
+\                          Tags should be migrated to a meta value.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -331,13 +332,13 @@ X-Container-Bytes-Used       The total number of bytes of all objects stored
 X-Container-Block-Size       The block size used by the storage backend
 X-Container-Block-Hash       The hash algorithm used for block identifiers in object hashmaps
 X-Container-Until-Timestamp  The last container modification date until the timestamp provided
-X-Container-Object-Meta      A list with all meta keys used by objects
+X-Container-Object-Meta      A list with all meta keys used by objects (**TBD**)
 X-Container-Policy-*         Container behavior and limits
 X-Container-Meta-*           Optional user defined metadata
 Last-Modified                The last container modification date (regardless of ``until``)
 ===========================  ===============================
 
-The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix, formatted as a comma-separated list. See container ``PUT`` for a reference of policy directives.
+The keys returned in ``X-Container-Object-Meta`` are all the unique strings after the ``X-Object-Meta-`` prefix, formatted as a comma-separated list. See container ``PUT`` for a reference of policy directives. (**TBD**)
 
 ================  ===============================
 Return Code       Description
@@ -930,7 +931,7 @@ List of differences from the OOS API:
 
 * Support for ``X-Account-Meta-*`` style headers at the account level. Use ``POST`` to update.
 * Support for ``X-Container-Meta-*`` style headers at the container level. Can be set when creating via ``PUT``. Use ``POST`` to update.
-* Header ``X-Container-Object-Meta`` at the container level and parameter ``meta`` in container listings.
+* Header ``X-Container-Object-Meta`` at the container level and parameter ``meta`` in container listings. (**TBD**)
 * Container policies to manage behavior and limits.
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
@@ -981,19 +982,19 @@ Upon entrance to the service, a user is presented with the following elements - 
 * The ``trash`` element, which contains files that have been marked for deletion, but can still be recovered.
 * The ``shared`` element, which contains all objects shared by the user to other users of the system.
 * The ``others`` element, which contains all objects that other users share with the user.
-* The ``tags`` element, which lists the names of tags the user has defined. This can be an entry point to list all files that have been assigned a specific tag or manage tags in general (remove a tag completely, rename a tag etc.).
 * The ``groups`` element, which contains the names of groups the user has defined. Each group consists of a user list. Group creation, deletion, and manipulation is carried out by actions originating here.
 * The ``history`` element, which allows browsing past instances of ``home`` and - optionally - ``trash``.
 
 Objects in Pithos can be:
 
-* Assigned custom tags.
 * Moved to trash and then deleted.
 * Shared with specific permissions.
 * Made public (shared with non-Pithos users).
 * Restored from previous versions.
 
 Some of these functions are performed by the client software and some by the Pithos server.
+
+In the first version of Pithos, objects could also be assigned custom tags. This is no longer supported. Existing deployments can migrate tags into a specific metadata value, i.e. ``X-Object-Meta-Tags``.
 
 Implementation Guidelines
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1006,11 +1007,9 @@ The ``shared`` element should be implemented as a read-only view of the ``pithos
 
 Public objects are not included in ``shared`` and ``others`` listings. It is suggested that they are marked in a visually distinctive way in ``pithos`` listings (for example using an icon overlay).
 
-At the object level, tags are implemented by managing metadata keys. The client software should allow the user to use any string as a tag and set the corresponding ``X-Object-Meta-<tag>`` key at the server. The API extensions provided, allow for listing all tags in a container and filtering object listings based on one or more tags. The tag list is sufficient for implementing the ``tags`` element, either as a special, virtual folder (as done in the first version of Pithos), or as an application menu.
-
 A special application menu, or a section in application preferences, should be devoted to managing groups (the ``groups`` element). All group-related actions are implemented at the account level.
 
-Browsing past versions of objects should be available both at the object and the container level. At the object level, a list of past versions can be included in the screen showing details or more information on the object (metadata, tags, permissions, etc.). At the container level, it is suggested that clients use a ``history`` element, which presents to the user a read-only, time-variable view of ``pithos`` contents. This can be accomplished via the ``until`` parameter in listings. Optionally, ``history`` may include ``trash``.
+Browsing past versions of objects should be available both at the object and the container level. At the object level, a list of past versions can be included in the screen showing details or more information on the object (metadata, permissions, etc.). At the container level, it is suggested that clients use a ``history`` element, which presents to the user a read-only, time-variable view of ``pithos`` contents. This can be accomplished via the ``until`` parameter in listings. Optionally, ``history`` may include ``trash``.
 
 Recommended Practices and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1063,7 +1062,7 @@ Assuming an authentication token is obtained (**TBD**), the following high-level
 
 * List metadata keys used by objects in a container
 
-  Will be in the ``X-Container-Object-Meta`` reply header, included in container information or object list (``HEAD`` or ``GET``).
+  Will be in the ``X-Container-Object-Meta`` reply header, included in container information or object list (``HEAD`` or ``GET``). (**TBD**)
 
 * List objects in a container having a specific meta defined ::
 

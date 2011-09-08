@@ -1,6 +1,5 @@
 from functools import wraps
 
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
@@ -19,7 +18,7 @@ def requires_admin(func):
     @wraps(func)
     def wrapper(request, *args):
         if not request.user or request.user.type != 'ADMIN':
-            return HttpResponse('Unauthorized', status=401)
+            return HttpResponse('Forbidden', status=403)
         return func(request, *args)
     return wrapper
 

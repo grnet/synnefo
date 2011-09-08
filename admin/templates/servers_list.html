@@ -22,7 +22,7 @@
       <td><a href="{% url admin.views.users_info vm.owner.id %}">{{ vm.owner.name }}</a></td>
       <td>{{ vm.operstate }}</td>
       <td><a href="{% url admin.views.flavors_info vm.flavor.id %}">{{ vm.flavor.name }}</a></td>
-      <td>{% if vm.image %}<a href="{% url admin.views.images_info vm.image.id %}">{{ vm.image.name }}</a>{% endif %}</td>
+      <td><a href="{% url admin.views.images_info vm.sourceimage.id %}">{{ vm.sourceimage.name }}</a></td>
       <td>{{ vm.deleted }}</td>
       <td>{{ vm.updated }}</td>
     </tr>

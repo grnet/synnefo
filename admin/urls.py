@@ -28,6 +28,11 @@ urlpatterns = patterns('synnefo.admin.views',
     (r'^/invitations/(\d+)/resend/?$', 'invitations_resend'),
 )
 
+urlpatterns += patterns('synnefo.admin.api',
+    (r'^/api/servers/(\d+)$', 'servers_info'),
+    (r'^/api/users/(\d+)$', 'users_info'),
+)
+
 urlpatterns += patterns('',
     (r'^/static/(?P<path>.*)$', 'django.views.static.serve', {
                     'document_root': settings.PROJECT_PATH + '/admin/static'}))

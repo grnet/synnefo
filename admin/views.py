@@ -1,6 +1,5 @@
 from functools import wraps
 
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string

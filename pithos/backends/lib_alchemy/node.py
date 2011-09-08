@@ -648,22 +648,21 @@ class Node(DBWorker):
             self.conn.execute(s).close()
     
     def attribute_copy(self, source, dest):
-        class InsertFromSelect(_UpdateBase):
-            def __init__(self, table, select):
-                self.table = table
-                self.select = select
-        
-        @compiles(InsertFromSelect)
-        def visit_insert_from_select(element, compiler, **kw):
-            return "INSERT INTO %s (%s)" % (
-                compiler.process(element.table, asfrom=True),
-                compiler.process(element.select)
-            )
-        
         s = select([dest, self.attributes.c.key, self.attributes.c.value],
             self.attributes.c.serial == source)
-        ins = InsertFromSelect(self.attributes, s)
-        self.conn.execute(ins).close()
+        rp = self.conn.execute(s)
+        attributes = rp.fetchall()
+        rp.close()
+        for dest, k, v in attributes:
+            s = self.attributes.update().where(and_(
+                self.attributes.c.serial == dest,
+                self.attributes.c.key == k))
+            rp = self.conn.execute(s, value=v)
+            rp.close()
+            if rp.rowcount == 0:
+                s = self.attributes.insert()
+                values = {'serial':dest, 'key':k, 'value':v}
+                self.conn.execute(s, values).close()
     
     def latest_attribute_keys(self, parent, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined

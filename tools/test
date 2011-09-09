@@ -195,7 +195,10 @@ class BaseTestCase(unittest.TestCase):
             r = callableObj(*args, **kwargs)
             self.fail('Should never reach here')
         except Fault, f:
-            self.failUnless(f.status == status)
+            if type(status) == types.ListType:
+                self.failUnless(f.status in status)
+            else:
+                self.failUnless(f.status == status)
     
     def assert_not_raises_fault(self, status, callableObj, *args, **kwargs):
         """
@@ -1533,7 +1536,7 @@ class ObjectPost(BaseTestCase):
     def test_update_object_invalid_range_and_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj[0]['name']):
-            self.assert_raises_fault(416, self.test_update_object, 499, 0, True,
+            self.assert_raises_fault([400, 416], self.test_update_object, 499, 0, True,
                                      -1)
     
     def test_update_object_invalid_range_with_no_content_length(self):

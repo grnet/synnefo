@@ -128,7 +128,7 @@ class Blocker(object):
         block_hash = self.block_hash
         hashlist = [block_hash(b) for b in blocklist]
         mf = None
-        missing = self.block_ping(hashlist)
+        missing = [i for i, h in enumerate(hashlist) if not self._check_rear_block(h)]
         for i in missing:
             with self._get_rear_block(hashlist[i], 1) as rbl:
                  rbl.sync_write(blocklist[i]) #XXX: verify?

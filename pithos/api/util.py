@@ -35,7 +35,7 @@ from functools import wraps
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -672,13 +672,14 @@ def hashmap_hash(hashmap):
         return hexlify(subhash(''))
     if len(hashmap) == 1:
         return hashmap[0]
+    
     s = 2
     while s < len(hashmap):
         s = s * 2
-    h = hashmap + ([('\x00' * len(hashmap[0]))] * (s - len(hashmap)))
-    h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
+    h = [unhexlify(x) for x in hashmap]
+    h += [('\x00' * len(h[0]))] * (s - len(hashmap))
     while len(h) > 1:
-        h = [subhash(h[x] + (h[x + 1] if x + 1 < len(h) else '')) for x in range(0, len(h), 2)]
+        h = [subhash(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
     return hexlify(h[0])
 
 def update_response_headers(request, response):

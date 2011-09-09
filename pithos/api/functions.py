@@ -122,12 +122,11 @@ def authenticate(request):
         raise BadRequest('Missing X-Auth-User or X-Auth-Key header')
     response = HttpResponse(status=204)
     
-    inv_auth_tokens = dict((v, k) for k, v in settings.AUTH_TOKENS.items())
     uri = request.build_absolute_uri()
     if '?' in uri:
         uri = uri[:uri.find('?')]
     
-    response['X-Auth-Token'] = inv_auth_tokens.get(x_auth_user, '0000')
+    response['X-Auth-Token'] = x_auth_key
     response['X-Storage-Url'] = uri + (uri.endswith('/') and '' or '/') + x_auth_user
     return response
 

@@ -33,6 +33,7 @@
 
 from sqlalchemy import Table, Column, String, MetaData
 from sqlalchemy.sql import select
+from sqlalchemy.sql import and_
 from dbworker import DBWorker
 
 
@@ -51,10 +52,18 @@ class Policy(DBWorker):
         metadata.bind = self.engine
     
     def policy_set(self, path, policy):
-        s = self.policies.insert()
-        values = [{'path':path, 'key':k, 'value':v} for k,v in policy.iteritems()]
-        r = self.conn.execute(s, values)
-        r.close()
+        #insert or replace
+        for k, v in policy.iteritems():
+            s = self.policies.update().where(and_(self.policies.c.path == path,
+                                                  self.policies.c.key == k))
+            s = s.values(value = v)
+            rp = self.conn.execute(s)
+            rp.close()
+            if rp.rowcount == 0:
+                s = self.policies.insert()
+                values = {'path':path, 'key':k, 'value':v}
+                r = self.conn.execute(s, values)
+                r.close()
     
     def policy_unset(self, path):
         s = self.policies.delete().where(self.policies.c.path==path)

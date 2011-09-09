@@ -45,7 +45,6 @@ class Public(DBWorker):
         columns.append(Column('path', String(2048), primary_key=True))
         self.public = Table('public', metadata, *columns)
         metadata.create_all(self.engine)
-        metadata.bind = self.engine
     
     
     def public_set(self, path):

@@ -36,10 +36,6 @@ from sqlalchemy import Table, Integer, Float, Column, String, MetaData, ForeignK
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, null, select, bindparam
 from sqlalchemy.ext.compiler import compiles
-try:
-    from sqlalchemy.sql.expression import _UpdateBase
-except:
-    from sqlalchemy.sql.expression import UpdateBase as _UpdateBase
 
 from dbworker import DBWorker
 

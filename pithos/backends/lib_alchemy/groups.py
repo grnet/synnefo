@@ -53,7 +53,6 @@ class Groups(DBWorker):
         Index('idx_groups_member', self.groups.c.member)
         
         metadata.create_all(self.engine)
-        metadata.bind = self.engine
     
     def group_names(self, owner):
         """List all group names belonging to owner."""

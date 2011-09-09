@@ -66,7 +66,6 @@ class XFeatures(DBWorker):
         self.xfeaturevals = Table('xfeaturevals', metadata, *columns)
         
         metadata.create_all(self.engine)
-        metadata.bind = self.engine
     
     def xfeature_inherit(self, path):
         """Return the (path, feature) inherited by the path, or None."""

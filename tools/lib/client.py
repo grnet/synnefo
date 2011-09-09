@@ -409,7 +409,7 @@ class OOS_Client(Client):
     
     def _change_obj_location(self, src_container, src_object, dst_container,
                              dst_object, remove=False, meta={}, account=None,
-                             **headers):
+                             content_type=None, **headers):
         account = account or self.account
         path = '/%s/%s/%s' % (account, dst_container, dst_object)
         headers = {} if not headers else headers
@@ -420,25 +420,29 @@ class OOS_Client(Client):
         else:
             headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
         headers['content_length'] = 0
+        if content_type:
+            headers['content_type'] = content_type 
         return self.put(path, headers=headers)
     
     def copy_object(self, src_container, src_object, dst_container, dst_object,
-                   meta={}, account=None, **headers):
+                   meta={}, account=None, content_type=None, **headers):
         """copies an object"""
         account = account or self.account
         return self._change_obj_location(src_container, src_object,
                                    dst_container, dst_object, account=account,
-                                   remove=False, meta=meta, **headers)
+                                   remove=False, meta=meta,
+                                   content_type=content_type, **headers)
     
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, meta={}, account=None,
-                             **headers):
+                             content_type=None, **headers):
         """moves an object"""
         account = account or self.account
         return self._change_obj_location(src_container, src_object,
                                          dst_container, dst_object,
                                          account=account, remove=True,
-                                         meta=meta, **headers)
+                                         meta=meta, content_type=content_type,
+                                         **headers)
     
     def delete_object(self, container, object, params={}, account=None):
         """deletes an object"""
@@ -897,23 +901,9 @@ class Pithos_Client(OOS_Client):
         params = {'update':None}
         return self.post(path, headers=headers, params=params)
     
-    def _change_obj_location(self, src_container, src_object, dst_container,
-                             dst_object, remove=False,
-                             meta={}, account=None, **headers):
-        account = account or self.account
-        path = '/%s/%s/%s' % (account, dst_container, dst_object)
-        headers = {} if not headers else headers
-        for k, v in meta.items():
-            headers['x-object-meta-%s' % k] = v
-        if remove:
-            headers['x-move-from'] = '/%s/%s' % (src_container, src_object)
-        else:
-            headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
-        headers['content_length'] = 0
-        return self.put(path, headers=headers)
-    
     def copy_object(self, src_container, src_object, dst_container, dst_object,
-                    meta={}, public=False, version=None, account=None):
+                    meta={}, public=False, version=None, account=None,
+                    content_type=None):
         """copies an object"""
         account = account or self.account
         headers = {}
@@ -922,11 +912,12 @@ class Pithos_Client(OOS_Client):
             headers['x_object_version'] = version
         return OOS_Client.copy_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
-                                      account=account,**headers)
+                                      account=account, content_type=content_type,
+                                      **headers)
     
     def move_object(self, src_container, src_object, dst_container,
                              dst_object, meta={}, public=False, version=None,
-                             account=None):
+                             account=None, content_type=None):
         """moves an object"""
         headers = {}
         headers['x_object_public'] = public
@@ -934,7 +925,8 @@ class Pithos_Client(OOS_Client):
             headers['x_object_version'] = version
         return OOS_Client.move_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
-                                      account=account, **headers)
+                                      account=account, content_type=content_type,
+                                      **headers)
     
     def list_shared_by_others(self, limit=None, marker=None, format='text'):
         """lists other accounts that share objects to the user"""

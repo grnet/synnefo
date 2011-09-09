@@ -423,6 +423,9 @@ class CopyObject(Command):
         parser.add_option('--public', action='store_true',
                           dest='public', default=False,
                           help='make object publicly accessible')
+        parser.add_option('--content-type', action='store',
+                          dest='content_type', default=None,
+                          help='change object\'s content type')
     
     def execute(self, src, dst, *args):
         src_container, sep, src_object = src.partition('/')
@@ -438,8 +441,10 @@ class CopyObject(Command):
             dst_container = src_container
             dst_object = dst
         
+        args = {'content_type':self.content_type} if self.content_type else {}
         self.client.copy_object(src_container, src_object, dst_container,
-                                dst_object, meta, self.public, self.version, **meta)
+                                dst_object, meta, self.public, self.version,
+                                **args)
 
 @cli_command('set')
 class SetMeta(Command):
@@ -545,6 +550,9 @@ class MoveObject(Command):
         parser.add_option('--public', action='store_true',
                           dest='public', default=False,
                           help='make object publicly accessible')
+        parser.add_option('--content-type', action='store',
+                          dest='content_type', default=None,
+                          help='change object\'s content type')
     
     def execute(self, src, dst, *args):
         src_container, sep, src_object = src.partition('/')
@@ -559,28 +567,9 @@ class MoveObject(Command):
             key, sep, val = arg.partition('=')
             meta[key] = val
         
+        args = {'content_type':self.content_type} if self.content_type else {}
         self.client.move_object(src_container, src_object, dst_container,
-                                dst_object, meta, self.public, self.version)
-
-@cli_command('remove')
-class TrashObject(Command):
-    syntax = '<container>/<object>'
-    description = 'trash an object'
-    
-    def execute(self, src):
-        src_container, sep, src_object = src.partition('/')
-        
-        self.client.trash_object(src_container, src_object)
-
-@cli_command('restore')
-class RestoreObject(Command):
-    syntax = '<container>/<object>'
-    description = 'restore a trashed object'
-    
-    def execute(self, src):
-        src_container, sep, src_object = src.partition('/')
-        
-        self.client.restore_object(src_container, src_object)
+                                dst_object, meta, self.public, self.version, **args)
 
 @cli_command('unset')
 class UnsetObject(Command):
@@ -668,6 +657,28 @@ class UnpublishObject(Command):
         src_container, sep, src_object = src.partition('/')
         
         self.client.unpublish_object(src_container, src_object)
+
+@cli_command('sharing')
+class SharingObject(Command):
+    syntax = 'list users sharing objects with the user'
+    description = 'list user accounts sharing objects with the user'
+    
+    def add_options(self, parser):
+        parser.add_option('-l', action='store_true', dest='detail',
+                          default=False, help='show detailed output')
+        parser.add_option('-n', action='store', type='int', dest='limit',
+                          default=10000, help='show limited output')
+        parser.add_option('--marker', action='store', type='str',
+                          dest='marker', default=None,
+                          help='show output greater then marker')
+        
+    
+    def execute(self):
+        attrs = ['limit', 'marker']
+        args = self._build_args(attrs)
+        args['format'] = 'json' if self.detail else 'text'
+        
+        print_list(self.client.list_shared_by_others(**args))
 
 def print_usage():
     cmd = Command('', [])

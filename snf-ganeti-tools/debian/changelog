@@ -1,3 +1,9 @@
+snf-ganeti-tools (0.6) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Thu, 08 Sep 2011 21:38:24 +0300
+
 snf-ganeti-tools (0.5.5) UNRELEASED; urgency=low
 
   * New version, minor bugfixes.

@@ -493,11 +493,7 @@ class ModularBackend(BaseBackend):
             self.permissions.access_set(path, permissions)
         return dest_version_id
     
-    @backend_method
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
-        """Copy an object's data and metadata."""
-        
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+    def _copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_read(user, account, src_container, src_name)
@@ -518,19 +514,22 @@ class ModularBackend(BaseBackend):
         return dest_version_id
     
     @backend_method
+    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+        """Copy an object's data and metadata."""
+        
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+        return self._copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+    
+    @backend_method
     def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
         logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
-        dest_version_id = self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
-        self.delete_object(user, account, src_container, src_name)
+        dest_version_id = self._copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
+        self._delete_object(user, account, src_container, src_name)
         return dest_version_id
     
-    @backend_method
-    def delete_object(self, user, account, container, name, until=None):
-        """Delete/purge an object."""
-        
-        logger.debug("delete_object: %s %s %s %s", account, container, name, until)
+    def _delete_object(self, user, account, container, name, until=None):
         if user != account:
             raise NotAllowedError
         
@@ -555,6 +554,13 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         self._copy_version(user, node, None, node, 0, CLUSTER_DELETED)
         self.permissions.access_clear(path)
+    
+    @backend_method
+    def delete_object(self, user, account, container, name, until=None):
+        """Delete/purge an object."""
+        
+        logger.debug("delete_object: %s %s %s %s", account, container, name, until)
+        self._delete_object(user, account, container, name, until)
     
     @backend_method
     def list_versions(self, user, account, container, name):

@@ -735,7 +735,7 @@ class ModularBackend(BaseBackend):
         
         objects, prefixes = self.node.latest_version_list(parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED, allowed, filterq)
         objects.extend([(p, None) for p in prefixes] if virtual else [])
-        objects.sort()
+        objects.sort(key=lambda x: x[0])
         objects = [(x[0][len(cont_prefix):], x[1]) for x in objects]
         
         start, limit = self._list_limits([x[0] for x in objects], marker, limit)

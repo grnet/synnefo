@@ -38,11 +38,11 @@ class DBWrapper(object):
     
     def __init__(self, db):
         self.engine = create_engine(db)
-        self.conn = engine.connect()
+        self.conn = self.engine.connect()
         self.trans = None
     
     def execute(self):
-        self.trans = self.con.begin()
+        self.trans = self.conn.begin()
     
     def commit(self):
         self.trans.commit()

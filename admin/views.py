@@ -6,7 +6,10 @@ from django.template.loader import render_to_string
 
 from synnefo.db import models
 from synnefo.invitations.invitations import add_invitation, send_invitation
-from synnefo.logic import backend, users
+from synnefo.logic import backend, log, users
+
+
+_log = log.get_logger('synnefo.admin')
 
 
 def render(template, tab, **kwargs):
@@ -62,10 +65,11 @@ def flavors_create(request):
         return HttpResponse(html)
     if request.method == 'POST':
         flavor = models.Flavor()
-        flavor.cpu = request.POST.get('cpu')
-        flavor.ram = request.POST.get('ram')
-        flavor.disk = request.POST.get('disk')
+        flavor.cpu = int(request.POST.get('cpu'))
+        flavor.ram = int(request.POST.get('ram'))
+        flavor.disk = int(request.POST.get('disk'))
         flavor.save()
+        _log.info('User %s created Flavor %s', request.user.name, flavor.name)
         return redirect(flavors_info, flavor.id)
 
 
@@ -79,10 +83,11 @@ def flavors_info(request, flavor_id):
 @requires_admin
 def flavors_modify(request, flavor_id):
     flavor = models.Flavor.objects.get(id=flavor_id)
-    flavor.cpu = request.POST.get('cpu')
-    flavor.ram = request.POST.get('ram')
-    flavor.disk = request.POST.get('disk')
+    flavor.cpu = int(request.POST.get('cpu'))
+    flavor.ram = int(request.POST.get('ram'))
+    flavor.disk = int(request.POST.get('disk'))
     flavor.save()
+    _log.info('User %s modified Flavor %s', request.user.name, flavor.name)
     return redirect(flavors_info, flavor.id)
 
 
@@ -90,6 +95,7 @@ def flavors_modify(request, flavor_id):
 def flavors_delete(request, flavor_id):
     flavor = models.Flavor.objects.get(id=flavor_id)
     flavor.delete()
+    _log.info('User %s deleted Flavor %s', request.user.name, flavor.name)
     return redirect(flavors_list)
 
 
@@ -103,7 +109,8 @@ def images_list(request):
 @requires_admin
 def images_register(request):
     if request.method == 'GET':
-        html = render('images_register.html', 'images')
+        formats = [x[0] for x in models.Image.FORMATS]
+        html = render('images_register.html', 'images', formats=formats)
         return HttpResponse(html)
     elif request.method == 'POST':
         image = models.Image()
@@ -112,8 +119,10 @@ def images_register(request):
         owner_id = request.POST.get('owner') or None
         image.owner = owner_id and models.SynnefoUser.objects.get(id=owner_id)
         image.backend_id = request.POST.get('backend')
+        image.format = request.POST.get('format')
         image.public = True if request.POST.get('public') else False
         image.save()
+        _log.info('User %s registered Image %s', request.user.name, image.name)
         return redirect(images_info, image.id)
 
 
@@ -158,6 +167,8 @@ def images_modify(request, image_id):
         if key:
             image.imagemetadata_set.create(meta_key=key, meta_value=val)
     
+    _log.info('User %s modified Image %s', request.user.name, image.name)
+
     return redirect(images_info, image.id)
 
 
@@ -187,6 +198,8 @@ def users_invite(request):
         inviter = models.SynnefoUser.objects.get(id=inviter_id)
         inv = add_invitation(inviter, realname, uniq)
         send_invitation(inv)
+        _log.info('User %s sent Invitation to %s as %s', request.user.name,
+                    uniq, inviter.name)
         return redirect(users_list)
 
 
@@ -211,6 +224,7 @@ def users_modify(request, user_id):
     invitations = request.POST.get('invitations')
     user.max_invitations = int(invitations) if invitations else None
     user.save()
+    _log.info('User %s modified User %s', request.user.name, user.name)
     return redirect(users_info, user.id)
 
 
@@ -218,6 +232,7 @@ def users_modify(request, user_id):
 def users_delete(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
     users.delete_user(user)
+    _log.info('User %s deleted User %s', request.user.name, user.name)
     return redirect(users_list)
 
 
@@ -233,4 +248,6 @@ def invitations_list(request):
 def invitations_resend(request, invitation_id):
     invitation = models.Invitations.objects.get(id=invitation_id)
     send_invitation(invitation)
+    _log.info('User %s resent Invitations from %s to %s', request.user.name,
+                invitation.source.name, invitation.target.name)
     return redirect(invitations_list)

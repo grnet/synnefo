@@ -37,11 +37,5 @@ class DBWorker(object):
     
     def __init__(self, **params):
         self.params = params
-        conn = params['wrapper'].conn
-        cur = params['wrapper'].conn.cursor()
-        self.execute = cur.execute
-        self.executemany = cur.executemany
-        self.fetchone = cur.fetchone
-        self.fetchall = cur.fetchall
-        self.cur = cur
-        self.conn = conn
+        self.conn = params['wrapper'].conn
+        self.engine = params['wrapper'].engine

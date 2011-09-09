@@ -99,8 +99,7 @@ class ModularBackend(BaseBackend):
                   'namelen': self.blocker.hashlen}
         self.mapper = Mapper(**params)
         
-        params = {'connection': self.wrapper.conn,
-                  'cursor': self.wrapper.conn.cursor()}
+        params = {'wrapper': self.wrapper}
         self.permissions = self.mod.permissions.Permissions(**params)
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.mod.permissions, x))
@@ -481,8 +480,8 @@ class ModularBackend(BaseBackend):
             ie = IndexError()
             ie.data = [binascii.hexlify(x) for x in missing]
             raise ie
-        path = '/'.join((account, container, name))
         if permissions is not None:
+            path = '/'.join((account, container, name))
             self._check_permissions(path, permissions)
         path, node = self._put_object_node(account, container, name)
         src_version_id, dest_version_id = self._copy_version(user, node, None, node, size)
@@ -505,6 +504,7 @@ class ModularBackend(BaseBackend):
         self._can_write(user, account, dest_container, dest_name)
         src_path, src_node = self._lookup_object(account, src_container, src_name)
         if permissions is not None:
+            dest_path = '/'.join((account, container, name))
             self._check_permissions(dest_path, permissions)
         dest_path, dest_node = self._put_object_node(account, dest_container, dest_name)
         src_version_id, dest_version_id = self._copy_version(user, src_node, src_version, dest_node)
@@ -514,7 +514,6 @@ class ModularBackend(BaseBackend):
             self.node.attribute_copy(src_version_id, dest_version_id)
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
         if permissions is not None:
-            dest_path = '/'.join((account, container, name))
             self.permissions.access_set(dest_path, permissions)
         return dest_version_id
     

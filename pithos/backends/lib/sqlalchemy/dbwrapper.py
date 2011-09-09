@@ -31,11 +31,23 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from sqlalchemy import create_engine
 
-class DBWorker(object):
-    """Database connection handler."""
+class DBWrapper(object):
+    """Database connection wrapper."""
     
-    def __init__(self, **params):
-        self.params = params
-        self.conn = params['connection']
-        self.engine = params['engine']
+    def __init__(self, db):
+        self.engine = create_engine(db)
+        self.conn = engine.connect()
+        self.trans = None
+    
+    def execute(self):
+        self.trans = self.con.begin()
+    
+    def commit(self):
+        self.trans.commit()
+        self.trans = None
+    
+    def rollback(self):
+        self.trans.rollback()
+        self.trans = None

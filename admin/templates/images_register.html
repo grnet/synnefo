@@ -12,8 +12,9 @@
 
   <div class="clearfix">
     <label for="image-owner">Owner ID</label>
-    <div class="input">
-      <input class="small" id="image-owner" name="owner" value="{{ image.owner.id }}" type="text" />
+    <div class="input input-append">
+      <input class="small append-user" id="image-owner" name="owner" value="{{ image.owner.id }}" type="text" />
+      <label class="add-on"><a href=""></a></label>
     </div>
   </div>
 
@@ -21,6 +22,17 @@
     <label for="image-backend">Backend ID</label>
     <div class="input">
       <input class="large" id="image-backend" name="backend" value="{{ image.backend_id }}" type="text" />
+    </div>
+  </div>
+
+  <div class="clearfix">
+    <label for="image-format">Format</label>
+    <div class="input">
+      <select class="medium" id="image-format" name="format">
+        {% for format in formats %}
+        <option>{{ format }}</option>
+        {% endfor %}
+      </select>
     </div>
   </div>
 

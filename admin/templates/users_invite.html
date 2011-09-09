@@ -5,8 +5,9 @@
 <form action="{% url admin.views.users_invite %}" method="post">
   <div class="clearfix">
     <label for="user-inviter">Inviter ID</label>
-    <div class="input">
-      <input class="small" id="user-inviter" name="inviter" type="text" />
+    <div class="input input-append">
+      <input class="small append-user" id="user-inviter" name="inviter" type="text" />
+      <label class="add-on"><a href=""></a></label>
     </div>
   </div>
 

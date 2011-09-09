@@ -49,7 +49,6 @@ class Policy(DBWorker):
         columns.append(Column('value', String(255)))
         self.policies = Table('policy', metadata, *columns)
         metadata.create_all(self.engine)
-        metadata.bind = self.engine
     
     def policy_set(self, path, policy):
         #insert or replace

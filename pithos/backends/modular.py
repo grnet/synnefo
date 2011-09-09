@@ -481,6 +481,7 @@ class ModularBackend(BaseBackend):
             ie = IndexError()
             ie.data = [binascii.hexlify(x) for x in missing]
             raise ie
+        path = '/'.join((account, container, name))
         if permissions is not None:
             self._check_permissions(path, permissions)
         path, node = self._put_object_node(account, container, name)
@@ -513,6 +514,7 @@ class ModularBackend(BaseBackend):
             self.node.attribute_copy(src_version_id, dest_version_id)
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
         if permissions is not None:
+            dest_path = '/'.join((account, container, name))
             self.permissions.access_set(dest_path, permissions)
         return dest_version_id
     

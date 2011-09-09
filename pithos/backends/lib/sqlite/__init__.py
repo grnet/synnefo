@@ -31,13 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from dbwrapper import DBWrapper
+from node import Node
+from permissions import Permissions
+from policy import Policy
 
-from simple import SimpleBackend
-from modular import ModularBackend
+__all__ = ["DBWrapper", "Node", "Permissions", "Policy"]
 
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
-	c = globals()[options[0]]
-	backend = c(*options[1])

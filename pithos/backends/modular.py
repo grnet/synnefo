@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import sys
 import os
 import time
 import sqlite3
@@ -39,9 +40,6 @@ import hashlib
 import binascii
 
 from base import NotAllowedError, BaseBackend
-from lib.node import Node, ROOTNODE, SERIAL, SIZE, MTIME, MUSER, CLUSTER
-from lib.permissions import Permissions, READ, WRITE
-from lib.policy import Policy
 from lib.hashfiler import Mapper, Blocker
 
 ( CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED ) = range(3)
@@ -60,13 +58,13 @@ def backend_method(func=None, autocommit=1):
     if not autocommit:
         return func
     def fn(self, *args, **kw):
-        self.con.execute('begin deferred')
+        self.wrapper.execute()
         try:
             ret = func(self, *args, **kw)
-            self.con.commit()
+            self.wrapper.commit()
             return ret
         except:
-            self.con.rollback()
+            self.wrapper.rollback()
             raise
     return fn
 
@@ -74,39 +72,42 @@ def backend_method(func=None, autocommit=1):
 class ModularBackend(BaseBackend):
     """A modular backend.
     
-    Uses modules for SQL functions and storage.
+    Uses modules for SQL functions and hashfiler for storage.
     """
     
-    def __init__(self, db, db_options):
+    def __init__(self, mod, path, db):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         
         self.default_policy = {'quota': 0, 'versioning': 'auto'}
         
-        basepath = os.path.split(db)[0]
-        if basepath and not os.path.exists(basepath):
-            os.makedirs(basepath)
-        if not os.path.isdir(basepath):
-            raise RuntimeError("Cannot open database at '%s'" % (db,))
+        if path and not os.path.exists(path):
+            os.makedirs(path)
+        if not os.path.isdir(path):
+            raise RuntimeError("Cannot open path '%s'" % (path,))
         
-        self.con = sqlite3.connect(basepath + '/db', check_same_thread=False)        
+        __import__(mod)
+        self.mod = sys.modules[mod]
+        self.wrapper = self.mod.dbwrapper.DBWrapper(db)
         
         params = {'blocksize': self.block_size,
-                  'blockpath': basepath + '/blocks',
+                  'blockpath': os.path.join(path + '/blocks'),
                   'hashtype': self.hash_algorithm}
         self.blocker = Blocker(**params)
         
-        params = {'mappath': basepath + '/maps',
+        params = {'mappath': os.path.join(path + '/maps'),
                   'namelen': self.blocker.hashlen}
         self.mapper = Mapper(**params)
         
-        params = {'connection': self.con,
-                  'cursor': self.con.cursor()}
-        self.permissions = Permissions(**params)
-        self.policy = Policy(**params)
-        self.node = Node(**params)
-        
-        self.con.commit()
+        params = {'connection': self.wrapper.conn,
+                  'cursor': self.wrapper.conn.cursor()}
+        self.permissions = self.mod.permissions.Permissions(**params)
+        for x in ['READ', 'WRITE']:
+            setattr(self, x, getattr(self.mod.permissions, x))
+        self.policy = self.mod.policy.Policy(**params)
+        self.node = self.mod.node.Node(**params)
+        for x in ['ROOTNODE', 'SERIAL', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
+            setattr(self, x, getattr(self.mod.node, x))
     
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
@@ -128,7 +129,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
         try:
             props = self._get_properties(node, until)
-            mtime = props[MTIME]
+            mtime = props[self.MTIME]
         except NameError:
             props = None
             mtime = until
@@ -145,7 +146,7 @@ class ModularBackend(BaseBackend):
         else:
             meta = {}
             if props is not None:
-                meta.update(dict(self.node.attribute_get(props[SERIAL])))
+                meta.update(dict(self.node.attribute_get(props[self.SERIAL])))
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
@@ -201,7 +202,7 @@ class ModularBackend(BaseBackend):
         node = self.node.node_lookup(account)
         if node is not None:
             raise NameError('Account already exists')
-        self._put_path(user, ROOTNODE, account)
+        self._put_path(user, self.ROOTNODE, account)
     
     @backend_method
     def delete_account(self, user, account):
@@ -245,7 +246,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
         path, node = self._lookup_container(account, container)
         props = self._get_properties(node, until)
-        mtime = props[MTIME]
+        mtime = props[self.MTIME]
         count, bytes, tstamp = self._get_statistics(node, until)
         tstamp = max(tstamp, mtime)
         if until is None:
@@ -257,7 +258,7 @@ class ModularBackend(BaseBackend):
         if user != account:
             meta = {'name': container}
         else:
-            meta = dict(self.node.attribute_get(props[SERIAL]))
+            meta = dict(self.node.attribute_get(props[self.SERIAL]))
             if until is not None:
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': container, 'count': count, 'bytes': bytes})
@@ -393,14 +394,14 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         if version is None:
-            modified = props[MTIME]
+            modified = props[self.MTIME]
         else:
-            modified = self._get_version(node)[MTIME] # Overall last modification.
+            modified = self._get_version(node)[self.MTIME] # Overall last modification.
         
-        meta = dict(self.node.attribute_get(props[SERIAL]))
-        meta.update({'name': name, 'bytes': props[SIZE]})
-        meta.update({'version': props[SERIAL], 'version_timestamp': props[MTIME]})
-        meta.update({'modified': modified, 'modified_by': props[MUSER]})
+        meta = dict(self.node.attribute_get(props[self.SERIAL]))
+        meta.update({'name': name, 'bytes': props[self.SIZE]})
+        meta.update({'version': props[self.SERIAL], 'version_timestamp': props[self.MTIME]})
+        meta.update({'modified': modified, 'modified_by': props[self.MUSER]})
         return meta
     
     @backend_method
@@ -464,8 +465,8 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
-        hashmap = self.mapper.map_retr(props[SERIAL])
-        return props[SIZE], [binascii.hexlify(x) for x in hashmap]
+        hashmap = self.mapper.map_retr(props[self.SERIAL])
+        return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
     @backend_method
     def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
@@ -609,7 +610,7 @@ class ModularBackend(BaseBackend):
     def _lookup_account(self, account, create=True):
         node = self.node.node_lookup(account)
         if node is None and create:
-            node = self._put_path(account, ROOTNODE, account) # User is account.
+            node = self._put_path(account, self.ROOTNODE, account) # User is account.
         return account, node
     
     def _lookup_container(self, account, container):
@@ -655,7 +656,7 @@ class ModularBackend(BaseBackend):
                 raise NameError('Object does not exist')
         else:
             props = self.node.version_get_properties(version)
-            if props is None or props[CLUSTER] == CLUSTER_DELETED:
+            if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
                 raise IndexError('Version does not exist')
         return props
     
@@ -664,14 +665,14 @@ class ModularBackend(BaseBackend):
         # Get source serial and size.
         if src_version is not None:
             src_props = self._get_version(src_node, src_version)
-            src_version_id = src_props[SERIAL]
-            size = src_props[SIZE]
+            src_version_id = src_props[self.SERIAL]
+            size = src_props[self.SIZE]
         else:
             # Latest or create from scratch.
             try:
                 src_props = self._get_version(src_node)
-                src_version_id = src_props[SERIAL]
-                size = src_props[SIZE]
+                src_version_id = src_props[self.SERIAL]
+                size = src_props[self.SIZE]
             except NameError:
                 src_version_id = None
                 size = 0
@@ -684,7 +685,7 @@ class ModularBackend(BaseBackend):
         else:
             dest_props = self.node.version_lookup(dest_node, inf, CLUSTER_NORMAL)
             if dest_props is not None:
-                self.node.version_recluster(dest_props[SERIAL], CLUSTER_HISTORY)
+                self.node.version_recluster(dest_props[self.SERIAL], CLUSTER_HISTORY)
         dest_version_id, mtime = self.node.version_create(dest_node, size, src_version_id, user, dest_cluster)
         
         return src_version_id, dest_version_id
@@ -776,14 +777,14 @@ class ModularBackend(BaseBackend):
         if user == account:
             return True
         path = '/'.join((account, container, name))
-        if not self.permissions.access_check(path, READ, user) and not self.permissions.access_check(path, WRITE, user):
+        if not self.permissions.access_check(path, self.READ, user) and not self.permissions.access_check(path, self.WRITE, user):
             raise NotAllowedError
     
     def _can_write(self, user, account, container, name):
         if user == account:
             return True
         path = '/'.join((account, container, name))
-        if not self.permissions.access_check(path, WRITE, user):
+        if not self.permissions.access_check(path, self.WRITE, user):
             raise NotAllowedError
     
     def _allowed_accounts(self, user):

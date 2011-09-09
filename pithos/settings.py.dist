@@ -39,13 +39,7 @@ PROJECT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-# A quick-n-dirty way to know if we're running unit tests
-import sys
 TEST = False
-if len(sys.argv) >= 2:
-    if os.path.basename(sys.argv[0]) == 'manage.py' and \
-        (sys.argv[1] == 'test' or sys.argv[1] == 'hudson'):
-            TEST = True
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -65,15 +59,20 @@ DATABASES = {
 }
 
 # The backend to use and its initilization options.
-dbuser = ''
-dbpass = ''
-dbhost = ''
-dbname = ''
-db_options = (dbuser, dbpass, dbhost, dbname,)
-if TEST:
-    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/test/'), db_options,))
-else:
-    BACKEND = ('SimpleBackend', (os.path.join(PROJECT_PATH, 'data/pithos/'), db_options,))
+
+# Simple.
+#backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')
+#backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
+#BACKEND = ('SimpleBackend', (backend_path, backend_db))
+
+# Modular.
+backend_module = 'pithos.backends.lib.sqlite'
+backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')
+backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
+#backend_module = 'pithos.backends.lib.sqlalchemy'
+#backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')
+#backend_db = 'postgresql://user:pass@host/db'
+BACKEND = ('ModularBackend', (backend_module, backend_path, backend_db))
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

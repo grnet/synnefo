@@ -72,19 +72,18 @@ class SimpleBackend(BaseBackend):
     
     # TODO: Create account if not present in all functions.
     
-    def __init__(self, db, db_options):
+    def __init__(self, path, db):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         
         self.default_policy = {'quota': 0, 'versioning': 'auto'}
         
-        basepath = os.path.split(db)[0]
-        if basepath and not os.path.exists(basepath):
-            os.makedirs(basepath)
-        if not os.path.isdir(basepath):
-            raise RuntimeError("Cannot open database at '%s'" % (db,))
+        if path and not os.path.exists(path):
+            os.makedirs(path)
+        if not os.path.isdir(path):
+            raise RuntimeError("Cannot open path '%s'" % (path,))
         
-        self.con = sqlite3.connect(basepath + '/db', check_same_thread=False)
+        self.con = sqlite3.connect(db, check_same_thread=False)
         
         sql = '''pragma foreign_keys = on'''
         self.con.execute(sql)
@@ -123,11 +122,11 @@ class SimpleBackend(BaseBackend):
         self.con.commit()
         
         params = {'blocksize': self.block_size,
-                  'blockpath': basepath + '/blocks',
+                  'blockpath': os.path.join(path + '/blocks'),
                   'hashtype': self.hash_algorithm}
         self.blocker = Blocker(**params)
         
-        params = {'mappath': basepath + '/maps',
+        params = {'mappath': os.path.join(path + '/maps'),
                   'namelen': self.blocker.hashlen}
         self.mapper = Mapper(**params)
     

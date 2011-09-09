@@ -31,13 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+import sqlite3
 
-from simple import SimpleBackend
-from modular import ModularBackend
-
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
-	c = globals()[options[0]]
-	backend = c(*options[1])
+class DBWrapper(object):
+    """Database connection wrapper."""
+    
+    def __init__(self, db):
+        self.conn = sqlite3.connect(db, check_same_thread=False)
+    
+    def execute(self):
+        self.conn.execute('begin deferred')
+    
+    def commit(self):
+        self.conn.commit()
+    
+    def rollback(self):
+        self.conn.rollback()

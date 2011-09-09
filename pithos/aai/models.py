@@ -39,6 +39,7 @@ from pithos import settings
 class PithosUser(models.Model):
     uniq = models.CharField('Unique ID', max_length=255, null=True)
     realname = models.CharField('Real Name', max_length=255, default='')
+    is_admin = models.BooleanField('Admin', default=False)
     affiliation = models.CharField('Affiliation', max_length=255, default='')
     quota = models.IntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)

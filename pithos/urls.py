@@ -37,5 +37,6 @@ urlpatterns = patterns('',
     (r'^v1(?:$|/)', include('pithos.api.urls')),
     (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
     (r'^public(?:$|/)', include('pithos.public.urls')),
-    (r'^login(?:$|/)', 'pithos.aai.functions.login')
+    (r'^login(?:$|/)', 'pithos.aai.functions.login'),
+    (r'^admin', include('pithos.admin.urls'))
 )

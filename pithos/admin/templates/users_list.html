@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block body %}
+<table class="zebra-striped id-sorted">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Uniq</th>
+      <th>Real Name</th>
+      <th>Admin</th>
+      <th>Affiliation</th>
+      <th>Quota</th>
+      <th>Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td><a href="{% url admin.views.users_info user.id %}">{{ user.id }}</a></td>
+      <td><a href="{% url admin.views.users_info user.id %}">{{ user.uniq }}</a></td>
+      <td>{{ user.realname }}</td>
+      <td>{{ user.is_admin }}</td>
+      <td>{{ user.affiliation }}</td>
+      <td>{{ user.quota }}</td>
+      <td>{{ user.updated }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a class="btn success" href="{% url admin.views.users_create %}">Create a user</a>
+<br /><br />
+{% endblock body %}

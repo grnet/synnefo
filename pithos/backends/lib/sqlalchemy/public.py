@@ -48,9 +48,15 @@ class Public(DBWorker):
     
     
     def public_set(self, path):
-        s = self.public.insert()
-        r = self.conn.execute(s, path = path)
+        s = self.public.select()
+        s = s.where(self.xfeaturevals.c.path == path)
+        r = self.conn.execute(s)
+        public = r.fetchall()
         r.close()
+        if len(public) == 0:
+            s = self.public.insert()
+            r = self.conn.execute(s, path = path)
+            r.close()
     
     def public_unset(self, path):
         s = self.public.delete().where(self.public.c.path == path)

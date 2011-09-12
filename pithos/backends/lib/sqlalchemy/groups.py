@@ -79,17 +79,24 @@ class Groups(DBWorker):
     def group_add(self, owner, group, member):
         """Add a member to a group."""
         
-        s = self.groups.insert()
-        r = self.conn.execute(s, owner=owner, name=group, member=member)
+        s = self.groups.select()
+        s = s.where(self.groups.c.owner == owner)
+        s = s.where(self.groups.c.name == group)
+        s = s.where(self.groups.c.member == member)
+        r = self.conn.execute(s)
+        groups = r.fetchall()
         r.close()
+        if len(groups) == 0:    
+            s = self.groups.insert()
+            r = self.conn.execute(s, owner=owner, name=group, member=member)
+            r.close()
     
     def group_addmany(self, owner, group, members):
         """Add members to a group."""
         
-        s = self.groups.insert()
-        values = [{'owner':owner, 'name':group, 'member':member} for member in members]
-        r = self.conn.execute(s, values)
-        r.close()
+        #TODO: more efficient way to do it
+        for member in members:
+            self.group_add(owner, group, member)
     
     def group_remove(self, owner, group, member):
         """Remove a member from a group."""

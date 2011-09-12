@@ -262,7 +262,34 @@ Configure and run apache::
 
 Useful alias to add in ``~/.bashrc``::
 
-  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx'
+  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && /etc/init.d/apache2 restart'
+
+Shibboleth Setup
+----------------
+
+Install package::
+
+  apt-get install libapache2-mod-shib2
+
+Setup the files in ``/etc/shibboleth``.
+
+Add in ``/etc/apache2/sites-available/pithos`` and ``/etc/apache2/sites-available/pithos-ssl``::
+
+	ShibConfig /etc/shibboleth/shibboleth2.xml
+	Alias      /shibboleth-sp /usr/share/shibboleth 
+
+	<Location /api/login>
+		AuthType shibboleth
+		ShibRequireSession On
+		ShibUseHeaders On
+		require valid-user
+	</Location>
+
+Configure and run apache::
+
+  a2enmod shib2
+  /etc/init.d/apache2 restart
+  /etc/init.d/shibd restart
 
 MySQL Setup
 -----------

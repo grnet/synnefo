@@ -25,10 +25,11 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.6 (Sept 08, 2011)        Reply with Merkle hash as the ETag when updating objects.
+0.6 (Sept 12, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
 \                          Tags should be migrated to a meta value.
+\                          Container ``PUT`` updates metadata/policy.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -448,7 +449,9 @@ Available policy directives:
 
 * ``versioning``: Set to ``auto``, ``manual`` or ``none`` (default is ``manual``)
 * ``quota``: Size limit in KB (default is ``0`` - unlimited)
- 
+
+If the container already exists, the operation is equal to a ``POST`` with ``update`` defined.
+
 ================  ===============================
 Return Code       Description
 ================  ===============================

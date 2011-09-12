@@ -364,7 +364,7 @@ class ReconciliationTestCase(TestCase):
         D = {1: 'STARTED', 2: 'STOPPED', 3: 'STARTED', 4: 'BUILD', 5: 'BUILD'}
         G = {1: True, 3: True}
         self.assertEquals(reconciliation.stale_servers_in_db(D, G),
-                          [2, 4, 5])
+                          set([2, 4, 5]))
 
     def test_orphan_instances_in_ganeti(self):
         """Test discovery of orphan instances in Ganeti, without a DB entry"""
@@ -372,7 +372,7 @@ class ReconciliationTestCase(TestCase):
         G = {1: True, 2: False, 3: False, 4: True, 50: True}
         D = {1: True, 3: False}
         self.assertEquals(reconciliation.orphan_instances_in_ganeti(D, G),
-                          [2, 4, 50])
+                          set([2, 4, 50]))
 
     def test_unsynced_operstate(self):
         """Test discovery of unsynced operstate between the DB and Ganeti"""
@@ -380,6 +380,6 @@ class ReconciliationTestCase(TestCase):
         G = {1: True, 2: False, 3: True, 4: False, 50: True}
         D = {1: 'STARTED', 2: 'STARTED', 3: 'BUILD', 4: 'STARTED', 50: 'BUILD'}
         self.assertEquals(reconciliation.unsynced_operstate(D, G),
-                          set((2, 'STARTED', False),
+                          set([(2, 'STARTED', False),
                            (3, 'BUILD', True), (4, 'STARTED', False),
-                           (50, 'BUILD', True)))
+                           (50, 'BUILD', True)]))

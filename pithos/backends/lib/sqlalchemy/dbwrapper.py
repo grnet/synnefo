@@ -32,12 +32,16 @@
 # or implied, of GRNET S.A.
 
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 
 class DBWrapper(object):
     """Database connection wrapper."""
     
     def __init__(self, db):
-        self.engine = create_engine(db)
+        if db.startswith('sqlite://'):
+            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool)
+        else:
+            self.engine = create_engine(db)
         self.conn = self.engine.connect()
         self.trans = None
     

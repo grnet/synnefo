@@ -332,9 +332,18 @@ def container_create(request, v_account, v_container):
     except NameError:
         ret = 202
     
-    if len(meta) > 0:
+    if ret == 202 and policy:
         try:
-            backend.update_container_meta(request.user, v_account, v_container, meta, replace=True)
+            backend.update_container_policy(request.user, v_account, v_container, policy, replace=False)
+        except NotAllowedError:
+            raise Unauthorized('Access denied')
+        except NameError:
+            raise ItemNotFound('Container does not exist')
+        except ValueError:
+            raise BadRequest('Invalid policy header')
+    if meta:
+        try:
+            backend.update_container_meta(request.user, v_account, v_container, meta, replace=False)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:

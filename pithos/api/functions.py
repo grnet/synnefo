@@ -498,7 +498,7 @@ def object_list(request, v_account, v_container):
                 rename_meta_key(meta, 'modified_by', 'x_object_modified_by')
                 rename_meta_key(meta, 'version', 'x_object_version')
                 rename_meta_key(meta, 'version_timestamp', 'x_object_version_timestamp')
-                update_sharing_meta(permissions, v_account, v_container, x[0], meta)
+                update_sharing_meta(request, permissions, v_account, v_container, x[0], meta)
                 update_public_meta(public, meta)
                 object_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
@@ -534,7 +534,7 @@ def object_meta(request, v_account, v_container, v_object):
         raise ItemNotFound('Version does not exist')
     
     update_manifest_meta(request, v_account, meta)
-    update_sharing_meta(permissions, v_account, v_container, v_object, meta)
+    update_sharing_meta(request, permissions, v_account, v_container, v_object, meta)
     update_public_meta(public, meta)
     
     # Evaluate conditions.
@@ -599,7 +599,7 @@ def object_read(request, v_account, v_container, v_object):
         raise ItemNotFound('Version does not exist')
     
     update_manifest_meta(request, v_account, meta)
-    update_sharing_meta(permissions, v_account, v_container, v_object, meta)
+    update_sharing_meta(request, permissions, v_account, v_container, v_object, meta)
     update_public_meta(public, meta)
     
     # Evaluate conditions.

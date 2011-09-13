@@ -414,13 +414,22 @@ class ModularBackend(BaseBackend):
     
     @backend_method
     def get_object_permissions(self, user, account, container, name):
-        """Return the path from which this object gets its permissions from,\
+        """Return the action allowed on the object, the path
+        from which the object gets its permissions from,
         along with a dictionary containing the permissions."""
         
         logger.debug("get_object_permissions: %s %s %s", account, container, name)
-        self._can_read(user, account, container, name)
+        allowed = 'write'
+        if user != account:
+            path = '/'.join((account, container, name))
+            if self.permissions.access_check(path, self.WRITE, user):
+                allowed = 'write'
+            elif self.permissions.access_check(path, self.READ, user):
+                allowed = 'read'
+            else:
+                raise NotAllowedError
         path = self._lookup_object(account, container, name)[0]
-        return self.permissions.access_inherit(path)
+        return (allowed,) + self.permissions.access_inherit(path)
     
     @backend_method
     def update_object_permissions(self, user, account, container, name, permissions):

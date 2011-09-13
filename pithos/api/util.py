@@ -160,7 +160,9 @@ def put_object_headers(response, meta, restricted=False):
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
             response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
-        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By', 'X-Object-Public'):
+        for k in ('Content-Encoding', 'Content-Disposition', 'X-Object-Manifest',
+                  'X-Object-Sharing', 'X-Object-Shared-By', 'X-Object-Allowed-To',
+                  'X-Object-Public'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
     else:
@@ -189,10 +191,10 @@ def update_manifest_meta(request, v_account, meta):
         md5.update(hash)
         meta['hash'] = md5.hexdigest().lower()
 
-def update_sharing_meta(permissions, v_account, v_container, v_object, meta):
+def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
     if permissions is None:
         return
-    perm_path, perms = permissions
+    allowed, perm_path, perms = permissions
     if len(perms) == 0:
         return
     ret = []
@@ -205,6 +207,8 @@ def update_sharing_meta(permissions, v_account, v_container, v_object, meta):
     meta['X-Object-Sharing'] = '; '.join(ret)
     if '/'.join((v_account, v_container, v_object)) != perm_path:
         meta['X-Object-Shared-By'] = perm_path
+    if request.user != v_account:
+        meta['X-Object-Allowed-To'] = allowed
 
 def update_public_meta(public, meta):
     if not public:

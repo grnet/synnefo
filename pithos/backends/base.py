@@ -311,10 +311,11 @@ class BaseBackend(object):
         return ''
     
     def get_object_permissions(self, user, account, container, name):
-        """Return the path from which this object gets its permissions from,
+        """Return the action allowed on the object, the path
+        from which the object gets its permissions from,
         along with a dictionary containing the permissions.
         
-        The keys are:
+        The dictionary keys are (also used for defining the action):
             'read': The object is readable by the users/groups in the list
             
             'write': The object is writable by the users/groups in the list

@@ -25,11 +25,12 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.6 (Sept 12, 2011)        Reply with Merkle hash as the ETag when updating objects.
+0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
 \                          Tags should be migrated to a meta value.
 \                          Container ``PUT`` updates metadata/policy.
+\                          Report allowed actions in shared object replies.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -566,6 +567,7 @@ X-Object-Modified-By        The user that comitted the object's version
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Sharing            Object permissions (optional)
 X-Object-Shared-By          Object inheriting permissions (optional)
+X-Object-Allowed-To         Allowed actions on object (optional)
 X-Object-Public             Object's publicly accessible URI (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
@@ -659,6 +661,7 @@ X-Object-Modified-By        The user that comitted the object's version
 X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 X-Object-Sharing            Object permissions (optional)
 X-Object-Shared-By          Object inheriting permissions (optional)
+X-Object-Allowed-To         Allowed actions on object (optional)
 X-Object-Public             Object's publicly accessible URI (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
@@ -909,7 +912,7 @@ Sharing and Public Objects
 
 Read and write control in Pithos is managed by setting appropriate permissions with the ``X-Object-Sharing`` header. The permissions are applied using prefix-based inheritance. Thus, each set of authorization directives is applied to all objects sharing the same prefix with the object where the corresponding ``X-Object-Sharing`` header is defined. For simplicity, nested/overlapping permissions are not allowed. Setting ``X-Object-Sharing`` will fail, if the object is already "covered", or another object with a longer common-prefix name already has permissions. When retrieving an object, the ``X-Object-Shared-By`` header reports where it gets its permissions from. If not present, the object is the actual source of authorization directives.
 
-A user may ``GET`` another account or container. The result will include a limited reply, containing only the allowed containers or objects respectively. A top-level request with an authentication token, will return a list of allowed accounts, so the user can easily find out which other users share objects.
+A user may ``GET`` another account or container. The result will include a limited reply, containing only the allowed containers or objects respectively. A top-level request with an authentication token, will return a list of allowed accounts, so the user can easily find out which other users share objects. The ``X-Object-Allowed-To`` header lists the actions allowed on an object, if it does not belong to the requesting user.
 
 Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden):
 
@@ -952,7 +955,7 @@ List of differences from the OOS API:
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
-* Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
+* Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Available actions in cross-user requests are reported with ``X-Object-Allowed-To``. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
 * Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.

@@ -124,6 +124,72 @@ class Client(object):
         #print '**',  resp.status, headers, data, '\n'
         return resp.status, headers, data
     
+    def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
+                          blocksize=1024, params={}):
+        """perfomrs a chunked request"""
+        http = HTTPConnection(self.host)
+        
+        # write header
+        full_path = '/%s%s?' % (self.api, path)
+        
+        for k,v in params.items():
+            if v:
+                full_path = '%s&%s=%s' %(full_path, k, v)
+            else:
+                full_path = '%s&%s=' %(full_path, k)
+        http.putrequest(method, full_path)
+        http.putheader('x-auth-token', self.token)
+        http.putheader('content-type', 'application/octet-stream')
+        http.putheader('transfer-encoding', 'chunked')
+        if headers:
+            for header,value in headers.items():
+                http.putheader(header, value)
+        http.endheaders()
+        
+        # write body
+        data = ''
+        while True:
+            if f.closed:
+                break
+            block = f.read(blocksize)
+            if block == '':
+                break
+            data = '%x\r\n%s\r\n' % (len(block), block)
+            try:
+                http.send(data)
+            except:
+                #retry
+                http.send(data)
+        data = '0\r\n\r\n'
+        try:
+            http.send(data)
+        except:
+            #retry
+            http.send(data)
+        
+        # get response
+        resp = http.getresponse()
+        
+        headers = dict(resp.getheaders())
+        
+        if self.verbose:
+            print '%d %s' % (resp.status, resp.reason)
+            for key, val in headers.items():
+                print '%s: %s' % (key.capitalize(), val)
+            print
+        
+        length = resp.getheader('Content-length', None)
+        data = resp.read(length)
+        if self.debug:
+            print data
+            print
+        
+        if int(resp.status) in ERROR_CODES.keys():
+            raise Fault(data, int(resp.status))
+        
+        #print '*',  resp.status, headers, data
+        return resp.status, headers, data
+    
     def delete(self, path, format='text', params={}):
         return self._req('DELETE', path, format=format, params=params)
     
@@ -381,7 +447,7 @@ class OOS_Client(Client):
         return self.create_object(container, account=account, f=None, **args)
     
     def update_object(self, container, object, f=stdin,
-                      offset=None, meta={}, content_length=None,
+                      offset=None, meta={}, params={}, content_length=None,
                       content_type=None, content_encoding=None,
                       content_disposition=None,  account=None, **headers):
         account = account or self.account
@@ -405,7 +471,31 @@ class OOS_Client(Client):
         for k,v in meta.items():
             headers['x-object-meta-%s' %k.strip()] = v.strip()
         data = f.read() if f else None
-        return self.post(path, data, headers=headers)
+        return self.post(path, data, headers=headers, params=params)
+    
+    def update_object_using_chunks(self, container, object, f=stdin,
+                                   blocksize=1024, offset=None, meta={},
+                                   params={}, content_type=None, content_encoding=None,
+                                   content_disposition=None, account=None, **headers):
+        """updates an object (incremental upload)"""
+        account = account or self.account
+        path = '/%s/%s/%s' % (account, container, object)
+        headers = headers if not headers else {}
+        l = ['content_type', 'content_encoding', 'content_disposition']
+        l = [elem for elem in l if eval(elem)]
+        for elem in l:
+            headers.update({elem:eval(elem)})
+        
+        if offset != None:
+            headers['content_range'] = 'bytes %s-/*' % offset
+        else:
+            headers['content_range'] = 'bytes */*'
+        
+        for k,v in meta.items():
+            v = v.strip()
+            headers['x-object-meta-%s' %k.strip()] = v
+        return self._chunked_transfer(path, 'POST', f, headers=headers,
+                                      blocksize=blocksize, params=params)
     
     def _change_obj_location(self, src_container, src_object, dst_container,
                              dst_object, remove=False, meta={}, account=None,
@@ -480,66 +570,6 @@ class OOS_Client(Client):
     
 class Pithos_Client(OOS_Client):
     """Pithos Storage Client. Extends OOS_Client"""
-    
-    def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
-                          blocksize=1024):
-        """perfomrs a chunked request"""
-        http = HTTPConnection(self.host)
-        
-        # write header
-        path = '/%s%s' % (self.api, path)
-        http.putrequest(method, path)
-        http.putheader('x-auth-token', self.token)
-        http.putheader('content-type', 'application/octet-stream')
-        http.putheader('transfer-encoding', 'chunked')
-        if headers:
-            for header,value in headers.items():
-                http.putheader(header, value)
-        http.endheaders()
-        
-        # write body
-        data = ''
-        while True:
-            if f.closed:
-                break
-            block = f.read(blocksize)
-            if block == '':
-                break
-            data = '%x\r\n%s\r\n' % (len(block), block)
-            try:
-                http.send(data)
-            except:
-                #retry
-                http.send(data)
-        data = '0\r\n\r\n'
-        try:
-            http.send(data)
-        except:
-            #retry
-            http.send(data)
-        
-        # get response
-        resp = http.getresponse()
-        
-        headers = dict(resp.getheaders())
-        
-        if self.verbose:
-            print '%d %s' % (resp.status, resp.reason)
-            for key, val in headers.items():
-                print '%s: %s' % (key.capitalize(), val)
-            print
-        
-        length = resp.getheader('Content-length', None)
-        data = resp.read(length)
-        if self.debug:
-            print data
-            print
-        
-        if int(resp.status) in ERROR_CODES.keys():
-            raise Fault(data, int(resp.status))
-        
-        #print '*',  resp.status, headers, data
-        return resp.status, headers, data
     
     def _update_metadata(self, path, entity, **meta):
         """
@@ -810,7 +840,7 @@ class Pithos_Client(OOS_Client):
                                   **headers)
     
     def update_object(self, container, object, f=stdin,
-                      offset=None, meta={}, content_length=None,
+                      offset=None, meta={}, replace=False, content_length=None,
                       content_type=None, content_range=None,
                       content_encoding=None, content_disposition=None,
                       x_object_bytes=None, x_object_manifest=None,
@@ -819,37 +849,26 @@ class Pithos_Client(OOS_Client):
         """updates an object"""
         account = account or self.account
         args = locals()
-        for elem in ['self', 'container', 'object']:
+        for elem in ['self', 'container', 'object', 'replace']:
             args.pop(elem)
+        if not replace:
+            args['params'] = {'update':None}
         return OOS_Client.update_object(self, container, object, **args)
-        
+    
     def update_object_using_chunks(self, container, object, f=stdin,
                                    blocksize=1024, offset=None, meta={},
-                                   content_type=None, content_encoding=None,
+                                   replace=False, content_type=None, content_encoding=None,
                                    content_disposition=None, x_object_bytes=None,
                                    x_object_manifest=None, x_object_sharing=None,
                                    x_object_public=None, account=None):
         """updates an object (incremental upload)"""
         account = account or self.account
-        path = '/%s/%s/%s' % (account, container, object)
-        headers = {}
-        l = ['content_type', 'content_encoding', 'content_disposition',
-             'x_object_bytes', 'x_object_manifest', 'x_object_sharing',
-             'x_object_public']
-        l = [elem for elem in l if eval(elem)]
-        for elem in l:
-            headers.update({elem:eval(elem)})
-        
-        if offset != None:
-            headers['content_range'] = 'bytes %s-/*' % offset
-        else:
-            headers['content_range'] = 'bytes */*'
-        
-        for k,v in meta.items():
-            v = v.strip()
-            headers['x-object-meta-%s' %k.strip()] = v
-        return self._chunked_transfer(path, 'POST', f, headers=headers,
-                                      blocksize=blocksize)
+        args = locals()
+        for elem in ['self', 'container', 'object', 'replace']:
+            args.pop(elem)
+        if not replace:
+            args['params'] = {'update':None}
+        return OOS_Client.update_object_using_chunks(self, container, object, **args)
     
     def update_from_other_source(self, container, object, source,
                       offset=None, meta={}, content_range=None,

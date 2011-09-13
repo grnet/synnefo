@@ -28,9 +28,10 @@
 # policies, either expressed or implied, of GRNET S.A.
 
 
-""" Logging configuration defaults
+"""Logging configuration defaults
 
-    Uses Python's logging framework and applies Synnefo conventions to it.
+Uses Python's logging framework and applies Synnefo conventions to it.
+
 """
 
 import logging
@@ -52,6 +53,7 @@ logging.config.fileConfig(logconf)
 
 def get_logger(logger):
     return logging.getLogger(logger)
+
 
 def console_output(logger):
     return logger.addHandler(logging.StreamHandler())

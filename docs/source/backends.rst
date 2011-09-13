@@ -28,7 +28,7 @@ ModularBackend
 Node
 ~~~~
 
-.. automodule:: pithos.backends.lib.node
+.. automodule:: pithos.backends.lib.sqlite.node
    :show-inheritance:
    :members:
    :undoc-members:
@@ -36,7 +36,7 @@ Node
 Policy
 ~~~~~~
 
-.. automodule:: pithos.backends.lib.policy
+.. automodule:: pithos.backends.lib.sqlite.policy
    :show-inheritance:
    :members:
    :undoc-members:
@@ -44,7 +44,7 @@ Policy
 Permissions
 ~~~~~~~~~~~
 
-.. automodule:: pithos.backends.lib.permissions
+.. automodule:: pithos.backends.lib.sqlite.permissions
    :show-inheritance:
    :members:
    :undoc-members:

@@ -52,7 +52,8 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
 	RewriteEngine On
 	RewriteRule ^/v(.*) /api/v$1 [PT]
 	RewriteRule ^/public(.*) /api/public$1 [PT]
-	RewriteRule ^/login(.*) /api/login$1 [PT]
+        RewriteRule ^/login(.*) https://%{HTTP_HOST}%{REQUEST_URI}
+        RewriteRule ^/admin(.*) https://%{HTTP_HOST}%{REQUEST_URI}
 
 	<Directory /pithos/pithos/wsgi/>
 		Order allow,deny
@@ -102,6 +103,7 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
 	RewriteRule ^/v(.*) /api/v$1 [PT]
 	RewriteRule ^/public(.*) /api/public$1 [PT]
 	RewriteRule ^/login(.*) /api/login$1 [PT]
+	RewriteRule ^/admin(.*) /api/admin$1 [PT]
 
         <Directory /pithos/pithos/wsgi/>
                 Order allow,deny
@@ -273,7 +275,7 @@ Install package::
 
 Setup the files in ``/etc/shibboleth``.
 
-Add in ``/etc/apache2/sites-available/pithos`` and ``/etc/apache2/sites-available/pithos-ssl``::
+Add in ``/etc/apache2/sites-available/pithos-ssl``::
 
 	ShibConfig /etc/shibboleth/shibboleth2.xml
 	Alias      /shibboleth-sp /usr/share/shibboleth 

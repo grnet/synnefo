@@ -78,6 +78,8 @@ def login(request):
                                  'token': user.auth_token})
     
     response = HttpResponse()
+    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
     if not next:
         response['X-Auth-User'] = user.uniq
         response['X-Auth-Token'] = user.auth_token

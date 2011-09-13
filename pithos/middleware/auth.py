@@ -61,4 +61,5 @@ class AuthMiddleware(object):
         if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
             return
         
+        request.user_obj = user
         request.user = user.uniq

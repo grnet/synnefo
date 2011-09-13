@@ -74,6 +74,9 @@ backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
 #backend_db = 'postgresql://user:pass@host/db'
 BACKEND = ('ModularBackend', (backend_module, backend_path, backend_db))
 
+# Shibboleth-enabled path for authentication.
+LOGIN_URL = "/login"
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.

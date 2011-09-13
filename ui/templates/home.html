@@ -205,15 +205,15 @@ or implied, of GRNET S.A.
         // ajax error checking
         function ajax_error(status, serverID, action, responseText, ajax_settings) {
 
-            // flag to display or not error report link
-            var allow_report = ajax_settings.disable_report ? false : true;
-            var no_details = ajax_settings.no_details === undefined || ajax_settings.no_details === false ? false : true;
-            
             var error_date = new Date();
             if (!ajax_settings) {
                 ajax_settings = {};
             }
 
+            // flag to display or not error report link
+            var allow_report = ajax_settings.disable_report ? false : true;
+            var no_details = ajax_settings.no_details === undefined || ajax_settings.no_details === false ? false : true;
+            
              // close existing overlays to begin with
             close_all_overlays();
             // clear old deferred calls (stops all auto-updates)

@@ -42,7 +42,7 @@ def id_from_instance_name(name):
     """
     if not str(name).startswith(settings.BACKEND_PREFIX_ID):
         raise VirtualMachine.InvalidBackendIdError(str(name))
-    ns = str(name).lstrip(settings.BACKEND_PREFIX_ID)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID, "", 1)
     if not ns.isdigit():
         raise VirtualMachine.InvalidBackendIdError(str(name))
 
@@ -50,13 +50,13 @@ def id_from_instance_name(name):
 
 def get_rsapi_state(vm):
     """Returns the API state for a virtual machine
-    
+
     The API state for an instance of VirtualMachine is derived as follows:
 
     * If the deleted flag has been set, it is "DELETED".
     * Otherwise, it is a mapping of the last state reported by Ganeti
       (vm.operstate) through the RSAPI_STATE_FROM_OPER_STATE dictionary.
-      
+
       The last state reported by Ganeti is set whenever Ganeti reports
       successful completion of an operation. If Ganeti says an OP_INSTANCE_STARTUP
       operation succeeded, vm.operstate is set to "STARTED".

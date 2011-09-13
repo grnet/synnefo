@@ -119,12 +119,12 @@ def process_net_status(vm, nics):
                 raise Network.DoesNotExist("NetworkLink for link='%s' not "
                     "associated with an existing Network instance." %
                     nic['link'])
-    
+
         firewall = nic.get('firewall', '')
         firewall_profile = _reverse_tags.get(firewall, '')
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
-    
+
         vm.nics.create(
             network=net,
             index=i,
@@ -132,6 +132,10 @@ def process_net_status(vm, nics):
             ipv4=nic.get('ip', ''),
             ipv6=nic.get('ipv6',''),
             firewall_profile=firewall_profile)
+
+        # network nics modified, update network object
+        net.save()
+
     vm.save()
 
 
@@ -278,7 +282,7 @@ def get_instance_console(vm):
     #
     # Until this is fixed on the Ganeti side, construct a console info reply
     # directly.
-    # 
+    #
     # WARNING: This assumes that VNC runs on port network_port on
     #          the instance's primary node, and is probably
     #          hypervisor-specific.
@@ -290,7 +294,7 @@ def get_instance_console(vm):
         raise Exception("hv parameter serial_console cannot be true")
     console['host'] = i['pnode']
     console['port'] = i['network_port']
-    
+
     return console
     # return rapi.GetInstanceConsole(vm.backend_id)
 
@@ -389,7 +393,7 @@ def set_firewall_profile(vm, profile):
         rapi.DeleteInstanceTags(vm.backend_id, [t], dry_run=settings.TEST)
 
     rapi.AddInstanceTags(vm.backend_id, [tag], dry_run=settings.TEST)
-    
+
     # XXX NOP ModifyInstance call to force process_net_status to run
     # on the dispatcher
     rapi.ModifyInstance(vm.backend_id,

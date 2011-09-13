@@ -648,7 +648,7 @@ def object_read(request, v_account, v_container, v_object):
             raise ItemNotFound('Version does not exist')
     
     # Reply with the hashmap.
-    if request.serialization != 'text':
+    if 'hashmap' in request.GET and request.serialization != 'text':
         size = sum(sizes)
         hashmap = sum(hashmaps, [])
         d = {'block_size': backend.block_size, 'block_hash': backend.hash_algorithm, 'bytes': size, 'hashes': hashmap}
@@ -675,9 +675,6 @@ def object_write(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       unauthorized (401),
     #                       badRequest (400)
-    
-    if not request.GET.get('format'):
-        request.serialization = 'text'
     
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
@@ -718,7 +715,10 @@ def object_write(request, v_account, v_container, v_object):
     if 'Content-Type' not in meta:
         raise LengthRequired('Missing Content-Type header')
     
-    if request.serialization != 'text':
+    if 'hashmap' in request.GET:
+        if request.serialization not in ('json', 'xml'):
+            raise BadRequest('Invalid hashmap format')
+        
         data = ''
         for block in socket_read_iterator(request, content_length, backend.block_size):
             data = '%s%s' % (data, block)

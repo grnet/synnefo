@@ -32,6 +32,7 @@ Revision                   Description
 \                          Container ``PUT`` updates metadata/policy.
 \                          Report allowed actions in shared object replies.
 \                          Provide ``https://hostname/login`` for Shibboleth authentication.
+\                          Use ``hashmap`` parameter in object ``GET``/``PUT`` to use hashmaps.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -74,7 +75,7 @@ The login URI accepts the following parameters:
 Request Parameter Name  Value
 ======================  =========================
 next                    The URI to redirect to when the process is finished
-renew                   Force token renewal
+renew                   Force token renewal (no value parameter)
 ======================  =========================
 
 The login process starts by redirecting the user to an external URI (controlled by Shibboleth), where the actual authentication credentials are entered. Then, the user is redirected back to the login URI from Shibboleth, with various identification information in the request headers.
@@ -626,10 +627,11 @@ If-Unmodified-Since   Retrieve if object has not changed since provided timestam
 Request Parameter Name  Value
 ======================  ===================================
 format                  Optional extended reply type (can be ``json`` or ``xml``)
+hashmap                 Optional request for hashmap (no value parameter)
 version                 Optional version identifier or ``list`` (specify a format if requesting a list)
 ======================  ===================================
 
-The reply is the object's data (or part of it), except if a hashmap is requested with the ``format`` parameter, or a version list with ``version=list`` (in which case an extended reply format must be specified). Object headers (as in a ``HEAD`` request) are always included.
+The reply is the object's data (or part of it), except if a hashmap is requested with ``hashmap``, or a version list with ``version=list`` (in both cases an extended reply format must be specified). Object headers (as in a ``HEAD`` request) are always included.
 
 Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block.
 
@@ -732,28 +734,13 @@ X-Object-Meta-*       Optional user defined metadata
 ======================  ===================================
 Request Parameter Name  Value
 ======================  ===================================
-format                  Optional extended request type (can be ``json``) to create the object by suppling its hashmap instead
+format                  Optional extended request type (can be ``json`` or ``xml``)
+hashmap                 Optional hashmap provided instead of data (no value parameter)
 ======================  ===================================
 
-The request is the object's data (or part of it), except if a hashmap is provided with the ``format`` parameter.  If format is used and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts (in a simple text format, with one hash per line). 
+The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts (in a simple text format, with one hash per line).
 
-Hashmaps expose the underlying storage format of the object.
-
-Example ``format=json`` request:
-
-::
-
-  {"block_hash": "sha1", "hashes": ["7295c41da03d7f916440b98e32c4a2a39351546c", ...], "block_size": 131072, "bytes": 242}
-
-Example ``format=xml`` request:
-
-::
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <object name="file" bytes="24223726" block_size="131072" block_hash="sha1">
-    <hash>7295c41da03d7f916440b98e32c4a2a39351546c</hash>
-    <hash>...</hash>
-  </object>
+Hashmaps should be formatted as outlined in ``GET``.
 
 ==========================  ===============================
 Reply Header Name           Value
@@ -992,7 +979,7 @@ Clarifications/suggestions:
 * Some processing is done in the variable part of all ``X-*-Meta-*`` headers. If it includes underscores, they will be converted to dashes and the first letter of all intra-dash strings will be capitalized.
 * A ``GET`` reply for a level will include all headers of the corresponding ``HEAD`` request.
 * To avoid conflicts between objects and virtual directory markers in container listings, it is recommended that object names do not end with the delimiter used.
-* The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired reply format. The parameter overrides the header (**TBD**).
+* The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired request/reply format. The parameter overrides the header.
 * Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
 * In headers, dates are formatted according to RFC 1123. In extended information listings, the ``last_modified`` field is formatted according to ISO 8601 (for OOS API compatibility). All other fields (Pithos extensions) use integer tiemstamps.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.

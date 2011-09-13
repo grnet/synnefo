@@ -33,15 +33,20 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
+from sqlalchemy.interfaces import PoolListener
 
 class DBWrapper(object):
     """Database connection wrapper."""
     
     def __init__(self, db):
         if db.startswith('sqlite://'):
-            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool)
+            class ForeignKeysListener(PoolListener):
+                def connect(self, dbapi_con, con_record):
+                    db_cursor = dbapi_con.execute('pragma foreign_keys=ON')
+            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
         else:
             self.engine = create_engine(db)
+        #self.engine.echo = True
         self.conn = self.engine.connect()
         self.trans = None
     

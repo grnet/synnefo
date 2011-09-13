@@ -142,17 +142,23 @@ class XFeatures(DBWorker):
     def feature_set(self, feature, key, value):
         """Associate a key, value pair with a feature."""
         
-        s = self.xfeaturevals.insert()
-        r = self.conn.execute(s, feature_id=feature, key=key, value=value)
+        s = self.xfeaturevals.select()
+        s = s.where(self.xfeaturevals.c.feature_id == feature)
+        s = s.where(self.xfeaturevals.c.key == key)
+        r = self.conn.execute(s)
+        xfeaturevals = r.fetchall()
         r.close()
+        if len(xfeaturevals) == 0:
+            s = self.xfeaturevals.insert()
+            r = self.conn.execute(s, feature_id=feature, key=key, value=value)
+            r.close()
     
     def feature_setmany(self, feature, key, values):
         """Associate the given key, and values with a feature."""
         
-        s = self.xfeaturevals.insert()
-        values = [{'feature_id':feature, 'key':key, 'value':v} for v in values]
-        r = self.conn.execute(s, values)
-        r.close()
+        #TODO: more efficient way to do it
+        for v in values:
+            self.feature_set(feature, key, v)
     
     def feature_unset(self, feature, key, value):
         """Disassociate a key, value pair from a feature."""

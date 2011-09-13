@@ -31,6 +31,7 @@ Revision                   Description
 \                          Tags should be migrated to a meta value.
 \                          Container ``PUT`` updates metadata/policy.
 \                          Report allowed actions in shared object replies.
+\                          Provide ``https://hostname/login`` for Shibboleth authentication.
 0.5 (July 22, 2011)        Object update from another object's data.
 \                          Support object truncate.
 \                          Create object using a standard HTML form.
@@ -56,6 +57,30 @@ Revision                   Description
 0.1 (May 17, 2011)         Initial release. Based on OpenStack Object Storage Developer Guide API v1 (Apr. 15, 2011).
 =========================  ================================
 
+Pithos Users and Authentication
+-------------------------------
+
+Pithos keeps separate databases for users and objects.
+
+Each user is uniquely identified by the ``Uniq`` field. This should be used as the user's account in the API. The API uses the ``Token`` field to authenticate a user, thus allowing cross-account requests. All API requests require a token.
+
+User entries can be modified/added via the management interface available at ``https://hostname/admin``.
+
+Pithos is also compatible with Shibboleth (http://shibboleth.internet2.edu/). The connection between Shibboleth and Pithos is done by ``https://hostname/login``. An application that wishes to connect to Pithos, but does not have a token, should redirect the user to the login URI.
+
+The login URI accepts the following parameters:
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+next                    The URI to redirect to when the process is finished
+renew                   Force token renewal
+======================  =========================
+
+The login process starts by redirecting the user to an external URI (controlled by Shibboleth), where the actual authentication credentials are entered. Then, the user is redirected back to the login URI from Shibboleth, with various identification information in the request headers.
+
+If the user does not exist in the database, Pithos adds the user and creates a random token. If the user exists, the token has not expired and ``renew`` is not set, the existing token is reused. Finally, the login URI redirects to the URI provided with ``next``, adding the ``user`` and ``token`` parameters, which contain the ``Uniq`` and ``Token`` fields respectively. 
+
 The Pithos API
 --------------
 
@@ -66,7 +91,7 @@ The URI requests supported by the Pithos API follow one of the following forms:
 * Container level: ``https://hostname/v1/<account>/<container>``
 * Object level: ``https://hostname/v1/<account>/<container>/<object>``
 
-All requests must include an ``X-Auth-Token`` - as a header, or a parameter. The process of obtaining the token is still to be determined (**TBD**).
+All requests must include an ``X-Auth-Token`` - as a header, or a parameter.
 
 The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
@@ -1020,7 +1045,7 @@ Browsing past versions of objects should be available both at the object and the
 Recommended Practices and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Assuming an authentication token is obtained (**TBD**), the following high-level operations are available - shown with ``curl``:
+Assuming an authentication token is obtained, the following high-level operations are available - shown with ``curl``:
 
 * Get account information ::
 

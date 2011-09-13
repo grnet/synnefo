@@ -41,6 +41,7 @@ var last_request = {};
 var CHANGES_SINCE_ERRORS = 0;
 
 $.ajaxSetup({
+    'cache': false,
     'beforeSend': function(xhr) {
           // save ajax settings, we might need them for error reporting
           last_request = this;

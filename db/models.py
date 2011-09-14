@@ -247,6 +247,13 @@ class VirtualMachine(models.Model):
         # and are ignored for the time being
         ('OP_INSTANCE_SET_PARAMS', 'Set Instance Parameters'),
         ('OP_INSTANCE_QUERY_DATA', 'Query Instance Data'),
+        ('OP_INSTANCE_REINSTALL', 'Reinstall Instance'),
+        ('OP_INSTANCE_ACTIVATE_DISKS', 'Activate Disks'),
+        ('OP_INSTANCE_DEACTIVATE_DISKS', 'Deactivate Disks'),
+        ('OP_INSTANCE_REPLACE_DISKS', 'Replace Disks'),
+        ('OP_INSTANCE_MIGRATE', 'Migrate Instance'),
+        ('OP_INSTANCE_CONSOLE', 'Get Instance Console'),
+        ('OP_INSTANCE_RECREATE_DISKS', 'Recreate Disks')
     )
     # A backend job may be in one of the following possible states
     BACKEND_STATUSES = (
@@ -261,6 +268,8 @@ class VirtualMachine(models.Model):
 
     # The operating state of a VM,
     # upon the successful completion of a backend operation.
+    # IMPORTANT: Make sure all keys have a corresponding
+    # entry in BACKEND_OPCODES if you update this field, see #1035, #1111.
     OPER_STATE_FROM_OPCODE = {
         'OP_INSTANCE_CREATE': 'STARTED',
         'OP_INSTANCE_REMOVE': 'DESTROYED',

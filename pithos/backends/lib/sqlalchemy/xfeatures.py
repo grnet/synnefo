@@ -145,6 +145,7 @@ class XFeatures(DBWorker):
         s = self.xfeaturevals.select()
         s = s.where(self.xfeaturevals.c.feature_id == feature)
         s = s.where(self.xfeaturevals.c.key == key)
+        s = s.where(self.xfeaturevals.c.value == value)
         r = self.conn.execute(s)
         xfeaturevals = r.fetchall()
         r.close()

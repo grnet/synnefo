@@ -50,6 +50,17 @@
   </div>
 
   <div class="clearfix">
+    <label for="user-state">State</label>
+    <div class="input">
+      <select class="medium" id="user-state" name="state">
+        {% for state in states %}
+        <option{% ifequal state user.state %} selected{% endifequal %}>{{ state }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="clearfix">
     <label for="user-invitations">Max Invitations</label>
     <div class="input">
       <input class="small" id="user-invitations" name="invitations" value="{{ user.max_invitations }}" type="text" />
@@ -73,16 +84,6 @@
   <div class="actions">
     <button type="submit" class="btn primary">Save Changes</button>
     <button type="reset" class="btn">Reset</button>
-        &nbsp;&nbsp;
-    <a class="btn danger needs-confirm" href="{% url admin.views.users_delete user.id %}">Delete User</a>
-  </div>
-
-  <div class="alert-message block-message error">
-    <p><strong>WARNING:</strong> Deleting a user is a very destructive operation. Any objects with foreign keys pointing to this user will be deleted as well.</p>
-    <div class="alert-actions">
-      <a class="btn danger" href="{% url admin.views.users_delete user.id %}">Delete</a>
-      <a class="btn alert-close">Cancel</a>
-    </div>
   </div>
 </form>
 {% endblock body %}

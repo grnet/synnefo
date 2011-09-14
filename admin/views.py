@@ -53,7 +53,7 @@ def index(request):
 
 @requires_admin
 def flavors_list(request):
-    flavors = models.Flavor.objects.order_by('id')
+    flavors = models.Flavor.objects.exclude(deleted=True).order_by('id')
     html = render('flavors_list.html', 'flavors', flavors=flavors)
     return HttpResponse(html)
 
@@ -86,6 +86,7 @@ def flavors_modify(request, flavor_id):
     flavor.cpu = int(request.POST.get('cpu'))
     flavor.ram = int(request.POST.get('ram'))
     flavor.disk = int(request.POST.get('disk'))
+    flavor.deleted = True if request.POST.get('deleted') else False
     flavor.save()
     _log.info('User %s modified Flavor %s', request.user.name, flavor.name)
     return redirect(flavors_info, flavor.id)
@@ -101,7 +102,7 @@ def flavors_delete(request, flavor_id):
 
 @requires_admin
 def images_list(request):
-    images = models.Image.objects.order_by('id')
+    images = models.Image.objects.exclude(state='DELETED').order_by('id')
     html = render('images_list.html', 'images', images=images)
     return HttpResponse(html)
 
@@ -174,14 +175,15 @@ def images_modify(request, image_id):
 
 @requires_admin
 def servers_list(request):
-    vms = models.VirtualMachine.objects.order_by('id')
+    active_vms = models.VirtualMachine.objects.exclude(operstate='DESTROYED')
+    vms = active_vms.order_by('id')
     html = render('servers_list.html', 'servers', vms=vms)
     return HttpResponse(html)
 
 
 @requires_admin
 def users_list(request):
-    users = models.SynnefoUser.objects.order_by('id')
+    users = models.SynnefoUser.objects.exclude(state='DELETED').order_by('id')
     html = render('users_list.html', 'users', users=users)
     return HttpResponse(html)
 
@@ -209,7 +211,9 @@ def users_info(request, user_id):
     types = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
     if not user.type:
         types = [''] + types
-    html = render('users_info.html', 'users', user=user, types=types)
+    states = [x[0] for x in models.SynnefoUser.ACCOUNT_STATE]
+    html = render('users_info.html', 'users',
+                    user=user, types=types, states=states)
     return HttpResponse(html)
 
 
@@ -221,6 +225,7 @@ def users_modify(request, user_id):
     user.uniq = request.POST.get('uniq')
     user.credit = int(request.POST.get('credit'))
     user.type = request.POST.get('type')
+    user.state = request.POST.get('state')
     invitations = request.POST.get('invitations')
     user.max_invitations = int(invitations) if invitations else None
     user.save()

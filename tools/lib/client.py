@@ -34,6 +34,7 @@
 from httplib import HTTPConnection, HTTP
 from sys import stdin
 from xml.dom import minidom
+from StringIO import StringIO
 
 import json
 import types
@@ -72,7 +73,8 @@ class Client(object):
         self.token = token
     
     def _req(self, method, path, body=None, headers={}, format='text', params={}):
-        full_path = '/%s%s?format=%s' % (self.api, path, format)
+        slash = '/' if self.api else ''
+        full_path = '%s%s%s?format=%s' % (slash, self.api, path, format)
         
         for k,v in params.items():
             if v:
@@ -204,8 +206,9 @@ class Client(object):
         return self._req('POST', path, body, headers=headers, format=format,
                         params=params)
     
-    def put(self, path, body=None, format='text', headers=None):
-        return self._req('PUT', path, body, headers=headers, format=format)
+    def put(self, path, body=None, format='text', headers=None, params={}):
+        return self._req('PUT', path, body, headers=headers, format=format,
+                         params=params)
     
     def _list(self, path, format='text', params={}, **headers):
         status, headers, data = self.get(path, format=format, headers=headers,
@@ -399,7 +402,7 @@ class OOS_Client(Client):
     def retrieve_object_hashmap(self, container, object, params={},
                         account=None, **headers):
         """returns the hashmap representing object's data"""
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
         data = self.retrieve_object(container, object, format='json', **args)
@@ -415,7 +418,7 @@ class OOS_Client(Client):
                                               **h)
     
     def create_object(self, container, object, f=stdin, format='text', meta={},
-                      etag=None, content_type=None, content_encoding=None,
+                      params={}, etag=None, content_type=None, content_encoding=None,
                       content_disposition=None, account=None, **headers):
         """creates a zero-length object"""
         account = account or self.account
@@ -433,14 +436,14 @@ class OOS_Client(Client):
         for k,v in meta.items():
             headers['x-object-meta-%s' %k.strip()] = v.strip()
         data = f.read() if f else None
-        return self.put(path, data, format, headers=headers)
+        return self.put(path, data, format, headers=headers, params=params)
     
     def create_zero_length_object(self, container, object, meta={}, etag=None,
                                   content_type=None, content_encoding=None,
                                   content_disposition=None, account=None,
                                   **headers):
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'headers', 'account']:
             args.pop(elem)
         args.update(headers)
@@ -681,7 +684,7 @@ class Pithos_Client(OOS_Client):
         params = {'until':until, 'meta':meta}
         if shared:
             params['shared'] = None
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'params', 'until', 'meta']:
             args.pop(elem)
         return OOS_Client.list_objects(self, container, params=params, **args)
@@ -728,6 +731,8 @@ class Pithos_Client(OOS_Client):
         l = [elem for elem in l if eval(elem)]
         for elem in l:
             headers.update({elem:eval(elem)})
+        if format != 'text':
+            params['hashmap'] = None
         return OOS_Client.retrieve_object(self, container, object,
                                           account=account, format=format,
                                           params=params, **headers)
@@ -739,7 +744,7 @@ class Pithos_Client(OOS_Client):
                                 account=None):
         """returns a specific object version"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         l = ['self', 'container', 'object']
         for elem in l:
             args.pop(elem)
@@ -752,7 +757,7 @@ class Pithos_Client(OOS_Client):
                                     if_unmodified_since=None, account=None):
         """returns the object version list"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         l = ['self', 'container', 'object']
         for elem in l:
             args.pop(elem)
@@ -768,20 +773,20 @@ class Pithos_Client(OOS_Client):
                                   x_object_public=None, account=None):
         """createas a zero length object"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
         return OOS_Client.create_zero_length_object(self, container, object,
                                                     **args)
     
-    def create_object(self, container, object, f=stdin, 
-                      meta={}, etag=None, content_type=None,
+    def create_object(self, container, object, f=stdin, format='text',
+                      meta={}, params={}, etag=None, content_type=None,
                       content_encoding=None, content_disposition=None,
                       x_object_manifest=None, x_object_sharing=None,
                       x_object_public=None, account=None):
         """creates an object"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
         return OOS_Client.create_object(self, container, object, **args)
@@ -810,27 +815,25 @@ class Pithos_Client(OOS_Client):
         return self._chunked_transfer(path, 'PUT', f, headers=headers,
                                       blocksize=blocksize)
     
-    def create_object_by_hashmap(container, object, f=stdin, format='json',
+    def create_object_by_hashmap(self, container, object, hashmap={},
                                  meta={}, etag=None, content_encoding=None,
                                  content_disposition=None, content_type=None,
                                  x_object_sharing=None, x_object_manifest=None,
                                  x_object_public = None, account=None):
         """creates an object by uploading hashes representing data instead of data"""
         account = account or self.account
-        args = locals()
-        for elem in ['self', 'container', 'object']:
+        args = locals().copy()
+        for elem in ['self', 'container', 'object', 'hashmap']:
             args.pop(elem)
             
-        data = f.read() if f else None
-        if data and format == 'json':
-            try:
-                data = eval(data)
-                data = json.dumps(data)
-            except SyntaxError:
-                raise Fault('Invalid formatting')
+        try:
+            data = json.dumps(hashmap)
+        except SyntaxError:
+            raise Fault('Invalid formatting')
+        args['params'] = {'hashmap':None}
+        args['format'] = 'json'
         
-        #TODO check with xml
-        return self.create_object(container, object, **args)
+        return self.create_object(container, object, f=StringIO(data), **args)
     
     def create_manifestation(self, container, object, manifest, account=None):
         """creates a manifestation"""
@@ -848,7 +851,7 @@ class Pithos_Client(OOS_Client):
                       x_source_object=None, account=None):
         """updates an object"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'object', 'replace']:
             args.pop(elem)
         if not replace:
@@ -863,7 +866,7 @@ class Pithos_Client(OOS_Client):
                                    x_object_public=None, account=None):
         """updates an object (incremental upload)"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'object', 'replace']:
             args.pop(elem)
         if not replace:
@@ -877,7 +880,7 @@ class Pithos_Client(OOS_Client):
                       x_object_sharing=None, x_object_public=None, account=None):
         """updates an object"""
         account = account or self.account
-        args = locals()
+        args = locals().copy()
         for elem in ['self', 'container', 'object', 'source']:
             args.pop(elem)
         

@@ -19,12 +19,12 @@
     <tr>
       <td>{{ invitation.id }}</td>
       <td>
-        <a href="{% url synnefo.admin.views.users_info invitation.source.id %}">{{ invitation.source }}</a>
+        <a href="{% url synnefo.admin.views.users_info invitation.source.id %}">{{ invitation.source.name }}</a>
         <br />
         {{ invitation.source.uniq }}
       </td>
       <td>
-        <a href="{% url synnefo.admin.views.users_info invitation.target.id %}">{{ invitation.target }}</a>
+        <a href="{% url synnefo.admin.views.users_info invitation.target.id %}">{{ invitation.target.name }}</a>
         <br />
         {{ invitation.target.uniq }}
       </td>

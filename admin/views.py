@@ -26,6 +26,20 @@ def requires_admin(func):
     return wrapper
 
 
+def get_filters(request, session_key, all_filters, default=None):
+    if default is None:
+        default = all_filters
+    filters = request.session.get(session_key, default)
+    filter = request.GET.get('toggle_filter')
+    if filter:
+        if filter in filters:
+            filters.remove(filter)
+        elif filter in all_filters:
+            filters.add(filter)
+        request.session[session_key] = filters
+    return filters
+
+
 @requires_admin
 def index(request):
     stats = {}
@@ -53,8 +67,18 @@ def index(request):
 
 @requires_admin
 def flavors_list(request):
-    flavors = models.Flavor.objects.exclude(deleted=True).order_by('id')
-    html = render('flavors_list.html', 'flavors', flavors=flavors)
+    all_states = set(['DELETED'])
+    default = set()
+    filters = get_filters(request, 'flavors_filters', all_states, default)
+    
+    flavors = models.Flavor.objects.all()
+    if 'DELETED' not in filters:
+        flavors = flavors.exclude(deleted=True)
+    
+    html = render('flavors_list.html', 'flavors',
+                    flavors=flavors,
+                    all_states=sorted(all_states),
+                    filters=filters)
     return HttpResponse(html)
 
 
@@ -102,8 +126,18 @@ def flavors_delete(request, flavor_id):
 
 @requires_admin
 def images_list(request):
-    images = models.Image.objects.exclude(state='DELETED').order_by('id')
-    html = render('images_list.html', 'images', images=images)
+    all_states = set(x[0] for x in models.Image.IMAGE_STATES)
+    default = all_states - set(['DELETED'])
+    filters = get_filters(request, 'images_filters', all_states, default)
+    
+    images = models.Image.objects.all()
+    for state in all_states - filters:
+        images = images.exclude(state=state)
+    
+    html = render('images_list.html', 'images',
+                    images=images.order_by('id'),
+                    all_states=sorted(all_states),
+                    filters=filters)
     return HttpResponse(html)
 
 
@@ -175,16 +209,35 @@ def images_modify(request, image_id):
 
 @requires_admin
 def servers_list(request):
-    active_vms = models.VirtualMachine.objects.exclude(operstate='DESTROYED')
-    vms = active_vms.order_by('id')
-    html = render('servers_list.html', 'servers', vms=vms)
+    all_states = set(x[0] for x in models.VirtualMachine.OPER_STATES)
+    default = all_states - set(['DESTROYED'])
+    filters = get_filters(request, 'servers_filters', all_states, default)
+    
+    servers = models.VirtualMachine.objects.all()
+    for state in all_states - filters:
+        servers = servers.exclude(operstate=state)
+    
+    html = render('servers_list.html', 'servers',
+                    servers=servers.order_by('id'),
+                    all_states=sorted(all_states),
+                    filters=filters)
     return HttpResponse(html)
 
 
 @requires_admin
 def users_list(request):
-    users = models.SynnefoUser.objects.exclude(state='DELETED').order_by('id')
-    html = render('users_list.html', 'users', users=users)
+    all_states = set(x[0] for x in models.SynnefoUser.ACCOUNT_STATE)
+    default = all_states - set(['DELETED'])
+    filters = get_filters(request, 'users_filters', all_states, default)
+    
+    users = models.SynnefoUser.objects.all()
+    for state in all_states - filters:
+        users = users.exclude(state=state)
+    
+    html = render('users_list.html', 'users',
+                    users=users.order_by('id'),
+                    all_states=sorted(all_states),
+                    filters=filters)
     return HttpResponse(html)
 
 

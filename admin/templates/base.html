@@ -36,6 +36,22 @@
       </li>
     </ul>
 
+    {% if all_states %}
+    <div class="row">
+      <div class="span3 columns">
+        <h4>Filter by state:</h4>
+      </div>
+      <div class="span13 columns">
+        <ul class="pills">
+          {% for state in all_states %}
+          <li class="{% if state in filters %}active{% endif %}">
+            <a href="?toggle_filter={{ state }}">{{ state }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
     {% block body %}{% endblock %}
   </div>
 </body>

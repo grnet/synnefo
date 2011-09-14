@@ -9,6 +9,7 @@
       <th>CPUs</th>
       <th>RAM</th>
       <th>Disk</th>
+      <th>Deleted</th>
     </tr>
   </thead>
   <tbody>
@@ -19,6 +20,7 @@
       <td>{{ flavor.cpu }}</td>
       <td>{{ flavor.ram }} MiB</td>
       <td>{{ flavor.disk }} GiB</td>
+      <td>{{ flavor.deleted }}</td>
     </tr>
     {% endfor %}
   </tbody>

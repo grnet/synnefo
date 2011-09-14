@@ -19,12 +19,12 @@
     <tr>
       <td>{{ invitation.id }}</td>
       <td>
-        <a href="{% url admin.views.users_info invitation.source.id %}">{{ invitation.source }}</a>
+        <a href="{% url synnefo.admin.views.users_info invitation.source.id %}">{{ invitation.source }}</a>
         <br />
         {{ invitation.source.uniq }}
       </td>
       <td>
-        <a href="{% url admin.views.users_info invitation.target.id %}">{{ invitation.target }}</a>
+        <a href="{% url synnefo.admin.views.users_info invitation.target.id %}">{{ invitation.target }}</a>
         <br />
         {{ invitation.target.uniq }}
       </td>
@@ -32,7 +32,7 @@
       <td>{{ invitation.level }}</td>
       <td>{{ invitation.created }}</td>
       <td>{{ invitation.updated }}</td>
-      <td><a class="btn info" href="{% url admin.views.invitations_resend invitation.id %}">Resend</a></td>
+      <td><a class="btn info" href="{% url synnefo.admin.views.invitations_resend invitation.id %}">Resend</a></td>
     </tr>
     {% endfor %}
   </tbody>

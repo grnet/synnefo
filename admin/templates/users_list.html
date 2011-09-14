@@ -16,8 +16,8 @@
   <tbody>
     {% for user in users %}
     <tr>
-      <td><a href="{% url admin.views.users_info user.id %}">{{ user.id }}</a></td>
-      <td><a href="{% url admin.views.users_info user.id %}">{{ user.name }}</a></td>
+      <td><a href="{% url synnefo.admin.views.users_info user.id %}">{{ user.id }}</a></td>
+      <td><a href="{% url synnefo.admin.views.users_info user.id %}">{{ user.name }}</a></td>
       <td>{{ user.realname }}</td>
       <td>{{ user.uniq }}</td>
       <td>{{ user.credit }}</td>
@@ -28,6 +28,6 @@
   </tbody>
 </table>
 
-<a class="btn primary" href="{% url admin.views.users_invite %}">Invite a user</a>
+<a class="btn primary" href="{% url synnefo.admin.views.users_invite %}">Invite a user</a>
 <br /><br />
 {% endblock body %}

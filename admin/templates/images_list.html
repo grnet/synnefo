@@ -17,9 +17,9 @@
   <tbody>
     {% for image in images %}
     <tr>
-      <td><a href="{% url admin.views.images_info image.id %}">{{ image.id }}</a></td>
-      <td><a href="{% url admin.views.images_info image.id %}">{{ image.name }}</a></td>
-      <td>{% if image.owner %}<a href="{% url admin.views.users_info image.owner.id %}">{{ image.owner.name }}</a>{% endif %}
+      <td><a href="{% url synnefo.admin.views.images_info image.id %}">{{ image.id }}</a></td>
+      <td><a href="{% url synnefo.admin.views.images_info image.id %}">{{ image.name }}</a></td>
+      <td>{% if image.owner %}<a href="{% url synnefo.admin.views.users_info image.owner.id %}">{{ image.owner.name }}</a>{% endif %}
       </td>
       <td>{{ image.state }}</td>
       <td>{{ image.backend_id }}</td>
@@ -31,6 +31,6 @@
   </tbody>
 </table>
 
-<a class="btn success" href="{% url admin.views.images_register %}">Register a new Image</a>
+<a class="btn success" href="{% url synnefo.admin.views.images_register %}">Register a new Image</a>
 <br /><br />
 {% endblock body %}

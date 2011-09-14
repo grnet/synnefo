@@ -757,6 +757,7 @@ function update_images() {
                 images = data.images.values;
                 jQuery.parseJSON(data);
                 update_wizard_images();
+                update_images_info_data(images);
 
                 // update images options
                 update_image_flavor_options();
@@ -913,7 +914,6 @@ function update_creating_vm_details() {
     if (servers) {
         var predefined_name = name;
         $.each(servers, function(index, el) {
-            console.log(el.name, name);
             if (el.name == name) {
                 name = predefined_name + " " + j;
                 j++;
@@ -921,6 +921,14 @@ function update_creating_vm_details() {
         })
     }
     cont.find("input[type=text][name=machine_name]").val(name);
+}
+
+// image information registry
+window.images_info = {};
+function update_images_info_data(images) {
+    $.each(images, function(i,img) {
+        images_info[img.id] = img;
+    });
 }
 
 // create a map with available flavors for each image
@@ -2496,26 +2504,56 @@ function get_flavor_params(flavorRef) {
     return {'cpus': cpus, 'ram': ram, 'disk': disk};
 }
 
+function get_image_details(imageRef) {
+    var response = false;
+    // make a sync call to retrieve image data
+    $.ajax({
+        url: API_URL + '/images/' + imageRef,
+        type: "GET",
+        async: false,
+        dataType: "json",
+        timeout: TIMEOUT,
+        error: function(jqXHR, textStatus, errorThrown) {},
+        success: function(data, textStatus, jqXHR) {try { response = data.image  } catch (err) {};}
+    });
+    return response;
+}
+
 function get_image_params(imageRef) {
-    var image_name, image_size;
-    if ( images.length > 0 ) {
-        var current_image = '';
-        for (i=0; i<images.length; i++) {
-            if (images[i]['id'] == imageRef) {
-                current_image = images[i];
+    // update the images info registry
+    if (!images_info[parseInt(imageRef)]) {
+        images_info[parseInt(imageRef)] = get_image_details(imageRef);
+    }
+    
+    // bypass images object with one populated
+    // from the images_info one
+    var images = [];
+    $.each(images_info, function(k,v){ images.push(v)});
+    
+    try {
+        var image_name, image_size;
+        if (images.length > 0 ) {
+            var current_image = '';
+            for (i=0; i<images.length; i++) {
+                if (images[i]['id'] == imageRef) {
+                    current_image = images[i];
+                }
             }
+            try {
+                image_name = current_image['name'];
+            } catch(err) { image_name = 'undefined'; }
+            try{
+                image_size = current_image['metadata']['values']['size'];
+            } catch(err) { image_size = 'undefined'; }
+        } else {
+            image_name = 'undefined';
+            image_size = 'undefined';
         }
-        try {
-            image_name = current_image['name'];
-        } catch(err) { image_name = 'undefined'; }
-        try{
-            image_size = current_image['metadata']['values']['size'];
-        } catch(err) { image_size = 'undefined'; }
-    } else {
+    } catch (err) {
         image_name = 'undefined';
         image_size = 'undefined';
     }
-    return {'name': image_name,'size': image_size};
+    return {'name': image_name || 'undefined','size': image_size || 'undefined'};
 }
 
 function get_public_ips(server) {

@@ -754,8 +754,7 @@ function update_images() {
         },
         success: function(data, textStatus, jqXHR) {
             try {
-                images = data.images.values;
-                jQuery.parseJSON(data);
+                images = update_images_data(data.images.values);
                 update_wizard_images();
                 update_images_info_data(images);
 
@@ -768,6 +767,25 @@ function update_images() {
         }
     });
     return false;
+}
+
+function update_images_data(data) {
+    var images = data;
+
+    function get_order(img) {
+        var def = -1;
+        try {
+            return parseInt(img.metadata.values.sortorder) || def;
+        } catch (err) {
+            return def;
+        }
+    }
+
+    images.sort(function(a,b) {
+        return get_order(a) < get_order(b);
+    })
+
+    return images
 }
 
 // update images panel

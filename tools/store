@@ -506,6 +506,9 @@ class UpdateObject(Command):
         parser.add_option('--public', action='store_true',
                           dest='x_object_public', default=False,
                           help='make object publicly accessible')
+        parser.add_option('--replace', action='store_true',
+                          dest='replace', default=False,
+                          help='override metadata')
     
     def execute(self, path, *args):
         if path.find('=') != -1:
@@ -521,7 +524,7 @@ class UpdateObject(Command):
             self.x_object_sharing = ''
         
         attrs = ['content_encoding', 'content_disposition', 'x_object_sharing',
-                 'x_object_public']
+                 'x_object_public', 'replace']
         args = self._build_args(attrs)
         
         container, sep, object = path.partition('/')

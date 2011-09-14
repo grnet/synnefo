@@ -3168,7 +3168,7 @@ function show_invitations() {
                 },
                 error : function(xhr, status, error) {
                     inv_email = $(".resend-invitation#inv-" + this.invid).parent().find(".email").text();
-                    display_resend_msg("Invitation to <em>'"+inv_email+"'</em> failed to send", "error-msg");
+                    display_resend_msg("Resending invitation to <em>'"+inv_email+"'</em> failed", "error-msg");
                     child.attr('src', '/static/resend.png');
                 }
             });

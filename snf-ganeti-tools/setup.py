@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name="snf-ganeti-tools",
-    version="0.5.5",
+    version="0.6",
     description="Synnefo Ganeti supplementary tools",
     author="Synnefo Development Team",
     author_email="synnefo@lists.grnet.gr",

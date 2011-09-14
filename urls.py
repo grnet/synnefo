@@ -32,16 +32,14 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import *
-from django.contrib import admin
 
-admin.autodiscover()
 
 urlpatterns = patterns('',
     (r'^lang/$', 'synnefo.ui.i18n.set_language'),
 #    (r'^auth/api/', include('synnefo.auth.urls')),
     (r'^api/', include('synnefo.api.urls')),
     (r'^', include('synnefo.ui.urls')),
-    (r'^admin/', include(admin.site.urls)),
+    (r'^admin', include('synnefo.admin.urls')),
     (r'^invitations/?', include('synnefo.invitations.urls')),
     (r'^helpdesk/?', include('synnefo.helpdesk.urls')),
 )

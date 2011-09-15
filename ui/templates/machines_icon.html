@@ -73,7 +73,7 @@ or implied, of GRNET S.A.
                         {% trans "RAM" %}: <span class="ram-data">2048</span>MB<br />
                         {% trans "System Disk" %}: <span class="disk-data">20</span>GB <br /><br />
                         {% trans "Image" %}: <span class="image-data">Debian</span><br />
-                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span>MB
+                        {% trans "Image Size" %}: <span class="image-size-data">2.3</span>
                     </div>
                     <div class="vm-stats metadata-column">
                         <div class='stat-label'>{% trans "CPU" %}</div>
@@ -711,7 +711,9 @@ function update_machines_view(data) {
             // find and display image parameters
             var image_params = get_image_params(server.imageRef);
             machine.find(".image-data").text(image_params['name'].substring(0,15));
-            machine.find(".image-size-data").text(image_params['size']);
+            machine.find(".image-size-data").text(
+                    image_params['size'] != 'undefined' ? image_params['size'] + 'MB' : image_params['size']
+            );
             // find and display ips
             var ips = get_public_ips(server);
             machine.find("span.ip span.public").text(ips['ip4']);

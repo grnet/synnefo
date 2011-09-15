@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block body %}
-<form action="{% url admin.views.images_modify image.id %}" method="post">
+<form action="{% url synnefo.admin.views.images_modify image.id %}" method="post">
   <div class="row">
     <div class="span7 columns">
 
@@ -65,7 +65,7 @@
       </div>
 
       <div class="clearfix">
-        <label for="image-format">Public</label>
+        <label for="image-public">Public</label>
         <div class="input">
           <ul class="inputs-list">
             <li>

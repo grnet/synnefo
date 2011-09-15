@@ -44,7 +44,13 @@ class SynnefoUser(models.Model):
         ('HELPDESK', 'Helpdesk User'),
         ('ADMIN', 'Admin User')
     )
-
+    
+    ACCOUNT_STATE = (
+        ('ACTIVE', 'Active'),
+        ('DELETED', 'Deleted'),
+        ('SUSPENDED', 'Suspended')
+    )
+    
     name = models.CharField('Synnefo Username', max_length=255, default='')
     realname = models.CharField('Real Name', max_length=255, default='')
     uniq = models.CharField('External Unique ID', max_length=255,null=True)
@@ -55,7 +61,9 @@ class SynnefoUser(models.Model):
     tmp_auth_token = models.CharField('Temporary authentication token', max_length=32, null=True)
     tmp_auth_token_expires = models.DateTimeField('Time of temporary auth token expiration', auto_now_add=True, null = True)
     type = models.CharField('Account type', choices=ACCOUNT_TYPE,
-                            max_length=30)
+                                max_length=30)
+    state = models.CharField('Account state', choices=ACCOUNT_STATE,
+                                max_length=30, default='ACTIVE')
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     max_invitations = models.IntegerField('Max number of invitations',
@@ -162,6 +170,7 @@ class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('Size of RAM', default=0)             # Size in MiB
     disk = models.IntegerField('Size of Disk space', default=0)     # Size in GiB
+    deleted = models.BooleanField('Deleted', default=False)
     
     class Meta:
         verbose_name = u'Virtual machine flavor'

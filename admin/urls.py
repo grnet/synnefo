@@ -1,6 +1,6 @@
-from django.conf.urls.defaults import patterns
+import os
 
-from synnefo import settings
+from django.conf.urls.defaults import patterns
 
 
 urlpatterns = patterns('synnefo.admin.views',
@@ -35,4 +35,5 @@ urlpatterns += patterns('synnefo.admin.api',
 
 urlpatterns += patterns('',
     (r'^/static/(?P<path>.*)$', 'django.views.static.serve', {
-                    'document_root': settings.PROJECT_PATH + '/admin/static'}))
+        'document_root': os.path.join(os.path.dirname(__file__), 'static')})
+)

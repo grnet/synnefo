@@ -193,29 +193,6 @@ class CreateUser(Command):
         print_item(user)
 
 
-class DeleteUser(Command):
-    group = 'user'
-    name = 'delete'
-    syntax = '<user id>'
-    description = 'delete a user'
-    hidden = True
-    
-    def add_options(self, parser):
-        parser.add_option('--force', action='store_true', dest='force',
-                        default=False, help='force deletion (use with care)')
-    
-    def main(self, user_id):
-        if self.force:
-            user = get_user(user_id)
-            users.delete_user(user)
-        else:
-            print "WARNING: Deleting a user is a very destructive operation."
-            print "Any objects with foreign keys pointing to this user will" \
-                    " be deleted as well."
-            print "Use --force to force deletion of this user."
-            print "You have been warned!"
-
-
 class InviteUser(Command):
     group = 'user'
     name = 'invite'
@@ -243,7 +220,8 @@ class ListUsers(Command):
         if user_id:
             users = [models.SynnefoUser.objects.get(id=user_id)]
         else:
-            users = models.SynnefoUser.objects.order_by('id')
+            active_users = models.SynnefoUser.objects.exclude(state='DELETED')
+            users = active_users.order_by('id')
         print_items(users, self.detail, keys=('id', 'name', 'uniq'))
 
 
@@ -255,6 +233,7 @@ class ModifyUser(Command):
     
     def add_options(self, parser):
         types = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_TYPE)
+        states = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_STATE)
         
         parser.add_option('--credit', dest='credit', metavar='VALUE',
                             help='set user credits')
@@ -264,6 +243,8 @@ class ModifyUser(Command):
                             help='set real name of user')
         parser.add_option('--type', dest='type', metavar='TYPE',
                             help='set user type (%s)' % types)
+        parser.add_option('--state', dest='state', metavar='STATE',
+                            help='set user state (%s)' % states)
         parser.add_option('--uniq', dest='uniq', metavar='ID',
                             help='set external unique ID')
         parser.add_option('--username', dest='username', metavar='NAME',
@@ -285,6 +266,13 @@ class ModifyUser(Command):
                 print 'Invalid type. Must be one of:', valid
                 return
             user.type = self.type
+        if self.state:
+            allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_STATE]
+            if self.state not in allowed:
+                valid = ', '.join(allowed)
+                print 'Invalid state. Must be one of:', valid
+                return
+            user.state = self.state
         if self.uniq:
             user.uniq = self.uniq
         if self.username:
@@ -497,7 +485,8 @@ class DeleteFlavor(Command):
             raise TypeError
         for flavor_id in args:
             flavor = models.Flavor.objects.get(id=int(flavor_id))
-            flavor.delete()
+            flavor.deleted = True
+            flavor.save()
 
 
 class ListFlavors(Command):
@@ -514,7 +503,7 @@ class ListFlavors(Command):
         if flavor_id:
             flavors = [models.Flavor.objects.get(id=flavor_id)]
         else:
-            flavors = models.Flavor.objects.order_by('id')
+            flavors = models.Flavor.objects.exclude(deleted=True).order_by('id')
         print_items(flavors, self.detail)
 
 

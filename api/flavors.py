@@ -64,10 +64,10 @@ def list_flavors(request, detail=False):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
-    all_flavors = Flavor.objects.all()
-    flavors = [flavor_to_dict(flavor, detail) for flavor in all_flavors]
-
+    
+    active_flavors = Flavor.objects.exclude(deleted=True)
+    flavors = [flavor_to_dict(flavor, detail) for flavor in active_flavors]
+    
     if request.serialization == 'xml':
         data = render_to_string('list_flavors.xml', {
             'flavors': flavors,

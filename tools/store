@@ -399,9 +399,13 @@ class PutObject(Command):
             self.client.create_object_using_chunks(container, object, f,
                                                     meta=meta, **args)
         elif self.use_hashes:
-            format = 'json' if detail else 'text'
-            self.client.create_object_by_hashmap(container, object, f, format,
-                                 meta=meta, **args)
+            data = f.read()
+            if data is object:
+                hashmap = json.loads()
+                self.client.create_object_by_hashmap(container, object, hashmap,
+                                                 meta=meta, **args)
+            else:
+                print "Expected object"
         elif self.x_object_manifest:
             self.client.create_manifestation(container, object, self.x_object_manifest)
         elif not f:

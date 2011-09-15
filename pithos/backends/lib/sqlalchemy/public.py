@@ -49,7 +49,7 @@ class Public(DBWorker):
     
     def public_set(self, path):
         s = self.public.select()
-        s = s.where(self.xfeaturevals.c.path == path)
+        s = s.where(self.public.c.path == path)
         r = self.conn.execute(s)
         public = r.fetchall()
         r.close()

@@ -505,6 +505,7 @@ $("#small").click(function(){
     $(this).parent().parent().parent().find("label").removeClass("active");
     $(this).addClass("active");
     set_flavor_sliders_values(flavor.cpu, flavor.disk, flavor.ram);
+    update_creating_vm_details();
 });
 
 // selecting the medium size
@@ -514,6 +515,7 @@ $("#medium").click(function(){
     $(this).parent().parent().parent().find("label").removeClass("active");
     $(this).addClass("active");
     set_flavor_sliders_values(flavor.cpu, flavor.disk, flavor.ram);
+    update_creating_vm_details();
 });
 
 // selecting the large size
@@ -523,6 +525,7 @@ $("#large").click(function(){
     $(this).parent().parent().parent().find("label").removeClass("active");
     $(this).addClass("active");
     set_flavor_sliders_values(flavor.cpu, flavor.disk, flavor.ram);
+    update_creating_vm_details();
 });
 
 // selecting the custom flavor enables the sliders

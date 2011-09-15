@@ -50,6 +50,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
+from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized)
@@ -210,6 +211,9 @@ def update_response_headers(request, response):
 
     if settings.TEST:
         response['Date'] = format_date_time(time())
+    
+    add_never_cache_headers(response)
+
 
 def render_metadata(request, metadata, use_values=False, status=200):
     if request.serialization == 'xml':

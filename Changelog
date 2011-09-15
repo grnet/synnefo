@@ -7,25 +7,25 @@ Changelog
 FIXES:
 	UI:
     	* Fix handling of Images in state=DELETED,
-	      allow sorting and categorization of Images in the UI (#823)
+          allow sorting and categorization of Images in the UI (#823)
     	* Fix the "Create New wizard" does not honor selection of
-		  "small/medium/large" images (#1129)
+          "small/medium/large" images (#1129)
 	Admin:
     	* Fix the admin interface throws exception on the
-		  Invitations tab (1105)
+          Invitations tab (1105)
     API:
-		* Make API responses uncacheable (#1091)
+        * Make API responses uncacheable (#1091)
     Logic:
-		* Fix The dispatcher leaving messages unprocessed for
-	      unknown Ganeti opcodes(#1111)
+        * Fix The dispatcher leaving messages unprocessed for
+          unknown Ganeti opcodes(#1111)
 
 NEW FEATURES:
 	Admin:
-		* Support filtering based on state, support image registration
-		  with mandatory type argument, make all deletion operations
-		  set state to DELETED (#849)
+        * Support filtering based on state, support image registration
+          with mandatory type argument, make all deletion operations
+          set state to DELETED (#849)
 	API:
-		* Allow marking flavors as removed, honor deleted flag (#1055)
+        * Allow marking flavors as removed, honor deleted flag (#1055)
 
 
 2011-09-13, v0.6.1

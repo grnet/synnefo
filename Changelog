@@ -2,6 +2,24 @@ Changelog
 =========
 
 
+2011-09-15, v0.6.2
+
+FIXES:
+	UI:
+    	* Fix handling of Images in state=DELETED,
+	      allow sorting and categorization of Images in the UI (#823)
+    	* Fix the "Create New wizard" does not honor selection of
+		  "small/medium/large" images (#1129)
+	Admin:
+    	* Fix the admin interface throws exception on the
+		  Invitations tab (1105)
+    API:
+		* Make API responses uncacheable (#1091)
+    Logic:
+		* Fix The dispatcher leaving messages unprocessed for
+	      unknown Ganeti opcodes(#1111)
+
+
 2011-09-13, v0.6.1
 
 FIXES:

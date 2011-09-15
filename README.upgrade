@@ -5,12 +5,15 @@ This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
 v0.6.1 -> v0.6.2
-
-API-CURRENT
+ADMIN INTERFACE
     * The models were changed so that Flavors and SynnefoUsers now have
       a deleted state. The admin tools were updated so that models are
       now marked as deleted instead of actually being deleted from the DB.
       A database migration is needed.
+
+COMPONENTS
+    * Only the Django webapp is affected, must restart the logic dispatcher
+      due to DB migration taking place.
 
 
 v0.5.5 -> v0.6

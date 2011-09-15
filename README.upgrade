@@ -4,6 +4,15 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+v0.6.1 -> v0.6.2
+
+API-CURRENT
+    * The models were changed so that Flavors and SynnefoUsers now have
+      a deleted state. The admin tools were updated so that models are
+      now marked as deleted instead of actually being deleted from the DB.
+      A database migration is needed.
+
+
 v0.5.5 -> v0.6
 ADMIN INTERFACE
     * A new Web-based admin interface is available under /admin.

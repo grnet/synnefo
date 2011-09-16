@@ -11,6 +11,10 @@
 </head>
 <body>
   <div class="container">
+    <div style="padding: 5px 0px 0px 0px">
+      <img src="/admin/static/banner.png" width="900" height="200">
+    </div>
+
     <ul class="tabs">
       <li{% ifequal tab "home" %} class="active"{% endifequal %}>
         <a href="{% url admin.views.index %}">Home</a>

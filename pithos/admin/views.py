@@ -51,11 +51,12 @@ def render(template, tab, **kwargs):
 def requires_admin(func):
     @wraps(func)
     def wrapper(request, *args):
-        if not request.user:
-            login_uri = settings.LOGIN_URL + '?' + urlencode({'next': request.build_absolute_uri()})
-            return HttpResponseRedirect(login_uri)
-        if not request.user_obj.is_admin:
-            return HttpResponse('Forbidden', status=403)
+        if not settings.BYPASS_ADMIN_AUTH:
+            if not request.user:
+                login_uri = settings.LOGIN_URL + '?' + urlencode({'next': request.build_absolute_uri()})
+                return HttpResponseRedirect(login_uri)
+            if not request.user_obj.is_admin:
+                return HttpResponse('Forbidden', status=403)
         return func(request, *args)
     return wrapper
 

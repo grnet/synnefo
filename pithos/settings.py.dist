@@ -77,6 +77,8 @@ BACKEND = ('ModularBackend', (backend_module, backend_path, backend_db))
 # Shibboleth-enabled path for authentication.
 LOGIN_URL = "/login"
 
+BYPASS_ADMIN_AUTH = False
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -162,4 +164,3 @@ AUTH_TOKEN_DURATION = 30 * 24
 
 # Default quota for new users.
 DEFAULT_QUOTA = 10 * 1024 * 1024 * 1024
-

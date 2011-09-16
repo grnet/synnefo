@@ -47,7 +47,7 @@ from pithos.api.compat import parse_http_date_safe, parse_http_date
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RangeNotSatisfiable,
                                 ServiceUnavailable)
-from pithos.backends import backend
+from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError
 
 import datetime
@@ -120,7 +120,7 @@ def get_container_headers(request):
     policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in get_header_prefix(request, 'X-Container-Policy-').iteritems()])
     return meta, policy
 
-def put_container_headers(response, meta, policy):
+def put_container_headers(request, response, meta, policy):
     if 'count' in meta:
         response['X-Container-Object-Count'] = meta['count']
     if 'bytes' in meta:
@@ -130,8 +130,8 @@ def put_container_headers(response, meta, policy):
         response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
     l = [smart_str(x, strings_only=True) for x in meta['object_meta'] if x.startswith('X-Object-Meta-')]
     response['X-Container-Object-Meta'] = ','.join([x[14:] for x in l])
-    response['X-Container-Block-Size'] = backend.block_size
-    response['X-Container-Block-Hash'] = backend.hash_algorithm
+    response['X-Container-Block-Size'] = request.backend.block_size
+    response['X-Container-Block-Hash'] = request.backend.hash_algorithm
     if 'until_timestamp' in meta:
         response['X-Container-Until-Timestamp'] = http_date(int(meta['until_timestamp']))
     for k, v in policy.iteritems():
@@ -178,9 +178,11 @@ def update_manifest_meta(request, v_account, meta):
         bytes = 0
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
-            objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
+            objects = request.backend.list_objects(request.user, v_account,
+                                src_container, prefix=src_name, virtual=False)
             for x in objects:
-                src_meta = backend.get_object_meta(request.user, v_account, src_container, x[0], x[1])
+                src_meta = request.backend.get_object_meta(request.user,
+                                        v_account, src_container, x[0], x[1])
                 hash += src_meta['hash']
                 bytes += src_meta['bytes']
         except:
@@ -271,9 +273,13 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')    
     try:
         if move:
-            version_id = backend.move_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions)
+            version_id = request.backend.move_object(request.user, v_account,
+                            src_container, src_name, dest_container, dest_name,
+                            meta, False, permissions)
         else:
-            version_id = backend.copy_object(request.user, v_account, src_container, src_name, dest_container, dest_name, meta, False, permissions, src_version)
+            version_id = request.backend.copy_object(request.user, v_account,
+                            src_container, src_name, dest_container, dest_name,
+                            meta, False, permissions, src_version)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except (NameError, IndexError):
@@ -284,7 +290,8 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         raise Conflict(json.dumps(e.data))
     if public is not None:
         try:
-            backend.update_object_public(request.user, v_account, dest_container, dest_name, public)
+            request.backend.update_object_public(request.user, v_account,
+                                            dest_container, dest_name, public)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:
@@ -528,7 +535,8 @@ class ObjectWrapper(object):
     Read from the object using the offset and length provided in each entry of the range list.
     """
     
-    def __init__(self, ranges, sizes, hashmaps, boundary):
+    def __init__(self, backend, ranges, sizes, hashmaps, boundary):
+        self.backend = backend
         self.ranges = ranges
         self.sizes = sizes
         self.hashmaps = hashmaps
@@ -556,16 +564,16 @@ class ObjectWrapper(object):
                 file_size = self.sizes[self.file_index]
             
             # Get the block for the current position.
-            self.block_index = int(self.offset / backend.block_size)
+            self.block_index = int(self.offset / self.backend.block_size)
             if self.block_hash != self.hashmaps[self.file_index][self.block_index]:
                 self.block_hash = self.hashmaps[self.file_index][self.block_index]
                 try:
-                    self.block = backend.get_block(self.block_hash)
+                    self.block = self.backend.get_block(self.block_hash)
                 except NameError:
                     raise ItemNotFound('Block does not exist')
             
             # Get the data from the block.
-            bo = self.offset % backend.block_size
+            bo = self.offset % self.backend.block_size
             bl = min(self.length, len(self.block) - bo)
             data = self.block[bo:bo + bl]
             self.offset += bl
@@ -639,7 +647,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = uuid.uuid4().hex
     else:
         boundary = ''
-    wrapper = ObjectWrapper(ranges, sizes, hashmaps, boundary)
+    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(response, meta, public)
     if ret == 206:
@@ -652,23 +660,23 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
             response['Content-Type'] = 'multipart/byteranges; boundary=%s' % (boundary,)
     return response
 
-def put_object_block(hashmap, data, offset):
+def put_object_block(request, hashmap, data, offset):
     """Put one block of data at the given offset."""
     
-    bi = int(offset / backend.block_size)
-    bo = offset % backend.block_size
-    bl = min(len(data), backend.block_size - bo)
+    bi = int(offset / request.backend.block_size)
+    bo = offset % request.backend.block_size
+    bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
-        hashmap[bi] = backend.update_block(hashmap[bi], data[:bl], bo)
+        hashmap[bi] = request.backend.update_block(hashmap[bi], data[:bl], bo)
     else:
-        hashmap.append(backend.put_block(('\x00' * bo) + data[:bl]))
+        hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl # Return ammount of data written.
 
-def hashmap_hash(hashmap):
+def hashmap_hash(request, hashmap):
     """Produce the root hash, treating the hashmap as a Merkle-like tree."""
     
     def subhash(d):
-        h = hashlib.new(backend.hash_algorithm)
+        h = hashlib.new(request.backend.hash_algorithm)
         h.update(d)
         return h.digest()
     
@@ -752,7 +760,8 @@ def api_method(http_method=None, format_allowed=False):
                 
                 # Fill in custom request variables.
                 request.serialization = request_serialization(request, format_allowed)
-                
+                request.backend = connect_backend()
+
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
                 return response

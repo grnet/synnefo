@@ -526,6 +526,8 @@ def socket_read_iterator(request, length=0, blocksize=4096):
             raise BadRequest('Maximum size is reached')
         while length > 0:
             data = sock.read(min(length, blocksize))
+            if not data:
+                raise BadRequest()
             length -= len(data)
             yield data
 
@@ -771,5 +773,7 @@ def api_method(http_method=None, format_allowed=False):
                 logger.exception('Unexpected error: %s' % e)
                 fault = ServiceUnavailable('Unexpected error')
                 return render_fault(request, fault)
+            finally:
+                request.backend.wrapper.conn.close()
         return wrapper
     return decorator

@@ -163,7 +163,9 @@ class Node(DBWorker):
         
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))
-        r = self.conn.execute(s).fetchone()
+        rp = self.conn.execute(s)
+        r = rp.fetchone()
+        rp.close()
         if not r:
             s = self.nodes.insert().values(node=ROOTNODE, parent=ROOTNODE)
             self.conn.execute(s)
@@ -214,6 +216,7 @@ class Node(DBWorker):
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
+        r.close()
         if not rows:
             return rows
         
@@ -309,6 +312,7 @@ class Node(DBWorker):
         s = s.where(where_clause)
         r = self.conn.execute(s)
         serials = [r[SERIAL] for r in r.fetchall()]
+        r.close()
         
         #delete versions
         s = self.versions.delete().where(where_clause)
@@ -808,5 +812,6 @@ class Node(DBWorker):
                 break
             
             rp = self.conn.execute(s, start=strnextling(pf)) # New start.
+        rp.close()
         
         return matches, prefixes

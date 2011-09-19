@@ -43,7 +43,7 @@ class AuthMiddleware(object):
         request.user = None
         
         # Try to find token in a parameter, in a request header, or in a cookie.
-        token = request.REQUEST.get('X-Auth-Token', None)
+        token = request.GET.get('X-Auth-Token', None)
         if not token:
             token = request.META.get('HTTP_X_AUTH_TOKEN', None)
         if not token:

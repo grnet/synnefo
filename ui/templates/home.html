@@ -65,10 +65,8 @@
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
         
-
-
         // timeout value from settings.py
-        var TIMEOUT = 10000 || {{ timeout }};
+        var TIMEOUT = {{ timeout }};
         var TIMEOUTS_OCCURED = 0;
         var SKIP_TIMEOUTS = 1;
         var UPDATE_INTERVAL = {{ update_interval }};

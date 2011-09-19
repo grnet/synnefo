@@ -105,6 +105,10 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
   </VirtualHost>
   </IfModule>
 
+Add in ``/etc/apache2/mods-available/wsgi.conf``::
+
+  WSGIChunkedRequest On
+
 Configure and run apache::
 
   a2enmod ssl

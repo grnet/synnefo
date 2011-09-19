@@ -442,9 +442,8 @@ Synnefo deployment.
     2.From source    
 
         Download and install gnt-instance-image from its own repository,
-        at https://code.grnet.gr/git/gnt-instance-image. It's
-        recommended to use the win-support branch (known good commit:
-        2fdc766d4c0c571536939ed6096016b58f2a1433).
+        at https://code.grnet.gr/git/gnt-instance-image
+        (known good commit: 489cbbdf07489646d0a395c6cc13a9a850834665).
 
         Make sure to enable progress monitoring, using the --with-progress-monitor
         argument to configure. This requires the snf-progress-monitor tool,

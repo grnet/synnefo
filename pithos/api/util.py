@@ -465,7 +465,7 @@ def raw_input_socket(request):
         return request.environ['wsgi.input']
     raise ServiceUnavailable('Unknown server software')
 
-MAX_UPLOAD_SIZE = 10 * (1024 * 1024) # 10MB
+MAX_UPLOAD_SIZE = 5 * (1024 * 1024 * 1024) # 5GB
 
 def socket_read_iterator(request, length=0, blocksize=4096):
     """Return a maximum of blocksize data read from the socket in each iteration.

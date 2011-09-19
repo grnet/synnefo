@@ -101,6 +101,8 @@ def machines_console(request):
     context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', context)
 
+def js_tests(request):
+    return template('tests', {})
 
 CONNECT_LINUX_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
@@ -224,7 +226,6 @@ FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
 def feedback_submit(request):
-
     if not request.method == "POST":
         raise Http404
 
@@ -245,7 +246,7 @@ def feedback_submit(request):
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
             dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 
-    return HttpResponse("ok");
+    return HttpResponse('{"status":"send"}');
 
 def images(request):
     context = {}

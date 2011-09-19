@@ -1,0 +1,127 @@
+{% load i18n %}
+<div id="machinesview-icon" class="standard icon">
+    <div class="machine-container" id="machine-container-template" style="display:none">
+        <div class="machine clearfix" id="machine-template">
+            
+            <div class="machine-data-cont clearfix">
+            <div class="machine-data clearfix">
+            <div class="machine-info clearfix">
+                <div class="machine-connect">
+                    <div class='connect-border' title='{% trans 'Connect to machine' %}'></div>
+                    <div class='connect-arrow' title='{% trans 'Connect to machine' %}'></div>
+                    <div class="logo"></div>
+                </div>
+
+                <div class="machine-details">
+                        <div href="#" class="name">
+                            <h5 class="namecontainer editable">
+                                <span class="name">node.name</span><span class="rename"></span>
+                                <div class="editbuttons" style="display:none">
+                                    <div class="save"></div>
+                                    <div class="cancel"></div>
+                                </div>
+                            </h5>
+                        </div>
+                        <div class="machine-ips ip subtitle">
+                            <span class="ip-version-label">IPv4</span> <span class="public ipv4-text"></span>
+                            <span class="ip-version-label">IPv6</span> <span class="public ipv6-text"></span>
+                        </div>
+                        <div class="build-progress subtitle"></div>
+                        <div class="info">
+                            <span class="info-header cont-toggler toggler">
+                                <span class="label">{% trans "info" %}</span>
+                            </span>
+                        </div>
+                </div>
+                <div class="state">
+                    <div class="status">{% trans "Running" %}</div>
+                    <div class="clearfix indicators">
+                        <div class="indicator1"></div>
+                        <div class="indicator2"></div>
+                        <div class="indicator3"></div>
+                        <div class="indicator4"></div>
+                    </div>
+                    <div class="action-indicator"></div>
+                    <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+                    <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+                </div>
+                </div>
+                <div class="info-content">
+                    <div class="metadata-container">
+                        <div class="vm-details metadata-column">
+                                <div class="flavor-details">
+                                <span class="vm-detail"><span class="key">{% trans "CPUs" %}:</span> <span class="value"><span class="cpu-data">1</span></span></span>
+                                <span class="vm-detail"><span class="key">{% trans "RAM" %}:</span><span class="value"><span class="ram-data">2048</span>MB</span></span>
+                                <span class="vm-detail"><span class="key">{% trans "System Disk" %}:</span> <span class="value"><span class="disk-data">20</span>GB</span></span>
+                            </div>
+                                <div class="image-details">
+                                <span class="vm-detail"><span class="key">{% trans "Image" %}:</span> <span class="value"><span class="image-data">Debian</span></span></span>
+                                <span class="vm-detail"><span class="key">{% trans "Image Size" %}:</span> <span class="value"><span class="image-size-data">2.3</span>MB</span></span>
+                            </div>
+                        </div>
+                        <div class="vm-stats metadata-column">
+                            <div class='stat-label'>{% trans "CPU" %}</div>
+                            <div class='stat-content cpu-cont cpu-graph'>
+                                <img src="./static/placeholder.png" class="cpu bar stat-img" />
+                                <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                                <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
+                            </div>
+                            <div class='stat-label'>{% trans "Net" %}</div>
+                            <div class='stat-content net-cont network-graph'>
+                                <img src="./static/placeholder.png" class="net bar stat-img" />
+                                <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                                <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
+                            </div>
+                            <a href="#" class="stats-report">{% trans "Full report" %}</a>
+                        </div>
+                        <div class="vm-metadata metadata-column">
+                            <div class="metadata-keys-container">
+                                <div class="scrollable vertical">
+                                    <div class="items">
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+
+            <div class="vm-actions machine-actions actions clearfix" id="">
+                <div class="action-container start">
+                    <a href="#" class="action-start">{% trans "Start" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container reboot">
+                    <a href="#" class="action-reboot">{% trans "Reboot" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container shutdown">
+                    <a href="#" class="action-shutdown">{% trans "Shutdown" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+                <div class="action-container destroy">
+                    <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><div class="large-spinner"></div>
+    <div class="running disabled"></div>
+    <div class="terminated" style="display:none;"></div>
+</div>
+

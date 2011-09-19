@@ -1,0 +1,88 @@
+{% load i18n %}
+<div id="createvm-overlay-content" class="hidden vm-meta create-vm">
+    <div class="subheader">
+        <span class="header-step step-1">1 <span>{% trans "Image" %}</span></span>
+        <span class="header-step step-2">2 <span>{% trans "Flavor" %}</span></span>
+        <span class="header-step step-3">3 <span>{% trans "Name" %}</span></span>
+        </div>
+
+        <div class="steps-containter">
+            <div class="step-1 select-image create-step-cont">
+                <div class="predefined-images">
+                    <ul class="images-list">
+                    </ul>
+                </div>
+                <div class="custom-images">
+                    <ul class="images-list">
+                    </ul>
+                </div>
+            </div>
+            <div class="step-2 select-flavor create-step-cont">
+                <div class="flavor-options cpu">
+                    <h4>{% trans "cpu" %}</h4>
+                    <ul class="flavors-cpu-list flavor-opts-list">
+                    </ul>
+                </div>
+                <div class="flavor-options mem">
+                    <h4>{% trans "mem" %}</h4>
+                    <ul class="flavors-mem-list flavor-opts-list">
+                    </ul>
+                </div>
+                <div class="flavor-options disk">
+                    <h4>{% trans "disk" %}</h4>
+                    <ul class="flavors-disk-list flavor-opts-list">
+                    </ul>
+                </div>
+            </div>
+            <div class="step-3 select-name create-step-cont">
+                <div class="rename">
+                    <div class="form-field">
+                        <label for="">{% trans "Machine name" %}</label>
+                        <input type="text" name="create-vm-name" />
+                    </div>
+                    <div class="confirm-params">
+                        <ul>
+                            <li class="param cpu">
+                                <span class="key">{% trans "Image" %}</span>
+                                <span class="value"></span>
+                            </li>
+                            <li class="param cpu">
+                                <span class="key">{% trans "CPUs" %}</span>
+                                <span class="value"></span>
+                            </li>
+                            <li class="param mem">
+                                <span class="key">{% trans "RAM" %}</span>
+                                <span class="value"></span>
+                            </li>
+                            <li class="param disk">
+                                <span class="key">{% trans "System disk" %}</span>
+                                <span class="value"></span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+    </div>
+</div>
+<div class="create-controls clearfix">
+    <span class="form-action cancel">{% trans "cancel" %}</span>
+    <span class="form-action next create">{% trans "next" %}</span>
+    <span class="form-action prev">{% trans "previous" %}</span>
+    <span class="form-action create submit">{% trans "create machine" %}</span>
+</div>
+</div>
+
+<div id="creation-password-overlay" class="overlay-content overlay-info hidden">
+    <div class="description">
+        <p>{% blocktrans %}Your new machine is now buidling... (this might take a few minutes){% endblocktrans %}</p>
+    </div>
+    <div class="password-cont">
+        {% blocktrans %}Write down your password now:{% endblocktrans %}
+        <div class="password" id="new-machine-password">password</div>
+    </div>
+    <div class="description subinfo">
+        <p>{% blocktrans %}You will need this later to connect to your machine.{% endblocktrans %}</p>
+        <p class="important">{% blocktrans %}After closing this window you will <em>NOT</em> be able to retrieve it again
+        {% endblocktrans %}</p>
+    </div>
+</div>
+

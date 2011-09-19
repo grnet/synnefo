@@ -36,8 +36,8 @@ from django.conf import settings
 from simple import SimpleBackend
 from modular import ModularBackend
 
-backend = None
-options = getattr(settings, 'BACKEND', None)
-if options:
+
+def connect_backend():
+	options = getattr(settings, 'BACKEND', None)
 	c = globals()[options[0]]
-	backend = c(*options[1])
+	return c(*options[1])

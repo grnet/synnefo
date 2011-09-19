@@ -39,7 +39,6 @@ from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
     validate_modification_preconditions, validate_matching_preconditions,
     object_data_response, api_method)
-from pithos.backends import backend
 
 
 logger = logging.getLogger(__name__)
@@ -64,8 +63,10 @@ def object_meta(request, v_account, v_container, v_object):
     #                       badRequest (400)
     
     try:
-        meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
-        public = backend.get_object_public(request.user, v_account, v_container, v_object)
+        meta = request.backend.get_object_meta(request.user, v_account,
+                                                v_container, v_object)
+        public = request.backend.get_object_public(request.user, v_account,
+                                                    v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
     
@@ -89,8 +90,10 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     try:
-        meta = backend.get_object_meta(request.user, v_account, v_container, v_object)
-        public = backend.get_object_public(request.user, v_account, v_container, v_object)
+        meta = request.backend.get_object_meta(request.user, v_account,
+                                                v_container, v_object)
+        public = request.backend.get_object_public(request.user, v_account,
+                                                    v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
     
@@ -112,20 +115,23 @@ def object_read(request, v_account, v_container, v_object):
     if 'X-Object-Manifest' in meta:
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
-            objects = backend.list_objects(request.user, v_account, src_container, prefix=src_name, virtual=False)
+            objects = request.backend.list_objects(request.user, v_account,
+                                src_container, prefix=src_name, virtual=False)
         except:
             raise ItemNotFound('Object does not exist')
         
         try:
             for x in objects:
-                s, h = backend.get_object_hashmap(request.user, v_account, src_container, x[0], x[1])
+                s, h = request.backend.get_object_hashmap(request.user,
+                                        v_account, src_container, x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
         except:
             raise ItemNotFound('Object does not exist')
     else:
         try:
-            s, h = backend.get_object_hashmap(request.user, v_account, v_container, v_object)
+            s, h = request.backend.get_object_hashmap(request.user, v_account,
+                                                        v_container, v_object)
             sizes.append(s)
             hashmaps.append(h)
         except:

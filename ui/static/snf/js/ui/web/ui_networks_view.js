@@ -560,6 +560,7 @@
 
         // fix left border position
         fix_left_border: function() {
+            if (!this.visible()) { return };
             var imgheight = 2783;
             var contents = this.$(".network-contents");
             var last_vm = this.$(".network-machine:last")

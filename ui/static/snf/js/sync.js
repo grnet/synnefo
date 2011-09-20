@@ -187,6 +187,9 @@
             error = error || function(){};
             success = success || function(){};
             complete = complete || function(){};
+            var extra = data._options || {};
+            if (data._options) { delete data._options };
+
             var params = {
                 url: snf.config.api_url + "/" + url,
                 data: data,
@@ -194,6 +197,7 @@
                 complete: function() { api.trigger("call"); complete(this) },
                 error: error
             }
+            params = _.extend(params, extra);
             this.sync(method, this, params);
         },
 

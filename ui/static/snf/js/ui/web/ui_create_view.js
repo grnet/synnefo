@@ -104,7 +104,7 @@
 
         reset_images: function() {
             this.$(".image-details").remove();
-            storage.images.each(_.bind(function(img){
+            _.each(storage.images.active(), _.bind(function(img){
                 this.add_image(img);
             }, this))
 

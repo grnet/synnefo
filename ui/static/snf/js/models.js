@@ -642,7 +642,6 @@
                         this.require_reboot();
                         this.remove_pending_firewall(key, val);
                 }
-
             }, this));
             return data;
         },
@@ -725,13 +724,23 @@
         // get image object
         // TODO: update images synchronously if image not found
         get_image: function() {
-            return storage.images.get(this.get('imageRef'));
+            var image = storage.images.get(this.get('imageRef'));
+            if (!image) {
+                storage.images.update_unknown_id(this.get('imageRef'));
+                image = storage.flavors.get(this.get('imageRef'));
+            }
+            return image;
         },
         
         // get flavor object
         // TODO: update flavors synchronously if image not found
         get_flavor: function() {
-            return storage.flavors.get(this.get('flavorRef'));
+            var flv = storage.flavors.get(this.get('flavorRef'));
+            if (!flv) {
+                storage.flavors.update_unknown_id(this.get('flavorRef'));
+                flv = storage.flavors.get(this.get('flavorRef'));
+            }
+            return flv;
         },
 
         // retrieve the metadata object
@@ -1061,6 +1070,19 @@
         
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
 
+        // update collection model with id passed
+        // making a direct call to the flavor
+        // api url
+        update_unknown_id: function(id) {
+            var url = getUrl.call(this) + "/" + id;
+            this.api.call(this.path + "/" + id, "read", {_options:{async:false}}, undefined, 
+            _.bind(function() {
+                this.add({id:id, name:"Unknown image", size:-1, progress:100, status:"DELETED"})
+            }, this), _.bind(function(image) {
+                this.add(image.image);
+            }, this));
+        },
+
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             window.images = resp.images.values;
@@ -1080,6 +1102,10 @@
                 img[key] = this.get_meta_key(img, key);
             }, this));
             return img;
+        },
+
+        active: function() {
+            return this.filter(function(img){return img.get('status') != "DELETED"});
         }
     })
 
@@ -1088,6 +1114,20 @@
         path: 'flavors',
         details: true,
         noUpdate: true,
+        
+        // update collection model with id passed
+        // making a direct call to the flavor
+        // api url
+        update_unknown_id: function(id) {
+            var url = getUrl.call(this) + "/" + id;
+            this.api.call(this.path + "/" + id, "read", {_options:{async:false}}, undefined, 
+            _.bind(function() {
+                this.add({id:id, cpu:"", ram:"", disk:"", name: "", status:"DELETED"})
+            }, this), _.bind(function(flv) {
+                if (!flv.flavor.status) { flv.flavor.status = "DELETED" };
+                this.add(flv.flavor);
+            }, this));
+        },
 
         parse: function (resp, xhr) {
             // FIXME: depricated global var
@@ -1097,7 +1137,7 @@
 
         for_image: function(img) {
             var size = parseInt(img.get("size"));
-            return this.select(function(el) {
+            return _.select(this.active(), function(el) {
                 return parseInt(parseInt(el.get("disk")) * 1000) >= size;
             })
         },
@@ -1130,6 +1170,10 @@
             })
 
             return data;
+        },
+
+        active: function() {
+            return this.filter(function(flv){return flv.get('status') != "DELETED"});
         }
             
     })

@@ -109,7 +109,7 @@
                 this.editor.find("input.meta-key").val("").attr("disabled", false);
                 this.editor.find("input.meta-value").val("");
             }
-            this.$(".editor").show();
+            this.$(".editor").fadeIn(200);
 
             if (meta) {
                 this.editor.find("input.meta-value").focus().select();
@@ -186,6 +186,12 @@
             });
 
             this.list.find(".edit").click(function(e) {
+                e.preventDefault();
+                var meta = self.meta_from_el($(this));
+                self.show_editor(meta, $(this));
+            })
+
+            this.list.find(".options-object").dblclick(function(e) {
                 e.preventDefault();
                 var meta = self.meta_from_el($(this));
                 self.show_editor(meta, $(this));

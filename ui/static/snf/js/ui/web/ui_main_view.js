@@ -841,4 +841,8 @@
 
     snf.ui.main = new views.MainView();
 
+    snf.ui.init = function() {
+        snf.ui.main.load();
+    }
+
 })(this);

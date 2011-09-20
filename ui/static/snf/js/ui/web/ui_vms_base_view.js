@@ -507,9 +507,4 @@
     
     snf.ui = _.extend(snf.ui, bb.Events);
 
-
-    snf.ui.init = function() {
-        snf.ui.main.load();
-    }
-
 })(this);

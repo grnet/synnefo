@@ -1243,18 +1243,49 @@ div#view-select {
     clear: both;
     color: white;
     position: absolute;
-    right: 5px;
-    top: 25px;
+    right: 10px;
+    top: 10px;
 }
 
 a.machines_view_link {
     text-decoration: none;
-    height: 15px;
+    font-size: 0.7em;
+    padding: 4px;
+    padding-right: 8px;
+    color: #5CA1C0;
+    margin-left: 5px;
+    background-repeat: no-repeat;
+    background-color: #C9DFEA;
+}
+
+a.machines_view_link span {
+    float: left;
+}
+
+a.machines_view_link span.ico {
     width: 17px;
+    height: 15px;
+    margin-right: 10px;
+    background-position: -36px 0;
+}
+
+a.machines_view_link:hover {
+    background-color: #A1C8DB;
+    color: #fff;
+}
+a.machines_view_link:hover span.ico {
+    background-position: -0px 0px;   
+}
+
+a.machines_view_link.activelink span.ico {
+    background-position: -18px 0px;
+}
+a.machines_view_link.activelink {
+    color: #fff;
+    background-color: #5CA1C0;
 }
 
 div#view-select a {
-    color:#5f8dd3;
     display: block;
     float: left;
 }
@@ -1267,40 +1298,16 @@ a#machines_view_icon_link:active, a#machines_view_list_link:active {
     color:white;
 }
 
-a#machines_view_icon_link {
-    background: url(./icon-view.png) no-repeat -36px 0;
+a#machines_view_icon_link span.ico {
+    background-image: url(./icon-view.png);
 }
 
-a#machines_view_list_link {
-    background: url(./list-view.png) no-repeat -36px 0;
+a#machines_view_list_link span.ico {
+    background-image: url(./list-view.png);
 }
 
-a#machines_view_single_link {
-    background: url(./single-view.png) no-repeat -36px 0;
-}
-
-a#machines_view_icon_link:hover {
-    background: url(./icon-view.png) no-repeat -18px 0;
-}
-
-a#machines_view_list_link:hover {
-    background: url(./list-view.png) no-repeat -18px 0;
-}
-
-a#machines_view_single_link:hover {
-    background: url(./single-view.png) no-repeat -18px 0;
-}
-
-a#machines_view_icon_link.activelink {
-    background: url(./icon-view.png) no-repeat 0px 0;
-}
-
-a#machines_view_list_link.activelink {
-    background: url(./list-view.png) no-repeat 0px 0;
-}
-
-a#machines_view_single_link.activelink {
-    background: url(./single-view.png) no-repeat 0px 0;
+a#machines_view_single_link span.ico {
+    background-image: url(./single-view.png);
 }
 
 #machinetype {

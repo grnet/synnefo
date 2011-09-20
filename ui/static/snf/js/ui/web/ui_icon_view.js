@@ -532,7 +532,8 @@
             'vm_cont_active': '#machinesview-icon.standard .running',
             'vm_cont_terminated': '#machinesview-icon.standard .terminated'
         },
-        
+            
+        reset: function() {},
         // overload show function
         show_view: function() {
             $(this.el).show();

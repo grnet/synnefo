@@ -88,11 +88,13 @@
         // set generic view handlers
         set_handlers: function() {
             this.prev_button.click(_.bind(function(ev){
+                storage.vms.reset_pending_actions();
                 ev.preventDefault();
                 this.show_prev();
             }, this));
 
             this.next_button.click(_.bind(function(ev){
+                storage.vms.reset_pending_actions();
                 ev.preventDefault();
                 this.show_next();
             }, this));
@@ -184,10 +186,6 @@
             };
 
             $("#" + this.link_id_tpl.format(this.current_vm)).addClass("column3-selected");
-
-            //if (this.vm(vm).find(".column3").length == 0) {
-                //this.$(".column3").appendTo(this.vm(vm).find(".vms-menu-cont"));
-            //}
         },
 
         show_vm_menu: function() {
@@ -204,6 +202,7 @@
             var self = this;
             this.menu.find(".server-name").click(function(ev) {
                 storage.vms.reset_pending_actions();
+
                 ev.preventDefault();
                 var id = $(this).attr("id").replace("single-vm-at-", "");
                 self.current_vm = id;

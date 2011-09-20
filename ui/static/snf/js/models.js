@@ -498,7 +498,6 @@
             }
             
             // call it silently to avoid double change trigger
-            //console.log("for status ",st, " and current vm state", this.state(), " NEW vm state: ", this.state_for_api_status(st));
             this.set({'state': this.state_for_api_status(st)}, {silent: true});
             
             // trigger transition
@@ -593,6 +592,12 @@
         enable_stats_update: function() {
             this.do_update_stats = true;
         },
+
+        require_reboot: function() {
+            if (this.is_active()) {
+                this.set({'reboot_required': true});
+            }
+        },
         
         set_pending_action: function(data) {
             this.pending_action = data;
@@ -601,12 +606,10 @@
 
         // machine has pending action
         update_pending_action: function(action, force) {
-            this.set({force_pending_notify:force || false});
             this.set({pending_action: action});
         },
 
         clear_pending_action: function() {
-            this.set({force_pending_notify: false});
             this.set({pending_action: undefined});
         },
 
@@ -619,7 +622,7 @@
             return models.VM.ACTIVE_STATES.indexOf(this.state()) > -1;
         },
         
-        // machine is active
+        // machine is building 
         is_building: function() {
             return models.VM.BUILDING_STATES.indexOf(this.state()) > -1;
         },
@@ -636,7 +639,7 @@
         set_firewalls: function(data) {
             _.each(data, _.bind(function(val, key){
                 if (this.pending_firewalls && this.pending_firewalls[key] && this.pending_firewalls[key] == val) {
-                        this.update_pending_action("reboot", true);
+                        this.require_reboot();
                         this.remove_pending_firewall(key, val);
                 }
 
@@ -666,6 +669,7 @@
 
         set_firewall: function(net_id, value, callback) {
             if (this.get("firewalls") && this.get("firewalls")[net_id] == value) { return }
+
             this.pending_firewalls[net_id] = value;
             this.trigger("change", this, this);
             this.api.call(this.api_path() + "/action", "create", {"firewallProfile":{"profile":value}}, callback);
@@ -865,6 +869,7 @@
                                              self.state("REBOOT"); 
                                              success.apply(this, arguments)
                                              snf.api.trigger("call");
+                                             self.set({'reboot_required': false});
                                          },
                                          error);
                     break;
@@ -1150,6 +1155,14 @@
             if (!resp) { return [] };
             data = _.map(resp.servers.values, _.bind(this.parse_vm_api_data, this));
             return data;
+        },
+        
+        get_reboot_required: function() {
+            return this.filter(function(vm){return vm.get("reboot_required") == true})
+        },
+
+        has_pending_actions: function() {
+            return this.filter(function(vm){return vm.pending_action}).length > 0;
         },
 
         reset_pending_actions: function() {

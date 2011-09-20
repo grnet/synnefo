@@ -48,7 +48,7 @@
         
         // vm element based on vm model instance provided
         vm: function(vm) {
-            return this.sel('vm', vm.id)
+            return this.sel('vm', vm.id);
         },
         
         // get vm model instance from DOM element
@@ -281,7 +281,6 @@
             this.view_id = "vm_" + vm.id + "_actions";
             views.VMActionsView.__super__.initialize.call(this);
 
-            this.update_layout();
         },
 
         action: function(name) {
@@ -310,12 +309,13 @@
 
         // update the actions layout, depending on the selected actions
         update_layout: function() {
-            // it doesn't seem to work without this
-            // some serious debugging is needed to 
-            // find out what is going on
             try {
+                // it doesn't seem to work without this
+                // some serious debugging is needed to 
+                // find out what is going on
                 this.vm = storage.vms.get(this.vm.id);
             } catch (err) { return }
+
             if (!this.vm) { return }
 
             // update selected action
@@ -344,6 +344,7 @@
             } else {
                 if (this.hide) {
                     // view shows actions on machine hover
+                    $(this.el).find("a").css("visibility", "hidden");
                 } else {
                     // view shows actions always
                     $(this.el).find("a").css("visibility", "visible");
@@ -353,7 +354,6 @@
                 this.view.hide_indicator(this.vm);
             }
             
-
             // update action link styles and shit
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
@@ -438,14 +438,6 @@
                     self.reset();
                 });
             }, this);
-            
-            // self bind to update layout when action is changed
-            var self = this;
-            this.bind("change", function(){ self.update_layout() });
-
-            // bind multiple actions view handlers
-            mview = synnefo.ui.main.multiple_actions_view;
-            this.bind("change", _.bind(mview.handle_add, mview));
         },
         
         // reset actions

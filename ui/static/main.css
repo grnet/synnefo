@@ -1822,11 +1822,23 @@ div.confirm_single button.no:hover {
     color: white;
 }
 
+div.confirm_multiple_cont {
+    background-color: #406A7D;
+    margin-top: 0px;
+    padding: 3px;
+    border-top: 1px solid #444;
+    border-bottom: 1px solid #444;
+    padding-top:0px;
+    margin-top: -1px;
+}
+
+div.confirm_reboot_required {
+}
+
 div.confirm_multiple {
-    background-color: #4085A5;
-    font-size: 75%;
+    font-size: 65%;
     z-index: 8000;
-    height: 28px;
+    /*height: 28px;*/
     width: 700px;
     margin-top: 15px;
 }
@@ -3338,6 +3350,10 @@ div.machine a.manage-metadata:hover {
     border-bottom: 1px solid #84B7D0;
 }
 
+.single .column3 .vm-control:hover {
+    background-color: #5CA1C0;
+}
+
 .single .column3 .previous {
     float:left;
     width: 72px;
@@ -3398,8 +3414,10 @@ div.machine a.manage-metadata:hover {
     cursor: pointer;
     padding-bottom: 2px;
 }
-
-div.single div.column3 div.server-name:hover, .single .column3 .column3-selected {
+div.single div.column3 div.server-name:hover {
+    background-color: #5CA1C0;
+}
+.single .column3 .column3-selected {
     background-color: #84B7D0;
     color: white;
     opacity: 0.8;

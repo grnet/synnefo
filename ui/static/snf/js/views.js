@@ -30,7 +30,7 @@
         initialize: function() {
             this.log = new snf.logging.logger("SNF-VIEWS:" + this.view_id);
         },
-
+    
         // is the view visible ?
         visible: function(){
             return $(this.el).is(":visible");

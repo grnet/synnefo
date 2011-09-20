@@ -33,27 +33,25 @@
         },
 
         set_handlers: function() {
-            // bind multiple actions view handlers
-            this.multi_view = synnefo.ui.main.multiple_actions_view;
-            this.bind("change", _.bind(this.multi_view.handle_add, this.multi_view));
+            var self = this;
+            storage.vms.bind("change:pending_action", function() {
+                if (!storage.vms.has_pending_actions()) {
+                    self.parent.$(".actions a").removeClass("selected");
+                }
+            })
+            
+            var self = this;
+            this.parent.$(".actions a.enabled").live('click', function() {
+                self.parent.$(".actions a").removeClass("selected");
+                $(this).addClass("selected");
+                self.parent.select_action($(this).attr("id").replace("action-",""));
+            })
         },
         
-        get_selected_vms: function() {
-            var selected = $(this.el).find(".list-vm-checkbox:checked");
-            var vms = []
-            _.each(selected, function(el){
-                var id = parseInt($(el).attr("id").replace("checkbox-list-vm-", ""));
-                vm = storage.vms.get(id);
-                vms.push(vm);
-            });
-
-            return vms;
-        },
-
         update_actions: function() {
             actions = undefined;
             this.available_actions = [];
-            _.each(this.get_selected_vms(), function(vm) {
+            _.each(this.parent.get_selected_vms(), function(vm) {
                 if (!actions) {
                     actions = vm.get_available_actions();
                     return;
@@ -132,6 +130,13 @@
             this.table_data = {};
             views.ListView.__super__.initialize.apply(this, arguments);
         },
+        
+        reset: function() {
+        },
+
+        hide_actions: function() {
+            this.$(".actions a").removeClass("selected");
+        },
 
         // overload show function
         show_view: function() {
@@ -147,12 +152,18 @@
         vm_id_for_element: function(el) {
             return el.attr('id').replace("list-vm-", "");
         },
+
+        reset_actions: function() {
+            this.$(".actions a").removeClass("selected");
+            storage.vms.reset_pending_actions();
+        },
         
         // set generic view handlers
         set_handlers: function() {
             //init_action_indicator_handlers('list');
 
             this.$(".list-vm-checkbox").live('change', _.bind(function(){
+                this.reset_actions();
                 this.actions.update_layout();
                 if (this.$("tbody input:checked").length > 0) {
                     this.select_all.attr("checked", true);
@@ -171,6 +182,31 @@
                 self.actions.update_layout();
             });
         },  
+
+        get_selected_vms: function() {
+            var selected = $(this.el).find(".list-vm-checkbox:checked");
+            var vms = []
+            _.each(selected, function(el){
+                var id = parseInt($(el).attr("id").replace("checkbox-list-vm-", ""));
+                vm = storage.vms.get(id);
+                vms.push(vm);
+            });
+
+            return vms;
+        },
+
+        select_action: function(action) {
+            this.reset_actions();
+            this.$(".actions a#action-" + action).addClass("selected");
+            var vms = this.get_selected_vms();
+            _.each(vms, function(vm){
+                vm.update_pending_action(action);
+            })
+        },
+
+        reset: function() {
+            this.reset_actions();
+        },
 
         create_vm: function(vm) {
             params = this.get_vm_table_data(vm);

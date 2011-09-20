@@ -163,100 +163,106 @@
         initialize: function() {
             this.actions = {};
             views.MultipleActionsView.__super__.initialize.call(this);
+            
+            // view elements
+            this.confirm_actions = this.$(".confirm_multiple_actions");
+            this.confirm_actions_yes = this.$(".confirm_multiple_actions button.yes");
+            this.confirm_actions_no = this.$(".confirm_multiple_actions button.no");
+            this.confirm_reboot = this.$(".confirm_reboot_required");
+            this.confirm_reboot_yes = this.$(".confirm_reboot_required button.yes");
+            this.confirm_reboot_no = this.$(".confirm_reboot_required button.no");
+            this.confirm_reboot_list = this.confirm_reboot.find(".reboot-machines-list");
+
             this.init_handlers();
             this.update_layout();
             
             // for heavy resize/scroll window events
             // do it `like a boss` 
-            this.fix_position = _.throttle(this.fix_position, 50);
+            this.fix_position = _.throttle(this.fix_position, 100);
             this.show_limit = 1;
         },
 
         init_handlers: function() {
-            
-            // position handlers
-            $(window).bind("view:change", function(){
-            })
+            var self = this;
+
             $(window).resize(_.bind(function(){
                 this.fix_position();
             }, this));
+
             $(window).scroll(_.bind(function(){
                 this.fix_position();
             }, this));
+            
+            // confirm/cancel button handlers
             var self = this;
-            $(this.el).find("button.yes").click(function(){
-                self.do_all();
-            })
-            $(this.el).find("button.no").click(function(){
-                self.reset_action_views();
-                self.reset();
+            this.confirm_actions_yes.click(function(){ self.do_all(); })
+            this.confirm_actions_no.click(function(){
+                self.reset_actions();
             });
 
-            storage.vms.bind("change:pending_action", _.bind(function(vm) {
-                this.handle_vm_pending_action_change(vm);
-            }, this));
+            this.confirm_reboot_yes.click(function(){ self.do_reboot_all(); })
+            this.confirm_reboot_no.click(function(){
+                self.reset_reboots();
+            });
+
+            storage.vms.bind("change:pending_action", _.bind(this.handle_vm_change, this));
+            storage.vms.bind("change:reboot_required", _.bind(this.handle_vm_change, this));
         },
     
-        handle_vm_pending_action_change: function(vm) {
+        handle_vm_change: function(vm) {
             if (vm.has_pending_action()) {
                 var action = vm.get("pending_action");
-                this.add_action(vm, action, ui.main.current_view);
+                this.add_action(vm, action);
             } else {
                 this.remove_action(vm);
             }
+            this.update_layout();
         },
 
-        add_action: function(vm, action, view) {
-            if (this._actions[vm.id] && this._actions[vm.id].views.indexOf(view) == -1) {
-                var new_views = this._actions[vm.id].views;
-                new_views.push(view);
-                this._actions[vm.id] = {'vm': vm, 'action': action, 'views': new_views};
-            } else {
-                this._actions[vm.id] = {'vm': vm, 'action': action, 'views': [view]};
-            }
-            this.update_layout();
+        add_action: function(vm, action) {
+            this._actions[vm.id] = {'vm': vm, 'action': action};
         },
 
         remove_action: function(vm) {
             delete this._actions[vm.id];
-            this.update_layout();
         },
 
         reset: function() {
             this._actions = {};
             this.update_layout();
         },
+        
+        reboot_vm: function(vm) {
+            vm.call("reboot");
+        },
+
+        do_reboot_all: function() {
+            _.each(storage.vms.get_reboot_required(), function(vm){
+                this.reboot_vm(vm)
+            }, this)  
+        },
 
         do_all: function() {
             _.each(this._actions, function(action){
                 action.vm.call(action.action);
             }, this)  
-            this.reset_action_views();
+            this.reset_actions();
         },
 
-        reset_action_views: function() {
-            _.each(this._actions, function(action){
-                var action = action;
-                _.each(action.views, function (view) {
-                    try {
-                        view.reset();
-                        view.update_layout();
-                        view.hide_actions();
-                    } catch(err) {
-                        console.error("view", view, "failed to reset");
-                    }
-                })
-            })  
-        },
-        
-        handle_add: function(data) {
-            if (data.remove) {
-                this.remove_action(data.vm);
-            } else {
-                this.add_action(data.vm, data.action, data.view);
-            }
-
+        reset_reboots: function () {
+            _.each(storage.vms.get_reboot_required(), function(vm) {vm.set({'reboot_required': false})}, this);
             this.update_layout();
+        },
+
+        reset_actions: function() {
+            _.each(this._actions, _.bind(function(action){
+                try {
+                    action.vm.clear_pending_action();
+                    this.remove_action(action.vm);
+                } catch(err) {
+                    console.error("vm " + action.vm.id + " failed to reset", err);
+                }
+            }, this))  
         },
         
         fix_position: function() {
@@ -266,36 +272,48 @@
             }
         },
         
-        set_title: function() {
-            $(this.$("p").get(0)).html('Your actions will affect <span class="actionLen"></span> machines');
-        },
-
-        set_force_title: function() {
-            $(this.$("p").get(0)).html('<span class="actionLen"></span> machines needs to be rebooted for changes to apply');
-        },
-
-        check_force_notify: function() {
+        check_notify_limit: function() {
             this.show_limit = 1;
-            this.set_title();
-            storage.vms.each(_.bind(function(vm) {
-                if (vm.get("force_pending_notify")) {
-                    this.show_limit = 0;
-                    this.set_force_title(window.force_actions_title);
+            if (ui.main.current_view && ['networks', 'vm_list'].indexOf(ui.main.current_view.view_id) > -1) {
+                this.show_limit = 0;
+            }
+        },
+        
+        update_reboot_required_list: function(vms) {
+            this.confirm_reboot_list.empty();
+        },
+
+        update_reboot_required: function() {
+            var vms = storage.vms.get_reboot_required();
+            if (vms.length) {
+                this.confirm_reboot.find(".actionLen").text(vms.length);
+                this.update_reboot_required_list();
+                this.confirm_reboot.show();
+                $(this.el).show();
+            } else {
+                if (!this.actions_visible) {
+                   $(this.el).hide();
                 }
-            }, this));
+                this.confirm_reboot.hide();
+            }
         },
 
         update_layout: function() {
-            this.check_force_notify();
+            this.check_notify_limit();
+            this.actions_visible = false;
+
             if (_.size(this._actions) > this.show_limit) {
+                this.actions_visible = true;
                 $(this.el).show();
+                this.confirm_actions.show();
             } else {
                 $(this.el).hide();
-                return;
+                this.confirm_actions.hide();
             }
-            $(this.el).find(".actionLen").text(_.size(this._actions));
+
+            this.update_reboot_required();
+            this.confirm_actions.find(".actionLen").text(_.size(this._actions));
             $(window).trigger("resize");
-            this.fix_position();
         }
     })
     
@@ -450,7 +468,6 @@
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             
             // api calls handlers
-            synnefo.api.bind("error", _.bind(this.handle_api_error, this));
             synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
         },
         
@@ -549,6 +566,7 @@
             // display initial view
             this.loaded = true;
             this.show_initial_view();
+            this.check_empty();
         },
 
         load: function() {

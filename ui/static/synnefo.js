@@ -539,7 +539,7 @@ function get_server_stats(serverID) {
             handle_api_error(-21, undefined, 'Get server stats', jqXHR, textStatus, errorThrown, this);
         },
         success: function(data, textStatus, jqXHR) {
-            update_machine_stats(serverID, data);
+            //update_machine_stats(serverID, data);
         },
 
         // pass server id to ajax settings

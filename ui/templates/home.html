@@ -276,10 +276,18 @@
                     </div>
                     <div id="disks-pane" class="pane"></div>
 
-                    <div class="confirm_multiple" id="multiple_actions_container">
-                        <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
-                        <button class="yes">{% trans "Confirm All" %}</button>
-                        <button class="no">{% trans "Cancel All" %}</button>
+                    <div class="confirm_multiple clearfix" id="multiple_actions_container">
+                        <div class="confirm_multiple_actions confirm_multiple_cont clearfix">
+                            <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
+                            <button class="yes">{% trans "Confirm All" %}</button>
+                            <button class="no">{% trans "Cancel All" %}</button>
+                        </div>
+                        <div class="confirm_reboot_required confirm_multiple_cont clearfix">
+                            <p><span class="actionLen"></span> {% trans "machines needs to be rebooted for changes to apply" %}</p>
+                            <button class="yes">{% trans "Reboot All" %}</button>
+                            <button class="no">{% trans "Cancel All" %}</button>
+                            <div class="reboot-machines-list"></div>
+                        </div>
                     </div>
 
                 </div>
@@ -370,7 +378,7 @@
                    }
 
                    }
-               window.positionFooter = _.throttle(positionFooter, 40);
+               window.positionFooter = _.throttle(positionFooter, 100);
                $(window).scroll(positionFooter).resize(positionFooter)
         });
     </script>

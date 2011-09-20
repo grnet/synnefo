@@ -1243,8 +1243,8 @@ div#view-select {
     clear: both;
     color: white;
     position: absolute;
-    right: 10px;
-    top: 10px;
+    right: 15px;
+    top: 15px;
 }
 
 a.machines_view_link {

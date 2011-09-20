@@ -30,6 +30,11 @@
             _.bindAll(this, 'show_password');
 
             this.password = this.$("#new-machine-password");
+
+            this.$(".show-machine").click(_.bind(function(){
+                this.hide();
+                snf.ui.main.show_vm_details(storage.vms.get(this.vm_id));
+            }, this));
         },
         
         show_password: function() {

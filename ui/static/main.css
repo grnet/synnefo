@@ -3889,6 +3889,17 @@ div.state .shutdown, tbody.machines .shutdown {
     padding-left: 5em;
 }
 
+#creation-password-overlay {
+    position: relative;
+}
+
+#creation-password-overlay .form-action {
+    position: absolute;
+    bottom: 15px;
+    right: 13px;
+    font-size: 0.8em;
+}
+
 #creation-password-overlay .password {
     font-size: 1.3em;
     font-weight: bold;

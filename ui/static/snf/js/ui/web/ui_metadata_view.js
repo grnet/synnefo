@@ -221,6 +221,7 @@
         },
 
         onClose: function() {
+            this.editing = false;
             this.unbind_vm_handlers();
         }
     });

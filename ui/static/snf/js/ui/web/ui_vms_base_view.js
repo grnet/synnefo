@@ -191,13 +191,17 @@
             if (el.parent()[0] != this.sel(selector)[0]) {
                 var cont = this.sel(selector);
                 var self = this;
-                el.fadeOut(200, function() {
-                    el.appendTo(cont); 
-                    el.fadeIn(200);
-                    self.sel(selector).show(function(){
-                        $(window).trigger("resize");
-                    });
-                });
+
+                el.hide().appendTo(cont).show();
+                $(window).trigger('resize');
+
+                //el.fadeOut(200, function() {
+                    //el.appendTo(cont); 
+                    //el.fadeIn(200);
+                    //self.sel(selector).show(function(){
+                        //$(window).trigger("resize");
+                    //});
+                //});
             }
         },
 

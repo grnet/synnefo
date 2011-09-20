@@ -71,4 +71,4 @@ function test_nets_border() {
 
 
 TEST = test_nets_border;
-//TEST = false;
+TEST = false;

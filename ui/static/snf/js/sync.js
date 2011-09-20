@@ -187,8 +187,8 @@
             error = error || function(){};
             success = success || function(){};
             complete = complete || function(){};
-            var extra = data._options || {};
-            if (data._options) { delete data._options };
+            var extra = data ? data._options || {} : {};
+            if (data && data._options) { delete data['_options'] };
 
             var params = {
                 url: snf.config.api_url + "/" + url,

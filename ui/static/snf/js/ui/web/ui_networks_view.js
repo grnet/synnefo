@@ -558,6 +558,16 @@
             this.$(".empty-network-slot").hide();
         },
 
+        // fix left border position
+        fix_left_border: function() {
+            var imgheight = 2783;
+            var contents = this.$(".network-contents");
+            var last_vm = this.$(".network-machine:last")
+            var bgpos = imgheight - contents.height() + last_vm.height() - 30;
+            this.$(".network-contents").css({'background-position':'33px ' + (-bgpos) + 'px'});
+        },
+
+
         init_handlers: function() {
             var self = this;
 
@@ -608,6 +618,10 @@
                 if (v == "networks" ){ return }
                 this.$(".confirm_single").hide();
                 this.$("a.selected").removeClass("selected");
+            }, this));
+
+            $(window).bind("resize", _.bind(function() {
+                this.fix_left_border();
             }, this));
         },
 
@@ -698,6 +712,16 @@
                 }
             }
         },
+        
+        create_vm: function(vm) {
+            vm_el = $(this.vm_tpl).clone().attr({id:this.get_vm_id(vm).replace("#","")});
+            this.vms_list.append(vm_el);
+            this.post_vm_add(vm);
+
+            if (!this.vm_views[vm.id]) {
+                vm_view = this.vm_views[vm.id] = new views.NetworkVMView(vm, this, this.firewall, vm_el);
+            }
+        },
 
         add_or_update_vm: function(vm) {
             if (!vm || !this.network.contains_vm(vm)) { return };
@@ -706,13 +730,7 @@
             var vm_view = this.vm_views[vm.id];
 
             if (vm_el.length == 0) {
-                vm_el = $(this.vm_tpl).clone().attr({id:this.get_vm_id(vm).replace("#","")});
-                this.vms_list.append(vm_el);
-                this.post_vm_add(vm);
-
-                if (!this.vm_views[vm.id]) {
-                    vm_view = this.vm_views[vm.id] = new views.NetworkVMView(vm, this, this.firewall, vm_el);
-                }
+                this.create_vm(vm);
             }
             
             if (vm_view) { vm_view.update_layout() };
@@ -848,14 +866,6 @@
             return new views.PrivateNetworkView(net, this);
         },
         
-        // fix left border position
-        fix_left_border: function() {
-            var vms = this.$(".network-machine:not(:last-child)");
-            var opened = vms.find(".firewall-content:visible").length;
-            var bgpos = -2584 + (opened * 72);
-            this.$(".network-contents").css({'background-position-y':bgpos + 'px'});
-        },
-
         init_handlers: function() {
             storage.networks.bind("add", _.bind(this.network_added_handler, this, "add"));
             storage.networks.bind("change", _.bind(this.network_changed_handler, this, "change"));
@@ -867,9 +877,6 @@
                 this.create_view.show();
             }, this));
             
-            $(window).bind("resize", _.bind(function() {
-                this.fix_left_border();
-            }, this));
         },
 
         update_networks: function(nets) {

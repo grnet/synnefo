@@ -37,6 +37,8 @@
         <script src="static/snf/js/ui/ie_fixes.js"></script>
     <![endif]-->
 
+
+    
     <script src="static/snf/js/utils.js"></script>
     <script src="static/snf/js/sync.js"></script>
     <script src="static/snf/js/models.js"></script>
@@ -56,6 +58,10 @@
     <!--<script src="static/snf/js/ui/create_view.js"></script>-->
     <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
+
+    {% if DEBUG %}
+        <script src="static/snf/js/tests/functional.js"></script>
+    {% endif %}
     
     <script>
         // empty object for console to avoid errors in browsers that don't support it
@@ -520,12 +526,14 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
     <script>
         $(document).ready(function() {
             $(".css-panes").hide();
-            
+
+            {% if DEBUG %}
             synnefo.ui.main.bind("initial", function() {
                 if (window.TEST) {
                     setTimeout(window.TEST, 60);
                 }
             });
+            {% endif %}
             
             synnefo.config.update_interval = 5000 || {{ update_interval }};
             synnefo.ui.init();

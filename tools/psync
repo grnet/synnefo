@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+
+import os
+import sqlite3
+import sys
+
+from cStringIO import StringIO
+from hashlib import md5
+
+from lib.client import Pithos_Client, Fault
+
+
+SQL_CREATE_TABLE = '''CREATE TABLE IF NOT EXISTS files (
+                        path TEXT PRIMARY KEY, hash TEXT)'''
+
+
+class LocalState(object):
+    def __init__(self):
+        dbpath = os.path.expanduser('~/.psyncdb')
+        self.conn = sqlite3.connect(dbpath)
+        self.conn.execute(SQL_CREATE_TABLE)
+        self.conn.commit()
+    
+    def get(self, path):
+        sql = 'SELECT hash FROM files WHERE path = ?'
+        ret = self.conn.execute(sql, (path,)).fetchone()
+        return ret[0] if ret else ''
+    
+    def put(self, path, hash):
+        sql = 'INSERT OR REPLACE INTO files VALUES (?, ?)'
+        self.conn.execute(sql, (path, hash))
+        self.conn.commit()
+
+
+class CurrentState(object):
+    def __init__(self, dir):
+        self.dir = dir
+    
+    def list(self):
+        return os.listdir(self.dir)
+        
+    def get(self, path):
+        fullpath = os.path.join(self.dir, path)
+        if os.path.exists(fullpath):
+            with open(fullpath) as f:
+                data = f.read()
+                return md5(data).hexdigest()
+        else:
+            return ''
+
+    def read(self, path):
+        fullpath = os.path.join(self.dir, path)
+        if not os.path.exists(fullpath):
+            return None
+        with open(fullpath) as f:
+            return f.read()
+    
+    def write(self, path, data):
+        fullpath = os.path.join(self.dir, path)
+        if data is None:
+            os.remove(fullpath)
+        else:
+            with open(fullpath, 'w') as f:
+                f.write(data)
+    
+    def resolve_conflict(self, path):
+        fullpath = os.path.join(self.dir, path)
+        os.rename(fullpath, fullpath + '.local')
+
+
+class RemoteState(object):
+    def __init__(self):
+        host = os.environ['PITHOS_SERVER']
+        user = os.environ['PITHOS_USER']
+        token = os.environ['PITHOS_AUTH']
+        self.container = 'pithos'
+        self.client = Pithos_Client(host, token, user)
+
+    def list(self):
+        return self.client.list_objects(self.container)
+        
+    def get(self, path):
+        try:
+            meta = self.client.retrieve_object_metadata(self.container, path)
+        except Fault:
+            return ''
+        return meta['etag']
+    
+    def read(self, path):
+        try:
+            return self.client.retrieve_object(self.container, path)
+        except Fault:
+            return None
+    
+    def write(self, path, data):
+        if data is None:
+            self.client.delete_object(self.container, path)
+        else:
+            f = StringIO(data)
+            self.client.create_object(self.container, path, f=f)
+
+
+def sync(path, lstate, cstate, rstate):
+    s0 = lstate.get(path)
+    s1 = cstate.get(path)
+    s = rstate.get(path)
+
+    if s1 == s0:
+        # No local changes
+        if s != s0:
+            data = rstate.read(path)
+            cstate.write(path, data)
+            assert cstate.get(path) == s
+            lstate.put(path, s)
+        return
+    
+    if s == s0:
+        # No remote changes
+        if s1 != s0:
+            data = cstate.read(path)
+            rstate.write(path, data)
+            assert rstate.get(path) == s1
+            lstate.put(path, s1)
+        return
+    
+    # At this point both local and remote states have changes since last sync
+
+    if s1 == s:
+        # We were lucky, both had the same change
+        lstate.put(path, s)
+    else:
+        # Conflict, try to resolve it
+        cstate.resolve_conflict(path)
+        data = rstate.read(path)
+        cstate.write(path, data)
+        assert cstate.get(path) == s
+        lstate.put(path, s)
+
+
+def main():
+    if len(sys.argv) != 2:
+        print 'syntax: %s <dir>' % sys.argv[0]
+        sys.exit(1)
+    
+    lstate = LocalState()
+    cstate = CurrentState(sys.argv[1])
+    rstate = RemoteState()
+
+    local_files = set(cstate.list())
+    remote_files = set(rstate.list())
+
+    for path in local_files | remote_files:
+        sync(path, lstate, cstate, rstate)
+
+
+if __name__ == '__main__':
+    main()

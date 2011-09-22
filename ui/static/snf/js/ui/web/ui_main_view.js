@@ -468,6 +468,7 @@
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             
             // api calls handlers
+            synnefo.api.bind("error", _.bind(this.handle_api_error, this));
             synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
         },
         

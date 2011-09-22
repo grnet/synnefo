@@ -476,25 +476,22 @@
 
     // UI helpers
     var uihelpers = snf.ui.helpers = {};
-
-    // VM Icon helpers
-    //
-    // identify icon
-    var vm_icon = uihelpers.vm_icon = function(vm) {
-        var os = vm.get_os();
+    
+    // OS icon helpers
+    var os_icon = uihelpers.os_icon = function(os) {
         var icons = window.os_icons;
         if (icons.indexOf(os) == -1) {
             os = "unknown";
         }
         return os;
     }
-    
-    // get icon url
-    var vm_icon_path = uihelpers.vm_icon_path = function(vm, size) {
-        size = size || "small";
 
-        var icon = vm_icon(vm);
-        if (vm.is_active()) {
+    var os_icon_path = uihelpers.os_icon_path = function(os, size, active) {
+        size = size || "small";
+        if (active == undefined) { active = true };
+
+        var icon = os_icon(os);
+        if (active) {
             icon = icon + "-on";
         } else {
             icon = icon + "-off";
@@ -502,11 +499,27 @@
 
         return "/static/icons/machines/{0}/{1}.png".format(size, icon)
     }
+
+    var os_icon_tag = uihelpers.os_icon_tag = function (os, size, active, attrs) {
+        attrs = attrs || {};
+        return '<img src="{0}" />'.format(os_icon_path(os, size, active));
+    }
+
+    // VM Icon helpers
+    //
+    // identify icon
+    var vm_icon = uihelpers.vm_icon = function(vm) {
+        return os_icon(vm.get_os());
+    }
+    
+    // get icon url
+    var vm_icon_path = uihelpers.vm_icon_path = function(vm, size) {
+        return os_icon_path(vm.get_os(), size, vm.is_active());
+    }
     
     // get icon IMG tag
     var vm_icon_tag = uihelpers.vm_icon_tag = function (vm, size, attrs) {
-        attrs = attrs || {};
-        return '<img src="{0}" />'.format(vm_icon_path(vm, size));
+       return os_icon_tag(vm.get_os(), size, vm.is_active(), attrs);
     }
     
     snf.ui = _.extend(snf.ui, bb.Events);

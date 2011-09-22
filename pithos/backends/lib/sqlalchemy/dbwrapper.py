@@ -31,19 +31,21 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
+#from sqlalchemy.event import listen
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
+from sqlalchemy.interfaces import PoolListener
 
 class DBWrapper(object):
     """Database connection wrapper."""
     
     def __init__(self, db):
         if db.startswith('sqlite://'):
-            def my_on_connect(dbapi_con, connection_rec):
-                dbapi_con.execute('pragma foreign_keys=ON')
-            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool)
-            event.listen(self.engine, 'connect', my_on_connect)
+            class ForeignKeysListener(PoolListener):
+                def connect(self, dbapi_con, con_record):
+                    db_cursor = dbapi_con.execute('pragma foreign_keys=ON')
+            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
         else:
             self.engine = create_engine(db)
         #self.engine.echo = True

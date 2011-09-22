@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from time import time
-from sqlalchemy import Table, Integer, Float, Column, String, MetaData, ForeignKey
+from sqlalchemy import Table, Integer, BigInteger, Float, Column, String, MetaData, ForeignKey
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, null, select, bindparam
 from sqlalchemy.ext.compiler import compiles
@@ -126,7 +126,7 @@ class Node(DBWorker):
                                          onupdate='CASCADE'),
                               primary_key=True))
         columns.append(Column('population', Integer, nullable=False, default=0))
-        columns.append(Column('size', Integer, nullable=False, default=0))
+        columns.append(Column('size', BigInteger, nullable=False, default=0))
         columns.append(Column('mtime', Float))
         columns.append(Column('cluster', Integer, nullable=False, default=0,
                               primary_key=True))
@@ -139,7 +139,7 @@ class Node(DBWorker):
                               ForeignKey('nodes.node',
                                          ondelete='CASCADE',
                                          onupdate='CASCADE')))
-        columns.append(Column('size', Integer, nullable=False, default=0))
+        columns.append(Column('size', BigInteger, nullable=False, default=0))
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', Float))
         columns.append(Column('muser', String(255), nullable=False, default=''))

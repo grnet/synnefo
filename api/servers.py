@@ -206,6 +206,7 @@ def create_server(request):
         assert isinstance(metadata, dict)
         image_id = server['imageRef']
         flavor_id = server['flavorRef']
+        personality = server.get('personality', [])
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
     
@@ -216,6 +217,9 @@ def create_server(request):
     count = VirtualMachine.objects.filter(owner=owner, deleted=False).count()
     if count >= settings.MAX_VMS_PER_USER:
         raise faults.OverLimit("Server count limit exceeded for your account.")
+    
+    for p in personality:
+        _log.warning("ignoring personality file '%s'", p.get('path', ''))
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(

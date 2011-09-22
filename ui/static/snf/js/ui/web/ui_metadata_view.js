@@ -191,11 +191,11 @@
                 self.show_editor(meta, $(this));
             })
 
-            this.list.find(".options-object").dblclick(function(e) {
-                e.preventDefault();
-                var meta = self.meta_from_el($(this));
-                self.show_editor(meta, $(this));
-            })
+            //this.list.find(".options-object").dblclick(function(e) {
+                //e.preventDefault();
+                //var meta = self.meta_from_el($(this));
+                //self.show_editor(meta, $(this));
+            //})
 
             this.list.find("li.create").click(function(){
                 self.show_create();

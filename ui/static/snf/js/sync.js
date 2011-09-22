@@ -34,10 +34,10 @@
     
     // Call history (set of api paths with the dates the path last called)
     var api_history = api.requests = api.requests || {};
-    var addApiCallDate = function(url, d) {
+    var addApiCallDate = function(url, d, method) {
         if (d === undefined) { d = Date() };
         var path = snf.util.parseUri(url).path;
-        api_history[path] = d;
+        api_history[path + "_" + method] = d;
         return api_history[path]
     }
     
@@ -46,10 +46,9 @@
         api_errors.push({url:settings.url, date:new Date, settings:settings, data:data})
     }
 
-    var setChangesSince = function(url) {
+    var setChangesSince = function(url, method) {
         var path = snf.util.parseUri(url).path;
-        var d = api_history[path];
-
+        var d = api_history[path + "_" + method];
         if (d) {
             url = url + "?changes-since=" + snf.util.ISODateString(d)
         }
@@ -69,7 +68,7 @@
         
         if (!options.url) {
             options.url = getUrl(model, options) || urlError();
-            options.url = options.refresh ? options.url : setChangesSince(options.url, options);
+            options.url = options.refresh ? options.url : setChangesSince(options.url, type);
             if (!options.refresh && options.cache === undefined) {
                 options.cache = true;
             }
@@ -139,7 +138,7 @@
                 // do not call success for 304 responses
                 if (args[1] === "notmodified" || xhr.status == 0 && $.browser.opera) {
                     if (args[2]) {
-                        addApiCallDate(this.url, new Date(args[2].getResponseHeader('Date')));
+                        addApiCallDate(this.url, new Date(args[2].getResponseHeader('Date')), ajax_options.type);
                     }
                     return;
                 }
@@ -154,14 +153,14 @@
     api.successHandler = function(data, status, xhr) {
         //debug("ajax success", arguments)
         // on success, update the last date we called the api url
-        addApiCallDate(this.url, new Date(xhr.getResponseHeader('Date')));
+        addApiCallDate(this.url, new Date(xhr.getResponseHeader('Date')), this.type);
         return [data, status, xhr];
     }
 
     api.errorHandler = function(event, xhr, settings, error) {
         //debug("ajax error", arguments, this);
         arguments.ajax = this;
-
+        
         // skip aborts
         if (xhr != "abort") {
             if (!settings.handles_error) api.trigger("error", arguments);
@@ -197,6 +196,7 @@
                 complete: function() { api.trigger("call"); complete(this) },
                 error: error
             }
+
             params = _.extend(params, extra);
             this.sync(method, this, params);
         },

@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from sqlalchemy import create_engine, event
+from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
 class DBWrapper(object):
@@ -39,10 +40,10 @@ class DBWrapper(object):
     
     def __init__(self, db):
         if db.startswith('sqlite://'):
-            def my_on_connect(dbapi_conn, connection_rec, connection_proxy):
-                db_cursor = dbapi_conn.execute('pragma foreign_keys=ON')
+            def my_on_connect(dbapi_con, connection_rec):
+                dbapi_con.execute('pragma foreign_keys=ON')
             self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool)
-            event.listen(self.engine, 'checkout', my_on_connect)
+            event.listen(self.engine, 'connect', my_on_connect)
         else:
             self.engine = create_engine(db)
         #self.engine.echo = True

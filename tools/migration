@@ -100,23 +100,12 @@ class DataMigration(Migration):
         s = select([filebody.c.id, filebody.c.storedfilepath])
         rp = self.conn.execute(s)
         
-        #basepath = '/Users/butters/Downloads'
-        #files = os.listdir(basepath)
-        #files = [f for f in files if not os.path.isdir(os.path.join(basepath, f))]
-        #i = 0
-        
         while True:
             t = rp.fetchone()
             if not t:
                 break
-            name, path = t
-            
-            #id, path = t[0], os.path.join(basepath, files[i])
-            #i+=1
-            #if i == len(files):
-            #    break
-            
-            print id, path
+            id, path = t
+            print '#', id, path
             hashlist = self.blocker.block_stor_file(open(path))[1]
             self.mapper.map_stor(id, hashlist)
         rp.close()
@@ -180,7 +169,6 @@ class ObjectMigration(DataMigration):
     
 if __name__ == "__main__":
     db = ''
-    #db = 'postgresql://gss:archipelagos@62.217.112.56/pithos'
     t = UserMigration(db)
     t.execute()
     

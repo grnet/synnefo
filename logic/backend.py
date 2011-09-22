@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+
 from django.conf import settings
 from django.db import transaction
 
@@ -206,7 +208,7 @@ def start_action(vm, action):
     vm.save()
 
 
-def create_instance(vm, flavor, image, password):
+def create_instance(vm, flavor, image, password, personality):
 
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
 
@@ -240,8 +242,14 @@ def create_instance(vm, flavor, image, password):
     #
     # kw['pnode']=rapi.GetNodes()[0]
     kw['dry_run'] = settings.TEST
-    kw['beparams'] = dict(auto_balance=True, vcpus=flavor.cpu,
-                          memory=flavor.ram)
+    
+    kw['beparams'] = {
+        'auto_balance': True,
+        'vcpus': flavor.cpu,
+        'memory': flavor.ram}
+    if personality:
+        kw['beparams']['personality'] = json.dumps(personality)
+    
     kw['osparams'] = dict(img_id=image.backend_id, img_passwd=password,
                          img_format=image.format)
     # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS

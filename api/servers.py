@@ -207,6 +207,10 @@ def create_server(request):
         image_id = server['imageRef']
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
+        assert isinstance(personality, list)
+        for p in personality:
+            assert isinstance(p, dict)
+            assert set(p.keys()) == set(['path', 'contents'])
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
     
@@ -218,9 +222,6 @@ def create_server(request):
     if count >= settings.MAX_VMS_PER_USER:
         raise faults.OverLimit("Server count limit exceeded for your account.")
     
-    for p in personality:
-        _log.warning("ignoring personality file '%s'", p.get('path', ''))
-    
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
@@ -229,7 +230,7 @@ def create_server(request):
         flavor=flavor)
     
     try:
-        create_instance(vm, flavor, image, password)
+        create_instance(vm, flavor, image, password, personality)
     except GanetiApiError:
         vm.delete()
         raise

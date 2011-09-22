@@ -261,7 +261,12 @@
             code = xhr.status || "undefined";
         } catch (err) {console.error(err);}
         var details = "";
-
+        
+        if ([413].indexOf(code) > -1) {
+            defaults.non_critical = true;
+            defaults.allow_report = false;
+            defaults.allow_reload = false;
+        }
         
         if (json_data) {
             $.each(json_data, function(key, obj) {

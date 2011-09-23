@@ -36,6 +36,8 @@
             this.set_storage_handlers();
             this.set_handlers();
             this.vms_updated_handler();
+
+            this.connect_overlay = new views.VMConnectView();
         },
 
         // Helpers

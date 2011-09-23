@@ -1035,7 +1035,7 @@ div.connect-border:hover {
     margin: 0;
 }
 
-div.ip, div.ips {
+.icon div.ip, .icon div.ips {
     font-size: 75%;
 }
 
@@ -4509,8 +4509,14 @@ table.list-machines .wave {
 
 .overlay .header .subtitle img {
     vertical-align: middle;
-    margin-left: 5px;
+    margin-left: 10px;
     margin-bottom: 2px;
+}
+
+.overlay-info .content {
+    background-repeat: no-repeat;
+    background-position: 110% 110%;
+    background-color: rgba(255,255,255,0.6)
 }
 
 .overlay-info .header {
@@ -4769,6 +4775,30 @@ table.list-machines .wave {
     color: #fff;
 }
 
+#createvm-overlay-content {
+    padding: 0;
+}
+
+.create-vm .header-step.current {
+    font-weight: bold;
+}
+
+.create-vm .create-step-cont {
+    margin: 20px;
+    min-height: 240px;
+}
+.create-vm .create-controls {
+    padding: 10px;
+}
+
+.create-vm ul li {
+    cursor: pointer;
+    padding: 4px;
+}
+
+.create-vm ul li.selected {
+    background-color: #aaa;
+}
 
 .cont-toggler {
     background-image: url("./down-arrow.png");
@@ -5322,4 +5352,10 @@ table.list-machines .wave {
 
 .create-vm .meta input {
     font-size: 0.8em;
+}
+
+.vm-connect .connect-cont {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #A1C8DB;
+    padding-bottom: 20px;
 }

@@ -151,7 +151,7 @@
             // same as icon view
             this.action_views[vm.id] = new views.VMActionsView(vm, this, this.vm(vm), this.hide_actions);
             this.stats_views[vm.id] = new views.VMStatsView(vm, this, {stats_type: 'series'});
-            this.connect_views[vm.id] = new views.VMConnectView(vm, this);
+            this.connect_views[vm.id] = new views.IconVMConnectView(vm, this);
             this.tags_views[vm.id] = new views.VMTagsView(vm, this, true, 20, 10, 35);
             this.details_views[vm.id] = new views.SingleDetailsView(vm, this);
         },

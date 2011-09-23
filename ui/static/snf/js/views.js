@@ -221,15 +221,85 @@
             } else {
                 delay = 0;
             }
-            
             window.setTimeout(_.bind(function(){ this.overlay.load() }, this), delay)
             return this;
         },
 
         hide: function() {
-            this.overlay.close();
+            if (!this.overlay.isOpened()) {
+                // if its not opened events wont trigger
+                this._onClose()
+            } else {
+                this.overlay.close();
+            }
             return this;
         }
+    });
+
+    
+    // overlay view helper
+    views.VMOverlay = views.Overlay.extend({
+
+        initialize: function() {
+            views.VMOverlay.__super__.initialize.apply(this);
+            this.vm = undefined;
+            this.view_id_tpl = this.view_id;
+
+            _.bindAll(this, "handle_vm_change", "handle_vm_remove");
+        },
+
+        set_vm: function(vm) {
+            if (this.vm) { this.unbind_vm_handlers };
+            this.vm = vm;
+            this.view_id = this.view_id + "_" + vm.id;
+            this.bind_vm_handlers();
+        },
+
+        bind_vm_handlers: function() {
+            this.log.debug("binding handlers");
+            this.vm.bind("change", this.handle_vm_change);
+            storage.vms.bind("remove", this.handle_vm_remove);
+        },
+        
+        unbind_vm_handlers: function() {
+            this.log.debug("unbinding handlers", this.vm);
+            if (!this.vm) { return };
+            this.vm.unbind("change", this.handle_vm_change);
+            storage.vms.unbind("remove", this.handle_vm_remove);
+        },
+        
+        _update_vm_details: function() { 
+            if (!this.vm) { console.error("invalid view state"); return }
+            this.set_subtitle(this.vm.get("name") + snf.ui.helpers.vm_icon_tag(this.vm, "small"));
+
+            var ico_path = snf.ui.helpers.os_icon_path(this.vm.get("OS"), "oslarge");
+            this.$(".content").css({"background-image":"url(" + ico_path +")"})
+            this.update_vm_details() 
+        },
+
+        update_vm_details: function() {},
+
+        handle_vm_remove: function(vm, collection) {
+            if (this.vm && vm.id == this.vm.id) {
+                this.hide();
+            }
+        },
+
+        handle_vm_change: function(vm) {
+            this._update_vm_details();
+        },
+        
+        beforeClose: function() {
+            this.unbind_vm_handlers();
+            this.vm = undefined;
+        },
+
+        show: function(vm) {
+            this.set_vm(vm);
+            views.VMOverlay.__super__.show.apply(this, arguments);
+            this._update_vm_details();
+        }
+
     });
 
 })(this);

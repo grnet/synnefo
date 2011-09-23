@@ -170,7 +170,7 @@
     });
     
     // VM connect interaction view
-    views.VMConnectView = views.View.extend({
+    views.IconVMConnectView = views.View.extend({
         
         initialize: function(vm, view) {
             // parent view (single, icon, list)
@@ -178,7 +178,7 @@
             this.vm = vm;
             this.el = view.vm(vm);
             this.set_handlers();
-            views.VMConnectView.__super__.initialize.call(this);
+            views.IconVMConnectView.__super__.initialize.call(this);
         },
         
         // set the appropriate handlers
@@ -190,9 +190,10 @@
             // element that triggers the connect handler
             var connect = el.find("div.connect-arrow, .logo");
             // connect status handler
-            var handler = _.bind(this.connect_handler, {vm:vm, el:el});
+            var handler = _.bind(this.connect_handler, {vm:vm, el:el, view:this.parent});
             $(connect).bind({'mouseover': handler, 'mouseleave': handler, 
-                            'mousedown': handler, 'mouseup': handler});
+                            'mousedown': handler, 'mouseup': handler,
+                            'click': handler });
             
             // setup connect arrow display handlers 
             // while hovering vm container
@@ -247,8 +248,10 @@
                     logo.addClass('single-image-state2');
                     break;
 
-                case "mouseclick":
-                    logo.addCLass('single-image-state4');
+                case "click":
+                    //logo.addCLass('single-image-state4');
+                    this.view.connect_to_console(vm);
+                    //this.view.connect_overlay.show(this.vm);
                     break;
 
                 default:
@@ -567,7 +570,7 @@
             this.action_views[vm.id] = new views.VMActionsView(vm, this, this.vm(vm), this.hide_actions);
             this.rename_views[vm.id] = new views.IconRenameView(vm, this);
             this.stats_views[vm.id] = new views.VMStatsView(vm, this, {el:'.vm-stats'});
-            this.connect_views[vm.id] = new views.VMConnectView(vm, this);
+            this.connect_views[vm.id] = new views.IconVMConnectView(vm, this);
             this.tags_views[vm.id] = new views.VMTagsView(vm, this);
             this.details_views[vm.id] = new views.VMDetailsView(vm, this);
             this.info_views[vm.id] = new views.IconInfoView(vm, this);

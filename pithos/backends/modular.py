@@ -395,7 +395,13 @@ class ModularBackend(BaseBackend):
         if version is None:
             modified = props[self.MTIME]
         else:
-            modified = self._get_version(node)[self.MTIME] # Overall last modification.
+            try:
+                modified = self._get_version(node)[self.MTIME] # Overall last modification.
+            except NameError: # Object may be deleted.
+                del_props = self.node.version_lookup(node, inf, CLUSTER_DELETED)
+                if del_props is None:
+                    raise NameError('Object does not exist')
+                modified = del_props[self.MTIME]
         
         meta = dict(self.node.attribute_get(props[self.SERIAL]))
         meta.update({'name': name, 'bytes': props[self.SIZE]})
@@ -508,6 +514,7 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, src_container, src_name)
         self._can_write(user, account, dest_container, dest_name)
         src_path, src_node = self._lookup_object(account, src_container, src_name)
+        self._get_version(src_node, src_version)
         if permissions is not None:
             dest_path = '/'.join((account, container, name))
             self._check_permissions(dest_path, permissions)
@@ -578,7 +585,8 @@ class ModularBackend(BaseBackend):
         logger.debug("list_versions: %s %s %s", account, container, name)
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
-        return self.node.node_get_versions(node, ['serial', 'mtime'])
+        versions = self.node.node_get_versions(node)
+        return [[x[self.SERIAL], x[self.MTIME]] for x in versions if x[self.CLUSTER] != CLUSTER_DELETED]
     
     @backend_method(autocommit=0)
     def get_block(self, hash):

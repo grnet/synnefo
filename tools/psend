@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+
+import os
+import hashlib
+import sys
+
+from binascii import hexlify, unhexlify
+from cStringIO import StringIO
+
+from lib.client import Pithos_Client, Fault
+from lib.util import get_user, get_auth, get_server, get_api
+
+
+# XXX Get these from container...
+BLOCK_SIZE = 4 * 1024 * 1024
+BLOCK_HASH = 'sha256'
+
+
+def file_read_iterator(fp, size=1024):
+    while True:
+        data = fp.read(size)
+        if not data:
+            break
+        yield data
+
+
+class HashMap(list):
+    
+    def __init__(self, f):
+        super(HashMap, self).__init__()
+        self.load(f)
+    
+    def _hash_raw(self, v):
+        h = hashlib.new(BLOCK_HASH)
+        h.update(v)
+        return h.digest()
+    
+    def _hash_block(self, v):
+        return self._hash_raw(v.rstrip('\x00'))
+    
+    def hash(self):
+        if len(self) == 0:
+            return self._hash_raw('')
+        if len(self) == 1:
+            return self.__getitem__(0)
+        
+        h = list(self)
+        s = 2
+        while s < len(h):
+            s = s * 2
+        h += [('\x00' * len(h[0]))] * (s - len(h))
+        while len(h) > 1:
+            h = [self._hash_raw(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
+        return h[0]
+    
+    def load(self, f):
+        with open(f) as fp:
+            for block in file_read_iterator(fp, BLOCK_SIZE):
+                self.append(self._hash_block(block))
+
+
+def smart_upload(client, file):
+    dest_container = 'pithos'
+    dest_object = os.path.split(file)[-1]
+    
+    size = os.path.getsize(file)
+    hashes = HashMap(sys.argv[1])
+    map = {'bytes': size, 'hashes': [hexlify(x) for x in hashes]}
+    
+    try:
+        client.create_object_by_hashmap(dest_container, dest_object, map)
+    except Fault, fault:
+        if fault.status != 409:
+            raise
+    else:
+        return
+    
+    missing = fault.data.split('\n')
+    if '' in missing:
+        del missing[missing.index(''):]
+    
+    with open(file) as fp:
+        for hash in missing:
+            offset = hashes.index(unhexlify(hash)) * BLOCK_SIZE
+            fp.seek(offset)
+            block = fp.read(BLOCK_SIZE)
+            client.create_object('pithos', '.upload', StringIO(block))
+    
+    client.create_object_by_hashmap(dest_container, dest_object, map)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2 or not os.path.isfile(sys.argv[1]):
+        print 'syntax: %s <file>' % sys.argv[0]
+        sys.exit(1)
+    
+    client = Pithos_Client(get_server(), get_auth(), get_user())
+    smart_upload(client, sys.argv[1])

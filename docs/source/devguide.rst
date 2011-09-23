@@ -25,6 +25,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.7 (Sept 22, 2011)        Suggest upload/download methods using hashmaps.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -1028,6 +1029,31 @@ Public objects are not included in ``shared`` and ``others`` listings. It is sug
 A special application menu, or a section in application preferences, should be devoted to managing groups (the ``groups`` element). All group-related actions are implemented at the account level.
 
 Browsing past versions of objects should be available both at the object and the container level. At the object level, a list of past versions can be included in the screen showing details or more information on the object (metadata, permissions, etc.). At the container level, it is suggested that clients use a ``history`` element, which presents to the user a read-only, time-variable view of ``pithos`` contents. This can be accomplished via the ``until`` parameter in listings. Optionally, ``history`` may include ``trash``.
+
+Uploading and downloading data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By using hashmaps to upload and download objects the corresponding operations can complete much faster.
+
+In the case of an upload, only the missing blocks will be submitted to the server:
+
+* Calculate the hash value for each block of the object to be uploaded. Use the hash algorithm and block size of the destination container.
+* Send a hashmap ``PUT`` request for the object.
+
+  * Server responds with status ``201`` (Created):
+
+    * Blocks are already on the server. The object has been created. Done.
+
+  * Server responds with status ``409`` (Conflict):
+
+    * Server's response body contains the hashes of the blocks that do not exist on the server.
+    * For each one of the hash values in the server's response:
+
+      * Send a ``PUT`` request to the server with the corresponding data block. Individual blocks are uploaded to a file named ``.upload``.
+
+* Repeat hashmap ``PUT``. Fail if the server's response is not ``201``.
+
+Consulting hashmaps when downloading allows for resuming partially transferred objects. The client should retrieve the hashmap from the server and compare it with the hashmap computed from the respective local file. Any missing parts can be downloaded with ``GET`` requests with the additional ``Range`` header.
 
 Recommended Practices and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

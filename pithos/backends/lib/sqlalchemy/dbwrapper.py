@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 from sqlalchemy import create_engine
+#from sqlalchemy.event import listen
+from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.interfaces import PoolListener
 

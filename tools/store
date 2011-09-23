@@ -551,9 +551,6 @@ class MoveObject(Command):
     description = 'move an object to a different location'
     
     def add_options(self, parser):
-        parser.add_option('--version', action='store',
-                          dest='version', default=None,
-                          help='move a specific object version')
         parser.add_option('--public', action='store_true',
                           dest='public', default=False,
                           help='make object publicly accessible')
@@ -576,7 +573,7 @@ class MoveObject(Command):
         
         args = {'content_type':self.content_type} if self.content_type else {}
         self.client.move_object(src_container, src_object, dst_container,
-                                dst_object, meta, self.public, self.version, **args)
+                                dst_object, meta, self.public, **args)
 
 @cli_command('unset')
 class UnsetObject(Command):

@@ -931,20 +931,18 @@ class Pithos_Client(OOS_Client):
         headers = {}
         headers['x_object_public'] = public
         if version:
-            headers['x_object_version'] = version
+            headers['x_source_version'] = version
         return OOS_Client.copy_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
                                       account=account, content_type=content_type,
                                       **headers)
     
     def move_object(self, src_container, src_object, dst_container,
-                             dst_object, meta={}, public=False, version=None,
+                             dst_object, meta={}, public=False,
                              account=None, content_type=None):
         """moves an object"""
         headers = {}
         headers['x_object_public'] = public
-        if version:
-            headers['x_object_version'] = version
         return OOS_Client.move_object(self, src_container, src_object,
                                       dst_container, dst_object, meta=meta,
                                       account=account, content_type=content_type,

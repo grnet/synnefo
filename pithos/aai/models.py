@@ -43,10 +43,19 @@ class PithosUser(models.Model):
     affiliation = models.CharField('Affiliation', max_length=255, default='')
     quota = models.IntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation', auto_now_add=True)
-    auth_token_expires = models.DateTimeField('Time of auth token expiration', auto_now_add=True)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
+    auth_token_created = models.DateTimeField('Time of auth token creation')
+    auth_token_expires = models.DateTimeField('Time of auth token expiration')
+    created = models.DateTimeField('Time of creation')
+    updated = models.DateTimeField('Time of last update')
+    
+    def save(self, update_timestamps=True):
+        if update_timestamps:
+            if not self.id:
+                self.created = datetime.datetime.now()
+                self.auth_token_created = datetime.datetime.now()
+                self.auth_token_expires = datetime.datetime.now()
+            self.updated = datetime.datetime.now()
+        super(PithosUser, self).save()
     
     class Meta:
         verbose_name = u'Pithos User'

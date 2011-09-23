@@ -267,5 +267,27 @@
             "ram": 4096,
             "disk": 40
         }
+    },
+
+    {
+        "model": "db.Flavor",
+        "pk": 28,
+        "fields": {
+            "cpu": 2,
+            "ram": 4096,
+            "disk": 10
+        }
+    },
+
+    {
+        "model": "db.Flavor",
+        "pk": 29,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 10
+        }
     }
+
+
 ]

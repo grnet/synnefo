@@ -131,6 +131,13 @@
         return uri;
     }
 
+    synnefo.util.equalHeights = function() {
+        var max_height = 0;
+        var selectors = _.toArray(arguments);
+
+        // TODO: implement me
+    }
+
     synnefo.util.truncate = function(string, size, append, words) {
         if (string.length <= size) {
             return string;
@@ -224,6 +231,23 @@
         } catch (err) {}
         return "";
     },
+    
+    synnefo.util.array_combinations = function(arr) {
+        if (arr.length == 1) {
+            return arr[0];
+        } else {
+            var result = [];
+
+            // recur with the rest of array
+            var allCasesOfRest = synnefo.util.array_combinations(arr.slice(1));  
+            for (var i = 0; i < allCasesOfRest.length; i++) {
+                for (var j = 0; j < arr[0].length; j++) {
+                    result.push(arr[0][j] + "-" + allCasesOfRest[i]);
+                }
+            }
+            return result;
+        }
+    }
 
     synnefo.util.parse_api_error = function(arguments) {
         arguments = arguments[0];

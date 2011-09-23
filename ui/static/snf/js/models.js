@@ -128,7 +128,11 @@
         path: 'images',
 
         get_size: function() {
-            return this.get('metadata') ? this.get('metadata').values.size : undefined;
+            return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
+        },
+
+        get_os: function() {
+            return this.get("OS");
         }
     });
 
@@ -138,7 +142,12 @@
 
         details_string: function() {
             return "{0} CPU, {1}MB, {2}GB".format(this.get('cpu'), this.get('ram'), this.get('disk'));
-        }
+        },
+
+        get_disk_size: function() {
+            return parseInt(this.get("disk") * 1000)
+        },
+
     });
     
     //network vms list helper
@@ -1039,11 +1048,6 @@
 
         parse: function (resp, xhr) {
             // FIXME: depricated global var
-            window.networks = resp.networks ? resp.networks.values : {}; 
-            if (window.update_networks_view) {
-                update_networks_view(undefined, resp);
-            }
-
             if (!resp) { return []};
                
             var data = _.map(resp.networks.values, _.bind(this.parse_net_api_data, this));
@@ -1085,7 +1089,6 @@
 
         parse: function (resp, xhr) {
             // FIXME: depricated global var
-            window.images = resp.images.values;
             var data = _.map(resp.images.values, _.bind(this.parse_meta, this));
             return resp.images.values;
         },
@@ -1131,44 +1134,53 @@
 
         parse: function (resp, xhr) {
             // FIXME: depricated global var
-            window.flavors = resp.flavors.values;
             return resp.flavors.values;
         },
 
-        for_image: function(img) {
-            var size = parseInt(img.get("size"));
-            return _.select(this.active(), function(el) {
-                return parseInt(parseInt(el.get("disk")) * 1000) >= size;
-            })
+        unavailable_values_for_image: function(img, flavors) {
+            var flavors = flavors || this.active();
+            var size = img.get_size();
+            
+            var index = {cpu:[], disk:[], ram:[]};
+
+            _.each(this.active(), function(el) {
+                var img_size = size;
+                var flv_size = el.get_disk_size();
+                if (flv_size < img_size) {
+                    if (index.disk.indexOf(flv_size) == -1) {
+                        index.disk.push(flv_size);
+                    }
+                };
+            });
+            
+            return index;
         },
-        
+
         get_flavor: function(cpu, mem, disk, filter_list) {
             if (!filter_list) { filter_list = this.models };
             return this.select(function(flv){
                 if (flv.get("cpu") == cpu + "" &&
                    flv.get("ram") == mem + "" &&
                    flv.get("disk") == disk + "" &&
-                   filter_list.indexOf(flv) > -1)
-                {
-                    return true;
-                }
+                   filter_list.indexOf(flv) > -1) { return true; }
             })[0]
         },
-
+        
         get_data: function(lst) {
             var data = {'cpu': [], 'mem':[], 'disk':[]};
+
             _.each(lst, function(flv) {
-                if (data.cpu.indexOf(flv.cpu) == -1) {
-                    data.cpu[data.cpu.length] = flv.cpu;
+                if (data.cpu.indexOf(flv.get("cpu")) == -1) {
+                    data.cpu.push(flv.get("cpu"));
                 }
-                if (data.cpu.indexOf(flv.mem) == -1) {
-                    data.mem[data.mem.length] = flv.mem;
+                if (data.mem.indexOf(flv.get("ram")) == -1) {
+                    data.mem.push(flv.get("ram"));
                 }
-                if (data.disk.indexOf(flv.disk) == -1) {
-                    data.disk[data.disk.length] = flv.disk;
+                if (data.disk.indexOf(flv.get("disk")) == -1) {
+                    data.disk.push(flv.get("disk"));
                 }
             })
-
+            
             return data;
         },
 
@@ -1187,17 +1199,8 @@
         parse: function (resp, xhr) {
             // FIXME: depricated after refactoring
             var data = resp;
-            if (data && data.servers && data.servers.values.length > 0) {
-                if (window.update_servers_data) {
-                    update_servers_data(data.servers.values, data)
-                }
-                if (window.update_machines_view) {
-                    update_machines_view(data);
-                    //update_network_names(data);
-                }
-            }
             if (!resp) { return [] };
-            data = _.map(resp.servers.values, _.bind(this.parse_vm_api_data, this));
+            data = _.filter(_.map(resp.servers.values, _.bind(this.parse_vm_api_data, this)), function(v){return v});
             return data;
         },
         
@@ -1224,6 +1227,15 @@
         },
 
         parse_vm_api_data: function(data) {
+
+            // do not add non existing DELETED entries
+            if (data.status && data.status == "DELETED") {
+                if (!this.get(data.id)) {
+                    console.error("non exising deleted vm", data)
+                    return false;
+                }
+            }
+
             // OS attribute
             if (this.has_meta(data)) {
                 data['OS'] = data.metadata.values.OS || "undefined";

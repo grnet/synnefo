@@ -1231,7 +1231,7 @@ button.prev:hover {
     margin-top: 4px;
 }
 
-div.image {
+.icon div.image {
     clear: both;
     display: block;
     margin-bottom: 3px;
@@ -4769,30 +4769,6 @@ table.list-machines .wave {
     color: #fff;
 }
 
-#createvm-overlay-content {
-    padding: 0;
-}
-
-.create-vm .header-step.current {
-    font-weight: bold;
-}
-
-.create-vm .create-step-cont {
-    margin: 20px;
-    min-height: 240px;
-}
-.create-vm .create-controls {
-    padding: 10px;
-}
-
-.create-vm ul li {
-    cursor: pointer;
-    padding: 4px;
-}
-
-.create-vm ul li.selected {
-    background-color: #aaa;
-}
 
 .cont-toggler {
     background-image: url("./down-arrow.png");
@@ -4901,4 +4877,354 @@ table.list-machines .wave {
     background-repeat: no-repeat;
     background-position: center center;
     color: transparent;
+}
+
+#createvm-overlay-content {
+    padding: 0;
+}
+
+.create-vm .image-details.selected .size {
+    color: #eee;
+}
+
+.create-vm .image-details p {
+    font-size: 0.8em;
+    padding-left: 27px;
+    display:block;
+}
+
+.create-vm .image-details .size {
+    margin-top: 2px;
+    font-size: 0.8em;
+    color: #aaa;
+    position: absolute;
+    right:5px;
+    top: 5px;
+}
+
+.create-vm .step-cont {
+    margin: 15px;
+}
+
+.create-vm .create-step-cont {
+    min-height: 250px;
+    float: left;
+    width: 584px;
+}
+
+.create-vm .create-controls {
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.create-vm .empty {
+    font-size: 0.8em;
+    color: #444;
+}
+
+.create-vm h4 {
+    color: #5CA1C0;
+    margin-bottom: 0.5em;
+    font-family: arial;
+}
+.create-vm ul li {
+    cursor: pointer;
+    padding: 4px;
+    font-size: 0.9em;
+}
+
+.create-vm ul li.selected {
+    background-color: #5CA1C0;
+    color: #fff;
+}
+
+.create-vm .images-list-cont {
+    width: 40%;
+    float: left;
+    padding-left: 3%;
+    padding-right: 3%;
+}
+
+.create-vm .images-filter-cont, .create-vm .flavors-predefined-cont {
+    width: 18%;
+    padding-right: 4%;
+    float:left;
+    border-right: 1px solid #A1C8DB;
+    overflow: auto;
+}
+
+.create-vm .flavor-options-cont {
+    width: 74%;
+    float: left;
+    margin-left: 20px;
+}
+
+.create-vm .flavor-options-cont .flavor-options li:hover {
+    background-image:-webkit-linear-gradient(top, #E8F4FA, #D1E7F0);
+    background-image:linear-gradient(top, #E8F4FA, #D1E7F0);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#E8F4FA', endColorstr='#D1E7F0', GradientType=0);
+}
+
+.create-vm .flavor-options-cont .flavor-options li.disabled * {
+    color: #eee !important;
+}
+
+.create-vm .flavor-options-cont .flavor-options li.disabled {
+    background-image:linear-gradient(top, #aaa, #ddd);
+    background-image:-webkit-linear-gradient(top, #aaa, #ddd);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#aaaaaa', endColorstr='#dddddd', GradientType=0);
+}
+
+.create-vm .flavor-options-cont .flavor-options li.selected {
+    background-image:linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FF9955', endColorstr='#5CA1C0', GradientType=0);
+    border: 1px solid #C97943;
+}
+
+.create-vm .predefined-list li.disabled {
+    color: #ddd !important;
+}
+
+.create-vm .flavor-options-cont .flavor-options li {
+    display: block;
+    float: left;
+    margin-right: 10px;
+    padding: 10px 15px;
+    border: 1px solid #aaa;
+    background-image:-webkit-linear-gradient(top, #D1E7F0, #E8F4FA);
+    background-image:linear-gradient(top, #D1E7F0, #E8F4FA);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#D1E7F0', endColorstr='#E8F4FA', GradientType=0);
+}
+
+.create-vm .flavor-options-cont .flavor-options {
+    margin-bottom: 25px;
+}
+
+.create-vm .flavor-options .metric {
+    font-size: 0.8em;
+    margin-left: 2px;
+}
+
+.create-vm .flavor-options span.title {
+    color: #444;
+}
+
+.create-vm .flavor-options span.desc {
+    display: block;
+    color: #aaa;
+    font-weight: normal;
+    font-size: 0.8em;
+    float: right;
+    margin-top: 4px;
+}
+
+.create-vm .flavor-options .selected .value {
+    color: #FFF;
+}
+
+.create-vm .flavor-options .value {
+    font-weight: bold;
+    color: #5CA1C0;
+}
+
+.create-vm .flavor-options-cont h4 {
+    border-bottom: 1px solid #A1C8DB;
+    padding-bottom: 5px;
+}
+
+.create-vm .images-info-cont {
+    width: 28%;
+    padding-left: 3%;
+    float: left;
+    border-left: 1px solid #A1C8DB;
+}
+
+.create-vm .images-info-cont h4 {
+    color: #FF9955;
+    margin-bottom: 1em;
+    font-size: 1.2em;
+}
+
+.create-vm .images-info-cont span.title {
+    color: #4085A5;
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.8em;
+}
+
+.create-vm .type-filter li {
+    font-size: 0.8em;
+    font-weight: bold;
+    padding: 4px;
+    margin-bottom: 0px;
+    
+}
+
+.create-vm .images-list .image-details:hover {
+    background-color: #eee;
+}
+
+.create-vm .images-list .image-details.selected:hover {
+    background-color: #5CA1C0;
+}
+
+.create-vm .images-list .image-details.selected {
+    /*font-weight: bold;*/
+}
+
+.create-vm .images-list .image-details {
+    padding: 6px;
+    margin-bottom:4px;
+    position: relative;
+}
+
+.create-vm .images-list .image-details img {
+    vertical-align: middle;
+    margin-right: 10px;
+}
+
+.create-vm .images-info-cont .image-detail:last-child p {
+    border-bottom: none;
+}
+
+.create-vm .images-info-cont h4 img {
+    vertical-align: middle;
+    margin-right: 7px;
+    margin-bottom: 5px;
+}
+
+.create-vm .images-info-cont .description p {
+    font-size: 0.8em;
+}
+
+.create-vm .images-info-cont p {
+    margin-bottom: 7px;
+    font-size: 0.9em;
+    border-bottom: 1px solid #A1C8DB;
+    padding-bottom: 7px;
+}
+
+.create-vm .step-header {
+    padding: 10px;
+    padding-bottom:0;
+    margin-bottom: 10px;
+    background-color: #A1C8DB;
+    border-bottom: 1px solid #aaa;
+    position: relative;
+}
+
+.create-vm .step-header .header-step .info span.subtitle {
+    font-size: 1.2em;
+    color: #fff;
+    font-weight: bold;
+}
+
+.create-vm .step-header .header-step .info span {
+    float: none;
+    text-align: right;
+}
+
+.create-vm .step-header .header-step .info {
+    position: absolute;
+    right: 15px;
+    top: 20px;
+    font-size: 0.8em;
+}
+
+.create-vm .step-header .header-step span {
+    float: left;
+    display: block;
+}
+
+.create-vm .steps-container {
+    width: 2000em;
+}
+
+.create-vm .step-header .header-step .title {
+    margin-top: 20px;
+    font-size: 1em;
+    margin-left: 10px;
+}
+
+#createvm-overlay-content {
+    width: 584px;
+    overflow: hidden;
+}
+
+.create-vm .step-header .header-step .num {
+    font-size: 4em;
+    margin-bottom: -5px;
+    font-family: 'Ubuntu';
+    font-weight: normal !important;
+}
+
+.create-vm .step-header .header-step {
+    color: #DCEBF1;
+    margin-bottom: -6px;
+    width: 25%;
+    padding-left: 0%;
+    display: block;
+    float: left;
+}
+
+.create-vm .step-header .header-step.current {
+    color: #387693;
+}
+
+.create-vm .image-filters-title {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.create-vm .create-step-cont span.clear {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #A1C8DB;
+    display: block;
+}
+
+.create-vm .category-filters li {
+    float:left;
+    display: block;
+    padding: 4px;
+    background-color: #eee;
+    margin-right: 5px;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.create-vm .vm-confirm .rename input {
+    font-size: 1.4em;
+    padding: 1%;
+    width: 93%;
+    padding-left: 30px;
+    background-position: 7px center;
+    background-repeat: no-repeat;
+}
+
+.create-vm .vm-confirm .rename label {
+    display: block;
+}
+
+.create-vm .vm-confirm .confirm-conts {
+    margin-top: 20px;
+}
+
+.create-vm .vm-confirm .confirm-cont {
+    width: 30%;
+    margin-right: 2%;
+    border-right: 1px solid #A1C8DB;
+    float: left;
+}
+
+.create-vm .vm-confirm .confirm-cont. ul li {
+    padding:0;
+    margin:0;
+    margin-bottom: 5px;
+}
+
+.create-vm .vm-confirm .confirm-cont.meta {
+    margin-right:0;
+    border-right: none;
 }

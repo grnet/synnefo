@@ -1,0 +1,46 @@
+[
+    {
+        "model": "db.SynnefoUser",
+        "pk": 1,
+        "fields": {
+            "name": "testdbuser",
+            "realname" :"test db user",
+            "uniq" :"test@synnefo.gr",
+            "credit": 10,
+            "auth_token": "46e427d657b20defe352804f0eb6f8a2",
+            "auth_token_created": "2011-05-10",
+            "auth_token_expires": "2015-05-10",
+            "type": "ADMIN",
+            "created": "2011-05-10",
+            "max_invitations" : 1000
+   	    }
+    },
+    {
+        "model": "db.SynnefoUser",
+        "pk": 2,
+        "fields": {
+            "name": "helpdesk",
+            "realname" :"HelpDesk user",
+            "uniq" :"helpdesk@synnefo.grnet.gr",
+            "credit": 10,
+            "auth_token": "839636858b1feafd37010f05dc4582e2",
+            "auth_token_created": "2011-05-10",
+            "auth_token_expires": "2015-05-10",
+            "type": "HELPDESK",
+            "created": "2011-05-10",
+            "max_invitations" : 10
+   	    }
+    },
+    {
+        "model" : "db.Invitations",
+        "pk" : 1,
+        "fields": {
+            "source": 1,
+            "target": 1,
+            "accepted": "True",
+            "level" : -1,
+            "created": "2011-06-01",
+            "updated": "2011-06-01"
+        }
+    }
+] 

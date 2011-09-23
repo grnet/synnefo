@@ -301,16 +301,18 @@ Synnefo deployment.
 
 7. Initialization of Synnefo DB:
    You need to initialize the Synnefo DB and load fixtures
-   db/fixtures/{flavors,images}.json, which make the API usable by end users by
-   defining a sample set of hardware configurations (flavors) and OS images.
+   db/fixtures/{users,flavors,images}.json, which make the API usable by end
+   users by defining a sample set of users, hardware configurations (flavors)
+   and OS images.
 
-   IMPORTANT: Be sure to modify db/fixtures/initial_data.json and select
+   IMPORTANT: Be sure to modify db/fixtures/users.json and select
    a unique token for each of the initial and any other users defined in this
    file. DO NOT LEAVE THE SAMPLE AUTHENTICATION TOKENS enabled in deployed
    configurations.
 
      $ ./bin/python manage.py syncdb
      $ ./bin/python manage.py migrate db
+     $ ./bin/python manage.py loaddata db/fixtures/users.json
      $ ./bin/python manage.py loaddata db/fixtures/flavors.json
      $ ./bin/python manage.py loaddata db/fixtures/images.json
 

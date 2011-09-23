@@ -4,6 +4,12 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+v0.6.2 -> v0.6.3
+
+    * MAX_PERSONALITY and MAX_PERSONALITY_SIZE settings were added in
+      20-api.conf.
+
+
 v0.6.1 -> v0.6.2
 
 API-CURRENT

@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from base64 import b64decode
+
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
@@ -208,11 +210,24 @@ def create_server(request):
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
         assert isinstance(personality, list)
-        for p in personality:
-            assert isinstance(p, dict)
-            assert set(p.keys()) == set(['path', 'contents'])
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
+    
+    if len(personality) > settings.MAX_PERSONALITY:
+        raise faults.OverLimit("Maximum number of personalities exceeded")
+    
+    for p in personality:
+        try:
+            assert isinstance(p, dict)
+            assert set(p.keys()) == set(['path', 'contents'])
+            contents = p['contents']
+            if len(contents) > settings.MAX_PERSONALITY_SIZE:
+                # No need to decode if contents already exceed limit
+                raise faults.OverLimit("Maximum size of personality exceeded")
+            if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
+                raise faults.OverLimit("Maximum size of personality exceeded")
+        except AssertionError:
+            raise faults.BadRequest("Malformed personality in request")
     
     image = util.get_image(image_id, owner)
     flavor = util.get_flavor(flavor_id)

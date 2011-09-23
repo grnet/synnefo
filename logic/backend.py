@@ -247,11 +247,14 @@ def create_instance(vm, flavor, image, password, personality):
         'auto_balance': True,
         'vcpus': flavor.cpu,
         'memory': flavor.ram}
-    if personality:
-        kw['beparams']['personality'] = json.dumps(personality)
     
-    kw['osparams'] = dict(img_id=image.backend_id, img_passwd=password,
-                         img_format=image.format)
+    kw['osparams'] = {
+        'img_id': image.backend_id,
+        'img_passwd': password,
+        'img_format': image.format}
+    if personality:
+        kw['osparams']['img_personality'] = json.dumps(personality)
+    
     # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
 

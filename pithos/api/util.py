@@ -36,6 +36,7 @@ from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
 from binascii import hexlify, unhexlify
+from datetime import datetime, tzinfo, timedelta
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -50,7 +51,6 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Ite
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError
 
-import datetime
 import logging
 import re
 import hashlib
@@ -59,6 +59,21 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+
+class UTC(tzinfo):
+   def utcoffset(self, dt):
+       return timedelta(0)
+
+   def tzname(self, dt):
+       return 'UTC'
+
+   def dst(self, dt):
+       return timedelta(0)
+
+def isoformat(d):
+   """Return an ISO8601 date string that includes a timezone."""
+
+   return d.replace(tzinfo=UTC()).isoformat()
 
 def rename_meta_key(d, old, new):
     if old not in d:
@@ -73,7 +88,7 @@ def printable_header_dict(d):
     Format 'last_modified' timestamp.
     """
     
-    d['last_modified'] = datetime.datetime.fromtimestamp(int(d['last_modified'])).isoformat()
+    d['last_modified'] = isoformat(datetime.fromtimestamp(int(d['last_modified'])))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 def format_header_key(k):

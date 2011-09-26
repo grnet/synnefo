@@ -3712,26 +3712,69 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-top: 5px;
 }
 
+.invitations #errors {
+    padding: 5px;
+    background-color: #800000;
+}
+
 .invitations #errors p {
     margin-bottom: 10px;
     font-size: 0.95em;
+    padding-top:0;
+    margin-top:0;
+    color: #fff;
 }
 
 .invitations #errors li {
     font-size: 0.85em;
-    color: #800000;
+    color: #ddd;
 }
 
 .invitations #errors {
     font-size: 100%;
-    color: #f00;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+}
+
+#invsent {
+    padding-top: 10px;
+}
+
+#invsent h3.overlay-inner-title {
+    font-size: 1.2em;
+    font-weight: normal;
+    border-bottom: 1px solid #B0D0E0;
+}
+
+#invsent .icons-info img {
+    vertical-align: middle;
+}
+
+#invsent .icons-info {
+    margin-top: 10px;
+    font-size: 0.7em;
+}
+
+#invsent .icons-info span {
+    margin-right: 10px;
+}
+
+.notification-box .invitations {
+    padding-bottom: 0;
+}
+.notification-box .invitations .sub-text {
+    display: none;
+}
+
+h3.overlay-inner-title {
+    color: #4085A5;
+    font-size: 2em;
 }
 
 #invsent .message {
     font-size: 0.9em;
-    padding: 5px;
-    margin-top: 10px;
+    padding: 5px 0;
+    margin-top: 5px;
+    margin-bottom: -10px;
     color: #5CAD54;
 }
 
@@ -3743,12 +3786,16 @@ div.state .shutdown, tbody.machines .shutdown {
     margin-bottom: 10px;   
 }
 
+.remove-field-trigger, .add-field-trigger {
+    cursor: pointer;
+}
+
 .add-field-trigger img {
     vertical-align: middle;
 }
 
 .invitations form {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 #invsent h3 {
@@ -3765,7 +3812,7 @@ div.state .shutdown, tbody.machines .shutdown {
 }
 
 #invsent ul {
-    margin-top: 10px;
+    margin-top: 3px;
 }
 
 #invsent li {

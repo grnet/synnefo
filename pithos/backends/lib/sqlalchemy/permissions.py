@@ -142,7 +142,7 @@ class Permissions(XFeatures, Groups, Public):
         """Return the list of shared paths."""
         
         s = select([self.xfeatures.c.path],
-            self.xfeatures.c.path.like(prefix + '%'))
+            self.xfeatures.c.path.like(prefix + '%')).order_by(self.xfeatures.c.path.asc())
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()

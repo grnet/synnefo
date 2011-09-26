@@ -773,7 +773,8 @@
             //this.$(".create-step-cont").hide();
             var width = this.el.find('.container').width();
             var left = (step -1) * width * -1;
-            this.$(".steps-container").css({"margin-left":left + "px"});
+            this.$(".steps-container").animate({"margin-left": left + "px"}, 300);
+            //this.$(".steps-container").css({"margin-left":left + "px"});
             
             this.steps[step].show();
             this.current_step = step;

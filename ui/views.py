@@ -51,6 +51,8 @@ UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 SUGGESTED_FLAVORS = getattr(settings, "SUGGESTED_FLAVORS", {})
+SUGGESTED_ROLES = getattr(settings, "SUGGESTED_ROLES",
+        ["Database server", "File server", "Mail server", "Web server", "Proxy", "CI server", "Leeching machine"])
 VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
 
@@ -69,6 +71,7 @@ def home(request):
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
+               'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
                'invitations_per_page': INVITATIONS_PER_PAGE,
                'DEBUG': settings.DEBUG}

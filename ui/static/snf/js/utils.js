@@ -134,7 +134,10 @@
     synnefo.util.equalHeights = function() {
         var max_height = 0;
         var selectors = _.toArray(arguments);
-
+            
+        _.each(selectors, function(s){
+            console.log($(s).height());
+        })
         // TODO: implement me
     }
 

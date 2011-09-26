@@ -4945,6 +4945,11 @@ table.list-machines .wave {
     padding-right: 3%;
 }
 
+.create-vm li.role .values .val.selected {
+    color: #fff;
+    background-color: #5CA1C0;
+}
+
 .create-vm .images-filter-cont, .create-vm .flavors-predefined-cont {
     width: 18%;
     padding-right: 4%;
@@ -4976,6 +4981,7 @@ table.list-machines .wave {
 }
 
 .create-vm .flavor-options-cont .flavor-options li.selected {
+    background-color: #FF9955;
     background-image:linear-gradient(top, #FF9955, #E88B4D);
     background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FF9955', endColorstr='#5CA1C0', GradientType=0);
@@ -5040,7 +5046,7 @@ table.list-machines .wave {
     border-left: 1px solid #A1C8DB;
 }
 
-.create-vm .images-info-cont h4 {
+.create-vm .images-info-cont h4, .create-vm .vm-confirm .param h4{
     color: #FF9955;
     margin-bottom: 1em;
     font-size: 1.2em;
@@ -5194,9 +5200,18 @@ table.list-machines .wave {
     margin-bottom: 5px;
 }
 
-.create-vm .vm-confirm .rename input {
+.create-vm .content-cont {
+    height: 340px;
+    overflow: auto;
+}
+
+.confirm-cont {
+    height: 250px;
+}
+
+.create-vm .vm-confirm .rename input.rename-field {
     font-size: 1.4em;
-    padding: 1%;
+    padding: 5px;
     width: 93%;
     padding-left: 30px;
     background-position: 7px center;
@@ -5218,13 +5233,90 @@ table.list-machines .wave {
     float: left;
 }
 
-.create-vm .vm-confirm .confirm-cont. ul li {
+.create-vm .vm-confirm .confirm-cont ul li {
     padding:0;
     margin:0;
     margin-bottom: 5px;
+    border-bottom: 1px solid #EEE;
+    padding-bottom: 9px;
+    margin-right: 10px;
+}
+
+.create-vm .vm-confirm .confirm-cont.meta h4 {
+    margin-right: 0;
 }
 
 .create-vm .vm-confirm .confirm-cont.meta {
     margin-right:0;
     border-right: none;
+    width: 195px;
+}
+
+.create-vm .confirm-cont > h4 {
+    font-size: 1.2em;
+    margin-right: 10px;
+    border-bottom: 1px solid #A1C8DB;
+    padding-bottom: 5px;
+    color: #387693;
+}
+
+.create-vm .confirm-cont .param.image-name {
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
+}
+
+.create-vm .confirm-cont .param h4 {
+    margin-bottom: 0px !important;
+    font-size: 1.1em !important; 
+}
+
+.create-vm .confirm-cont .param {
+    margin-bottom: 10px !important;
+}
+
+.create-vm .confirm-cont .value {
+    font-weight: bold;
+}
+
+.create-vm .confirm-cont .param .value {
+    font-size: 0.9em;
+}
+
+.create-vm .confirm-cont .param .title {
+    color: #387693;
+}
+
+.create-vm .confirm-cont .image-description {
+    margin-left:0;
+}
+
+.create-vm .confirm-cont .image-description .value {
+    font-weight: normal;
+    margin-left: 0 !important;
+}
+
+.create-vm .confirm-cont .image-description .title {
+    display: none;
+    font-size: 0.8em;
+}
+
+.create-vm .confirm-cont.meta .values span {
+    display:block;
+    float: left;
+    margin-right: 4px;
+    border: 1px solid #eee;
+    padding:3px;
+    margin-bottom: 4px;
+    font-size: 0.8em;
+}
+
+.create-vm .confirm-cont.meta .key {
+    font-weight: bold;
+    font-size: 0.9em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.create-vm .meta input {
+    font-size: 0.8em;
 }

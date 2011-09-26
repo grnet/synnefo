@@ -19,7 +19,7 @@
                 </span>
             </div>
             <div class="step-cont clearfix">
-                <div class="images-filter-cont">
+                <div class="images-filter-cont content-cont">
                     <div class="images-filters">
                         <div class="image-types-cont">
                             <h4>Image type</h4>
@@ -36,13 +36,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="images-list-cont">
+                <div class="images-list-cont content-cont">
                     <h4>{% trans "Available images" %}</h4>
                         <ul class="images-list">
                         </ul>
                         <span class="empty">{% trans "no images available" %}</span>
                 </div>
-                <div class="images-info-cont">
+                <div class="images-info-cont content-cont">
                     <h4>Image title</h4>
                     <div class="image-detail description">
                         <span class="title">{% trans "Description" %}</span>
@@ -85,14 +85,14 @@
                 </span>
             </div>
             <div class="step-cont clearfix">
-                <div class="flavors-predefined-cont">
+                <div class="flavors-predefined-cont content-cont"> 
                     <div class="flavors-predefined">
                         <h4>{% trans "Predefined" %}</h4>
                         <ul class="predefined-list">
                         </ul>
                     </div>
                 </div>
-                <div class="flavor-options-cont">
+                <div class="flavor-options-cont content-cont">
                     <div class="flavor-options-inner-cont clearfix">
                         <div class="flavor-options cpu clearfix">
                             <h4 class="clearfix"><span class="title">{% trans "CPUs" %}</span>
@@ -142,7 +142,8 @@
                         <h4>
                             <label for="create-vm-name">{% trans "Machine name" %}</label>
                         </h4>
-                        <input type="text" name="create-vm-name" id="create-vm-name" />
+                        <input type="text" name="create-vm-name"
+                        class="rename-field" id="create-vm-name" />
                     </div>
                     
                     <div class="confirm-conts clearfix">
@@ -177,19 +178,33 @@
                         <div class="confirm-cont flavor">
                             <h4>{% trans "Flavor" %}</h4>
                             <ul class="confirm-params">
-                                <li class="param cpu">
-                                    <span class="key">{% trans "Image" %}</span>
+                                <li class="param flavor-cpu">
+                                    <span class="title">{% trans "CPUs" %}</span>
+                                    <span class="value"></span>
+                                </li>
+                                <li class="param flavor-ram">
+                                    <span class="title">{% trans "Memory" %}</span>
+                                    <span class="value"></span>
+                                </li>
+                                <li class="param flavor-disk">
+                                    <span class="title">{% trans "Disk" %}</span>
                                     <span class="value"></span>
                                 </li>
                             </ul>
                         </div>
                         <div class="confirm-cont meta">
-                            <h4>{% trans "Metadata" %}</h4>
+                            <h4>{% trans "Personalize" %}</h4>
                             <ul class="confirm-params">
-                                <li class="param cpu">
-                                    <span class="key">{% trans "Image" %}</span>
-                                    <span class="value"></span>
+                                <li class="predefined-meta role">
+                                    <span class="key">{% trans "Role" %}</span>
+                                    <div class="values clearfix">
+                                    </div>
                                 </li>
+                                <!--<li class="predefined-meta clearfix">-->
+                                    <!--<span class="key">{% trans "Public key" %}</span>-->
+                                    <!--<input type="file"/>-->
+                                    <!--<textarea height="20"></textarea>-->
+                                <!--</li>-->
                             </ul>
                         </div>
                     </div>

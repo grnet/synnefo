@@ -88,6 +88,7 @@
             views.CreateImageSelectView.__super__.initialize.apply(this, arguments);
 
             // elements
+            this.images_list_cont = this.$(".images-list-cont");
             this.images_list = this.$(".images-list-cont ul");
             this.image_details = this.$(".images-info-cont");
             this.image_details_desc = this.$(".images-info-cont .description p");
@@ -199,7 +200,7 @@
                 this.image_details_os.text(_(image.get("OS")).capitalize());
                 this.image_details_kernel.text(image.get("kernel"));
 
-                var size = util.readablizeBytes(parseInt(image.get("size")) * 1000000);
+                var size = util.readablizeBytes(parseInt(image.get("size")) * 1024 * 1024);
                 this.image_details_size.text(size);
                 this.image_details_gui.text(image.get("GUI"));
 
@@ -227,12 +228,10 @@
                 self.select_image($(this).data("image"));
             });
             
-            util.equalHeights(this.$(".images-filter-cont"), this.$(".images-list-cont"), this.$(".images-info-cont"));
         },
 
         show: function() {
             views.CreateImageSelectView.__super__.show.apply(this, arguments);
-            util.equalHeights(this.$(".images-filter-cont"), this.$(".images-list-cont"), this.$(".images-info-cont"));
         },
 
         add_image: function(img) {
@@ -242,7 +241,7 @@
                            '</span></li>').format(img.get("name"), 
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.get("OS")),
-                                                  util.readablizeBytes(parseInt(img.get("size"))*1000000),
+                                                  util.readablizeBytes(parseInt(img.get("size"))* 1024 * 1024),
                                                   util.truncate(img.get("description"),35)));
             image.data("image", img);
             image.data("image_id", img.id);
@@ -407,7 +406,7 @@
             if (!this.unavailable_values) { return }
 
             this.$(".flavor-options.disk li").each(_.bind(function(i, el){
-                var el_value = $(el).data("value") * 1000;
+                var el_value = $(el).data("value") * 1024;
                 if (this.unavailable_values.disk.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
                 };
@@ -518,10 +517,28 @@
         step: 3,
         initialize: function() {
             views.CreateSubmitView.__super__.initialize.apply(this, arguments);
+            this.roles = this.$("li.predefined-meta.role .values");
             this.confirm = this.$(".confirm-params ul");
-            this.name = this.$("input");
+            this.name = this.$("input.rename-field");
             this.name_changed = false;
+            this.init_suggested_roles();
             this.init_handlers();
+        },
+
+        init_suggested_roles: function() {
+            var cont = this.roles;
+            cont.empty();
+            
+            // TODO: get suggested from snf.api.conf
+            _.each(window.SUGGESTED_ROLES, function(r){
+                var el = $('<span class="val">{0}</span>'.format(r));
+                el.data("value", r);
+                cont.append(el);
+                el.click(function() {
+                    $(this).parent().find(".val").removeClass("selected");
+                    $(this).toggleClass("selected");
+                })
+            })
         },
 
         init_handlers: function() {
@@ -542,17 +559,35 @@
             this.update_layout();
         },
         
+        update_flavor_details: function() {
+            var flavor = this.parent.get_params().flavor;
+
+            function set_detail(sel, key) {
+                var val = key;
+                if (key == undefined) { val = flavor.get(sel) };
+                this.$(".confirm-cont.flavor .flavor-" + sel + " .value").text(val)
+            }
+            
+            set_detail("cpu");
+            set_detail("ram", flavor.get("ram") + " MB");
+            set_detail("disk", util.readablizeBytes(flavor.get("disk") * 1024 * 1024 * 1024));
+        },
+
         update_image_details: function() {
             var image = this.parent.get_params().image;
 
-            function set_img_detail(sel, key) {
-                if (!key) { key = image.get(key) };
-                this.$(".confirm-cont.image .image-" + sel + " .value").text(key)
+            function set_detail(sel, key) {
+                var val = key;
+                if (key == undefined) { val = image.get(sel) };
+                this.$(".confirm-cont.image .image-" + sel + " .value").text(val)
             }
             
-            set_img_detail("description");
-            set_img_detail("name");
-            set_img_detail("os", image.get("OS"));
+            set_detail("description");
+            set_detail("name");
+            set_detail("os", image.get("OS"));
+            set_detail("gui", image.get("GUI"));
+            set_detail("size", util.readablizeBytes(image.get_size() * 1024 * 1024));
+            set_detail("kernel");
         },
 
         update_layout: function() {
@@ -588,15 +623,32 @@
             this.name.css({backgroundImage:"url({0})".format(img)})
 
             this.update_image_details();
+            this.update_flavor_details();
         },
 
         reset: function() {
+            this.roles.find(".val").removeClass("selected");
             this.name_changed = false;
             this.update_layout();
         },
 
+        get_meta: function() {
+            if (this.roles.find(".selected").length == 0) {
+                return false;
+            }
+
+            var role = $(this.roles.find(".selected").get(0)).data("value");
+            return {'Role': role }
+        },
+
         get: function() {
-            return {'name': this.name.val() };
+            var val = {'name': this.name.val() };
+            if (this.get_meta()) {
+                val.metadata = this.get_meta();
+            }
+            
+            console.log(val, this.get_meta());
+            return val;
         }
     });
 
@@ -664,10 +716,12 @@
         submit: function() {
             if (this.submiting) { return };
             var data = this.get_params();
+            var meta = {};
             if (this.validate(data)) {
                 this.submit_btn.addClass("in-progress");
                 this.submiting = true;
-                storage.vms.create(data.name, data.image, data.flavor, {}, {}, _.bind(function(data){
+                if (data.metadata) { meta = data.metadata; }
+                storage.vms.create(data.name, data.image, data.flavor, meta, {}, _.bind(function(data){
                     this.close_all();
                     this.password_view.show(data.server.adminPass, data.server.id);
                     this.submiting = false;

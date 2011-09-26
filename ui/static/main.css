@@ -4784,7 +4784,6 @@ table.list-machines .wave {
 }
 
 .create-vm .create-step-cont {
-    margin: 20px;
     min-height: 240px;
 }
 .create-vm .create-controls {

@@ -611,7 +611,7 @@
             }
 
             this.confirm.find("li.image .value").text(params.flavor.get("image"));
-            this.confirm.find("li.cpu .value").text(params.flavor.get("cpu"));
+            this.confirm.find("li.cpu .value").text(params.flavor.get("cpu") + "x");
             this.confirm.find("li.mem .value").text(params.flavor.get("ram"));
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 

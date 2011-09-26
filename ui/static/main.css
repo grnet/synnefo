@@ -4945,7 +4945,10 @@ table.list-machines .wave {
     padding-right: 3%;
 }
 
-.create-vm li.role .values .val.selected {
+.create-vm li.role .values .val:hover {
+    background-color: #eee;
+}
+.create-vm li.role .values .val.selected,  .create-vm li.role .values .val.selected:hover {
     color: #fff;
     background-color: #5CA1C0;
 }
@@ -5307,7 +5310,7 @@ table.list-machines .wave {
     border: 1px solid #eee;
     padding:3px;
     margin-bottom: 4px;
-    font-size: 0.8em;
+    font-size: 0.9em;
 }
 
 .create-vm .confirm-cont.meta .key {

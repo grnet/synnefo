@@ -716,6 +716,16 @@
     });
 
     snf.ui.main = new views.MainView();
+    
+    snf.ui.logout = function() {
+        $.cookie("X-Auth-Token", null);
+        if (window.LOGOUT_REDIRECT !== undefined)
+        {
+            window.location = window.LOGOUT_REDIRECT;
+        } else {
+            window.location.reload();
+        }
+    }
 
     snf.ui.init = function() {
         snf.ui.main.load();

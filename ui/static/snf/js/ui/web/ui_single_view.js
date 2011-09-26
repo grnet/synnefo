@@ -178,8 +178,10 @@
             vm = storage.vms.at(index);
             if (!vm) {
                 // empty list
+                this.$(".column3").hide();
                 return;
             }
+            this.$(".column3").show();
 
             if (vm) {
                 this.vm(vm).show();

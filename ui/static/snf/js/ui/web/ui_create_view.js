@@ -386,7 +386,6 @@
             //console.log(flv);
             //if (!this.flavor_is_valid(flv)) { flv = undefined };
             
-            console.log(flv);
             this.current_flavor = flv;
             this.trigger("change");
             this.update_selected_flavor();

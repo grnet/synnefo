@@ -354,6 +354,9 @@
             var xhr = arguments[0];
             var args = util.parse_api_error(arguments);
             
+            // force logout if UNAUTHORIZED request arrives
+            if (args.code == 401) { snf.ui.logout(); return };
+
             var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
             this.error_view.show_error.apply(this.error_view, error_entry);
         },

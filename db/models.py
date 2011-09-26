@@ -143,6 +143,7 @@ class ImageMetadata(models.Model):
     image = models.ForeignKey(Image)
     
     class Meta:
+        unique_together = (('meta_key', 'image'),)
         verbose_name = u'Key-value pair of Image metadata.'
     
     def __unicode__(self):
@@ -410,6 +411,7 @@ class VirtualMachineMetadata(models.Model):
     vm = models.ForeignKey(VirtualMachine)
     
     class Meta:
+        unique_together = (('meta_key', 'vm'),)
         verbose_name = u'Key-value pair of metadata for a VM.'
     
     def __unicode__(self):

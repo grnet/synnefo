@@ -8,6 +8,8 @@ v0.6.2 -> v0.6.3
 
     * MAX_PERSONALITY and MAX_PERSONALITY_SIZE settings were added in
       20-api.conf.
+    * Uniqueness constraints have been added to the metadata models.
+      A database migration is needed.
 
 
 v0.6.1 -> v0.6.2

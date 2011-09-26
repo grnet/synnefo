@@ -956,6 +956,7 @@
         'start',
         'shutdown',
         'reboot',
+        'console',
         'destroy'
     ]
 

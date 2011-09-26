@@ -230,6 +230,7 @@ class ModularBackend(BaseBackend):
             return allowed[start:start + limit]
         if shared:
             allowed = [x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)]
+            allowed = list(set(allowed))
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
         node = self.node.node_lookup(account)

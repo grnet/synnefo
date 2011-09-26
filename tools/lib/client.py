@@ -424,7 +424,7 @@ class OOS_Client(Client):
         account = account or self.account
         path = '/%s/%s/%s' % (account, container, object)
         for k, v  in headers.items():
-            if not v:
+            if v == None:
                 headers.pop(k)
         
         l = ['etag', 'content_encoding', 'content_disposition', 'content_type']
@@ -456,7 +456,7 @@ class OOS_Client(Client):
         account = account or self.account
         path = '/%s/%s/%s' % (account, container, object)
         for k, v  in headers.items():
-            if not v:
+            if v == None:
                 headers.pop(k)
         
         l = ['content_encoding', 'content_disposition', 'content_type',
@@ -789,6 +789,8 @@ class Pithos_Client(OOS_Client):
         args = locals().copy()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
+        if format != 'text':
+            params.update({'hashmap':None})
         return OOS_Client.create_object(self, container, object, **args)
         
     def create_object_using_chunks(self, container, object,

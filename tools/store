@@ -524,12 +524,13 @@ class UpdateObject(Command):
             key, sep, val = arg.partition('=')
             meta[key] = val
         
-        if self.no_sharing:
-            self.x_object_sharing = ''
         
         attrs = ['content_encoding', 'content_disposition', 'x_object_sharing',
                  'x_object_public', 'replace']
         args = self._build_args(attrs)
+        
+        if self.no_sharing:
+            args['x_object_sharing'] = ''
         
         container, sep, object = path.partition('/')
         

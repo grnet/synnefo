@@ -245,7 +245,7 @@
             this.vm = undefined;
             this.view_id_tpl = this.view_id;
 
-            _.bindAll(this, "handle_vm_change", "handle_vm_remove");
+            _.bindAll(this, "_handle_vm_change", "_handle_vm_remove");
         },
 
         set_vm: function(vm) {
@@ -257,15 +257,15 @@
 
         bind_vm_handlers: function() {
             this.log.debug("binding handlers");
-            this.vm.bind("change", this.handle_vm_change);
-            storage.vms.bind("remove", this.handle_vm_remove);
+            this.vm.bind("change", this._handle_vm_change);
+            storage.vms.bind("remove", this._handle_vm_remove);
         },
         
         unbind_vm_handlers: function() {
             this.log.debug("unbinding handlers", this.vm);
             if (!this.vm) { return };
-            this.vm.unbind("change", this.handle_vm_change);
-            storage.vms.unbind("remove", this.handle_vm_remove);
+            this.vm.unbind("change", this._handle_vm_change);
+            storage.vms.unbind("remove", this._handle_vm_remove);
         },
         
         _update_vm_details: function() { 
@@ -278,15 +278,19 @@
         },
 
         update_vm_details: function() {},
-
-        handle_vm_remove: function(vm, collection) {
+        handle_vm_remove: function() {},
+        handle_vm_change: function () {},
+        
+        _handle_vm_remove: function(vm, collection) {
             if (this.vm && vm.id == this.vm.id) {
                 this.hide();
             }
+            this.handle_vm_remove();
         },
-
-        handle_vm_change: function(vm) {
+        
+        _handle_vm_change: function(vm) {
             this._update_vm_details();
+            this.handle_vm_change(vm);
         },
         
         beforeClose: function() {

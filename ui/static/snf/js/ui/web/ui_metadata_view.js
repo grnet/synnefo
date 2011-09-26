@@ -49,6 +49,7 @@
 
         show: function(vm) {
             this.current_vm = vm;
+            this.current_vm.bind("change", this.handle_vm_change);
             views.MetadataView.__super__.show.apply(this);
         },
 
@@ -210,7 +211,6 @@
                 self.editor.find("input.meta-value").focus();
             })
 
-            this.current_vm.bind("change", this.handle_vm_change)
         },
 
         show_create: function() {
@@ -222,6 +222,7 @@
         },
 
         handle_vm_change: function(vm) {
+            console.log("meta vm change");
             this.update_vm_details();
             this.update_layout();
         },
@@ -229,6 +230,7 @@
         onClose: function() {
             this.editing = false;
             this.unbind_vm_handlers();
+            this.current_vm = undefined;
         }
     });
     

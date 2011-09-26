@@ -23,6 +23,7 @@
     <script src="static/snf/js/lib/jquery.client.js"></script>
     <script src="static/snf/js/lib/jquery.tools.min.js"></script>
     <script src="static/snf/js/lib/jquery.dataTables.min.js"></script>
+    <script src="static/snf/js/lib/ZeroClipboard.js"></script>
 
     <script src="static/snf/js/lib/underscore.js"></script>
     <script src="static/snf/js/lib/underscore.string.js"></script>
@@ -69,6 +70,9 @@
         // empty object for console to avoid errors in browsers that don't support it
         if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
             window.console.error = function() {}};
+        
+        // initialize zero clipboard
+        ZeroClipboard.setMoviePath( 'static/snf/js/lib/ZeroClipboard.swf' );
 
         //populate available image icons array
         var os_icons = {{image_icons|safe}};

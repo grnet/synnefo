@@ -141,6 +141,23 @@
         // TODO: implement me
     }
 
+    synnefo.util.ClipHelper = function(cont) {
+        this.cont = cont || $('<div class="clip-copy"></div>');
+        this.clip = new ZeroClipboard.Client();
+        this.clip.setHandCursor(true);
+        this.el = this.cont;
+        this.el.append(this.clip.getHTML(20,20));
+
+        this.setText = function(t) {
+            this.clip.setText(t);
+        }
+
+        this.el.attr({title: "Click to copy to clipboard"})
+        this.clip.addEventListener('complete', _.bind(function(client, text) {
+            //$(".tooltip").text("Copied");
+        }, this));
+    }
+
     synnefo.util.truncate = function(string, size, append, words) {
         if (string.length <= size) {
             return string;

@@ -3934,6 +3934,7 @@ h3.overlay-inner-title {
     color: #447821;
     text-align: left;
     padding-left: 5em;
+    position: relative;
 }
 
 #creation-password-overlay {
@@ -4112,6 +4113,7 @@ h3.overlay-inner-title {
     font-size: 0.7em;
     padding: 0.2em 0.5em;
     border: 1px solid #888;
+    z-index: 50000;
 }
 
 /*404 and 500 pages*/
@@ -5427,3 +5429,18 @@ table.list-machines .wave {
     font-size: 1.2em;
     text-align: center;
 }
+
+.clip-copy {
+    display: block;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    border: 1px solid #387693;
+    background-image: url("./clipboard.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    background-color: #A1C8DB;
+}
+
+.password-cont .clip-copy { right: 10px; top: 8px;}

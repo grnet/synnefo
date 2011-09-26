@@ -30,11 +30,15 @@
             _.bindAll(this, 'show_password');
 
             this.password = this.$("#new-machine-password");
+            this.copy = this.$(".clip-copy");
 
             this.$(".show-machine").click(_.bind(function(){
                 this.hide();
                 snf.ui.main.show_vm_details(storage.vms.get(this.vm_id));
             }, this));
+            
+            this.clipboard = new util.ClipHelper(this.copy);
+            this.clipboard.el.tooltip();
         },
         
         show_password: function() {
@@ -51,6 +55,8 @@
 
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
             this.show_password();
+            
+            this.clipboard.setText(this.pass);
         }
     })
 
@@ -681,6 +687,7 @@
             
             this.init_handlers();
             this.update_layout();
+
         },
 
         init_handlers: function() {

@@ -925,7 +925,7 @@
             }
         },
         
-        __make_api_call: function(url, method, data, success, error) {
+        __make_api_call: function(url, method, data, success, error, action) {
             var self = this;
             error = error || function(){};
             success = success || function(){};
@@ -934,7 +934,11 @@
                 url: url,
                 data: data,
                 success: function(){ self.handle_action_succeed.apply(self, arguments); success.apply(this, arguments)},
-                error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)}
+                error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
+                error_params: { ns: "Machines actions", 
+                                message: "'" + this.get("name") + "'" + " action failed", 
+                                extra_details: { 'Machine ID': this.id, url: url }
+                              }
             }
             this.sync(method, this, params);
         },

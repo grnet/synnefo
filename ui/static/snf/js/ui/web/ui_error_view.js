@@ -21,6 +21,7 @@
         content_selector: "#error-overlay-content",
         css_class: 'overlay-error',
         overlay_id: "error-overlay",
+        error_stack: {},
 
         initialize: function() {
             views.ErrorView.__super__.initialize.apply(this, arguments);
@@ -60,7 +61,10 @@
 
         report_error: function() {
             this.feedback_view = this.feedback_view || ui.main.feedback_view;
-            this.feedback_view.show(this.get_report_message(), true, {error: this.error_object()});
+            this.hide(false);
+            window.setTimeout(_.bind(function() {
+                this.feedback_view.show(this.get_report_message(), true, {error: this.error_object()});
+            }, this), 400);
         },
 
         get_report_message: function() {
@@ -75,15 +79,25 @@
             
             return fdb_msg;
         },
-
+        
         show_error: function(ns, code, message, type, details, error_options) {
+            if (!snf.api.error_state) { this.error_stack = {} };
+            
+            snf.api.error_state = true;
+            snf.api.trigger("change:error_state", true);
+
+            var error_entry = [ns, code, message, type, details, error_options];
+            this.error_stack[new Date()] = error_entry;
+            this.display_error.apply(this, error_entry);
+            this.show();
+        },
+
+        display_error: function(ns, code, message, type, details, error_options) {
             this.error_options = {'allow_report': true, 'allow_reload': true, 'extra_details': {}, 'non_critical': false};
 
             if (error_options) {
                 this.error_options = _.extend(this.error_options, error_options);
             }
-
-            this.hide();
 
             this.code = code;
             this.ns = ns;
@@ -99,8 +113,6 @@
                 this.el.removeClass("non-critical");
             }
 
-            this.show();
-            
             this.$(".actions .show-details").click();
             this.$(".key.details").click();
             this.$(".error-more-details").hide();
@@ -145,7 +157,16 @@
             }
         },
 
-        onClose: function() {
+        hide: function(reset_state) {
+            if (reset_state === undefined) { reset_state = true };
+            if (reset_state) {
+                snf.api.error_state = false;
+                snf.api.trigger("change:error_state", snf.api.error_state);
+            }
+            views.ErrorView.__super__.hide.apply(this);
+        },
+
+        onClose: function(reset_state) {
             this.trigger("close", this);
         }
     });

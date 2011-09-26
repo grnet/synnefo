@@ -215,6 +215,8 @@
         this._called = 0;
         this.interval = undefined;
         this.call_on_start = options.call_on_start || true;
+
+        this.running = false;
         
         // wrapper
         function _cb() {
@@ -228,6 +230,7 @@
             }
             this.cb();
         };
+
         _cb = _.bind(_cb, this);
 
         this.faster = function() {
@@ -239,10 +242,11 @@
         this.setInterval = function() {
             this.trigger("clear");
             window.clearInterval(this.interval);
+            this.interval = window.setInterval(_cb, this.timeout);
+            this.running = true;
             if (this.call_on_start) {
                 _cb();
             }
-            this.interval = window.setInterval(_cb, this.timeout);
         }
 
         this.start = function () {
@@ -252,6 +256,7 @@
         this.stop = function() {
             this.trigger("clear");
             window.clearInterval(this.interval);
+            this.running = false;
         }
     }
     

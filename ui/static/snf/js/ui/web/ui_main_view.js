@@ -333,30 +333,28 @@
             
             // api calls handlers
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
+            synnefo.api.bind("change:error_state", _.bind(this.handle_api_error_state, this));
             synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
         },
         
-        handle_error_close: function(view) {
-            snf.api.stop_calls = false;
-            this.update_intervals();
+        handle_api_error_state: function(state) {
+            if (snf.api.error_state) {
+                this.stop_intervals();
+            } else {
+                if (this.intervals_stopped) {
+                    this.update_intervals();
+                }
+            }
         },
-        
-        error_stack: [],
 
         handle_api_error: function(xhr, type, message) {
-            this.stop_intervals();
-
             this.error_state = true;
             this.log.error("API ERRROR", arguments);
             
             var xhr = arguments[0];
             var args = util.parse_api_error(arguments);
             
-            snf.api.stop_calls = true;
-            
             var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
-
-            this.error_stack.push(error_entry);
             this.error_view.show_error.apply(this.error_view, error_entry);
         },
 
@@ -416,6 +414,7 @@
         stop_intervals: function() {
             this._networks.stop();
             this._vms.stop();
+            this.intervals_stopped = true;
         },
 
         update_intervals: function() {
@@ -423,6 +422,7 @@
             this._networks.start();
             this._vms.stop();
             this._vms.start();
+            this.intervals_stopped = false;
         },
 
         after_load: function() {
@@ -443,7 +443,6 @@
 
         load: function() {
             this.error_view = new views.ErrorView();
-            this.error_view.bind("close", _.bind(this.handle_error_close, this));
             var self = this;
             // initialize overlay views
             
@@ -647,11 +646,14 @@
                 this.current_view.visible()) {
                 return;
             }
-
+            
+            // choose proper view_id
             view_id = this.identify_view(view_id);
+
             // add/create view and update current view
             var view = this.add_view(view_id);
-
+            
+            // set current view
             this.current_view = view;
             this.current_view_id = view_id;
 
@@ -673,7 +675,8 @@
 
             // update cookies
             this.update_session();
-
+            
+            // machines view subnav
             if (this.current_view.vms_view) {
                 $("#machines-pane").show();
             } else {
@@ -687,6 +690,7 @@
                 window.positionFooter();
             }
             
+            // trigger view change event
             this.trigger("view:change", this.current_view.view_id);
             $(window).trigger("view:change");
             storage.vms.reset_pending_actions();

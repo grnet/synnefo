@@ -126,6 +126,12 @@
             this.success.show();
             this.sending.hide();
         },
+        
+        hide: function() {
+            snf.api.error_state = false;
+            snf.api.trigger("change:error_state", snf.api.error_state);
+            views.FeedbackView.__super__.hide.apply(this);
+        },
 
         show: function(data, collect_data, extra_data, cb) {
             this.data = data || "";

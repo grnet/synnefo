@@ -259,6 +259,7 @@
         var error_message = arguments[1];
         var error_thrown = arguments[2];
         var ajax_settings = arguments.ajax;
+        var call_settings = arguments.ajax.error_params || {};
 
         var json_data = undefined;
         if (xhr.responseText) {
@@ -306,6 +307,7 @@
         extra = {'URL': ajax_settings.url};
         options = {};
         options = _.extend(options, {'details': details, 'message': error_message, 'ns': module, 'extra_details': extra});
+        options = _.extend(options, call_settings);
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[error_message] || {});
         options = _.extend(defaults, options);
         options.code = code;

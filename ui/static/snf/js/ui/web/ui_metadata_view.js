@@ -218,11 +218,19 @@
         },
 
         unbind_vm_handlers: function() {
+            if (!this.current_vm) { return }
             this.current_vm.unbind("change", this.handle_vm_change);
         },
 
         handle_vm_change: function(vm) {
-            console.log("meta vm change");
+            // if overlay has been closed and for
+            // some reason change event still triggers
+            // force event unbind
+            if (!this.current_vm) {
+                vm.unbind("change", this.handle_vm_change);
+                return;
+            } 
+
             this.update_vm_details();
             this.update_layout();
         },

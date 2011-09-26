@@ -953,6 +953,23 @@
 
         get_action_url: function(name) {
             return this.url() + "/action";
+        },
+
+        get_connection_info: function(host_os, success, error) {
+            var url = "/machines/connect";
+            params = {
+                ip_address: this.get_addresses().ip4,
+                os: this.get_os(),
+                host_os: host_os,
+                srv: this.id
+            }
+
+            url = url + "?" + $.param(params);
+
+            var ajax = snf.api.sync("read", undefined, { url: url, 
+                                                         error:error, 
+                                                         success:success, 
+                                                         handles_error:1});
         }
     })
     

@@ -250,8 +250,8 @@
 
                 case "click":
                     //logo.addCLass('single-image-state4');
-                    this.view.connect_to_console(vm);
-                    //this.view.connect_overlay.show(this.vm);
+                    //this.view.connect_to_console(vm);
+                    this.view.connect_overlay.show(this.vm);
                     break;
 
                 default:

@@ -4357,6 +4357,10 @@ table.list-machines .wave {
     width: 600px;
 }
 
+.overlay a {
+    color: #387693;
+}
+
 .overlay .overlay-content .description.subinfo {
     margin-bottom:0;
     border-bottom: none;
@@ -5357,4 +5361,22 @@ table.list-machines .wave {
     margin-bottom: 20px;
     border-bottom: 1px solid #A1C8DB;
     padding-bottom: 20px;
+}
+
+.vm-connect .connection-info {
+    padding-bottom: 0px;
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.vm-connect .connection-info .connect a {
+    color: #fff;
+}
+
+.vm-connect .connection-info .connect {
+    background-color: #387693;
+    color: #fff;
+    padding: 10px;
+    font-size: 1.2em;
+    text-align: center;
 }

@@ -28,6 +28,33 @@
 
         initialize: function(options) {
             views.VMConnectView.__super__.initialize.apply(this);
+            _.bindAll(this, "handle_success", "handle_error");
+
+            this.error = this.$("div.error");
+            this.info = this.$("div.connection-info");
+            this.description = this.info.find(".description p");
+            this.connect = this.info.find(".connect p");
+            this.subinfo = this.info.find(".subinfo");
+        },
+
+        handle_success: function(data) {
+            this.error.hide();
+            this.info.show();
+            this.description.html(data.info);
+            if (data.ssh) {
+                this.connect.html(data.link.title);
+            } else {
+                this.connect.html('<a href="{0}">{1}</a>'.format(data.link.url, data.link.title))
+            }
+
+            this.subinfo.html(data.subinfo).show();
+            if (!data.subinfo) { this.subinfo.hide() };
+
+        },
+
+        handle_error: function() {
+            this.error.show();
+            this.info.hide();
         },
 
         handle_vm_change: function(vm) {
@@ -38,6 +65,15 @@
         },
         
         update_vm_details: function() {
+        },
+
+        show: function() {
+            views.VMConnectView.__super__.show.apply(this, arguments);
+            
+            this.error.hide();
+            this.info.hide();
+
+            this.vm.get_connection_info($.client.os, this.handle_success, this.handle_error)
         }
 
     });

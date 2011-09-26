@@ -789,6 +789,8 @@ class Pithos_Client(OOS_Client):
         args = locals().copy()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
+        if format != 'text':
+            params.update({'hashmap':None})
         return OOS_Client.create_object(self, container, object, **args)
         
     def create_object_using_chunks(self, container, object,

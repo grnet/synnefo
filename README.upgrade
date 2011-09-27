@@ -4,6 +4,14 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+
+v0.6.2 -> TBD
+NEW SETTINGS
+    * EMAIL_SUBJECT_PREFIX:
+      Prepended to automated emails, set to someting that uniquely identifies
+      the deployment.
+
+
 v0.6.1 -> v0.6.2
 ADMIN INTERFACE
     * The models were changed so that Flavors and SynnefoUsers now have

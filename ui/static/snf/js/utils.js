@@ -276,8 +276,8 @@
         var xhr = arguments[0];
         var error_message = arguments[1];
         var error_thrown = arguments[2];
-        var ajax_settings = arguments.ajax;
-        var call_settings = arguments.ajax.error_params || {};
+        var ajax_settings = arguments.ajax || {};
+        var call_settings = arguments.ajax ? arguments.ajax.error_params || {} : {};
 
         var json_data = undefined;
         if (xhr.responseText) {

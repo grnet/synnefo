@@ -15,3 +15,7 @@ html {
     background: url("./meta-wiz-inner-bg.png") repeat-x scroll 0 0;
     cursor: pointer;
 }
+
+.firewall .network-progress-indicator img {
+    left: 253px;
+}

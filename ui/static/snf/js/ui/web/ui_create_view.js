@@ -633,10 +633,6 @@
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 
             if (!this.name_changed) {
-                // WTH ??
-                if (!$.browser.msie) {
-                    this.name.select().focus();
-                }
             }
             
             var img = snf.ui.helpers.os_icon_path(params.image.get("OS"))

@@ -145,6 +145,7 @@
         this.cont = cont || $('<div class="clip-copy"></div>');
         this.clip = new ZeroClipboard.Client();
         this.clip.setHandCursor(true);
+
         this.el = this.cont;
         this.el.append(this.clip.getHTML(20,20));
 

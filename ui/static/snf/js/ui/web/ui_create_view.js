@@ -37,8 +37,6 @@
                 snf.ui.main.show_vm_details(storage.vms.get(this.vm_id));
             }, this));
             
-            this.clipboard = new util.ClipHelper(this.copy);
-            this.clipboard.el.tooltip();
         },
         
         show_password: function() {
@@ -48,15 +46,24 @@
         onClose: function() {
             this.password.text("");
         },
-            
+        
+        beforeOpen: function() {
+            if (this.clipboard) { return };
+            console.log(this.copy);
+            this.clipboard = new util.ClipHelper(this.copy);
+            this.clipboard.el.tooltip();
+        },
+        
+        onOpen: function() {
+            this.clipboard.setText(this.pass);
+        },
+
         show: function(pass, vm_id) {
             this.pass = pass;
             this.vm_id = vm_id;
 
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
             this.show_password();
-            
-            this.clipboard.setText(this.pass);
         }
     })
 
@@ -774,18 +781,19 @@
                 step = this.steps.length - 1;
             }
                 
+            this.steps[step].show();
+            this.current_step = step;
+            this.current_view = this.steps[step];
+            this.update_controls();
+
             // hide other
             //this.$(".step-header .header-step").removeClass("current").hide();
             //this.$(".create-step-cont").hide();
             var width = this.el.find('.container').width();
             var left = (step -1) * width * -1;
-            this.$(".steps-container").animate({"margin-left": left + "px"}, 300);
-            //this.$(".steps-container").css({"margin-left":left + "px"});
+            //this.$(".steps-container").animate({"margin-left": left + "px"}, 300);
+            this.$(".steps-container").css({marginLeft:left + "px"});
             
-            this.steps[step].show();
-            this.current_step = step;
-            this.current_view = this.steps[step];
-            this.update_controls();
         },
 
         update_controls: function() {

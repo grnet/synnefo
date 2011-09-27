@@ -49,13 +49,17 @@
         
         beforeOpen: function() {
             if (this.clipboard) { return };
-            console.log(this.copy);
             this.clipboard = new util.ClipHelper(this.copy);
             this.clipboard.el.tooltip();
         },
         
         onOpen: function() {
-            this.clipboard.setText(this.pass);
+            try {
+                this.clipboard.setText(this.pass);
+                this.copy.show();
+            } catch (err) {
+                this.copy.hide();
+            }
         },
 
         show: function(pass, vm_id) {
@@ -611,6 +615,7 @@
             
             var existing = true;
             var j = 0;
+
             while (existing && !this.name_changed) {
                 var existing = storage.vms.select(function(vm){return vm.get("name") == vm_name}).length
                 if (existing) {
@@ -628,7 +633,10 @@
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 
             if (!this.name_changed) {
-                this.name.select().focus();
+                // WTH ??
+                if (!$.browser.msie) {
+                    this.name.select().focus();
+                }
             }
             
             var img = snf.ui.helpers.os_icon_path(params.image.get("OS"))
@@ -659,7 +667,6 @@
                 val.metadata = this.get_meta();
             }
             
-            console.log(val, this.get_meta());
             return val;
         }
     });
@@ -699,11 +706,11 @@
 
         init_handlers: function() {
             this.next_btn.click(_.bind(function(){
-                this.show_step(this.current_step + 1);
+                this.set_step(this.current_step + 1);
                 this.update_layout();
             }, this))
             this.prev_btn.click(_.bind(function(){
-                this.show_step(this.current_step - 1);
+                this.set_step(this.current_step - 1);
                 this.update_layout();
             }, this))
             this.cancel_btn.click(_.bind(function(){
@@ -748,9 +755,14 @@
 
         reset: function() {
             this.current_step = 1;
+
             this.steps[1].reset();
             this.steps[2].reset();
             this.steps[3].reset();
+
+            this.steps[1].show();
+            this.steps[2].show();
+            this.steps[3].show();
 
             this.submit_btn.removeClass("in-progress");
         },
@@ -772,28 +784,25 @@
             this.$(".steps-container").css({"margin-left":0 + "px"});
             this.show_step(1);
         },
-
-        show_step: function(step) {
+        
+        set_step: function(step) {
             if (step <= 1) {
                 step = 1
             }
             if (step > this.steps.length - 1) {
                 step = this.steps.length - 1;
             }
-                
-            this.steps[step].show();
             this.current_step = step;
+        },
+
+        show_step: function(step) {
             this.current_view = this.steps[step];
             this.update_controls();
 
-            // hide other
-            //this.$(".step-header .header-step").removeClass("current").hide();
-            //this.$(".create-step-cont").hide();
+            this.steps[step].show();
             var width = this.el.find('.container').width();
             var left = (step -1) * width * -1;
-            //this.$(".steps-container").animate({"margin-left": left + "px"}, 300);
-            this.$(".steps-container").css({marginLeft:left + "px"});
-            
+            this.$(".steps-container").css({"margin-left": left + "px"});
         },
 
         update_controls: function() {

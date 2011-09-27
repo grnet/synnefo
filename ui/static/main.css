@@ -4832,6 +4832,10 @@ table.list-machines .wave {
     padding: 0;
 }
 
+.overlay-createvm .container {
+    width: 584px !important;
+}
+
 .create-vm .header-step.current {
     font-weight: bold;
 }
@@ -5069,7 +5073,7 @@ table.list-machines .wave {
     background-color: #FF9955;
     background-image:linear-gradient(top, #FF9955, #E88B4D);
     background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
-    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FF9955', endColorstr='#5CA1C0', GradientType=0);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#FF9955', endColorstr='#E88B4D', GradientType=0);
     border: 1px solid #C97943;
 }
 
@@ -5166,7 +5170,7 @@ table.list-machines .wave {
 
 .create-vm .images-list .image-details {
     padding: 6px;
-    margin-bottom:4px;
+    margin-bottom:1px;
     position: relative;
 }
 

@@ -5,3 +5,13 @@ html {
 .form-action.in-progress, button.in-progress {
     text-indent: -6000px;
 }
+
+.overlay .content {
+    background: url("./meta-wiz-inner-bg.png") repeat-x scroll 0 0;
+    border: 1px solid #aaa;
+}
+
+.create-vm .flavor-options-cont .flavor-options li {
+    background: url("./meta-wiz-inner-bg.png") repeat-x scroll 0 0;
+    cursor: pointer;
+}

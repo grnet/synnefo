@@ -299,7 +299,7 @@
             // reset views
             this.views = {};
 
-            this.el = $("body");
+            this.el = $("#app");
             // reset main view status
             this._loaded = false;
             this.status = "Initializing...";

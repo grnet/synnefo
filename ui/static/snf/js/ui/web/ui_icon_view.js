@@ -62,7 +62,7 @@
             this.vm = vm;
             this.view = view;
             // name container
-            this.el = $('.machine-container#' + this.view.id_tpl.format(vm.id) + " div.name").get(0);
+            this.el = $('div#' + this.view.id_tpl + vm.id + " div.name").get(0);
             // name inline element
             this.name = this.$('span.name');
             // rename button
@@ -522,7 +522,7 @@
         view_id: 'vm_icon',
 
         el: '#machinesview-icon',
-        id_tpl: 'icon-vm-{0}',
+        id_tpl: 'icon-vm-',
 
         selectors: {
             'vms': '.machine-container',

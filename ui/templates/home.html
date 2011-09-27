@@ -25,11 +25,13 @@
     <script src="static/snf/js/lib/jquery.dataTables.min.js"></script>
     <script src="static/snf/js/lib/ZeroClipboard.js"></script>
 
+
     <script src="static/snf/js/lib/underscore.js"></script>
     <script src="static/snf/js/lib/underscore.string.js"></script>
     <script src="static/snf/js/lib/backbone.js"></script>
     <script src="static/snf/js/lib/json2.js"></script>
     <script src="static/snf/js/lib/stacktrace.js"></script>
+
     <!--[if (gte IE 6)&(lte IE 7)]>
         <script src="static/snf/js/lib/selectivizr.js"></script>
     <! [endif] -->
@@ -37,8 +39,6 @@
     <!--[if IE]>
         <script src="static/snf/js/ui/ie_fixes.js"></script>
     <![endif]-->
-
-
     
     <script src="static/snf/js/utils.js"></script>
     <script src="static/snf/js/sync.js"></script>
@@ -58,11 +58,11 @@
     <script src="static/snf/js/ui/web/ui_connect_view.js"></script>
 
     <!-- the following views require refactor -->
-    <!--<script src="static/snf/js/ui/create_view.js"></script>-->
     <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
 
     {% if DEBUG %}
+        <script src="static/snf/js/tests/jquery.profile.js"></script>
         <script src="static/snf/js/tests/functional.js"></script>
     {% endif %}
     
@@ -229,7 +229,7 @@
     </script>
 </head>
 
-<body>
+<body id="app">
     <!--<img id="okeanos-image" src="/static/body-bg2.png" />-->
     <div id="container">
         <div id="header">

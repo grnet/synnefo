@@ -80,8 +80,8 @@
         view_id: 'vm_list',
 
         el: '#machinesview-list',
-        id_tpl: 'list-vm-{0}',
-        link_id_tpl: 'list-vm-at-{0}',
+        id_tpl: 'list-vm-',
+        link_id_tpl: 'list-vm-at-',
 
         hide_actions: false,
 
@@ -214,7 +214,7 @@
             this.table_data["vm_" + vm.id] = {index: index[0], params: params};
             
             // append row id
-            $(this.table.fnGetNodes(index)).attr("id", this.id_tpl.format(vm.id));
+            $(this.table.fnGetNodes(index)).attr("id", this.id_tpl + vm.id);
             
             // hide indicators on creation
             this.vm(vm).find(".spinner").hide();
@@ -246,7 +246,7 @@
         get_vm_table_data: function(vm) {
             var checkbox = '<input type="checkbox" class="' + 
                 views.ListView.STATE_CLASSES[vm.state()].join(" ") + 
-                ' list-vm-checkbox" id="checkbox-' + this.id_tpl.format(vm.id) + '"/>';
+                ' list-vm-checkbox" id="checkbox-' + this.id_tpl + vm.id + '"/>';
 
             var img = '<img class="os_icon" src="'+ this.get_vm_icon_path(vm, "small") +'" />';
             img = img + '<img src="static/icons/indicators/small/progress.gif" class="spinner" />';

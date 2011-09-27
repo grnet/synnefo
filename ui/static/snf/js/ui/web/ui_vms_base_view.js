@@ -103,7 +103,7 @@
         // create vm dom element
         create_vm_element: function(vm) {
             // clone template
-            return this.sel('tpl').clone().attr("id", this.id_tpl.format([vm.id]))
+            return this.sel('tpl').clone().attr("id", this.id_tpl + vm.id)
         },
 
         // get proper vm container

@@ -23,7 +23,7 @@
         // view delegates show, visible, hide etc to this element
         view_id: false,
 
-        el: 'body',
+        el: '#app',
         data_from: false,
         selectors: {},
         

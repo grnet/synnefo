@@ -38,19 +38,19 @@
         view_id: 'vm_single',
 
         el: '#machinesview-single',
-        id_tpl: 'single-vm-{0}',
-        link_id_tpl: 'single-vm-at-{0}',
+        id_tpl: 'single-vm-',
+        link_id_tpl: 'single-vm-at-',
 
         hide_actions: false,
 
         selectors: {
             'vms': '.single-container',
-            'vm': '.single-container#single-vm-{0}',
+            'vm': 'div#single-vm-{0}',
             'view': '#machinesview-single',
-            'tpl': '.single-container#machine-container-template',
+            'tpl': 'div.single-container#machine-container-template',
             'spinner': '.large-spinner',
-            'vm_spinner': '.single-container#single-vm-{0} .state .spinner',
-            'vm_wave': '.single-container#single-vm-{0} img.wave',
+            'vm_spinner': 'div.single-container#single-vm-{0} .state .spinner',
+            'vm_wave': 'div.single-container#single-vm-{0} img.wave',
             'vm_cont_active': '#machinesview-single',
             'vm_cont_terminated': '#machinesview-single'
         },
@@ -187,14 +187,14 @@
                 this.vm(vm).show();
             };
 
-            $("#" + this.link_id_tpl.format(this.current_vm)).addClass("column3-selected");
+            $("#" + this.link_id_tpl + this.current_vm).addClass("column3-selected");
         },
 
         show_vm_menu: function() {
             this.menu.find(".server-name").remove();
 
             _.each(storage.vms.models, function(vm, index) {
-                this.menu.append('<div class="server-name" id="'+this.link_id_tpl.format(index)+'">' + 
+                this.menu.append('<div class="server-name" id="'+this.link_id_tpl + index +'">' + 
                                util.truncate(vm.get("name"),16)+'</div>');
                 if (this.current_vm_instance && vm.id == this.current_vm_instance.id) {
                     this.current_vm = index;

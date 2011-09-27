@@ -1014,7 +1014,7 @@
     models.VM.CONNECT_STATES = [
         'ACTIVE',
         'REBOOT',
-        'START'
+        'SHUTDOWN'
     ]
 
     // vm states
@@ -1054,7 +1054,7 @@
     models.VM.ACTIVE_STATES = [
         'BUILD', 'REBOOT', 'ACTIVE',
         'BUILD_INIT', 'BUILD_COPY', 'BUILD_FINAL',
-        'START', 'CONNECT', 'DISCONNECT'
+        'SHUTDOWN', 'CONNECT', 'DISCONNECT'
     ]
 
     models.VM.BUILDING_STATES = [

@@ -25,7 +25,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Sept 22, 2011)        Suggest upload/download methods using hashmaps.
+0.7 (Sept 28, 2011)        Suggest upload/download methods using hashmaps.
+\                          Propose syncing algorithm.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -437,6 +438,7 @@ x_object_modified_by        The user that committed the object's version
 x_object_manifest           Object parts prefix in ``<container>/<object>`` form (optional)
 x_object_sharing            Object permissions (optional)
 x_object_shared_by          Object inheriting permissions (optional)
+x_object_allowed_to         Allowed actions on object (optional)
 x_object_public             Object's publicly accessible URI (optional)
 x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
@@ -1054,6 +1056,44 @@ In the case of an upload, only the missing blocks will be submitted to the serve
 * Repeat hashmap ``PUT``. Fail if the server's response is not ``201``.
 
 Consulting hashmaps when downloading allows for resuming partially transferred objects. The client should retrieve the hashmap from the server and compare it with the hashmap computed from the respective local file. Any missing parts can be downloaded with ``GET`` requests with the additional ``Range`` header.
+
+Syncing
+^^^^^^^
+
+Consider the following algorithm for synchronizing a local folder with the server. The "state" is the complete object listing, with the corresponding attributes.
+ 
+::
+
+  L: local state (stored state from last sync with the server)
+  C: current state (state computed right before sync)
+  S: server state
+
+  if C == L:
+      # No local changes
+      if S == L:
+          # No remote changes, nothing to do
+      else:
+          # Update local state to match that of the server
+         L = S
+  else:
+      # We have local changes
+      if S == L:
+          # No remote changes, update the server
+          S = C
+          L = S
+      else:
+          # Both we and server have changes
+          if C == S:
+              # We were lucky, we did the same change
+              L = S
+          else:
+              # We have conflicting changes
+              resolve conflict
+
+Notes:
+
+* States represent file hashes (either MD5 or Merkle). Deleted or non-existing files are assumed to have a magic hash (e.g. empty string).
+* Updating a state (either local or remote) implies downloading, uploading or deleting the appropriate file.
 
 Recommended Practices and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

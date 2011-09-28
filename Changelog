@@ -5,13 +5,13 @@ Changelog
 2011-09-15, v0.6.2
 
 FIXES:
-	UI:
-    	* Fix handling of Images in state=DELETED,
+    UI:
+        * Fix handling of Images in state=DELETED,
           allow sorting and categorization of Images in the UI (#823)
-    	* Fix the "Create New wizard" does not honor selection of
+        * Fix the "Create New wizard" does not honor selection of
           "small/medium/large" images (#1129)
-	Admin:
-    	* Fix the admin interface throws exception on the
+    Admin:
+        * Fix the admin interface throws exception on the
           Invitations tab (1105)
     API:
         * Make API responses uncacheable (#1091)
@@ -20,62 +20,62 @@ FIXES:
           unknown Ganeti opcodes(#1111)
 
 NEW FEATURES:
-	Admin:
+    Admin:
         * Support filtering based on state, support image registration
           with mandatory type argument, make all deletion operations
           set state to DELETED (#849)
-	API:
+    API:
         * Allow marking flavors as removed, honor deleted flag (#1055)
 
 
 2011-09-13, v0.6.1
 
 FIXES:
-	UI:
-		* Make all AJAX requests to the API uncache-able
+    UI:
+        * Make all AJAX requests to the API uncache-able
 
 
 2011-09-12, v0.6
 
 NEW FEATURES:
-	Admin:
-		* Initial version of new Web-based admininstration panel, allows
-	      management of Synnefo entities directly on the DB (#849)
-		* Allow setting https apiurl and token in cloud tool (#853)
-	Deployment:
-		* Overhauled reconciliation mechanism, unit tests (#1021, #811)
+    Admin:
+        * Initial version of new Web-based admininstration panel, allows
+          management of Synnefo entities directly on the DB (#849)
+        * Allow setting https apiurl and token in cloud tool (#853)
+    Deployment:
+        * Overhauled reconciliation mechanism, unit tests (#1021, #811)
     UI:
-		* Overhaul CPU/RAM/disk sliders in UI to be more intuitive (#843)
-		* Support setting of small, medium large flavors in UI (#815)
-		* Have the UI filter flavors, depending on image size (#817)
-		* Better, error-specific handling of error codes in UI (#971)
-		* Implement retrieval of authentication token from the UI (#977)
-		* Re-worked invitation UI is more vocal on errors, supports pagination
+        * Overhaul CPU/RAM/disk sliders in UI to be more intuitive (#843)
+        * Support setting of small, medium large flavors in UI (#815)
+        * Have the UI filter flavors, depending on image size (#817)
+        * Better, error-specific handling of error codes in UI (#971)
+        * Implement retrieval of authentication token from the UI (#977)
+        * Re-worked invitation UI is more vocal on errors, supports pagination
           (#1039)
-		* Support a list of UI-specific metadata keys to be copied from Image
-		  to newly-created Server (#847)
-	Images:
-		* Support dd-based deployment of Windows and Linux images, using only
-		  dd-based sequential I/O, get rid of ntfsclone (#965, #1007)
+        * Support a list of UI-specific metadata keys to be copied from Image
+          to newly-created Server (#847)
+    Images:
+        * Support dd-based deployment of Windows and Linux images, using only
+          dd-based sequential I/O, get rid of ntfsclone (#965, #1007)
 
 FIXES:
-	UI:
-		* Fix Opera failing with "too old changes-since value" when idle (#521)
-		* Fix UI problems with Firefox 3.5.x (#781)
-		* Fix server statistics not refreshing properly in the UI (#881)
-		* Machine rename icon not visible on IE (#909)
-		* Fix list view fail not updating machine state properly (#915)
-		* Fix colors in "Error" state (#953)
-		* Fix the confirmation bar disappearing at times (#955)
-		* Hide all actions when in state "Destroying..." (#957)
-		* Disable connect action when machine has no ip set (#983)
-		* Update image details on last vm creation step overlay on IE (#1011)
-		* Fix list view displays UI error when servers are updated on IE
-		  (#1013)
-		* Make "Add invitation", remove invitation button appear clickable
-		  (#1019)
-	Logic:
-		* Fix Logic layer complaining about certain Ganeti opcodes (#1031)
+    UI:
+        * Fix Opera failing with "too old changes-since value" when idle (#521)
+        * Fix UI problems with Firefox 3.5.x (#781)
+        * Fix server statistics not refreshing properly in the UI (#881)
+        * Machine rename icon not visible on IE (#909)
+        * Fix list view fail not updating machine state properly (#915)
+        * Fix colors in "Error" state (#953)
+        * Fix the confirmation bar disappearing at times (#955)
+        * Hide all actions when in state "Destroying..." (#957)
+        * Disable connect action when machine has no ip set (#983)
+        * Update image details on last vm creation step overlay on IE (#1011)
+        * Fix list view displays UI error when servers are updated on IE
+          (#1013)
+        * Make "Add invitation", remove invitation button appear clickable
+          (#1019)
+    Logic:
+        * Fix Logic layer complaining about certain Ganeti opcodes (#1031)
 
 
 2011-08-29, v0.5.5

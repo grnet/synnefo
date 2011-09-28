@@ -346,7 +346,7 @@
                 }
             }
         },
-
+        
         handle_api_error: function(xhr, type, message) {
             this.error_state = true;
             this.log.error("API ERRROR", arguments);

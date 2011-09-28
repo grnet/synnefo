@@ -476,6 +476,8 @@
             // default values
             this.set({linked_to_nets:this.get("linked_to_nets") || []});
             this.set({firewalls:this.get("firewalls") || []});
+
+            this.action_error = false;
         },
 
         handle_firewall_change: function() {
@@ -876,7 +878,7 @@
                                              success.apply(this, arguments);
                                              snf.api.trigger("call");
                                          },  
-                                         error);
+                                         error, 'start');
                     break;
                 case 'reboot':
                     this.__make_api_call(this.get_action_url(), // vm actions url
@@ -889,7 +891,7 @@
                                              snf.api.trigger("call");
                                              self.set({'reboot_required': false});
                                          },
-                                         error);
+                                         error, 'reboot');
                     break;
                 case 'shutdown':
                     this.__make_api_call(this.get_action_url(), // vm actions url
@@ -901,13 +903,13 @@
                                              success.apply(this, arguments)
                                              snf.api.trigger("call");
                                          },  
-                                         error);
+                                         error, 'shutdown');
                     break;
                 case 'console':
                     this.__make_api_call(this.url() + "/action", "create", {'console': {'type':'vnc'}}, function(data) {
                         var cons_data = data.console;
                         success.apply(this, [cons_data]);
-                    })
+                    }, undefined, 'console')
                     break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
@@ -918,7 +920,7 @@
                                              self.state('DESTROY');
                                              success.apply(this, arguments)
                                          },  
-                                         error);
+                                         error, 'destroy');
                     break;
                 default:
                     throw "Invalid VM action ("+action_name+")";
@@ -937,8 +939,10 @@
                 error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
                 error_params: { ns: "Machines actions", 
                                 message: "'" + this.get("name") + "'" + " action failed", 
-                                extra_details: { 'Machine ID': this.id, url: url }
-                              }
+                                extra_details: { 'Machine ID': this.id, 'URL': url, 'Action': action || "undefined" },
+                                allow_reload: false
+                              },
+                handles_error: true
             }
             this.sync(method, this, params);
         },
@@ -946,8 +950,14 @@
         handle_action_succeed: function() {
             this.trigger("action:success", arguments);
         },
+        
+        reset_action_error: function() {
+            this.action_error = false;
+            this.trigger("action:fail:reset", this.action_error);
+        },
 
         handle_action_fail: function() {
+            this.action_error = arguments;
             this.trigger("action:fail", arguments);
         },
 

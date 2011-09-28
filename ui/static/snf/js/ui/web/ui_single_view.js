@@ -145,6 +145,7 @@
             this.tags_views = this.tags_views || {};
             this.details_views = this.details_views || {};
             this.action_views = this.action_views || {};
+            this.action_error_views = this.action_error_views || {};
 
             //this.stats_views[vm.id] = new views.IconStatsView(vm, this);
 
@@ -154,6 +155,7 @@
             this.connect_views[vm.id] = new views.IconVMConnectView(vm, this);
             this.tags_views[vm.id] = new views.VMTagsView(vm, this, true, 20, 10, 35);
             this.details_views[vm.id] = new views.SingleDetailsView(vm, this);
+            this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
         },
 
         post_update_vm: function(vm) {

@@ -125,6 +125,15 @@
                         <button class="no">X</button>
                     </div>
                 </div>
+                <div class="action-error hidden action_error" align="center">
+                    <div class="action-error-msg">
+                        {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+                        <span class="code"></span>
+                        <span class="message"></span>
+                    </div>
+                    <button class="show-action-error details">{% trans "Details" %}</button>
+                    <button class="close-action-error"></button>
+                </div>
             </div>
         </div>
     </div><div class="large-spinner"></div>

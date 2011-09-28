@@ -16,6 +16,71 @@
     var bb = root.Backbone;
     
     // handle extended info toggler
+    views.VMActionErrorView = views.View.extend({
+    
+        initialize: function (vm, view) {
+            this.vm = vm;
+            this.view = view;
+            this.vm_view = this.view.vm(vm);
+
+            this.has_error = false;
+            
+            this.error = this.vm_view.find(".action-error");
+            this.close = this.vm_view.find(".close-action-error");
+            this.show_btn = this.vm_view.find(".show-action-error");
+
+            this.init_handlers();
+            this.update_layout();
+        },
+
+        init_handlers: function() {
+            // action call failed notify the user
+            this.vm.bind("action:fail", _.bind(function(args){
+                if (this.vm.action_error) {
+                    this.has_error = true;
+                    action = args[0].ajax.error_params.extra_details['Action'];
+                    this.error.find(".action").text(action);
+                    this.error.show();
+                }
+            }, this));
+            
+            // show error overlay
+            this.show_btn.click(_.bind(function() {
+                this.show_error_overlay(this.vm.action_error);
+                this.vm.reset_action_error();
+            }, this));
+            
+            // user requests to forget about the error
+            this.close.click(_.bind(_.bind(function() {
+                this.error.hide();
+                this.vm.reset_action_error();
+            }, this)));
+            
+            // hide error message if action fail get reset
+            this.vm.bind("action:fail:reset", _.bind(function(){
+                this.error.hide();
+            }, this));
+        },
+
+        show_error_overlay: function(arguments) {
+            var xhr = arguments[0];
+            var args = util.parse_api_error(arguments);
+            
+            // force logout if UNAUTHORIZED request arrives
+            if (args.code == 401) { snf.ui.logout(); return };
+
+            var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
+            ui.main.error_view.show_error.apply(ui.main.error_view, error_entry);
+        },
+
+        update_layout: function() {
+            if (this.vm.action_error) {
+                this.error.show();
+            }
+        }
+    });
+
+    // handle extended info toggler
     views.IconInfoView = views.View.extend({
     
         initialize: function (vm, view) {
@@ -565,6 +630,7 @@
             this.tags_views = this.tags_views || {};
             this.details_views = this.details_views || {};
             this.info_views = this.info_views || {};
+            this.action_error_views = this.action_error_views || {};
             this.action_views = this.action_views || {};
 
             this.action_views[vm.id] = new views.VMActionsView(vm, this, this.vm(vm), this.hide_actions);
@@ -574,6 +640,7 @@
             this.tags_views[vm.id] = new views.VMTagsView(vm, this);
             this.details_views[vm.id] = new views.VMDetailsView(vm, this);
             this.info_views[vm.id] = new views.IconInfoView(vm, this);
+            this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
         },
         
         // vm specific event handlers

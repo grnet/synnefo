@@ -82,9 +82,14 @@
         
         show_error: function(ns, code, message, type, details, error_options) {
             if (!snf.api.error_state) { this.error_stack = {} };
-            
-            snf.api.error_state = true;
-            snf.api.trigger("change:error_state", true);
+                
+            if (error_options.fatal_error) {
+                snf.api.error_state = true;
+                snf.api.trigger("change:error_state", true);
+            } else {
+                snf.api.error_state = false;
+                snf.api.trigger("change:error_state", false);
+            }
 
             var error_entry = [ns, code, message, type, details, error_options];
             this.error_stack[new Date()] = error_entry;
@@ -93,7 +98,7 @@
         },
 
         display_error: function(ns, code, message, type, details, error_options) {
-            this.error_options = {'allow_report': true, 'allow_reload': true, 'extra_details': {}, 'non_critical': false};
+            this.error_options = {'allow_report': true, 'allow_reload': true, 'extra_details': {}, 'non_critical': false, 'allow_details': false };
 
             if (error_options) {
                 this.error_options = _.extend(this.error_options, error_options);
@@ -109,9 +114,15 @@
             
             if (error_options.non_critical) {
                 this.el.addClass("non-critical");
+                this.error_options.allow_details = false;
             } else {
                 this.el.removeClass("non-critical");
+                this.error_options.allow_details = true;
             }
+            
+            //if (APP_DEBUG) {
+                //this.error_options.allow_details = true;
+            //}
 
             this.$(".actions .show-details").click();
             this.$(".key.details").click();
@@ -143,6 +154,12 @@
             this.$(".error-details").hide();
             this.$(".show-details").show();
             this.$(".hide-details").hide();
+            
+            if (this.error_options.allow_details) {
+                this.$(".show-details").show();
+            } else {
+                this.$(".show-details").hide();
+            }
 
             if (this.error_options.allow_report) {
                 this.$(".report-error").show();

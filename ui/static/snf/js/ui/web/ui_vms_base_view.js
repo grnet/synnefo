@@ -287,6 +287,7 @@
             this.view_id = "vm_" + vm.id + "_actions";
             views.VMActionsView.__super__.initialize.call(this);
 
+            this.hovered = false;
         },
 
         action: function(name) {
@@ -320,10 +321,11 @@
                 // some serious debugging is needed to 
                 // find out what is going on
                 this.vm = storage.vms.get(this.vm.id);
-            } catch (err) { return }
+                this.init_vm_handlers();
+            } catch (err) { console.error(err); return }
 
             if (!this.vm) { return }
-
+            
             // update selected action
             if (this.vm.pending_action) {
                 this.selected_action = this.vm.pending_action;
@@ -340,21 +342,24 @@
                 this.reset();
             }
             
-            if (this.selected_action) {
+            this.el.show();
+            
+            if ((this.selected_action || this.hovered) && !this.vm.action_error) {
                 // show selected action
                 $(this.el).show();
                 $(this.el).find("a").css("visibility", "visible");
-
                 // show action icon
                 this.view.show_indicator(this.vm);
             } else {
-                if (this.hide) {
+                if (this.hide || this.vm.action_error) {
                     // view shows actions on machine hover
                     $(this.el).find("a").css("visibility", "hidden");
                 } else {
-                    // view shows actions always
-                    $(this.el).find("a").css("visibility", "visible");
-                    $(this.el).show();
+                    if (!this.vm.action_error) {
+                        // view shows actions always
+                        $(this.el).find("a").css("visibility", "visible");
+                        $(this.el).show();
+                    }
                 }
                 
                 this.view.hide_indicator(this.vm);
@@ -383,6 +388,16 @@
             }, this);
         },
         
+        init_vm_handlers: function() {
+            try {
+                this.vm.unbind("action:fail", this.update_layout)
+                this.vm.unbind("action:fail:reset", this.update_layout)
+            } catch (err) {};
+
+            this.vm.bind("action:fail", this.update_layout)
+            this.vm.bind("action:fail:reset", this.update_layout)
+        },
+
         // bind event handlers
         set_handlers: function() {
             var self = this;
@@ -392,23 +407,17 @@
             if (this.hide) { $(this.el).hide() };
             
             // vm container hover (icon view)
-            this.view.vm(this.vm).hover(function(){
-                $(self.el).show();
-                $(self.el).find("a").css("visibility", "visible");
+            this.view.vm(this.vm).hover(_.bind(function() {
+                this.hovered = true;
+                this.update_layout();
 
-            }, function() {
+            }, this),  _.bind(function() {
                 if (self.hide) {
-                    // icon view
-                    if (!self.selected_action) {
-                        $(self.el).find("a").css("visibility", "hidden");
-                    } else {
-                        // single view (always visible) or icon view with
-                        // selected action
-                        $(self.el).show();
-                        $(self.el).find("a").css("visibility", "visible");
-                    }
+                    this.hovered = false;
+                    this.update_layout();
                 }
-            });
+            }, this));
+
             
             // action links events
             _.each(models.VM.ACTIONS, function(action) {

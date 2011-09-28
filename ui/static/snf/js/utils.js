@@ -295,11 +295,12 @@
         } catch (err) {
             console.error("cannot identify api error module");
         }
-
+        
         defaults = {
             'message': 'Api error',
             'type': 'API',
-            'allow_report': true
+            'allow_report': true,
+            'fatal_error': ajax_settings.critical || false
         }
 
         var code = -1;

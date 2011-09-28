@@ -94,11 +94,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="action_error" align="center">
-                    {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
-                    <span class="code"></span>
-                    <span class="message"></span>
-                    <button class="details">{% trans "Details" %}</button>
+                <div class="action-error hidden action_error" align="center">
+                    <div class="action-error-msg">
+                        {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+                        <span class="code"></span>
+                        <span class="message"></span>
+                    </div>
+                    <button class="show-action-error details">{% trans "Details" %}</button>
+                    <button class="close-action-error"></button>
                 </div>
                 <div class="vms-menu-cont">
                 </div>

@@ -1890,30 +1890,57 @@ div.confirm_multiple button.no:hover {
 }
 
 div.action_error {
-    width: 80px;
-    height: 60px;
-    padding: 5px;
-    margin: -2px 0 0 595px;
-    background-color: #4085A5;
+    width: 120px;
+    margin: 14px 0 0 37px;
+    background-color: #981D1D;
     font-size: 75%;
-    line-height: 1.5;
     z-index:1;
-    color: #FF7F2A;
+    color: #FFF;
     position:absolute;
     top: 0px;
 }
 
+div.action_error .action-error-msg {
+    background-color: #fff;
+    color: #981D1D;
+    border: 1px solid #981D1D;
+    padding: 4px;
+}
+div.action_error .action-error-msg .action {
+    font-weight: bold;
+}
+
+div.action_error .action-error-msg {
+    font-size: 0.8em;
+}
+
 .action_error button {
-    width: 80px !important;
+    width: 75px;
     background-color: transparent;
     border: 1px solid;
-    padding: 0px;
-    border-color: #FF7F2A;
+    border-color: #981D1D;
+    color: #fff !important;
+    float: left;
 }
 
 div.action_error button.details {
-    margin: 5px 0 0 0px;
-    padding: 0 15px;
+    padding-right: 5px;
+    width: 100px;
+    border-bottom: 2px solid #981D1D;
+    border-right: 1px solid #981D1D;
+    border-left: 2px solid #981D1D;
+    background-color: #E24B4B;
+}
+
+div.action_error button.close-action-error {
+    background-image: url("./option-action-remove.png");
+    background-color: #fff;
+    background-repeat: no-repeat;
+    background-position: center center;
+    width: 20px;
+    border-bottom: 2px solid #981D1D;
+    border-right: 2px solid #981D1D;
+    border-top: 1px solid #981D1D;
 }
 
 div.action_error button.details:hover {
@@ -3240,9 +3267,14 @@ div.machine a.manage-metadata:hover {
     margin: 15px 53px 0 0px !important
 }
 
+.icon div.action_error {
+    font-size: 100%;
+}
+
 .single div.action_error {
-    margin: 2px 0px 0 605px !important;
-    position: relative;
+    position: absolute;
+    top: 29px;
+    right: 35px;
 }
 
 .single .column2 {

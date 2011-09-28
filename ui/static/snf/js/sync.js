@@ -110,8 +110,16 @@
             if (type == "error") {
                 add_api_error(this, arguments);
             }
+            
+            var status = 304;
+            if (arguments[0]) {
+                var status = arguments[0].status;
+            }
 
-            if (type == "error" && this.handles_error) { return method.apply(this, arguments)}
+            if (type == "error" && this.handles_error && ((status > 499 && status < 600) || status == 400)) { 
+                arguments.ajax = this;
+                return method(arguments)
+            }
 
             var args = wrap.apply(this, arguments);
             args = _.toArray(args);
@@ -163,6 +171,7 @@
         
         // skip aborts
         if (xhr != "abort") {
+            arguments.ajax.critical = arguments.ajax.critical == undefined ? true : arguments.ajax.critical;
             if (!settings.handles_error) api.trigger("error", arguments);
         }
         return arguments;

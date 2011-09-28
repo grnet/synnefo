@@ -117,10 +117,12 @@
 
         show_next: function() {
             this.current_vm++;
-            if (this.current_vm >= storage.vms.length) {
+            if (this.current_vm >= storage.vms.models.length) {
                 this.current_vm = 0;
             }
+
             this.update_current_vm();
+            this.show_current();
             this.__update_layout();
         },
 
@@ -130,6 +132,7 @@
                 this.current_vm = storage.vms.length - 1;
             }
             this.update_current_vm();
+            this.show_current();
             this.__update_layout();
         },
 

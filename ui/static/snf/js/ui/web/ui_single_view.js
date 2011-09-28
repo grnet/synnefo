@@ -169,8 +169,8 @@
             this.tags_views[vm.id] = new views.VMTagsView(vm, this, true, 20, 10, 35);
             this.details_views[vm.id] = new views.SingleDetailsView(vm, this);
             this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
-
-            this.vm(vm).hide();
+            
+            if (storage.vms.models.length > 1) { this.vm(vm).hide(); };
         },
 
         post_update_vm: function(vm) {

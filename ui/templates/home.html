@@ -201,7 +201,9 @@
             // error box title
             'GENERIC_POPUP_HEADER' : '{% trans "Something seems to have gone wrong :( Here is what happened:" %}',
             // no advanced details
-            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}'
+            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}',
+            // timeout message
+            'TIMEOUT' : '{% trans "It seems the server takes too long to respond, please check your network connectivity" %}'
         };
 
         var SUGGESTED_FLAVORS = {{ suggested_flavors|safe }};

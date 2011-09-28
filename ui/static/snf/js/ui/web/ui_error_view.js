@@ -132,7 +132,7 @@
         update_details: function() {
             var title = "Application error";
             if (this.ns && this.type) {
-                title = this.type + ": " + this.message;
+                title = this.title || this.type + " Error";
             }
             this.$(".header .title").text(title);
             this.$(".error-code").text(this.code || "");

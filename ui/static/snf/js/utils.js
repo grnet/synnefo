@@ -186,8 +186,9 @@
     
     synnefo.i18n.API_ERROR_MESSAGES = {
         'timeout': {
-            'message': 'Timeout', 
-            'allow_report': false
+            'message': 'TIMEOUT', 
+            'allow_report': false,
+            'type': 'Network'
         },
         
         'error': {
@@ -328,6 +329,15 @@
         options = _.extend(options, {'details': details, 'message': error_message, 'ns': module, 'extra_details': extra});
         options = _.extend(options, call_settings);
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[error_message] || {});
+        
+        if (window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[options.message]) {
+            options.message = window.ERROR_OVERRIDES[options.message];
+        }
+
+        if (options.code && window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[code]) {
+            options.message = window.ERROR_OVERRIDES[code];
+        }
+
         options = _.extend(defaults, options);
         options.code = code;
 

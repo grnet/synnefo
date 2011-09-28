@@ -415,16 +415,26 @@
         },
 
         stop_intervals: function() {
-            this._networks.stop();
-            this._vms.stop();
+            if (this._networks) { this._networks.stop(); }
+            if (this._vms) { this._vms.stop(); }
             this.intervals_stopped = true;
         },
 
         update_intervals: function() {
-            this._networks.stop();
-            this._networks.start();
-            this._vms.stop();
-            this._vms.start();
+            if (this._networks) {
+                this._networks.stop();
+                this._networks.start();
+            } else {
+                this.init_intervals();
+            }
+
+            if (this._vms) {
+                this._vms.stop();
+                this._vms.start();
+            } else {
+                this.init_intervals();
+            }
+
             this.intervals_stopped = false;
         },
 

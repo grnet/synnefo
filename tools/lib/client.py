@@ -83,8 +83,7 @@ class Client(object):
                 full_path = '%s&%s=' %(full_path, k)
         conn = HTTPConnection(self.host)
         
-        #encode whitespace
-        full_path = full_path.replace(' ', '%20')
+        full_path = urllib.quote(full_path, '?&:=/')
         
         kwargs = {}
         for k,v in headers.items():
@@ -139,6 +138,9 @@ class Client(object):
                 full_path = '%s&%s=%s' %(full_path, k, v)
             else:
                 full_path = '%s&%s=' %(full_path, k)
+        
+        full_path = urllib.quote(full_path, '?&:=/')
+        
         http.putrequest(method, full_path)
         http.putheader('x-auth-token', self.token)
         http.putheader('content-type', 'application/octet-stream')
@@ -218,7 +220,7 @@ class Client(object):
         elif format == 'xml':
             data = minidom.parseString(data)
         else:
-            data = data.strip().split('\n') if data else ''
+            data = data.split('\n')[:-1] if data else ''
         return data
     
     def _get_metadata(self, path, prefix=None, params={}):
@@ -464,7 +466,7 @@ class OOS_Client(Client):
         l = [elem for elem in l if eval(elem)]
         for elem in l:
             headers.update({elem:eval(elem)})
-            
+        
         if 'content_range' not in headers.keys():
             if offset != None:
                 headers['content_range'] = 'bytes %s-/*' % offset

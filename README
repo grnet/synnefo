@@ -1,10 +1,23 @@
+README
+======
+
+Pithos is a file storage service, built using Django (https://www.djangoproject.com/).
+Consult LICENSE for licensing information.
+
 Documentation
 -------------
 
-To build the documentation you need to have Sphinx installed:
-http://sphinx.pocoo.org/
+All docs are in the docs/source directory. The .rst files are perfectly readable in source form.
 
-Run:
+To build the documentation you need to have Sphinx (http://sphinx.pocoo.org/) installed.
+
+On a typical debian-based Linux system run:
+    apt-get install python-django python-setuptools python-sphinx
+    apt-get install python-sqlalchemy python-psycopg2
+
+Enter the pithos dir, copy settings.py.dist to settings.py.
+
+Then run:
     python setup.py build_sphinx
 
 The documentation will be built in the docs/build/html directory.
@@ -17,7 +30,11 @@ Then find the plain text version of the docs in docs/build/text.
 Running the server
 ------------------
 
-Enter the pithos dir, copy settings.py.dist to settings.py and change the SECRET_KEY inside.
+Make sure you have all required packages installed:
+    apt-get install python-django python-setuptools python-sphinx
+    apt-get install python-sqlalchemy python-psycopg2
+
+Enter the pithos dir, copy settings.py.dist to settings.py.
 
 Then run:
     python manage.py syncdb
@@ -25,3 +42,4 @@ Then run:
     python manage.py runserver
 
 This server is useful during development, but should not be used for deployment.
+To deploy Pithos using Apache, take a look at the Administrator Guide in docs.

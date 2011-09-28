@@ -159,8 +159,10 @@
             this.editing = false;
             var meta = this.get_editor_values();
             if (this.validate(meta)) {
+                this.$(".editor .create").addClass('in-progress');
                 this.current_vm.save_meta(meta, _.bind(function() {
                     this.close_editor();
+                    this.$(".editor .create").removeClass('in-progress');
                 }, this));
             } else {
                 this.editor.find(".form-field label").addClass("error");
@@ -214,6 +216,7 @@
         },
 
         show_create: function() {
+            this.$(".editor .create").removeClass('in-progress');
             this.show_editor();
         },
 

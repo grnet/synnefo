@@ -676,6 +676,9 @@
             // FIXME: depricated
             $(".large-spinner").remove();
 
+            storage.vms.reset_pending_actions();
+            storage.vms.reset_stats_update();
+
             // show current view
             this.show_view_pane();
             view.show();
@@ -706,7 +709,6 @@
             // trigger view change event
             this.trigger("view:change", this.current_view.view_id);
             $(window).trigger("view:change");
-            storage.vms.reset_pending_actions();
             return view;
         },
 

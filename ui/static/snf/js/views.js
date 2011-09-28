@@ -207,6 +207,7 @@
         onClose: function () {},
 
         show: function() {
+            // close opened overlays
             var hidden = false;
             _.each(views._overlay_index, function(ovr){
                 if (ovr == this) { return };
@@ -216,11 +217,8 @@
                 }
             })
 
-            if (hidden) {
-                delay = 300;
-            } else {
-                delay = 0;
-            }
+            // do we need to wait for other overlays to close ???
+            if (hidden) { delay = 300; } else { delay = 0; }
             window.setTimeout(_.bind(function(){ this.overlay.load() }, this), delay)
             return this;
         },

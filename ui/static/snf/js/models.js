@@ -330,7 +330,7 @@
                 var removed_from_net = this.vms.remove(model.id);
                 var removed_from_vm = model.networks.remove(this.id);
                 if (removed_from_net) {this.trigger("vm:disconnect", model, this); this.change()};
-                if (removed_from_vm) {vm.trigger("network:disconnect", this, model); this.change()};
+                if (removed_from_vm) {model.trigger("network:disconnect", this, model); this.change()};
                 return;
             }
             
@@ -457,16 +457,10 @@
             // this will dynamicaly change if the server responds that
             // images get refreshed on different intervals
             this.stats_update_interval = synnefo.config.STATS_INTERVAL || 5000;
+            this.stats_available = false;
 
             // initialize interval
             this.init_stats_intervals(this.stats_update_interval);
-            
-            // clear stats intervals on update
-            this.bind("remove", _.bind(function(){
-                try {
-                    window.clearInterval(this.stats_interval);
-                } catch (err) {};
-            }, this));
             
             this.bind("change:progress", _.bind(this.update_building_progress, this));
             this.update_building_progress();
@@ -477,7 +471,7 @@
             this.set({linked_to_nets:this.get("linked_to_nets") || []});
             this.set({firewalls:this.get("firewalls") || []});
 
-            this.action_error = false;
+            this.bind("change:state", _.bind(function(){if (this.state() == "DESTROY") { this.handle_destroy() }}, this))
         },
 
         handle_firewall_change: function() {
@@ -555,53 +549,129 @@
 
         // clear and reinitialize update interval
         init_stats_intervals: function (interval) {
-            try {
-                window.clearInterval(this.stats_interval);
-            } catch (err){}
-            //this.stats_interval = window.setInterval(_.bind(this.update_stats, this), interval);
-            //this.update_stats(true);
+            this.stats_fetcher = this.get_stats_fetcher(this.stats_update_interval);
+            this.stats_fetcher.start();
+            this.update_stats(true);
         },
         
+        get_stats_fetcher: function(timeout) {
+            var cb = _.bind(function(data){
+                this.update_stats();
+            }, this);
+            var fetcher = new snf.api.updateHandler({'callback': cb, timeout:timeout});
+            return fetcher;
+        },
+
         // do the api call
         update_stats: function(force) {
             // do not update stats if flag not set
             if (!this.do_update_stats && !force) {
                 return;
             }
-            
+
             // make the api call, execute handle_stats_update on sucess
             // TODO: onError handler ???
             stats_url = this.url() + "/stats";
-            this.sync("GET", this, {url: stats_url, refresh:true, success: _.bind(this.handle_stats_update, this)});
+            this.sync("GET", this, {
+                handles_error:true, 
+                url: stats_url, 
+                refresh:true, 
+                success: _.bind(this.handle_stats_update, this),
+                error: _.bind(this.handle_stats_error)
+            });
+        },
+
+        get_stats_image: function(stat, type) {
         },
         
+        _set_stats: function(stats) {
+            var silent = silent === undefined ? false : silent;
+            // unavailable stats while building
+            if (this.get("status") == "BUILD") { 
+                this.stats_available = false;
+            } else { this.stats_available = true; }
+
+            if (this.get("status") == "DESTROY") { this.stats_available = false; }
+            
+            this.set({stats: stats}, {silent:true});
+            this.trigger("stats:update", stats);
+        },
+
+        unbind: function() {
+            models.VM.__super__.unbind.apply(this, arguments);
+        },
+
+        handle_stats_error: function() {
+            stats = {};
+            _.each(['cpuBar', 'cpuTimeSeries', 'netBar', 'netTimeSeries'], function(k) {
+                stats[k] = false;
+            });
+
+            this.set({'stats': stats});
+        },
+
         // this method gets executed after a successful vm stats api call
         handle_stats_update: function(data) {
+            var self = this;
             // avoid browser caching
+            
             if (data.stats && _.size(data.stats) > 0) {
                 var ts = $.now();
                 var stats = data.stats;
+                var images_loaded = 0;
+                var images = {};
+
+                function check_images_loaded() {
+                    images_loaded++;
+
+                    if (images_loaded == 4) {
+                        self._set_stats(images);
+                    }
+                }
                 _.each(['cpuBar', 'cpuTimeSeries', 'netBar', 'netTimeSeries'], function(k) {
+                    
                     stats[k] = stats[k] + "?_=" + ts;
+                    
+                    var stat = k.slice(0,3);
+                    var type = k.slice(3,6) == "Bar" ? "bar" : "time";
+                    var img = $("<img />");
+                    var val = stats[k];
+                    
+                    // load stat image to a temporary dom element
+                    // update model stats on image load/error events
+                    img.load(function() {
+                        images[k] = val;
+                        check_images_loaded();
+                    });
+
+                    img.error(function() {
+                        images[stat + type] = false;
+                        check_images_loaded();
+                    });
+
+                    img.attr({'src': stats[k]});
                 })
                 data.stats = stats;
             }
-            this.set({'stats': data.stats}, {silent:true});
-            // trigger the event
-            this.trigger("stats:update");
-    
+
             // do we need to change the interval ??
             if (data.stats.refresh * 1000 != this.stats_update_interval) {
                 this.stats_update_interval = data.stats.refresh * 1000;
-                this.init_stats_intervals(this.stats_update_interval);
+                this.stats_fetcher.timeout = this.stats_update_interval;
+                this.stats_fetcher.stop();
+                this.stats_fetcher.start();
             }
         },
-        
+
         // helper method that sets the do_update_stats
         // in the future this method could also make an api call
         // immediaetly if needed
         enable_stats_update: function() {
             this.do_update_stats = true;
+        },
+        
+        handle_destroy: function() {
+            this.stats_fetcher.stop();
         },
 
         require_reboot: function() {
@@ -1064,7 +1134,7 @@
     models.VM.ACTIVE_STATES = [
         'BUILD', 'REBOOT', 'ACTIVE',
         'BUILD_INIT', 'BUILD_COPY', 'BUILD_FINAL',
-        'SHUTDOWN', 'CONNECT', 'DISCONNECT'
+        'SHUTDOWN', 'CONNECT', 'DISCONNECT', 'DESTROY'
     ]
 
     models.VM.BUILDING_STATES = [
@@ -1247,6 +1317,12 @@
         reset_pending_actions: function() {
             this.each(function(vm) {
                 vm.clear_pending_action();
+            })
+        },
+
+        reset_stats_update: function() {
+            this.each(function(vm) {
+                vm.do_update_stats = false;
             })
         },
         

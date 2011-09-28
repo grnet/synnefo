@@ -103,9 +103,10 @@
 
                 if (this.toggler.hasClass("open")) {
                     this.toggler.removeClass("open");
+                    this.vm.do_update_stats = false;
                 } else {
                     this.toggler.addClass("open");
-                    get_server_stats(this.vm.id);
+                    this.vm.do_update_stats = true;
                 }
                 
                 var self = this;
@@ -441,60 +442,35 @@
             this.net_loading = this.el.find(".network-graph .stat-busy");
             this.net_error = this.el.find(".network-graph .stat-error");
             this.net_img = this.el.find(".network-graph .stat-img");
+
+            this.loading = this.el.find(".stat-busy");
+            this.error = this.el.find(".stat-error");
+            this.img = this.el.find(".stat-img");
             
             // initial state paremeters
-            this.is_building = (this.vm.get("status") == "BUILD");
-            this.stats_error = false;
             this.stats = this.vm.get("stats");
-            this.loading = false;
 
             // timeseries or bar images ?
             this.stats_type = options.stats_type || "bar";
-            
-            // stats undefined so probably not loaded yet
-            if (this.stats === undefined) {
-                this.loading = true;
-            }
 
             views.VMStatsView.__super__.initialize.apply(this, arguments);
             this.set_handlers();
             this.update_layout();
+
+            this.net_loading.show();
+            this.net_error.hide();
+            this.cpu_loading.show();
+            this.cpu_error.hide();
+
+            this.net_img.hide();
+            this.cpu_img.hide();
         },
 
         
         set_handlers: function() {
             // update view state when vm stats update gets triggered
             this.vm.bind("stats:update", _.bind(function(){
-                // update building state
-                if (this.vm.get("status") == "BUILD") {
-                    this.is_building = true;
-                } else {
-                    this.is_building = false;
-                }
-                
-                // update loading state
-                this.stats = this.vm.get("stats");
-                if (this.stats == undefined) {
-                    this.loading = true
-                } else {
-                    this.loading = false;
-                }
-                
                 // update the layout
-                this.update_layout();
-            }, this));
-
-            this.vm.bind("stats:error", _.bind(function(){
-                this.stats_error = true;
-            }, this))
-
-            this.cpu_img.error(_.bind(function(){
-                this.stats_error = true;
-                this.update_layout();
-            }, this));
-
-            this.net_img.error(_.bind(function(){
-                this.stats_error = true;
                 this.update_layout();
             }, this));
         },
@@ -508,35 +484,32 @@
         },
 
         update_layout: function() {
-            if (this.stats_error) {
-                this.net_loading.hide();
-                this.cpu_loading.hide();
-                this.net_img.hide();
-                this.cpu_img.hide();
-                this.cpu_error.show();
-                this.net_error.show();
-                return;
-            }
+            if (!this.vm.stats_available) {
+                this.loading.show();
+                this.img.hide();
+                this.error.hide();
+            } else {
+                this.loading.hide();
+                this.stats = this.vm.get("stats");
+                var images = this.get_images(this.stats_type);
 
-            if (this.loading) {
-                this.net_loading.show();
-                this.cpu_loading.show();
-                this.net_img.hide();
-                this.cpu_img.hide();
-                this.cpu_error.hide();
-                this.net_error.hide();
-                return;
-            }
+                if (images.cpu) {
+                    this.cpu_img.attr({src:images.cpu}).show();
+                    this.cpu_error.hide();
+                } else {
+                    this.cpu_img.hide();
+                    this.cpu_error.show();
+                }
 
-            this.net_loading.hide();
-            this.cpu_loading.hide();
-            this.cpu_error.hide();
-            this.net_error.hide();
-            
-            this.net_img.attr("src", this.get_images(this.stats_type).net);
-            this.cpu_img.attr("src", this.get_images(this.stats_type).cpu);
-            this.net_img.show();
-            this.cpu_img.show();
+                if (images.net) {
+                    this.net_img.attr({src:images.net}).show();
+                    this.net_error.hide();
+                } else {
+                    this.net_img.hide();
+                    this.net_error.show();
+                }
+            }
+            $(window).trigger("resize");
         }
     });
 

@@ -68,9 +68,12 @@
         },
 
         // overload show function
-        show_view: function() {
+        show: function() {
+            views.SingleView.__super__.show.apply(this, arguments);
             this.log.debug("showing");
             this.$(".column3").show();
+            this.show_vm_menu();
+            this.show_current();
         },
 
         show_vm: function(vm) {
@@ -101,8 +104,11 @@
         },  
 
         update_current_vm: function() {
+            storage.vms.reset_stats_update();
+
             try {
                 this.current_vm_instance = storage.vms.at(this.current_vm);
+                this.current_vm_instance.do_update_stats = true;
             } catch (err) {
                 this.log.debug("Cannot select current vm instance for: {0}".format(this.current_vm));
             }
@@ -139,6 +145,9 @@
         // stuff to do when a new vm has been created.
         // - create vm subviews
         post_add: function(vm) {
+            this.show_vm_menu();
+            this.show_current();
+
             // rename views index
             this.stats_views = this.stats_views || {};
             this.connect_views = this.connect_views || {};
@@ -159,7 +168,6 @@
         },
 
         post_update_vm: function(vm) {
-            vm.enable_stats_update();
         },
         
         // vm specific event handlers
@@ -170,14 +178,20 @@
         // handle selected vm
         show_current: function() {
             var index = this.current_vm;
-            
+            var vm = storage.vms.at(index);
+
             this.$(".server-name").removeClass("column3-selected");
             
-            _.each(storage.vms.models, function(vm){
-                this.vm(vm).hide();
+            if (vm) {
+                this.vm(vm).show();
+            };
+
+            _.each(storage.vms.models, function(vmo){
+                if (vm && (vm.id != vmo.id)) {
+                    this.vm(vmo).hide();
+                }
             }, this)
 
-            vm = storage.vms.at(index);
             if (!vm) {
                 // empty list
                 this.$(".column3").hide();
@@ -185,9 +199,6 @@
             }
             this.$(".column3").show();
 
-            if (vm) {
-                this.vm(vm).show();
-            };
 
             $("#" + this.link_id_tpl + this.current_vm).addClass("column3-selected");
         },
@@ -205,8 +216,6 @@
             
             var self = this;
             this.menu.find(".server-name").click(function(ev) {
-                storage.vms.reset_pending_actions();
-
                 ev.preventDefault();
                 var id = $(this).attr("id").replace("single-vm-at-", "");
                 self.current_vm = id;
@@ -219,8 +228,6 @@
         // called once after each vm has been updated
         update_layout: function() {
             this.update_current_vm();
-            this.show_vm_menu();
-            this.show_current();
             fix_v6_addresses();
         },
 

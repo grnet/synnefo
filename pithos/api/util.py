@@ -281,20 +281,21 @@ def split_container_object_string(s):
         raise ValueError
     return s[:pos], s[(pos + 1):]
 
-def copy_or_move_object(request, v_account, src_container, src_name, dest_container, dest_name, move=False):
+def copy_or_move_object(request, src_account, src_container, src_name, dest_account, dest_container, dest_name, move=False):
     """Copy or move an object."""
     
     meta, permissions, public = get_object_headers(request)
-    src_version = request.META.get('HTTP_X_SOURCE_VERSION')    
+    print '---', meta, permissions, public
+    src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:
-            version_id = request.backend.move_object(request.user, v_account,
-                            src_container, src_name, dest_container, dest_name,
-                            meta, False, permissions)
+            version_id = request.backend.move_object(request.user, src_account, src_container, src_name,
+                                                        dest_account, dest_container, dest_name,
+                                                        meta, False, permissions)
         else:
-            version_id = request.backend.copy_object(request.user, v_account,
-                            src_container, src_name, dest_container, dest_name,
-                            meta, False, permissions, src_version)
+            version_id = request.backend.copy_object(request.user, src_account, src_container, src_name,
+                                                        dest_account, dest_container, dest_name,
+                                                        meta, False, permissions, src_version)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     except (NameError, IndexError):
@@ -305,8 +306,7 @@ def copy_or_move_object(request, v_account, src_container, src_name, dest_contai
         raise Conflict(json.dumps(e.data))
     if public is not None:
         try:
-            request.backend.update_object_public(request.user, v_account,
-                                            dest_container, dest_name, public)
+            request.backend.update_object_public(request.user, dest_account, dest_container, dest_name, public)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:

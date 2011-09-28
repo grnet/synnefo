@@ -728,18 +728,23 @@ def object_write(request, v_account, v_container, v_object):
     if copy_from or move_from:
         content_length = get_content_length(request) # Required by the API.
         
+        src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
+        if not src_account:
+            src_account = request.user
         if move_from:
             try:
                 src_container, src_name = split_container_object_string(move_from)
             except ValueError:
                 raise BadRequest('Invalid X-Move-From header')
-            version_id = copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=True)
+            version_id = copy_or_move_object(request, src_account, src_container, src_name,
+                                                v_account, v_container, v_object, move=True)
         else:
             try:
                 src_container, src_name = split_container_object_string(copy_from)
             except ValueError:
                 raise BadRequest('Invalid X-Copy-From header')
-            version_id = copy_or_move_object(request, v_account, src_container, src_name, v_container, v_object, move=False)
+            version_id = copy_or_move_object(request, src_account, src_container, src_name,
+                                                v_account, v_container, v_object, move=False)
         response = HttpResponse(status=201)
         response['X-Object-Version'] = version_id
         return response
@@ -875,7 +880,10 @@ def object_copy(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    dest_path = request.META.get('HTTP_DESTINATION')
+    dest_account = smart_unicode(request.META.get('HTTP_DESTINATION_ACCOUNT'), strings_only=True)
+    if not dest_account:
+        dest_account = request.user
+    dest_path = smart_unicode(request.META.get('HTTP_DESTINATION'), strings_only=True)
     if not dest_path:
         raise BadRequest('Missing Destination header')
     try:
@@ -895,7 +903,8 @@ def object_copy(request, v_account, v_container, v_object):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
-    version_id = copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=False)
+    version_id = copy_or_move_object(request, v_account, v_container, v_object,
+                                        dest_account, dest_container, dest_name, move=False)
     response = HttpResponse(status=201)
     response['X-Object-Version'] = version_id
     return response
@@ -908,7 +917,10 @@ def object_move(request, v_account, v_container, v_object):
     #                       unauthorized (401),
     #                       badRequest (400)
     
-    dest_path = request.META.get('HTTP_DESTINATION')
+    dest_account = smart_unicode(request.META.get('HTTP_DESTINATION_ACCOUNT'), strings_only=True)
+    if not dest_account:
+        dest_account = request.user
+    dest_path = smart_unicode(request.META.get('HTTP_DESTINATION'), strings_only=True)
     if not dest_path:
         raise BadRequest('Missing Destination header')
     try:
@@ -927,7 +939,8 @@ def object_move(request, v_account, v_container, v_object):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
     
-    version_id = copy_or_move_object(request, v_account, v_container, v_object, dest_container, dest_name, move=True)
+    version_id = copy_or_move_object(request, v_account, v_container, v_object,
+                                        dest_account, dest_container, dest_name, move=True)
     response = HttpResponse(status=201)
     response['X-Object-Version'] = version_id
     return response

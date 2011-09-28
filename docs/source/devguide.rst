@@ -27,6 +27,7 @@ Revision                   Description
 =========================  ================================
 0.7 (Sept 28, 2011)        Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
+\                          Support cross-account object copy and move.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -723,6 +724,7 @@ Content-Type          The MIME content type of the object
 Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 X-Copy-From           The source path in the form ``/<container>/<object>``
 X-Move-From           The source path in the form ``/<container>/<object>``
+X-Source-Account      The source account to copy/move from
 X-Source-Version      The source version to copy from
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
@@ -773,6 +775,7 @@ Request Header Name   Value
 If-Match              Proceed if ETags match with object
 If-None-Match         Proceed if ETags don't match with object
 Destination           The destination path in the form ``/<container>/<object>``
+Destination-Account   The destination account to copy to
 Content-Type          The MIME content type of the object (optional)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
@@ -972,6 +975,7 @@ List of differences from the OOS API:
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.
 * Sharing/publishing with ``X-Object-Sharing``, ``X-Object-Public`` at the object level. Cross-user operations are allowed - controlled by sharing directives. Available actions in cross-user requests are reported with ``X-Object-Allowed-To``. Permissions may include groups defined with ``X-Account-Group-*`` at the account level. These apply to the object - not its versions.
 * Support for prefix-based inheritance when enforcing permissions. Parent object carrying the authorization directives is reported in ``X-Object-Shared-By``.
+* Copy and move between accounts with ``X-Source-Account`` and ``Destination-Account`` headers.
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.
 * Purge container/object history with the ``until`` parameter in ``DELETE``.

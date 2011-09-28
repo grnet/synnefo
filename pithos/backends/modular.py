@@ -509,17 +509,17 @@ class ModularBackend(BaseBackend):
             self.permissions.access_set(path, permissions)
         return dest_version_id
     
-    def _copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
-        if permissions is not None and user != account:
+    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+        if permissions is not None and user != dest_account:
             raise NotAllowedError
-        self._can_read(user, account, src_container, src_name)
-        self._can_write(user, account, dest_container, dest_name)
-        src_path, src_node = self._lookup_object(account, src_container, src_name)
+        self._can_read(user, src_account, src_container, src_name)
+        self._can_write(user, dest_account, dest_container, dest_name)
+        src_path, src_node = self._lookup_object(src_account, src_container, src_name)
         self._get_version(src_node, src_version)
         if permissions is not None:
-            dest_path = '/'.join((account, container, name))
+            dest_path = '/'.join((dest_account, dest_container, dest_name))
             self._check_permissions(dest_path, permissions)
-        dest_path, dest_node = self._put_object_node(account, dest_container, dest_name)
+        dest_path, dest_node = self._put_object_node(dest_account, dest_container, dest_name)
         src_version_id, dest_version_id = self._copy_version(user, src_node, src_version, dest_node)
         if src_version_id is not None:
             self._copy_data(src_version_id, dest_version_id)
@@ -531,19 +531,21 @@ class ModularBackend(BaseBackend):
         return dest_version_id
     
     @backend_method
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata."""
         
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
-        return self._copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+        return self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
     
     @backend_method
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
-        dest_version_id = self._copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
-        self._delete_object(user, account, src_container, src_name)
+        logger.debug("move_object: %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions)
+        if user != src_account:
+            raise NotAllowedError
+        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
+        self._delete_object(user, src_account, src_container, src_name)
         return dest_version_id
     
     def _delete_object(self, user, account, container, name, until=None):

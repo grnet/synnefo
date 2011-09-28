@@ -535,20 +535,20 @@ class SimpleBackend(BaseBackend):
         return dest_version_id
     
     @backend_method
-    def copy_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata."""
         
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
-        if permissions is not None and user != account:
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+        if permissions is not None and user != dest_account:
             raise NotAllowedError
-        self._can_read(user, account, src_container, src_name)
-        self._can_write(user, account, dest_container, dest_name)
-        self._get_containerinfo(account, src_container)
+        self._can_read(user, src_account, src_container, src_name)
+        self._can_write(user, dest_account, dest_container, dest_name)
+        self._get_containerinfo(src_account, src_container)
         if src_version is None:
-            src_path = self._get_objectinfo(account, src_container, src_name)[0]
+            src_path = self._get_objectinfo(src_account, src_container, src_name)[0]
         else:
-            src_path = '/'.join((account, src_container, src_name))
-        dest_path = self._get_containerinfo(account, dest_container)[0]
+            src_path = '/'.join((src_account, src_container, src_name))
+        dest_path = self._get_containerinfo(dest_account, dest_container)[0]
         dest_path = '/'.join((dest_path, dest_name))
         if permissions is not None:
             r, w = self._check_permissions(dest_path, permissions)
@@ -561,12 +561,12 @@ class SimpleBackend(BaseBackend):
         return dest_version_id
     
     @backend_method
-    def move_object(self, user, account, src_container, src_name, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s %s %s %s %s", account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions)
-        dest_version_id = self.copy_object(user, account, src_container, src_name, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
-        self.delete_object(user, account, src_container, src_name)
+        logger.debug("move_object: %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions)
+        dest_version_id = self.copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
+        self.delete_object(user, src_account, src_container, src_name)
         return dest_version_id
     
     @backend_method

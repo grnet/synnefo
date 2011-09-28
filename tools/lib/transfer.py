@@ -31,24 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import os
+
 from hashmap import HashMap
 from binascii import hexlify, unhexlify
 from cStringIO import StringIO
-from lib.client import Fault
+from client import Fault
 
-import os
-import sys
 
-def smart_upload(client, file, blocksize, blockhash):
-    dest_container = 'pithos'
-    dest_object = os.path.split(file)[-1]
+def upload(client, file, container, prefix):
+    
+    meta = client.retrieve_container_metadata(container)
+    blocksize = int(meta['x-container-block-size'])
+    blockhash = meta['x-container-block-hash']
     
     size = os.path.getsize(file)
-    hashes = HashMap(sys.argv[1], blocksize, blockhash)
+    hashes = HashMap(blocksize, blockhash)
+    hashes.load(file)
     map = {'bytes': size, 'hashes': [hexlify(x) for x in hashes]}
     
+    object = prefix + os.path.split(file)[-1]
     try:
-        client.create_object_by_hashmap(dest_container, dest_object, map)
+        client.create_object_by_hashmap(container, object, map)
     except Fault, fault:
         if fault.status != 409:
             raise
@@ -64,6 +68,6 @@ def smart_upload(client, file, blocksize, blockhash):
             offset = hashes.index(unhexlify(hash)) * BLOCK_SIZE
             fp.seek(offset)
             block = fp.read(BLOCK_SIZE)
-            client.create_object('pithos', '.upload', StringIO(block))
+            client.create_object(container, '.upload', StringIO(block))
     
-    client.create_object_by_hashmap(dest_container, dest_object, map)
+    client.create_object_by_hashmap(container, object, map)

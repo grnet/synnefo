@@ -42,11 +42,10 @@ def file_read_iterator(fp, size=1024):
 
 class HashMap(list):
     
-    def __init__(self, f, blocksize, blockhash):
+    def __init__(self, blocksize, blockhash):
         super(HashMap, self).__init__()
         self.blocksize = blocksize
         self.blockhash = blockhash
-        self.load(f)
     
     def _hash_raw(self, v):
         h = hashlib.new(self.blockhash)

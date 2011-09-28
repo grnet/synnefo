@@ -40,6 +40,7 @@ from sys import argv, exit, stdin, stdout
 from datetime import datetime
 from lib.client import Pithos_Client, Fault
 from lib.util import get_user, get_auth, get_server, get_api
+from lib.transfer import upload
 
 import json
 import logging
@@ -684,6 +685,15 @@ class SharingObject(Command):
         args['format'] = 'json' if self.detail else 'text'
         
         print_list(self.client.list_shared_by_others(**args))
+
+@cli_command('send')
+class Send(Command):
+    syntax = '<file> <container>[/<prefix>]'
+    description = 'upload file to container (using prefix)'
+        
+    def execute(self, file, prefix):
+        container, sep, prefix = prefix.partition('/')
+        upload(self.client, file, container, prefix)
 
 def print_usage():
     cmd = Command('', [])

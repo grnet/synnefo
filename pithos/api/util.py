@@ -88,7 +88,7 @@ def printable_header_dict(d):
     Format 'last_modified' timestamp.
     """
     
-    d['last_modified'] = isoformat(datetime.fromtimestamp(int(d['last_modified'])))
+    d['last_modified'] = isoformat(datetime.fromtimestamp(d['last_modified']))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 def format_header_key(k):

@@ -1,4 +1,3 @@
-{% spaceless %}
 <?xml version="1.0" encoding="UTF-8"?>
 
 <object name="{{ object }}" bytes="{{ bytes }}" block_size="{{ block_size }}" block_hash="{{ block_hash }}">
@@ -6,4 +5,3 @@
   <hash>{{ hash }}</hash>
   {% endfor %}
 </object>
-{% endspaceless %}

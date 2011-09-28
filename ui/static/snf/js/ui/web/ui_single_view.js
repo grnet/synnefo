@@ -57,7 +57,6 @@
         
         initialize: function() {
             this.current_vm = 0;
-            this.update_current_vm();
             
             // button selectors
             this.prev_button = this.$(".controls .previous");
@@ -65,6 +64,7 @@
             this.menu = $("#single-servers-list");
 
             views.SingleView.__super__.initialize.apply(this, arguments);
+            this.update_current_vm();
         },
 
         // overload show function
@@ -110,6 +110,7 @@
                 this.current_vm_instance = storage.vms.at(this.current_vm);
                 this.current_vm_instance.do_update_stats = true;
             } catch (err) {
+                console.trace();
                 this.log.debug("Cannot select current vm instance for: {0}".format(this.current_vm));
             }
         },
@@ -165,6 +166,8 @@
             this.tags_views[vm.id] = new views.VMTagsView(vm, this, true, 20, 10, 35);
             this.details_views[vm.id] = new views.SingleDetailsView(vm, this);
             this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
+
+            this.vm(vm).hide();
         },
 
         post_update_vm: function(vm) {

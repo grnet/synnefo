@@ -121,8 +121,8 @@
             // create if it does not exist
             if (this.vm(vm).length == 0) {
                 this.create_vm(vm);
-                this.post_add(vm);
                 this.vm(vm).show();
+                this.post_add(vm);
             }
 
             return this.vm(vm);
@@ -412,10 +412,8 @@
                 this.update_layout();
 
             }, this),  _.bind(function() {
-                if (self.hide) {
-                    this.hovered = false;
-                    this.update_layout();
-                }
+                this.hovered = false;
+                this.update_layout();
             }, this));
 
             

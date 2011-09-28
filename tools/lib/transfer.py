@@ -65,9 +65,35 @@ def upload(client, file, container, prefix):
     
     with open(file) as fp:
         for hash in missing:
-            offset = hashes.index(unhexlify(hash)) * BLOCK_SIZE
+            offset = hashes.index(unhexlify(hash)) * blocksize
             fp.seek(offset)
-            block = fp.read(BLOCK_SIZE)
+            block = fp.read(blocksize)
             client.create_object(container, '.upload', StringIO(block))
     
     client.create_object_by_hashmap(container, object, map)
+
+def download(client, container, object, file):
+    
+    meta = client.retrieve_container_metadata(container)
+    blocksize = int(meta['x-container-block-size'])
+    blockhash = meta['x-container-block-hash']
+    
+    if os.path.isfile(file):
+        size = os.path.getsize(file)
+        hashes = HashMap(blocksize, blockhash)
+        hashes.load(file)
+    else:
+        size = 0
+        hashes = []
+    
+    map = client.retrieve_object_hashmap(container, object)
+    
+    with open(file, 'a') as fp:
+        for i, h in enumerate(map):
+            if i < len(hashes) and h == hashes[i]:
+                continue
+            start = i * blocksize
+            end = '' if i == len(map) - 1 else (i + 1) * blocksize
+            data = client.retrieve_object(container, object, range='bytes=%s-%s' % (start, end))
+            fp.seek(start)
+            fp.write(data)

@@ -220,7 +220,7 @@ class Client(object):
         elif format == 'xml':
             data = minidom.parseString(data)
         else:
-            data = data.split('\n') if data else ''
+            data = data.split('\n')[:-1] if data else ''
         return data
     
     def _get_metadata(self, path, prefix=None, params={}):

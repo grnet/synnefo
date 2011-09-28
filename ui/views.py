@@ -243,9 +243,6 @@ def feedback_submit(request):
     mail_context = {'message': message, 'data': data, 'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)
 
-    if settings.DEBUG:
-        print mail_subject, mail_content
-
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
             dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 

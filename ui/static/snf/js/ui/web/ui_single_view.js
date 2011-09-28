@@ -257,8 +257,7 @@
 
             if (vm.get('status') == 'BUILD') {
                 // update bulding progress
-                var progress_details = get_progress_details(vm.id);
-                el.find("span.build-progress").show().text(progress_details.msg);
+                el.find("span.build-progress").show().text(vm.get("progress_message"));
             } else {
                 // hide building progress
                 el.find("span.build-progress").hide();

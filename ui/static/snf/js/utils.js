@@ -333,8 +333,8 @@
         if (window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[options.message]) {
             options.message = window.ERROR_OVERRIDES[options.message];
         }
-
-        if (options.code && window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[code]) {
+        
+        if (code && window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[code]) {
             options.message = window.ERROR_OVERRIDES[code];
         }
 
@@ -375,4 +375,45 @@
           range.select();
         }
     }
+
+    // trim prototype for IE
+    if(typeof String.prototype.trim !== 'function') {
+        String.prototype.trim = function() {
+            return this.replace(/^\s+|\s+$/g, '');
+        }
+    }
+
+    // http://stackoverflow.com/questions/499126/jquery-set-cursor-position-in-text-area 
+    $.fn.setCursorPosition = function(pos) {
+        if ($(this).get(0).setSelectionRange) {
+          $(this).get(0).setSelectionRange(pos, pos);
+        } else if ($(this).get(0).createTextRange) {
+          var range = $(this).get(0).createTextRange();
+          range.collapse(true);
+          range.moveEnd('character', pos);
+          range.moveStart('character', pos);
+          range.select();
+        }
+    }
+
+    // indexOf prototype for IE
+    if (!Array.prototype.indexOf) {
+      Array.prototype.indexOf = function(elt /*, from*/) {
+        var len = this.length;
+        var from = Number(arguments[1]) || 0;
+        from = (from < 0)
+             ? Math.ceil(from)
+             : Math.floor(from);
+        if (from < 0)
+          from += len;
+
+        for (; from < len; from++) {
+          if (from in this &&
+              this[from] === elt)
+            return from;
+        }
+        return -1;
+      };
+    }
+
 })(this);

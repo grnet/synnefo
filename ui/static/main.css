@@ -1423,6 +1423,49 @@ div.list table tbody {
     margin-top: 8px;
 }
 
+div.list table tr.checked td {
+    background-color: #A1C8DB !important;
+}
+
+div.list table tr:hover td,
+div.list table tr.inactive:hover td,
+div.list table tr.error:hover td {
+    background-color: #A1C8DB;
+    color: #fff;
+}
+
+div.list table td.name {
+    min-width: 170px;
+}
+
+div.list table td.status {
+    font-size: 0.9em !important; 
+    text-align: right;
+    min-width: 90px;
+    color: #000;
+}
+
+div.list table td.flavor {
+    font-size: 0.8em;
+}
+
+div.list table td {
+    border-bottom: 1px solid #DDD;
+}
+
+div.list table tr.error td.status {
+    color: #800000 !important;
+    font-weight: bold;
+}
+
+div.list table tr.error td {
+    background-color: #DCE5E8;
+}
+
+div.list table tr.inactive td {
+    background-color: #DCE5E8;
+}
+
 div.list .stopped {
     margin-top: 8px;
 }
@@ -2230,6 +2273,9 @@ div.list table tbody td {
     height: 20px;
 }
 
+div.list table thead tr {
+    border-bottom: 1px solid #aaa;
+}
 div.list table thead tr th {
     background-color: #CDE2EC;
     background-image: url(bg.gif);

@@ -52,12 +52,12 @@
 
             this.parent.$(".actions a.enabled").live({
                 'mouseenter': function() {
-                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""))
                     self.hovered = true;
+                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""))
                 }, 
                 'mouseleave': function() {
-                    self.parent.clear_indicators();
                     self.hovered = false;
+                    self.parent.clear_indicators();
                 }
             });
         },
@@ -81,8 +81,14 @@
             }, this))
         },
 
+        update_selected: function() {
+            this.$("tr").removeClass("checked");
+            this.$("tr input:checked").parent().parent().addClass("checked");
+        },
+
         update_layout: function() {
             this.update_actions();
+            this.update_selected();
         }
     });
 
@@ -174,8 +180,6 @@
         
         // set generic view handlers
         set_handlers: function() {
-            //init_action_indicator_handlers('list');
-
             this.$(".list-vm-checkbox").live('change', _.bind(function(){
                 this.reset_actions();
                 this.actions.update_layout();
@@ -184,6 +188,7 @@
                 } else {
                     this.select_all.attr("checked", false);
                 }
+                self.actions.update_layout();
             }, this))
 
             var self = this;
@@ -238,7 +243,6 @@
             
             // ancestor method
             this.__set_vm_handlers(vm);
-            this.set_vm_handlers(vm);
             this.post_add(vm);
         },
 
@@ -259,7 +263,7 @@
         },
 
         set_indicator_for: function(action) {
-            var vms = this.get_selected_vms();
+            var vms = this.get_selected_vms();;
             _.each(vms, _.bind(function(vm){
                 var vmel = this.vm(vm);
                 vmel.find("img.spinner, img.wave, img.os_icon").hide();
@@ -306,7 +310,7 @@
             img = img + '<img src="static/icons/indicators/medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
-            var name = util.truncate(vm.get('name'), 20);
+            var name = util.truncate(vm.get('name'), 25);
             var flavor = vm.get_flavor().details_string();
             var status = STATE_TEXTS[vm.state()];
             
@@ -318,6 +322,14 @@
 
         // is vm in transition ??? show the progress spinner
         update_transition_state: function(vm) {
+            if ((this.actions.hovered && this.vm(vm).find("input").is(":checked")) || vm.pending_action) {
+                this.sel('vm_spinner', vm.id).hide();
+                this.sel('vm_wave', vm.id).hide();
+                this.sel('os_icon', vm.id).hide();
+                this.vm(vm).find(".action-indicator").show();
+                return;
+            }
+
             if (vm.in_transition()){
                 this.sel('vm_spinner', vm.id).show();
                 this.sel('vm_wave', vm.id).hide();
@@ -325,6 +337,7 @@
                 this.$(".action-indicator").hide();
             } else {
                 this.sel('vm_spinner', vm.id).hide();
+                this.$(".action-indicator").hide();
             }
         },
 
@@ -348,7 +361,11 @@
                 if (vm.in_transition()) {
                     self.sel("vm_spinner", vm.id).fadeIn(200);
                 } else {
-                    self.sel("os_icon", vm.id).fadeIn(200);
+                    if (vm.pending_action || (self.actions.hovered && this.vm(vm).find("input").is(":checked"))) {
+                        self.vm(vm).find(".action-indicator").show();
+                    } else {
+                        self.sel("os_icon", vm.id).fadeIn(200);
+                    }
                 }
             });
         },
@@ -367,6 +384,16 @@
             this.table.fnUpdate(params[2], parseInt(index), 2);
             this.table.fnUpdate(params[3], parseInt(index), 3);
             this.table.fnUpdate(params[4], parseInt(index), 4);
+
+            var active_class = vm.is_active() ? "active" : "inactive";
+            this.vm(vm).removeClass("active").removeClass("inactive").addClass(active_class);
+            $(this.vm(vm).find("td").get(4)).addClass("status");
+            $(this.vm(vm).find("td").get(3)).addClass("flavor");
+            $(this.vm(vm).find("td").get(2)).addClass("name");
+
+            if (vm.status() == "ERROR") {
+                this.vm(vm).removeClass("active").removeClass("inactive").addClass("error");
+            }
             
             this.update_os_icon(vm);
             this.update_transition_state(vm);
@@ -378,7 +405,6 @@
         
         // vm specific event handlers
         set_vm_handlers: function(vm) {
-
         },
 
         // generic stuff to do on each view update

@@ -50,7 +50,6 @@
         beforeOpen: function() {
             if (this.clipboard) { return };
             this.clipboard = new util.ClipHelper(this.copy);
-            this.clipboard.el.tooltip();
         },
         
         onOpen: function() {

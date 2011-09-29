@@ -153,9 +153,23 @@
             this.clip.setText(t);
         }
 
-        this.el.attr({title: "Click to copy to clipboard"})
+        var copy_prompt = "Click to copy to clipboard";
+        this.el.attr({title: copy_prompt});
+        this.el.tooltip();
+        var el = this.el;
+
         this.clip.addEventListener('complete', _.bind(function(client, text) {
-            //$(".tooltip").text("Copied");
+            var tip = el.data("tooltip")
+            tip.hide().getTip().text("Copied");
+            window.setTimeout(function() {
+                tip.show();
+            }, 70)
+            window.setTimeout(function() {
+                tip.hide().getTip().text(copy_prompt);
+                window.setTimeout(function(){
+                    tip.show();
+                }, 100)
+            }, 3000)
         }, this));
     }
 

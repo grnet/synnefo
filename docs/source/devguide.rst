@@ -25,9 +25,10 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Sept 28, 2011)        Suggest upload/download methods using hashmaps.
+0.7 (Sept 29, 2011)        Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
+\                          Pass token as a request parameter when using ``POST`` via an HTML form.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -880,15 +881,14 @@ Return Code                  Description
 416 (Range Not Satisfiable)  The supplied range is invalid
 ===========================  ==============================
 
-The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have exactly two fields, as in the following example. ::
+The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have an ``X-Object-Data`` field, as in the following example. The token is passed as a request parameter. ::
 
-  <form method="post" action="https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt" enctype="multipart/form-data">
-    <input type="hidden" name="X-Auth-Token" value="0000">
+  <form method="post" action="https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt?X-Auth-Token=0000" enctype="multipart/form-data">
     <input type="file" name="X-Object-Data">
     <input type="submit">
   </form>
 
-This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data. Metadata, sharing and other object attributes can not be set this way.
+This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data (usually, automatically handled by the browser). Metadata, sharing and other object attributes can not be set this way.
 
 ==========================  ===============================
 Reply Header Name           Value

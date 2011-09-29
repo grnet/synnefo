@@ -699,6 +699,7 @@ def object_read(request, v_account, v_container, v_object):
         response['Content-Length'] = len(data)
         return response
     
+    request.serialization = 'text' # Unset.
     return object_data_response(request, sizes, hashmaps, meta)
 
 @api_method('PUT', format_allowed=True)

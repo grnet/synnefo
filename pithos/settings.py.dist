@@ -164,3 +164,5 @@ AUTH_TOKEN_DURATION = 30 * 24
 
 # Default quota for new users.
 DEFAULT_QUOTA = 10 * 1024 * 1024 * 1024
+
+ADMIN_PAGE_LIMIT = 10

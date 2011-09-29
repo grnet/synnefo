@@ -28,6 +28,28 @@
   </tbody>
 </table>
 
+{% if pages|length > 1 %}
+<div class="pagination">
+  <ul>
+    {% if prev %}
+      <li class="prev"><a href="?page={{ prev }}">&larr; Previous</a></li>
+    {% else %}
+      <li class="prev disabled"><a href="#">&larr; Previous</a></li>
+    {% endif %}
+
+    {% for p in pages %}
+      <li{% if page == p %} class="active"{% endif %}><a href="?page={{ p }}">{{ p }}</a></li>
+    {% endfor %}
+
+    {% if next %}
+      <li class="next"><a href="?page={{ next }}">&rarr; Next</a></li>
+    {% else %}
+      <li class="next disabled"><a href="#">&rarr; Next</a></li>
+    {% endif %}
+  </ul>
+</div>
+{% endif %}
+
 <a class="btn success" href="{% url admin.views.users_create %}">Create a user</a>
 <br /><br />
 {% endblock body %}

@@ -286,6 +286,12 @@
             this.mems = this.$(".flavors-mem-list");
 
             this.predefined_flavors = SUGGESTED_FLAVORS;
+            this.predefined_flavors_keys = _.keys(SUGGESTED_FLAVORS);
+            this.predefined_flavors_keys = _.sortBy(this.predefined_flavors_keys, _.bind(function(k){
+                var flv = this.predefined_flavors[k];
+                return flv.ram * flv.cpu * flv.disk;
+            }, this));
+
             this.predefined = this.$(".predefined-list");
             this.update_predefined_flavors();
         },
@@ -305,9 +311,10 @@
 
         update_predefined_flavors: function() {
             this.predefined.find("li").remove();
-            _.each(this.predefined_flavors, _.bind(function(val, key) {
+            _.each(this.predefined_flavors_keys, _.bind(function(key) {
+                var val = this.predefined_flavors[key];
                 var el = $(('<li class="predefined-selection" id="predefined-flavor-{0}">' +
-                           '{1}</li>').format(key, key));
+                           '{1}</li>').format(key, _(key).capitalize()));
 
                 this.predefined.append(el);
                 el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, this.flavors)})

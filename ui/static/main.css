@@ -2227,6 +2227,7 @@ div.list table tbody td {
     color: #3D3D3D;
     padding:6px;
     vertical-align: middle;
+    height: 20px;
 }
 
 div.list table thead tr th {
@@ -2325,8 +2326,8 @@ div.list table thead .vmname {
 
 .spinner, .action-indicator {
     clear: right;
-    float:right !important;
-    margin: 10px 6px 0 15px !important;
+    float:right;
+    margin: 10px 6px 0 15px;
 }
 
 .icon .spinner {
@@ -2338,7 +2339,15 @@ div.list table thead .vmname {
 }
 
 .action-indicator {
-    margin-right: 18px !important;
+    margin-right: 18px;
+}
+
+.list span.action-indicator {
+    display: block;
+    width: 15px;
+    height: 20px;
+    margin: 0 !important;
+    float: none;
 }
 
 .wave {
@@ -3686,6 +3695,11 @@ div.console-footer {
 #machinesview-list div.action-indicator {
     margin:0 !important;
     float: none !important;
+}
+
+.icon div.action-indicator {
+    margin-top: 15px;
+    margin-right: 14px;
 }
 
 div.action-indicator {

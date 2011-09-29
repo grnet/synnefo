@@ -30,6 +30,8 @@
             this.selected_action = undefined;
             this.available_actions = [];
             this.multi_view = synnefo.ui.main.multiple_actions_view;
+
+            this.hovered = false;
         },
 
         set_handlers: function() {
@@ -37,15 +39,27 @@
             storage.vms.bind("change:pending_action", function() {
                 if (!storage.vms.has_pending_actions()) {
                     self.parent.$(".actions a").removeClass("selected");
+                    self.parent.clear_indicators();
                 }
-            })
+            });
             
             var self = this;
             this.parent.$(".actions a.enabled").live('click', function() {
                 self.parent.$(".actions a").removeClass("selected");
                 $(this).addClass("selected");
                 self.parent.select_action($(this).attr("id").replace("action-",""));
-            })
+            });
+
+            this.parent.$(".actions a.enabled").live({
+                'mouseenter': function() {
+                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""))
+                    self.hovered = true;
+                }, 
+                'mouseleave': function() {
+                    self.parent.clear_indicators();
+                    self.hovered = false;
+                }
+            });
         },
         
         update_actions: function() {
@@ -220,6 +234,7 @@
             this.vm(vm).find(".spinner").hide();
             this.vm(vm).find(".wave").hide();
             this.vm(vm).find(".os_icon").show();
+            this.vm(vm).find(".action-indicator").hide();
             
             // ancestor method
             this.__set_vm_handlers(vm);
@@ -243,6 +258,44 @@
             }, this));
         },
 
+        set_indicator_for: function(action) {
+            var vms = this.get_selected_vms();
+            _.each(vms, _.bind(function(vm){
+                var vmel = this.vm(vm);
+                vmel.find("img.spinner, img.wave, img.os_icon").hide();
+                vmel.find("span.action-indicator").show().removeClass().addClass(action + " action-indicator");
+            }, this));
+        },
+
+        clear_indicators: function() {
+            var vms = storage.vms.models;
+            _.each(vms, _.bind(function(vm){
+                var vmel = this.vm(vm);
+
+                vmel.find("img.wave").hide();
+                
+                if (vm.pending_action) {
+                    vmel.find("img.os_icon").hide();
+                    vmel.find("span.action-indicator").show().removeClass().addClass(vm.pending_action + " action-indicator");
+                    return;
+                }
+
+                if (vm.in_transition()) {
+                    vmel.find("span.action-indicator").hide();
+                    vmel.find("img.spinner").show();
+                    return;
+                }
+
+                if (!this.actions.hovered) {
+                    vmel.find("img.os_icon").show();
+                    vmel.find("span.action-indicator").hide();
+                    vmel.find("img.spinner").hide();
+                }
+                
+
+            }, this));
+        },
+
         get_vm_table_data: function(vm) {
             var checkbox = '<input type="checkbox" class="' + 
                 views.ListView.STATE_CLASSES[vm.state()].join(" ") + 
@@ -251,6 +304,7 @@
             var img = '<img class="os_icon" src="'+ this.get_vm_icon_path(vm, "small") +'" />';
             img = img + '<img src="static/icons/indicators/small/progress.gif" class="spinner" />';
             img = img + '<img src="static/icons/indicators/medium/wave.gif" class="wave" />';
+            img = img + '<span class="action-indicator" />';
 
             var name = util.truncate(vm.get('name'), 20);
             var flavor = vm.get_flavor().details_string();
@@ -268,6 +322,7 @@
                 this.sel('vm_spinner', vm.id).show();
                 this.sel('vm_wave', vm.id).hide();
                 this.sel('os_icon', vm.id).hide();
+                this.$(".action-indicator").hide();
             } else {
                 this.sel('vm_spinner', vm.id).hide();
             }
@@ -275,6 +330,7 @@
 
         // display transition animations
         show_transition: function(vm) {
+            if (!this.visible()) { return };
             var wave = this.sel('vm_wave', vm.id);
             if (!wave.length) {
                 return

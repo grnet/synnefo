@@ -43,20 +43,7 @@ from pithos import settings
 from pithos.backends.modular import ModularBackend
 
 from lib.hashmap import HashMap
-
-
-class Migration(object):
-    def __init__(self, db):
-        self.engine = create_engine(db)
-        self.metadata = MetaData(self.engine)
-        #self.engine.echo = True
-        self.conn = self.engine.connect()
-        
-        options = getattr(settings, 'BACKEND', None)[1]
-        self.backend = ModularBackend(*options)
-    
-    def execute(self):
-        pass
+from lib.migrate import Migration
 
 class DataMigration(Migration):
     def __init__(self, db):
@@ -91,7 +78,13 @@ class DataMigration(Migration):
         blockhash = self.backend.hash_algorithm
         
         # Loop for all available files.
-        for path in ['README', 'store', 'test']:
+        filebody = Table('filebody', self.metadata, autoload=True)
+        s = select([filebody.c.storedfilepath])
+        rp = self.conn.execute(s)
+        paths = rp.fetchall()
+        rp.close()
+        
+        for path in paths:
             map = HashMap(blocksize, blockhash)
             map.load(path)
             hash = hexlify(map.hash())

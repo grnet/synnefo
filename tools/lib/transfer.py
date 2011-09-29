@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import os
+import types
 
 from hashmap import HashMap
 from binascii import hexlify, unhexlify
@@ -39,7 +40,7 @@ from cStringIO import StringIO
 from client import Fault
 
 
-def upload(client, file, container, prefix):
+def upload(client, file, container, prefix, name=None):
     
     meta = client.retrieve_container_metadata(container)
     blocksize = int(meta['x-container-block-size'])
@@ -50,7 +51,8 @@ def upload(client, file, container, prefix):
     hashes.load(file)
     map = {'bytes': size, 'hashes': [hexlify(x) for x in hashes]}
     
-    object = prefix + os.path.split(file)[-1]
+    objectname = name if name else os.path.split(file)[-1]
+    object = prefix + objectname
     try:
         client.create_object_by_hashmap(container, object, map)
     except Fault, fault:
@@ -59,7 +61,11 @@ def upload(client, file, container, prefix):
     else:
         return
     
-    missing = fault.data.split('\n')
+    if type(fault.data) == types.StringType:
+        missing = fault.data.split('\n')
+    elif type(fault.data) == types.ListType:
+        missing = fault.data
+    
     if '' in missing:
         del missing[missing.index(''):]
     

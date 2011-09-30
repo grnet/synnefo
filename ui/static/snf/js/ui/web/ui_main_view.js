@@ -43,6 +43,7 @@
             // for heavy resize/scroll window events
             // do it `like a boss` 
             this.fix_position = _.throttle(this.fix_position, 100);
+            this.update_layout = _.throttle(this.update_layout, 100);
             this.show_limit = 1;
         },
 

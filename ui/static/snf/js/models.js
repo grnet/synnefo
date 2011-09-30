@@ -77,6 +77,18 @@
 
         remove: function() {
             this.api.call(this.api_path(), "delete");
+        },
+
+        changedKeys: function() {
+            return _.keys(this.changedAttributes() || {});
+        },
+
+        hasOnlyChange: function(keys) {
+            var ret = false;
+            _.each(keys, _.bind(function(key) {
+                if (this.changedKeys().length == 1 && this.changedKeys().indexOf(key) > -1) { ret = true};
+            }, this));
+            return ret;
         }
 
     })

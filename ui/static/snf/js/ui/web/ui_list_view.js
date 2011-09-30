@@ -31,6 +31,8 @@
             this.available_actions = [];
             this.multi_view = synnefo.ui.main.multiple_actions_view;
             this.hovered = false;
+
+            this.update_actions = _.throttle(this.update_actions, 100);
         },
 
         set_handlers: function() {
@@ -148,6 +150,8 @@
 
             this.table_data = {};
             views.ListView.__super__.initialize.apply(this, arguments);
+
+            this.update_layout = _.throttle(this.update_layout, 100);
         },
         
         reset: function() {
@@ -249,7 +253,9 @@
         // remove vm
         remove_vm: function(vm) {
             this.vm(vm).find("input[type=checkbox]").removeAttr("checked");
-            var index = this.table_data["vm_" + vm.id].index;
+            var vm_data = this.table_data["vm_" + vm.id];
+            if (!vm_data) { return };
+            var index = vm_data.index;
             this.table.fnDeleteRow(index);
             delete this.table_data["vm_" + vm.id];
             this.update_data();
@@ -375,6 +381,7 @@
         },
 
         post_update_vm: function(vm) {
+            if (vm.hasOnlyChange(["pending_action", "stats"])) { return };
             var index = this.table_data["vm_" + vm.id].index;
             params = this.get_vm_table_data(vm);
             this.table_data["vm_" + vm.id].params = params;

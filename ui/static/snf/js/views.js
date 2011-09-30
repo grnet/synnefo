@@ -84,9 +84,10 @@
                 closeOnClick: false,
                 mask: {
                     color: "#444",
-                    loadSpeed: 200,
+                    loadSpeed: snf.config.overlay_speed || 0,
                     opacity: 0.7
-                }
+                },
+                speed: snf.config.overlay_speed || 200
             }
             
             this.tpl_selector = selector || this.tpl_selector;

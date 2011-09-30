@@ -556,6 +556,9 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             {% endif %}
             
             synnefo.config.update_interval = 5000 || {{ update_interval }};
+            if ($.browser.mozilla && $.browser.version == "1.9.1") {
+                synnefo.config.overlay_speed = 0;
+            }
             synnefo.ui.init();
 
         })

@@ -38,7 +38,11 @@
             this.vm.bind("action:fail", _.bind(function(args){
                 if (this.vm.action_error) {
                     this.has_error = true;
-                    action = args[0].ajax.error_params.extra_details['Action'];
+                    var action = "undefined";
+                    try {
+                        action = args[0].ajax.error_params.extra_details['Action'];
+                    } catch (err) {console.log(err)};
+                    
                     this.error.find(".action").text(action);
                     this.error.show();
                 }
@@ -307,7 +311,7 @@
 
                 case "mouseup":
                     logo.addClass('single-image-state4');
-                    machine_connect([machine_connect, this.vm.id]);
+                    this.view.connect_overlay.show(this.vm);
                     break;
 
                 case "mousedown":

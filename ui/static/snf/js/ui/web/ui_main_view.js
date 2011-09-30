@@ -522,6 +522,7 @@
         check_empty: function() {
             if (!this.loaded) { return }
             if (storage.vms.length == 0) {
+                this.show_view("machines");
                 this.show_empty();
             } else {
                 this.hide_empty();

@@ -30,7 +30,6 @@
             this.selected_action = undefined;
             this.available_actions = [];
             this.multi_view = synnefo.ui.main.multiple_actions_view;
-
             this.hovered = false;
         },
 
@@ -208,6 +207,7 @@
             _.each(selected, function(el){
                 var id = parseInt($(el).attr("id").replace("checkbox-list-vm-", ""));
                 vm = storage.vms.get(id);
+                if (!vm) { return };
                 vms.push(vm);
             });
 
@@ -248,6 +248,7 @@
 
         // remove vm
         remove_vm: function(vm) {
+            this.vm(vm).find("input[type=checkbox]").removeAttr("checked");
             var index = this.table_data["vm_" + vm.id].index;
             this.table.fnDeleteRow(index);
             delete this.table_data["vm_" + vm.id];
@@ -263,7 +264,7 @@
         },
 
         set_indicator_for: function(action) {
-            var vms = this.get_selected_vms();;
+            var vms = this.get_selected_vms();
             _.each(vms, _.bind(function(vm){
                 var vmel = this.vm(vm);
                 vmel.find("img.spinner, img.wave, img.os_icon").hide();
@@ -457,7 +458,7 @@
         'STOPPED':          ['terminated-state'],
         'ACTIVE':           ['running-state'],
         'ERROR':            ['error-state'],
-        'DELETE':           ['destroying-state'],
+        'DELETED':          ['destroying-state'],
         'DESTROY':          ['destroying-state'],
         'BUILD_INIT':       ['build-state'], 
         'BUILD_COPY':       ['build-state'],

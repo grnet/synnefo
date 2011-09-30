@@ -110,8 +110,9 @@
                 this.current_vm_instance = storage.vms.at(this.current_vm);
                 this.current_vm_instance.do_update_stats = true;
             } catch (err) {
-                console.trace();
                 this.log.debug("Cannot select current vm instance for: {0}".format(this.current_vm));
+                this.current_vm_instance = undefined;
+                this.current_vm = 0;
             }
         },
 
@@ -316,7 +317,7 @@
         'STOPPED':          ['state', 'terminated-state'],
         'ACTIVE':           ['state', 'running-state'],
         'ERROR':            ['state', 'error-state'],
-        'DELETE':           ['state', 'destroying-state'],
+        'DELETED':           ['state', 'destroying-state'],
         'DESTROY':          ['state', 'destroying-state'],
         'BUILD_INIT':       ['state', 'build-state'], 
         'BUILD_COPY':       ['state', 'build-state'],

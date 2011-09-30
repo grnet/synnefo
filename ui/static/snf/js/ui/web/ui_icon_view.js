@@ -744,7 +744,7 @@
         'STOPPED':          ['state', 'terminated-state'],
         'ACTIVE':           ['state', 'running-state'],
         'ERROR':            ['state', 'error-state'],
-        'DELETE':           ['state', 'destroying-state'],
+        'DELETED':           ['state', 'destroying-state'],
         'DESTROY':          ['state', 'destroying-state'],
         'BUILD_INIT':       ['state', 'build-state'], 
         'BUILD_COPY':       ['state', 'build-state'],

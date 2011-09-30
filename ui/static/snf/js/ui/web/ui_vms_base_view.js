@@ -38,6 +38,7 @@
             this.vms_updated_handler();
 
             this.connect_overlay = new views.VMConnectView();
+            
         },
 
         // Helpers
@@ -169,6 +170,8 @@
         
         // update ui for the given vm
         update_vm: function(vm) {
+            // do not update deleted state vms
+            if (!vm || vm.get("status") == 'DELETED') { return };
             this.check_vm_container(vm);
 
             this.update_details(vm);

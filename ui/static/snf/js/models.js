@@ -40,8 +40,10 @@
         },
 
         handle_remove: function() {
-            if (this.get("status") == "DELETED") {
+            if (this.get("status") == 'DELETED') {
                 if (this.collection) {
+                    try { this.clear_pending_action();} catch (err) {};
+                    try { this.reset_pending_actions();} catch (err) {};
                     this.collection.remove(this.id);
                 }
             }
@@ -577,7 +579,7 @@
                 url: stats_url, 
                 refresh:true, 
                 success: _.bind(this.handle_stats_update, this),
-                error: _.bind(this.handle_stats_error)
+                error: _.bind(this.handle_stats_error, this)
             });
         },
 
@@ -764,7 +766,7 @@
         state: function() {
             var args = slice.call(arguments);
                 
-            // TODO: it might not be a good idea to let api set the state
+            // TODO: it might not be a good idea to set the state in set_state method
             if (args.length > 0 && models.VM.STATES.indexOf(args[0]) > -1) {
                 this.set({'state': args[0]});
             }
@@ -1068,7 +1070,7 @@
         'STOPPED'       : ['start', 'destroy'],
         'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console'],
         'ERROR'         : ['destroy'],
-        'DELETE'        : [],
+        'DELETED'        : [],
         'DESTROY'       : [],
         'BUILD_INIT'    : ['destroy'],
         'BUILD_COPY'    : ['destroy'],
@@ -1087,7 +1089,7 @@
         'STOPPED',
         'ACTIVE',
         'ERROR',
-        'DELETE'
+        'DELETED'
     ]
 
     // api status values
@@ -1111,7 +1113,7 @@
     ]);
     
     models.VM.STATES_TRANSITIONS = {
-        'DESTROY' : ['DELETE'],
+        'DESTROY' : ['DELETED'],
         'SHUTDOWN': ['ERROR', 'STOPPED', 'DESTROY'],
         'STOPPED': ['ERROR', 'ACTIVE', 'DESTROY'],
         'ACTIVE': ['ERROR', 'STOPPED', 'REBOOT', 'SHUTDOWN', 'DESTROY'],
@@ -1335,7 +1337,6 @@
         },
 
         parse_vm_api_data: function(data) {
-
             // do not add non existing DELETED entries
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {

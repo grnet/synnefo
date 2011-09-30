@@ -396,7 +396,7 @@ def container_update(request, v_account, v_container):
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
         content_length = get_int_parameter(request.META.get('CONTENT_LENGTH', 0))
-    content_type = request.META.get('Content-Type')
+    content_type = request.META.get('CONTENT_TYPE')
     hashmap = []
     if content_type and content_type == 'application/octet-stream' and content_length != 0:
         for data in socket_read_iterator(request, content_length,

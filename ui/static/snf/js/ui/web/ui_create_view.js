@@ -53,10 +53,12 @@
         },
         
         onOpen: function() {
+            this.copy.show();
             try {
                 this.clipboard.setText(this.pass);
                 this.copy.show();
             } catch (err) {
+                console.error(err);
                 this.copy.hide();
             }
         },

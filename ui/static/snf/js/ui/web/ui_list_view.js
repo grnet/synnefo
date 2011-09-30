@@ -254,7 +254,10 @@
         remove_vm: function(vm) {
             this.vm(vm).find("input[type=checkbox]").removeAttr("checked");
             var vm_data = this.table_data["vm_" + vm.id];
+
+            // update triggered on removed vm, skipping
             if (!vm_data) { return };
+
             var index = vm_data.index;
             this.table.fnDeleteRow(index);
             delete this.table_data["vm_" + vm.id];
@@ -381,7 +384,10 @@
         },
 
         post_update_vm: function(vm) {
+            
+            // skip update for these changes for performance issues
             if (vm.hasOnlyChange(["pending_action", "stats"])) { return };
+
             var index = this.table_data["vm_" + vm.id].index;
             params = this.get_vm_table_data(vm);
             this.table_data["vm_" + vm.id].params = params;

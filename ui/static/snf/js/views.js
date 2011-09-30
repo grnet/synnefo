@@ -305,4 +305,6 @@
 
     });
 
+    snf.config.update_hidden_views = true;
+
 })(this);

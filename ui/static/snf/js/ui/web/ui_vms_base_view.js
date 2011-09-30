@@ -152,12 +152,16 @@
 
         show: function() {
             views.VMListView.__super__.show.apply(this, arguments);
-            this.update_vms(storage.vms.models);
+            if (!snf.config.update_hidden_views) {
+                this.update_vms(storage.vms.models);
+            }
         },
 
         // do update for provided vms, then update the view layout
         update_vms: function(vms) {
-            if (!this.visible()) { return };
+
+            if (!this.visible() && !snf.config.update_hidden_views) { return };
+
             _.each(vms, _.bind(function(vm){
                 // vm will be removed
                 // no need to update

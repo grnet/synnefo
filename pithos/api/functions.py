@@ -392,7 +392,23 @@ def container_update(request, v_account, v_container):
             raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Container does not exist')
-    return HttpResponse(status=202)
+    
+    content_length = -1
+    if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
+        content_length = get_int_parameter(request.META.get('CONTENT_LENGTH', 0))
+    content_type = request.META.get('Content-Type')
+    hashmap = []
+    if content_type and content_type == 'application/octet-stream' and content_length != 0:
+        for data in socket_read_iterator(request, content_length,
+                                            request.backend.block_size):
+            # TODO: Raise 408 (Request Timeout) if this takes too long.
+            # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+            hashmap.append(request.backend.put_block(data))
+    
+    response = HttpResponse(status=202)
+    if hashmap:
+        response.content = '\n'.join(hashmap) + '\n'
+    return response
 
 @api_method('DELETE')
 def container_delete(request, v_account, v_container):

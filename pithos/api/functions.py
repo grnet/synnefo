@@ -1058,13 +1058,16 @@ def object_update(request, v_account, v_container, v_object):
     elif offset > size:
         raise RangeNotSatisfiable('Supplied offset is beyond object limits')
     if src_object:
+        src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
+        if not src_account:
+            src_account = request.user
         src_container, src_name = split_container_object_string(src_object)
         src_container = smart_unicode(src_container, strings_only=True)
         src_name = smart_unicode(src_name, strings_only=True)
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
-            src_size, src_hashmap = request.backend.get_object_hashmap(
-                request.user, v_account, src_container, src_name, src_version)
+            src_size, src_hashmap = request.backend.get_object_hashmap(request.user,
+                                        src_account, src_container, src_name, src_version)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:

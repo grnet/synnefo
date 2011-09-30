@@ -25,10 +25,11 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Sept 29, 2011)        Suggest upload/download methods using hashmaps.
+0.7 (Sept 30, 2011)        Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
 \                          Pass token as a request parameter when using ``POST`` via an HTML form.
+\                          Optionally use source account to update object from another object.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -826,6 +827,7 @@ Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if us
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Object       Update with data from the object at path ``/<container>/<object>`` (optional, to update)
+X-Source-Account      The source account to update from
 X-Source-Version      The source version to update from (optional, to update)
 X-Object-Bytes        The updated object's final size (optional, when updating)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)

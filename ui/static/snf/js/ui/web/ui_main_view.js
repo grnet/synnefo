@@ -410,8 +410,8 @@
         },  
 
         init_intervals: function() {
-            this._networks = storage.networks.get_fetcher(snf.config.update_interval, snf.config.update_interval/3, 3, true, undefined);
-            this._vms = storage.vms.get_fetcher(snf.config.update_interval, snf.config.update_interval/3, 3, true, undefined);
+            this._networks = storage.networks.get_fetcher(snf.config.update_interval, snf.config.update_interval/2, 2, true, undefined);
+            this._vms = storage.vms.get_fetcher(snf.config.update_interval, snf.config.update_interval/2, 2, true, undefined);
         },
 
         stop_intervals: function() {

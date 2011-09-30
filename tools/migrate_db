@@ -1,0 +1,172 @@
+#!/usr/bin/env python
+
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
+from sqlalchemy import Table
+from sqlalchemy.sql import select
+
+from binascii import hexlify
+
+from pithos.backends.lib.hashfiler import Blocker
+from pithos.aai.models import PithosUser
+
+from django.conf import settings
+
+from pithos.backends.modular import ModularBackend
+
+from lib.transfer import upload
+from lib.hashmap import HashMap
+from lib.client import Fault
+from lib.migrate import Migration
+
+import json
+import os
+import sys
+import hashlib
+
+class ObjectMigration(DataMigration):
+    def __init__(self, db, path, block_size, hash_algorithm):
+        DataMigration.__init__(self, db, path, block_size, hash_algorithm)
+        self.wrapper = ClientWrapper()
+    
+    def create_default_containers(self):
+        users = PithosUser.objects.all()
+        for u in users:
+            print '#', u.uniq
+            try:
+                self.wrapper.create_container('pithos', u.uniq)
+                self.wrapper.create_container('trash', u.uniq)
+            except NameError, e:
+                pass
+    
+    def get_path(self, child_id):
+        folderTable = Table('folder', self.metadata, autoload=True)
+        s = select([folderTable.c.parent_id, folderTable.c.name])
+        s = s.where(folderTable.c.id == child_id)
+        rp = self.conn.execute(s)
+        parent_id, foldername = rp.fetchone()
+        if not parent_id:
+            return ''
+        else:
+            return '%s/%s' %(self.get_path(parent_id), foldername)
+    
+    def create_objects(self):
+        fileheader = Table('fileheader', self.metadata, autoload=True)
+        filebody = Table('filebody', self.metadata, autoload=True)
+        folder = Table('folder', self.metadata, autoload=True)
+        gss_user = Table('gss_user', self.metadata, autoload=True)
+        j = filebody.join(fileheader, filebody.c.header_id == fileheader.c.id)
+        j = j.join(folder, fileheader.c.folder_id == folder.c.id)
+        j = j.join(gss_user, fileheader.c.owner_id == gss_user.c.id)
+        s = select([gss_user.c.username,  fileheader.c.folder_id, fileheader.c.name,
+                    filebody.c.storedfilepath], from_obj=j)
+        rp = self.conn.execute(s)
+        objects = rp.fetchall()
+        for username, folderid, filename, filepath in objects:
+            path = self.get_path(folderid)[1:]
+            obj = ''
+            #create directory markers
+            for f in path.split('/'):
+                obj = '%s/%s' %(obj, f) if obj else f
+                try:
+                    self.wrapper.create_directory_marker('pithos', obj, username)
+                except NameError, e:
+                    pass
+            self.wrapper.set_account(username)
+            
+            print '#', username, path, filename
+            prefix = '%s/' %path if path else ''
+            upload(self.wrapper, filepath, 'pithos', prefix, filename)
+
+class ClientWrapper(object):
+    """Wraps client methods used by transfer.upload()
+    to ModularBackend methods"""
+    
+    def __init__(self):
+        options = getattr(settings, 'BACKEND', None)[1]
+        self.backend = ModularBackend(*options)
+        self.block_size = self.backend.block_size
+        self.block_hash = self.backend.hash_algorithm
+    
+    def set_account(self, account):
+        self.account = account
+    
+    def create_container(self, container, account=None, **meta):
+        self.backend.put_container(account, account, container, meta)
+    
+    def create_directory_marker(self, container, object, account=None):
+        md5 = hashlib.md5()
+        meta = {'Content-Type':'application/directory',
+                'hash':  md5.hexdigest().lower()}
+        self.backend.update_object_hashmap(account, account, container, object, 0, [], meta)   
+    
+    def create_object_by_hashmap(self, container, object, map):
+        hashmap = HashMap(self.block_size, self.block_hash)
+        for hash in map['hashes']:
+            hashmap.append(hash)
+        meta = {'hash':hexlify(hashmap.hash())}
+        size = map['bytes']
+        try:
+            args = [self.account, self.account, container, object, size,  map['hashes'], meta]
+            self.backend.update_object_hashmap(*args)
+        except IndexError, ie:
+            fault = Fault(ie.data, 409)
+            raise fault
+    
+    def create_object(self, container, object, f):
+        hashmap = HashMap(self.block_size, self.block_hash)
+        hashmap.load(f)
+        map =  [hexlify(x) for x in hashmap]
+        meta = {'hash':hashmap.hash()}
+        size = hashmap.size
+        self.backend.update_object_hashmap(self.account, self.account, container, object, size,  hashmap, meta)
+    
+    def retrieve_container_metadata(self, container):
+        return {'x-container-block-size':self.block_size,
+                'x-container-block-hash':self.block_hash}
+    
+if __name__ == "__main__":
+    db = ''
+    
+    basepath = options = getattr(settings, 'PROJECT_PATH', None)
+    params = {'db':db,
+              'path':os.path.join(basepath, 'data/pithos/'),
+              'block_size':(4 * 1024 * 1024),
+              'hash_algorithm':'sha256'}
+    
+    ot = ObjectMigration(**params)
+    ot.create_default_containers()
+    ot.create_objects()
+    
+    

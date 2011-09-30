@@ -34,12 +34,12 @@
 from functools import wraps
 from math import ceil
 
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.http import urlencode
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 
-from pithos import settings
 from pithos.aai.models import PithosUser
 
 
@@ -56,7 +56,8 @@ def requires_admin(func):
     def wrapper(request, *args):
         if not settings.BYPASS_ADMIN_AUTH:
             if not request.user:
-                login_uri = settings.LOGIN_URL + '?' + urlencode({'next': request.build_absolute_uri()})
+                next = urlencode({'next': request.build_absolute_uri()})
+                login_uri = settings.LOGIN_URL + '?' + next
                 return HttpResponseRedirect(login_uri)
             if not request.user_obj.is_admin:
                 return HttpResponse('Forbidden', status=403)
@@ -73,19 +74,28 @@ def index(request):
 
 @requires_admin
 def users_list(request):
+    users = PithosUser.objects.order_by('id')
+    
+    filter = request.GET.get('filter', '')
+    if filter:
+        if filter.startswith('-'):
+            users = users.exclude(uniq__icontains=filter[1:])
+        else:
+            users = users.filter(uniq__icontains=filter)
+    
     try:
         page = int(request.GET.get('page', 1))
     except ValueError:
         page = 1
     offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
     limit = offset + settings.ADMIN_PAGE_LIMIT
-    users = PithosUser.objects.order_by('id')
     
     npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
     prev = page - 1 if page > 1 else None
     next = page + 1 if page < npages else None
     return render_response('users_list.html',
                             users=users[offset:limit],
+                            filter=filter,
                             pages=range(1, npages + 1),
                             page=page,
                             prev=prev,

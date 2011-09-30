@@ -50,25 +50,9 @@ utils = {
 
 }
 
-function test_create_view() {
+function test() {
     utils.main().create_vm_view.show();   
 }
 
-function test_nets_border() {
-    utils.rvms(1);
-
-    //vms.each(function(vm) {
-        //utils.nets().network_views['public'].create_vm(vm);
-        //utils.nets().network_views[2].create_vm(vm);
-    //})
-    utils.nets().network_views['public'].create_vm(vms.at(0));
-    utils.nets().network_views[2].create_vm(vms.at(0));
-
-    utils.nets().network_views['public'].$(".cont-toggler").click();
-    utils.nets().network_views[2].vms_list.show();
-    $(window).trigger("resize");
-}
-
-
-TEST = test_nets_border;
+TEST = test;
 TEST = false;

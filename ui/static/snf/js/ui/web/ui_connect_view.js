@@ -58,6 +58,7 @@
         },
 
         handle_vm_change: function(vm) {
+            if (!this.vm) { this.vm = undefined; return; }
             if (this.vm.state() == "DESTROY") {
                 this.hide();
             }

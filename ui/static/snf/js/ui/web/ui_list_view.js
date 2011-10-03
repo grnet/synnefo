@@ -332,6 +332,8 @@
 
         // is vm in transition ??? show the progress spinner
         update_transition_state: function(vm) {
+            if (this.in_transition) { return };
+
             if ((this.actions.hovered && this.vm(vm).find("input").is(":checked")) || vm.pending_action) {
                 this.sel('vm_spinner', vm.id).hide();
                 this.sel('vm_wave', vm.id).hide();
@@ -348,11 +350,14 @@
             } else {
                 this.sel('vm_spinner', vm.id).hide();
                 this.$(".action-indicator").hide();
+                this.sel('os_icon', vm.id).show();
             }
         },
 
         // display transition animations
         show_transition: function(vm) {
+            this.in_transition = true;
+
             if (!this.visible()) { return };
             var wave = this.sel('vm_wave', vm.id);
             if (!wave.length) {
@@ -364,19 +369,12 @@
 
             var src = wave.attr('src');
             var self = this;
-
+            
             // change src to force gif play from the first frame
             // animate for 500 ms then hide
             wave.attr('src', "").show().attr('src', src).fadeIn(500).delay(700).fadeOut(300, function() {
-                if (vm.in_transition()) {
-                    self.sel("vm_spinner", vm.id).fadeIn(200);
-                } else {
-                    if (vm.pending_action || (self.actions.hovered && self.vm(vm).find("input").is(":checked"))) {
-                        self.vm(vm).find(".action-indicator").show();
-                    } else {
-                        self.sel("os_icon", vm.id).fadeIn(200);
-                    }
-                }
+                self.in_transition = false;
+                self.update_transition_state(vm);
             });
         },
 
@@ -407,6 +405,8 @@
 
             if (vm.status() == "ERROR") {
                 this.vm(vm).removeClass("active").removeClass("inactive").addClass("error");
+            } else {
+                this.vm(vm).removeClass("error").addClass(active_class);
             }
             
             this.update_os_icon(vm);

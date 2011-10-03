@@ -61,11 +61,12 @@
         },
 
         update_layout: function() {
-            if(this.vms.length == 0) {
+            if (this.vms.length == 0) {
                 this.empty_message.show();
             } else {
                 this.empty_message.hide();
             }
+
             _.each(this.vms, _.bind(function(vm){
                 var html = '<li class="vm option options-object vm-{0}">' +
                            '<div class="options-object-cont">' +

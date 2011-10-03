@@ -423,7 +423,7 @@
 
         get_connectable_vms: function() {
             var servers = this.vms.list();
-            return storage.vms.filter(function(vm){return servers.indexOf(vm.id) == -1})
+            return storage.vms.filter(function(vm){return servers.indexOf(vm) == -1})
         },
 
         state_message: function() {

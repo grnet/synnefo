@@ -148,6 +148,7 @@
 
         beforeOpen: function() {
             this.$(".error-details").hide();
+            this.$(".key.details").addClass("expand");
             this.$(".show-details").show();
             this.$(".hide-details").hide();
             

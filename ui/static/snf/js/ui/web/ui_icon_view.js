@@ -40,7 +40,7 @@
                     this.has_error = true;
                     var action = "undefined";
                     try {
-                        action = args[0].ajax.error_params.extra_details['Action'];
+                        action = _.last(args).error_params.extra_details['Action'];
                     } catch (err) {console.log(err)};
                     
                     this.error.find(".action").text(action);
@@ -50,7 +50,9 @@
             
             // show error overlay
             this.show_btn.click(_.bind(function() {
-                this.show_error_overlay(this.vm.action_error);
+                if (this.vm.action_error) {
+                    this.show_error_overlay(this.vm.action_error);
+                }
                 this.vm.reset_action_error();
             }, this));
             
@@ -66,13 +68,12 @@
             }, this));
         },
 
-        show_error_overlay: function(arguments) {
-            var xhr = arguments[0];
-            var args = util.parse_api_error(arguments);
+        show_error_overlay: function(args) {
+            var args = util.parse_api_error.apply(util, args);
             
             // force logout if UNAUTHORIZED request arrives
             if (args.code == 401) { snf.ui.logout(); return };
-
+            
             var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
             ui.main.error_view.show_error.apply(ui.main.error_view, error_entry);
         },

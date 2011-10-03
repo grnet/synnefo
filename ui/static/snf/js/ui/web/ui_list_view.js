@@ -371,7 +371,7 @@
                 if (vm.in_transition()) {
                     self.sel("vm_spinner", vm.id).fadeIn(200);
                 } else {
-                    if (vm.pending_action || (self.actions.hovered && this.vm(vm).find("input").is(":checked"))) {
+                    if (vm.pending_action || (self.actions.hovered && self.vm(vm).find("input").is(":checked"))) {
                         self.vm(vm).find(".action-indicator").show();
                     } else {
                         self.sel("os_icon", vm.id).fadeIn(200);

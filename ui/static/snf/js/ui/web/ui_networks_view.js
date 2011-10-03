@@ -436,10 +436,20 @@
 
                 $(window).trigger("resize");
             }, this))
-
+            
             this.apply.click(_.bind(function(){
                 this.apply.addClass("in-progress");
-                this.vm.set_firewall(this.network.id, this.value(), _.bind(function() {
+                
+                // make the api call
+                this.vm.set_firewall(this.network.id, this.value(), 
+                // complete
+                _.bind(function() {
+                    // complete callback
+                    this.apply.removeClass("in-progress");
+                }, this), 
+                // error
+                _.bind(function(){
+                    this.vm.remove_pending_firewall(this.network.id, this.value());
                 }, this));
                 this.hide_firewall();
             }, this))

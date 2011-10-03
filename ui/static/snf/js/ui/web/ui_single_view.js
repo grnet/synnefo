@@ -104,7 +104,7 @@
         },  
 
         update_current_vm: function() {
-            storage.vms.reset_stats_update();
+            storage.vms.stop_stats_update();
 
             try {
                 this.current_vm_instance = storage.vms.at(this.current_vm);

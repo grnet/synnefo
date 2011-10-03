@@ -114,25 +114,29 @@
         },
 
         get_fetcher: function(timeout, fast, limit, initial, params) {
-            var fetch_params = params;
+            var fetch_params = params || {};
+            fetch_params.skips_timeouts = true;
+
             var timeout = parseInt(timeout);
             var fast = fast || 1000;
             var limit = limit;
             var initial_call = initial || true;
             
             var last_ajax = undefined;
-            var cb = _.bind(function(){
+            var cb = _.bind(function() {
+                // clone to avoid referenced objects
+                var params = _.clone(fetch_params);
                 updater._ajax = last_ajax;
                 if (last_ajax) {
                     last_ajax.abort();
                 }
-                last_ajax = this.fetch(fetch_params);
+                last_ajax = this.fetch(params);
             }, this);
             var updater = new snf.api.updateHandler({'callback': cb, timeout:timeout, 
                                                     fast:fast, limit:limit, 
                                                     call_on_start:initial_call});
 
-            snf.api.bind("call", _.bind(function(){ updater.faster()}, this));
+            snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster()}, this)), 2000);
             return updater;
         }
     });
@@ -391,22 +395,26 @@
             return net_vm_exists && vm_net_exists;
         },
 
-        add_vm: function (vm, callback) {
+        add_vm: function (vm, callback, error, options) {
+            var payload = {add:{serverRef:"" + vm.id}};
+            payload._options = options || {};
             return this.api.call(this.api_path() + "/action", "create", 
-                                 {add:{serverRef:"" + vm.id}},
+                                 payload,
                                  _.bind(function(){
                                      this.vms.add_pending(vm.id);
                                      if (callback) {callback()}
-                                 },this));
+                                 },this), error);
         },
 
-        remove_vm: function (vm, callback) {
+        remove_vm: function (vm, callback, error, options) {
+            var payload = {remove:{serverRef:"" + vm.id}};
+            payload._options = options || {};
             return this.api.call(this.api_path() + "/action", "create", 
                                  {remove:{serverRef:"" + vm.id}},
                                  _.bind(function(){
                                      this.vms.add_pending_for_remove(vm.id);
                                      if (callback) {callback()}
-                                 },this));
+                                 },this), error);
         },
 
         rename: function(name, callback) {
@@ -758,15 +766,26 @@
             var payload = {meta:{}};
             payload.meta[meta.key] = meta.value;
 
+            // inject error settings
+            payload._options = {critical: false};
+
             this.api.call(url, "update", payload, complete, error)
         },
 
-        set_firewall: function(net_id, value, callback) {
+        set_firewall: function(net_id, value, callback, error, options) {
             if (this.get("firewalls") && this.get("firewalls")[net_id] == value) { return }
 
             this.pending_firewalls[net_id] = value;
             this.trigger("change", this, this);
-            this.api.call(this.api_path() + "/action", "create", {"firewallProfile":{"profile":value}}, callback);
+            var payload = {"firewallProfile":{"profile":value}};
+            payload._options = _.extend({critical: false}, options);
+            
+            // reset firewall state on error
+            var error_cb = _.bind(function() {
+                thi
+            }, this);
+
+            this.api.call(this.api_path() + "/action", "create", payload, callback, error);
             storage.networks.get(net_id).update_state();
         },
 
@@ -1026,7 +1045,8 @@
                                 extra_details: { 'Machine ID': this.id, 'URL': url, 'Action': action || "undefined" },
                                 allow_reload: false
                               },
-                handles_error: true
+                display: false,
+                critical: false
             }
             this.sync(method, this, params);
         },
@@ -1274,12 +1294,13 @@
 
         get_flavor: function(cpu, mem, disk, filter_list) {
             if (!filter_list) { filter_list = this.models };
+
             return this.select(function(flv){
                 if (flv.get("cpu") == cpu + "" &&
                    flv.get("ram") == mem + "" &&
                    flv.get("disk") == disk + "" &&
                    filter_list.indexOf(flv) > -1) { return true; }
-            })[0]
+            })[0];
         },
         
         get_data: function(lst) {
@@ -1334,7 +1355,7 @@
             })
         },
 
-        reset_stats_update: function() {
+        stop_stats_update: function() {
             this.each(function(vm) {
                 vm.do_update_stats = false;
             })
@@ -1390,7 +1411,7 @@
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
 
-            this.api.call(this.path, "create", {'server': opts}, undefined, undefined, callback);
+            this.api.call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: false});
         }
 
     })

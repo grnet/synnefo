@@ -81,16 +81,8 @@
         },
         
         show_error: function(ns, code, message, type, details, error_options) {
-            if (!snf.api.error_state) { this.error_stack = {} };
+            if (snf.api.error_state == snf.api.STATES.NORMAL) { this.error_stack = {} };
                 
-            if (error_options.fatal_error) {
-                snf.api.error_state = true;
-                snf.api.trigger("change:error_state", true);
-            } else {
-                snf.api.error_state = false;
-                snf.api.trigger("change:error_state", false);
-            }
-
             var error_entry = [ns, code, message, type, details, error_options];
             this.error_stack[new Date()] = error_entry;
             this.display_error.apply(this, error_entry);
@@ -98,8 +90,10 @@
         },
 
         display_error: function(ns, code, message, type, details, error_options) {
-            this.error_options = {'allow_report': true, 'allow_reload': true, 'extra_details': {}, 'non_critical': false, 'allow_details': false };
-
+            this.error_options = {'allow_report': true, 'allow_reload': true, 
+                'extra_details': {}, 'non_critical': false, 
+                'allow_details': false };
+            
             if (error_options) {
                 this.error_options = _.extend(this.error_options, error_options);
             }
@@ -109,6 +103,7 @@
             this.type = type;
             this.details = details ? (details.toString ? details.toString() : details) : undefined;
             this.message = message;
+            this.title = error_options.title || undefined;
 
             this.update_details();
             
@@ -120,10 +115,10 @@
                 this.error_options.allow_details = true;
             }
             
-            //if (APP_DEBUG) {
-                //this.error_options.allow_details = true;
-            //}
-
+            if (APP_DEBUG) {
+                this.error_options.allow_details = true;
+            }
+            
             this.$(".actions .show-details").click();
             this.$(".key.details").click();
             this.$(".error-more-details").hide();
@@ -134,6 +129,7 @@
             if (this.ns && this.type) {
                 title = this.title || this.type + " Error";
             }
+
             this.$(".header .title").text(title);
             this.$(".error-code").text(this.code || "");
             this.$(".error-type").text(this.type || "");
@@ -172,14 +168,20 @@
             } else {
                 this.$(".reload-app").hide();
             }
+
+        },
+
+        onOpen: function() {
+            var self = this;
+
+            this.$(".closeme").unbind("click");
+            this.$(".closeme").bind("click", function(){
+                self.hide("reset")
+            })
         },
 
         hide: function(reset_state) {
-            if (reset_state === undefined) { reset_state = true };
-            if (reset_state) {
-                snf.api.error_state = false;
-                snf.api.trigger("change:error_state", snf.api.error_state);
-            }
+            if (reset_state === "reset") { snf.api.trigger("reset") };
             views.ErrorView.__super__.hide.apply(this);
         },
 

@@ -7,6 +7,7 @@
     var snf = root.synnefo = root.synnefo || {};
     var sync = snf.sync = snf.sync || {};
     var api = snf.api = snf.api || {};
+    var storage = snf.storage = snf.storage || {};
 
     // shortcuts
     var bb = Backbone;
@@ -37,10 +38,20 @@
     var addApiCallDate = function(url, d, method) {
         if (d === undefined) { d = Date() };
         var path = snf.util.parseUri(url).path;
-        api_history[path + "_" + method] = d;
+        var key = path + "_" + method;
+
+        // TODO: check if d is very old date
+        api_history[key] = d;
         return api_history[path]
     }
-    
+
+    var clearApiCallDate = function(url, method) {
+        var path = snf.util.parseUri(url).path;
+        var key = path + "_" + method;
+        api_history[key] = false;
+        return api_history[path]
+    }
+
     var api_errors = api.errors = api.errors || [];
     var add_api_error = function(settings, data) {
         api_errors.push({url:settings.url, date:new Date, settings:settings, data:data})
@@ -74,9 +85,11 @@
             }
         }
 
-        options.handles_error = options.handles_error || false;
-        
-        if (api.stop_calls) {
+        // default error options
+        options.critical = options.critical === undefined ? true : options.critical;
+        options.display = options.display === undefined ? true : options.display;
+
+        if (api.stop_calls && !options.no_skip) {
             return;
         }
 
@@ -103,28 +116,51 @@
         return bb.sync(method, model, api_options);
     }
     
+    api.timeouts_occured = 0;
+
     api.handlerWrapper = function(wrap, method, type) {
+        
         var cb_type = type;
+
         return function() {
             
-            if (type == "error") {
+            var xhr = undefined;
+            var handler_type = type;
+            var args = arguments;
+            var ajax_options = this;
+
+            // save the request date to use it as a changes-since value
+            // for opera because we are not able to determine
+            // response date header for 304 requests
+            if (handler_type == "beforeSend" && $.browser.opera) {
+                this.date_send = new Date;
+            }
+
+            // error with status code 0 in opera
+            // act as 304 response
+            if (handler_type == "error" && $.browser.opera) {
+                if (arguments[0].status === 0 && arguments[1] === "error") {
+                    arguments[0].status = 304;
+                    arguments[1] = "notmodified";
+                    response_type = "success";
+                    xhr = arguments[0];
+                }
+            }
+            
+            // add error in api errors registry
+            // api errors registry will be sent
+            // if user reports an error using feedback form
+            if (handler_type == "error") {
                 add_api_error(this, arguments);
             }
             
+            // identify response status
             var status = 304;
             if (arguments[0]) {
-                var status = arguments[0].status;
+                status = arguments[0].status;
             }
-
-            if (type == "error" && this.handles_error && ((status > 499 && status < 600) || status == 400)) { 
-                arguments.ajax = this;
-                return method(arguments)
-            }
-
-            var args = wrap.apply(this, arguments);
-            args = _.toArray(args);
-            var ajax_options = this;
             
+            // identify aborted request
             try {
                 if (args[1] === "abort") {
                     api.trigger("abort");
@@ -133,48 +169,111 @@
             } catch(error) {
                 console.error("error aborting", error);
             }
-
-            // FIXME: is this good practice ??
-            // fetch callbacks wont get called
+            
+            // try to set the last request date
+            // only for notmodified or succeed responses
             try {
                 // identify xhr object
-                var xhr = args[2];
-                if (args.length == 2) {
-                    xhr = args[0];
-                }
-
-                // do not call success for 304 responses
-                if (args[1] === "notmodified" || xhr.status == 0 && $.browser.opera) {
-                    if (args[2]) {
-                        addApiCallDate(this.url, new Date(args[2].getResponseHeader('Date')), ajax_options.type);
+                xhr = xhr || args[2];
+                
+                // not modified response
+                if (args[1] === "notmodified") {
+                    if (xhr) {
+                        // use date_send if exists (opera browser)
+                        var d = this.date_send || xhr.getResponseHeader('Date');
+                        if (d) { addApiCallDate(this.url, new Date(d), ajax_options.type); };
                     }
                     return;
                 }
                 
+                // success response
+                if (args[1] == "success" && handler_type == "success") {
+                    try {
+                        // use date_send if exists (opera browser)
+                        var d = this.date_send || args[2].getResponseHeader('Date');
+                        if (d) { addApiCallDate(this.url, new Date(d), ajax_options.type); };
+                    } catch (err) {
+                        console.error(err)
+                    }
+                }
             } catch (err) {
                 console.error(err);
             }
-            method.apply(this, args);
+            
+            // dont call error callback for non modified responses
+            if (arguments[1] === "notmodified") {
+                return;
+            }
+            
+            // prepare arguments for error callbacks
+            var cb_args = _.toArray(arguments);
+            if (handler_type === "error") {
+                cb_args.push(_.clone(this));
+            }
+            
+            // determine if we need to call our callback wrapper
+            var call_api_handler = true;
+
+            // request handles errors by itself, s
+            if (handler_type == "error" && this.skip_api_error) {
+                call_api_handler = false
+            }
+
+            // aborted request, don't call error handler
+            if (handler_type === "error" && args[1] === "abort") {
+                call_api_handler = false;
+            }
+            
+            // reset api call date, next call will be sent without changes-since
+            // parameter set
+            if (handler_type === "error") {
+                if (args[1] === "error") {
+                    clearApiCallDate(this.url, this.type);
+                }
+            }
+            
+            // call api call back and retrieve params to
+            // be passed to the callback method set for
+            // this type of response
+            if (call_api_handler) {
+                cb_args = wrap.apply(this, cb_args);
+            }
+            
+            // call requested callback
+            method.apply(this, _.toArray(cb_args));
         }
     }
 
     api.successHandler = function(data, status, xhr) {
         //debug("ajax success", arguments)
         // on success, update the last date we called the api url
-        addApiCallDate(this.url, new Date(xhr.getResponseHeader('Date')), this.type);
         return [data, status, xhr];
     }
 
     api.errorHandler = function(event, xhr, settings, error) {
-        //debug("ajax error", arguments, this);
-        arguments.ajax = this;
         
-        // skip aborts
-        if (xhr != "abort") {
-            arguments.ajax.critical = arguments.ajax.critical == undefined ? true : arguments.ajax.critical;
-            if (!settings.handles_error) api.trigger("error", arguments);
+        // dont trigger api error untill timeouts occured
+        // exceed the skips_timeouts limit
+        //
+        // check only requests with skips_timeouts option set
+        if (xhr === "timeout" && _.last(arguments).skips_timeouts) {
+            var skip_timeouts = snf.config.skip_timeouts || 1;
+            if (snf.api.timeouts_occured < skip_timeouts) {
+                snf.api.timeouts_occured++;
+                return;
+            } else {
+                // reset and continue to error trigger
+                snf.api.timeouts_occured = 0;
+            }
         }
-        return arguments;
+    
+        // skip aborts, notmodified (opera)
+        if (xhr === "error" || xhr === "timeout") {
+            var args = _.toArray(arguments);
+            api.trigger("error", args);
+        }
+
+        return _.toArray(arguments);
     }
 
     api.completeHandler = function(xhr, status) {
@@ -189,15 +288,19 @@
         return arguments;
     }
 
-
-    api.call = function(url, method, data, complete, error, success) {
+    // api call helper
+    api.call = function(url, method, data, complete, error, success, options) {
             var self = this;
             error = error || function(){};
             success = success || function(){};
             complete = complete || function(){};
             var extra = data ? data._options || {} : {};
-            if (data && data._options) { delete data['_options'] };
 
+            // really ugly way to pass sync request options.
+            // it works though....
+            if (data && data._options) { delete data['_options'] };
+            
+            // prepare the params
             var params = {
                 url: snf.config.api_url + "/" + url,
                 data: data,
@@ -206,13 +309,14 @@
                 error: error
             }
 
-            params = _.extend(params, extra);
+            params = _.extend(params, extra, options);
             this.sync(method, this, params);
         },
 
     _.extend(api, bb.Events);
-
     
+    // helper for callbacks that need to get called
+    // in fixed intervals
     api.updateHandler = function(options) {
         this.cb = options.callback;
         this.limit = options.limit;
@@ -269,7 +373,31 @@
         }
     }
     
+    // api error state
     api.stop_calls = false;
+    api.STATES = { NORMAL:1, WARN:0, ERROR:-1 };
+    api.error_state = api.STATES.NORMAL;
+
+    // on api error update the api error_state
+    api.bind("error", function() {
+        var args = _.toArray(_.toArray(arguments)[0]);
+        var params = _.last(args);
+        
+        if (params.critical) {
+            snf.api.error_state = api.STATES.ERROR;
+            snf.api.stop_calls = true;
+        } else {
+            snf.api.error_state = api.STATES.WARN;
+        }
+        snf.api.trigger("change:error_state", snf.api.error_state);
+    });
+    
+    // reset api error state
+    api.bind("reset", function() {
+        snf.api.error_state = api.STATES.NORMAL;
+        snf.api.stop_calls = false;
+        snf.api.trigger("change:error_state", snf.api.error_state);
+    })
 
     // make it eventable
     _.extend(api.updateHandler.prototype, bb.Events);

@@ -339,7 +339,7 @@
         },
         
         handle_api_error_state: function(state) {
-            if (snf.api.error_state) {
+            if (snf.api.error_state === snf.api.STATES.ERROR) {
                 this.stop_intervals();
             } else {
                 if (this.intervals_stopped) {
@@ -348,12 +348,17 @@
             }
         },
         
-        handle_api_error: function(xhr, type, message) {
+        handle_api_error: function(args) {
+            if (arguments.length == 1) { arguments = _.toArray(arguments[0])};
+
+            if (!_.last(arguments).display) {
+                return;
+            }
+
             this.error_state = true;
-            this.log.error("API ERRROR", arguments);
             
             var xhr = arguments[0];
-            var args = util.parse_api_error(arguments);
+            var args = util.parse_api_error.apply(util, arguments);
             
             // force logout if UNAUTHORIZED request arrives
             if (args.code == 401) { snf.ui.logout(); return };
@@ -401,18 +406,23 @@
             this.update_status("Loading vms...");
             storage.vms.fetch({refresh:true, update:false, success: function(){
                 self.update_status("VMS Loaded.");
-                self.check_status()
+                self.check_status();
             }});
+
             this.update_status("Loading networks...");
             storage.networks.fetch({refresh:true, update:false, success: function(){
                 self.update_status("Networks loaded.");
-                self.check_status()
+                self.check_status();
             }});
         },  
 
         init_intervals: function() {
-            this._networks = storage.networks.get_fetcher(snf.config.update_interval, snf.config.update_interval/2, 2, true, undefined);
-            this._vms = storage.vms.get_fetcher(snf.config.update_interval, snf.config.update_interval/2, 2, true, undefined);
+            this._networks = storage.networks.get_fetcher(snf.config.update_interval, 
+                                                          snf.config.update_interval - 100, 
+                                                          1, true, undefined);
+            this._vms = storage.vms.get_fetcher(snf.config.update_interval, 
+                                                snf.config.update_interval - 100, 
+                                                1, true, undefined);
         },
 
         stop_intervals: function() {
@@ -679,7 +689,7 @@
             $(".large-spinner").remove();
 
             storage.vms.reset_pending_actions();
-            storage.vms.reset_stats_update();
+            storage.vms.stop_stats_update();
 
             // show current view
             this.show_view_pane();

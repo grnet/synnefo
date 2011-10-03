@@ -82,6 +82,7 @@
             this.defaults = {
                 load: false,
                 closeOnClick: false,
+                closeOnEsc: false,
                 mask: {
                     color: "#444",
                     loadSpeed: snf.config.overlay_speed || 0,
@@ -180,6 +181,9 @@
         },
 
         _onOpen: function() {
+            // clear previously bound click events
+            $(this.el).find(".closeme").unbind("click");
+
             if ($(this.el).find(".closeme").length) {
                 $(this.el).find(".closeme").click(_.bind(function(){
                     this.hide();
@@ -270,9 +274,6 @@
         _update_vm_details: function() { 
             if (!this.vm) { console.error("invalid view state"); return }
             this.set_subtitle(this.vm.get("name") + snf.ui.helpers.vm_icon_tag(this.vm, "small"));
-
-            var ico_path = snf.ui.helpers.os_icon_path(this.vm.get("OS"), "oslarge");
-            this.$(".content").css({"background-image":"url(" + ico_path +")"})
             this.update_vm_details() 
         },
 

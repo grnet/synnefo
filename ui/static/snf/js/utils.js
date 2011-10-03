@@ -47,9 +47,6 @@
 
         this.error = function() {
             var args = [2]; args.push.call(args, arguments);
-            try {
-                console.trace()
-            } catch (err) {}
             this._log.apply(this, args);
         }
 
@@ -210,7 +207,10 @@
         }, 
 
         'abort': {},
-        'parserror': {}
+        'parserror': {},
+        '413': {
+            'title': "Account warning"
+        }
     }
     
     synnefo.util.array_diff = function(arr1, arr2) {
@@ -285,16 +285,18 @@
         }
     }
 
-    synnefo.util.parse_api_error = function(arguments) {
-        arguments = arguments[0];
+    synnefo.util.parse_api_error = function() {
+        if (arguments.length == 1) { arguments = arguments[0] };
 
         var xhr = arguments[0];
         var error_message = arguments[1];
         var error_thrown = arguments[2];
-        var ajax_settings = arguments.ajax || {};
-        var call_settings = arguments.ajax ? arguments.ajax.error_params || {} : {};
-
+        var ajax_settings = _.last(arguments) || {};
+        var call_settings = ajax_settings.error_params || {};
         var json_data = undefined;
+
+        var critical = ajax_settings.critical === undefined ? true : ajax_settings.critical;
+
         if (xhr.responseText) {
             try {
                 json_data = JSON.parse(xhr.responseText)
@@ -315,7 +317,8 @@
             'message': 'Api error',
             'type': 'API',
             'allow_report': true,
-            'fatal_error': ajax_settings.critical || false
+            'fatal_error': ajax_settings.critical || false,
+            'non_critical': !critical
         }
 
         var code = -1;
@@ -328,6 +331,11 @@
             defaults.non_critical = true;
             defaults.allow_report = false;
             defaults.allow_reload = false;
+            error_message = "limit_error";
+        }
+
+        if (critical) {
+            defaults.allow_report = true;
         }
         
         if (json_data) {
@@ -337,12 +345,13 @@
                 error_message = obj.message;
             })
         }
-        
+
         extra = {'URL': ajax_settings.url};
         options = {};
         options = _.extend(options, {'details': details, 'message': error_message, 'ns': module, 'extra_details': extra});
         options = _.extend(options, call_settings);
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[error_message] || {});
+        options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[code] || {});
         
         if (window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[options.message]) {
             options.message = window.ERROR_OVERRIDES[options.message];

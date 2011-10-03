@@ -83,6 +83,8 @@
                 'data': $.param(data),
                 'success': this.show_success,
                 'error': this.show_error,
+                'no_skip': true,
+                'display': false,
                 'handles_error': true
             }
             api.sync('create', undefined, opts);
@@ -93,8 +95,14 @@
         },
         
         onOpen: function() {
+            var self = this;
             var point = this.text.val().length;
             this.text.show().focus().setCursorPosition(point);
+
+            this.$(".closeme").unbind("click");
+            this.$(".closeme").bind("click", function(){
+                self.hide("reset")
+            });
         },
 
         show_form: function() {
@@ -127,9 +135,14 @@
             this.sending.hide();
         },
         
-        hide: function() {
-            snf.api.error_state = false;
-            snf.api.trigger("change:error_state", snf.api.error_state);
+        hide: function(reset_error_state) {
+            // trigger api reset
+            if (reset_error_state === "reset") {
+                // report error feedback form
+                if (snf.api.error_state == snf.api.STATES.ERROR) {
+                    snf.api.trigger("reset");
+                }
+            }
             views.FeedbackView.__super__.hide.apply(this);
         },
 

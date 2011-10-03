@@ -152,6 +152,7 @@
 
         show: function() {
             views.VMListView.__super__.show.apply(this, arguments);
+            if (storage.vms.length == 0) { this.hide() };
             if (!snf.config.update_hidden_views) {
                 this.update_vms(storage.vms.models);
             }

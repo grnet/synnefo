@@ -192,7 +192,9 @@
                 this.action_views[vm.id].update_layout();
             }
             
-            this.post_update_vm(vm);
+            try {
+                this.post_update_vm(vm);
+            } catch (err) {};
         },
 
         // check if vm is placed properly within the view

@@ -118,11 +118,6 @@ def nic_to_dict(nic):
     return d
 
 
-def metadata_to_dict(vm):
-    vm_meta = vm.virtualmachinemetadata_set.all()
-    return dict((meta.meta_key, meta.meta_value) for meta in vm_meta)
-
-
 def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
     if detail:
@@ -134,8 +129,8 @@ def vm_to_dict(vm, detail=False):
         d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.sourceimage.id
-
-        metadata = metadata_to_dict(vm)
+        
+        metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
             d['metadata'] = {'values': metadata}
 
@@ -395,7 +390,7 @@ def list_metadata(request, server_id):
     #                       overLimit (413)
 
     vm = util.get_vm(server_id, request.user)
-    metadata = metadata_to_dict(vm)
+    metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
 
@@ -417,22 +412,15 @@ def update_metadata(request, server_id):
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
-
-    updated = {}
-
+    
     for key, val in metadata.items():
-        try:
-            meta = VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
-            meta.meta_value = val
-            meta.save()
-            updated[key] = val
-        except VirtualMachineMetadata.DoesNotExist:
-            pass    # Ignore non-existent metadata
+        meta, created = vm.metadata.get_or_create(meta_key=key)
+        meta.meta_value = val
+        meta.save()
     
-    if updated:
-        vm.save()
-    
-    return util.render_metadata(request, updated, status=201)
+    vm.save()
+    vm_meta = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
+    return util.render_metadata(request, vm_meta, status=201)
 
 
 @util.api_method('GET')

@@ -528,7 +528,9 @@
             this.set({'state': this.state_for_api_status(st)}, {silent: true});
             
             // trigger transition
-            if (transition) { this.trigger("transition", {from:transition, to:new_state}) };
+            if (transition && models.VM.TRANSITION_STATES.indexOf(new_state) == -1) { 
+                this.trigger("transition", {from:transition, to:new_state}) 
+            };
             return st;
         },
 

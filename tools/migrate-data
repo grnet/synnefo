@@ -46,14 +46,17 @@ from lib.hashmap import HashMap
 from lib.migrate import Migration
 
 class DataMigration(Migration):
-    def __init__(self, db):
-        Migration.__init__(self, db)
+    def __init__(self, pithosdb, db):
+        Migration.__init__(self,  pithosdb)
         # XXX Need more columns for primary key - last modified timestamp...
+        engine = create_engine(db)
+        metadata = MetaData(engine)
+        
         columns=[]
         columns.append(Column('path', String(2048), primary_key=True))
         columns.append(Column('hash', String(255)))
-        self.files = Table('files', self.metadata, *columns)
-        self.metadata.create_all(self.engine)
+        self.files = Table('files', metadata, *columns)
+        metadata.create_all(engine)
     
     def cache_put(self, path, hash):
         # Insert or replace.
@@ -108,7 +111,8 @@ class DataMigration(Migration):
             print status
 
 if __name__ == "__main__":
+    pithosdb = ''
     db = 'sqlite:///migrate.db'
     
-    dt = DataMigration(db)
+    dt = DataMigration(pithosdb, db)
     dt.execute()

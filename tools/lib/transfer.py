@@ -40,7 +40,7 @@ from cStringIO import StringIO
 from client import Fault
 
 
-def upload(client, file, container, prefix, name=None):
+def upload(client, file, container, prefix, name=None, mimetype=None):
     
     meta = client.retrieve_container_metadata(container)
     blocksize = int(meta['x-container-block-size'])
@@ -48,18 +48,20 @@ def upload(client, file, container, prefix, name=None):
     
     size = os.path.getsize(file)
     hashes = HashMap(blocksize, blockhash)
-    hashes.load(file)
+    hashes.load(open(file))
     map = {'bytes': size, 'hashes': [hexlify(x) for x in hashes]}
     
     objectname = name if name else os.path.split(file)[-1]
     object = prefix + objectname
+    kwargs = {'mimetype':mimetype} if mimetype else {}
+    v = None
     try:
-        client.create_object_by_hashmap(container, object, map)
+        v = client.create_object_by_hashmap(container, object, map, **kwargs)
     except Fault, fault:
         if fault.status != 409:
             raise
     else:
-        return
+        return v
     
     if type(fault.data) == types.StringType:
         missing = fault.data.split('\n')
@@ -76,7 +78,7 @@ def upload(client, file, container, prefix, name=None):
             block = fp.read(blocksize)
             client.update_container_data(container, StringIO(block))
     
-    client.create_object_by_hashmap(container, object, map)
+    return client.create_object_by_hashmap(container, object, map, **kwargs)
 
 def download(client, container, object, file):
     

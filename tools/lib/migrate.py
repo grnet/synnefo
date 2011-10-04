@@ -36,6 +36,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Table, MetaData
 
+from django.conf import settings
+
 from pithos.backends.modular import ModularBackend
 
 class Migration(object):
@@ -44,6 +46,9 @@ class Migration(object):
         self.metadata = MetaData(self.engine)
         #self.engine.echo = True
         self.conn = self.engine.connect()
+        
+        options = getattr(settings, 'BACKEND', None)[1]
+        self.backend = ModularBackend(*options)
     
     def execute(self):
         pass

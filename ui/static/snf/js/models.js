@@ -625,7 +625,10 @@
                 url: stats_url, 
                 refresh:true, 
                 success: _.bind(this.handle_stats_update, this),
-                error: _.bind(this.handle_stats_error, this)
+                error: _.bind(this.handle_stats_error, this),
+                critical: false,
+                display: false,
+                log_error: false
             });
         },
 

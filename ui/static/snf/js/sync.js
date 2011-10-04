@@ -151,7 +151,11 @@
             // api errors registry will be sent
             // if user reports an error using feedback form
             if (handler_type == "error") {
-                add_api_error(this, arguments);
+                // skip logging requested ?
+                // if not log this error
+                if (this.log_error !== false) {
+                    add_api_error(this, arguments);
+                }
             }
             
             // identify response status

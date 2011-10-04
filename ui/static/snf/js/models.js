@@ -572,19 +572,24 @@
             return {'progress': progress, 'size': size, 'copy': size_copied};
         },
 
-        start_stats_update: function() {
+        start_stats_update: function(force_if_empty) {
             var prev_state = this.do_update_stats;
 
             this.do_update_stats = true;
-
+            
             // fetcher initialized ??
             if (!this.stats_fetcher) {
                 this.init_stats_intervals();
             }
 
+
             // fetcher running ???
             if (!this.stats_fetcher.running || !prev_state) {
                 this.stats_fetcher.start();
+            }
+
+            if (force_if_empty && this.get("stats") == undefined) {
+                this.update_stats(true);
             }
         },
 
@@ -613,19 +618,21 @@
         // do the api call
         update_stats: function(force) {
             // do not update stats if flag not set
-            if (!this.do_update_stats && !force) {
+            if ((!this.do_update_stats && !force) || this.updating_stats) {
                 return;
             }
 
             // make the api call, execute handle_stats_update on sucess
             // TODO: onError handler ???
             stats_url = this.url() + "/stats";
+            this.updating_stats = true;
             this.sync("GET", this, {
                 handles_error:true, 
                 url: stats_url, 
                 refresh:true, 
                 success: _.bind(this.handle_stats_update, this),
                 error: _.bind(this.handle_stats_error, this),
+                complete: _.bind(function(){this.updating_stats = false;}, this),
                 critical: false,
                 display: false,
                 log_error: false

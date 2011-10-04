@@ -107,7 +107,7 @@
         update_current_vm: function() {
             try {
                 this.current_vm_instance = storage.vms.at(this.current_vm);
-                this.current_vm_instance.start_stats_update();
+                this.current_vm_instance.start_stats_update(true);
                 storage.vms.stop_stats_update([this.current_vm_instance]);
             } catch (err) {
                 this.log.debug("Cannot select current vm instance for: {0}".format(this.current_vm));

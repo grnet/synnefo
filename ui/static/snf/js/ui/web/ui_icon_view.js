@@ -563,7 +563,7 @@
             this.parent.stats_views[this.vm.id].update_layout();
             
             if (this.parent.details_hidden) {
-                this.vm.start_stats_update();
+                this.vm.start_stats_update(true);
             }
         }
     });

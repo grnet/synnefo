@@ -95,7 +95,7 @@ class ObjectMigration(Migration):
         for f in path.split('/'):
             obj = '%s/%s' %(obj, f) if obj else f
             try:
-                self.wrapper.create_directory_marker('pithos', obj, username)
+                self.wrapper.create_directory_marker(container, obj, username)
             except NameError, e:
                 pass
         self.wrapper.set_account(username)

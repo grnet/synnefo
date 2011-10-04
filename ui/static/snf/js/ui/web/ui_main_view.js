@@ -467,6 +467,7 @@
 
         load: function() {
             this.error_view = new views.ErrorView();
+            this.feedback_view = new views.FeedbackView();
             var self = this;
             // initialize overlay views
             
@@ -495,7 +496,6 @@
             this.select_view = new views.SelectView(this);
             this.metadata_view = new views.MetadataView();
             this.multiple_actions_view = new views.MultipleActionsView();
-            this.feedback_view = new views.FeedbackView();
             
             this.add_view("icon");
             this.add_view("list");

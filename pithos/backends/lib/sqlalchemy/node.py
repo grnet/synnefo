@@ -41,7 +41,7 @@ from dbworker import DBWorker
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(7)
+( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
 
 inf = float('inf')
 
@@ -85,11 +85,12 @@ def strprevling(prefix):
 _propnames = {
     'serial'    : 0,
     'node'      : 1,
-    'size'      : 2,
-    'source'    : 3,
-    'mtime'     : 4,
-    'muser'     : 5,
-    'cluster'   : 6,
+    'hash'      : 2,
+    'size'      : 3,
+    'source'    : 4,
+    'mtime'     : 5,
+    'muser'     : 6,
+    'cluster'   : 7,
 }
 
 
@@ -139,6 +140,7 @@ class Node(DBWorker):
                               ForeignKey('nodes.node',
                                          ondelete='CASCADE',
                                          onupdate='CASCADE')))
+        columns.append(Column('hash', String(255)))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', Float))
@@ -212,7 +214,14 @@ class Node(DBWorker):
            (serial, node, size, source, mtime, muser, cluster).
         """
         
-        s = select(['*'], self.versions.c.node == node)
+        s = select([self.versions.c.serial,
+                    self.versions.c.node,
+                    self.versions.c.hash,
+                    self.versions.c.size,
+                    self.versions.c.source,
+                    self.versions.c.mtime,
+                    self.versions.c.muser,
+                    self.versions.c.cluster], self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
@@ -435,6 +444,7 @@ class Node(DBWorker):
         # The latest version.
         s = select([self.versions.c.serial,
                     self.versions.c.node,
+                    self.versions.c.hash,
                     self.versions.c.size,
                     self.versions.c.source,
                     self.versions.c.mtime,
@@ -495,16 +505,14 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, size, source, muser, cluster=0):
+    def version_create(self, node, hash, size, source, muser, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
         mtime = time()
-        props = (node, size, source, mtime, muser, cluster)
-        props = locals()
-        props.pop('self')
-        s = self.versions.insert().values(**props)
+        s = self.versions.insert().values(node=node, hash=hash, size=size, source=source,
+                                          mtime=mtime, muser=muser, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -512,13 +520,13 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, size, source, mtime, muser, cluster)
+           (serial, node, hash, size, source, mtime, muser, cluster)
            or None if the current version is not found in the given cluster.
         """
         
         v = self.versions.alias('v')
-        s = select([v.c.serial, v.c.node, v.c.size, v.c.source, v.c.mtime,
-                    v.c.muser, v.c.cluster])
+        s = select([v.c.serial, v.c.node, v.c.hash, v.c.size,
+                    v.c.source, v.c.mtime, v.c.muser, v.c.cluster])
         c = select([func.max(self.versions.c.serial)],
             and_(self.versions.c.node == node,
                  self.versions.c.mtime < before))
@@ -535,12 +543,12 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, cluster).
         """
         
         v = self.versions.alias()
-        s = select([v.c.serial, v.c.node, v.c.size, v.c.source, v.c.mtime,
-                   v.c.muser, v.c.cluster], v.c.serial == serial)
+        s = select([v.c.serial, v.c.node, v.c.hash, v.c.size,
+                    v.c.source, v.c.mtime, v.c.muser, v.c.cluster], v.c.serial == serial)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()

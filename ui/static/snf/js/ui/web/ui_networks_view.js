@@ -230,8 +230,10 @@
             this.cancel = this.$("button.no");
             this.confirm = this.$("button.yes");
             this.details = this.$(".action-details");
+            this.vm_connect = this.$(".machine-connect");
 
             this.init_handlers();
+            this.connect_overlay = new views.VMConnectView();
             
             this.firewall_view = undefined;
             if (this.firewall_controls) {
@@ -266,7 +268,11 @@
 
                 this.$(".remove-icon").click(_.bind(function(){
                     this.confirm_disconnect();
-                }, this))
+                }, this));
+
+                this.vm_connect.click(_.bind(function() {
+                    this.connect_overlay.show(this.vm);
+                }, this));
             }
             
             var vm = this.vm;

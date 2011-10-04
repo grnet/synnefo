@@ -34,9 +34,7 @@
 import sys
 import os
 import time
-import sqlite3
 import logging
-import hashlib
 import binascii
 
 from base import NotAllowedError, BaseBackend

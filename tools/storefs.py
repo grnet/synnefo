@@ -41,9 +41,10 @@ from stat import S_IFDIR, S_IFREG
 from sys import argv
 from time import time
 
+from lib.client import OOS_Client, Fault
+from lib.fuse import FUSE, FuseOSError, Operations
+
 from pithos.api.compat import parse_http_date
-from pithos.lib.client import OOS_Client, Fault
-from pithos.lib.fuse import FUSE, FuseOSError, Operations
 
 DEFAULT_HOST = 'pithos.dev.grnet.gr'
 

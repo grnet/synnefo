@@ -911,7 +911,7 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta().OS;
+            return this.get_meta().OS || (this.get_image() ? this.get_image().get_os() || "okeanos" : "okeanos");
         },
         
         // get public ip addresses

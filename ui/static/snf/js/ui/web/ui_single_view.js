@@ -45,7 +45,7 @@
 
         selectors: {
             'vms': '.single-container',
-            'vm': 'div#single-vm-{0}',
+            'vm': 'div#single-vm-',
             'view': '#machinesview-single',
             'tpl': 'div.single-container#machine-container-template',
             'spinner': '.large-spinner',
@@ -105,7 +105,6 @@
 
         update_current_vm: function() {
             storage.vms.stop_stats_update();
-
             try {
                 this.current_vm_instance = storage.vms.at(this.current_vm);
                 this.current_vm_instance.do_update_stats = true;
@@ -208,6 +207,9 @@
 
 
             $("#" + this.link_id_tpl + this.current_vm).addClass("column3-selected");
+            try {
+                this.update_details(vm);
+            } catch (err) {};
         },
 
         show_vm_menu: function() {
@@ -241,6 +243,8 @@
         // update vm details
         update_details: function(vm) {
             var el = this.vm(vm);
+            if (vm != this.current_vm_instance) { return };
+
             // truncate name
             el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 35));
             // set ips

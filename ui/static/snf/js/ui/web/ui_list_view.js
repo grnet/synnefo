@@ -108,7 +108,7 @@
 
         selectors: {
             'vms': '.list-container',
-            'vm': '#list-vm-{0}',
+            'vm': '#list-vm-',
             'view': '#machinesview-list',
             'tpl': '.list-container#machine-container-template',
             'spinner': '.large-spinner',

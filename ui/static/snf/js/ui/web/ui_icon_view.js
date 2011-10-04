@@ -112,6 +112,9 @@
                 } else {
                     this.toggler.addClass("open");
                     this.vm.do_update_stats = true;
+                    this.view.details_views[this.vm.id].update_layout();
+                    this.view.tags_views[this.vm.id].update_layout();
+                    this.view.stats_views[this.vm.id].update_layout();
                 }
                 
                 var self = this;
@@ -542,6 +545,8 @@
         },
 
         update_layout: function() {
+            if (!this.visible() && this.parent.details_hidden) { return };
+
             var image = this.vm.get_image();
             var flavor = this.vm.get_flavor();
             if (!flavor || !image) {
@@ -554,6 +559,9 @@
             this.sel('cpu').text(flavor.get('cpu'));
             this.sel('ram').text(flavor.get('ram'));
             this.sel('disk').text(flavor.get('disk'));
+
+            this.parent.tags_views[this.vm.id].update_layout();
+            this.parent.stats_views[this.vm.id].update_layout();
         }
     });
     
@@ -563,13 +571,15 @@
         // view id (this could be used to identify 
         // the view object from global context
         view_id: 'vm_icon',
+        
+        details_hidden: true,
 
         el: '#machinesview-icon',
         id_tpl: 'icon-vm-',
 
         selectors: {
             'vms': '.machine-container',
-            'vm': '#icon-vm-{0}',
+            'vm': '#icon-vm-',
             'view': '#machinesview-icon',
             'tpl': '#machinesview-icon.standard #machine-container-template',
             'spinner': '.large-spinner',
@@ -662,34 +672,37 @@
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
             // set ips
-            el.find(".ipv4-text").text(vm.get_addresses().ip4 || "undefined");
+            el.find("span.ipv4-text").text(vm.get_addresses().ip4 || "undefined");
             // TODO: fix ipv6 truncates and tooltip handler
-            el.find(".ipv6-text").text(vm.get_addresses().ip6 || "undefined");
+            el.find("span.ipv6-text").text(vm.get_addresses().ip6 || "undefined");
             // set the state (i18n ??)
-            el.find(".status").text(STATE_TEXTS[vm.state()]);
+            el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
-            el.find(".state").removeClass().addClass(views.IconView.STATE_CLASSES[vm.state()].join(" "));
+            el.find("div.state").removeClass().addClass(views.IconView.STATE_CLASSES[vm.state()].join(" "));
             // os icon
-            el.find(".logo").css({'background-image': "url(" + this.get_vm_icon_path(vm, "medium") + ")"});
+            el.find("div.logo").css({'background-image': "url(" + this.get_vm_icon_path(vm, "medium") + ")"});
             
             el.removeClass("connectable");
             if (vm.is_connectable()) {
                 el.addClass("connectable");
             }
             
-            if (vm.get('status') == 'BUILD') {
+            var status = vm.get("status");
+            var state = vm.get("state");
+
+            if (status == 'BUILD') {
                 // update bulding progress
-                el.find(".machine-ips").hide();
-                el.find(".build-progress").show().text(vm.get('progress_message'));
+                el.find("div.machine-ips").hide();
+                el.find("div.build-progress").show().text(vm.get('progress_message'));
             } else {
                 // hide building progress
-                el.find(".machine-ips").show()
-                el.find(".build-progress").hide();
+                el.find("div.machine-ips").show()
+                el.find("div.build-progress").hide();
             }
 
-            if (vm.state() == "DESTROY") {
-                el.find(".machine-ips").hide();
-                el.find(".build-progress").show().text("Terminating...");
+            if (state == "DESTROY") {
+                el.find("div.machine-ips").hide();
+                el.find("div.build-progress").show().text("Terminating...");
             }
 
             icon_state = vm.is_active() ? "on" : "off";
@@ -697,9 +710,7 @@
             
             // update subviews
             this.rename_views[vm.id].update_layout();
-            this.stats_views[vm.id].update_layout();
             this.connect_views[vm.id].update_layout();
-            this.tags_views[vm.id].update_layout();
             this.details_views[vm.id].update_layout();
         },
 

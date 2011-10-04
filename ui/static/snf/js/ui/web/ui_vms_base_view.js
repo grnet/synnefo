@@ -32,13 +32,11 @@
 
         initialize: function() {
             views.VMListView.__super__.initialize.call(this);
-
             this.set_storage_handlers();
             this.set_handlers();
             this.vms_updated_handler();
-
             this.connect_overlay = new views.VMConnectView();
-            
+            this.vm_selector = this.selectors.vm;
         },
 
         // Helpers
@@ -51,7 +49,7 @@
         
         // vm element based on vm model instance provided
         vm: function(vm) {
-            return this.sel('vm', vm.id);
+            return $(this.vm_selector + vm.id);
         },
         
         // get vm model instance from DOM element
@@ -80,7 +78,7 @@
                 this.remove_vm(model)
                 return;
             }
-
+            
             this.update_vms(updated);
         },
 
@@ -160,7 +158,6 @@
 
         // do update for provided vms, then update the view layout
         update_vms: function(vms) {
-
             if (!this.visible() && !snf.config.update_hidden_views) { return };
 
             _.each(vms, _.bind(function(vm){

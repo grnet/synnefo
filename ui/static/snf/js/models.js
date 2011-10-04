@@ -1413,7 +1413,7 @@
 
             // OS attribute
             if (this.has_meta(data)) {
-                data['OS'] = data.metadata.values.OS || "undefined";
+                data['OS'] = data.metadata.values.OS || "okeanos";
             }
             
             data['firewalls'] = {};

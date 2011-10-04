@@ -32,20 +32,23 @@
 # or implied, of GRNET S.A.
 
 from functools import wraps
+from math import ceil
 
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.http import urlencode
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 
-from pithos import settings
 from pithos.aai.models import PithosUser
 
 
-
-def render(template, tab, **kwargs):
+def render_response(template, tab=None, status=200, **kwargs):
+    if tab is None:
+        tab = template.partition('_')[0]
     kwargs.setdefault('tab', tab)
-    return render_to_string(template, kwargs)
+    html = render_to_string(template, kwargs)
+    return HttpResponse(html, status=status)
 
 
 def requires_admin(func):
@@ -53,7 +56,8 @@ def requires_admin(func):
     def wrapper(request, *args):
         if not settings.BYPASS_ADMIN_AUTH:
             if not request.user:
-                login_uri = settings.LOGIN_URL + '?' + urlencode({'next': request.build_absolute_uri()})
+                next = urlencode({'next': request.build_absolute_uri()})
+                login_uri = settings.LOGIN_URL + '?' + next
                 return HttpResponseRedirect(login_uri)
             if not request.user_obj.is_admin:
                 return HttpResponse('Forbidden', status=403)
@@ -65,22 +69,43 @@ def requires_admin(func):
 def index(request):
     stats = {}
     stats['users'] = PithosUser.objects.count()
-    html = render('index.html', 'home', stats=stats)
-    return HttpResponse(html)
+    return render_response('index.html', tab='home', stats=stats)
 
 
 @requires_admin
 def users_list(request):
     users = PithosUser.objects.order_by('id')
-    html = render('users_list.html', 'users', users=users)
-    return HttpResponse(html)
+    
+    filter = request.GET.get('filter', '')
+    if filter:
+        if filter.startswith('-'):
+            users = users.exclude(uniq__icontains=filter[1:])
+        else:
+            users = users.filter(uniq__icontains=filter)
+    
+    try:
+        page = int(request.GET.get('page', 1))
+    except ValueError:
+        page = 1
+    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
+    limit = offset + settings.ADMIN_PAGE_LIMIT
+    
+    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
+    prev = page - 1 if page > 1 else None
+    next = page + 1 if page < npages else None
+    return render_response('users_list.html',
+                            users=users[offset:limit],
+                            filter=filter,
+                            pages=range(1, npages + 1),
+                            page=page,
+                            prev=prev,
+                            next=next)
 
 
 @requires_admin
 def users_create(request):
     if request.method == 'GET':
-        html = render('users_create.html', 'users')
-        return HttpResponse(html)
+        return render_response('users_create.html')
     if request.method == 'POST':
         user = PithosUser()
         user.uniq = request.POST.get('uniq')
@@ -96,8 +121,7 @@ def users_create(request):
 @requires_admin
 def users_info(request, user_id):
     user = PithosUser.objects.get(id=user_id)
-    html = render('users_info.html', 'users', user=user)
-    return HttpResponse(html)
+    return render_response('users_info.html', user=user)
 
 
 @requires_admin

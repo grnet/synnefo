@@ -31,39 +31,75 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import os
+import types
+
 from hashmap import HashMap
 from binascii import hexlify, unhexlify
 from cStringIO import StringIO
-from lib.client import Fault
+from client import Fault
 
-import os
-import sys
 
-def smart_upload(client, file, blocksize, blockhash):
-    dest_container = 'pithos'
-    dest_object = os.path.split(file)[-1]
+def upload(client, file, container, prefix, name=None):
+    
+    meta = client.retrieve_container_metadata(container)
+    blocksize = int(meta['x-container-block-size'])
+    blockhash = meta['x-container-block-hash']
     
     size = os.path.getsize(file)
-    hashes = HashMap(sys.argv[1], blocksize, blockhash)
+    hashes = HashMap(blocksize, blockhash)
+    hashes.load(file)
     map = {'bytes': size, 'hashes': [hexlify(x) for x in hashes]}
     
+    objectname = name if name else os.path.split(file)[-1]
+    object = prefix + objectname
     try:
-        client.create_object_by_hashmap(dest_container, dest_object, map)
+        client.create_object_by_hashmap(container, object, map)
     except Fault, fault:
         if fault.status != 409:
             raise
     else:
         return
     
-    missing = fault.data.split('\n')
+    if type(fault.data) == types.StringType:
+        missing = fault.data.split('\n')
+    elif type(fault.data) == types.ListType:
+        missing = fault.data
+    
     if '' in missing:
         del missing[missing.index(''):]
     
     with open(file) as fp:
         for hash in missing:
-            offset = hashes.index(unhexlify(hash)) * BLOCK_SIZE
+            offset = hashes.index(unhexlify(hash)) * blocksize
             fp.seek(offset)
-            block = fp.read(BLOCK_SIZE)
-            client.create_object('pithos', '.upload', StringIO(block))
+            block = fp.read(blocksize)
+            client.update_container_data(container, StringIO(block))
     
-    client.create_object_by_hashmap(dest_container, dest_object, map)
+    client.create_object_by_hashmap(container, object, map)
+
+def download(client, container, object, file):
+    
+    meta = client.retrieve_container_metadata(container)
+    blocksize = int(meta['x-container-block-size'])
+    blockhash = meta['x-container-block-hash']
+    
+    if os.path.isfile(file):
+        size = os.path.getsize(file)
+        hashes = HashMap(blocksize, blockhash)
+        hashes.load(file)
+    else:
+        size = 0
+        hashes = []
+    
+    map = client.retrieve_object_hashmap(container, object)
+    
+    with open(file, 'a') as fp:
+        for i, h in enumerate(map):
+            if i < len(hashes) and h == hashes[i]:
+                continue
+            start = i * blocksize
+            end = '' if i == len(map) - 1 else (i + 1) * blocksize
+            data = client.retrieve_object(container, object, range='bytes=%s-%s' % (start, end))
+            fp.seek(start)
+            fp.write(data)

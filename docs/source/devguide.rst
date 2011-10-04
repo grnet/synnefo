@@ -25,9 +25,12 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Sept 28, 2011)        Suggest upload/download methods using hashmaps.
+0.7 (Oct 4, 2011)          Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
+\                          Pass token as a request parameter when using ``POST`` via an HTML form.
+\                          Optionally use source account to update object from another object.
+\                          Use container ``POST`` to upload missing blocks of data.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -497,6 +500,9 @@ POST
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
+Content-Length        The size of the supplied data (optional, to upload)
+Content-Type          The MIME content type of the supplied data (optional, to upload)
+Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if used, ``Content-Length`` is ignored)
 X-Container-Policy-*  Container behavior and limits
 X-Container-Meta-*    Optional user defined metadata
 ====================  ================================
@@ -509,10 +515,12 @@ Request Parameter Name  Value
 update                  Do not replace metadata/policy (no value parameter)
 ======================  ============================================
 
-No reply content/headers.
+No reply content/headers, except when uploading data, where the reply consists of a list of hashes for the blocks received (in a simple text format, with one hash per line).
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
 To change policy, include an ``X-Container-Policy-*`` header with the name in the key. If no ``X-Container-Policy-*`` header is present, no changes will be applied to policy. The ``update`` parameter also applies to policy - deleted values will revert to defaults. To delete/revert a specific policy directive, use ``update`` and an empty header value. See container ``PUT`` for a reference of policy directives.
+
+To upload blocks of data to the container, set ``Content-Type`` to ``application/octet-stream`` and ``Content-Length`` to a valid value (except if using ``chunked`` as the ``Transfer-Encoding``).
 
 ================  ===============================
 Return Code       Description
@@ -825,6 +833,7 @@ Transfer-Encoding     Set to ``chunked`` to specify incremental uploading (if us
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Object       Update with data from the object at path ``/<container>/<object>`` (optional, to update)
+X-Source-Account      The source account to update from
 X-Source-Version      The source version to update from (optional, to update)
 X-Object-Bytes        The updated object's final size (optional, when updating)
 X-Object-Manifest     Object parts prefix in ``<container>/<object>`` form (optional)
@@ -880,15 +889,14 @@ Return Code                  Description
 416 (Range Not Satisfiable)  The supplied range is invalid
 ===========================  ==============================
 
-The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have exactly two fields, as in the following example. ::
+The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have an ``X-Object-Data`` field, as in the following example. The token is passed as a request parameter. ::
 
-  <form method="post" action="https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt" enctype="multipart/form-data">
-    <input type="hidden" name="X-Auth-Token" value="0000">
+  <form method="post" action="https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt?X-Auth-Token=0000" enctype="multipart/form-data">
     <input type="file" name="X-Object-Data">
     <input type="submit">
   </form>
 
-This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data. Metadata, sharing and other object attributes can not be set this way.
+This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data (usually, automatically handled by the browser). Metadata, sharing and other object attributes can not be set this way.
 
 ==========================  ===============================
 Reply Header Name           Value
@@ -1053,9 +1061,9 @@ In the case of an upload, only the missing blocks will be submitted to the serve
   * Server responds with status ``409`` (Conflict):
 
     * Server's response body contains the hashes of the blocks that do not exist on the server.
-    * For each one of the hash values in the server's response:
+    * For each hash value in the server's response (or all hashes together):
 
-      * Send a ``PUT`` request to the server with the corresponding data block. Individual blocks are uploaded to a file named ``.upload``.
+      * Send a ``POST`` request to the destination container with the corresponding data.
 
 * Repeat hashmap ``PUT``. Fail if the server's response is not ``201``.
 

@@ -303,7 +303,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict(json.dumps(e.data))
+        raise Conflict('\n'.join(e.data) + '\n')
     if public is not None:
         try:
             request.backend.update_object_public(request.user, dest_account, dest_container, dest_name, public)

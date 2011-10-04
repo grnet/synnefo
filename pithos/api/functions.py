@@ -392,7 +392,23 @@ def container_update(request, v_account, v_container):
             raise Unauthorized('Access denied')
         except NameError:
             raise ItemNotFound('Container does not exist')
-    return HttpResponse(status=202)
+    
+    content_length = -1
+    if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
+        content_length = get_int_parameter(request.META.get('CONTENT_LENGTH', 0))
+    content_type = request.META.get('CONTENT_TYPE')
+    hashmap = []
+    if content_type and content_type == 'application/octet-stream' and content_length != 0:
+        for data in socket_read_iterator(request, content_length,
+                                            request.backend.block_size):
+            # TODO: Raise 408 (Request Timeout) if this takes too long.
+            # TODO: Raise 499 (Client Disconnect) if a length is defined and we stop before getting this much data.
+            hashmap.append(request.backend.put_block(data))
+    
+    response = HttpResponse(status=202)
+    if hashmap:
+        response.content = '\n'.join(hashmap) + '\n'
+    return response
 
 @api_method('DELETE')
 def container_delete(request, v_account, v_container):
@@ -699,6 +715,7 @@ def object_read(request, v_account, v_container, v_object):
         response['Content-Length'] = len(data)
         return response
     
+    request.serialization = 'text' # Unset.
     return object_data_response(request, sizes, hashmaps, meta)
 
 @api_method('PUT', format_allowed=True)
@@ -1041,13 +1058,16 @@ def object_update(request, v_account, v_container, v_object):
     elif offset > size:
         raise RangeNotSatisfiable('Supplied offset is beyond object limits')
     if src_object:
+        src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
+        if not src_account:
+            src_account = request.user
         src_container, src_name = split_container_object_string(src_object)
         src_container = smart_unicode(src_container, strings_only=True)
         src_name = smart_unicode(src_name, strings_only=True)
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
-            src_size, src_hashmap = request.backend.get_object_hashmap(
-                request.user, v_account, src_container, src_name, src_version)
+            src_size, src_hashmap = request.backend.get_object_hashmap(request.user,
+                                        src_account, src_container, src_name, src_version)
         except NotAllowedError:
             raise Unauthorized('Access denied')
         except NameError:

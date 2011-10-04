@@ -711,6 +711,16 @@ class Pithos_Client(OOS_Client):
             headers['x-container-policy-%s' % key] = val
         return self.post(path, headers=headers)
     
+    def update_container_data(self, container, f=stdin):
+        """adds blocks of data to the container"""
+        account = self.account
+        path = '/%s/%s' % (account, container)
+        params = {'update': None}
+        headers = {'content_type': 'application/octet-stream'}
+        data = f.read() if f else None
+        headers['content_length'] = len(data)
+        return self.post(path, data, headers=headers, params=params)
+    
     def delete_container(self, container, until=None, account=None):
         """deletes a container or the container history until the date provided"""
         account = account or self.account

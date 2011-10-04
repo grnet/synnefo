@@ -40,6 +40,7 @@ from sys import argv, exit, stdin, stdout
 from datetime import datetime
 from lib.client import Pithos_Client, Fault
 from lib.util import get_user, get_auth, get_server, get_api
+from lib.transfer import upload, download
 
 import json
 import logging
@@ -203,7 +204,7 @@ class Meta(Command):
     
     def execute(self, path=''):
         container, sep, object = path.partition('/')
-        args = {'restricted':self.restricted}
+        args = {'restricted': self.restricted}
         if getattr(self, 'until'):
             t = _time.strptime(self.until, self.format)
             args['until'] = int(_time.mktime(t))
@@ -298,7 +299,7 @@ class GetObject(Command):
         args = self._build_args(attrs)
         args['format'] = 'json' if self.detail else 'text'
         if self.range:
-            args['range'] = 'bytes=%s' %self.range
+            args['range'] = 'bytes=%s' % self.range
         if getattr(self, 'if_range'):
             args['if-range'] = 'If-Range:%s' % getattr(self, 'if_range')
         
@@ -684,6 +685,24 @@ class SharingObject(Command):
         args['format'] = 'json' if self.detail else 'text'
         
         print_list(self.client.list_shared_by_others(**args))
+
+@cli_command('send')
+class Send(Command):
+    syntax = '<file> <container>[/<prefix>]'
+    description = 'upload file to container (using prefix)'
+    
+    def execute(self, file, path):
+        container, sep, prefix = path.partition('/')
+        upload(self.client, file, container, prefix)
+
+@cli_command('receive')
+class Receive(Command):
+    syntax = '<container>/<object> <file>'
+    description = 'download object to file'
+    
+    def execute(self, path, file):
+        container, sep, object = path.partition('/')
+        download(self.client, container, object, file)
 
 def print_usage():
     cmd = Command('', [])

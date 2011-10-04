@@ -270,6 +270,15 @@
                 snf.api.timeouts_occured = 0;
             }
         }
+
+        // if error occured and changes-since is set for the request
+        // skip triggering the error and try again without the changes-since
+        // parameter set
+        var url = snf.util.parseUri(this.url);
+        if (url.query.indexOf("changes-since") > -1) {
+            clearApiCallDate(this.url, this.type);
+            return _.toArray(arguments);
+        }
     
         // skip aborts, notmodified (opera)
         if (xhr === "error" || xhr === "timeout") {

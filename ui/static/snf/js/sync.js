@@ -361,20 +361,20 @@
 
         _cb = _.bind(_cb, this);
 
-        this.faster = function() {
+        this.faster = function(do_call) {
             this.timeout = this.fast_timeout;
             this._called = 0;
-            this.setInterval();
+            this.setInterval(do_call);
         }
 
-        this.setInterval = function() {
+        this.setInterval = function(do_call) {
             this.trigger("clear");
             window.clearInterval(this.interval);
             
             this.interval = window.setInterval(_cb, this.timeout);
             this.running = true;
             
-            var call = this.call_on_start;
+            var call = do_call || this.call_on_start;
             
             if (this.last_call) {
                 var next_call = (this.timeout - ((new Date) - this.last_call));

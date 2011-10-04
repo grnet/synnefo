@@ -444,10 +444,10 @@
 
         init_intervals: function() {
             this._networks = storage.networks.get_fetcher(snf.config.update_interval, 
-                                                          snf.config.update_interval - 100, 
+                                                          snf.config.update_interval / 2, 
                                                           1, true, undefined);
             this._vms = storage.vms.get_fetcher(snf.config.update_interval, 
-                                                snf.config.update_interval - 100, 
+                                                snf.config.update_interval / 2, 
                                                 1, true, undefined);
         },
 

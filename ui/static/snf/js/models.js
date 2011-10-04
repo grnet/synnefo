@@ -137,7 +137,7 @@
                                                     fast:fast, limit:limit, 
                                                     call_on_start:initial_call});
 
-            snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster()}, this)), 2000);
+            snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster(true)}, this)), 1000);
             return updater;
         }
     });

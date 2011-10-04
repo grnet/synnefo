@@ -33,7 +33,6 @@
 
 from django.conf import settings
 
-from simple import SimpleBackend
 from modular import ModularBackend
 
 

@@ -60,11 +60,6 @@ DATABASES = {
 
 # The backend to use and its initilization options.
 
-# Simple.
-#backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')
-#backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
-#BACKEND = ('SimpleBackend', (backend_path, backend_db))
-
 # Modular.
 backend_module = 'pithos.backends.lib.sqlite'
 backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')

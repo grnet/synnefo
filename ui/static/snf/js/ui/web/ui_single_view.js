@@ -77,6 +77,7 @@
         },
 
         show_vm: function(vm) {
+            console.log("SHOW", vm.id);
             this.current_vm_instance = vm;
             this.show_vm_menu();
             this.show_current();
@@ -104,10 +105,10 @@
         },  
 
         update_current_vm: function() {
-            storage.vms.stop_stats_update();
             try {
                 this.current_vm_instance = storage.vms.at(this.current_vm);
-                this.current_vm_instance.do_update_stats = true;
+                this.current_vm_instance.start_stats_update();
+                storage.vms.stop_stats_update([this.current_vm_instance]);
             } catch (err) {
                 this.log.debug("Cannot select current vm instance for: {0}".format(this.current_vm));
                 this.current_vm_instance = undefined;

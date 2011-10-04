@@ -362,7 +362,8 @@
             }
         }
 
-        this.start = function () {
+        this.start = function (call_on_start) {
+            this.call_on_start = call_on_start == undefined ? this.call_on_start : call_on_start;
             this.setInterval();
         }
 

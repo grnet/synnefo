@@ -44,6 +44,7 @@
                 if (this.collection) {
                     try { this.clear_pending_action();} catch (err) {};
                     try { this.reset_pending_actions();} catch (err) {};
+                    try { this.stop_stats_update();} catch (err) {};
                     this.collection.remove(this.id);
                 }
             }
@@ -571,11 +572,34 @@
             return {'progress': progress, 'size': size, 'copy': size_copied};
         },
 
+        start_stats_update: function() {
+            var prev_state = this.do_update_stats;
+
+            this.do_update_stats = true;
+
+            // fetcher initialized ??
+            if (!this.stats_fetcher) {
+                this.init_stats_intervals();
+            }
+
+            // fetcher running ???
+            if (!this.stats_fetcher.running || !prev_state) {
+                this.stats_fetcher.start();
+            }
+        },
+
+        stop_stats_update: function(stop_calls) {
+            this.do_update_stats = false;
+
+            if (stop_calls) {
+                this.stats_fetcher.stop();
+            }
+        },
+
         // clear and reinitialize update interval
         init_stats_intervals: function (interval) {
             this.stats_fetcher = this.get_stats_fetcher(this.stats_update_interval);
             this.stats_fetcher.start();
-            this.update_stats(true);
         },
         
         get_stats_fetcher: function(timeout) {
@@ -683,7 +707,7 @@
                 this.stats_update_interval = data.stats.refresh * 1000;
                 this.stats_fetcher.timeout = this.stats_update_interval;
                 this.stats_fetcher.stop();
-                this.stats_fetcher.start();
+                this.stats_fetcher.start(false);
             }
         },
 
@@ -1356,10 +1380,14 @@
                 vm.clear_pending_action();
             })
         },
-
-        stop_stats_update: function() {
+        
+        stop_stats_update: function(exclude) {
+            var exclude = exclude || [];
             this.each(function(vm) {
-                vm.do_update_stats = false;
+                if (exclude.indexOf(vm) > -1) {
+                    return;
+                }
+                vm.stop_stats_update();
             })
         },
         

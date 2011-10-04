@@ -108,10 +108,9 @@
 
                 if (this.toggler.hasClass("open")) {
                     this.toggler.removeClass("open");
-                    this.vm.do_update_stats = false;
+                    this.vm.stop_stats_update();
                 } else {
                     this.toggler.addClass("open");
-                    this.vm.do_update_stats = true;
                     this.view.details_views[this.vm.id].update_layout();
                     this.view.tags_views[this.vm.id].update_layout();
                     this.view.stats_views[this.vm.id].update_layout();
@@ -562,6 +561,10 @@
 
             this.parent.tags_views[this.vm.id].update_layout();
             this.parent.stats_views[this.vm.id].update_layout();
+            
+            if (this.parent.details_hidden) {
+                this.vm.start_stats_update();
+            }
         }
     });
     

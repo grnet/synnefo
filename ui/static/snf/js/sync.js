@@ -343,6 +343,7 @@
         this.call_on_start = options.call_on_start || true;
 
         this.running = false;
+        this.last_call = false;
         
         // wrapper
         function _cb() {
@@ -355,6 +356,7 @@
                 this.setInterval()
             }
             this.cb();
+            this.last_call = new Date;
         };
 
         _cb = _.bind(_cb, this);
@@ -368,22 +370,39 @@
         this.setInterval = function() {
             this.trigger("clear");
             window.clearInterval(this.interval);
+            
             this.interval = window.setInterval(_cb, this.timeout);
             this.running = true;
-            if (this.call_on_start) {
+            
+            var call = this.call_on_start;
+            
+            if (this.last_call) {
+                var next_call = (this.timeout - ((new Date) - this.last_call));
+                if (next_call < this.timeout/2) {
+                    call = true;
+                } else {
+                    call = false;
+                }
+            }
+
+            if (call) {
                 _cb();
             }
+            return this;
         }
 
         this.start = function (call_on_start) {
+            if (this.running) { this.stop() };
             this.call_on_start = call_on_start == undefined ? this.call_on_start : call_on_start;
             this.setInterval();
+            return this;
         }
 
         this.stop = function() {
             this.trigger("clear");
             window.clearInterval(this.interval);
             this.running = false;
+            return this;
         }
     }
     

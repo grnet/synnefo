@@ -72,8 +72,9 @@
 
             storage.vms.bind("change:pending_action", _.bind(this.handle_vm_change, this));
             storage.vms.bind("change:reboot_required", _.bind(this.handle_vm_change, this));
+
         },
-    
+
         handle_vm_change: function(vm) {
             if (vm.has_pending_action()) {
                 var action = vm.get("pending_action");
@@ -314,6 +315,31 @@
             this.initial_view = this.session_view();
 
             views.MainView.__super__.initialize.call(this);
+
+            $(window).focus(_.bind(this.handle_window_focus, this, "focus"));
+            $(window).blur(_.bind(this.handle_window_focus, this, "out"));
+
+            this.focused = true;
+        },
+
+        handle_window_focus: function(focus) {
+            if (!snf.config.delay_on_blur) { return };
+
+            if (focus === "focus") {
+                this.focused = true;
+                this.set_interval_timeouts(snf.config.update_interval);
+            } else {
+                this.focused = false;
+                this.set_interval_timeouts(snf.config.update_interval*3);
+            }
+        },
+
+        set_interval_timeouts: function(time) {
+            _.each([this._networks, this._vms], function(fetcher){
+                if (!fetcher) { return };
+                fetcher.timeout = time;
+                fetcher.stop().start();
+            })
         },
         
         vms_handlers_registered: false,

@@ -556,6 +556,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             {% endif %}
             
             synnefo.config.update_interval = 5000 || {{ update_interval }};
+            synnefo.config.delay_on_blur = true;
 
             // match <= 1.9.1
             if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {

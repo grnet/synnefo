@@ -675,9 +675,9 @@
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
             // set ips
-            el.find("span.ipv4-text").text(vm.get_addresses().ip4 || "undefined");
+            el.find("span.ipv4-text").text(vm.get_addresses().ip4 || "not set");
             // TODO: fix ipv6 truncates and tooltip handler
-            el.find("span.ipv6-text").text(vm.get_addresses().ip6 || "undefined");
+            el.find("span.ipv6-text").text(vm.get_addresses().ip6 || "not set");
             // set the state (i18n ??)
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class

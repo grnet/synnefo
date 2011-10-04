@@ -86,6 +86,7 @@ class ModularBackend(BaseBackend):
         
         __import__(mod)
         self.mod = sys.modules[mod]
+        self.db = db
         self.wrapper = self.mod.dbwrapper.DBWrapper(db)
         
         params = {'blocksize': self.block_size,

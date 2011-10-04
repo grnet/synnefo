@@ -70,7 +70,8 @@ class HashMap(list):
             h = [self._hash_raw(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
         return h[0]
     
-    def load(self, f):
-        with open(f) as fp:
-            for block in file_read_iterator(fp, self.blocksize):
-                self.append(self._hash_block(block))
+    def load(self, fp):
+        self.size = 0
+        for block in file_read_iterator(fp, self.blocksize):
+            self.append(self._hash_block(block))
+            self.size += len(block)

@@ -88,7 +88,7 @@
             // create dom element
             var vm_view = this.create_vm_element(vm);
             vm_view.find(".vm-actions").attr("id", this.view_id+"-actions-" + vm.id);
-            var container = this.get_vm_container(vm)
+            var container = this.get_vm_container(vm);
             container.append(vm_view);
             vm_view.find(".action-indicator").text("");
             if (this.visible()) {
@@ -207,7 +207,7 @@
                 var cont = this.sel(selector);
                 var self = this;
 
-                el.hide().appendTo(cont).show();
+                el.hide().appendTo(cont).fadeIn(300);
                 $(window).trigger('resize');
 
                 //el.fadeOut(200, function() {
@@ -460,7 +460,13 @@
                 // cancels
                 $(this.el).find(".action-container."+action+" button.yes").click(function(ev) {
                     ev.preventDefault();
-                    self.vm.call(action);
+                    // override console
+                    // ui needs to act (open the console window)
+                    if (action == "console") {
+                        self.view.connect_to_console(self.vm);
+                    } else {
+                        self.vm.call(action);
+                    }
                     self.reset();
                 });
             }, this);

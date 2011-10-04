@@ -801,6 +801,7 @@ div.image-container {
     margin-right: 10px;
     float: left;
     height: 55px;
+    margin-top: -5px;
 }
 
 .vm-actions {
@@ -2377,7 +2378,7 @@ div.list table thead .vmname {
 }
 
 .icon .spinner {
-    margin: 20px 15px 0 15px !important;
+    margin: 20px 4px 0 15px !important;
 }
 
 .single .state .spinner {
@@ -3734,6 +3735,15 @@ div.console-footer {
     display: inline-block;
 }
 
+.icon .wave {
+    margin-right: 4px !important;
+    margin-top: 15px !important;
+}
+
+.icon .status {
+    margin-right: 3px;
+}
+
 #machinesview .status, .single .state {
     font-size: 75%;
 }
@@ -3744,8 +3754,8 @@ div.console-footer {
 }
 
 .icon div.action-indicator {
-    margin-top: 15px;
-    margin-right: 14px;
+    margin-top: 14px;
+    margin-right: 4px;
 }
 
 div.action-indicator {

@@ -1049,6 +1049,9 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     height:11px;
     clear: none;
     float:right;
+    -webkit-transition: background-color .75s ease-out;
+    -o-transition: background-color .75s ease-out;
+    transition: color .75s ease-out;
 }
 
 .view-separator {

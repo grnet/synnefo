@@ -437,7 +437,9 @@
 
         get_connectable_vms: function() {
             var servers = this.vms.list();
-            return storage.vms.filter(function(vm){return servers.indexOf(vm) == -1})
+            return storage.vms.filter(function(vm){
+                return servers.indexOf(vm) == -1 && !vm.in_error_state();
+            })
         },
 
         state_message: function() {
@@ -777,6 +779,10 @@
         // machine is building 
         is_building: function() {
             return models.VM.BUILDING_STATES.indexOf(this.state()) > -1;
+        },
+        
+        in_error_state: function() {
+            return this.state() === "ERROR"
         },
 
         // user can connect to machine

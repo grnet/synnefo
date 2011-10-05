@@ -817,6 +817,9 @@ div.image-container {
     height: 78px;
     float: left;
 }
+.network .vm-actions {
+    width: 185px;
+}
 
 .icon .machine-container:hover .machine-data {
     background-color:#A1C8DB !important;
@@ -1855,6 +1858,12 @@ div.confirm_single button, div.confirm_multiple button, div.action_error button 
 
 div.confirm_single button {
     border: none;
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1em;
+    vertical-align: middle;
+    padding: 2px 6px;
+    padding-bottom:4px;
+    height: 15px;
 }
 
 div.confirm_single button.yes {
@@ -2607,7 +2616,7 @@ div.firewall-label.darker {
     font-size: 75%;
     position: absolute;
     right: 10px;
-    top: 10px;
+    top: 5px;
 }
 
 div.network div.actions {
@@ -2624,7 +2633,7 @@ div.network div.actions {
 div.network div.machine-actions {
     text-decoration: none;
     float: right;
-    margin: -17px -175px 0 0;
+    margin: -17px -180px 0 0;
     font-weight: normal;
     font-size: 75%;
 }
@@ -2651,7 +2660,7 @@ div.network div.action-container {
 
 div.network div.net-actions .confirm_single {
     position: absolute;
-    left: 95px;
+    left: 96px;
     width: 200px;
     margin: 0 0px -5px 0;
     font-size: 100%;
@@ -2679,7 +2688,7 @@ div.network div.actions a.selected:hover, div.network div.machine-actions a.sele
 
 div.network .net-vm-actions .confirm_single {
     font-size: 100% !important;
-    margin-right: -25px !important;
+    margin-right: -20px !important;
     position: absolute !important;
     top: 7px;
     right:0;
@@ -2921,7 +2930,7 @@ span.remove-icon:hover, span.add-icon:hover {
 }
 
 div.network-add-machine {
-    margin:43px 0 0 -3px;
+    margin:43px 0 0 0px;
 }
 
 .firewall-on {

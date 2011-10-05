@@ -77,7 +77,7 @@
         },
 
         show_vm: function(vm) {
-            console.log("SHOW", vm.id);
+            if (!vm) { return };
             this.current_vm_instance = vm;
             this.show_vm_menu();
             this.show_current();

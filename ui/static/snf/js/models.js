@@ -899,7 +899,6 @@
         },
         
         // get flavor object
-        // TODO: update flavors synchronously if image not found
         get_flavor: function() {
             var flv = storage.flavors.get(this.get('flavorRef'));
             if (!flv) {

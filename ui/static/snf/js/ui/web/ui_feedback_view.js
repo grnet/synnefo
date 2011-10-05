@@ -141,12 +141,19 @@
                 // report error feedback form
                 if (snf.api.error_state == snf.api.STATES.ERROR) {
                     snf.api.trigger("reset");
+                    ui.main.error_view.displaying_error = false;
+                    ui.main.error_view.is_visible = false;
                 }
             }
+            ui.main.error_view.is_visible = false;
             views.FeedbackView.__super__.hide.apply(this);
         },
 
         show: function(data, collect_data, extra_data, cb) {
+            // proxy error view visibility to avoid showing
+            // errors while user sees feedback overlay
+            ui.main.error_view.is_visible = true;
+
             this.data = data || "";
             this.cb = cb || function () {};
             this.collect_data = collect_data || false;

@@ -423,7 +423,16 @@
         },
 
         rename: function(name, callback) {
-            return this.api.call(this.api_path(), "update", {network:{name:name}}, callback);
+            return this.api.call(this.api_path(), "update", {
+                network:{name:name}, 
+                _options:{
+                    critical: false, 
+                    error_params:{
+                        title: "Network action failed",
+                        ns: "Networks",
+                        extra_details: {"Network id": this.id},
+                    }
+                }}, callback);
         },
 
         get_connectable_vms: function() {
@@ -805,11 +814,14 @@
             var url = this.api_path() + "/meta/" + meta.key;
             var payload = {meta:{}};
             payload.meta[meta.key] = meta.value;
+            payload._options = {
+                critical:false, 
+                error_params: {
+                    title: "Machine metadata error",
+                    extra_details: {"Machine id": this.id}
+            }};
 
-            // inject error settings
-            payload._options = {critical: false};
-
-            this.api.call(url, "update", payload, complete, error)
+            this.api.call(url, "update", payload, complete, error);
         },
 
         set_firewall: function(net_id, value, callback, error, options) {
@@ -976,6 +988,7 @@
         rename: function(new_name) {
             //this.set({'name': new_name});
             this.sync("update", this, {
+                critical: true,
                 data: {
                     'server': {
                         'name': new_name
@@ -1081,7 +1094,7 @@
                 success: function(){ self.handle_action_succeed.apply(self, arguments); success.apply(this, arguments)},
                 error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
                 error_params: { ns: "Machines actions", 
-                                message: "'" + this.get("name") + "'" + " action failed", 
+                                title: "'" + this.get("name") + "'" + " " + action + " failed", 
                                 extra_details: { 'Machine ID': this.id, 'URL': url, 'Action': action || "undefined" },
                                 allow_reload: false
                               },

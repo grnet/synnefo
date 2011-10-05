@@ -550,6 +550,10 @@
        return os_icon_tag(vm.get_os(), size, vm.is_active(), attrs);
     }
     
+
     snf.ui = _.extend(snf.ui, bb.Events);
+    snf.ui.trigger_error = function(code, msg, error, extra) {
+        snf.ui.trigger("error", { code:code, msg:msg, error:error, extra:extra || {} })
+    };
 
 })(this);

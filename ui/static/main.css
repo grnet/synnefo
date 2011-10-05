@@ -4656,6 +4656,36 @@ table.list-machines .wave {
     font-weight: bold;
 }
 
+.overlay-error .indicator {
+    background-color: #880000;
+    color: #fff;
+    padding: 4px;
+    display: block;
+    float: left;
+    border: 1px solid #444;
+}
+
+.overlay-error .nav-btn:hover {
+    
+}
+
+.overlay-error .nav-btn {
+    margin-left: 5px;
+    color: #fff;
+    display: block;
+    float: left;
+    padding: 4px;
+    background-color: #AAA;
+    border: 1px solid #444;
+}
+
+.overlay-error .error-nav {
+    position: absolute;
+    right: 0px;
+    bottom: -25px;
+    font-size: 0.8em;
+}
+
 .overlay-error span.value, .overlay-error div.value {
     padding: 0.4em;
     display: block;

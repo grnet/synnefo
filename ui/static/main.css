@@ -4777,6 +4777,21 @@ table.list-machines .wave {
     margin-bottom: 5px;
 }
 
+.meta-list .options-list li.options-object.create .options-object-cont {
+    background-image: url("./option-action-add.png");
+    background-repeat: no-repeat;
+    background-position: 90px 5px;
+}
+
+.meta-list .options-list li .options-object-cont .option-action,
+.meta-list .options-list li.options-object.create {
+    cursor: pointer !important;
+}
+
+.meta-list .options-list li .options-object-cont {
+    cursor: inherit;
+}
+
 .options-list li .options-object-cont {
     padding: 4px;
     margin-right: 4px;

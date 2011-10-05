@@ -152,6 +152,10 @@
 
         get_os: function() {
             return this.get("OS");
+        },
+
+        get_sort_order: function() {
+            return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
         }
     });
 
@@ -165,7 +169,7 @@
 
         get_disk_size: function() {
             return parseInt(this.get("disk") * 1000)
-        },
+        }
 
     });
     
@@ -1272,6 +1276,10 @@
             return undefined;
         },
 
+        comparator: function(img) {
+            return -img.get_sort_order("sortorder") || 1000 * img.id;
+        },
+
         parse_meta: function(img) {
             _.each(this.meta_keys_as_attrs, _.bind(function(key){
                 img[key] = this.get_meta_key(img, key);
@@ -1307,6 +1315,10 @@
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             return resp.flavors.values;
+        },
+
+        comparator: function(flv) {
+            return flv.get("disk") * flv.get("cpu") * flv.get("ram");
         },
 
         unavailable_values_for_image: function(img, flavors) {

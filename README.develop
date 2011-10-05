@@ -30,9 +30,7 @@ Development-specific guidelines on each step:
 
 
 2. You do not need to setup your own RabbitMQ nodes, use the AMQP endpoints
-   contained in settings.py.dist. MAKE SURE to call fix_amqp_settings() after
-   settings a custom BACKEND_PREFIX_ID.
-
+   contained in settings.py.dist. 
 
 3. For development purposes, Django's own development
    `server, ./manage.py runserver' will suffice.
@@ -57,8 +55,7 @@ Development-specific guidelines on each step:
 
 
 8. MAKE SURE you setup a distinct BACKEND_PREFIX_ID, e.g., use your commit
-   username. Make sure you call fix_amqp_settings() to setup use of individual
-   queues on RabbiMQ.
+   username. 
 
 
 9. The Ganeti monitoring daemon from the latest Synnefo release is already

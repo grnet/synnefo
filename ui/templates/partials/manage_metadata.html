@@ -1,0 +1,55 @@
+{% load i18n %}
+
+<div id="metadata-overlay-content" class="hidden vm-meta content">
+    
+    <div class="editor hidden clearfix">
+        <div class="editor-content meta-form clearfix">
+            <div class="form-field">
+                <label for="">{% trans "Key" %}:</label>
+                <input type="text" name="meta-key" class="meta-key" />
+            </div>
+            <div class="form-field">
+                <label for="">{% trans "Value" %}:</label>
+                <input type="text" name="meta-value" class="meta-value" />
+            </div>
+            <div class="form-actions plain">
+                <span class="form-action create">{% trans "save" %}</span>
+                <span class="form-action cancel">{% trans "cancel" %}</span>
+            </div>
+        </div>
+        <div class="predefined clearfix">
+            <span class="predefined-meta-key">OS</span>
+            <span class="predefined-meta-key">Location</span>
+            <span class="predefined-meta-key">Owner</span>
+            <span class="predefined-meta-key">Role</span>
+        </div>
+    </div>
+
+    <div class="meta-list clearfix">
+        <ul class="options-list five">
+        </ul>
+    </div>
+    
+    <ul class="hidden">
+        <li class="meta-object-tpl options-object">
+        <div class="options-object-cont">
+            <div class="view">
+            <span class="title"></span>
+            <span class="value"></span>
+            <div class="edit option-action"></div>
+            <div class="remove option-action"></div>
+
+            <input type="text" class="editvalue hidden" />
+            </div>
+            <div class="editing hidden">
+            <input type="text" class="edit-title" />
+            <input type="text" class="editvalue" />
+            <span class="submit"></span>
+            </div>
+        </div>
+            </li>
+    </ul>
+    
+    <div class="inner-mask">
+    </div>
+</div>

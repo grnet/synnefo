@@ -1,0 +1,39 @@
+{% load i18n %}
+<div id="machinesview-list" class="list">
+    <div id="machinesview_content" class="clearfix">
+        <div class="actions">
+            <a id="action-start">{% trans "Start" %}</a>
+            <a id="action-reboot">{% trans "Reboot" %}</a>
+            <a id="action-shutdown">{% trans "Shutdown" %}</a>
+            <br />
+            <a id="action-destroy" class="destroy">{% trans "Destroy" %}</a>
+        </div>
+        <table class="list-machines" style="display: none">
+            <thead>
+                <tr>
+                    <th class="selection select-running">
+                        <input type="checkbox" id="list-view-select-all"/>
+                        <!-- Drop down selector is commented out for v0.5
+                        <div class="expand-icon"></div>
+                        -->
+                    </th>
+                    <th class="vmos">{% trans "OS" %}</th>
+                    <th class="vmname">{% trans "Name" %}</th>
+                    <th class="vmflavor">{% trans "Flavor" %}</th>
+                    <!--  Group column is commented out for v0.5
+                    <th class="vmgroup">{% trans "Group" %}</th>
+                    -->
+                    <th class="vmstatus">{% trans "Status" %}</th>
+                </tr>
+            </thead>
+            <tbody class="machines"></tbody>
+        </table>
+        <!-- Drop down selector is commented out for v0.5
+        <ul class="dropdown-selector" style="display: none">
+            <li class="select-all" ><a href="#">{% trans "all" %}</a></li>
+            <li class="select-none"><a href="#">{% trans "none" %}</a></li>
+            <li class="select-group"><a href="#">{% trans "group" %}</a></li>
+        </ul>
+        -->
+    </div>
+</div>

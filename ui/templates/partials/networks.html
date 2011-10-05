@@ -1,0 +1,253 @@
+{% load i18n %}
+<!-- the create button -->
+<div class="pane-top">
+<div id="networks-createcontainer" class="create-container">
+    <a class="createbutton" id="networkscreate" rel="#networks-wizard" href="#">{% trans "Create New +" %}</a>
+</div>
+</div>
+
+<!-- vm select -->
+<div id="network-vms-select-content" class="overlay-content hidden">
+    <div class="description">
+        <p>{% trans "Select machines to add" %}</p>
+    </div>
+    <div class="clearfix vms-list">
+        <ul class="options-list three">
+        </ul>
+        <div class="empty-message">{% trans "No available machines to connect" %}</div>
+    </div>
+    <div class="form-actions clearfix">
+        <span class="form-action create">{% trans "connect machines" %}</span>
+    </div>
+</div>
+
+<!-- add new network overlay -->
+<div id="networks-create-content" class="overlay-content hidden">
+    <div class="create-form">
+        <p class="info"></p>
+        <form>
+            <div class="form-field">
+                <label for="">Network name:</label>
+                <input type="text" class="network-create-name" />
+            </div>
+
+            <div class="form-actions plain clearfix">
+                <span class="form-action create">{% trans "create network" %}</span>
+            </div>
+        </form>
+    </div>
+    
+    <div class="ajax-submit"></div>
+</div>
+
+<!-- networks list -->
+<div id="networks-container" class="clearfix">
+    <!-- spinner while loading list -->
+    
+    <div class="templates">
+    <!-- public network template -->
+    <div class="network" id="public-template">
+        <img class="network-logos" src="static/internet.png" />
+        <div href="#" class="name-div">
+            <h5 class="namecontainer">
+                <span class="name">{% trans "Internet" %}</span>
+            </h5>
+        </div>
+        <div class="network-machines">
+            <div class="cont-toggler list-toggle">
+                <span class="label machines-label">{% trans "machines" %}
+                    (<span class="machines-count">0</span>)
+                </span>
+            </div>
+        </div>
+        <div class="network-contents">
+            <div class="network-placeholder">
+                <div class="machines-list">
+                <!-- append machines here -->
+                </div>
+                <!-- Adding servers to public network is not supported in 0.5
+                <div class="empty-network-slot" id="machine-template">
+                    <div class='network-add-machine'>
+                        <span class="add-icon">+</span>
+                    </div>
+                </div>
+                -->
+            </div>
+        </div>
+        <div class="state">
+            <div class="net-status status">{% trans "Public Network" %}</div>
+            <div class="indicators network-indicator">
+                <div class="indicator1"></div>
+                <div class="indicator2"></div>
+                <div class="indicator3"></div>
+                <div class="indicator4"></div>
+            </div>
+        </div>
+        <div class="actions vm-actions">
+             <!-- Adding servers to public network is not supported in 0.5
+            <a href="#" class="action-add">{% trans "Add Machine" %}</a>
+            -->
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
+    </div>
+
+    <!-- template for machines in public network -->
+    <div class="network-machine" id="public-machine-template">
+        <div class="machine-actions vm-actions">
+            <a href="#" class="action-details">{% trans "Details" %}</a>
+        </div>
+        <div class="confirm_single">
+            <button class="yes">{% trans "Confirm" %}</button>
+            <button class="no">{% trans "Cancel" %}</button>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
+        <div class="ips">
+            <div class="ip4-container status">
+                {% trans "IPv4" %}:
+                <span class="ip4 ipv4-text">192.94.73.15</span>
+            </div>
+            <div class="ip6-container status">
+                {% trans "IPv6" %}:
+                <span class="ip6 ipv6-text"></span>
+            </div>
+        </div>
+        <img class="logo" src="static/icons/machines/medium/debian-on.png" />
+        <div class='network-remove-machine'>
+            <!-- Removing servers from public network is not supported in 0.5
+            <span class="remove-icon">X</span>
+            -->
+            <span>&nbsp;</span>
+        </div>
+        <div href="#" class="machine-name-div">
+            <h5 class="namecontainer">
+                <span class="name vm-name">my desktop1</span>
+            </h5>
+        </div>
+        <div class="firewall">
+            <div class="cont-toggler firewall-toggle">
+                <span class="label machines-label">{% trans "Firewall" %}
+                    (<span class="firewall-off">{% trans "Off" %}</span>)
+                </span>
+                <span class="network-progress-indicator">
+                    <img src="/static/icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
+                </span>
+            </div>
+        </div>
+        <div class="firewall-content">
+            <input type="radio" class="checkboxes" value="DISABLED" name="firewall" />
+            <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
+            <br />
+            <input type="radio" class="checkboxes" value="ENABLED" name="firewall" />
+            <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
+            <br />
+            <input type="radio" class="checkboxes" value="PROTECTED" name="firewall" />
+            <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
+            <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
+        </div>
+    </div>
+
+
+    <!-- private network template -->
+    <div class="network-cont" id="private-template">
+        <div class="network">
+            <div class="actions vm-actions machine-actions net-actions">
+                    <a href="#" class="action-add">{% trans "Add Machine" %}</a>
+                    <div class="action-container destroy">
+                        <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
+                        <div class="confirm_single">
+                            <button class="yes">{% trans "Confirm" %}</button>
+                            <button class="no">X</button>
+                        </div>
+                    </div>
+            </div>
+            <div class="state">
+                <div class="net-status status">{% trans "Private Network" %}</div>
+                <div class="indicators network-indicator">
+                    <div class="indicator1"></div>
+                    <div class="indicator2"></div>
+                    <div class="indicator3"></div>
+                    <div class="indicator4"></div>
+                </div>
+                <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
+                <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+            </div>
+            <img class="network-logos" src="static/network.png" />
+            <div href="#" class="name-div">
+                <h5 class="namecontainer editable">
+                    <span class="name">{% trans "My Network 1" %}</span>
+                    <span class="rename-network"></span>
+                    <div class="editbuttons" style="display:none">
+                        <span class="save"></span>
+                        <span class="cancel"></span>
+                    </div>
+                </h5>
+            </div>
+            <div class="network-machines">
+                <div class="cont-toggler list-toggle">
+                    <span class="label machines-label">{% trans "machines" %}
+                        (<span class="machines-count">0</span>)
+                    </span>
+                </div>
+            </div>
+            <div class="network-contents">
+                <div class="network-placeholder">
+                    <div class="machines-list">
+                    <!-- append machines here -->
+                    </div>
+                    <div class="empty-network-slot" id="machine-template">
+                        <div class='network-add-machine'><div class="add-icon">+</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- template for machines in private network -->
+    <div class="network-machine" id="private-machine-template">
+        <div class="machine-actions vm-actions net-vm-actions">
+            <div class="action-destroy">
+                <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
+                <div class="confirm_single">
+                    <button class="yes">{% trans "Confirm" %}</button>
+                    <button class="no">X</button>
+                </div>
+            </div>
+            <a href="#" class="action-details">{% trans "Details" %}</a>
+        </div>
+        <div class="action_error" align="center">
+            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
+            <span class="code"></span>
+            <span class="message"></span>
+            <button class="details">{% trans "Details" %}</button>
+        </div>
+        <img class="logo" src="static/icons/machines/medium/debian-on.png" />
+        <div class='network-remove-machine'><span class="remove-icon">X</span></div>
+        <div href="#" class="machine-name-div">
+            <h5 class="namecontainer editable">
+                <span class="name vm-name">my desktop1</span>
+            </h5>
+        </div>
+        <h5 class='machine-connect'>
+            <span>{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
+        </h5>
+    </div>
+    </div>
+    <!-- the actual structure to be populated -->
+    <div class="public-networks clearfix"></div>
+    <div class="private-networks clearfix" style="display:none;"></div>
+</div>
+

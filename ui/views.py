@@ -51,6 +51,8 @@ UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 SUGGESTED_FLAVORS = getattr(settings, "SUGGESTED_FLAVORS", {})
+SUGGESTED_ROLES = getattr(settings, "SUGGESTED_ROLES",
+        ["Database server", "File server", "Mail server", "Web server", "Proxy", "CI server", "Leeching machine"])
 VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
 
@@ -69,6 +71,7 @@ def home(request):
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
+               'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
                'invitations_per_page': INVITATIONS_PER_PAGE,
                'DEBUG': settings.DEBUG}
@@ -101,6 +104,8 @@ def machines_console(request):
     context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', context)
 
+def js_tests(request):
+    return template('tests', {})
 
 CONNECT_LINUX_LINUX_MESSAGE = _("""A direct connection to this machine can be established using the <a target="_blank"
 href="http://en.wikipedia.org/wiki/Secure_Shell">SSH Protocol</a>.
@@ -224,7 +229,6 @@ FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
 def feedback_submit(request):
-
     if not request.method == "POST":
         raise Http404
 
@@ -239,13 +243,10 @@ def feedback_submit(request):
     mail_context = {'message': message, 'data': data, 'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)
 
-    if settings.DEBUG:
-        print mail_subject, mail_content
-
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
             dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 
-    return HttpResponse("ok");
+    return HttpResponse('{"status":"send"}');
 
 def images(request):
     context = {}

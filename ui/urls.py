@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 #
 from django.conf.urls.defaults import *
+from django.conf import settings
 import os
 
 urlpatterns = patterns('',
@@ -52,5 +53,9 @@ urlpatterns = patterns('',
     url(r'^static/(.*)$', 'django.views.static.serve',
     {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
 )
+
+if settings.DEBUG or settings.TEST:
+    urlpatterns += patterns('',
+        url(r'^jstests$', 'synnefo.ui.views.js_tests', name='js_tests'),)
 
 

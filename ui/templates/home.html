@@ -1,74 +1,82 @@
-<!--
-Copyright 2011 GRNET S.A. All rights reserved.
-
-Redistribution and use in source and binary forms, with or
-without modification, are permitted provided that the following
-conditions are met:
-
-  1. Redistributions of source code must retain the above
-     copyright notice, this list of conditions and the following
-     disclaimer.
-
-  2. Redistributions in binary form must reproduce the above
-     copyright notice, this list of conditions and the following
-     disclaimer in the documentation and/or other materials
-     provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
-
-The views and conclusions contained in the software and
-documentation are those of the authors and should not be
-interpreted as representing official policies, either expressed
-or implied, of GRNET S.A.
--->
-
+<!doctype html>
 <html>
 
 {% load i18n %}
-<!DOCTYPE html>
 <head>
     <title>~okeanos</title>
-    <!-- include the Tools -->
-    <!-- jquery tools minified for deployment-->
-    <script src="static/jquery.tools.min.js"></script>
-    <!-- jquery tools source for JS debugging -->
-    <!--
-    <script src="http://flowplayer.org/tools/download/1.2.5/jquery-1.4.2.js"></script>
-    <script src="http://flowplayer.org/tools/download/1.2.5/tabs/tabs.js"></script>
-    <script src="http://flowplayer.org/tools/download/1.2.5/scrollable/scrollable.js"></script>
-    <script src="http://flowplayer.org/tools/download/1.2.5/overlay/overlay.js"></script>
-    <script src="http://flowplayer.org/tools/download/1.2.5/rangeinput/rangeinput.js"></script>
-    <script src="http://flowplayer.org/tools/download/1.2.5/toolbox/toolbox.expose.js"></script>
-    -->
-    <script src="static/jquery.cookie.js"></script>
-    <script src="static/jquery.client.js"></script>
-    <script src="static/json2.js"></script>
-    <script src="static/jquery.dataTables.min.js"></script>
-    <script src="static/jquery.pagination.js"></script>
+
+    <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
+    <link href="http://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
+
+    {% comment %}
+    <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
+    {% endcomment %}
+
+    <link rel="stylesheet" type="text/css" href="static/main.css"/>
+    <!--[if IE]>
+        <style type="text/css" media="all">@import url(static/ie.css);</style>
+    <![endif]-->
+
+    <script src="static/snf/js/lib/jquery.js"></script>
+    <script src="static/snf/js/lib/jquery.cookie.js"></script>
+    <script src="static/snf/js/lib/jquery.client.js"></script>
+    <script src="static/snf/js/lib/jquery.tools.min.js"></script>
+    <script src="static/snf/js/lib/jquery.dataTables.min.js"></script>
+    <script src="static/snf/js/lib/ZeroClipboard.js"></script>
+
+
+    <script src="static/snf/js/lib/underscore.js"></script>
+    <script src="static/snf/js/lib/underscore.string.js"></script>
+    <script src="static/snf/js/lib/backbone.js"></script>
+    <script src="static/snf/js/lib/json2.js"></script>
+    <script src="static/snf/js/lib/stacktrace.js"></script>
+
+    <!--[if (gte IE 6)&(lte IE 7)]>
+        <script src="static/snf/js/lib/selectivizr.js"></script>
+    <! [endif] -->
+
+    <!--[if IE]>
+        <script src="static/snf/js/ui/ie_fixes.js"></script>
+    <![endif]-->
+    
+    <script src="static/snf/js/utils.js"></script>
+    <script src="static/snf/js/sync.js"></script>
+    <script src="static/snf/js/models.js"></script>
+    <script src="static/snf/js/views.js"></script>
+
+    <script src="static/snf/js/ui/web/ui_vms_base_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_error_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_icon_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_single_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_list_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_networks_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_main_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_metadata_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_feedback_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_create_view.js"></script>
+    <script src="static/snf/js/ui/web/ui_connect_view.js"></script>
+
+    <!-- the following views require refactor -->
     <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="static/main.css"/>
-    <!--[if IE]><style type="text/css" media="all">@import url(static/ie.css);</style><![endif]-->
+    {% if DEBUG %}
+        <script src="static/snf/js/tests/jquery.profile.js"></script>
+        <script src="static/snf/js/tests/functional.js"></script>
+    {% endif %}
+    
     <script>
         // empty object for console to avoid errors in browsers that don't support it
         if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
             window.console.error = function() {}};
+        
+        // initialize zero clipboard
+        ZeroClipboard.setMoviePath( 'static/snf/js/lib/ZeroClipboard.swf' );
 
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
-
+        
         // timeout value from settings.py
         var TIMEOUT = {{ timeout }};
         var TIMEOUTS_OCCURED = 0;
@@ -82,16 +90,34 @@ or implied, of GRNET S.A.
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
         var API_OVERLAY_TITLE = "{% trans "API access" %}";
         var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
-        var INVITATIONS_PER_PAGE = {% if invitations_per_page %} {{ invitations_per_page }} {% else %} 10 {% endif %};
-        
-        // building statuses
-        var BUILDING_STATUSES = {
-            'INIT': '{% trans "Initializing..." %}',
-            'IMAGE_COPY': '{% trans "{0} of {1} ({2}%)" %}',
-            'FINISH': '{% trans "Finalizing... (approx. 10 minutes remaining)" %}'
+
+        STATE_TEXTS = {
+            'UNKNOWN': '{% trans "Unknown" %}',
+            'BUILD':  '{% trans "Building..." %}',
+            'FIREWALL':  '{% trans "Firewall change..." %}',
+            'REBOOT': '{% trans "Rebooting..." %}',
+            'STOPPED':'{% trans "Stopped" %}',
+            'ACTIVE': '{% trans "Running" %}',
+            'ERROR':  '{% trans "Error" %}',
+            'DELETE': '',
+            'DESTROY': '{% trans "Destroying..." %}',
+            'BUILD_INIT':  '{% trans "Building..." %}',
+            'BUILD_COPY':  '{% trans "Building..." %}',
+            'BUILD_FINAL':  '{% trans "Building..." %}',
+            'SHUTDOWN': '{% trans "Shutting down..." %}',
+            'START': '{% trans "Starting..." %}',
+            'CONNECT': '{% trans "Connecting..." %}',
+            'DISCONNECT': '{% trans "Disconnecting..." %}'
         }
-        
-        var VM_IMAGE_COMMON_METADATA = {{ vm_image_common_metadata|safe }};
+
+
+
+        // building statuses
+        var BUILDING_MESSAGES = {
+            'INIT': '{% trans "Initializing..." %}',
+            'COPY': '{% trans "{0} of {1} ({2}%)" %}',
+            'FINAL': '{% trans "Finalizing..." %}'
+        }
 
         // server statuses and transitions
         var STATUSES = {
@@ -149,15 +175,13 @@ or implied, of GRNET S.A.
             'Disconnecting' : '{% trans "Disconnecting" %}'
         };
 
-        var ERRORS = {
+        var ERROR_OVERRIDES = {
             // error message header
             'HEADER' : '{% trans "Error" %}',
             // default
             'DEFAULT' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
             // bad request
             '400' : '{% trans "Malformed request." %}',
-            // Unauthorized
-            '401' : '{% trans "Unauthorized" %}',
             // not found
             '404' : '{% trans "Your request has failed. Resource not found." %}',
             // internal server error
@@ -171,17 +195,19 @@ or implied, of GRNET S.A.
             // no server handshake
             '0' : '{% trans "Could not contact the server." %}',
             // no images found
-            'NO_IMAGES' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
+            '-212' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
             // no flavors found
-            'NO_FLAVORS' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}',
+            '-213' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}',
             // error box title
             'GENERIC_POPUP_HEADER' : '{% trans "Something seems to have gone wrong :( Here is what happened:" %}',
             // no advanced details
             'NO_DETAILS' : '{% trans "Νο advanced details provided" %}',
+            // timeout message
             'TIMEOUT' : '{% trans "It seems the server takes too long to respond, please check your network connectivity" %}'
         };
 
         var SUGGESTED_FLAVORS = {{ suggested_flavors|safe }};
+        var SUGGESTED_ROLES = {{ suggested_roles|safe }}
 
         var SUCCESS = {
             'HEADER' : '{% trans "Success" %}',
@@ -202,290 +228,14 @@ or implied, of GRNET S.A.
             'ON' : '{% trans "On" %}'
         };
 
-        // ajax error checking
-        function ajax_error(status, serverID, action, responseText, ajax_settings) {
-
-            var error_date = new Date();
-            if (!ajax_settings) {
-                ajax_settings = {};
-            }
-
-            // flag to display or not error report link
-            var allow_report = ajax_settings.disable_report ? false : true;
-            var no_details = ajax_settings.no_details === undefined || ajax_settings.no_details === false ? false : true;
-            
-             // close existing overlays to begin with
-            close_all_overlays();
-            // clear old deferred calls (stops all auto-updates)
-            clearTimeout(deferred);
-
-            $('#error-success').addClass('error');
-            $('#error-success').removeClass('success');
-
-            var serverName = '';
-
-            if (serverID !== undefined) {
-                // standard view
-                serverName = $("#" + serverID).find("span.name").text();
-                if (serverName === "") { // list view
-                    serverName = $("#" + serverID).parent().parent().find("span.name").text();
-                }
-            }
-
-            // prepare the error message
-            $("#error-success h3").text(ERRORS['HEADER']);
-            if (responseText !== undefined) {
-                var errors = parse_error(responseText, status), details = '';
-                if (serverName) {
-                    serverName = "<p>{% trans "Server" %}: " + serverName + "</p>";
-                }
-
-                if ((errors[0].details === undefined) || (errors[0].details === "")) {
-                    details = ERRORS["NO_DETAILS"];
-                    
-                    // if no details message show debug info
-                    if (window.APP_DEBUG) {
-                        details = responseText;
-                        try {
-                            console.trace();
-                        } catch (err) {
-                        }
-                    }
-                } else {
-                    details = errors[0].details;
-                }
-                
-                // fallback to predefined message
-                if (ERRORS[status] !== undefined) {
-                    errors[0].message = ERRORS[status];
-                }
-
-                $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
-                $("#error-success .popup-header").addClass("popup-header-error");
-                $("#error-success").addClass("popup-border-error");
-                $("#error-success .password-container").hide();
-                $("#error-success .popup-details").addClass("popup-details-error");
-                $("#error-success .popup-separator").addClass("popup-separator-error");
-                $("#error-success .popup-details").html("<p>" + 
-                    (errors[0].message || ERRORS[errors[0].code] || serverID) + 
-                    "</p>" + serverName + "<p>{% trans "Action" %}:" + 
-                    action + "</p><p>{% trans "Code" %}: " + errors[0].code + 
-                    "<p><a class='expand-details' href='#'>{% trans 'Details' %}</a><div class='more-details'>" + 
-                    details + "</div></p>");
-
-            } else if (ERRORS[status] !== undefined) {
-                if (serverID === undefined) {
-                    //eg no_images, no_flavors cases
-                    $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
-                    $("#error-success .popup-header").addClass("popup-header-error");
-                    $("#error-success").addClass("popup-border-error");
-                    $("#error-success .password-container").hide();
-                    $("#error-success .popup-details").addClass("popup-details-error");
-                    $("#error-success .popup-separator").addClass("popup-separator-error");
-                    $("#error-success .popup-details").html("<p>" + ERRORS[status] + "</p>");
-                } else {
-                    $("#error-success .machine-now-building").html(ERRORS["GENERIC_POPUP_HEADER"]);
-                    $("#error-success .popup-header").addClass("popup-header-error");
-                    $("#error-success").addClass("popup-border-error");
-                    $("#error-success .password-container").hide();
-                    $("#error-success .popup-details").addClass("popup-details-error");
-                    $("#error-success .popup-separator").addClass("popup-separator-error");
-                    $("#error-success .popup-details").html("<p>" + ERRORS[status] + "</p><p>" + serverName + "</p>");
-                }
-            } else {
-                $("#error-success .machine-now-building").html(ERRORS["DEFAULT"]);
-                $("#error-success .popup-header").addClass("popup-header-error");
-                $("#error-success").addClass("popup-border-error");
-                $("#error-success .password-container").hide();
-                $("#error-success .popup-details").hide();
-                $("#error-success .popup-separator").hide();
-            }
-            $("#error-success p:first").css("padding-bottom", "10px");
-            $("#error-success p:first").css("color", "#800000");
-            $("#error-success div.more-details").hide();
-            $("#error-success a.expand-details").live('click', function () {
-                $(this).parent().parent().find("div.more-details").slideToggle(600);
-                return false;
-            });
-            //stop the progress icon and hide the wizard
-            if (action !== undefined) {
-                if (action === 'Create VM') {
-                    $('#wizard #start').text('{% trans "Create VM" %}');
-                    $("#wizard").hide();
-                } else if (action === 'Create network') {
-                    $('#networks-wizard').hide();
-                } else if (action === 'Add server to network') {
-                    $('#add-machines-wizard').hide();
-                }
-            }
-
-            
-            // prepare ajax call to get called when user clicks on 
-            // send error report button
-            function initialize_error_report(cont, extra_data) {
-                var cont = $(cont);
-                var sel = function(sel) {return $(sel, cont)};
-                var btn = sel(".send-btn");
-                var extra_data = extra_data;
-
-                // clear previous callbacks
-                btn.unbind('click');
-                btn.click(function(){
-                    // wrap in its own try catch to avoid retriggering ajax_error
-                    try {
-                        
-                        var data = {};
-                        // fallback to error object
-                        try {
-                            var data = $.extend({'error_info': $.extend({}, extra_data)}, get_user_data());
-                        } catch (err) {
-                            var data = {'error': err};
-                        }
-                        
-                        try {
-                            // make it text then again object to be sure it can be
-                            // converted to text
-                            var ajax_data = {'ajax_settings': JSON.parse(JSON.stringify(ajax_settings))};
-                        } catch (err) {
-                            var ajax_data = {'ajax_settings': err};
-                        }
-                        
-                        var payload = {'feedback-msg': "Automated error report", 'feedback-data': JSON.stringify(data)};
-                        // we will close error overlay to display feedback form
-                        // set feedback pending flag to not reload the window url
-                        // unless the user is done with the feedback
-                        window.FEEDBACK_PENDING = true;
-
-                        $("a#notification").overlay().close();
-
-                        var errorCode = extra_data[0] || -10;
-                        var errorType = extra_data[1] || "Generic error";
-                        var errorAction = extra_data[2] || "noaction";
-                        var errorData = extra_data[3] || "";
-                            
-                        fdb_msg =   "Error report\n" +
-                                    "------------\n" + 
-                                    "Code: " + errorCode + "\n" + 
-                                    "Type: " + errorType + "\n" + 
-                                    "Action: " + errorAction + "\n" + 
-                                    "Data: " + errorData + "\n\n" + 
-                                    "Please describe the actions that triggered the error:\n";
-
-                        // append error date to extra user info
-                        var extra_user_data = $.extend(ajax_data, {'error_date': error_date});
-                        setTimeout(function() {
-                            show_feedback_form(fdb_msg, 1, extra_user_data); 
-                            $("#exposeMask").show();
-                            }, 400);
-                    } catch (err) {
-                        sel(".send-btn").hide();
-                        sel(".errormsg").fadeIn();
-                        window.FEEDBACK_PENDING = false;
-                    }
-                });
-            }
-
-            // bring up error notification
-            var triggers = $("a#notification").overlay({
-                // some mask tweaks suitable for modal dialogs
-                mask: '#666',
-                top: 'center',
-                closeOnClick: false,
-                fixed: false,
-                oneInstance: false,
-                load: false,
-                onClose: function () {
-                    // user requested feedback from error page
-                    if (!window.FEEDBACK_PENDING) {
-                        // refresh the whole page
-                       location.reload();
-                    }
-                },
-                onBeforeLoad: function() {
-                    if (allow_report) {
-                        $(".error-report .send-btn").show();
-                    } else {
-                        $(".error-report .send-btn").hide();
-                    }
-
-                    if (no_details) {
-                        $(".expand-details").hide();
-                    } else {
-                        $(".expand-details").show();
-                    }
-                },
-                onLoad: function() {
-                    if (allow_report) {
-                        initialize_error_report($(this.getOverlay()), [status, serverID, action, responseText]);
-                    } else {
-                    }
-                }
-
-            });
-
-            // we need to give the browser some time to close the old overlays before opening the new one
-            setTimeout("$('a#notification').data('overlay').load()",400);
-            return false;
-        }
-
-        // ajax success checking
-        function ajax_success(status, password) {
-            // prepare the error message
-            // bring up success notification
-            $('#error-success').addClass('success');
-            $('#error-success').removeClass('error');
-            if (status !== undefined && SUCCESS[status]) {
-                if (password !== undefined && status === "CREATE_VM_SUCCESS") {
-
-                    //stop the progress icon and hide the wizard
-                    $('#wizard #start').text('{% trans "Create VM" %}');
-                    $("#wizard").hide();
-
-                    $("#error-success h3 span.header-box").text(SUCCESS[status]);
-                    var CREATE_VM_SUCCESS_MSG = SUCCESS["CREATE_VM_SUCCESS_THREE"] + '<br / >'
-                        + SUCCESS["CREATE_VM_SUCCESS_FOUR"];
-                    $("#error-success div.machine-now-building").html(SUCCESS["CREATE_VM_SUCCESS_ONE"]);
-                    $("#error-success .popup-header").removeClass("popup-header-error");
-                    $("#error-success").removeClass("popup-border-error");
-                    $("#error-success .popup-details").removeClass("popup-details-error");
-                    $("#error-success .popup-separator").removeClass("popup-separator-error");
-                    $("#error-success .password-container").show();
-
-                    $("#error-success .popup-details").html("</div><div class=\"write-password-details\">" + CREATE_VM_SUCCESS_MSG + "</div>");
-                    $("#error-success div.password").html("<div class=\"write-password\">" + SUCCESS["CREATE_VM_SUCCESS_TWO"] + "<div class=\"write-password-password\"> " + password + "</div></div>");
-                    //$("#error-success div.write-password").html(SUCCESS["CREATE_VM_SUCCESS_TWO"]);
-                    //$("#error-success div.write-password-details").html(CREATE_VM_SUCCESS_MSG);
-                } else {
-                    $("#error-success h3").text(SUCCESS['HEADER']);
-                    $("#error-success div.popup-body-inner").text("<p>" + SUCCESS[status] + "</p>");
-                }
-            } else {
-                $("#error-success h3").text(SUCCESS['HEADER']);
-                $("#error-success div.popup-body-inner").html("<p>" + SUCCESS['DEFAULT'] + "</p>");
-            }
-
-            var triggers = $("a#notification").overlay({
-                // some mask tweaks suitable for modal dialogs
-                mask: '#666',
-                top: 'center',
-                closeOnClick: false,
-                oneInstance: false,
-                load: false,
-                onClose: function () {
-                    // With partial refresh working properly,
-                    // it is no longer necessary to refresh the whole page
-                    // choose_view();
-                }
-            });
-            $("a#notification").data('overlay').load();
-            return false;
-        }
     </script>
 </head>
-<body>
+
+<body id="app">
+    <!--<img id="okeanos-image" src="/static/body-bg2.png" />-->
     <div id="container">
-        <div id='header'>
-            <div id='user'>
+        <div id="header">
+            <div id="user">
                 <div class="usermenu">
                     <div class="username">{{ request.user.uniq }}</div>
                     <ul class="useractions">
@@ -496,11 +246,13 @@ or implied, of GRNET S.A.
                     </ul>
                 </div>
                 <div class="langmenu">
-                <a class="current_lang">en</a>
-                {% comment %}
+                    <a class="current_lang">en</a>
+                    {% comment %}
                 {% get_available_languages as LANGUAGES %}
                 {% for lang in LANGUAGES %}
-                <a {% if current_lang == lang.0 %}class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
+                <a {% if current_lang == lang.0 %}
+                    class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
+
                     {% if not forloop.last %}<span class="sep">~</span>{% endif %}
                     {% endfor %}
                 {% endcomment %}
@@ -513,67 +265,53 @@ or implied, of GRNET S.A.
             </div>
         </div>
         <div id="content">
-            <div id="wrapper">
+            <div id="wrapper" class="clearfix">
+
+                <div class="panes-menu clearfix">
                 <!-- tabs -->
                 <div class="tab-name">{% trans "machines" %}</div>
-                <div class="tab-separator"></div>
                 <ul class="css-tabs">
-                    <li><a href="machines" title="{% trans "manage your virtual machines" %}" class="primary" id="machines">
-                        <img src="static/machines-icon.png" /></a></li><div class="tab-separator"></div>
-                    <li><a href="networks" title="{% trans "configure networking" %}" class="primary" id="networks">
-                        <img src="static/networks-icon.png" /></a></li><div class="tab-separator"></div>
-                    <li><a href="disks" title="{% trans "manage your storage volumes" %}" class="primary" id="disks">
+                    <li><a href="machines" title="{% trans "manage your virtual machines" %}"
+                        class="primary" id="machines_view_link">
+                        <img src="static/machines-icon.png" /></a></li>
+                    <li><a href="networks" title="{% trans "configure networking" %}"
+                        class="primary" id="networks_view_link">
+                        <img src="static/networks-icon.png" /></a></li>
+                    <li class="hidden"><a href="disks" title="{% trans "manage your storage volumes" %}"
+                        class="primary" id="disks_view_link">
                         <img src="static/disks-icon.png" /></a></li>
                 </ul>
+                </div>
                 <div class="css-panes">
-                    <div id="machines-pane" class="pane" style="display:block;"></div>
-                    <div id="networks-pane" class="pane"></div>
+                    <div id="machines-pane" class="pane" style="display:block;">
+                        {% include "partials/machines.html" %}
+                    </div>
+                    <div id="networks-pane" class="pane">
+                        {% include "partials/networks.html" %}
+                    </div>
                     <div id="disks-pane" class="pane"></div>
+
+                    <div class="confirm_multiple clearfix" id="multiple_actions_container">
+                        <div class="confirm_multiple_actions confirm_multiple_cont clearfix">
+                            <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
+                            <button class="yes">{% trans "Confirm All" %}</button>
+                            <button class="no">{% trans "Cancel All" %}</button>
+                        </div>
+                        <div class="confirm_reboot_required confirm_multiple_cont clearfix">
+                            <p><span class="actionLen"></span> {% trans "machines needs to be rebooted for changes to apply" %}</p>
+                            <button class="yes">{% trans "Reboot All" %}</button>
+                            <button class="no">{% trans "Cancel All" %}</button>
+                            <div class="reboot-machines-list"></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
-        {% include "footer.html" %}
     </div>
 
     <!-- activate tabs with JavaScript -->
     <script>
-
-        $(function() {
-            // check pane cookie to select the initial pane
-            var initial = 0, pane = $.cookie("pane");
-            if (pane > 0)
-                initial = pane;
-            //alert(initial);
-            $("ul.css-tabs").tabs("div.css-panes div.pane", {
-                initialIndex: initial,
-                onBeforeClick: function(event, i) {
-                    this.getPanes().children().remove();
-                    // get the pane to be opened
-                    var pane = this.getPanes().eq(i);
-                    //change the displaying title
-                    $(".tab-name").text(this.getTabs().eq(i).attr("href"));
-                    // load it with a page specified in the tab's href attribute
-                    pane.load(this.getTabs().eq(i).attr("href"),function() {if (!i) {choose_view()}});
-                }
-            });
-        });
-
-        // set pane cookie whenever the user clicks on a different pane
-        $("ul.css-tabs a").click(function(i) {
-            $.cookie("pane", $("ul.css-tabs a").index(this));
-        });
-
-        //change menu title on hover
-        $("ul.css-tabs li").hover(
-            function () {
-                if ($(this).find("a.current").length == 0) {
-                    $(this).parent().parent().find(".tab-name").text($(this).find("a").attr("href"));
-                }
-            },
-            function () {
-                $(this).parent().parent().find(".tab-name").text($(this).parent().find("a.current").attr("href"));
-            }
-        );
 
         //load opera css fixes
         if ($.browser.opera) {
@@ -586,8 +324,6 @@ or implied, of GRNET S.A.
 
         $(document).ready(function(){
 
-            $(".close-msg-box").live('click', close_all_overlays);
-
             {% if current_lang == "el" and not DEBUG %}
                 window.location = "/lang/?l=en";
             {% endif %}
@@ -597,6 +333,7 @@ or implied, of GRNET S.A.
                 $(this).removeClass("hovered");
                 $(this).removeClass("active");
             }
+
             $(".usermenu").live("click", function(){
                 $(this).addClass("active");
             });
@@ -610,45 +347,139 @@ or implied, of GRNET S.A.
 
             // bind menu actions
             $(".usermenu .logout").click(function() {
-                user_session_logout();
+                snf.ui.logout();
             });
 
             $(".usermenu .invitations").click(show_invitations);
-            $(".usermenu .feedback").click(show_feedback_form);
             $(".usermenu .api").click(show_api_overlay);
+
+        });
+        
+        function positionBottomMessages() {
+            var el = $("#multiple_actions_container");
+        }
+
+        $(window).bind("load", function() { 
+               var footerHeight = 0;
+               var footerTop = 0;
+               var $footer = $("#footer-container");
+
+               positionFooter();
+               function positionFooter() {
+                   footerHeight = 80;
+                   footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
+                   if (($(document.body).height()+footerHeight) < $(window).height()) {
+
+                       $footer.css({
+                            position: "absolute"
+                       }).css({
+                            top: footerTop
+                       })
+                    } else {
+                    
+                       if ($footer.css("position") == "static") {
+                           if ($(document.body).height() < $(window).height()) {    
+                               $footer.css({
+                                    position: "absolute"
+                               }).css({
+                                    top: footerTop
+                                })
+                            }
+                        } else {
+
+                           $footer.css({
+                               position: "static"
+                           })
+                       }
+                   }
+
+                   }
+               window.positionFooter = _.throttle(positionFooter, 100);
+               $(window).scroll(positionFooter).resize(positionFooter)
         });
     </script>
+
     <!-- base notification for error/success reporting -->
     <a id="notification" rel="#error-success" href="#"></a>
     <a id="msgbox" rel="#notification-box" href="#"></a>
     <a id="feedbackbox" rel="#feedback-form" href="#"></a>
 
-    <div class="modal" id="error-success">
-        <h3 class="popup-header">
-            <span class="header-box"></span>
-        </h3>
-        <div class="popup-body">
-            <div class="popup-body-inner">
-                <div class="error-report">
-                    <div class="send-btn">{% trans "report error" %}</div>
-                    <div class="sending">{% trans "sending error report..." %}</div>
-                    <div class="errormsg">{% trans "report failed" %}</div>
-                    <div class="success">{% trans "report send successfully" %}</div>
-                </div>
-                <div class="machine-now-building"></div>
-                <div class="popup-separator"></div>
-                <div class="password-container">
-                    <div class="password-header"></div>
-                    <div class="password"></div>
-                </div>
-                <div class="popup-details">
-                    <div class="write-password"></div>
-                    <div class="write-password-details">{% trans "More details about the result"%}</div>
+    <div class="overlay" id="generic-overlay-tpl">
+        <div class="overlay-inner">
+            <h3 class="header clearfix">
+                <span class="subtitle"></span>
+                <span class="title"></span>
+                <span class="closeme">close</span></h3>
+            <div class="container">
+                <div class="content">
                 </div>
             </div>
+            <div class="footer"></div>
         </div>
     </div>
 
+    <div id="error-overlay-content" class="hidden">
+        <div class="message"><p></p></div>
+        <div class="error-details">
+            <span class="key">{% trans "Module" %}</span>
+            <span class="value error-module"></span>
+
+            <span class="key">{% trans "Code" %}</span>
+            <span class="value error-code"></span>
+
+            <span class="key">{% trans "Type" %}</span>
+            <span class="value error-type"></span>
+
+            <span class="key details">{% trans "Details" %}</span>
+            <div class="value error-more-details"><p></p></div>
+        </div>
+        
+        <!--<div class="navigation">-->
+            <!--<span class="next-error">{% trans "next error" %}</span>-->
+            <!--<span class="previous-error">{% trans "previous error" %}</span>-->
+        <!--</div>-->
+        
+        <!--<div class="date">-->
+            <!--<span class="error-date"></span>-->
+        <!--</div>-->
+
+        <div class="actions">
+            <span class="show-details">{% trans "Show details" %}</span>
+            <span class="hide-details">{% trans "Hide details" %}</span>
+            <span class="report-error">{% trans "Send report" %}</span>
+            <span class="reload-app">{% trans "Reload" %}</span>
+        </div>
+    </div>
+
+    <div id="feedback-overlay-content" class="hidden overlay-content feedback-form">
+        <div class="description">
+            <p>
+                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+                We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}
+            </p>
+        </div>
+        <div class="description messages noborder">
+            <p class="success-message hidden">
+            {% trans "thank you for submiting your feedback" %}
+            </p>
+            <p class="error-message hidden">
+                {% trans "some error occured submiting submiting your feedback, please try again later" %}
+            </p>
+            <p class="sending-message hidden">
+            {% blocktrans %}Sending feedback...{% endblocktrans %}
+            </p>
+        </div>
+        <div class="form">
+            <div class="form-field">
+                <label for>{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+                <textarea class="feedback-message"> 
+                </textarea>
+            </div>
+            <div class="form-actions clearfix noborder">
+                <span class="form-action submit">{% trans "send feedback" %}</span>
+            </div>
+        </div>
+    </div>
     <div class="modal" id="feedback-form" class="feedback notification-box">
         <h3 class="popup-header">
             <span class="header-box">{% trans "Send feedback" %}</span>
@@ -704,5 +535,38 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             </div>
         </div>
     </div>
+    
+    <div id="loading-view" class="hidden">
+        <img src="/static/icons/indicators/small/progress.gif" />
+        <div class="header">Loading <span>~okeanos</span></div>
+        <div class="info hidden"></div>
+    </div>
+    {% include "footer.html" %}
+
+    <script>
+        $(document).ready(function() {
+            $(".css-panes").hide();
+
+            {% if DEBUG %}
+            synnefo.ui.main.bind("initial", function() {
+                if (window.TEST) {
+                    setTimeout(window.TEST, 60);
+                }
+            });
+            {% endif %}
+            
+            synnefo.config.update_interval = {{ update_interval }};
+            synnefo.config.delay_on_blur = true;
+
+            // match <= 1.9.1
+            if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {
+                synnefo.config.overlay_speed = 0;
+            }
+
+            synnefo.config.update_hidden_views = false;
+            synnefo.ui.init();
+
+        })
+    </script>
 </body>
 </html>

@@ -625,18 +625,12 @@ class UpdateServerMetadata(BaseTestCase):
         new_metadata = {}
         for key in sample(metadata[server_id].keys(), 3):
             new_metadata[key] = 'New %s value' % key
-        response_metadata = self.update_server_metadata(server_id, new_metadata)
-        self.assertEqual(response_metadata, new_metadata)
+        response_metadata = self.update_server_metadata(server_id,
+                                                        new_metadata)
         metadata[server_id].update(new_metadata)
+        self.assertEqual(response_metadata, metadata[server_id])
         self.assertEqual(metadata, self.get_all_server_metadata())
-
-    def test_does_not_create(self):
-        with AssertInvariant(self.get_all_server_metadata) as metadata:
-            server_id = choice(metadata.keys())
-            new_metadata = {'Foo': 'Bar'}
-            response_metadata = self.update_server_metadata(server_id, new_metadata)
-            self.assertEqual(response_metadata, {})
-
+    
     def test_invalid_data(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
@@ -773,17 +767,10 @@ class UpdateImageMetadata(BaseTestCase):
         for key in sample(metadata[image_id].keys(), 3):
             new_metadata[key] = 'New %s value' % key
         response_metadata = self.update_image_metadata(image_id, new_metadata)
-        self.assertEqual(response_metadata, new_metadata)
         metadata[image_id].update(new_metadata)
+        self.assertEqual(response_metadata, metadata[image_id])
         self.assertEqual(metadata, self.get_all_image_metadata())
-
-    def test_does_not_create(self):
-        with AssertInvariant(self.get_all_image_metadata) as metadata:
-            image_id = choice(metadata.keys())
-            new_metadata = {'Foo': 'Bar'}
-            response_metadata = self.update_image_metadata(image_id, new_metadata)
-            self.assertEqual(response_metadata, {})
-
+    
     def test_invalid_data(self):
         with AssertInvariant(self.get_all_image_metadata) as metadata:
             image_id = choice(metadata.keys())

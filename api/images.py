@@ -105,10 +105,6 @@ def image_to_dict(image, detail=True):
 
     return d
 
-def metadata_to_dict(image):
-    image_meta = image.imagemetadata_set.all()
-    return dict((meta.meta_key, meta.meta_value) for meta in image_meta)
-
 
 @util.api_method('GET')
 def list_images(request, detail=False):
@@ -220,7 +216,7 @@ def list_metadata(request, image_id):
     #                       overLimit (413)
 
     image = util.get_image(image_id, request.user)
-    metadata = metadata_to_dict(image)
+    metadata = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
 @util.api_method('POST')
@@ -241,22 +237,15 @@ def update_metadata(request, image_id):
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-
-    updated = {}
-
+    
     for key, val in metadata.items():
-        try:
-            meta = ImageMetadata.objects.get(meta_key=key, image=image)
-            meta.meta_value = val
-            meta.save()
-            updated[key] = val
-        except ImageMetadata.DoesNotExist:
-            pass    # Ignore non-existent metadata
+        meta, created = image.metadata.get_or_create(meta_key=key)
+        meta.meta_value = val
+        meta.save()
     
-    if updated:
-        image.save()
-    
-    return util.render_metadata(request, updated, status=201)
+    image.save()
+    image_meta = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
+    return util.render_metadata(request, image_meta, status=201)
 
 @util.api_method('GET')
 def get_metadata_item(request, image_id, key):

@@ -199,6 +199,7 @@
         // container (e.g. some views might have different
         // containers for terminated or running machines
         check_vm_container: function(vm){
+            if (vm.state() == "DESTROY") { return };
             var el = this.vm(vm);
             if (!el.length) { return };
             var self = this;

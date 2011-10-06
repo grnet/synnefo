@@ -419,6 +419,12 @@
     </div>
 
     <div id="error-overlay-content" class="hidden">
+        <div class="error-nav hidden clearfix">
+            <span class="indicator"><span class="num">1</span> <span
+                    class="ind-msg">new error occured</span></span>
+            <span class="show-next nav-btn">{% trans "next" %}</span>
+            <span class="show-prev nav-btn">{% trans "previous" %}</span>
+        </div>
         <div class="message"><p></p></div>
         <div class="error-details">
             <span class="key">{% trans "Module" %}</span>

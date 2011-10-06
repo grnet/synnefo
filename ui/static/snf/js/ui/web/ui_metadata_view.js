@@ -24,7 +24,7 @@
         overlay_id: "metadata-overlay",
 
         subtitle: "",
-        title: "Manage metadata",
+        title: "Manage tags",
 
         initialize: function(options) {
             views.MetadataView.__super__.initialize.apply(this);
@@ -85,7 +85,7 @@
             this.list.append('<li class="options-object create">' + 
                              '<div class="options-object-cont">' +
                              '<span class="title">Add new</span>' + 
-                             '<span class="value">metadata key</span>' + 
+                             '<span class="value">tag</span>' + 
                              '</div>' + 
                              '</li>')
 
@@ -185,7 +185,7 @@
                 e.preventDefault();
                 var meta = self.meta_from_el($(this));
                 self.remove_meta(meta.key);
-                $(this).parent().remove();
+                $(this).parent().parent().parent().remove();
             });
 
             this.list.find(".edit").click(function(e) {

@@ -119,6 +119,8 @@
 
             this.overlay = $(this.el).overlay();
             this.append_css = this.options ? this.options.css_class ? this.options.css_class : "" : "";
+
+            this.is_visible = false;
             return this;
         },
 
@@ -169,6 +171,7 @@
         },
 
         _beforeOpen: function() {
+            this.is_visible = true;
             if (this.append_css) {
                 $(this.el).addClass(this.append_css);
             }
@@ -194,6 +197,7 @@
         },
 
         _beforeClose: function() {
+            this.is_visible = false;
             this.beforeClose.apply(this, arguments);
             this.options.beforeClose.apply(this, arguments);
         },
@@ -224,6 +228,8 @@
 
             // do we need to wait for other overlays to close ???
             if (hidden) { delay = 300; } else { delay = 0; }
+
+            this.is_visible = true;
             window.setTimeout(_.bind(function(){ this.overlay.load() }, this), delay)
             return this;
         },

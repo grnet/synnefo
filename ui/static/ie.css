@@ -19,3 +19,7 @@ html {
 .firewall .network-progress-indicator img {
     left: 253px;
 }
+
+div.confirm_single button {
+    padding-bottom: 0px;
+}

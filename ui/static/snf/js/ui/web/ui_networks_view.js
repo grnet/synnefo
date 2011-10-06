@@ -532,9 +532,11 @@
         initialize: function(network, view) {
             this.parent_view = view;
             this.network = network;
+            this.is_public = network.is_public();
+
             this.init_vm_handlers();
 
-            this.id = "networks_view_" + network.id;
+            this.view_id = "networks_view_" + network.id;
             views.NetworkModelView.__super__.initialize.call(this);
 
             this.vm_views = {};
@@ -579,6 +581,7 @@
         fix_left_border: function() {
             if (!this.visible()) { return };
             var imgheight = 2783;
+            if (!this.is_public) { imgheight = 2700 };
             var contents = this.$(".network-contents");
             var last_vm = this.$(".network-machine:last")
             var bgpos = imgheight - contents.height() + last_vm.height() - 30;
@@ -690,6 +693,7 @@
         vm_added_handler: function(action, vm) {
             if (!this.network.contains_vm(vm)) { return }
             this.add_or_update_vm(vm);
+            this.fix_left_border();
             this.update_layout();
         },
 

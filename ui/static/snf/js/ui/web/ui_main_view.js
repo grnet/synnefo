@@ -393,9 +393,12 @@
             this.error_view.show_error.apply(this.error_view, error_entry);
         },
 
-        handle_ui_error: function(error) {
-            error = error + "<br /><br />" + snf.util.stacktrace().replace("at", "<br /><br />at");
-            this.error_view.show_error("Application", -1, "Something went wrong", "JS Exception", error);
+        handle_ui_error: function(data) {
+            var msg = data.msg, code = data.code, err_obj = data.error;
+            error = msg + "<br /><br />" + snf.util.stacktrace().replace("at", "<br /><br />at");
+            params = { title: "UI error", extra_details: data.extra };
+            params.allow_close = data.extra.allow_close === undefined ? true : data.extra.allow_close;
+            this.error_view.show_error("UI", -1, msg, "JS Exception", error, params);
         },
 
         init_overlays: function() {
@@ -622,7 +625,7 @@
                             window.positionFooter();
                             this.multiple_actions_view.fix_position();
                         }, this));
-                    } catch (err) {snf.ui.trigger("error", err)}
+                    } catch (err) {snf.ui.trigger_error(-1, "Cannot add view", err)}
                 }
             } else {
             }
@@ -690,64 +693,68 @@
         },
 
         show_view: function(view_id) {
-            // same view, visible
-            // get out of here asap
-            if (this.current_view && 
-                this.current_view.id == view_id && 
-                this.current_view.visible()) {
-                return;
+            try {
+                // same view, visible
+                // get out of here asap
+                if (this.current_view && 
+                    this.current_view.id == view_id && 
+                    this.current_view.visible()) {
+                    return;
+                }
+                
+                // choose proper view_id
+                view_id = this.identify_view(view_id);
+
+                // add/create view and update current view
+                var view = this.add_view(view_id);
+                
+                // set current view
+                this.current_view = view;
+                this.current_view_id = view_id;
+
+                // hide all other views
+                this.hide_views([this.current_view]);
+                
+                // FIXME: depricated
+                $(".large-spinner").remove();
+
+                storage.vms.reset_pending_actions();
+                storage.vms.stop_stats_update();
+
+                // show current view
+                this.show_view_pane();
+                view.show();
+                
+                // update menus
+                if (this.select_view) {
+                    this.select_view.update_layout();
+                }
+                this.current_view.__update_layout();
+
+                // update cookies
+                this.update_session();
+                
+                // machines view subnav
+                if (this.current_view.vms_view) {
+                    $("#machines-pane").show();
+                } else {
+                    $("#machines-pane").hide();
+                }
+                
+                // fix footer position
+                // TODO: move footer handlers in
+                // main view (from home.html)
+                if (window.positionFooter) {
+                    window.positionFooter();
+                }
+
+                // trigger view change event
+                this.trigger("view:change", this.current_view.view_id);
+                $(window).trigger("view:change");
+                return view;
+            } catch (err) {
+                snf.ui.trigger_error(-2, "Cannot show view: " + view_id, err);
             }
-            
-            // choose proper view_id
-            view_id = this.identify_view(view_id);
-
-            // add/create view and update current view
-            var view = this.add_view(view_id);
-            
-            // set current view
-            this.current_view = view;
-            this.current_view_id = view_id;
-
-            // hide all other views
-            this.hide_views([this.current_view]);
-            
-            // FIXME: depricated
-            $(".large-spinner").remove();
-
-            storage.vms.reset_pending_actions();
-            storage.vms.stop_stats_update();
-
-            // show current view
-            this.show_view_pane();
-            view.show();
-            
-            // update menus
-            if (this.select_view) {
-                this.select_view.update_layout();
-            }
-            this.current_view.__update_layout();
-
-            // update cookies
-            this.update_session();
-            
-            // machines view subnav
-            if (this.current_view.vms_view) {
-                $("#machines-pane").show();
-            } else {
-                $("#machines-pane").hide();
-            }
-            
-            // fix footer position
-            // TODO: move footer handlers in
-            // main view (from home.html)
-            if (window.positionFooter) {
-                window.positionFooter();
-            }
-            
-            // trigger view change event
-            this.trigger("view:change", this.current_view.view_id);
-            $(window).trigger("view:change");
-            return view;
         },
 
         reset_vm_actions: function() {
@@ -781,6 +788,9 @@
     }
 
     snf.ui.init = function() {
+        window.onerror = function(msg, file, line) {
+            snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
+        };
         snf.ui.main.load();
     }
 

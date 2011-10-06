@@ -152,6 +152,10 @@
 
         get_os: function() {
             return this.get("OS");
+        },
+
+        get_sort_order: function() {
+            return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
         }
     });
 
@@ -165,7 +169,7 @@
 
         get_disk_size: function() {
             return parseInt(this.get("disk") * 1000)
-        },
+        }
 
     });
     
@@ -419,12 +423,23 @@
         },
 
         rename: function(name, callback) {
-            return this.api.call(this.api_path(), "update", {network:{name:name}}, callback);
+            return this.api.call(this.api_path(), "update", {
+                network:{name:name}, 
+                _options:{
+                    critical: false, 
+                    error_params:{
+                        title: "Network action failed",
+                        ns: "Networks",
+                        extra_details: {"Network id": this.id},
+                    }
+                }}, callback);
         },
 
         get_connectable_vms: function() {
             var servers = this.vms.list();
-            return storage.vms.filter(function(vm){return servers.indexOf(vm) == -1})
+            return storage.vms.filter(function(vm){
+                return servers.indexOf(vm) == -1 && !vm.in_error_state();
+            })
         },
 
         state_message: function() {
@@ -765,6 +780,10 @@
         is_building: function() {
             return models.VM.BUILDING_STATES.indexOf(this.state()) > -1;
         },
+        
+        in_error_state: function() {
+            return this.state() === "ERROR"
+        },
 
         // user can connect to machine
         is_connectable: function() {
@@ -801,11 +820,14 @@
             var url = this.api_path() + "/meta/" + meta.key;
             var payload = {meta:{}};
             payload.meta[meta.key] = meta.value;
+            payload._options = {
+                critical:false, 
+                error_params: {
+                    title: "Machine metadata error",
+                    extra_details: {"Machine id": this.id}
+            }};
 
-            // inject error settings
-            payload._options = {critical: false};
-
-            this.api.call(url, "update", payload, complete, error)
+            this.api.call(url, "update", payload, complete, error);
         },
 
         set_firewall: function(net_id, value, callback, error, options) {
@@ -883,7 +905,6 @@
         },
         
         // get flavor object
-        // TODO: update flavors synchronously if image not found
         get_flavor: function() {
             var flv = storage.flavors.get(this.get('flavorRef'));
             if (!flv) {
@@ -972,6 +993,7 @@
         rename: function(new_name) {
             //this.set({'name': new_name});
             this.sync("update", this, {
+                critical: true,
                 data: {
                     'server': {
                         'name': new_name
@@ -1077,7 +1099,7 @@
                 success: function(){ self.handle_action_succeed.apply(self, arguments); success.apply(this, arguments)},
                 error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
                 error_params: { ns: "Machines actions", 
-                                message: "'" + this.get("name") + "'" + " action failed", 
+                                title: "'" + this.get("name") + "'" + " " + action + " failed", 
                                 extra_details: { 'Machine ID': this.id, 'URL': url, 'Action': action || "undefined" },
                                 allow_reload: false
                               },
@@ -1272,6 +1294,10 @@
             return undefined;
         },
 
+        comparator: function(img) {
+            return -img.get_sort_order("sortorder") || 1000 * img.id;
+        },
+
         parse_meta: function(img) {
             _.each(this.meta_keys_as_attrs, _.bind(function(key){
                 img[key] = this.get_meta_key(img, key);
@@ -1307,6 +1333,10 @@
         parse: function (resp, xhr) {
             // FIXME: depricated global var
             return resp.flavors.values;
+        },
+
+        comparator: function(flv) {
+            return flv.get("disk") * flv.get("cpu") * flv.get("ram");
         },
 
         unavailable_values_for_image: function(img, flavors) {

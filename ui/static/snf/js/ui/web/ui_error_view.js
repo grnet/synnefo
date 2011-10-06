@@ -52,7 +52,19 @@
 
             this.$(".reload-app").click(function(){
                 window.location.reload(true);
-            })
+            });
+
+            this.$(".show-next").click(_.bind(function(){
+                this.show_next_error();
+            }, this));
+
+            this.$(".show-prev").click(_.bind(function(){
+                this.show_prev_error();
+            }, this));
+
+            this.displaying_error = false;
+            this.error_stack_index = [];
+            this.error_stack = {};
         },
 
         error_object: function() {
@@ -62,6 +74,8 @@
         report_error: function() {
             this.feedback_view = this.feedback_view || ui.main.feedback_view;
             this.hide(false);
+            this.displaying_error = true;
+
             window.setTimeout(_.bind(function() {
                 this.feedback_view.show(this.get_report_message(), true, {error: this.error_object()});
             }, this), 400);
@@ -81,18 +95,79 @@
         },
         
         show_error: function(ns, code, message, type, details, error_options) {
-            if (snf.api.error_state == snf.api.STATES.NORMAL) { this.error_stack = {} };
-                
+            
             var error_entry = [ns, code, message, type, details, error_options];
-            this.error_stack[new Date()] = error_entry;
-            this.display_error.apply(this, error_entry);
-            this.show();
+            var last_error_key = this.update_errors_stack(error_entry);
+            
+            if (!this.is_visible && !this.displaying_error) {
+                this.current_error = last_error_key;
+                this.display_error.call(this, last_error_key);
+                this.show();
+            }
+
+            this.update_errors_stack();
         },
 
-        display_error: function(ns, code, message, type, details, error_options) {
+        update_errors_stack: function(entry) {
+            if (snf.api.error_state != snf.api.STATES.ERROR) { 
+                this.error_stack = {};
+                this.error_stack_index = [];
+            };
+
+            var stack_key = (new Date()).getTime();
+            this.error_stack[stack_key] = entry;
+            this.error_stack_index.push(stack_key);
+            this.errors_occured = this.error_stack_index.length;
+            
+            this.$(".error-nav").hide();
+            //this.update_errors_stack_layout();
+            return stack_key;
+        },
+
+        is_last_error: function(stack_key) {
+            return this.error_stack_index.indexOf(stack_key) == this.error_stack_index.length - 1;
+        },
+
+        is_first_error: function(stack_key) {
+            return this.error_stack_index.indexOf(stack_key) == 0;
+        },
+
+        update_errors_stack_layout: function() {
+            if (!this.current_error) { return };
+
+            if (this.errors_occured <= 1) {
+                this.$(".error-nav").hide();
+            } else {
+                this.$(".error-nav").show();
+            };
+            
+            if (this.is_last_error(this.current_error)) {
+                this.$(".show-next").hide();
+            } else {
+                this.$(".show-next").show();
+            }
+
+            if (this.is_first_error(this.current_error)) {
+                this.$(".show-prev").hide();
+            } else {
+                this.$(".show-prev").show();
+            }
+        },
+
+        show_next_error: function() {
+        },
+
+        show_prev_error: function() {
+        },
+
+        display_error: function(stack_key) {
+            var err = this.error_stack[stack_key];
+            var ns = err[0], code = err[1], message = err[2], type = err[3], details = err[4], error_options = err[5]
+
             this.error_options = {'allow_report': true, 'allow_reload': true, 
                 'extra_details': {}, 'non_critical': false, 
-                'allow_details': false };
+                'allow_details': false,
+                'allow_close': true };
             
             if (error_options) {
                 this.error_options = _.extend(this.error_options, error_options);
@@ -120,6 +195,7 @@
             }
             
             this.$(".actions .show-details").click();
+            this.$(".error-details").hide();
             this.$(".key.details").click();
             this.$(".error-more-details").hide();
         },
@@ -170,19 +246,35 @@
                 this.$(".reload-app").hide();
             }
 
+            if (this.error_options.allow_close) {
+                this.$(".closeme").show();
+            } else {
+                this.$(".closeme").hide();
+            }
+
         },
 
         onOpen: function() {
+            this.displaying_error = true;
             var self = this;
 
             this.$(".closeme").unbind("click");
             this.$(".closeme").bind("click", function(){
-                self.hide("reset")
+                self.hide("reset");
             })
         },
 
         hide: function(reset_state) {
-            if (reset_state === "reset") { snf.api.trigger("reset") };
+            if (reset_state === "reset") {
+                // delay reset error state for fade out
+                window.setTimeout(_.bind(function(){
+                    this.displaying_error = false;
+                    this.error_stack = {};
+                    snf.api.trigger("reset");
+                }, this), 500);
+            } else {
+                this.displaying_error = false;
+            }
             views.ErrorView.__super__.hide.apply(this);
         },
 

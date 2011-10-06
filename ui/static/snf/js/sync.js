@@ -413,6 +413,8 @@
 
     // on api error update the api error_state
     api.bind("error", function() {
+        if (snf.api.error_state == snf.api.STATES.ERROR) { return };
+
         var args = _.toArray(_.toArray(arguments)[0]);
         var params = _.last(args);
         
@@ -420,7 +422,7 @@
             snf.api.error_state = api.STATES.ERROR;
             snf.api.stop_calls = true;
         } else {
-            snf.api.error_state = api.STATES.WARN;
+            snf.api.error_state = api.STATES.ERROR;
         }
         snf.api.trigger("change:error_state", snf.api.error_state);
     });

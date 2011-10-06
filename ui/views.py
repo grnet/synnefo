@@ -52,7 +52,7 @@ IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 SUGGESTED_FLAVORS = getattr(settings, "SUGGESTED_FLAVORS", {})
 SUGGESTED_ROLES = getattr(settings, "SUGGESTED_ROLES",
-        ["Database server", "File server", "Mail server", "Web server", "Proxy", "CI server", "Leeching machine"])
+        ["Database server", "File server", "Mail server", "Web server", "Proxy", "CI server"])
 VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
 

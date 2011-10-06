@@ -56,6 +56,9 @@
         var data = {}
         
         try {
+            data.client = {'browser': $.browser, 'screen': $.extend({}, screen), 'client': $.client}
+        } catch (err) { data.client = err }
+        try {
             data.calls = synnefo.api.requests;
         } catch (err) { data.calls = err }
         try {
@@ -68,14 +71,14 @@
             data.data.vms = synnefo.storage.vms.toJSON();
         } catch (err) { data.data.vms = err }
         try {
-            data.data.networks = synnefo.storage.vms.toJSON();
+            data.data.networks = synnefo.storage.networks.toJSON();
         } catch (err) { data.data.networks = err }
-        try {
-            data.data.images = synnefo.storage.images.toJSON();
-        } catch (err) { data.data.images = err }
-        try {
-            data.data.flavors = synnefo.storage.flavors.toJSON();
-        } catch (err) { data.data.flavors = err }
+        //try {
+            //data.data.images = synnefo.storage.images.toJSON();
+        //} catch (err) { data.data.images = err }
+        //try {
+            //data.data.flavors = synnefo.storage.flavors.toJSON();
+        //} catch (err) { data.data.flavors = err }
         try {
             data.date = new Date;
         } catch (err) { data.date = err }

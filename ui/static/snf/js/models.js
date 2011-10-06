@@ -433,7 +433,7 @@
                     error_params:{
                         title: "Network action failed",
                         ns: "Networks",
-                        extra_details: {"Network id": this.id},
+                        extra_details: {"Network id": this.id}
                     }
                 }}, callback);
         },

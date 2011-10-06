@@ -38,7 +38,7 @@ from dbworker import DBWorker
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(7)
+( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
 
 inf = float('inf')
 
@@ -81,11 +81,12 @@ def strprevling(prefix):
 _propnames = {
     'serial'    : 0,
     'node'      : 1,
-    'size'      : 2,
-    'source'    : 3,
-    'mtime'     : 4,
-    'muser'     : 5,
-    'cluster'   : 6,
+    'hash'      : 2,
+    'size'      : 3,
+    'source'    : 4,
+    'mtime'     : 5,
+    'muser'     : 6,
+    'cluster'   : 7,
 }
 
 
@@ -129,6 +130,7 @@ class Node(DBWorker):
         execute(""" create table if not exists versions
                           ( serial     integer primary key,
                             node       integer,
+                            hash       text,
                             size       integer not null default 0,
                             source     integer,
                             mtime      integer,
@@ -191,7 +193,7 @@ class Node(DBWorker):
            (serial, node, size, source, mtime, muser, cluster).
         """
         
-        q = ("select serial, node, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
              "from versions "
              "where node = ?")
         self.execute(q, (node,))
@@ -385,7 +387,7 @@ class Node(DBWorker):
         parent, path = props
         
         # The latest version.
-        q = ("select serial, node, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -435,15 +437,15 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, size, source, muser, cluster=0):
+    def version_create(self, node, hash, size, source, muser, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
-        q = ("insert into versions (node, size, source, mtime, muser, cluster) "
-             "values (?, ?, ?, ?, ?, ?)")
+        q = ("insert into versions (node, hash, size, source, mtime, muser, cluster) "
+             "values (?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
-        props = (node, size, source, mtime, muser, cluster)
+        props = (node, hash, size, source, mtime, muser, cluster)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -451,11 +453,11 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, size, source, mtime, muser, cluster)
+           (serial, node, hash, size, source, mtime, muser, cluster)
            or None if the current version is not found in the given cluster.
         """
         
-        q = ("select serial, node, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -471,10 +473,10 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, cluster).
         """
         
-        q = ("select serial, node, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
              "from versions "
              "where serial = ?")
         self.execute(q, (serial,))

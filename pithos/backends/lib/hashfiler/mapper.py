@@ -31,9 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from os.path import realpath, join, exists, isdir
 from os import makedirs, unlink
-from errno import ENOENT
+from os.path import isdir, realpath, exists, join
+from binascii import hexlify
 
 from context_file import ContextFile
 
@@ -57,21 +57,21 @@ class Mapper(object):
                 raise ValueError("Variable mappath '%s' is not a directory" % (mappath,))
         self.mappath = mappath
 
-    def _get_rear_map(self, name, create=0):
-        name = join(self.mappath, hex(int(name)))
+    def _get_rear_map(self, maphash, create=0):
+        filename = hexlify(maphash)
+        dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
+        if not exists(dir):
+            makedirs(dir)
+        name = join(dir, filename)
         return ContextFile(name, create)
 
-    def _delete_rear_map(self, name):
-        name = join(self.mappath, hex(int(name)))
-        try:
-            unlink(name)
-            return 1
-        except OSError, e:
-            if e.errno != ENOENT:
-                raise
-        return 0
+    def _check_rear_map(self, maphash):
+        filename = hexlify(maphash)
+        dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
+        name = join(dir, filename)
+        return exists(name)
 
-    def map_retr(self, name, blkoff=0, nr=100000000000000):
+    def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
@@ -79,24 +79,16 @@ class Mapper(object):
         namelen = self.namelen
         hashes = ()
 
-        with self._get_rear_map(name, 0) as rmap:
+        with self._get_rear_map(maphash, 0) as rmap:
             if rmap:
                 hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
         return hashes
 
-    def map_stor(self, name, hashes=(), blkoff=0, create=1):
-        """Store hashes in the given hashes map, replacing the old ones."""
+    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+        """Store hashes in the given hashes map."""
         namelen = self.namelen
-        with self._get_rear_map(name, 1) as rmap:
+        if self._check_rear_map(maphash):
+            return
+        with self._get_rear_map(maphash, 1) as rmap:
             rmap.sync_write_chunks(namelen, blkoff, hashes, None)
-
-#     def map_copy(self, src, dst):
-#         """Copy a hashes map to another one, replacing it."""
-#         with self._get_rear_map(src, 0) as rmap:
-#             if rmap:
-#                 rmap.copy_to(dst)
-
-    def map_remv(self, name):
-        """Remove a hashes map. Returns true if the map was found and removed."""
-        return self._delete_rear_map(name)
 

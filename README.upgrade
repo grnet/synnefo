@@ -13,7 +13,23 @@ NEW SETTINGS
     * MAX_PERSONALITY and MAX_PERSONALITY_SIZE in 20-api.conf:
       Maximum number of files to be injected in newly created servers,
       maximum total size of encoded file contents.
-
+    * Renamed SUGGESTED_FLAVORS to VM_CREATE_SUGGESTED_FLAVORS in 30-ui.conf
+    * VM_CREATE_SUGGESTED_ROLES in 30-ui.conf:
+      A list of suggested vm roles to display to user on create wizard.
+    * UI_DELAY_ON_BLUR in 30-ui.conf:
+      Whether to increase the intervals of recurrent requests (networks/vms 
+      update) if window loses its focus.
+    * UI_BLUR_DELAY in 30-ui.conf:
+      The value of update intervals if window loses its focus.
+      Considered only if `UI_DELAY_ON_BLUR` is set to True.
+    * UI_UPDATE_HIDDEN_VIEWS in 30-ui.conf:
+      Whether not visible vm views will update their content if vm changes.
+    * UI_SKIP_TIMEOUTS in 30-ui.conf:
+      After how many timeouts of reccurent ajax requests to display the timeout
+      error overlay.
+    * UI_HANDLE_WINDOW_EXCEPTIONS in 30-ui.conf:
+      Whether UI should display error overlay for all Javascript exceptions.
+    
 DB MIGRATION
     * Uniqueness constraints have been added to the metadata models.
       A database migration is needed.

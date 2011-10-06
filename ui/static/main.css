@@ -868,7 +868,6 @@ div.image-container {
 }
 
 div.list div.actions a.enabled.destroy {
-    color: #981D1D;
 }
 
 .vm-actions .action-container.destroy {
@@ -880,7 +879,6 @@ div.list div.actions a.enabled.destroy {
 }
 
 .vm-actions .action-container.destroy a {
-    color: #981D1D;
 }
 
 .icon .light-background .machine-data, div.network.light-background, div.network.expand {
@@ -1839,8 +1837,30 @@ input.machine {
     text-decoration: none;
 }
 
-.popup-details a:link, .popup-details a:visited{
+.popup-details a:link, .popup-details a:visited {
     color: black;
+}
+
+.destroy .confirm_single .yes {
+    background-color: #880000;
+    color: #fff;
+}
+
+.destroy .confirm_single .no {
+    background-color: #CC0000;
+    color: #880000;
+}
+
+.destroy .confirm_single .yes:hover {
+    background-color:#CC0000;
+}
+
+div.list div.actions a.selected#action-destroy {
+    color: #880000 !important;
+}
+
+.vm-actions .destroy a#action-destroy.selected {
+    color: #880000 !important;
 }
 
 /* Confirmation boxes */
@@ -2681,6 +2701,10 @@ div.network:hover div.actions a, div.network-machine:hover div.machine-actions a
     visibility: visible;
 }
 
+div.network div.machine-actions a.action-destroy.selected {
+    color: #880000 !important;
+}
+
 div.network div.actions a.selected:hover, div.network div.machine-actions a.selected {
     background-color: transparent !important;
     visibility: visible!important;
@@ -3313,6 +3337,10 @@ div.machine a.manage-metadata:hover {
     width: 162px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
+}
+
+.single .destroy a.single-action.selected {
+    color: #880000 !important;
 }
 
 .single a.single-action.selected {

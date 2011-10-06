@@ -164,7 +164,7 @@ def login(request):
     if not request.method == 'GET':
         method_not_allowed(request)
 
-    key = request.GET['key']
+    key = request.GET.get('key', None)
 
     if key is None:
         return render_login_error("10", "Required key is missing")

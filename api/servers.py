@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from base64 import b64decode
+
 from django.conf import settings
 from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
@@ -116,11 +118,6 @@ def nic_to_dict(nic):
     return d
 
 
-def metadata_to_dict(vm):
-    vm_meta = vm.virtualmachinemetadata_set.all()
-    return dict((meta.meta_key, meta.meta_value) for meta in vm_meta)
-
-
 def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
     if detail:
@@ -132,8 +129,8 @@ def vm_to_dict(vm, detail=False):
         d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.sourceimage.id
-
-        metadata = metadata_to_dict(vm)
+        
+        metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
             d['metadata'] = {'values': metadata}
 
@@ -206,8 +203,26 @@ def create_server(request):
         assert isinstance(metadata, dict)
         image_id = server['imageRef']
         flavor_id = server['flavorRef']
+        personality = server.get('personality', [])
+        assert isinstance(personality, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
+    
+    if len(personality) > settings.MAX_PERSONALITY:
+        raise faults.OverLimit("Maximum number of personalities exceeded")
+    
+    for p in personality:
+        try:
+            assert isinstance(p, dict)
+            assert set(p.keys()) == set(['path', 'contents'])
+            contents = p['contents']
+            if len(contents) > settings.MAX_PERSONALITY_SIZE:
+                # No need to decode if contents already exceed limit
+                raise faults.OverLimit("Maximum size of personality exceeded")
+            if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
+                raise faults.OverLimit("Maximum size of personality exceeded")
+        except AssertionError:
+            raise faults.BadRequest("Malformed personality in request")
     
     image = util.get_image(image_id, owner)
     flavor = util.get_flavor(flavor_id)
@@ -225,7 +240,7 @@ def create_server(request):
         flavor=flavor)
     
     try:
-        create_instance(vm, flavor, image, password)
+        create_instance(vm, flavor, image, password, personality)
     except GanetiApiError:
         vm.delete()
         raise
@@ -375,7 +390,7 @@ def list_metadata(request, server_id):
     #                       overLimit (413)
 
     vm = util.get_vm(server_id, request.user)
-    metadata = metadata_to_dict(vm)
+    metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
 
@@ -397,22 +412,15 @@ def update_metadata(request, server_id):
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
-
-    updated = {}
-
+    
     for key, val in metadata.items():
-        try:
-            meta = VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
-            meta.meta_value = val
-            meta.save()
-            updated[key] = val
-        except VirtualMachineMetadata.DoesNotExist:
-            pass    # Ignore non-existent metadata
+        meta, created = vm.metadata.get_or_create(meta_key=key)
+        meta.meta_value = val
+        meta.save()
     
-    if updated:
-        vm.save()
-    
-    return util.render_metadata(request, updated, status=201)
+    vm.save()
+    vm_meta = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
+    return util.render_metadata(request, vm_meta, status=201)
 
 
 @util.api_method('GET')

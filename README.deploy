@@ -301,16 +301,18 @@ Synnefo deployment.
 
 7. Initialization of Synnefo DB:
    You need to initialize the Synnefo DB and load fixtures
-   db/fixtures/{flavors,images}.json, which make the API usable by end users by
-   defining a sample set of hardware configurations (flavors) and OS images.
+   db/fixtures/{users,flavors,images}.json, which make the API usable by end
+   users by defining a sample set of users, hardware configurations (flavors)
+   and OS images.
 
-   IMPORTANT: Be sure to modify db/fixtures/initial_data.json and select
+   IMPORTANT: Be sure to modify db/fixtures/users.json and select
    a unique token for each of the initial and any other users defined in this
    file. DO NOT LEAVE THE SAMPLE AUTHENTICATION TOKENS enabled in deployed
    configurations.
 
      $ ./bin/python manage.py syncdb
      $ ./bin/python manage.py migrate db
+     $ ./bin/python manage.py loaddata db/fixtures/users.json
      $ ./bin/python manage.py loaddata db/fixtures/flavors.json
      $ ./bin/python manage.py loaddata db/fixtures/images.json
 
@@ -442,9 +444,8 @@ Synnefo deployment.
     2.From source    
 
         Download and install gnt-instance-image from its own repository,
-        at https://code.grnet.gr/git/gnt-instance-image. It's
-        recommended to use the win-support branch (known good commit:
-        a7fb0e606623e7ac10d06ac935b0afe7f03d496c).
+        at https://code.grnet.gr/git/gnt-instance-image.
+        [FIXME: Must be updated to include information on installation of snf-image]
 
         Make sure to enable progress monitoring, using the --with-progress-monitor
         argument to configure. This requires the snf-progress-monitor tool,

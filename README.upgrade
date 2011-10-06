@@ -10,6 +10,13 @@ NEW SETTINGS
     * EMAIL_SUBJECT_PREFIX:
       Prepended to automated emails, set to someting that uniquely identifies
       the deployment.
+    * MAX_PERSONALITY and MAX_PERSONALITY_SIZE in 20-api.conf:
+      Maximum number of files to be injected in newly created servers,
+      maximum total size of encoded file contents.
+
+DB MIGRATION
+    * Uniqueness constraints have been added to the metadata models.
+      A database migration is needed.
 
 
 v0.6.1 -> v0.6.2

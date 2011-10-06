@@ -419,13 +419,13 @@ class ModifyImageMeta(Command):
         
         if not key:
             metadata = {}
-            for meta in image.imagemetadata_set.order_by('meta_key'):
+            for meta in image.metadata.order_by('meta_key'):
                 metadata[meta.meta_key] = meta.meta_value
             print_dict(metadata)
             return
         
         try:
-            meta = image.imagemetadata_set.get(meta_key=key)
+            meta = image.metadata.get(meta_key=key)
         except models.ImageMetadata.DoesNotExist:
             meta = None
         
@@ -436,7 +436,7 @@ class ModifyImageMeta(Command):
         
         if val:
             if not meta:
-                meta = image.imagemetadata_set.create(meta_key=key)
+                meta = image.metadata.create(meta_key=key)
             meta.meta_value = val
             meta.save()
         else:

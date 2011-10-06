@@ -140,9 +140,10 @@ class Image(models.Model):
 class ImageMetadata(models.Model):
     meta_key = models.CharField('Image metadata key name', max_length=50)
     meta_value = models.CharField('Image metadata value', max_length=500)
-    image = models.ForeignKey(Image)
+    image = models.ForeignKey(Image, related_name='metadata')
     
     class Meta:
+        unique_together = (('meta_key', 'image'),)
         verbose_name = u'Key-value pair of Image metadata.'
     
     def __unicode__(self):
@@ -416,9 +417,10 @@ class VirtualMachineGroup(models.Model):
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
-    vm = models.ForeignKey(VirtualMachine)
+    vm = models.ForeignKey(VirtualMachine, related_name='metadata')
     
     class Meta:
+        unique_together = (('meta_key', 'vm'),)
         verbose_name = u'Key-value pair of metadata for a VM.'
     
     def __unicode__(self):

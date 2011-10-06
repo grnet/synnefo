@@ -204,7 +204,7 @@ def images_info(request, image_id):
     if not image.format:
         formats = [''] + formats
     
-    metadata = image.imagemetadata_set.order_by('meta_key')
+    metadata = image.metadata.order_by('meta_key')
     html = render('images_info.html', 'images',
                     image=image,
                     states=states,
@@ -230,10 +230,10 @@ def images_modify(request, image_id):
     keys = request.POST.getlist('key')
     vals = request.POST.getlist('value')
     meta = dict(zip(keys, vals))
-    image.imagemetadata_set.all().delete()
+    image.metadata.all().delete()
     for key, val in meta.items():
         if key:
-            image.imagemetadata_set.create(meta_key=key, meta_value=val)
+            image.metadata.create(meta_key=key, meta_value=val)
     
     _log.info('User %s modified Image %s', request.user.name, image.name)
 

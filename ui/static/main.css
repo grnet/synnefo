@@ -781,7 +781,7 @@ div.image-container {
 }
 
 .icon .machine-details .name {
-    height: 28px;
+    height: 24px;
 }
 
 .icon .machine-connect {
@@ -792,7 +792,7 @@ div.image-container {
 .icon .machine-details {
     width: 310px;
     float: left;
-    margin-top: -6px;
+    margin-top: -5px;
 }
 
 .icon .state {
@@ -872,7 +872,7 @@ div.list div.actions a.enabled.destroy {
 
 .vm-actions .action-container.destroy {
     position: absolute;
-    bottom: -2px;
+    bottom: 2px;
     width: 100%;
     left: 0px;
     background: transparent;
@@ -1005,7 +1005,7 @@ div.connect-border:hover {
     float: left;
     width: 50px;
     height: 54px;
-    margin: 4px 14px 0;
+    margin: 1px 14px 0;
 }
 .machine .logo {
     background-image: url("./icons/machines/medium/unknown-sprite.png");
@@ -2186,7 +2186,7 @@ div#user .langmenu .sep {
     clear: none;
     width: 40px;
     margin-right: 0px;
-    padding-top: 2px;
+    padding-top: 0px;
     float: right;
     cursor: pointer;
     position: relative;
@@ -2241,9 +2241,17 @@ div.editbuttons div.cancel:hover {
     z-index: 1000;
 }
 
+.icon .nametextbox {
+    width: 255px;
+}
+
 .nametextbox, .network-rename-input {
+    position: relative;
+    top: -3px;
     font-size: 65%;
     width: 240px;
+    border: 1px solid #aaaaaa;
+    padding: 2px;
 }
 
 .large-spinner {
@@ -3774,6 +3782,10 @@ div.console-footer {
 
 * html .clearfix {
     display: inline-block;
+}
+
+.icon .cont-toggler {
+    margin-top: -1px;
 }
 
 .icon .wave {

@@ -39,6 +39,10 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api.util import api_method, isoformat
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.api')
 
 
 VERSION_1_1 = {
@@ -96,7 +100,8 @@ def version_details(request, api_version):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit(413)
-
+    
+    log.debug('version_details %s', api_version)
     # We hardcode to v1.1 since it is the only one we support
     version = VERSION_1_1.copy()
     version['links'] = version['links'] + DESCRIBED_BY

@@ -42,7 +42,6 @@ except ImportError:
 setup_environ(settings)
 
 import inspect
-import logging
 import sys
 
 from collections import defaultdict
@@ -53,6 +52,7 @@ from os.path import basename
 from synnefo.db import models
 from synnefo.invitations.invitations import add_invitation, send_invitation
 from synnefo.logic import backend, users
+from synnefo.util.dictconfig import dictConfig
 
 
 def get_user(uid):
@@ -112,13 +112,6 @@ class Command(object):
             if key:
                 val = getattr(options, key)
                 setattr(self, key, val)
-        
-        ch = logging.StreamHandler()
-        ch.setFormatter(logging.Formatter('%(message)s'))
-        logger = logging.getLogger()
-        logger.addHandler(ch)
-        level = logging.WARNING
-        logger.setLevel(level)
         
         self.parser = parser
     
@@ -616,4 +609,5 @@ def main():
 
 
 if __name__ == '__main__':
+    dictConfig(settings.SNFADMIN_LOGGING)
     main()

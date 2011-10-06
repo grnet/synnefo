@@ -56,10 +56,8 @@ For G, the operating state is True if the machine is up, False otherwise.
 
 """
 
+import logging
 import sys
-
-from synnefo.logic import log
-_logger = log.get_logger("reconciliation")
 
 from django.core.management import setup_environ
 try:
@@ -70,7 +68,11 @@ except ImportError:
 setup_environ(settings)
 
 from synnefo.db.models import VirtualMachine
+from synnefo.util.dictconfig import dictConfig
 from synnefo.util.rapi import GanetiRapiClient
+
+
+log = logging.getLogger()
 
 
 def stale_servers_in_db(D, G):
@@ -116,12 +118,12 @@ def get_instances_from_ganeti():
             try:
                 id = int(i['name'].split(prefix)[1])
             except Exception:
-                _logger.error("Ignoring instance with malformed name %s",
+                log.error("Ignoring instance with malformed name %s",
                               i['name'])
                 continue
 
             if id in snf_instances:
-                _logger.error("Ignoring instance with duplicate Synnefo id %s",
+                log.error("Ignoring instance with duplicate Synnefo id %s",
                     i['name'])
                 continue
 
@@ -135,5 +137,5 @@ def main():
 
 
 if __name__ == "__main__":
-    log.console_output(_logger)
+    dictConfig(settings.RECONCILIATION_LOGGING)
     sys.exit(main())

@@ -41,7 +41,10 @@ from synnefo.api import util
 from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest
 from synnefo.db.models import Image, ImageMetadata
+from synnefo.util.log import getLogger
 
+
+log = getLogger('synnefo.api')
 
 urlpatterns = patterns('synnefo.api.images',
     (r'^(?:/|.json|.xml)?$', 'demux'),
@@ -115,6 +118,7 @@ def list_images(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
+    log.debug('list_images detail=%s', detail)
     user_images = Image.objects.filter(Q(owner=request.user) | Q(public=True))
     since = util.isoparse(request.GET.get('changes-since'))
     
@@ -152,7 +156,8 @@ def create_image(request):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-
+    log.debug('create_image %s', req)
+    
     try:
         d = req['image']
         server_id = d['serverRef']
@@ -163,6 +168,7 @@ def create_image(request):
     owner = request.user
     vm = util.get_vm(server_id, owner)
     image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
+    log.info('User %d created image %d', owner.id, image.id)
 
     imagedict = image_to_dict(image)
     if request.serialization == 'xml':
@@ -181,7 +187,8 @@ def get_image_details(request, image_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
+    
+    log.debug('get_image_details %s', image_id)
     image = util.get_image(image_id, request.user)
     imagedict = image_to_dict(image)
 
@@ -200,10 +207,12 @@ def delete_image(request, image_id):
     #                       unauthorized (401),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
+    
+    log.debug('delete_image %s', image_id)
     image = util.get_image(image_id, request.user)
     image.state = 'DELETED'
     image.save()
+    log.info('User %d deleted image %d', request.user.id, image.id)
     return HttpResponse(status=204)
 
 @util.api_method('GET')
@@ -214,7 +223,8 @@ def list_metadata(request, image_id):
     #                       unauthorized (401),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    log.debug('list_image_metadata %s', image_id)
     image = util.get_image(image_id, request.user)
     metadata = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
     return util.render_metadata(request, metadata, use_values=True, status=200)
@@ -229,9 +239,10 @@ def update_metadata(request, image_id):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413)
-
-    image = util.get_image(image_id, request.user)
+    
     req = util.get_request_dict(request)
+    log.debug('update_image_metadata %s %s', image_id, req)
+    image = util.get_image(image_id, request.user)
     try:
         metadata = req['metadata']
         assert isinstance(metadata, dict)
@@ -256,7 +267,8 @@ def get_metadata_item(request, image_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-
+    
+    log.debug('get_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user)
     meta = util.get_image_meta(image, key)
     return util.render_meta(request, meta, status=200)
@@ -272,9 +284,10 @@ def create_metadata_item(request, image_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413)
-
-    image = util.get_image(image_id, request.user)
+    
     req = util.get_request_dict(request)
+    log.debug('create_image_metadata_item %s %s %s', image_id, key, req)
+    image = util.get_image(image_id, request.user)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -303,7 +316,8 @@ def delete_metadata_item(request, image_id, key):
     #                       buildInProgress (409),
     #                       badMediaType(415),
     #                       overLimit (413),
-
+    
+    log.debug('delete_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user)
     meta = util.get_image_meta(image, key)
     meta.delete()

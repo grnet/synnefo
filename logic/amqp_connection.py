@@ -31,11 +31,15 @@ import time
 import socket
 from amqplib import client_0_8 as amqp
 from django.conf import settings
-from synnefo.logic import log
+
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.logic')
 
 _conn = None
 _chan = None
-_logger = log.get_logger("amqplib")
+
 
 def _connect():
     global _conn, _chan
@@ -51,7 +55,7 @@ def _connect():
         except socket.error:
             retry += 1
             if retry < 5 :
-                _logger.exception("Cannot establish connection to AMQP. Retrying...")
+                log.exception("Cannot establish connection to AMQP. Retrying...")
                 time.sleep(1)
             else:
                 raise AMQPError("Queue error")
@@ -87,13 +91,13 @@ def send(payload, exchange, key):
                                routing_key=key)
            return
         except socket.error as se:
-           _logger.exception("Server went away, reconnecting...")
+           log.exception("Server went away, reconnecting...")
            _connect()
         except Exception as e:
             if _conn is None:
                _connect()
             else:
-                _logger.exception('Caught unexpected exception (msg: %s)' % msg)
+                log.exception('Caught unexpected exception (msg: %s)', msg)
                 raise AMQPError("Error sending message to exchange %s with \
                                 key %s.Payload: %s. Error was: %s",
                                 (exchange, key, payload, e.message))

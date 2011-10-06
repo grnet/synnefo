@@ -494,7 +494,7 @@ Synnefo deployment.
     to NFDHCPD's state directory, usually /var/lib/nfdhcpd.
 
 
-15. See section "Logging" in README.admin, and edit logic/logging.conf
+15. See section "Logging" in README.admin, and edit settings.d/00-logging.conf
     according to your OS and individual deployment characteristics.
 
 

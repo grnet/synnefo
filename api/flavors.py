@@ -38,6 +38,10 @@ from django.utils import simplejson as json
 
 from synnefo.api import util
 from synnefo.db.models import Flavor
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.api')
 
 
 urlpatterns = patterns('synnefo.api.flavors',
@@ -65,6 +69,7 @@ def list_flavors(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
+    log.debug('list_flavors detail=%s', detail)
     active_flavors = Flavor.objects.exclude(deleted=True)
     flavors = [flavor_to_dict(flavor, detail) for flavor in active_flavors]
     
@@ -86,7 +91,8 @@ def get_flavor_details(request, flavor_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
+    
+    log.debug('get_flavor_details %s', flavor_id)
     flavor = util.get_flavor(flavor_id)
     flavordict = flavor_to_dict(flavor, detail=True)
 

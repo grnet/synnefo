@@ -202,6 +202,7 @@
 
         beforeOpen: function() {
             this.create_button.removeClass("in-progress")
+            this.text.closest(".form-field").removeClass("error");
             this.text.val("");
             this.text.show();
             this.text.focus();

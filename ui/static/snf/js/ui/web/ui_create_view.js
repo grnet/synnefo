@@ -592,7 +592,7 @@
                 this.$(".confirm-cont.flavor .flavor-" + sel + " .value").text(val)
             }
             
-            set_detail("cpu");
+            set_detail("cpu", flavor.get("cpu") + "x");
             set_detail("ram", flavor.get("ram") + " MB");
             set_detail("disk", util.readablizeBytes(flavor.get("disk") * 1024 * 1024 * 1024));
         },
@@ -608,7 +608,7 @@
             
             set_detail("description");
             set_detail("name");
-            set_detail("os", image.get("OS"));
+            set_detail("os", _(image.get("OS")).capitalize());
             set_detail("gui", image.get("GUI"));
             set_detail("size", util.readablizeBytes(image.get_size() * 1024 * 1024));
             set_detail("kernel");
@@ -640,7 +640,14 @@
             this.confirm.find("li.mem .value").text(params.flavor.get("ram"));
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 
-            if (!this.name_changed) {
+            if (!this.name_changed && this.parent.visible()) {
+                if (!$.browser.msie) {
+                    this.$("#create-vm-name").select();
+                } else {
+                    window.setTimeout(_.bind(function(){
+                        this.$("#create-vm-name").select();
+                    }, this), 100)
+                }
             }
             
             var img = snf.ui.helpers.os_icon_path(params.image.get("OS"))

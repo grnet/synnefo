@@ -567,6 +567,7 @@
                 $(window).trigger("resize");
             }).closest(".network").addClass("expand");
             this.$(".empty-network-slot").show();
+            this.vms_visible = true;
         },
 
         hide_vm_list: function() {
@@ -575,16 +576,35 @@
                 $(window).trigger("resize");
             }).closest(".network").removeClass("expand");
             this.$(".empty-network-slot").hide();
+            this.vms_visible = false;
         },
-
+        
         // fix left border position
         fix_left_border: function() {
-            if (!this.visible()) { return };
+            if (!this.vms_visible) { return };
+            
             var imgheight = 2783;
-            if (!this.is_public) { imgheight = 2700 };
+            var opened_vm_height = 133 + 20;
+            var closed_vm_height = 61 + 20;
+            var additional_height = 25;
+
+            if (!this.is_public) { 
+                imgheight = 2700;
+                additional_height = 65;
+            };
+            
             var contents = this.$(".network-contents");
-            var last_vm = this.$(".network-machine:last")
-            var bgpos = imgheight - contents.height() + last_vm.height() - 30;
+            var last_vm = this.$(".network-machine:last .cont-toggler.open").length;
+            var last_vm_height = closed_vm_height;
+            if (last_vm > 0){
+                last_vm_height = opened_vm_height;
+            }
+
+            var vms_opened = this.$(".network-machine .cont-toggler.open").length;
+            var vms_closed = this.$(".network-machine").length - vms_opened;
+
+            var calc_height = (vms_opened * opened_vm_height) + (vms_closed * closed_vm_height) + additional_height; 
+            var bgpos = imgheight - calc_height + last_vm_height - 30;
             this.$(".network-contents").css({'background-position':'33px ' + (-bgpos) + 'px'});
         },
 
@@ -596,6 +616,7 @@
                 if (this.vms_list.is(":visible")) {
                     this.hide_vm_list();
                 } else {
+                    this.fix_left_border();
                     this.show_vm_list();
                 }
 
@@ -693,8 +714,8 @@
         vm_added_handler: function(action, vm) {
             if (!this.network.contains_vm(vm)) { return }
             this.add_or_update_vm(vm);
-            this.fix_left_border();
             this.update_layout();
+            this.fix_left_border();
         },
 
         vm_changed_handler: function(action, vms, model, changes) {
@@ -721,6 +742,7 @@
 
         vm_removed_handler: function(action, vm, model) {
             if (action == "disconnect") { vm = model };
+            this.fix_left_border();
             this.remove_vm(vm);
             this.update_layout();
         },
@@ -851,6 +873,7 @@
 
             this.create_view = new views.NetworkCreateView();
             this.connect_machines_view = new views.NetworkConnectVMsOverlay();
+
         },
         
         exists: function(net) {

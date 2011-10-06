@@ -750,6 +750,7 @@
 
                 // trigger view change event
                 this.trigger("view:change", this.current_view.view_id);
+                this.select_view.title.text(this.get_title());
                 $(window).trigger("view:change");
                 return view;
             } catch (err) {

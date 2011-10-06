@@ -128,6 +128,17 @@ Synnefo deployment.
    be installed:
     * pycrypto==2.1.0
 
+   The integration test suite snf-tools/snf-test depends on:
+    * python-unittest2 [unittest2==0.5.1]
+    * python-paramiko  [paramiko==1.7.6], version included in Debian Squeeze
+      is broken wrt to use of RandomPool, see Debian bug #576697
+    * python-ipy [IPy==0.75]
+    * python-prctl [python-prctl==1.3.0]
+    * the client component of vncauthproxy, see Step 12
+    * the kamaki client library, please see
+      https://code.grnet.gr/projects/kamaki for installation instructions.
+      [FIXME: Update instructions on kamaki installation]
+
    To run the user interface tests, selenium must be installed
     * selenium [?]
 

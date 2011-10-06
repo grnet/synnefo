@@ -330,7 +330,7 @@
                 this.set_interval_timeouts(snf.config.update_interval);
             } else {
                 this.focused = false;
-                this.set_interval_timeouts(snf.config.update_interval*3);
+                this.set_interval_timeouts(snf.config.blur_delay);
             }
         },
 
@@ -779,18 +779,20 @@
     
     snf.ui.logout = function() {
         $.cookie("X-Auth-Token", null);
-        if (window.LOGOUT_REDIRECT !== undefined)
+        if (snf.config.logout_url !== undefined)
         {
-            window.location = window.LOGOUT_REDIRECT;
+            window.location = snf.config.logout_url;
         } else {
             window.location.reload();
         }
     }
 
     snf.ui.init = function() {
-        window.onerror = function(msg, file, line) {
-            snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
-        };
+        if (snf.config.handle_window_exceptions) {
+            window.onerror = function(msg, file, line) {
+                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
+            };
+        }
         snf.ui.main.load();
     }
 

@@ -119,62 +119,6 @@
             'FINAL': '{% trans "Finalizing..." %}'
         }
 
-        // server statuses and transitions
-        var STATUSES = {
-            'UNKNOWN'   : '{% trans "Unknown" %}',
-            'BUILD'     : '{% trans "Building" %}',
-            'REBOOT'    : '{% trans "Rebooting" %}',
-            'STOPPED'   : '{% trans "Stopped" %}',
-            'ACTIVE'    : '{% trans "Running" %}',
-            'ERROR'     : '{% trans "Error" %}'
-        };
-
-        var TRANSITIONS = {
-            'Shutting down' : '{% trans "Shutting down" %}',
-            'Rebooting'     : '{% trans "Rebooting" %}',
-            'Starting'      : '{% trans "Starting" %}',
-            'Destroying'    : '{% trans "Destroying" %}',
-            'Connecting'    : '{% trans "Connecting" %}',   // used only in networks
-            'Disconnecting' : '{% trans "Disconnecting" %}' // used only in networks
-        };
-
-        // Server statuses and transitions that should be displayed as active or inactive
-        var ACTIVE_STATES = [
-            '{% trans "Building" %}',
-            '{% trans "Rebooting" %}',
-            '{% trans "Running" %}',
-            '{% trans "Shutting down" %}',
-            '{% trans "Rebooting" %}',
-            '{% trans "Destroying" %}'
-        ];
-        
-        var TRANSITION_STATES = [
-            '{% trans "Building" %}',
-            '{% trans "Rebooting" %}',
-            '{% trans "Starting" %}',
-            '{% trans "Shutting down" %}',
-            '{% trans "Destroying" %}',
-            '{% trans "Connecting" %}',
-            '{% trans "Disconnectig" %}'
-        ]
-        var TRANSITION_STATE_APPEND = "...";
-
-        var INACTIVE_STATES = [
-            '{% trans "Unknown" %}',
-            '{% trans "Stopped" %}',
-            '{% trans "Error" %}',
-            '{% trans "Starting" %}',
-        ];
-
-        // Network statuses and transitions
-        var NET_STATES = {
-            'ACTIVE'        : '{% trans "Private network" %}',  // this comes from the API
-            'DELETED'       : '{% trans "Deleted" %}',          // this comes from the API
-            'Destroying'    : '{% trans "Destroying" %}',
-            'Connecting'    : '{% trans "Connecting" %}',
-            'Disconnecting' : '{% trans "Disconnecting" %}'
-        };
-
         var ERROR_OVERRIDES = {
             // error message header
             'HEADER' : '{% trans "Error" %}',
@@ -553,23 +497,26 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
         $(document).ready(function() {
             $(".css-panes").hide();
 
-            {% if DEBUG %}
-            synnefo.ui.main.bind("initial", function() {
-                if (window.TEST) {
-                    setTimeout(window.TEST, 60);
-                }
-            });
-            {% endif %}
-            
-            synnefo.config.update_interval = {{ update_interval }};
-            synnefo.config.delay_on_blur = true;
 
-            // match <= 1.9.1
+            // TODO: match <= 1.9.1
             if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {
                 synnefo.config.overlay_speed = 0;
+                $.fx.off = true;
             }
+            
+            // synnefo js config
+            synnefo.config.update_interval = {{ update_interval }};
+            synnefo.config.delay_on_blur = {{ delay_on_blur }};
+            synnefo.config.blur_delay = {{ blur_delay }};
+            synnefo.config.update_hidden_views = {{ update_hidden_views }};
+            synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
+            synnefo.config.ajax_timeout = {{ timeout }};
+            synnefo.config.skip_timeouts = {{ skip_timeouts }};
 
-            synnefo.config.update_hidden_views = false;
+            // TODO: make it dynamic
+            synnefo.config.api_url = '/api/v1.1';
+            synnefo.config.logout_url = '{{ logout_redirect }}';
+
             synnefo.ui.init();
 
         })

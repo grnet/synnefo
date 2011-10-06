@@ -46,15 +46,27 @@ from django.core.mail import send_mail
 
 from django.http import Http404
 
-TIMEOUT = settings.TIMEOUT
-UPDATE_INTERVAL = settings.UPDATE_INTERVAL
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
-SUGGESTED_FLAVORS = getattr(settings, "SUGGESTED_FLAVORS", {})
-SUGGESTED_ROLES = getattr(settings, "SUGGESTED_ROLES",
-        ["Database server", "File server", "Mail server", "Web server", "Proxy", "CI server"])
-VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
+
+# UI preferences settings
+TIMEOUT = getattr(settings, "TIMEOUT", 10000)
+UPDATE_INTERVAL = getattr(settings, "UPDATE_INTERVAL", 5000)
+
+# predefined values settings
+VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
+SUGGESTED_FLAVORS_DEFAULT = {}
+SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS", SUGGESTED_FLAVORS_DEFAULT)
+SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
+SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES", SUGGESTED_ROLES_DEFAULT)
+
+# UI behaviour settings
+DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
+BLUR_DELAY = getattr(settings, "UI_BLUR_DELAY", 8000)
+UPDATE_HIDDEN_VIEWS = getattr(settings, "UI_UPDATE_HIDDEN_VIEWS", False)
+HANDLE_WINDOW_EXCEPTIONS = getattr(settings, "UI_HANDLE_WINDOW_EXCEPTIONS", True)
+SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -74,6 +86,11 @@ def home(request):
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
                'invitations_per_page': INVITATIONS_PER_PAGE,
+               'delay_on_blur': json.dumps(DELAY_ON_BLUR),
+               'blur_delay': json.dumps(BLUR_DELAY),
+               'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
+               'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
+               'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
                'DEBUG': settings.DEBUG}
     return template('home', context)
 

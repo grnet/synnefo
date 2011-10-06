@@ -650,7 +650,8 @@
                 var el = $(this);
                 el.closest(".confirm_single").hide();
                 el.parent().parent().find(".selected").removeClass("selected");
-                self.network.remove(function(){
+                self.network.remove(function() {
+                    self.network.set({state:"DESTROY"});
                     el.closest(".confirm_single").removeClass("in-progress");
                 });
                 el.closest(".confirm_single").addClass("in-progress");
@@ -833,6 +834,11 @@
             } else {
                 this.$(".spinner").hide();
                 this.$(".network-indicator").removeClass("in-progress");
+            }
+
+            if (this.network.get("state") == "DESTROY") {
+                this.$(".spinner").show();
+                this.$(".state").addClass("destroying-state");
             }
         }
     })

@@ -310,9 +310,11 @@
             storage.vms.bind("add", _.bind(this.update_connections, this, "add"));
             storage.vms.bind("remove", _.bind(this.update_connections, this, "remove"));
             storage.vms.bind("reset", _.bind(this.update_connections, this, "reset"));
+
             this.bind("change:linked_to", _.bind(this.update_connections, this, "net:change"));
             this.update_connections();
             this.update_state();
+
             return ret;
         },
 
@@ -321,6 +323,7 @@
                 this.set({state: "CONNECTING"});
                 return
             }
+
             if (this.vms.pending_for_removal.length) {
                 this.set({state: "DISCONNECTING"});
                 return
@@ -459,7 +462,8 @@
         'NORMAL': 'Private network',
         'CONNECTING': 'Connecting...',
         'DISCONNECTING': 'Disconnecting...',
-        'FIREWALLING': 'Firewall update...'
+        'FIREWALLING': 'Firewall update...',
+        'DESTROY': 'Destroying...'
     }
 
     models.Network.STATES_TRANSITIONS = {

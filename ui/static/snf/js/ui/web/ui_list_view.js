@@ -56,7 +56,7 @@
             this.parent.$(".actions a.enabled").live({
                 'mouseenter': function() {
                     self.hovered = true;
-                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""))
+                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""));
                 }, 
                 'mouseleave': function() {
                     self.hovered = false;
@@ -237,11 +237,11 @@
             params = this.get_vm_table_data(vm);
             var index = this.table.fnAddData.call(this.table, params);
             this.table_data["vm_" + vm.id] = {index: index[0], params: params};
-            
-            this._vm_els[vm.id] = this.vm(vm);
             // append row id
             $(this.table.fnGetNodes(index)).attr("id", this.id_tpl + vm.id);
-            
+                
+            var vm_el = $("#" + this.id_tpl + vm.id);
+            this._vm_els[vm.id] = vm_el;
             // hide indicators on creation
             this.vm(vm).find(".spinner").hide();
             this.vm(vm).find(".wave").hide();
@@ -340,8 +340,9 @@
 
         // is vm in transition ??? show the progress spinner
         update_transition_state: function(vm) {
+            if (!vm) { return };
             if (this.in_transition) { return };
-
+            
             if ((this.actions.hovered && this.vm(vm).find("input").is(":checked")) || vm.pending_action) {
                 this.sel('vm_spinner', vm.id).hide();
                 this.sel('vm_wave', vm.id).hide();
@@ -354,10 +355,10 @@
                 this.sel('vm_spinner', vm.id).show();
                 this.sel('vm_wave', vm.id).hide();
                 this.sel('os_icon', vm.id).hide();
-                this.$(".action-indicator").hide();
+                this.vm(vm).find(".action-indicator").hide();
             } else {
                 this.sel('vm_spinner', vm.id).hide();
-                this.$(".action-indicator").hide();
+                this.vm(vm).find(".action-indicator").hide();
                 this.sel('os_icon', vm.id).show();
             }
         },
@@ -366,9 +367,15 @@
         show_transition: function(vm) {
             this.in_transition = true;
 
-            if (!this.visible()) { return };
+            if (!this.visible()) { 
+                this.in_transition = false; 
+                this.update_transition_state(); 
+                return 
+            };
+
             var wave = this.sel('vm_wave', vm.id);
             if (!wave.length) {
+                this.in_transition = false
                 return
             }
             

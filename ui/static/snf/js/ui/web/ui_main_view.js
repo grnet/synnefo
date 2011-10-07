@@ -428,11 +428,11 @@
             }
 
             if (this.completed_items == this.items_to_load) {
-                this.update_status("Rendering layout");
+                this.update_status("Rendering layout...");
                 var self = this;
                 window.setTimeout(function(){
                     self.after_load();
-                }, 100)
+                }, 10)
             }
         },
 
@@ -485,12 +485,11 @@
         },
 
         after_load: function() {
+            var self = this;
             this.update_status("Setting vms update interval...");
             this.init_intervals();
             this.update_intervals();
-            this.update_status("Loaded");
-            // FIXME: refactor needed
-            // initialize views
+            this.update_status("Showing initial view...");
             
             // bypass update_hidden_views in initial view
             // rendering to force all views to get render
@@ -498,14 +497,20 @@
             var uhv = snf.config.update_hidden_views;
             snf.config.update_hidden_views = true;
             this.initialize_views()
+            snf.config.update_hidden_views = uhv;
 
-            this.update_status("Initializing overlays...");
+            window.setTimeout(function() {
+                self.update_status("Initializing overlays...");
+                self.load_initialize_overlays();
+            }, 20);
+        },
+
+        load_initialize_overlays: function() {
             this.init_overlays();
             // display initial view
             this.loaded = true;
             this.show_initial_view();
             this.check_empty();
-            snf.config.update_hidden_views = uhv;
         },
 
         load: function() {

@@ -252,7 +252,9 @@ ZeroClipboard.Client.prototype = {
 				}
 				
 				this.ready = true;
-				this.movie.setText( this.clipText );
+                try {
+                    this.movie.setText( this.clipText );
+                } catch (err) {};
 				this.movie.setHandCursor( this.handCursorEnabled );
 				break;
 			

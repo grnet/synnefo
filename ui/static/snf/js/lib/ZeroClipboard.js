@@ -255,7 +255,11 @@ ZeroClipboard.Client.prototype = {
                 try {
                     this.movie.setText( this.clipText );
                 } catch (err) {};
-				this.movie.setHandCursor( this.handCursorEnabled );
+
+                try {
+                    this.movie.setHandCursor( this.handCursorEnabled );
+                } catch(err) {};
+
 				break;
 			
 			case 'mouseover':

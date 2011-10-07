@@ -540,7 +540,7 @@
             icon = icon + "-off";
         }
 
-        return "/static/icons/machines/{0}/{1}.png".format(size, icon)
+        return (snf.config.machines_icons_url + "{0}/{1}.png").format(size, icon)
     }
 
     var os_icon_tag = uihelpers.os_icon_tag = function (os, size, active, attrs) {

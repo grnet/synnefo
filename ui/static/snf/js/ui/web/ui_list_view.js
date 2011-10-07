@@ -324,8 +324,8 @@
                 ' list-vm-checkbox" id="checkbox-' + this.id_tpl + vm.id + '"/>';
 
             var img = '<img class="os_icon" src="'+ this.get_vm_icon_path(vm, "small") +'" />';
-            img = img + '<img src="static/icons/indicators/small/progress.gif" class="spinner" />';
-            img = img + '<img src="static/icons/indicators/medium/wave.gif" class="wave" />';
+            img = img + '<img src="'+snf.config.indicators_icons_url+'small/progress.gif" class="spinner" />';
+            img = img + '<img src="'+snf.config.indicators_icons_url+'medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
             var name = util.truncate(vm.get('name'), 25);
@@ -443,7 +443,7 @@
             var os = vm.get_os();
             var icons = window.os_icons || views.ListView.VM_OS_ICONS;
             if (icons.indexOf(os) == -1) {
-                os = "unknown";
+                os = "okeanos";
             }
             return os;
         },
@@ -454,7 +454,7 @@
             var icons = window.os_icons || views.ListView.VM_OS_ICONS;
 
             if (icons.indexOf(os) == -1) {
-                os = "unknown";
+                os = "okeanos";
             }
             
             var st = "off";
@@ -462,12 +462,14 @@
                 st = "on"
             }
 
-            return views.ListView.VM_OS_ICON_TPLS[icon_type].format(os, st);
+            return views.ListView.VM_OS_ICON_TPLS()[icon_type].format(os, st);
         }
     })
 
-    views.ListView.VM_OS_ICON_TPLS = {
-        "small": "/static/icons/machines/small/{0}-{1}.png"
+    views.ListView.VM_OS_ICON_TPLS = function() {
+        return {
+            "small": snf.config.machines_icons_url + "small/{0}-{1}.png"
+        }
     }
 
     views.ListView.VM_OS_ICONS = window.os_icons || [];

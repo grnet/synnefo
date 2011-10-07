@@ -68,6 +68,17 @@ UPDATE_HIDDEN_VIEWS = getattr(settings, "UI_UPDATE_HIDDEN_VIEWS", False)
 HANDLE_WINDOW_EXCEPTIONS = getattr(settings, "UI_HANDLE_WINDOW_EXCEPTIONS", True)
 SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
+UI_MEDIA_URL = getattr(settings, "UI_SYNNEFO_MEDIA_URL", "/static/")
+UI_SYNNEFO_MEDIA_URL = getattr(settings,
+                    "UI_SYNNEFO_MEDIA_URL", UI_MEDIA_URL + "snf/")
+UI_SYNNEFO_JS_URL = getattr(settings,
+                    "UI_SYNNEFO_JS_URL", UI_SYNNEFO_MEDIA_URL + "js/")
+UI_SYNNEFO_JS_LIB_URL = getattr(settings,
+                    "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
+UI_SYNNEFO_JS_WEB_URL = getattr(settings,
+                    "UI_SYNNEFO_JS_WEB_URL",
+                    UI_SYNNEFO_JS_URL + "ui/web/")
+
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -91,6 +102,13 @@ def home(request):
                'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
                'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
+
+               'UI_MEDIA_URL': UI_MEDIA_URL,
+               'SYNNEFO_MEDIA_URL': UI_SYNNEFO_MEDIA_URL,
+               'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
+               'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
+               'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
+
                'DEBUG': settings.DEBUG}
     return template('home', context)
 

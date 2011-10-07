@@ -307,12 +307,14 @@
                 os = "unknown";
             }
 
-            return views.SingleView.VM_OS_ICON_TPLS[icon_type].format(os);
+            return views.SingleView.VM_OS_ICON_TPLS()[icon_type].format(os);
         }
     })
 
-    views.SingleView.VM_OS_ICON_TPLS = {
-        "medium": "/static/icons/machines/large/{0}-sprite.png"
+    views.SingleView.VM_OS_ICON_TPLS = function() {
+        return {
+            "medium": snf.config.machines_icons_url + "large/{0}-sprite.png"
+        }
     }
 
     views.SingleView.VM_OS_ICONS = window.os_icons || [];

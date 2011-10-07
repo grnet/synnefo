@@ -225,8 +225,6 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _verify_server_status(self, current_status, new_status):
         """Verify a server has switched to a specified status"""
-        log.info("Getting status for server %d, Image %s",
-                 self.serverid, self.imagename)
         server = self.client.get_server_details(self.serverid)
         self.assertIn(server["status"], (current_status, new_status))
         self.assertEquals(server["status"], new_status)
@@ -254,7 +252,6 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _ping_once(self, ipv6, ip):
         """Test server responds to a single IPv4 or IPv6 ping"""
-        log.info("PING IPv%s to %s", "6" if ipv6 else "4", ip)
         cmd = "ping%s -c 2 -w 3 %s" % ("6" if ipv6 else "", ip)
         ping = subprocess.Popen(cmd, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -272,7 +269,7 @@ class SpawnServerTestCase(unittest.TestCase):
         stdin, stdout, stderr = ssh.exec_command("hostname")
         lines = stdout.readlines()
         self.assertEqual(len(lines), 1)
-        return lines
+        return lines[0]
 
     def _try_until_timeout_expires(self, warn_timeout, fail_timeout,
                                    opmsg, callable, *args, **kwargs):
@@ -281,16 +278,16 @@ class SpawnServerTestCase(unittest.TestCase):
         warn_tmout = time.time() + warn_timeout
         fail_tmout = time.time() + fail_timeout
         while True:
+            self.assertLess(time.time(), fail_tmout,
+                            "operation '%s' timed out" % opmsg)
             if time.time() > warn_tmout:
-                log.warning("Server %d: %s operation '%s' not done yet",
-                            opmsg, self.serverid, self.servername)
+                log.warning("Server %d: `%s' operation `%s' not done yet",
+                            self.serverid, self.servername, opmsg)
             try:
+                log.info("%s... " % opmsg)
                 return callable(*args, **kwargs)
             except AssertionError:
                 pass
-
-            self.assertLess(time.time(), fail_tmout,
-                            "operation '%s' timed out" % opmsg)
             time.sleep(self.query_interval)
 
     def _insist_on_tcp_connection(self, family, host, port):
@@ -305,7 +302,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _insist_on_status_transition(self, current_status, new_status,
                                     fail_timeout, warn_timeout=None):
-        msg = "status transition %s -> %s" % (current_status, new_status)
+        msg = "Server %d: `%s', waiting for %s -> %s" % \
+              (self.serverid, self.servername, current_status, new_status)
         if warn_timeout is None:
             warn_timeout = fail_timeout
         self._try_until_timeout_expires(warn_timeout, fail_timeout,
@@ -313,7 +311,7 @@ class SpawnServerTestCase(unittest.TestCase):
                                         current_status, new_status)
 
     def _insist_on_ssh_hostname(self, hostip, username, password):
-        msg = "ssh to %s, as %s/%s" % (hostip, username, password)
+        msg = "SSH to %s, as %s/%s" % (hostip, username, password)
         hostname = self._try_until_timeout_expires(
                 self.action_timeout, self.action_timeout,
                 msg, self._get_hostname_over_ssh,
@@ -441,7 +439,8 @@ class SpawnServerTestCase(unittest.TestCase):
         ip = self._get_ipv4(server)
         self._try_until_timeout_expires(self.action_timeout,
                                         self.action_timeout,
-                                        "PING IPv4", self._ping_once,
+                                        "PING IPv4 to %s" % ip,
+                                        self._ping_once,
                                         False, ip)
 
     def test_007_server_responds_to_ping_IPv6(self):
@@ -450,7 +449,8 @@ class SpawnServerTestCase(unittest.TestCase):
         ip = self._get_ipv6(server)
         self._try_until_timeout_expires(self.action_timeout,
                                         self.action_timeout,
-                                        "PING IPv6", self._ping_once,
+                                        "PING IPv6 to %s" % ip,
+                                        self._ping_once,
                                         True, ip)
 
     def test_008_submit_shutdown_request(self):
@@ -518,6 +518,21 @@ class SpawnServerTestCase(unittest.TestCase):
         self._skipIf(self.is_windows, "only implemented for Linux servers")
         self.assertTrue(False, "test not implemented, will fail")
 
+    def test_017_submit_delete_request(self):
+        """Test submit request to delete server"""
+        self.client.delete_server(self.serverid)
+
+    def test_018_server_becomes_deleted(self):
+        """Test server becomes DELETED"""
+        self._insist_on_status_transition("ACTIVE", "DELETED",
+                                         self.action_timeout,
+                                         self.action_timeout)
+
+    def test_019_server_no_longer_in_server_list(self):
+        """Test server is no longer in server list"""
+        servers = self.client.list_servers()
+        self.assertNotIn(self.serverid, [s['id'] for s in servers])
+
 
 def _spawn_server_test_case(**kwargs):
     """Construct a new unit test case class from SpawnServerTestCase"""
@@ -538,6 +553,9 @@ def cleanup_servers(delete_stale=False):
     c = Client(API, TOKEN)
     servers = c.list_servers()
     stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
+
+    if len(stale) == 0:
+        return
 
     print >> sys.stderr, "Found these stale servers from previous runs:"
     print "    " + \

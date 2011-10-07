@@ -303,7 +303,6 @@
             this.vm = vm;
             this.vm_el = el;
             this.el = $("#" + parent.view_id + "-actions-" + vm.id);
-            this.set_handlers();
             this.all_action_names = _.keys(views.VMActionsView.STATUS_ACTIONS);
             
             // state params
@@ -315,6 +314,7 @@
             views.VMActionsView.__super__.initialize.call(this);
 
             this.hovered = false;
+            this.set_hover_handlers();
         },
 
         action: function(name) {
@@ -353,6 +353,16 @@
 
             if (!this.vm) { return }
             
+            if (!this.hovered && !this.vm.has_pending_action() && this.hide && !this.vm.action_error) { 
+                this.el.hide();
+                this.view.hide_indicator(this.vm);
+                return 
+            };
+
+            if (!this.el.is(":visible") && !this.hide) { return };
+            if (!this.handlers_initialized) { this.set_handlers(); }
+
+
             // update selected action
             if (this.vm.pending_action) {
                 this.selected_action = this.vm.pending_action;
@@ -424,15 +434,8 @@
             this.vm.bind("action:fail", this.update_layout)
             this.vm.bind("action:fail:reset", this.update_layout)
         },
-
-        // bind event handlers
-        set_handlers: function() {
-            var self = this;
-            var vm = this.vm;
-            
-            // initial hide
-            if (this.hide) { $(this.el).hide() };
-            
+        
+        set_hover_handlers: function() {
             // vm container hover (icon view)
             this.view.vm(this.vm).hover(_.bind(function() {
                 this.hovered = true;
@@ -442,7 +445,15 @@
                 this.hovered = false;
                 this.update_layout();
             }, this));
+        },
 
+        // bind event handlers
+        set_handlers: function() {
+            var self = this;
+            var vm = this.vm;
+            
+            // initial hide
+            if (this.hide) { $(this.el).hide() };
             
             // action links events
             _.each(models.VM.ACTIONS, function(action) {
@@ -484,6 +495,8 @@
                     self.reset();
                 });
             }, this);
+
+            this.handlers_initialized = true;
         },
         
         // reset actions

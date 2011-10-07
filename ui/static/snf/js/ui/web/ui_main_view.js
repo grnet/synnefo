@@ -425,8 +425,13 @@
             if (this.completed_items == 2) {
                 this.load_nets_and_vms();
             }
+
             if (this.completed_items == this.items_to_load) {
-                this.after_load();
+                this.update_status("Rendering layout");
+                var self = this;
+                window.setTimeout(function(){
+                    self.after_load();
+                }, 100)
             }
         },
 
@@ -485,13 +490,21 @@
             this.update_status("Loaded");
             // FIXME: refactor needed
             // initialize views
+            
+            // bypass update_hidden_views in initial view
+            // rendering to force all views to get render
+            // on their creation
+            var uhv = snf.config.update_hidden_views;
+            snf.config.update_hidden_views = true;
             this.initialize_views()
+
             this.update_status("Initializing overlays...");
             this.init_overlays();
             // display initial view
             this.loaded = true;
             this.show_initial_view();
             this.check_empty();
+            snf.config.update_hidden_views = uhv;
         },
 
         load: function() {
@@ -691,8 +704,15 @@
                 this.current_pane = this.current_view.pane;
             }
         },
-
+        
         show_view: function(view_id) {
+            //var d = new Date;
+            var ret = this._show_view(view_id);
+            //console.log((new Date)-d)
+            return ret;
+        },
+
+        _show_view: function(view_id) {
             try {
                 // same view, visible
                 // get out of here asap

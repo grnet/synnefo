@@ -18,6 +18,8 @@
     var logger = new snf.logging.logger("SNF-VIEWS");
     var debug = _.bind(logger.debug, logger);
     
+    var hasKey = Object.prototype.hasOwnProperty;
+
     // base class for views that contain/handle VMS
     views.VMListView = views.View.extend({
 
@@ -32,11 +34,11 @@
 
         initialize: function() {
             views.VMListView.__super__.initialize.call(this);
+            this._vm_els = {};
             this.set_storage_handlers();
             this.set_handlers();
             this.vms_updated_handler();
             this.connect_overlay = new views.VMConnectView();
-            this.vm_selector = this.selectors.vm;
         },
 
         // Helpers
@@ -49,7 +51,13 @@
         
         // vm element based on vm model instance provided
         vm: function(vm) {
-            return $(this.vm_selector + vm.id);
+            if (hasKey.call(this._vm_els, vm.id)) {
+                ret = this._vm_els[vm.id];
+            } else {
+                return $([]);
+            }
+
+            return ret;
         },
         
         // get vm model instance from DOM element
@@ -88,6 +96,7 @@
             // create dom element
             var vm_view = this.create_vm_element(vm);
             vm_view.find(".vm-actions").attr("id", this.view_id+"-actions-" + vm.id);
+            this._vm_els[vm.id] = vm_view;
             var container = this.get_vm_container(vm);
             container.append(vm_view);
             vm_view.find(".action-indicator").text("");
@@ -97,6 +106,7 @@
 
             // initialize vm specific event handlers 
             this.__set_vm_handlers(vm);
+            return vm_view;
         },
         
         // create vm dom element
@@ -118,9 +128,9 @@
         // if it doesn't exist update vm data and make it visible
         add: function(vm) {
             // create if it does not exist
-            if (this.vm(vm).length == 0) {
-                this.create_vm(vm);
-                this.vm(vm).show();
+            if (!hasKey.call(this._vm_els, vm.id)) {
+                var el = this.create_vm(vm);
+                el.show();
                 this.post_add(vm);
             }
 
@@ -140,6 +150,9 @@
             // FIXME: some kind of transiton ??? effect maybe ???
             this.vm(vm).remove();
             this.post_remove_vm(vm);
+            if (hasKey.call(this._vm_els, vm.id)) {
+                delete this._vm_els[vm.id];
+            }
         },
         
         // remove all vms from view

@@ -15,6 +15,8 @@
     // shortcuts
     var bb = root.Backbone;
     
+    var hasKey = Object.prototype.hasOwnProperty;
+
     views.ListMultipleActions = views.View.extend({
         
         view_id: "list_actions",
@@ -236,6 +238,7 @@
             var index = this.table.fnAddData.call(this.table, params);
             this.table_data["vm_" + vm.id] = {index: index[0], params: params};
             
+            this._vm_els[vm.id] = this.vm(vm);
             // append row id
             $(this.table.fnGetNodes(index)).attr("id", this.id_tpl + vm.id);
             
@@ -248,6 +251,7 @@
             // ancestor method
             this.__set_vm_handlers(vm);
             this.post_add(vm);
+            return this.vm(vm);
         },
 
         // remove vm
@@ -262,6 +266,10 @@
             this.table.fnDeleteRow(index);
             delete this.table_data["vm_" + vm.id];
             this.update_data();
+
+            if (hasKey.call(this._vm_els, vm.id)) {
+                delete this._vm_els[vm.id];
+            }
         },
 
         update_data: function() {

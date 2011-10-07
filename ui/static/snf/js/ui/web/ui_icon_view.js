@@ -538,8 +538,9 @@
             this.vm = vm;
             this.el = $(this.parent.vm(vm)).find(this.el_sel).get(0);
             this.view_id = "vm_{0}_details".format(vm.id);
-
+            
             views.VMDetailsView.__super__.initialize.call(this);
+
             this.update_layout();
         },
 
@@ -586,8 +587,8 @@
             'view': '#machinesview-icon',
             'tpl': '#machinesview-icon.standard #machine-container-template',
             'spinner': '.large-spinner',
-            'vm_spinner': '.machine-container#icon-vm-{0} .state .spinner',
-            'vm_wave': '.machine-container#icon-vm-{0} .wave',
+            'vm_spinner': '#icon-vm-{0} .state .spinner',
+            'vm_wave': '#icon-vm-{0} .wave',
             'vm_cont_active': '#machinesview-icon.standard .running',
             'vm_cont_terminated': '#machinesview-icon.standard .terminated'
         },

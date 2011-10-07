@@ -294,7 +294,8 @@
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
-            
+                
+            this.empty_hidden = true;
             // fallback to browser error reporting (true for debug)
             this.skip_errors = true
 
@@ -355,7 +356,7 @@
             // vm handlers
             storage.vms.bind("remove", _.bind(this.check_empty, this));
             storage.vms.bind("add", _.bind(this.check_empty, this));
-            storage.vms.bind("change", _.bind(this.check_empty, this));
+            storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             
             // api calls handlers
@@ -577,30 +578,36 @@
             if (storage.vms.length == 0) {
                 this.show_view("machines");
                 this.show_empty();
+                this.empty_hidden = false;
             } else {
                 this.hide_empty();
             }
-            this.select_view.update_layout();
         },
 
         show_empty: function() {
+            if (!this.empty_hidden) { return };
             $("#machines-pane-top").addClass("empty");
 
             this.$(".panes").hide();
             this.$("#machines-pane").show();
 
             this.hide_views([]);
+            this.empty_hidden = false;
             this.empty_view.show();
+            this.select_view.update_layout();
+            this.empty_hidden = false;
         },
 
         hide_empty: function() {
+            if (this.empty_hidden) { return };
             $("#machines-pane-top").removeClass("empty");
 
-            this.empty_view = new views.EmptyView();
-            this.empty_view.hide();
+            this.empty_view.hide(true);
             if (this.current_view && !this.current_view.visible()) { 
                 this.current_view.show(); 
             }
+            this.empty_hidden = true;
+            this.select_view.update_layout();
         },
         
         get_title: function(view_id) {

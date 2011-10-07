@@ -37,8 +37,8 @@
         },
         
         // hide view
-        hide: function() {
-            if (!this.visible()) { return this };
+        hide: function(force) {
+            if (!this.visible() && !force) { return this };
             return $(this.el).hide();
         },
         

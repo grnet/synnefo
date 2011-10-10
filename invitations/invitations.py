@@ -49,11 +49,12 @@ from django.utils.translation import ugettext as _
 from synnefo.logic.email_send import send_async, send
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
-from synnefo.logic import users, log
+from synnefo.logic import users
+from synnefo.util import log
 
 from Crypto.Cipher import AES
 
-_logger = log.get_logger("synnefo.invitations")
+_logger = log.getLogger("synnefo.invitations")
 
 
 def process_form(request):

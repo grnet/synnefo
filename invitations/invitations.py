@@ -49,11 +49,12 @@ from django.utils.translation import ugettext as _
 from synnefo.logic.email_send import send_async, send
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import Invitations, SynnefoUser
-from synnefo.logic import users, log
+from synnefo.logic import users
+from synnefo.util.log import getLogger
 
 from Crypto.Cipher import AES
 
-_logger = log.get_logger("synnefo.invitations")
+log = getLogger('synnefo.invitations')
 
 
 def process_form(request):
@@ -81,7 +82,7 @@ def process_form(request):
                        (name, email, e.messages[0])]
         except Exception as e:
             remove_invitation(invitation)
-            _logger.exception(e)
+            log.exception(e)
             errors += ["Invitation to %s <%s> could not be sent. An unexpected"
                        " error occurred. Please try again later." %
                        (name, email)]
@@ -97,8 +98,8 @@ def process_form(request):
                                      get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
         response = HttpResponse(data)
-        _logger.warn("Error adding invitation %s -> %s: %s" %
-                     (request.user.uniq, email, errors))
+        log.warn("Error adding invitation %s -> %s: %s",
+                    request.user.uniq, email, errors)
     else:
         # form submitted
         data = render_to_string('invitations.html',
@@ -108,7 +109,7 @@ def process_form(request):
                                     get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
         response = HttpResponse(data)
-        _logger.info("Added invitation %s -> %s" % (request.user.uniq, email))
+        log.info("Added invitation %s -> %s", request.user.uniq, email)
 
     return response
 
@@ -214,7 +215,7 @@ def login(request):
     inv.accepted = True
     inv.save()
 
-    _logger.info("Invited user %s logged in", inv.target.uniq)
+    log.info("Invited user %s logged in", inv.target.uniq)
 
     data = dict()
     data['user'] = user.realname
@@ -255,7 +256,7 @@ def send_invitation(invitation):
 
     data = render_to_string('invitation.txt', {'email': email})
 
-    _logger.debug("Invitation URL: %s" % email['url'])
+    log.debug("Invitation URL: %s", email['url'])
 
     # send_async(
     #    frm = "%s"%(settings.DEFAULT_FROM_EMAIL),
@@ -310,7 +311,7 @@ def resend(request):
     try:
         send_invitation(inv)
     except Exception as e:
-        _logger.exception(e)
+        log.exception(e)
         return HttpResponseServerError("Error sending invitation email")
 
     return HttpResponse("Invitation has been resent")

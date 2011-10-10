@@ -1056,7 +1056,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     -webkit-transition: background-color .75s ease-out;
     -o-transition: background-color .75s ease-out;
     -moz-transition: background-color .75s ease-out;
-    transition: color .75s ease-out;
+    transition: background-color .75s ease-out;
 }
 
 .view-separator {
@@ -5185,8 +5185,8 @@ table.list-machines .wave {
 
 .form-action.prev:hover,
 .form-action.cancel:hover {
-    background-color: #fff;
-    color: #800;
+    background-color: #CC0000;
+    color: #fff;
 }
 
 .form-action.next,
@@ -5197,8 +5197,8 @@ table.list-machines .wave {
 
 .form-action.next:hover,
 .form-action.ok:hover {
-    background-color: #fff;
-    color: #080;
+    background-color: #00aa00;
+    color: #fff;
 }
 
 .form-action .create,
@@ -5463,11 +5463,7 @@ table.list-machines .wave {
 }
 
 .create-vm .step-header {
-    padding: 10px;
     padding-bottom:0;
-    margin-bottom: 10px;
-    background-color: #A1C8DB;
-    border-bottom: 1px solid #aaa;
     position: relative;
 }
 
@@ -5509,7 +5505,133 @@ table.list-machines .wave {
     overflow: hidden;
 }
 
+.create-vm .steps-history .steps-history-cont.current .title {
+    display: block;
+    top: 23px;
+    left: 39px;
+    font-size: 1.2em;
+    color: #ffffff;
+    font-weight: bold;
+    font-family: 'Ubuntu' !important;
+}
+
+.create-vm .steps-history .steps-history-cont.current .subnum {
+    display: none;
+    float: none;
+    font-size: 0.9em;
+    font-family: 'Ubuntu' !important;
+}
+
+.create-vm .steps-history .steps-history-cont.current .subtitle,
+.create-vm .steps-history .steps-history-cont.current .description {
+    font-family: 'Ubuntu' !important;
+}
+
+.create-vm .steps-history .steps-history-cont.current .info {
+    display: block;
+    font-family: 'Ubuntu' !important;
+}
+
+.create-vm .steps-history .steps-history-cont.completed .title,
+.create-vm .steps-history .steps-history-cont.completed .num {
+    color: #A1C8DB;
+}
+
+.create-vm .steps-history .steps-history-cont.completed {
+    background-color: #4085A5;
+    color: #fff;
+    cursor: pointer;
+}
+
+.create-vm .steps-history .steps-history-cont.completed .steps-history-step {
+    background-image: url("./check.png");
+}
+
+.create-vm .steps-history .steps-history-cont.current .steps-history-step {
+    width: 380px;
+}
+
+.create-vm .steps-history .steps-history-cont.current .num {
+    color: #fff;
+}
+
+.create-vm .steps-history .steps-history-cont.current .info {
+    color: #4085A5;
+    font-size: 0.8em;
+}
+
+.create-vm .steps-history .steps-history-cont.current {
+    background-color: #A1C8DB;
+    color: #fff;
+    width: 462px;
+}
+
+.create-vm .steps-history-step {
+    padding: 4px;
+    padding-left: 10px;
+    font-size: 1em;
+    font-family: 'Ubuntu' !important;
+    margin-right: 5px;
+    padding-top: 12px;
+    background-position: right 30px;
+    background-image: none;
+    background-repeat: no-repeat;
+}
+
+.create-vm .steps-history {
+    background-color: #4085A5;
+}
+
+.create-vm .steps-history .steps-history-cont.last {
+    border-right: none;
+}
+
+.create-vm .steps-history .steps-history-cont .num {
+    margin-left: 5px;
+    margin-top: -10px;
+    padding-bottom: 10px;
+}
+
+.create-vm .steps-history .steps-history-cont .title {
+    display: none;
+    position: absolute;
+    bottom: 0px;
+    text-align: center;
+    padding-bottom: 2px;
+    left:0;
+    width: 60px;
+    margin-left:0;
+    margin-top:0;
+    font-size: 0.8em;
+}
+
+.create-vm .steps-history .steps-history-cont .subnum,
+.create-vm .steps-history .steps-history-cont .info {
+    display: none;
+}
+
+.create-vm .steps-history .steps-history-cont {
+    height: 70px;
+    width: 60px;
+    float: left;
+    color: #fff;
+    border-right: 1px solid #A1C8DB;
+    color: #A1C8DB;
+    background-color: #4085A5;
+    background-position: center right;
+    background-image: none;
+    background-repeat: no-repeat;
+
+    -webkit-transition: background-color .15s ease-in;
+    -o-transition: background-color .15s ease-in;
+    -moz-transition: background-color .15s ease-in;
+    transition: background-color .15s ease-in;
+
+    border-bottom: 1px solid #aaa;
+}
+
 .create-vm .step-header .header-step .num {
+    color: #225871;
     font-size: 4em;
     margin-bottom: -5px;
     font-family: 'Ubuntu';
@@ -5517,7 +5639,7 @@ table.list-machines .wave {
 }
 
 .create-vm .step-header .header-step {
-    color: #DCEBF1;
+    color: #;
     margin-bottom: -6px;
     width: 25%;
     padding-left: 0%;

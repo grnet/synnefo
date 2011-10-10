@@ -814,9 +814,10 @@ div.image-container {
 
 .icon .vm-actions, .network .vm-actions {
     width: 180px;
-    height: 78px;
+    height: 76px;
     float: left;
 }
+
 .network .vm-actions {
     width: 185px;
 }
@@ -872,7 +873,7 @@ div.list div.actions a.enabled.destroy {
 
 .vm-actions .action-container.destroy {
     position: absolute;
-    bottom: 2px;
+    bottom: -1px;
     width: 100%;
     left: 0px;
     background: transparent;

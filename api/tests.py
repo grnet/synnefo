@@ -54,7 +54,7 @@ class AaiClient(Client):
 
 
 class APITestCase(TestCase):
-    fixtures = ['api_test_data']
+    fixtures = ['api_test_data', 'users.json']
     test_server_id = 1001
     test_image_id = 1
     test_flavor_id = 1
@@ -417,6 +417,7 @@ class BaseTestCase(TestCase):
     SERVERS = 1
     SERVER_METADATA = 0
     IMAGE_METADATA = 0
+    fixtures = ['users.json']
 
     def setUp(self):
         self.client = AaiClient()

@@ -42,7 +42,6 @@ except ImportError:
 setup_environ(settings)
 
 import inspect
-import logging
 import sys
 
 from collections import defaultdict
@@ -53,6 +52,7 @@ from os.path import basename
 from synnefo.db import models
 from synnefo.invitations.invitations import add_invitation, send_invitation
 from synnefo.logic import backend, users
+from synnefo.util.dictconfig import dictConfig
 
 
 def get_user(uid):
@@ -113,13 +113,6 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
         
-        ch = logging.StreamHandler()
-        ch.setFormatter(logging.Formatter('%(message)s'))
-        logger = logging.getLogger()
-        logger.addHandler(ch)
-        level = logging.WARNING
-        logger.setLevel(level)
-        
         self.parser = parser
     
     def add_options(self, parser):
@@ -149,18 +142,19 @@ class ListServers(Command):
                             help='show servers of user with id UID')
     
     def main(self, server_id=None):
-        servers = models.VirtualMachine.objects.order_by('id')
         if server_id:
-            servers = servers.filter(id=server_id)
-        if not self.show_deleted:
-            servers = servers.filter(deleted=False)
-        if self.uid:
-            user = get_user(self.uid)
-            if user:
-                servers = servers.filter(owner=user)
-            else:
-                print 'Unknown user id'
-                return
+            servers = [models.VirtualMachine.objects.get(id=server_id)]
+        else:
+            servers = models.VirtualMachine.objects.order_by('id')
+            if not self.show_deleted:
+                servers = servers.exclude(deleted=True)
+            if self.uid:
+                user = get_user(self.uid)
+                if user:
+                    servers = servers.filter(owner=user)
+                else:
+                    print 'Unknown user id'
+                    return
         
         print_items(servers, self.detail)
 
@@ -213,6 +207,8 @@ class ListUsers(Command):
     description = 'list users'
     
     def add_options(self, parser):
+        parser.add_option('-a', action='store_true', dest='show_deleted',
+                        default=False, help='also list deleted users')
         parser.add_option('-l', action='store_true', dest='detail',
                         default=False, help='show detailed output')
     
@@ -220,8 +216,9 @@ class ListUsers(Command):
         if user_id:
             users = [models.SynnefoUser.objects.get(id=user_id)]
         else:
-            active_users = models.SynnefoUser.objects.exclude(state='DELETED')
-            users = active_users.order_by('id')
+            users = models.SynnefoUser.objects.order_by('id')
+            if not self.show_deleted:
+                users = users.exclude(state='DELETED')
         print_items(users, self.detail, keys=('id', 'name', 'uniq'))
 
 
@@ -291,6 +288,8 @@ class ListImages(Command):
     description = 'list images'
     
     def add_options(self, parser):
+        parser.add_option('-a', action='store_true', dest='show_deleted',
+                        default=False, help='also list deleted images')
         parser.add_option('-l', action='store_true', dest='detail',
                         default=False, help='show detailed output')
     
@@ -299,6 +298,8 @@ class ListImages(Command):
             images = [models.Image.objects.get(id=image_id)]
         else:
             images = models.Image.objects.order_by('id')
+            if not self.show_deleted:
+                images = images.exclude(state='DELETED')
         print_items(images, self.detail)
 
 
@@ -309,6 +310,9 @@ class RegisterImage(Command):
     description = 'register an image'
     
     def add_options(self, parser):
+        parser.add_option('--meta', dest='meta', action='append',
+                            metavar='KEY=VAL',
+                            help='assign image to user with id UID')
         parser.add_option('--public', action='store_true', dest='public',
                             default=False, help='make image public')
         parser.add_option('-u', dest='uid', metavar='UID',
@@ -335,6 +339,14 @@ class RegisterImage(Command):
             backend_id=backend_id,
             format=format,
             public=self.public)
+        
+        if self.meta:
+            for m in self.meta:
+                key, sep, val = m.partition('=')
+                if key and val:
+                    image.imagemetadata_set.create(meta_key=key, meta_value=val)
+                else:
+                    print 'WARNING: Ignoring meta', m
         
         print_item(image)
 
@@ -496,6 +508,8 @@ class ListFlavors(Command):
     description = 'list images'
     
     def add_options(self, parser):
+        parser.add_option('-a', action='store_true', dest='show_deleted',
+                default=False, help='also list deleted flavors')
         parser.add_option('-l', action='store_true', dest='detail',
                         default=False, help='show detailed output')
     
@@ -503,7 +517,9 @@ class ListFlavors(Command):
         if flavor_id:
             flavors = [models.Flavor.objects.get(id=flavor_id)]
         else:
-            flavors = models.Flavor.objects.exclude(deleted=True).order_by('id')
+            flavors = models.Flavor.objects.order_by('id')
+            if not self.show_deleted:
+                flavors = flavors.exclude(deleted=True)
         print_items(flavors, self.detail)
 
 
@@ -605,4 +621,5 @@ def main():
 
 
 if __name__ == '__main__':
+    dictConfig(settings.SNFADMIN_LOGGING)
     main()

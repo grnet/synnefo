@@ -43,6 +43,10 @@ from synnefo.api.common import method_not_allowed
 from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
 from synnefo.db.models import Network
 from synnefo.logic import backend
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.api')
 
 
 urlpatterns = patterns('synnefo.api.networks',
@@ -99,6 +103,7 @@ def list_networks(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
     
+    log.debug('list_networks detail=%s', detail)
     owner = request.user
     since = util.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(Q(owner=owner) | Q(public=True))
@@ -132,7 +137,8 @@ def create_network(request):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-
+    log.debug('create_network %s', req)
+    
     try:
         d = req['network']
         name = d['name']
@@ -155,7 +161,8 @@ def get_network_details(request, network_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
+    
+    log.debug('get_network_details %s', network_id)
     net = util.get_network(network_id, request.user)
     netdict = network_to_dict(net)
     return render_network(request, netdict)
@@ -172,7 +179,8 @@ def update_network_name(request, network_id):
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-
+    log.debug('update_network_name %s', network_id)
+    
     try:
         name = req['network']['name']
     except (TypeError, KeyError):
@@ -195,6 +203,7 @@ def delete_network(request, network_id):
     #                       unauthorized (401),
     #                       overLimit (413)
     
+    log.debug('delete_network %s', network_id)
     net = util.get_network(network_id, request.user)
     if net.public:
         raise Unauthorized('Can not delete the public network.')
@@ -203,14 +212,15 @@ def delete_network(request, network_id):
 
 @util.api_method('POST')
 def network_action(request, network_id):
+    req = util.get_request_dict(request)
+    log.debug('network_action %s %s', network_id, req)
+    if len(req) != 1:
+        raise BadRequest('Malformed request.')
+    
     net = util.get_network(network_id, request.user)
     if net.public:
         raise Unauthorized('Can not modify the public network.')
     
-    req = util.get_request_dict(request)
-    if len(req) != 1:
-        raise BadRequest('Malformed request.')
-
     key = req.keys()[0]
     val = req[key]
 

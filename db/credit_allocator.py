@@ -31,26 +31,27 @@
 #
 # Execute once to increase user credits according to their monthly rate
 
-from synnefo.db.models import *
-from django.db.models import F
 from datetime import datetime
 
-from synnefo.logic import log
+from synnefo.db.models import SynnefoUser
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.db')
 
 
 # main entry point
 def allocate_credit():
-    logger = log.get_logger("synnefo.logic")
-
     # Select the users that their monthly
     user_list = SynnefoUser.objects.all()
     
     if len(user_list) == 0:
-        logger.warning('No users found')
+        log.warning('No users found')
     else:
-        logger.info('Found %d user(s)' % ( len(user_list), ))
+        log.info('Found %d user(s)', len(user_list))
 
     for user in user_list:
         user.allocate_credits()
-        logger.info("Adding %d credits to %s. Total: %d" % ( user.monthly_rate, user.name, user.credit ))
+        log.info('Adding %d credits to %s. Total: %d', user.monthly_rate,
+                    user.name, user.credit)
         user.save()

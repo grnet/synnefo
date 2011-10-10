@@ -96,7 +96,7 @@
             views._overlay_index.push(this);
 
             this.options = _.extend(this.defaults, options);
-            this.options.clone = this.options.clone == undefined ? true : this.options.clonde;
+            this.options.clone = this.options.clone == undefined ? true : this.options.clone;
             this.options.fixed = this.fixed;
 
             this.options.onOpen = this.options.onOpen || function() {};

@@ -57,7 +57,11 @@ from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
 from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
-from synnefo.logic import log
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.api')
+
 
 class UTC(tzinfo):
     def utcoffset(self, dt):
@@ -284,8 +288,6 @@ def api_method(http_method=None, atom_allowed=False):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             u = request.user.uniq if request.user else ''
-            logger = log.get_logger("synnefo.api")
-            logger.debug("%s <%s>" % (request.path, u))
             try:
 
                 request.serialization = request_serialization(
@@ -312,7 +314,7 @@ def api_method(http_method=None, atom_allowed=False):
             except Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
-                logger.exception('Unexpected error')
+                log.exception('Unexpected error')
                 fault = ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
         return wrapper

@@ -40,7 +40,10 @@ from synnefo.db.models import (VirtualMachine, Network, NetworkInterface,
                                 NetworkLink)
 from synnefo.logic import utils
 from synnefo.util.rapi import GanetiRapiClient
+from synnefo.util.log import getLogger
 
+
+log = getLogger('synnefo.logic')
 
 rapi = GanetiRapiClient(*settings.GANETI_CLUSTER_INFO)
 
@@ -274,6 +277,7 @@ def delete_instance(vm):
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
     rapi.RebootInstance(vm.backend_id, reboot_type, dry_run=settings.TEST)
+    log.info('Rebooting instance %s', vm.backend_id)
 
 
 def startup_instance(vm):

@@ -43,18 +43,16 @@ import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 import synnefo.settings as settings
-from synnefo.logic import log
 
 setup_environ(settings)
 
 from amqplib import client_0_8 as amqp
 from signal import signal, SIGINT, SIGTERM
 
+import logging
 import time
 import socket
 from daemon import daemon
-
-import traceback
 
 # Take care of differences between python-daemon versions.
 try:
@@ -63,6 +61,11 @@ except:
     from daemon import pidlockfile
 
 from synnefo.logic import callbacks
+from synnefo.util.dictconfig import dictConfig
+
+
+log = logging.getLogger()
+
 
 # Queue names
 QUEUES = []
@@ -72,17 +75,11 @@ BINDINGS = []
 
 
 class Dispatcher:
-
-    logger = None
     chan = None
     debug = False
     clienttags = []
 
     def __init__(self, debug=False):
-
-        # Initialize logger
-        self.logger = log.get_logger('synnefo.dispatcher')
-
         self.debug = debug
         self._init()
 
@@ -93,13 +90,13 @@ class Dispatcher:
             except SystemExit:
                 break
             except amqp.exceptions.AMQPConnectionException:
-                self.logger.error("Server went away, reconnecting...")
+                log.error("Server went away, reconnecting...")
                 self._init()
             except socket.error:
-                self.logger.error("Server went away, reconnecting...")
+                log.error("Server went away, reconnecting...")
                 self._init()
             except Exception, e:
-                self.logger.exception("Caught unexpected exception")
+                log.exception("Caught unexpected exception")
 
         [self.chan.basic_cancel(clienttag) for clienttag in self.clienttags]
         self.chan.connection.close()
@@ -107,24 +104,23 @@ class Dispatcher:
 
     def _init(self):
         global QUEUES, BINDINGS
-        self.logger.info("Initializing")
+        log.info("Initializing")
 
         # Connect to RabbitMQ
         conn = None
         while conn == None:
-            self.logger.info("Attempting to connect to %s",
-                             settings.RABBIT_HOST)
+            log.info("Attempting to connect to %s", settings.RABBIT_HOST)
             try:
                 conn = amqp.Connection(host=settings.RABBIT_HOST,
                                        userid=settings.RABBIT_USERNAME,
                                        password=settings.RABBIT_PASSWORD,
                                        virtual_host=settings.RABBIT_VHOST)
             except socket.error:
-                self.logger.error("Failed to connect to %s, retrying in 10s",
+                log.error("Failed to connect to %s, retrying in 10s",
                                   settings.RABBIT_HOST)
                 time.sleep(10)
 
-        self.logger.info("Connection succesful, opening channel")
+        log.info("Connection succesful, opening channel")
         self.chan = conn.channel()
 
         # Declare queues and exchanges
@@ -143,14 +139,14 @@ class Dispatcher:
             try:
                 callback = getattr(callbacks, binding[3])
             except AttributeError:
-                self.logger.error("Cannot find callback %s" % binding[3])
+                log.error("Cannot find callback %s", binding[3])
                 raise SystemExit(1)
 
             self.chan.queue_bind(queue=binding[0], exchange=binding[1],
                                  routing_key=binding[2])
             tag = self.chan.basic_consume(queue=binding[0], callback=callback)
-            self.logger.debug("Binding %s(%s) to queue %s with handler %s" %
-                              (binding[1], binding[2], binding[0], binding[3]))
+            log.debug("Binding %s(%s) to queue %s with handler %s",
+                              binding[1], binding[2], binding[0], binding[3])
             self.clienttags.append(tag)
 
 
@@ -207,15 +203,14 @@ def _init_queues():
 
 def _exit_handler(signum, frame):
     """"Catch exit signal in children processes"""
-    global logger
-    logger.info("Caught signal %d, will raise SystemExit", signum)
+    log.info("Caught signal %d, will raise SystemExit", signum)
     raise SystemExit
 
 
 def _parent_handler(signum, frame):
     """"Catch exit signal in parent process and forward it to children."""
-    global children, logger
-    logger.info("Caught signal %d, sending SIGTERM to children %s",
+    global children
+    log.info("Caught signal %d, sending SIGTERM to children %s",
                 signum, children)
     [os.kill(pid, SIGTERM) for pid in children]
 
@@ -375,7 +370,7 @@ def debug_mode():
 
 
 def daemon_mode(opts):
-    global children, logger
+    global children
 
     # Create pidfile,
     # take care of differences between python-daemon versions
@@ -386,7 +381,7 @@ def daemon_mode(opts):
 
     pidf.acquire()
 
-    logger.info("Became a daemon")
+    log.info("Became a daemon")
 
     # Fork workers
     children = []
@@ -401,9 +396,8 @@ def daemon_mode(opts):
             child(sys.argv[1:])
             sys.exit(1)
         else:
-            pids = (os.getpid(), newpid)
-            logger.debug("%d, forked child: %d" % pids)
-            children.append(pids[1])
+            log.debug("%d, forked child: %d", os.getpid(), newpid)
+            children.append(newpid)
         i += 1
 
     # Catch signals to ensure graceful shutdown
@@ -422,10 +416,8 @@ def daemon_mode(opts):
 
 
 def main():
-    global logger
+    global log
     (opts, args) = parse_arguments(sys.argv[1:])
-
-    logger = log.get_logger("synnefo.dispatcher")
 
     # Init the global variables containing the queues
     _init_queues()
@@ -446,38 +438,31 @@ def main():
 
     # Debug mode, process messages without spawning workers
     if opts.debug:
-        log.console_output(logger)
         debug_mode()
         return
-
-    # Redirect stdout and stderr to the fileno of the first
-    # file-based handler for this logger
-    stdout_stderr_handler = None
-    files_preserve = None
-    for handler in logger.handlers:
-        if hasattr(handler, 'stream') and hasattr(handler.stream, 'fileno'):
-            stdout_stderr_handler = handler.stream
-            files_preserve = [handler.stream]
-            break
-
+    
+    files_preserve = []
+    for handler in log.handlers:
+        stream = getattr(handler, 'stream')
+        if stream and hasattr(stream, 'fileno'):
+            files_preserve.append(handler.stream)
+    
     daemon_context = daemon.DaemonContext(
-        stdout=stdout_stderr_handler,
-        stderr=stdout_stderr_handler,
         files_preserve=files_preserve,
         umask=022)
-
+    
     daemon_context.open()
 
     # Catch every exception, make sure it gets logged properly
     try:
         daemon_mode(opts)
     except Exception:
-        exc = "".join(traceback.format_exception(*sys.exc_info()))
-        logger.critical(exc)
+        log.exception("Unknown error")
         raise
 
 
 if __name__ == "__main__":
+    dictConfig(settings.DISPATCHER_LOGGING)
     sys.exit(main())
 
 # vim: set sta sts=4 shiftwidth=4 sw=4 et ai :

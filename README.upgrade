@@ -23,6 +23,10 @@ DB MIGRATION
     * Uniqueness constraints have been added to the metadata models.
       A database migration is needed.
 
+LOGGING
+    * A new logging mechanism has been implemeted. See 00-logging.conf in
+      settings.
+
 
 v0.6.1 -> v0.6.2
 ADMIN INTERFACE

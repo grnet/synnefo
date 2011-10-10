@@ -43,28 +43,30 @@ Logging
 =======
 
 Logging in Synnefo is using Python's logging module. The module is configured
-using a configuration file, whose format is described here:
+using dictionary configuration, whose format is described here:
 
-http://docs.python.org/library/logging.config.html
+http://docs.python.org/release/2.7.1/library/logging.html#logging-config-dictschema
 
-By default, the log initialization code will look for the logging.conf file
-in the following locations in order:
+Note that this is a feature of Python 2.7 that we have backported for use in
+Python 2.6.
 
-1. /etc/synnefo/logging.conf
-2. os.getcwd()/logging.conf
-3. synnefo.logic.__path__[0]/logging.conf (<-- this is the default)
+The logging configuration dictionary is defined in settings.d/00-logging.conf
+and is broken in 4 separate dictionaries:
 
-The default configuration is using Linux conventions: it logs to /dev/log for
-all loggers. The default configuration can be changed by copying the default
-file to any of the above mentioned locations and changing it appropriately.
-
-* Logging and demonization: If the logging is configured to print to the console
-  (using the consoleHandler handler) then daemon processes (notably, the
-  dispatcher) will not work as it should. This only happens after the daemon
-  has lost its controlling terminal (e.g. because the terminal was closed);
-  in this case the dispatcher does not know where to log to and depending on
-  the system it either crashes or stalls. This can be avoided if the logging
-  module is not configured to output to the console.
+  * LOGGING is the logging configuration used by the web app. By default all
+    loggers fall back to the main 'synnefo' logger. The subloggers can be
+    changed accordingly for finer logging control. e.g. To disable debug
+    messages from the API set the level of 'synnefo.api' to 'INFO'.
+  
+  * DISPATCHER_LOGGING is the logging configuration of the logic/dispatcher.py
+    command line tool.
+  
+  * RECONCILIATION_LOGGING is the logging configuration of the
+    logic/reconciliation.py command line tool.
+  
+  * SNFADMIN_LOGGING is the logging configuration of the snf-admin tool.
+    Consider using matching configuration for snf-admin and the synnefo.admin
+    logger of the web app.
 
 
 Admin Tools

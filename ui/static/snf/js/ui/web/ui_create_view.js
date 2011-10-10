@@ -48,7 +48,7 @@
         },
         
         beforeOpen: function() {
-            if (this.clipboard) { return };
+            try { delete this.clipboard } catch (err) { console.log(err) };
             this.clipboard = new util.ClipHelper(this.copy);
         },
         

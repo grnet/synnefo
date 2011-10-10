@@ -4562,6 +4562,21 @@ table.list-machines .wave {
     display: none;
 }
 
+.overlay .copy-content .clip-copy {
+    right: 10px;
+    top:8px;
+    border: 1px solid #fff;
+}
+
+.overlay .copy-content {
+    background-color: #387693;
+    color: #fff;
+    padding: 10px;
+    font-size: 1.2em;
+    text-align: center;
+    position: relative;
+}
+
 .overlay {
     background-color: #fff;
     border: 2px solid #444;

@@ -177,19 +177,6 @@ function msg_box(user_config) {
     return false;
 }
 
-
-function show_api_overlay() {
-    var config = {
-        title: window.API_OVERLAY_TITLE,
-        content: $(".api_overlay_content").html().replace("$api_key", $.cookie("X-Auth-Token")),
-        extra: $.cookie("X-Auth-Token"),
-        sub_content: window.API_OVERLAY_SUBCONTENT,
-        cls: "api_content",
-        ajax: false
-    }
-    msg_box(config);
-}
-
 function show_invitations() {
     
     function display_resend_success(msg) {

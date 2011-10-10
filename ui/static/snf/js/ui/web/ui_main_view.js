@@ -15,6 +15,35 @@
     var bb = root.Backbone;
     var util = snf.util;
     
+    views.ApiInfoView = views.Overlay.extend({
+        view_id: "api_info_view",
+        
+        content_selector: "#api-info-overlay",
+        css_class: 'overlay-api-info overlay-info',
+        overlay_id: "overlay-api-info",
+
+        subtitle: "",
+        title: "API Access",
+
+        beforeOpen: function() {
+            var cont = this.$(".copy-content p");
+            var token = $.cookie("X-Auth-Token");
+
+            cont.html("");
+            cont.text(token);
+
+            var clip = new snf.util.ClipHelper();
+            cont.parent().append(clip.cont);
+            clip.setText(token);
+        },
+
+        onClose: function() {
+            var cont = this.$(".copy-content p");
+            var token = $.cookie("X-Auth-Token");
+            cont.html("");
+        }
+    });
+
     // TODO: implement me
     views.NoticeView = views.Overlay.extend({});
 
@@ -404,6 +433,7 @@
 
         init_overlays: function() {
             this.create_vm_view = new views.CreateVMView();
+            this.api_info_view = new views.ApiInfoView();
             //this.notice_view = new views.NoticeView();
         },
         

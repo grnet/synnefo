@@ -51,11 +51,11 @@
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_single_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_list_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_networks_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_main_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_metadata_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_feedback_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_create_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_connect_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_main_view.js"></script>
 
     <!-- the following views require refactor -->
     <script src="static/invitations.js"></script>
@@ -290,7 +290,9 @@
             });
 
             $(".usermenu .invitations").click(show_invitations);
-            $(".usermenu .api").click(show_api_overlay);
+            $(".usermenu .api").click(function(){
+                synnefo.ui.main.api_info_view.show();
+            });
 
         });
         
@@ -459,6 +461,22 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
         </div>
     </div>
     
+    <div id="api-info-overlay" class="overlay-content overlay-info hidden">
+        <div class="description">
+            <p>{% blocktrans with EXTERNAL_CLIENT_URL as EXTERNAL_CLIENT_URL %}Use the following API key along with the <a
+                href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage
+            your cloud resources from outside this page.{% endblocktrans %}</p>
+        </div>
+        <div class="copy-content">
+            <p></p>
+        </div>
+        <div class="description subinfo">
+            <p>
+            {% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}
+            </p>
+        </div>
+    </div>
+
     <div class="api_overlay_template">
         <div class="api_overlay_content">
             <p>Use the following API key along with the <a href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage your cloud resources from outside this page.</p>
@@ -517,6 +535,8 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.machines_icons_url = '{{ UI_MEDIA_URL }}icons/machines/';
 
             synnefo.ui.init();
+
+            synnefo.ui.main.bind("initial", function(){})
         })
     </script>
 </body>

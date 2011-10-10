@@ -13,58 +13,53 @@
     <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
     {% endcomment %}
 
-    <link rel="stylesheet" type="text/css" href="static/main.css"/>
+    <link rel="stylesheet" type="text/css" href="{{ UI_MEDIA_URL }}main.css"/>
     <!--[if IE]>
-        <style type="text/css" media="all">@import url(static/ie.css);</style>
+        <style type="text/css" media="all">@import url({{ UI_MEDIA_URL }}ie.css);</style>
     <![endif]-->
 
-    <script src="static/snf/js/lib/jquery.js"></script>
-    <script src="static/snf/js/lib/jquery.cookie.js"></script>
-    <script src="static/snf/js/lib/jquery.client.js"></script>
-    <script src="static/snf/js/lib/jquery.tools.min.js"></script>
-    <script src="static/snf/js/lib/jquery.dataTables.min.js"></script>
-    <script src="static/snf/js/lib/ZeroClipboard.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL }}jquery.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.cookie.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.client.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.tools.min.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.dataTables.min.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}ZeroClipboard.js"></script>
 
 
-    <script src="static/snf/js/lib/underscore.js"></script>
-    <script src="static/snf/js/lib/underscore.string.js"></script>
-    <script src="static/snf/js/lib/backbone.js"></script>
-    <script src="static/snf/js/lib/json2.js"></script>
-    <script src="static/snf/js/lib/stacktrace.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}backbone.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}json2.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js"></script>
 
     <!--[if (gte IE 6)&(lte IE 7)]>
-        <script src="static/snf/js/lib/selectivizr.js"></script>
+        <script src="{{ SYNNEFO_JS_LIB_URL}}selectivizr.js"></script>
     <! [endif] -->
 
     <!--[if IE]>
-        <script src="static/snf/js/ui/ie_fixes.js"></script>
+        <script src="{{ SYNNEFO_JS_URL}}ui/ie_fixes.js"></script>
     <![endif]-->
     
-    <script src="static/snf/js/utils.js"></script>
-    <script src="static/snf/js/sync.js"></script>
-    <script src="static/snf/js/models.js"></script>
-    <script src="static/snf/js/views.js"></script>
+    <script src="{{ SYNNEFO_JS_URL}}utils.js"></script>
+    <script src="{{ SYNNEFO_JS_URL}}sync.js"></script>
+    <script src="{{ SYNNEFO_JS_URL}}models.js"></script>
+    <script src="{{ SYNNEFO_JS_URL}}views.js"></script>
 
-    <script src="static/snf/js/ui/web/ui_vms_base_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_error_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_icon_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_single_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_list_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_networks_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_main_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_metadata_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_feedback_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_create_view.js"></script>
-    <script src="static/snf/js/ui/web/ui_connect_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_vms_base_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_error_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_icon_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_single_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_list_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_networks_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_main_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_metadata_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_feedback_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_create_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_connect_view.js"></script>
 
     <!-- the following views require refactor -->
     <script src="static/invitations.js"></script>
     <script src="static/synnefo.js"></script>
-
-    {% if DEBUG %}
-        <script src="static/snf/js/tests/jquery.profile.js"></script>
-        <script src="static/snf/js/tests/functional.js"></script>
-    {% endif %}
     
     <script>
         // empty object for console to avoid errors in browsers that don't support it
@@ -72,7 +67,7 @@
             window.console.error = function() {}};
         
         // initialize zero clipboard
-        ZeroClipboard.setMoviePath( 'static/snf/js/lib/ZeroClipboard.swf' );
+        ZeroClipboard.setMoviePath( '{{ SYNNEFO_JS_LIB_URL}}ZeroClipboard.swf' );
 
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
@@ -118,62 +113,6 @@
             'COPY': '{% trans "{0} of {1} ({2}%)" %}',
             'FINAL': '{% trans "Finalizing..." %}'
         }
-
-        // server statuses and transitions
-        var STATUSES = {
-            'UNKNOWN'   : '{% trans "Unknown" %}',
-            'BUILD'     : '{% trans "Building" %}',
-            'REBOOT'    : '{% trans "Rebooting" %}',
-            'STOPPED'   : '{% trans "Stopped" %}',
-            'ACTIVE'    : '{% trans "Running" %}',
-            'ERROR'     : '{% trans "Error" %}'
-        };
-
-        var TRANSITIONS = {
-            'Shutting down' : '{% trans "Shutting down" %}',
-            'Rebooting'     : '{% trans "Rebooting" %}',
-            'Starting'      : '{% trans "Starting" %}',
-            'Destroying'    : '{% trans "Destroying" %}',
-            'Connecting'    : '{% trans "Connecting" %}',   // used only in networks
-            'Disconnecting' : '{% trans "Disconnecting" %}' // used only in networks
-        };
-
-        // Server statuses and transitions that should be displayed as active or inactive
-        var ACTIVE_STATES = [
-            '{% trans "Building" %}',
-            '{% trans "Rebooting" %}',
-            '{% trans "Running" %}',
-            '{% trans "Shutting down" %}',
-            '{% trans "Rebooting" %}',
-            '{% trans "Destroying" %}'
-        ];
-        
-        var TRANSITION_STATES = [
-            '{% trans "Building" %}',
-            '{% trans "Rebooting" %}',
-            '{% trans "Starting" %}',
-            '{% trans "Shutting down" %}',
-            '{% trans "Destroying" %}',
-            '{% trans "Connecting" %}',
-            '{% trans "Disconnectig" %}'
-        ]
-        var TRANSITION_STATE_APPEND = "...";
-
-        var INACTIVE_STATES = [
-            '{% trans "Unknown" %}',
-            '{% trans "Stopped" %}',
-            '{% trans "Error" %}',
-            '{% trans "Starting" %}',
-        ];
-
-        // Network statuses and transitions
-        var NET_STATES = {
-            'ACTIVE'        : '{% trans "Private network" %}',  // this comes from the API
-            'DELETED'       : '{% trans "Deleted" %}',          // this comes from the API
-            'Destroying'    : '{% trans "Destroying" %}',
-            'Connecting'    : '{% trans "Connecting" %}',
-            'Disconnecting' : '{% trans "Disconnecting" %}'
-        };
 
         var ERROR_OVERRIDES = {
             // error message header
@@ -553,25 +492,31 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
         $(document).ready(function() {
             $(".css-panes").hide();
 
-            {% if DEBUG %}
-            synnefo.ui.main.bind("initial", function() {
-                if (window.TEST) {
-                    setTimeout(window.TEST, 60);
-                }
-            });
-            {% endif %}
-            
-            synnefo.config.update_interval = {{ update_interval }};
-            synnefo.config.delay_on_blur = true;
-
-            // match <= 1.9.1
+            // TODO: match <= 1.9.1
             if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {
                 synnefo.config.overlay_speed = 0;
+                $.fx.off = true;
             }
+            
+            // synnefo js config
+            synnefo.config.update_interval = {{ update_interval }};
+            synnefo.config.delay_on_blur = {{ delay_on_blur }};
+            synnefo.config.blur_delay = {{ blur_delay }};
+            synnefo.config.update_hidden_views = {{ update_hidden_views }};
+            synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
+            synnefo.config.ajax_timeout = {{ timeout }};
+            synnefo.config.skip_timeouts = {{ skip_timeouts }};
 
-            synnefo.config.update_hidden_views = false;
+            // TODO: make it dynamic
+            synnefo.config.api_url = '/api/v1.1';
+            synnefo.config.logout_url = '{{ logout_redirect }}';
+
+            synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
+            synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
+            synnefo.config.indicators_icons_url = '{{ UI_MEDIA_URL }}icons/indicators/';
+            synnefo.config.machines_icons_url = '{{ UI_MEDIA_URL }}icons/machines/';
+
             synnefo.ui.init();
-
         })
     </script>
 </body>

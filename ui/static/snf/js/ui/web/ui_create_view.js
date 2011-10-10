@@ -58,7 +58,6 @@
                 this.clipboard.setText(this.pass);
                 this.copy.show();
             } catch (err) {
-                console.error(err);
                 this.copy.hide();
             }
         },
@@ -407,10 +406,27 @@
             return true;
         },
             
+        set_valid_current_for: function(t, val) {
+            var found = this.flavors[0];
+            _.each(this.flavors, function(flv) {
+                if (flv.get(t) == val) {
+                    found = flv;
+                }
+            });
+
+            this.set_current(found);
+        },
+
         set_current: function(flv) {
-            //console.log(flv);
-            //if (!this.flavor_is_valid(flv)) { flv = undefined };
-            
+
+            if (!flv) {
+                // user clicked on invalid combination
+                // force the first available choice for the
+                // type of option he last clicked
+                this.set_valid_current_for.apply(this, this.last_choice);
+                return;
+            }
+
             this.current_flavor = flv;
             this.trigger("change");
             this.update_selected_flavor();
@@ -428,9 +444,9 @@
         update_disabled_flavors: function() {
             this.$(".flavor-options.disk li").removeClass("disabled");
             if (!this.unavailable_values) { return }
-
-            this.$(".flavor-options.disk li").each(_.bind(function(i, el){
-                var el_value = $(el).data("value") * 1024;
+            
+            this.$("#create-vm-flavor-options .flavor-options.disk li").each(_.bind(function(i, el){
+                var el_value = $(el).data("value") * 1000;
                 if (this.unavailable_values.disk.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
                 };
@@ -440,6 +456,7 @@
         create_flavors: function() {
             var flavors = this.get_active_flavors();
             var valid_flavors = this.get_valid_flavors();
+            this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[]};
 
             _.each(flavors, _.bind(function(flv){
                 this.add_flavor(flv);
@@ -454,9 +471,9 @@
                 el.parent().find(".option").removeClass("selected");
                 el.addClass("selected");
                 
-                if (el.hasClass("mem")) { this.last_choice = "mem" }
-                if (el.hasClass("cpu")) { this.last_choice = "cpu" }
-                if (el.hasClass("disk")) { this.last_choice = "disk" }
+                if (el.hasClass("mem")) { self.last_choice = ["ram", $(this).data("value")] }
+                if (el.hasClass("cpu")) { self.last_choice = ["cpu", $(this).data("value")] }
+                if (el.hasClass("disk")) { self.last_choice = ["disk", $(this).data("value")] }
 
                 self.update_selected_from_ui();
             })
@@ -480,33 +497,37 @@
             this.$(".option.mem.value-" + flv.get("ram")).addClass("selected");
             this.$(".option.disk.value-" + flv.get("disk")).addClass("selected");
         },
-
+        
+        __added_flavors: {'cpu':[], 'ram':[], 'disk':[]},
         add_flavor: function(flv) {
             var values = {'cpu': flv.get('cpu'), 'mem': flv.get('ram'), 'disk': flv.get('disk')};
 
             disabled = "";
-
-            if (this.$('li.option.cpu.value-{0}'.format(values.cpu)).length == 0) {
+            
+            if (this.__added_flavors.cpu.indexOf(values.cpu) == -1) {
                 var cpu = $(('<li class="option cpu value-{0} {1}">' + 
                              '<span class="value">{0}</span>' + 
                              '<span class="metric">x</span></li>').format(values.cpu, disabled)).data('value', values.cpu);
-
                 this.cpus.append(cpu);
+                this.__added_flavors.cpu.push(values.cpu);
             }
-            if (this.$('li.option.mem.value-{0}'.format(values.mem)).length == 0) {
+
+            if (this.__added_flavors.ram.indexOf(values.mem) == -1) {
                 var mem = $(('<li class="option mem value-{0}">' + 
                              '<span class="value">{0}</span>' + 
                              '<span class="metric">MB</span></li>').format(values.mem)).data('value', values.mem);
-
                 this.mems.append(mem);
+                this.__added_flavors.ram.push(values.mem);
             }
-            if (this.$('li.option.disk.value-{0}'.format(values.disk)).length == 0) {
+
+            if (this.__added_flavors.disk.indexOf(values.disk) == -1) {
                 var disk = $(('<li class="option disk value-{0}">' + 
                               '<span class="value">{0}</span>' + 
                               '<span class="metric">GB</span></li>').format(values.disk)).data('value', values.disk);
-
                 this.disks.append(disk);
+                this.__added_flavors.disk.push(values.disk)
             }
+
             
         },
         
@@ -528,7 +549,6 @@
             this.flavors = [];
             this.flavors_data = {'cpu':[], 'mem':[], 'disk':[]};
             this.update_flavors_data();
-            this.reset_flavors();
         },
 
         get: function() {
@@ -592,7 +612,7 @@
                 this.$(".confirm-cont.flavor .flavor-" + sel + " .value").text(val)
             }
             
-            set_detail("cpu");
+            set_detail("cpu", flavor.get("cpu") + "x");
             set_detail("ram", flavor.get("ram") + " MB");
             set_detail("disk", util.readablizeBytes(flavor.get("disk") * 1024 * 1024 * 1024));
         },
@@ -608,7 +628,7 @@
             
             set_detail("description");
             set_detail("name");
-            set_detail("os", image.get("OS"));
+            set_detail("os", _(image.get("OS")).capitalize());
             set_detail("gui", image.get("GUI"));
             set_detail("size", util.readablizeBytes(image.get_size() * 1024 * 1024));
             set_detail("kernel");
@@ -640,7 +660,14 @@
             this.confirm.find("li.mem .value").text(params.flavor.get("ram"));
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 
-            if (!this.name_changed) {
+            if (!this.name_changed && this.parent.visible()) {
+                if (!$.browser.msie) {
+                    this.$("#create-vm-name").select();
+                } else {
+                    window.setTimeout(_.bind(function(){
+                        this.$("#create-vm-name").select();
+                    }, this), 100)
+                }
             }
             
             var img = snf.ui.helpers.os_icon_path(params.image.get("OS"))
@@ -704,8 +731,6 @@
             this.submit_btn = this.$(".create-controls .submit")
             
             this.init_handlers();
-            this.update_layout();
-
         },
 
         init_handlers: function() {

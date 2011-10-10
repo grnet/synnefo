@@ -111,7 +111,7 @@
             complete: api.handlerWrapper(api.completeHandler, complete, "complete"),
             beforeSend: api.handlerWrapper(api.beforeSendHandler, before_send, "beforeSend"),
             cache: options.cache || false,
-            timeout: options.timeout || window.TIMEOUT || 5000
+            timeout: options.timeout || snf.config.ajax_timeout || window.TIMEOUT || 5000
         });
         return bb.sync(method, model, api_options);
     }

@@ -252,8 +252,14 @@ ZeroClipboard.Client.prototype = {
 				}
 				
 				this.ready = true;
-				this.movie.setText( this.clipText );
-				this.movie.setHandCursor( this.handCursorEnabled );
+                try {
+                    this.movie.setText( this.clipText );
+                } catch (err) {};
+
+                try {
+                    this.movie.setHandCursor( this.handCursorEnabled );
+                } catch(err) {};
+
 				break;
 			
 			case 'mouseover':

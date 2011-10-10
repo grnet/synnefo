@@ -294,7 +294,8 @@
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
-            
+                
+            this.empty_hidden = true;
             // fallback to browser error reporting (true for debug)
             this.skip_errors = true
 
@@ -330,7 +331,7 @@
                 this.set_interval_timeouts(snf.config.update_interval);
             } else {
                 this.focused = false;
-                this.set_interval_timeouts(snf.config.update_interval*3);
+                this.set_interval_timeouts(snf.config.blur_delay);
             }
         },
 
@@ -355,7 +356,7 @@
             // vm handlers
             storage.vms.bind("remove", _.bind(this.check_empty, this));
             storage.vms.bind("add", _.bind(this.check_empty, this));
-            storage.vms.bind("change", _.bind(this.check_empty, this));
+            storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             
             // api calls handlers
@@ -425,8 +426,13 @@
             if (this.completed_items == 2) {
                 this.load_nets_and_vms();
             }
+
             if (this.completed_items == this.items_to_load) {
-                this.after_load();
+                this.update_status("Rendering layout...");
+                var self = this;
+                window.setTimeout(function(){
+                    self.after_load();
+                }, 10)
             }
         },
 
@@ -479,14 +485,27 @@
         },
 
         after_load: function() {
+            var self = this;
             this.update_status("Setting vms update interval...");
             this.init_intervals();
             this.update_intervals();
-            this.update_status("Loaded");
-            // FIXME: refactor needed
-            // initialize views
+            this.update_status("Showing initial view...");
+            
+            // bypass update_hidden_views in initial view
+            // rendering to force all views to get render
+            // on their creation
+            var uhv = snf.config.update_hidden_views;
+            snf.config.update_hidden_views = true;
             this.initialize_views()
-            this.update_status("Initializing overlays...");
+            snf.config.update_hidden_views = uhv;
+
+            window.setTimeout(function() {
+                self.update_status("Initializing overlays...");
+                self.load_initialize_overlays();
+            }, 20);
+        },
+
+        load_initialize_overlays: function() {
             this.init_overlays();
             // display initial view
             this.loaded = true;
@@ -564,30 +583,36 @@
             if (storage.vms.length == 0) {
                 this.show_view("machines");
                 this.show_empty();
+                this.empty_hidden = false;
             } else {
                 this.hide_empty();
             }
-            this.select_view.update_layout();
         },
 
         show_empty: function() {
+            if (!this.empty_hidden) { return };
             $("#machines-pane-top").addClass("empty");
 
             this.$(".panes").hide();
             this.$("#machines-pane").show();
 
             this.hide_views([]);
+            this.empty_hidden = false;
             this.empty_view.show();
+            this.select_view.update_layout();
+            this.empty_hidden = false;
         },
 
         hide_empty: function() {
+            if (this.empty_hidden) { return };
             $("#machines-pane-top").removeClass("empty");
 
-            this.empty_view = new views.EmptyView();
-            this.empty_view.hide();
+            this.empty_view.hide(true);
             if (this.current_view && !this.current_view.visible()) { 
                 this.current_view.show(); 
             }
+            this.empty_hidden = true;
+            this.select_view.update_layout();
         },
         
         get_title: function(view_id) {
@@ -691,8 +716,15 @@
                 this.current_pane = this.current_view.pane;
             }
         },
-
+        
         show_view: function(view_id) {
+            //var d = new Date;
+            var ret = this._show_view(view_id);
+            //console.log((new Date)-d)
+            return ret;
+        },
+
+        _show_view: function(view_id) {
             try {
                 // same view, visible
                 // get out of here asap
@@ -750,6 +782,7 @@
 
                 // trigger view change event
                 this.trigger("view:change", this.current_view.view_id);
+                this.select_view.title.text(this.get_title());
                 $(window).trigger("view:change");
                 return view;
             } catch (err) {
@@ -779,18 +812,20 @@
     
     snf.ui.logout = function() {
         $.cookie("X-Auth-Token", null);
-        if (window.LOGOUT_REDIRECT !== undefined)
+        if (snf.config.logout_url !== undefined)
         {
-            window.location = window.LOGOUT_REDIRECT;
+            window.location = snf.config.logout_url;
         } else {
             window.location.reload();
         }
     }
 
     snf.ui.init = function() {
-        window.onerror = function(msg, file, line) {
-            snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
-        };
+        if (snf.config.handle_window_exceptions) {
+            window.onerror = function(msg, file, line) {
+                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
+            };
+        }
         snf.ui.main.load();
     }
 

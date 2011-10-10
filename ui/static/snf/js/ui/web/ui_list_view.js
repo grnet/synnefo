@@ -15,6 +15,8 @@
     // shortcuts
     var bb = root.Backbone;
     
+    var hasKey = Object.prototype.hasOwnProperty;
+
     views.ListMultipleActions = views.View.extend({
         
         view_id: "list_actions",
@@ -54,7 +56,7 @@
             this.parent.$(".actions a.enabled").live({
                 'mouseenter': function() {
                     self.hovered = true;
-                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""))
+                    self.parent.set_indicator_for($(this).attr("id").replace("action-",""));
                 }, 
                 'mouseleave': function() {
                     self.hovered = false;
@@ -235,10 +237,11 @@
             params = this.get_vm_table_data(vm);
             var index = this.table.fnAddData.call(this.table, params);
             this.table_data["vm_" + vm.id] = {index: index[0], params: params};
-            
             // append row id
             $(this.table.fnGetNodes(index)).attr("id", this.id_tpl + vm.id);
-            
+                
+            var vm_el = $("#" + this.id_tpl + vm.id);
+            this._vm_els[vm.id] = vm_el;
             // hide indicators on creation
             this.vm(vm).find(".spinner").hide();
             this.vm(vm).find(".wave").hide();
@@ -248,6 +251,7 @@
             // ancestor method
             this.__set_vm_handlers(vm);
             this.post_add(vm);
+            return this.vm(vm);
         },
 
         // remove vm
@@ -262,6 +266,10 @@
             this.table.fnDeleteRow(index);
             delete this.table_data["vm_" + vm.id];
             this.update_data();
+
+            if (hasKey.call(this._vm_els, vm.id)) {
+                delete this._vm_els[vm.id];
+            }
         },
 
         update_data: function() {
@@ -316,8 +324,8 @@
                 ' list-vm-checkbox" id="checkbox-' + this.id_tpl + vm.id + '"/>';
 
             var img = '<img class="os_icon" src="'+ this.get_vm_icon_path(vm, "small") +'" />';
-            img = img + '<img src="static/icons/indicators/small/progress.gif" class="spinner" />';
-            img = img + '<img src="static/icons/indicators/medium/wave.gif" class="wave" />';
+            img = img + '<img src="'+snf.config.indicators_icons_url+'small/progress.gif" class="spinner" />';
+            img = img + '<img src="'+snf.config.indicators_icons_url+'medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
             var name = util.truncate(vm.get('name'), 25);
@@ -332,8 +340,9 @@
 
         // is vm in transition ??? show the progress spinner
         update_transition_state: function(vm) {
+            if (!vm) { return };
             if (this.in_transition) { return };
-
+            
             if ((this.actions.hovered && this.vm(vm).find("input").is(":checked")) || vm.pending_action) {
                 this.sel('vm_spinner', vm.id).hide();
                 this.sel('vm_wave', vm.id).hide();
@@ -346,10 +355,10 @@
                 this.sel('vm_spinner', vm.id).show();
                 this.sel('vm_wave', vm.id).hide();
                 this.sel('os_icon', vm.id).hide();
-                this.$(".action-indicator").hide();
+                this.vm(vm).find(".action-indicator").hide();
             } else {
                 this.sel('vm_spinner', vm.id).hide();
-                this.$(".action-indicator").hide();
+                this.vm(vm).find(".action-indicator").hide();
                 this.sel('os_icon', vm.id).show();
             }
         },
@@ -358,9 +367,15 @@
         show_transition: function(vm) {
             this.in_transition = true;
 
-            if (!this.visible()) { return };
+            if (!this.visible()) { 
+                this.in_transition = false; 
+                this.update_transition_state(); 
+                return 
+            };
+
             var wave = this.sel('vm_wave', vm.id);
             if (!wave.length) {
+                this.in_transition = false
                 return
             }
             
@@ -435,7 +450,7 @@
             var os = vm.get_os();
             var icons = window.os_icons || views.ListView.VM_OS_ICONS;
             if (icons.indexOf(os) == -1) {
-                os = "unknown";
+                os = "okeanos";
             }
             return os;
         },
@@ -446,7 +461,7 @@
             var icons = window.os_icons || views.ListView.VM_OS_ICONS;
 
             if (icons.indexOf(os) == -1) {
-                os = "unknown";
+                os = "okeanos";
             }
             
             var st = "off";
@@ -454,12 +469,14 @@
                 st = "on"
             }
 
-            return views.ListView.VM_OS_ICON_TPLS[icon_type].format(os, st);
+            return views.ListView.VM_OS_ICON_TPLS()[icon_type].format(os, st);
         }
     })
 
-    views.ListView.VM_OS_ICON_TPLS = {
-        "small": "/static/icons/machines/small/{0}-{1}.png"
+    views.ListView.VM_OS_ICON_TPLS = function() {
+        return {
+            "small": snf.config.machines_icons_url + "small/{0}-{1}.png"
+        }
     }
 
     views.ListView.VM_OS_ICONS = window.os_icons || [];

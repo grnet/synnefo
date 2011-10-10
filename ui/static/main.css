@@ -38,6 +38,7 @@ a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
 	margin:0 auto;
 	width: 100%;
 	background: transparent;
+    z-index: 1;
 }
 
 #header {
@@ -47,6 +48,7 @@ a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
     width: 700px;
     text-align: left;
     position: relative;
+    z-index: 50;
 }
 
 #content {
@@ -781,7 +783,7 @@ div.image-container {
 }
 
 .icon .machine-details .name {
-    height: 28px;
+    height: 24px;
 }
 
 .icon .machine-connect {
@@ -792,7 +794,7 @@ div.image-container {
 .icon .machine-details {
     width: 310px;
     float: left;
-    margin-top: -6px;
+    margin-top: -5px;
 }
 
 .icon .state {
@@ -814,9 +816,10 @@ div.image-container {
 
 .icon .vm-actions, .network .vm-actions {
     width: 180px;
-    height: 78px;
+    height: 76px;
     float: left;
 }
+
 .network .vm-actions {
     width: 185px;
 }
@@ -868,19 +871,17 @@ div.image-container {
 }
 
 div.list div.actions a.enabled.destroy {
-    color: #981D1D;
 }
 
 .vm-actions .action-container.destroy {
     position: absolute;
-    bottom: -2px;
+    bottom: -1px;
     width: 100%;
     left: 0px;
     background: transparent;
 }
 
 .vm-actions .action-container.destroy a {
-    color: #981D1D;
 }
 
 .icon .light-background .machine-data, div.network.light-background, div.network.expand {
@@ -1007,7 +1008,7 @@ div.connect-border:hover {
     float: left;
     width: 50px;
     height: 54px;
-    margin: 4px 14px 0;
+    margin: 1px 14px 0;
 }
 .machine .logo {
     background-image: url("./icons/machines/medium/unknown-sprite.png");
@@ -1839,8 +1840,30 @@ input.machine {
     text-decoration: none;
 }
 
-.popup-details a:link, .popup-details a:visited{
+.popup-details a:link, .popup-details a:visited {
     color: black;
+}
+
+.destroy .confirm_single .yes {
+    background-color: #880000;
+    color: #fff;
+}
+
+.destroy .confirm_single .no {
+    background-color: #CC0000;
+    color: #880000;
+}
+
+.destroy .confirm_single .yes:hover {
+    background-color:#CC0000;
+}
+
+div.list div.actions a.selected#action-destroy {
+    color: #880000 !important;
+}
+
+.vm-actions .destroy a#action-destroy.selected {
+    color: #880000 !important;
 }
 
 /* Confirmation boxes */
@@ -2018,7 +2041,6 @@ div#user{
     font-size: 75%;
     margin-top: 38px;
     padding-bottom: 10px;
-    z-index: 500;
     position: absolute;
     right:0;
 }
@@ -2087,7 +2109,6 @@ div#user .active .useractions {
     box-shadow: 1px 1px 1px #aaa;
     -moz-box-shadow: 1px 1px 1px #aaa;
     -webkit-box-shadow: 1px 1px 1px #aaa;
-    z-index: 2000;
 }
 
 div#user .useractions li {
@@ -2166,7 +2187,7 @@ div#user .langmenu .sep {
     clear: none;
     width: 40px;
     margin-right: 0px;
-    padding-top: 2px;
+    padding-top: 0px;
     float: right;
     cursor: pointer;
     position: relative;
@@ -2221,9 +2242,17 @@ div.editbuttons div.cancel:hover {
     z-index: 1000;
 }
 
+.icon .nametextbox {
+    width: 255px;
+}
+
 .nametextbox, .network-rename-input {
+    position: relative;
+    top: -3px;
     font-size: 65%;
     width: 240px;
+    border: 1px solid #aaaaaa;
+    padding: 2px;
 }
 
 .large-spinner {
@@ -2585,6 +2614,10 @@ div.firewall {
     margin-top: -3px;
 }
 
+div.firewall .firewall-options {
+    float: left;
+}
+
 div.machines-header, div.firewall-header {
     background-color: #A1C8DB;
     color: white;
@@ -2679,6 +2712,10 @@ div.network.expand .net-actions a {
 
 div.network:hover div.actions a, div.network-machine:hover div.machine-actions a {
     visibility: visible;
+}
+
+div.network div.machine-actions a.action-destroy.selected {
+    color: #880000 !important;
 }
 
 div.network div.actions a.selected:hover, div.network div.machine-actions a.selected {
@@ -2946,7 +2983,6 @@ div.network-add-machine {
     font-size: 60%;
     margin-left: 60px;
     height: 55px;
-    margin-bottom: 17px;
 }
 
 .firewall-content .checkbox-legends {
@@ -2989,6 +3025,8 @@ h5.machine-connect span:hover {
     margin-right: 5px;
     margin-top: 3px;
     width: 75px;
+    position: relative;
+    bottom:20px;
 }
 
 .firewall-apply:hover {
@@ -3313,6 +3351,10 @@ div.machine a.manage-metadata:hover {
     width: 162px;
     opacity: 0.8;
     filter: alpha(opacity = 80);
+}
+
+.single .destroy a.single-action.selected {
+    color: #880000 !important;
 }
 
 .single a.single-action.selected {
@@ -3714,10 +3756,11 @@ div.console-footer {
 
 .css-panes {
     clear: both;
+    position: relative;
+    z-index: 10;
 }
 
 .last .firewall-content {
-    margin-bottom:13px;
 }
 
 #pub .last .network-separator {
@@ -3746,6 +3789,10 @@ div.console-footer {
 
 * html .clearfix {
     display: inline-block;
+}
+
+.icon .cont-toggler {
+    margin-top: -1px;
 }
 
 .icon .wave {
@@ -4063,11 +4110,16 @@ h3.overlay-inner-title {
     font-size: 0.8em;
 }
 
+#creation-password-overlay .password-label {
+    float: left;
+}
+
 #creation-password-overlay .password {
     font-size: 1.3em;
     font-weight: bold;
     margin-right: 5em;
     float: right;
+    margin-top: -4px;
 }
 
 .feedback-form .description {
@@ -5191,6 +5243,12 @@ table.list-machines .wave {
     padding-right: 3%;
 }
 
+.create-vm p.desc {
+    font-size: 0.9em;
+    color: #888;
+    margin-bottom: 10px;
+}
+
 .create-vm li.role .values .val:hover {
     background-color: #eee;
 }
@@ -5490,12 +5548,28 @@ table.list-machines .wave {
     float: left;
 }
 
+.create-vm .vm-confirm .confirm-cont ul li .value {
+    float: right;
+    padding-top: 2px;
+    display: block;
+    width: 90px;
+    text-align: right;
+}
+
+.create-vm .vm-confirm .confirm-cont ul li.image-description .value,
+.create-vm .vm-confirm .confirm-cont ul li.image-name .value {
+    float: none;
+    width: auto;
+    text-align:left;
+    width: auto;
+}
+
 .create-vm .vm-confirm .confirm-cont ul li {
     padding:0;
     margin:0;
     margin-bottom: 5px;
     border-bottom: 1px solid #EEE;
-    padding-bottom: 9px;
+    padding-bottom: 7px;
     margin-right: 10px;
 }
 
@@ -5528,7 +5602,7 @@ table.list-machines .wave {
 }
 
 .create-vm .confirm-cont .param {
-    margin-bottom: 10px !important;
+    margin-bottom: 7px !important;
 }
 
 .create-vm .confirm-cont .value {

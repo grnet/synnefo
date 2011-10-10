@@ -14,7 +14,8 @@
 
     // shortcuts
     var bb = root.Backbone;
-    
+    var hasKey = Object.prototype.hasOwnProperty;
+
     views.SingleDetailsView = views.VMDetailsView.extend({
     
         view_id: "vm_details_single",
@@ -45,12 +46,12 @@
 
         selectors: {
             'vms': '.single-container',
-            'vm': 'div#single-vm-',
+            'vm': '#single-vm-',
             'view': '#machinesview-single',
             'tpl': 'div.single-container#machine-container-template',
             'spinner': '.large-spinner',
-            'vm_spinner': 'div.single-container#single-vm-{0} .state .spinner',
-            'vm_wave': 'div.single-container#single-vm-{0} img.wave',
+            'vm_spinner': '#single-vm-{0} .state .spinner',
+            'vm_wave': '#single-vm-{0} img.wave',
             'vm_cont_active': '#machinesview-single',
             'vm_cont_terminated': '#machinesview-single'
         },
@@ -195,6 +196,7 @@
 
             _.each(storage.vms.models, function(vmo){
                 if (vm && (vm.id != vmo.id)) {
+                    if (!hasKey.call(this._vm_els, vmo.id)) { return };
                     this.vm(vmo).hide();
                 }
             }, this)
@@ -305,12 +307,14 @@
                 os = "unknown";
             }
 
-            return views.SingleView.VM_OS_ICON_TPLS[icon_type].format(os);
+            return views.SingleView.VM_OS_ICON_TPLS()[icon_type].format(os);
         }
     })
 
-    views.SingleView.VM_OS_ICON_TPLS = {
-        "medium": "/static/icons/machines/large/{0}-sprite.png"
+    views.SingleView.VM_OS_ICON_TPLS = function() {
+        return {
+            "medium": snf.config.machines_icons_url + "large/{0}-sprite.png"
+        }
     }
 
     views.SingleView.VM_OS_ICONS = window.os_icons || [];

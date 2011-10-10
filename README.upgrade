@@ -6,6 +6,10 @@ For more information, please see README.deploy.
 
 
 v0.6.2 -> TBD
+HTML TEMPLATES
+    * Included a generic service unavailable template based on
+      generic_info_tpl.html, as ui/static/service_unavailable.html.
+
 NEW DEPENDENCIES
     * python-unittest2, python-paramiko needed by the new integration
       test suite snf-tools/snf-test. Paramiko shipped with Squeeze uses

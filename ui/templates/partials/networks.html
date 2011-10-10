@@ -139,24 +139,28 @@
             </h5>
         </div>
         <div class="firewall">
-            <div class="cont-toggler firewall-toggle">
-                <span class="label machines-label">{% trans "Firewall" %}
-                    (<span class="firewall-off">{% trans "Off" %}</span>)
-                </span>
-                <span class="network-progress-indicator">
-                    <img src="/static/icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
-                </span>
+            <div class="toggler-wrap clearfix">
+                <div class="cont-toggler firewall-toggle">
+                    <span class="label machines-label">{% trans "Firewall" %}
+                        (<span class="firewall-off">{% trans "Off" %}</span>)
+                    </span>
+                    <span class="network-progress-indicator">
+                        <img src="/static/icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
+                    </span>
+                </div>
             </div>
         </div>
-        <div class="firewall-content">
-            <input type="radio" class="checkboxes" value="DISABLED" name="firewall" />
-            <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
-            <br />
-            <input type="radio" class="checkboxes" value="ENABLED" name="firewall" />
-            <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
-            <br />
-            <input type="radio" class="checkboxes" value="PROTECTED" name="firewall" />
-            <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
+        <div class="firewall-content clearix">
+            <div class="firewall-options">
+                <input type="radio" class="checkboxes" value="DISABLED" name="firewall" />
+                <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
+                <br />
+                <input type="radio" class="checkboxes" value="ENABLED" name="firewall" />
+                <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
+                <br />
+                <input type="radio" class="checkboxes" value="PROTECTED" name="firewall" />
+                <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
+            </div>
             <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
         </div>
     </div>

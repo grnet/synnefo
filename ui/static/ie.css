@@ -23,3 +23,15 @@ html {
 div.confirm_single button {
     padding-bottom: 0px;
 }
+
+.create-vm {
+    position: relative;
+}
+
+.firewall .cont-toggler {
+    float: left;
+}
+
+.network-machines .cont-toggler {
+    float: left;
+}

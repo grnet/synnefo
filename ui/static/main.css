@@ -38,6 +38,7 @@ a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
 	margin:0 auto;
 	width: 100%;
 	background: transparent;
+    z-index: 1;
 }
 
 #header {
@@ -47,6 +48,7 @@ a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
     width: 700px;
     text-align: left;
     position: relative;
+    z-index: 50;
 }
 
 #content {
@@ -2039,7 +2041,6 @@ div#user{
     font-size: 75%;
     margin-top: 38px;
     padding-bottom: 10px;
-    z-index: 500;
     position: absolute;
     right:0;
 }
@@ -2108,7 +2109,6 @@ div#user .active .useractions {
     box-shadow: 1px 1px 1px #aaa;
     -moz-box-shadow: 1px 1px 1px #aaa;
     -webkit-box-shadow: 1px 1px 1px #aaa;
-    z-index: 2000;
 }
 
 div#user .useractions li {
@@ -2614,6 +2614,10 @@ div.firewall {
     margin-top: -3px;
 }
 
+div.firewall .firewall-options {
+    float: left;
+}
+
 div.machines-header, div.firewall-header {
     background-color: #A1C8DB;
     color: white;
@@ -2979,7 +2983,6 @@ div.network-add-machine {
     font-size: 60%;
     margin-left: 60px;
     height: 55px;
-    margin-bottom: 17px;
 }
 
 .firewall-content .checkbox-legends {
@@ -3022,6 +3025,8 @@ h5.machine-connect span:hover {
     margin-right: 5px;
     margin-top: 3px;
     width: 75px;
+    position: relative;
+    bottom:20px;
 }
 
 .firewall-apply:hover {
@@ -3751,10 +3756,11 @@ div.console-footer {
 
 .css-panes {
     clear: both;
+    position: relative;
+    z-index: 10;
 }
 
 .last .firewall-content {
-    margin-bottom:13px;
 }
 
 #pub .last .network-separator {
@@ -4104,11 +4110,16 @@ h3.overlay-inner-title {
     font-size: 0.8em;
 }
 
+#creation-password-overlay .password-label {
+    float: left;
+}
+
 #creation-password-overlay .password {
     font-size: 1.3em;
     font-weight: bold;
     margin-right: 5em;
     float: right;
+    margin-top: -4px;
 }
 
 .feedback-form .description {

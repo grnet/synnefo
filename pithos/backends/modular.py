@@ -706,6 +706,10 @@ class ModularBackend(BaseBackend):
             if props is None:
                 raise NameError('Object does not exist')
         else:
+            try:
+                version = int(version)
+            except ValueError:
+                raise IndexError('Version does not exist')
             props = self.node.version_get_properties(version)
             if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
                 raise IndexError('Version does not exist')
@@ -745,11 +749,6 @@ class ModularBackend(BaseBackend):
         dest_version_id, mtime = self.node.version_create(dest_node, hash, size, src_version_id, user, dest_cluster)
         
         return src_version_id, dest_version_id
-    
-    def _get_metadata(self, version):
-        if version is None:
-            return {}
-        return dict(self.node.attribute_get(version))
     
     def _put_metadata(self, user, node, meta, replace=False, copy_data=True):
         """Create a new version and store metadata."""

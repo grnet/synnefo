@@ -39,9 +39,9 @@ from sqlalchemy.ext.compiler import compiles
 
 from dbworker import DBWorker
 
-ROOTNODE  = 0
+ROOTNODE  = 1
 
-( SERIAL, NODE, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(7)
+( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
 
 inf = float('inf')
 
@@ -85,11 +85,12 @@ def strprevling(prefix):
 _propnames = {
     'serial'    : 0,
     'node'      : 1,
-    'size'      : 2,
-    'source'    : 3,
-    'mtime'     : 4,
-    'muser'     : 5,
-    'cluster'   : 6,
+    'hash'      : 2,
+    'size'      : 3,
+    'source'    : 4,
+    'mtime'     : 5,
+    'muser'     : 6,
+    'cluster'   : 7,
 }
 
 
@@ -116,7 +117,7 @@ class Node(DBWorker):
         columns.append(Column('path', String(2048), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns)
         # place an index on path
-        Index('idx_nodes_path', self.nodes.c.path, unique=True)
+        Index('idx_nodes_path', self.nodes.c.path)
         
         #create statistics table
         columns=[]
@@ -139,6 +140,7 @@ class Node(DBWorker):
                               ForeignKey('nodes.node',
                                          ondelete='CASCADE',
                                          onupdate='CASCADE')))
+        columns.append(Column('hash', String(255)))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', Float))
@@ -212,7 +214,14 @@ class Node(DBWorker):
            (serial, node, size, source, mtime, muser, cluster).
         """
         
-        s = select(['*'], self.versions.c.node == node)
+        s = select([self.versions.c.serial,
+                    self.versions.c.node,
+                    self.versions.c.hash,
+                    self.versions.c.size,
+                    self.versions.c.source,
+                    self.versions.c.mtime,
+                    self.versions.c.muser,
+                    self.versions.c.cluster], self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
@@ -246,11 +255,12 @@ class Node(DBWorker):
         c1 = select([self.nodes.c.node],
             self.nodes.c.parent == parent)
         where_clause = and_(self.versions.c.node.in_(c1),
-                            self.versions.c.cluster == cluster,
-                            self.versions.c.mtime <= before)
+                            self.versions.c.cluster == cluster)
         s = select([func.count(self.versions.c.serial),
                     func.sum(self.versions.c.size)])
         s = s.where(where_clause)
+        if before != inf:
+            s = s.where(self.versions.c.mtime <= before)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -296,9 +306,10 @@ class Node(DBWorker):
         s = select([func.count(self.versions.c.serial),
                     func.sum(self.versions.c.size)])
         where_clause = and_(self.versions.c.node == node,
-                         self.versions.c.cluster == cluster,
-                         self.versions.c.mtime <= before)
+                         self.versions.c.cluster == cluster)
         s = s.where(where_clause)
+        if before != inf:
+            s = s.where(self.versions.c.mtime <= before)
         r = self.conn.execute(s)
         row = r.fetchone()
         nr, size = row[0], row[1]
@@ -435,16 +446,18 @@ class Node(DBWorker):
         # The latest version.
         s = select([self.versions.c.serial,
                     self.versions.c.node,
+                    self.versions.c.hash,
                     self.versions.c.size,
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
                     self.versions.c.cluster])
+        filtered = select([func.max(self.versions.c.serial)],
+                            self.versions.c.node == node)
+        if before != inf:
+            filtered = filtered.where(self.versions.c.mtime < before)
         s = s.where(and_(self.versions.c.cluster != except_cluster,
-                         self.versions.c.serial == select(
-                            [func.max(self.versions.c.serial)],
-                            and_(self.versions.c.node == node,
-                            self.versions.c.mtime < before))))
+                         self.versions.c.serial == filtered))
         r = self.conn.execute(s)
         props = r.fetchone()
         r.close()
@@ -457,11 +470,11 @@ class Node(DBWorker):
         s = select([func.count(v.c.serial),
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])
-        c1 = select([func.max(self.versions.c.serial)],
-            and_(self.versions.c.node == v.c.node,
-                 self.versions.c.mtime < before))
+        c1 = select([func.max(self.versions.c.serial)])
+        if before != inf:
+            c1 = c1.where(self.versions.c.mtime < before)
         c2 = select([self.nodes.c.node], self.nodes.c.parent == node)
-        s = s.where(and_(v.c.serial == c1,
+        s = s.where(and_(v.c.serial == c1.where(self.versions.c.node == v.c.node),
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
         rp = self.conn.execute(s)
@@ -480,8 +493,9 @@ class Node(DBWorker):
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])
         c1 = select([func.max(self.versions.c.serial)],
-            and_(self.versions.c.node == v.c.node,
-                 self.versions.c.mtime < before))
+            self.versions.c.node == v.c.node)
+        if before != inf:
+            c1 = c1.where(self.versions.c.mtime < before)
         c2 = select([self.nodes.c.node], self.nodes.c.path.like(path + '%'))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
@@ -495,16 +509,14 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, size, source, muser, cluster=0):
+    def version_create(self, node, hash, size, source, muser, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
         mtime = time()
-        props = (node, size, source, mtime, muser, cluster)
-        props = locals()
-        props.pop('self')
-        s = self.versions.insert().values(**props)
+        s = self.versions.insert().values(node=node, hash=hash, size=size, source=source,
+                                          mtime=mtime, muser=muser, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -512,16 +524,17 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, size, source, mtime, muser, cluster)
+           (serial, node, hash, size, source, mtime, muser, cluster)
            or None if the current version is not found in the given cluster.
         """
         
         v = self.versions.alias('v')
-        s = select([v.c.serial, v.c.node, v.c.size, v.c.source, v.c.mtime,
-                    v.c.muser, v.c.cluster])
+        s = select([v.c.serial, v.c.node, v.c.hash, v.c.size,
+                    v.c.source, v.c.mtime, v.c.muser, v.c.cluster])
         c = select([func.max(self.versions.c.serial)],
-            and_(self.versions.c.node == node,
-                 self.versions.c.mtime < before))
+            self.versions.c.node == node)
+        if before != inf:
+            c = c.where(self.versions.c.mtime < before)
         s = s.where(and_(v.c.serial == c,
                          v.c.cluster == cluster))
         r = self.conn.execute(s)
@@ -535,12 +548,12 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, cluster).
         """
         
         v = self.versions.alias()
-        s = select([v.c.serial, v.c.node, v.c.size, v.c.source, v.c.mtime,
-                   v.c.muser, v.c.cluster], v.c.serial == serial)
+        s = select([v.c.serial, v.c.node, v.c.hash, v.c.size,
+                    v.c.source, v.c.mtime, v.c.muser, v.c.cluster], v.c.serial == serial)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
@@ -674,9 +687,10 @@ class Node(DBWorker):
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         s = select([a.c.key]).distinct()
-        s = s.where(v.c.serial == select([func.max(self.versions.c.serial)],
-                                          and_(self.versions.c.node == v.c.node,
-                                               self.versions.c.mtime < before)))
+        filtered = select([func.max(self.versions.c.serial)])
+        if before != inf:
+            filtered = filtered.where(self.versions.c.mtime < before)
+        s = s.where(v.c.serial == filtered.where(self.versions.c.node == v.c.node))
         s = s.where(v.c.cluster != except_cluster)
         s = s.where(v.c.node.in_(select([self.nodes.c.node],
             self.nodes.c.parent == parent)))
@@ -749,9 +763,10 @@ class Node(DBWorker):
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         s = select([n.c.path, v.c.serial]).distinct()
-        s = s.where(v.c.serial == select([func.max(self.versions.c.serial)],
-            and_(self.versions.c.node == v.c.node,
-                 self.versions.c.mtime < before)))
+        filtered = select([func.max(self.versions.c.serial)])
+        if before != inf:
+            filtered = filtered.where(self.versions.c.mtime < before)
+        s = s.where(v.c.serial == filtered.where(self.versions.c.node == v.c.node))
         s = s.where(v.c.cluster != except_cluster)
         s = s.where(v.c.node.in_(select([self.nodes.c.node],
             self.nodes.c.parent == parent)))

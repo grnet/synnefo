@@ -35,6 +35,7 @@ import sys
 import os
 import time
 import logging
+import hashlib
 import binascii
 
 from base import NotAllowedError, BaseBackend
@@ -46,6 +47,35 @@ inf = float('inf')
 
 
 logger = logging.getLogger(__name__)
+
+
+class HashMap(list):
+    
+    def __init__(self, blocksize, blockhash):
+        super(HashMap, self).__init__()
+        self.blocksize = blocksize
+        self.blockhash = blockhash
+    
+    def _hash_raw(self, v):
+        h = hashlib.new(self.blockhash)
+        h.update(v)
+        return h.digest()
+    
+    def hash(self):
+        if len(self) == 0:
+            return self._hash_raw('')
+        if len(self) == 1:
+            return self.__getitem__(0)
+        
+        h = list(self)
+        s = 2
+        while s < len(h):
+            s = s * 2
+        h += [('\x00' * len(h[0]))] * (s - len(h))
+        while len(h) > 1:
+            h = [self._hash_raw(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
+        return h[0]
+
 
 def backend_method(func=None, autocommit=1):
     if func is None:
@@ -104,7 +134,7 @@ class ModularBackend(BaseBackend):
             setattr(self, x, getattr(self.mod.permissions, x))
         self.policy = self.mod.policy.Policy(**params)
         self.node = self.mod.node.Node(**params)
-        for x in ['ROOTNODE', 'SERIAL', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
+        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
             setattr(self, x, getattr(self.mod.node, x))
     
     @backend_method
@@ -333,17 +363,13 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_container(account, container)
         
         if until is not None:
-            versions = self.node.node_purge_children(node, until, CLUSTER_HISTORY)
-            for v in versions:
-                self.mapper.map_remv(v)
+            self.node.node_purge_children(node, until, CLUSTER_HISTORY)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             return
         
         if self._get_statistics(node)[0] > 0:
             raise IndexError('Container is not empty')
-        versions = self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
-        for v in versions:
-            self.mapper.map_remv(v)
+        self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
         self.node.node_purge_children(node, inf, CLUSTER_DELETED)
         self.node.node_remove(node)
         self.policy.policy_unset(path)
@@ -479,7 +505,7 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
-        hashmap = self.mapper.map_retr(props[self.SERIAL])
+        hashmap = self.mapper.map_retr(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
     @backend_method
@@ -490,7 +516,9 @@ class ModularBackend(BaseBackend):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
-        missing = self.blocker.block_ping([binascii.unhexlify(x) for x in hashmap])
+        map = HashMap(self.block_size, self.hash_algorithm)
+        map.extend([binascii.unhexlify(x) for x in hashmap])
+        missing = self.blocker.block_ping(map)
         if missing:
             ie = IndexError()
             ie.data = [binascii.hexlify(x) for x in missing]
@@ -499,8 +527,9 @@ class ModularBackend(BaseBackend):
             path = '/'.join((account, container, name))
             self._check_permissions(path, permissions)
         path, node = self._put_object_node(account, container, name)
-        src_version_id, dest_version_id = self._copy_version(user, node, None, node, size)
-        self.mapper.map_stor(dest_version_id, [binascii.unhexlify(x) for x in hashmap])
+        hash = map.hash()
+        src_version_id, dest_version_id = self._copy_version(user, node, None, node, binascii.hexlify(hash), size)
+        self.mapper.map_stor(hash, map)
         if not replace_meta and src_version_id is not None:
             self.node.attribute_copy(src_version_id, dest_version_id)
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
@@ -520,8 +549,6 @@ class ModularBackend(BaseBackend):
             self._check_permissions(dest_path, permissions)
         dest_path, dest_node = self._put_object_node(dest_account, dest_container, dest_name)
         src_version_id, dest_version_id = self._copy_version(user, src_node, src_version, dest_node)
-        if src_version_id is not None:
-            self._copy_data(src_version_id, dest_version_id)
         if not replace_meta and src_version_id is not None:
             self.node.attribute_copy(src_version_id, dest_version_id)
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
@@ -556,10 +583,8 @@ class ModularBackend(BaseBackend):
             node = self.node.node_lookup(path)
             if node is None:
                 return
-            versions = self.node.node_purge(node, until, CLUSTER_NORMAL)
-            versions += self.node.node_purge(node, until, CLUSTER_HISTORY)
-            for v in versions:
-                self.mapper.map_remv(v)
+            self.node.node_purge(node, until, CLUSTER_NORMAL)
+            self.node.node_purge(node, until, CLUSTER_HISTORY)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             try:
                 props = self._get_version(node)
@@ -570,7 +595,7 @@ class ModularBackend(BaseBackend):
             return
         
         path, node = self._lookup_object(account, container, name)
-        self._copy_version(user, node, None, node, 0, CLUSTER_DELETED)
+        self._copy_version(user, node, None, node, None, 0, CLUSTER_DELETED)
         self.permissions.access_clear(path)
     
     @backend_method
@@ -630,7 +655,7 @@ class ModularBackend(BaseBackend):
     
     def _put_path(self, user, parent, path):
         node = self.node.node_create(parent, path)
-        self.node.version_create(node, 0, None, user, CLUSTER_NORMAL)
+        self.node.version_create(node, None, 0, None, user, CLUSTER_NORMAL)
         return node
     
     def _lookup_account(self, account, create=True):
@@ -686,22 +711,27 @@ class ModularBackend(BaseBackend):
                 raise IndexError('Version does not exist')
         return props
     
-    def _copy_version(self, user, src_node, src_version, dest_node, dest_size=None, dest_cluster=CLUSTER_NORMAL):
+    def _copy_version(self, user, src_node, src_version, dest_node, dest_hash=None, dest_size=None, dest_cluster=CLUSTER_NORMAL):
         
         # Get source serial and size.
         if src_version is not None:
             src_props = self._get_version(src_node, src_version)
             src_version_id = src_props[self.SERIAL]
+            hash = src_props[self.HASH]
             size = src_props[self.SIZE]
         else:
             # Latest or create from scratch.
             try:
                 src_props = self._get_version(src_node)
                 src_version_id = src_props[self.SERIAL]
+                hash = src_props[self.HASH]
                 size = src_props[self.SIZE]
             except NameError:
                 src_version_id = None
+                hash = None
                 size = 0
+        if dest_hash is not None:
+            hash = dest_hash
         if dest_size is not None:
             size = dest_size
         
@@ -712,13 +742,9 @@ class ModularBackend(BaseBackend):
             dest_props = self.node.version_lookup(dest_node, inf, CLUSTER_NORMAL)
             if dest_props is not None:
                 self.node.version_recluster(dest_props[self.SERIAL], CLUSTER_HISTORY)
-        dest_version_id, mtime = self.node.version_create(dest_node, size, src_version_id, user, dest_cluster)
+        dest_version_id, mtime = self.node.version_create(dest_node, hash, size, src_version_id, user, dest_cluster)
         
         return src_version_id, dest_version_id
-    
-    def _copy_data(self, src_version, dest_version):
-        hashmap = self.mapper.map_retr(src_version)
-        self.mapper.map_stor(dest_version, hashmap)
     
     def _get_metadata(self, version):
         if version is None:
@@ -736,8 +762,6 @@ class ModularBackend(BaseBackend):
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems() if v != ''))
         else:
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
-        if copy_data and src_version_id is not None:
-            self._copy_data(src_version_id, dest_version_id)
         return dest_version_id
     
     def _list_limits(self, listing, marker, limit):

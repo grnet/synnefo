@@ -42,7 +42,7 @@ class Public(DBWorker):
         DBWorker.__init__(self, **params)
         metadata = MetaData()
         columns=[]
-        columns.append(Column('path', String(2048), primary_key=True))
+        columns.append(Column('path', String(2048), index=True))
         self.public = Table('public', metadata, *columns)
         metadata.create_all(self.engine)
     

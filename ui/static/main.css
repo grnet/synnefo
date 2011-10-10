@@ -4860,7 +4860,7 @@ table.list-machines .wave {
 }
 
 .options-list li .options-object-cont {
-    padding: 4px;
+    padding: 5px;
     margin-right: 4px;
     border: 1px solid #A6D1E6;
     cursor: pointer;
@@ -4873,12 +4873,12 @@ table.list-machines .wave {
 }
 
 .options-list li.selected .options-object-cont {
-    background-color: #4085A5;
-    border: 1px solid #fff;
+    background-color: #efefef;
+    border: 2px solid #4085A5;
+    padding: 4px;
 }
 
 .options-list li.selected .options-object-cont .title {
-    color: #fff;
 }
 
 .options-list li.options-object .title {
@@ -4906,7 +4906,7 @@ table.list-machines .wave {
     width:10px;
     height:10px;
     right:5px;
-    bottom: 5px;
+    top: 5px;
 }
 
 .options-list li .edit {
@@ -4914,7 +4914,7 @@ table.list-machines .wave {
     width:10px;
     height:10px;
     right:5px;
-    top: 5px;
+    bottom: 8px;
 }
 
 .options-list li:hover .option-action  {
@@ -4928,14 +4928,14 @@ table.list-machines .wave {
 }
 
 .options-list li.selected.options-object .value {
-    color: #ddd;
 }
+
 .options-list li .options-object-cont:hover {
     background-color: #fff;
 }
 
 .options-list li.selected .options-object-cont:hover {
-    background-color: #A6D1E6;
+    background-color: #fff;
 }
 
 .options-list li img {
@@ -4943,6 +4943,27 @@ table.list-machines .wave {
     margin:2px;
     margin-right: 10px;
     padding-bottom:10px;
+}
+
+#network-vms-select-content li.options-object .value {
+    margin-top: 10px;
+    margin-left: 30px;
+}
+
+#network-vms-select-content li.options-object:hover .options-object-cont,
+#network-vms-select-content li.options-object .options-object-cont {
+    background-image: url("./option-action-add-dark.png");
+    background-repeat: no-repeat;
+    background-position: 160px 28px;
+}
+
+#network-vms-select-content li.selected:hover .options-object-cont,
+#network-vms-select-content li.selected .options-object-cont {
+    background-image: url("./option-action-remove.png") !important;
+}
+
+#metadata-overlay-content .view .value {
+    margin-top: 10px;
 }
 
 #metadata-overlay-content {

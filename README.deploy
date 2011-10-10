@@ -4,7 +4,7 @@ This document describes the basic steps to obtain a basic, working Synnefo
 deployment. It begins by examining the different node roles, then moves to the
 installation and setup of distinct software components.
 
-It is current as of Synnefo v0.5.2.
+It is current as of Synnefo v0.7.
 
 
 Node types
@@ -430,60 +430,19 @@ Synnefo deployment.
     sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
 
 
-13. Installation of the customized Ganeti Instance Image for image deployment:
+13. Installation of the snf-image Ganeti OS provider for image deployment:
     For Synnefo to be able to launch VMs from specified Images, you need
-    the gnt-instance-image OS Provider installed on *all* Ganeti nodes.
-    There are 2 different ways to install gnt-instance-image on a node:
+    the snf-image OS Provider installed on *all* Ganeti nodes.
 
-    1.As a debian package (recommended)
-        
-        Download and install the debian package found here:
-        https://code.grnet.gr/attachments/download/351/ganeti-instance-image_0.5.1-1-snf1_all.deb
-        You can do this by running the following:
-        
-        $ wget https://code.grnet.gr/attachments/download/351/ganeti-instance-image_0.5.1-1-snf1_all.deb
-        # dpkg -i ganeti-instance-image_0.5.1-1-snf1_all.deb
+    Please see https://code.grnet.gr/projects/snf-image/wiki
+    for installation instructions and documentation on the design
+    and implementation of snf-image.
 
-        Make any additional configuration changes in 
-        /etc/default/ganeti-instance-image.
-        It is recommended to change the default IMAGE_DIR from 
-        /var/cache/ganeti-instance-image to something like /srv/example_images_repo
+    Please see https://code.grnet.gr/projects/snf-image/files
+    for the latest packages.
 
-	Be sure to have all the package's needed dependencies installed 
-        on your system.
-
-    2.From source    
-
-        Download and install gnt-instance-image from its own repository,
-        at https://code.grnet.gr/git/gnt-instance-image.
-        [FIXME: Must be updated to include information on installation of snf-image]
-
-        Make sure to enable progress monitoring, using the --with-progress-monitor
-        argument to configure. This requires the snf-progress-monitor tool,
-        provided in snf-ganeti-tools/ and also as part of the snf-ganeti-tools
-        Debian package.
-
-        After installing gnt-instance-image do the following:
-        1. $ cd /path-to-repo
-           # cp ./defaults /etc/default/ganeti-instance-image
-        2. In /etc/ganeti/instance-image/hooks, make sure the hooks you want to
-           run during the instance creation process have execute permission.
-           For linux you will need at lease `grub' and `root_passwd' to make the
-           instance usable:
-           chmod +x /etc/ganeti/instance-image/hooks/linux/{grub,root_passwd}
-           For security reasons make sure `ssh' hook is also enabled.
-           For windows you will need `mbr' and `admin_passwd':
-           chmod +x /etc/ganeti/instance-image/hooks/windows/{mbr,admin_passwd}
-           For both architectures it is also highly recommended to enable the
-           `hostname' hook too:
-           chmod +x /et/ganeti/instance-image/hooks/{linux,windows}/hostname
-
-    Your custom Images should be stored in a dump format under
-    /var/cache/ganeti-instance-image (default) or a different directory of your
-    choice, accordingly set in /etc/default/ganeti-instance-image. The latter
-    is recommended. Their filenames should have the following format:
-      {backend_id}-x86_64-root.dump
-    e.g., debian-6.0.1a-x86_64-root.dump (backend_id = "debian-6.0.1a")
+    Images should be stored under extdump format in a directory
+    of your choice, configurable as IMAGE_DIR in /etc/default/snf-image.
 
 
 14. Setup Synnefo-specific networking on the Ganeti backend:

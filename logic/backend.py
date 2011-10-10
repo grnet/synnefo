@@ -236,11 +236,11 @@ def create_instance(vm, flavor, image, password, personality):
     kw = settings.GANETI_CREATEINSTANCE_KWARGS
     kw['mode'] = 'create'
     kw['name'] = vm.backend_id
-    # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
+    # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['disk_template'] = settings.GANETI_DISK_TEMPLATE
     kw['disks'] = [{"size": sz}]
     kw['nics'] = [nic]
-    # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
+    # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False
     kw['name_check'] = False
@@ -262,7 +262,7 @@ def create_instance(vm, flavor, image, password, personality):
     if personality:
         kw['osparams']['img_personality'] = json.dumps(personality)
     
-    # Defined in settings.GANETI_CREATE_INSTANCE_KWARGS
+    # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
 
     return rapi.CreateInstance(**kw)

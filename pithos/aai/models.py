@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import datetime
+
 from django.db import models
 
 from pithos import settings

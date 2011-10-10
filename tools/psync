@@ -37,14 +37,21 @@ import os
 import sqlite3
 import sys
 
-from cStringIO import StringIO
-from hashlib import md5
-
+from lib import transfer
 from lib.client import Pithos_Client, Fault
+from lib.hashmap import merkle
+from lib.util import get_user, get_auth, get_server
 
+
+CONTAINER = 'pithos'
 
 SQL_CREATE_TABLE = '''CREATE TABLE IF NOT EXISTS files (
                         path TEXT PRIMARY KEY, hash TEXT)'''
+
+client = None
+lstate = None
+cstate = None
+rstate = None
 
 
 class LocalState(object):
@@ -57,7 +64,7 @@ class LocalState(object):
     def get(self, path):
         sql = 'SELECT hash FROM files WHERE path = ?'
         ret = self.conn.execute(sql, (path,)).fetchone()
-        return ret[0] if ret else ''
+        return ret[0] if ret else 'DEL'
     
     def put(self, path, hash):
         sql = 'INSERT OR REPLACE INTO files VALUES (?, ?)'
@@ -69,121 +76,152 @@ class CurrentState(object):
     def __init__(self, dir):
         self.dir = dir
     
-    def list(self):
-        return os.listdir(self.dir)
-        
     def get(self, path):
         fullpath = os.path.join(self.dir, path)
         if os.path.exists(fullpath):
-            with open(fullpath) as f:
-                data = f.read()
-                return md5(data).hexdigest()
+            if os.path.isdir(fullpath):
+                return 'DIR'
+            else:
+                return merkle(fullpath)
         else:
-            return ''
-
-    def read(self, path):
-        fullpath = os.path.join(self.dir, path)
-        if not os.path.exists(fullpath):
-            return None
-        with open(fullpath) as f:
-            return f.read()
+            return 'DEL'
     
-    def write(self, path, data):
-        fullpath = os.path.join(self.dir, path)
-        if data is None:
-            os.remove(fullpath)
-        else:
-            with open(fullpath, 'w') as f:
-                f.write(data)
-    
-    def resolve_conflict(self, path):
-        fullpath = os.path.join(self.dir, path)
-        os.rename(fullpath, fullpath + '.local')
+    def fullpath(self, path):
+        return os.path.join(self.dir, path)
 
 
 class RemoteState(object):
-    def __init__(self):
-        host = os.environ['PITHOS_SERVER']
-        user = os.environ['PITHOS_USER']
-        token = os.environ['PITHOS_AUTH']
+    def __init__(self, client):
         self.container = 'pithos'
-        self.client = Pithos_Client(host, token, user)
-
-    def list(self):
-        return self.client.list_objects(self.container)
-        
+        self.client = client
+        self.container = CONTAINER
+    
     def get(self, path):
         try:
             meta = self.client.retrieve_object_metadata(self.container, path)
         except Fault:
-            return ''
-        return meta['etag']
-    
-    def read(self, path):
-        try:
-            return self.client.retrieve_object(self.container, path)
-        except Fault:
-            return None
-    
-    def write(self, path, data):
-        if data is None:
-            self.client.delete_object(self.container, path)
+            return 'DEL'
+        if meta.get('content-type', None) == 'application/directory':
+            return 'DIR'
         else:
-            f = StringIO(data)
-            self.client.create_object(self.container, path, f=f)
+            return meta['etag']
 
 
-def sync(path, lstate, cstate, rstate):
-    s0 = lstate.get(path)
-    s1 = cstate.get(path)
-    s = rstate.get(path)
+def download(path, S):
+    fullpath = cstate.fullpath(path)
+    if S == 'DEL':
+        os.remove(fullpath)
+    elif S == 'DIR':
+        if os.path.exists(fullpath):
+            os.remove(fullpath)
+        os.mkdir(fullpath)
+    else:
+        transfer.download(client, CONTAINER, path, fullpath)
+        assert cstate.get(path) == S
 
-    if s1 == s0:
+
+def upload(path, S):
+    fullpath = cstate.fullpath(path)
+    if S == 'DEL':
+        client.delete_object(CONTAINER, path)
+    elif S == 'DIR':
+        client.create_directory_marker(CONTAINER, path)
+    else:
+        prefix, name = os.path.split(path)
+        if prefix:
+            prefix += '/'
+        transfer.upload(client, fullpath, CONTAINER, prefix, name)
+        assert rstate.get(path) == S
+
+
+def resolve_conflict(path):
+    fullpath = cstate.fullpath(path)
+    if os.path.exists(fullpath):
+        os.rename(fullpath, fullpath + '.local')
+
+
+def sync(path):
+    L = lstate.get(path)
+    C = cstate.get(path)
+    R = rstate.get(path)
+
+    if C == L:
         # No local changes
-        if s != s0:
-            data = rstate.read(path)
-            cstate.write(path, data)
-            assert cstate.get(path) == s
-            lstate.put(path, s)
+        if R != L:
+            download(path, R)
+            lstate.put(path, R)
         return
     
-    if s == s0:
+    if R == L:
         # No remote changes
-        if s1 != s0:
-            data = cstate.read(path)
-            rstate.write(path, data)
-            assert rstate.get(path) == s1
-            lstate.put(path, s1)
+        if C != L:
+            upload(path, C)
+            lstate.put(path, C)
         return
     
     # At this point both local and remote states have changes since last sync
 
-    if s1 == s:
+    if C == R:
         # We were lucky, both had the same change
-        lstate.put(path, s)
+        lstate.put(path, R)
     else:
         # Conflict, try to resolve it
-        cstate.resolve_conflict(path)
-        data = rstate.read(path)
-        cstate.write(path, data)
-        assert cstate.get(path) == s
-        lstate.put(path, s)
+        resolve_conflict(path)
+        download(path, R)
+        lstate.put(path, R)
+
+
+def walk(dir):
+    pending = ['']
+    
+    while pending:
+        dirs = set()
+        files = set()
+        root = pending.pop(0)
+        if root:
+            yield root
+        
+        dirpath = os.path.join(dir, root)
+        if os.path.exists(dirpath):
+            for filename in os.listdir(dirpath):
+                path = os.path.join(root, filename)
+                if os.path.isdir(os.path.join(dir, path)):
+                    dirs.add(path)
+                else:
+                    files.add(path)
+        
+        for object in client.list_objects(CONTAINER, prefix=root,
+                                            delimiter='/', format='json'):
+            if 'subdir' in object:
+                continue
+            name = str(object['name'])
+            if object['content_type'] == 'application/directory':
+                dirs.add(name)
+            else:
+                files.add(name)
+        
+        pending += sorted(dirs)
+        for path in files:
+            yield path
 
 
 def main():
+    global client, lstate, cstate, rstate
+    
     if len(sys.argv) != 2:
         print 'syntax: %s <dir>' % sys.argv[0]
         sys.exit(1)
     
+    dir = sys.argv[1]
+    client = Pithos_Client(get_server(), get_auth(), get_user())
+    
     lstate = LocalState()
-    cstate = CurrentState(sys.argv[1])
-    rstate = RemoteState()
-
-    local_files = set(cstate.list())
-    remote_files = set(rstate.list())
-
-    for path in local_files | remote_files:
-        sync(path, lstate, cstate, rstate)
+    cstate = CurrentState(dir)
+    rstate = RemoteState(client)
+    
+    for path in walk(dir):
+        print 'Syncing', path
+        sync(path)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ Assuming a clean debian squeeze (stable) installation, use the following steps t
 Install packages::
 
   apt-get install git python-django python-setuptools python-sphinx
-  apt-get install python-sqlalchemy python-psycopg2
+  apt-get install python-sqlalchemy python-mysqldb python-psycopg2
   apt-get install apache2 libapache2-mod-wsgi
 
 Get the source::

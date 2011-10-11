@@ -164,7 +164,7 @@ Edit ``/etc/mysql/my.cnf`` to allow network connections and restart the server.
 
 Create database and user::
 
-  CREATE DATABASE pithos;
+  CREATE DATABASE pithosdb CHARACTER SET utf8 COLLATE utf8_bin;
   GRANT ALL ON pithos.* TO pithos@localhost IDENTIFIED BY 'password';
   GRANT ALL ON pithos.* TO pithos@'%' IDENTIFIED BY 'password';
 

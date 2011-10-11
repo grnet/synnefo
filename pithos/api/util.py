@@ -55,7 +55,7 @@ import logging
 import re
 import hashlib
 import uuid
-
+import decimal
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,11 @@ class UTC(tzinfo):
 
    def dst(self, dt):
        return timedelta(0)
+
+def json_encode_decimal(obj):
+    if isinstance(obj, decimal.Decimal):
+        return str(obj)
+    raise TypeError(repr(obj) + " is not JSON serializable")
 
 def isoformat(d):
    """Return an ISO8601 date string that includes a timezone."""

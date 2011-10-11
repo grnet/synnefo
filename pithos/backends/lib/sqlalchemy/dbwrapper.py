@@ -46,6 +46,9 @@ class DBWrapper(object):
                 def connect(self, dbapi_con, con_record):
                     db_cursor = dbapi_con.execute('pragma foreign_keys=ON')
             self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
+        if db.startswith('mysql://'):
+            db = '%s?charset=utf8&use_unicode=0' %db
+            self.engine = create_engine(db, convert_unicode=True)
         else:
             self.engine = create_engine(db)
         #self.engine.echo = True

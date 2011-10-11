@@ -9,7 +9,7 @@ Assuming a clean debian squeeze (stable) installation, use the following steps t
 Install packages::
 
   apt-get install git python-django python-setuptools python-sphinx
-  apt-get install python-sqlalchemy python-psycopg2
+  apt-get install python-sqlalchemy python-mysqldb python-psycopg2
   apt-get install apache2 libapache2-mod-wsgi
 
 Get the source::
@@ -164,7 +164,7 @@ Edit ``/etc/mysql/my.cnf`` to allow network connections and restart the server.
 
 Create database and user::
 
-  CREATE DATABASE pithosdb CHARACTER SET utf8 COLLATE utf8_bin;
+  CREATE DATABASE pithos CHARACTER SET utf8 COLLATE utf8_bin;
   GRANT ALL ON pithos.* TO pithos@localhost IDENTIFIED BY 'password';
   GRANT ALL ON pithos.* TO pithos@'%' IDENTIFIED BY 'password';
 

@@ -41,7 +41,7 @@ from synnefo.aai.shibboleth import Tokens
 
 
 class AaiTestCase(TestCase):
-    fixtures = ['api_test_data', 'auth_test_data']
+    fixtures = ['users', 'api_test_data', 'auth_test_data']
     apibase = '/api/v1.1'
 
     def setUp(self):

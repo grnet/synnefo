@@ -54,7 +54,7 @@ class AaiClient(Client):
 
 
 class APITestCase(TestCase):
-    fixtures = ['api_test_data', 'users.json']
+    fixtures = ['users', 'api_test_data']
     test_server_id = 1001
     test_image_id = 1
     test_flavor_id = 1
@@ -417,7 +417,7 @@ class BaseTestCase(TestCase):
     SERVERS = 1
     SERVER_METADATA = 0
     IMAGE_METADATA = 0
-    fixtures = ['users.json']
+    fixtures = ['users']
 
     def setUp(self):
         self.client = AaiClient()
@@ -819,7 +819,7 @@ class ServerVNCConsole(BaseTestCase):
 
 
 class AaiTestCase(TestCase):
-    fixtures = ['api_test_data', 'auth_test_data']
+    fixtures = ['users', 'api_test_data', 'auth_test_data']
     apibase = '/api/v1.1'
 
     def setUp(self):

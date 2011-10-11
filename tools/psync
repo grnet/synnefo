@@ -43,7 +43,14 @@ from lib.hashmap import merkle
 from lib.util import get_user, get_auth, get_server
 
 
-CONTAINER = 'pithos'
+DEFAULT_CONTAINER = 'pithos'
+
+def get_container():
+    try:
+        return os.environ['PITHOS_SYNC_CONTAINER']
+    except KeyError:
+        return DEFAULT_CONTAINER
+
 
 SQL_CREATE_TABLE = '''CREATE TABLE IF NOT EXISTS files (
                         path TEXT PRIMARY KEY, hash TEXT)'''
@@ -92,9 +99,8 @@ class CurrentState(object):
 
 class RemoteState(object):
     def __init__(self, client):
-        self.container = 'pithos'
         self.client = client
-        self.container = CONTAINER
+        self.container = get_container()
     
     def get(self, path):
         try:
@@ -116,21 +122,21 @@ def download(path, S):
             os.remove(fullpath)
         os.mkdir(fullpath)
     else:
-        transfer.download(client, CONTAINER, path, fullpath)
+        transfer.download(client, get_container(), path, fullpath)
         assert cstate.get(path) == S
 
 
 def upload(path, S):
     fullpath = cstate.fullpath(path)
     if S == 'DEL':
-        client.delete_object(CONTAINER, path)
+        client.delete_object(get_container(), path)
     elif S == 'DIR':
-        client.create_directory_marker(CONTAINER, path)
+        client.create_directory_marker(get_container(), path)
     else:
         prefix, name = os.path.split(path)
         if prefix:
             prefix += '/'
-        transfer.upload(client, fullpath, CONTAINER, prefix, name)
+        transfer.upload(client, fullpath, get_container(), prefix, name)
         assert rstate.get(path) == S
 
 
@@ -190,7 +196,7 @@ def walk(dir):
                 else:
                     files.add(path)
         
-        for object in client.list_objects(CONTAINER, prefix=root,
+        for object in client.list_objects(get_container(), prefix=root,
                                             delimiter='/', format='json'):
             if 'subdir' in object:
                 continue

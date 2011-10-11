@@ -40,18 +40,18 @@ from cStringIO import StringIO
 from client import Fault
 
 
-def upload(client, file, container, prefix, name=None, mimetype=None):
+def upload(client, path, container, prefix, name=None, mimetype=None):
     
     meta = client.retrieve_container_metadata(container)
     blocksize = int(meta['x-container-block-size'])
     blockhash = meta['x-container-block-hash']
     
-    size = os.path.getsize(file)
+    size = os.path.getsize(path)
     hashes = HashMap(blocksize, blockhash)
-    hashes.load(open(file))
+    hashes.load(open(path))
     map = {'bytes': size, 'hashes': [hexlify(x) for x in hashes]}
     
-    objectname = name if name else os.path.split(file)[-1]
+    objectname = name if name else os.path.split(path)[-1]
     object = prefix + objectname
     kwargs = {'mimetype':mimetype} if mimetype else {}
     v = None
@@ -71,7 +71,7 @@ def upload(client, file, container, prefix, name=None, mimetype=None):
     if '' in missing:
         del missing[missing.index(''):]
     
-    with open(file) as fp:
+    with open(path) as fp:
         for hash in missing:
             offset = hashes.index(unhexlify(hash)) * blocksize
             fp.seek(offset)
@@ -80,23 +80,24 @@ def upload(client, file, container, prefix, name=None, mimetype=None):
     
     return client.create_object_by_hashmap(container, object, map, **kwargs)
 
-def download(client, container, object, file):
+def download(client, container, object, path):
     
     meta = client.retrieve_container_metadata(container)
     blocksize = int(meta['x-container-block-size'])
     blockhash = meta['x-container-block-hash']
     
-    if os.path.isfile(file):
-        size = os.path.getsize(file)
+    if os.path.exists(path):
+        size = os.path.getsize(path)
         hashes = HashMap(blocksize, blockhash)
-        hashes.load(file)
+        hashes.load(open(path))
     else:
+        open(path, 'w').close()     # Create an empty file
         size = 0
         hashes = []
     
     map = client.retrieve_object_hashmap(container, object)
     
-    with open(file, 'a') as fp:
+    with open(path, 'a') as fp:
         for i, h in enumerate(map):
             if i < len(hashes) and h == hashes[i]:
                 continue

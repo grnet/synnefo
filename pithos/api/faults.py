@@ -66,6 +66,9 @@ class LengthRequired(Fault):
 class PreconditionFailed(Fault):
     code = 412
 
+class RequestEntityTooLarge(Fault):
+    code = 413
+
 class RangeNotSatisfiable(Fault):
     code = 416
 

@@ -33,6 +33,9 @@
 
 import hashlib
 
+from binascii import hexlify
+
+
 def file_read_iterator(fp, size=1024):
     while True:
         data = fp.read(size)
@@ -75,3 +78,9 @@ class HashMap(list):
         for block in file_read_iterator(fp, self.blocksize):
             self.append(self._hash_block(block))
             self.size += len(block)
+
+
+def merkle(path, blocksize=4194304, blockhash='sha256'):
+    hashes = HashMap(blocksize, blockhash)
+    hashes.load(open(path))
+    return hexlify(hashes.hash())

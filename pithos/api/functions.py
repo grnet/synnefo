@@ -49,7 +49,7 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
-    object_data_response, put_object_block, hashmap_hash, api_method)
+    object_data_response, put_object_block, hashmap_hash, api_method, json_encode_decimal)
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError
 
@@ -192,7 +192,7 @@ def account_meta(request, v_account):
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse(status=204)
-    put_account_headers(response, meta, groups)
+    put_account_headers(response, request.quota, meta, groups)
     return response
 
 @api_method('POST')
@@ -240,7 +240,7 @@ def container_list(request, v_account):
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_account_headers(response, meta, groups)
+    put_account_headers(response, request.quota, meta, groups)
     
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
@@ -329,10 +329,14 @@ def container_create(request, v_account, v_container):
     #                       badRequest (400)
     
     meta, policy = get_container_headers(request)
+    try:
+        if policy and int(policy.get('quota', 0)) > request.quota:
+            policy['quota'] = request.quota
+    except:
+        raise BadRequest('Invalid quota header')
     
     try:
-        request.backend.put_container(request.user, v_account, v_container,
-                                        policy)
+        request.backend.put_container(request.user, v_account, v_container, policy)
         ret = 201
     except NotAllowedError:
         raise Unauthorized('Access denied')
@@ -375,6 +379,11 @@ def container_update(request, v_account, v_container):
     if 'update' in request.GET:
         replace = False
     if policy:
+        try:
+            if int(policy.get('quota', 0)) > request.quota:
+                policy['quota'] = request.quota
+        except:
+            raise BadRequest('Invalid quota header')
         try:
             request.backend.update_container_policy(request.user, v_account,
                                                 v_container, policy, replace)
@@ -542,7 +551,7 @@ def object_list(request, v_account, v_container):
     if request.serialization == 'xml':
         data = render_to_string('objects.xml', {'container': v_container, 'objects': object_meta})
     elif request.serialization  == 'json':
-        data = json.dumps(object_meta)
+        data = json.dumps(object_meta, default=json_encode_decimal)
     response.status_code = 200
     response.content = data
     return response
@@ -619,7 +628,7 @@ def object_read(request, v_account, v_container, v_object):
             d['object'] = v_object
             data = render_to_string('versions.xml', d)
         elif request.serialization  == 'json':
-            data = json.dumps(d)
+            data = json.dumps(d, default=json_encode_decimal)
         
         response = HttpResponse(data, status=200)
         response['Content-Length'] = len(data)

@@ -42,8 +42,8 @@ class Public(DBWorker):
         DBWorker.__init__(self, **params)
         metadata = MetaData()
         columns=[]
-        columns.append(Column('path', String(2048), primary_key=True))
-        self.public = Table('public', metadata, *columns)
+        columns.append(Column('path', String(2048), index=True))
+        self.public = Table('public', metadata, *columns, mysql_engine='InnoDB')
         metadata.create_all(self.engine)
     
     

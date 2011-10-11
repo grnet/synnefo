@@ -71,15 +71,14 @@ HANDLE_WINDOW_EXCEPTIONS = getattr(settings, "UI_HANDLE_WINDOW_EXCEPTIONS", True
 SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 # MEDIA PATHS
-UI_MEDIA_URL = getattr(settings, "MEDIA_URL", "/static/")
-UI_SYNNEFO_MEDIA_URL = getattr(settings,
-                    "UI_SYNNEFO_MEDIA_URL", UI_MEDIA_URL + "snf-%s/" % SYNNEFO_JS_LIB_VERSION)
+UI_MEDIA_URL = getattr(settings, "UI_MEDIA_URL",
+                    "%ssnf-%s/" % (settings.MEDIA_URL, SYNNEFO_JS_LIB_VERSION))
 UI_SYNNEFO_IMAGES_URL = getattr(settings,
-                    "UI_SYNNEFO_IMAGES_URL", UI_SYNNEFO_MEDIA_URL + "images/")
+                    "UI_SYNNEFO_IMAGES_URL", UI_MEDIA_URL + "images/")
 UI_SYNNEFO_CSS_URL = getattr(settings,
-                    "UI_SYNNEFO_CSS_URL", UI_SYNNEFO_MEDIA_URL + "css/")
+                    "UI_SYNNEFO_CSS_URL", UI_MEDIA_URL + "css/")
 UI_SYNNEFO_JS_URL = getattr(settings,
-                    "UI_SYNNEFO_JS_URL", UI_SYNNEFO_MEDIA_URL + "js/")
+                    "UI_SYNNEFO_JS_URL", UI_MEDIA_URL + "js/")
 UI_SYNNEFO_JS_LIB_URL = getattr(settings,
                     "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
 UI_SYNNEFO_JS_WEB_URL = getattr(settings,
@@ -92,7 +91,6 @@ def template(name, context):
     t = loader.get_template(current_template)
     media_context = {
        'UI_MEDIA_URL': UI_MEDIA_URL,
-       'SYNNEFO_MEDIA_URL': UI_SYNNEFO_MEDIA_URL,
        'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
        'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
        'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,

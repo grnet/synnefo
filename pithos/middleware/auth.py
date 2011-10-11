@@ -63,3 +63,4 @@ class AuthMiddleware(object):
         
         request.user_obj = user
         request.user = user.uniq
+        request.quota = user.quota

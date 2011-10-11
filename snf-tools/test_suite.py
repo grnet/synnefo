@@ -630,7 +630,10 @@ def _spawn_server_test_case(**kwargs):
         inspect.getmembers(cls, lambda x: inspect.ismethod(x)):
             if hasattr(m, __doc__):
                 m.__func__.__doc__ = "[%s] %s" % (imagename, m.__doc__)
-    setattr(__main__,name,cls)
+
+    # Make sure the class can be pickled, by listing it among
+    # the attributes of __main__. A PicklingError is raised otherwise.
+    setattr(__main__, name, cls)
     return cls
 
 

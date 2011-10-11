@@ -312,7 +312,7 @@ class RegisterImage(Command):
     def add_options(self, parser):
         parser.add_option('--meta', dest='meta', action='append',
                             metavar='KEY=VAL',
-                            help='assign image to user with id UID')
+                            help='add metadata (can be used multiple times)')
         parser.add_option('--public', action='store_true', dest='public',
                             default=False, help='make image public')
         parser.add_option('-u', dest='uid', metavar='UID',
@@ -344,7 +344,7 @@ class RegisterImage(Command):
             for m in self.meta:
                 key, sep, val = m.partition('=')
                 if key and val:
-                    image.imagemetadata_set.create(meta_key=key, meta_value=val)
+                    image.metadata.create(meta_key=key, meta_value=val)
                 else:
                     print 'WARNING: Ignoring meta', m
         

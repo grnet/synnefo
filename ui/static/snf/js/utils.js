@@ -173,6 +173,7 @@
     }
 
     synnefo.util.truncate = function(string, size, append, words) {
+        if (string === undefined) { return "" };
         if (string.length <= size) {
             return string;
         }

@@ -192,7 +192,7 @@ def account_meta(request, v_account):
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse(status=204)
-    put_account_headers(response, meta, groups)
+    put_account_headers(response, request.quota, meta, groups)
     return response
 
 @api_method('POST')
@@ -240,7 +240,7 @@ def container_list(request, v_account):
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_account_headers(response, meta, groups)
+    put_account_headers(response, request.quota, meta, groups)
     
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
@@ -329,10 +329,14 @@ def container_create(request, v_account, v_container):
     #                       badRequest (400)
     
     meta, policy = get_container_headers(request)
+    try:
+        if policy and int(policy.get('quota', 0)) > request.quota:
+            policy['quota'] = request.quota
+    except:
+        raise BadRequest('Invalid quota header')
     
     try:
-        request.backend.put_container(request.user, v_account, v_container,
-                                        policy)
+        request.backend.put_container(request.user, v_account, v_container, policy)
         ret = 201
     except NotAllowedError:
         raise Unauthorized('Access denied')
@@ -375,6 +379,11 @@ def container_update(request, v_account, v_container):
     if 'update' in request.GET:
         replace = False
     if policy:
+        try:
+            if int(policy.get('quota', 0)) > request.quota:
+                policy['quota'] = request.quota
+        except:
+            raise BadRequest('Invalid quota header')
         try:
             request.backend.update_container_policy(request.user, v_account,
                                                 v_container, policy, replace)

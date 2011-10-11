@@ -221,7 +221,7 @@ Reply Header Name           Value
 X-Account-Container-Count   The total number of containers
 X-Account-Object-Count      The total number of objects (**TBD**)
 X-Account-Bytes-Used        The total number of bytes stored
-X-Account-Bytes-Remaining   The total number of bytes remaining (**TBD**)
+X-Account-Bytes-Remaining   The total number of bytes remaining
 X-Account-Last-Login        The last login (**TBD**)
 X-Account-Until-Timestamp   The last account modification date until the timestamp provided
 X-Account-Group-*           Optional user defined groups

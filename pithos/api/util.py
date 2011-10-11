@@ -114,11 +114,13 @@ def get_account_headers(request):
             groups[n].remove('')
     return meta, groups
 
-def put_account_headers(response, meta, groups):
+def put_account_headers(response, quota, meta, groups):
     if 'count' in meta:
         response['X-Account-Container-Count'] = meta['count']
     if 'bytes' in meta:
         response['X-Account-Bytes-Used'] = meta['bytes']
+        if quota:
+            response['X-Account-Bytes-Remaining'] = quota - meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
         response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
@@ -285,7 +287,6 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     """Copy or move an object."""
     
     meta, permissions, public = get_object_headers(request)
-    print '---', meta, permissions, public
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:

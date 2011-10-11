@@ -1304,7 +1304,7 @@
 
         parse_meta: function(img) {
             _.each(this.meta_keys_as_attrs, _.bind(function(key){
-                img[key] = this.get_meta_key(img, key);
+                img[key] = this.get_meta_key(img, key) || "";
             }, this));
             return img;
         },

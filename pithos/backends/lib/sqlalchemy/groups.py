@@ -47,7 +47,7 @@ class Groups(DBWorker):
         columns.append(Column('owner', String(255), primary_key=True))
         columns.append(Column('name', String(255), primary_key=True))
         columns.append(Column('member', String(255), primary_key=True))
-        self.groups = Table('groups', metadata, *columns, mysql_engine='InnoDB')
+        self.groups = Table('groups', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         
         # place an index on member
         Index('idx_groups_member', self.groups.c.member)

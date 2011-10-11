@@ -160,6 +160,11 @@ Server side::
 
   apt-get install mysql-server
 
+Add in ``/etc/mysql/conf.d/pithos.cnf``::
+
+  [mysqld]
+  sql-mode="NO_AUTO_VALUE_ON_ZERO"
+
 Edit ``/etc/mysql/my.cnf`` to allow network connections and restart the server.
 
 Create database and user::
@@ -181,10 +186,6 @@ It helps to create a ``~/.my.cnf`` file, for automatically connecting to the ser
 
   [mysql]
   database = pithos
-  
-  [mysqld]
-  default-storage-engine = InnoDB
-  sql_mode="NO_AUTO_VALUE_ON_ZERO"
 
 PostgreSQL Setup
 ----------------

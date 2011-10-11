@@ -51,7 +51,7 @@ class XFeatures(DBWorker):
         columns=[]
         columns.append(Column('feature_id', Integer, primary_key=True))
         columns.append(Column('path', String(2048)))
-        self.xfeatures = Table('xfeatures', metadata, *columns)
+        self.xfeatures = Table('xfeatures', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         # place an index on path
         Index('idx_features_path', self.xfeatures.c.path)
         
@@ -63,7 +63,7 @@ class XFeatures(DBWorker):
         columns.append(Column('key', Integer, primary_key=True,
                               autoincrement=False))
         columns.append(Column('value', String(255), primary_key=True))
-        self.xfeaturevals = Table('xfeaturevals', metadata, *columns)
+        self.xfeaturevals = Table('xfeaturevals', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         
         metadata.create_all(self.engine)
     

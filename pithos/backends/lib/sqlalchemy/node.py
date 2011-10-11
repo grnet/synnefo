@@ -115,7 +115,7 @@ class Node(DBWorker):
                                          onupdate='CASCADE'),
                               autoincrement=False))
         columns.append(Column('path', String(2048), default='', nullable=False))
-        self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
+        self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         # place an index on path
         Index('idx_nodes_path', self.nodes.c.path)
         
@@ -130,8 +130,8 @@ class Node(DBWorker):
         columns.append(Column('size', BigInteger, nullable=False, default=0))
         columns.append(Column('mtime', DECIMAL))
         columns.append(Column('cluster', Integer, nullable=False, default=0,
-                              primary_key=True))
-        self.statistics = Table('statistics', metadata, *columns, mysql_engine='InnoDB')
+                              primary_key=True, autoincrement=False))
+        self.statistics = Table('statistics', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         
         #create versions table
         columns=[]
@@ -146,7 +146,7 @@ class Node(DBWorker):
         columns.append(Column('mtime', DECIMAL))
         columns.append(Column('muser', String(255), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
-        self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
+        self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         Index('idx_versions_node_mtime', self.versions.c.node,
               self.versions.c.mtime)
         
@@ -159,7 +159,7 @@ class Node(DBWorker):
                               primary_key=True))
         columns.append(Column('key', String(255), primary_key=True))
         columns.append(Column('value', String(255)))
-        self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
+        self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
         
         metadata.create_all(self.engine)
         

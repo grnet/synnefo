@@ -5,7 +5,7 @@ This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
 
-v0.6.2 -> TBD
+v0.6.2 -> v0.7
 HTML TEMPLATES
     * Included a generic service unavailable template based on
       generic_info_tpl.html, as ui/static/service_unavailable.html.
@@ -14,8 +14,17 @@ NEW DEPENDENCIES
     * python-unittest2, python-paramiko needed by the new integration
       test suite snf-tools/snf-test. Paramiko shipped with Squeeze uses
       broken RandomPool, produces warnings, see #576697.
+    * snf-image must be installed on all Ganeti hosts, see README.deploy,
+      Step 13.
 
-NEW SETTINGS
+COMPONENTS
+    * snf-image replaces snf-ganeti-instance-image as the Ganeti OS provider
+      used by Synnefo, and can live alongside snf-ganeti-instance-image.
+      Once snf-image has been deployed on all Ganeti nodes, be sure to modify
+      the value of settings.d/10-backend.conf:GANETI_CREATEINSTANCE_KWARGS
+      to use 'snf-image+default'.
+
+NEW/UPDATED SETTINGS
     * EMAIL_SUBJECT_PREFIX:
       Prepended to automated emails, set to someting that uniquely identifies
       the deployment.
@@ -38,6 +47,8 @@ NEW SETTINGS
       error overlay.
     * UI_HANDLE_WINDOW_EXCEPTIONS in 30-ui.conf:
       Whether UI should display error overlay for all Javascript exceptions.
+    * GANETI_CREATEINSTANCE_KWARGS in 10-backend.conf:
+      Must be updated to use snf-image as the Ganeti OS provider.
     
 DB MIGRATION
     * Uniqueness constraints have been added to the metadata models.

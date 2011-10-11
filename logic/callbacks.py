@@ -30,26 +30,28 @@
 # Callback functions used by the dispatcher to process incoming notifications
 # from AMQP queues.
 
+import logging
 import socket
 import traceback
 import json
 import sys
 
 from synnefo.db.models import VirtualMachine
-from synnefo.logic import utils, backend, email_send, log
+from synnefo.logic import utils, backend, email_send
 
-_logger = log.get_logger("synnefo.dispatcher")
+
+log = logging.getLogger()
 
 
 def update_db(message):
     """Process a notification of type 'ganeti-op-status'"""
-    _logger.debug("Processing ganeti-op-status msg: %s", message.body)
+    log.debug("Processing ganeti-op-status msg: %s", message.body)
     msg = None
     try:
         msg = json.loads(message.body)
 
         if msg["type"] != "ganeti-op-status":
-            _logger.error("Message is of unknown type %s.", msg["type"])
+            log.error("Message is of unknown type %s.", msg["type"])
             return
 
         if msg["operation"] == "OP_INSTANCE_QUERY_DATA":
@@ -60,53 +62,51 @@ def update_db(message):
 
         backend.process_op_status(vm, msg["jobId"], msg["operation"],
                                   msg["status"], msg["logmsg"])
-        _logger.debug("Done processing ganeti-op-status msg for vm %s.",
+        log.debug("Done processing ganeti-op-status msg for vm %s.",
                       msg["instance"])
         message.channel.basic_ack(message.delivery_tag)
     except KeyError:
-        _logger.error("Malformed incoming JSON, missing attributes: %s",
+        log.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
     except VirtualMachine.InvalidBackendIdError:
-        _logger.debug("Ignoring msg for unknown instance %s.",
-                      msg["instance"])
+        log.debug("Ignoring msg for unknown instance %s.", msg["instance"])
     except VirtualMachine.InvalidBackendMsgError, e:
-        _logger.debug("Ignoring msg of unknown type: %s.", e)
+        log.debug("Ignoring msg of unknown type: %s.", e)
     except VirtualMachine.DoesNotExist:
-        _logger.error("VM for instance %s with id %d not found in DB.",
+        log.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
     except Exception as e:
-        _logger.exception("Unexpected error, msg: %s", msg)
+        log.exception("Unexpected error, msg: %s", msg)
 
 
 def update_net(message):
     """Process a notification of type 'ganeti-net-status'"""
-    _logger.debug("Processing ganeti-net-status msg: %s", message.body)
+    log.debug("Processing ganeti-net-status msg: %s", message.body)
     msg = None
     try:
         msg = json.loads(message.body)
 
         if msg["type"] != "ganeti-net-status":
-            _logger.error("Message is of unknown type %s", msg["type"])
+            log.error("Message is of unknown type %s", msg["type"])
             return
 
         vmid = utils.id_from_instance_name(msg["instance"])
         vm = VirtualMachine.objects.get(id=vmid)
 
         backend.process_net_status(vm, msg["nics"])
-        _logger.debug("Done processing ganeti-net-status msg for vm %s.",
+        log.debug("Done processing ganeti-net-status msg for vm %s.",
                       msg["instance"])
         message.channel.basic_ack(message.delivery_tag)
     except KeyError:
-        _logger.error("Malformed incoming JSON, missing attributes: %s",
+        log.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
     except VirtualMachine.InvalidBackendIdError:
-        _logger.debug("Ignoring msg for unknown instance %s.",
-                      msg["instance"])
+        log.debug("Ignoring msg for unknown instance %s.", msg["instance"])
     except VirtualMachine.DoesNotExist:
-        _logger.error("VM for instance %s with id %d not found in DB.",
+        log.error("VM for instance %s with id %d not found in DB.",
                       msg["instance"], vmid)
     except Exception as e:
-        _logger.exception("Unexpected error, msg: %s", msg)
+        log.exception("Unexpected error, msg: %s", msg)
 
 
 def send_email(message):
@@ -119,33 +119,33 @@ def send_email(message):
                         body=msg['body'], subject=msg['subject'])
 
         if not sent:
-            _logger.warn("Failed to send email to %s", msg['to'])
+            log.warn("Failed to send email to %s", msg['to'])
         else:
             message.channel.basic_ack(message.delivery_tag)
     except KeyError:
-        _logger.error("Malformed incoming JSON, missing attributes: %s",
+        log.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
     except socket.error as e:
-        _logger.error("Cannot connect to SMTP server:%s\n", e)
+        log.error("Cannot connect to SMTP server:%s\n", e)
     except Exception as e:
-        _logger.exception("Unexpected error, msg: %s", msg)
+        log.exception("Unexpected error, msg: %s", msg)
         raise
 
 
 def update_credits(message):
-    _logger.debug("Request to update credits")
+    log.debug("Request to update credits")
     message.channel.basic_ack(message.delivery_tag)
 
 
 def update_build_progress(message):
     """Process a create progress message"""
-    _logger.debug("Processing ganeti-create-progress msg: %s", message.body)
+    log.debug("Processing ganeti-create-progress msg: %s", message.body)
     msg = None
     try:
         msg = json.loads(message.body)
 
         if msg['type'] != "ganeti-create-progress":
-            _logger.error("Message is of unknown type %s", msg["type"])
+            log.error("Message is of unknown type %s", msg["type"])
             return
 
         # XXX: The following assumes names like snf-12
@@ -153,30 +153,30 @@ def update_build_progress(message):
         vm = VirtualMachine.objects.get(id=vmid)
 
         backend.process_create_progress(vm, msg['rprogress'], None)
-        _logger.debug("Done processing ganeti-create-progress msg for vm %s.",
+        log.debug("Done processing ganeti-create-progress msg for vm %s.",
                       msg["instance"])
         message.channel.basic_ack(message.delivery_tag)
     except KeyError:
-        _logger.error("Malformed incoming JSON, missing attributes: %s",
+        log.error("Malformed incoming JSON, missing attributes: %s",
                       message.body)
     except Exception as e:
-        _logger.exception("Unexpected error, msg: %s", msg)
+        log.exception("Unexpected error, msg: %s", msg)
         raise
 
 
 def trigger_status_update(message):
     """Triggers a status update job for a specific VM id"""
-    _logger.debug("Request to trigger status update: %s", message.body)
+    log.debug("Request to trigger status update: %s", message.body)
     msg = None
     try:
         msg = json.loads(message.body)
 
         if msg["type"] != "reconcile":
-             _logger.error("Message is of unknown type %s", msg["type"])
+             log.error("Message is of unknown type %s", msg["type"])
              return
 
         if msg["vmid"] == "":
-            _logger.error("Reconciliation message does not specify a VM id")
+            log.error("Reconciliation message does not specify a VM id")
             return
 
         vm = VirtualMachine.objects.get(id=msg["vmid"])
@@ -184,9 +184,9 @@ def trigger_status_update(message):
 
         message.channel.basic_ack(message.delivery_tag)
     except KeyError as k:
-        _logger.error("Malformed incoming JSON, missing attributes: %s", k)
+        log.error("Malformed incoming JSON, missing attributes: %s", k)
     except Exception as e:
-        _logger.exception("Unexpected error, msg: %s", msg)
+        log.exception("Unexpected error, msg: %s", msg)
 
 
 def status_job_finished(message):
@@ -196,21 +196,22 @@ def status_job_finished(message):
         msg = json.loads(message.body)
 
         if msg["operation"] != 'OP_INSTANCE_QUERY_DATA':
-            _logger.error("Message is of unknown type %s", msg["operation"])
+            log.error("Message is of unknown type %s", msg["operation"])
             return
 
         if msg["status"] != "success":
-            _logger.warn("Ignoring non-success status update from job %d on VM %s",
+            log.warn("Ignoring non-success status update from job %d on VM %s",
                           msg['jobId'], msg['instance'])
             message.channel.basic_ack(message.delivery_tag)
             return
 
         status = backend.get_job_status(msg['jobId'])
 
-        _logger.debug("Node status job result: %s" % status)
+        log.debug("Node status job result: %s", status)
 
         if status['summary'][0] != u'INSTANCE_QUERY_DATA':
-             _logger.error("Status update is of unknown type %s", status['summary'])
+             log.error("Status update is of unknown type %s",
+                        status['summary'])
              return
 
         conf_state = status['opresult'][0][msg['instance']]['config_state']
@@ -232,15 +233,15 @@ def status_job_finished(message):
 
         message.channel.basic_ack(message.delivery_tag)
     except KeyError as k:
-        _logger.error("Malformed incoming JSON, missing attributes: %s", k)
+        log.error("Malformed incoming JSON, missing attributes: %s", k)
     except Exception as e:
-        _logger.exception("Unexpected error, msg: %s", msg)
+        log.exception("Unexpected error, msg: %s", msg)
 
 
 def dummy_proc(message):
     try:
-        _logger.debug("Msg: %s", message.body)
+        log.debug("Msg: %s", message.body)
         message.channel.basic_ack(message.delivery_tag)
     except Exception as e:
-        _logger.exception("Could not receive message")
+        log.exception("Could not receive message")
         pass

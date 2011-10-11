@@ -230,6 +230,9 @@
             this.menu.find(".server-name").click(function(ev) {
                 ev.preventDefault();
                 var id = $(this).attr("id").replace("single-vm-at-", "");
+                if (self.current_vm != id) {
+                    storage.vms.reset_pending_actions();
+                }
                 self.current_vm = id;
                 self.update_current_vm();
                 self.show_current();

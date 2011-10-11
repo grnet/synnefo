@@ -1,10 +1,12 @@
 {% load i18n %}
 <div id="createvm-overlay-content" class="hidden create-vm">
-    <div class="steps-container clearfix">
-        <div class="step-1 select-image create-step-cont clearfix">
-            <div class="clearfix step-header">
+
+    <div class="steps-history clearfix">
+        <div class="steps-history-cont step1h completed step-header"
+            id="vm-create-step-history-1">
+            <div class="steps-history-step clearfix">
                 <span class="header-step step-1 clearfix">
-                    <span class="num">1/3</span>
+                    <span class="num">1<span class="subnum">/3</span></span>
                     <span class="title">
                         {% trans "Image" %}
                     </span>
@@ -17,6 +19,50 @@
                         </span>
                     </div>
                 </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step2h current step-header"
+           id="vm-create-step-history-2" >
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-2 clearfix">
+                    <span class="num">2<span class="subnum">/3</span></span>
+                    <span class="title">
+                        {% trans "Flavor" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Select CPUs, RAM and Disk Size" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Available options are filtered based on the selected image" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step3h last step-header">
+            <div class="steps-history-step clearfix"
+                id="vm-create-step-history-3">
+                <span class="header-step step-3 clearfix">
+                    <span class="num">3<span class="subnum">/3</span></span>
+                    <span class="title">
+                        {% trans "Name" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Confirm your settings" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Confirm that the options you have selected are correct" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="steps-container clearfix">
+        <div class="step-1 select-image create-step-cont clearfix">
+            <div class="clearfix step-header">
             </div>
             <div class="step-cont clearfix">
                 <div class="images-filter-cont content-cont">
@@ -69,20 +115,6 @@
         </div>
         <div class="step-2 select-flavor create-step-cont clearfix">
             <div class="clearfix step-header">
-                <span class="header-step step-2 clearfix">
-                    <span class="num">2/3</span>
-                    <span class="title">
-                        {% trans "Flavor" %}
-                    </span>
-                    <div class="info">
-                        <span class="subtitle">
-                            {% trans "Select CPUs, RAM and Disk Size" %}
-                        </span>
-                        <span class="description">
-                            {% trans "Available options are filtered based on the selected image" %}
-                        </span>
-                    </div>
-                </span>
             </div>
             <div class="step-cont clearfix">
                 <div class="flavors-predefined-cont content-cont"> 
@@ -122,20 +154,6 @@
         </div>
         <div class="step-3 vm-confirm create-step-cont clearfix">
             <div class="clearfix step-header">
-                <span class="header-step step-3 clearfix">
-                    <span class="num">3/3</span>
-                    <span class="title">
-                        {% trans "Name" %}
-                    </span>
-                    <div class="info">
-                        <span class="subtitle">
-                            {% trans "Confirm your settings" %}
-                        </span>
-                        <span class="description">
-                            {% trans "Confirm that the options you have selected are correct" %}
-                        </span>
-                    </div>
-                </span>
             </div>
             <div class="step-cont clearfix">
                 <div class="rename">
@@ -217,11 +235,12 @@
             </div>
     </div>
 </div>
+
 <div class="create-controls clearfix">
-    <span class="form-action cancel">{% trans "cancel" %}</span>
-    <span class="form-action next">{% trans "next" %}</span>
-    <span class="form-action prev">{% trans "previous" %}</span>
-    <span class="form-action create submit">{% trans "create machine" %}</span>
+    <div class="form-action cancel">{% trans "cancel" %}</div>
+    <div class="form-action next">{% trans "next" %}</div>
+    <div class="form-action prev">{% trans "previous" %}</div>
+    <div class="form-action create submit">{% trans "create machine" %}</div>
 </div>
 </div>
 

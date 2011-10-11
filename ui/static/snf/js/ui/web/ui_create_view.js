@@ -48,7 +48,7 @@
         },
         
         beforeOpen: function() {
-            if (this.clipboard) { return };
+            try { delete this.clipboard } catch (err) { console.log(err) };
             this.clipboard = new util.ClipHelper(this.copy);
         },
         
@@ -661,12 +661,12 @@
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 
             if (!this.name_changed && this.parent.visible()) {
-                if (!$.browser.msie) {
+                if (!$.browser.msie && !$.browser.opera) {
                     this.$("#create-vm-name").select();
                 } else {
                     window.setTimeout(_.bind(function(){
                         this.$("#create-vm-name").select();
-                    }, this), 100)
+                    }, this), 400)
                 }
             }
             
@@ -725,15 +725,19 @@
             this.steps[2] = new views.CreateFlavorSelectView(this);
             this.steps[3] = new views.CreateSubmitView(this);
 
-            this.cancel_btn = this.$(".create-controls .cancel")
-            this.next_btn = this.$(".create-controls .next")
-            this.prev_btn = this.$(".create-controls .prev")
-            this.submit_btn = this.$(".create-controls .submit")
+            this.cancel_btn = this.$(".create-controls .cancel");
+            this.next_btn = this.$(".create-controls .next");
+            this.prev_btn = this.$(".create-controls .prev");
+            this.submit_btn = this.$(".create-controls .submit");
+
+            this.history = this.$(".steps-history");
+            this.history_steps = this.$(".steps-history .steps-history-step");
             
             this.init_handlers();
         },
 
         init_handlers: function() {
+            var self = this;
             this.next_btn.click(_.bind(function(){
                 this.set_step(this.current_step + 1);
                 this.update_layout();
@@ -748,6 +752,12 @@
             this.submit_btn.click(_.bind(function(){
                 this.submit();
             }, this))
+            
+            this.history.find(".completed").live("click", function() {
+                var step = parseInt($(this).attr("id").replace("vm-create-step-history-", ""));
+                self.set_step(step);
+                self.update_layout();
+            })
         },
 
         set_step: function(st) {
@@ -831,7 +841,28 @@
             this.steps[step].show();
             var width = this.el.find('.container').width();
             var left = (step -1) * width * -1;
-            this.$(".steps-container").css({"margin-left": left + "px"});
+            this.$(".steps-container").animate({"margin-left": left + "px"}, 300);
+
+            this.update_steps_history();
+        },
+
+        update_steps_history: function() {
+            var self = this;
+            function get_step(s) {
+                return self.history.find(".step" + s + "h");
+            }
+            
+            var current_step = parseInt(this.current_view.step);
+            _.each(this.steps, function(stepv) {
+                var step = parseInt(stepv.step);
+                get_step(step).removeClass("completed").removeClass("current");
+                if (step == current_step) {
+                    get_step(step).removeClass("completed").addClass("current");
+                }
+                if (step < current_step) {
+                    get_step(step).removeClass("current").addClass("completed");
+                }
+            });
         },
 
         update_controls: function() {

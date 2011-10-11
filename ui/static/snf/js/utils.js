@@ -161,14 +161,13 @@
         this.clip.addEventListener('complete', _.bind(function(client, text) {
             var tip = el.data("tooltip")
             tip.hide().getTip().text("Copied");
+            
             window.setTimeout(function() {
                 tip.show();
             }, 70)
+
             window.setTimeout(function() {
                 tip.hide().getTip().text(copy_prompt);
-                window.setTimeout(function(){
-                    tip.show();
-                }, 100)
             }, 3000)
         }, this));
     }

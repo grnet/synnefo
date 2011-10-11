@@ -42,8 +42,8 @@
                         <div class="indicator4"></div>
                     </div>
                     <div class="action-indicator"></div>
-                    <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
-                    <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+                    <img class="spinner" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/progress.gif" />
+                    <img class="wave" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/wave.gif" />
                 </div>
                 </div>
                 <div class="info-content">
@@ -62,14 +62,14 @@
                         <div class="vm-stats metadata-column">
                             <div class='stat-label'>{% trans "CPU" %}</div>
                             <div class='stat-content cpu-cont cpu-graph'>
-                                <img src="./static/placeholder.png" class="cpu bar stat-img" />
-                                <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                                <img src="{{ SYNNEFO_IMAGES_URL }}placeholder.png" class="cpu bar stat-img" />
+                                <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" class="stat-busy" />
                                 <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                             </div>
                             <div class='stat-label'>{% trans "Net" %}</div>
                             <div class='stat-content net-cont network-graph'>
-                                <img src="./static/placeholder.png" class="net bar stat-img" />
-                                <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                                <img src="{{ SYNNEFO_IMAGES_URL }}placeholder.png" class="net bar stat-img" />
+                                <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" class="stat-busy" />
                                 <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                             </div>
                             <a href="#" class="stats-report">{% trans "Full report" %}</a>

@@ -16,8 +16,8 @@
                         <div class="indicator4"></div>
                     </div>
                     <div class="action-indicator" style="display:none">empty</div>
-                    <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
-                    <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+                    <img class="spinner" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/progress.gif" />
+                    <img class="wave" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/wave.gif" />
                 </div>
                 <div class="progress-message"><span class="build-progress"></span></div>
             </div>
@@ -113,8 +113,8 @@
                     {% trans "CPU Utilization" %}
                 </div>
                 <div class="cpu-graph">
-                    <img src="./static/placeholder.png" class="stat-img stats series" />
-                    <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                    <img src="{{ SYNNEFO_IMAGES_URL }}placeholder.png" class="stat-img stats series" />
+                    <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" class="stat-busy" />
                     <div class='stat-error'>{% trans "Could not fetch CPU stats graph." %}</div>
                 </div>
             </div>
@@ -123,8 +123,8 @@
                     {% trans "Network Utilization" %}
                 </div>
                 <div class="network-graph">
-                    <img src="./static/placeholder.png" class="stat-img stats series" />
-                    <img src="./static/icons/indicators/small/progress.gif" class="stat-busy" />
+                    <img src="{{ SYNNEFO_IMAGES_URL }}placeholder.png" class="stat-img stats series" />
+                    <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" class="stat-busy" />
                     <div class='stat-error'>{% trans "Could not fetch Net stats graph." %}</div>
                 </div>
             </div>

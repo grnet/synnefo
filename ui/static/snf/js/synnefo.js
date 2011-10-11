@@ -177,19 +177,6 @@ function msg_box(user_config) {
     return false;
 }
 
-
-function show_api_overlay() {
-    var config = {
-        title: window.API_OVERLAY_TITLE,
-        content: $(".api_overlay_content").html().replace("$api_key", $.cookie("X-Auth-Token")),
-        extra: $.cookie("X-Auth-Token"),
-        sub_content: window.API_OVERLAY_SUBCONTENT,
-        cls: "api_content",
-        ajax: false
-    }
-    msg_box(config);
-}
-
 function show_invitations() {
     
     function display_resend_success(msg) {
@@ -460,7 +447,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
     var cls = states_map[state];
 
     if (os === "unknown") { os = "okeanos" } ;
-    var new_img = 'url("./static/icons/machines/' + size + '/' + os + '-sprite.png")';
+    var new_img = 'url("' + synnefo.config.machines_icons_url + size + '/' + os + '-sprite.png")';
 
     var el = $(img_selector, machine);
     var current_img = el.css("backgroundImage");

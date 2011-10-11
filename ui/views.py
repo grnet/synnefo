@@ -46,6 +46,8 @@ from django.core.mail import send_mail
 
 from django.http import Http404
 
+SYNNEFO_JS_LIB_VERSION = "0.7"
+
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
@@ -68,11 +70,15 @@ UPDATE_HIDDEN_VIEWS = getattr(settings, "UI_UPDATE_HIDDEN_VIEWS", False)
 HANDLE_WINDOW_EXCEPTIONS = getattr(settings, "UI_HANDLE_WINDOW_EXCEPTIONS", True)
 SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
-UI_MEDIA_URL = getattr(settings, "UI_SYNNEFO_MEDIA_URL", "/static/")
-UI_SYNNEFO_MEDIA_URL = getattr(settings,
-                    "UI_SYNNEFO_MEDIA_URL", UI_MEDIA_URL + "snf/")
+# MEDIA PATHS
+UI_MEDIA_URL = getattr(settings, "UI_MEDIA_URL",
+                    "%ssnf-%s/" % (settings.MEDIA_URL, SYNNEFO_JS_LIB_VERSION))
+UI_SYNNEFO_IMAGES_URL = getattr(settings,
+                    "UI_SYNNEFO_IMAGES_URL", UI_MEDIA_URL + "images/")
+UI_SYNNEFO_CSS_URL = getattr(settings,
+                    "UI_SYNNEFO_CSS_URL", UI_MEDIA_URL + "css/")
 UI_SYNNEFO_JS_URL = getattr(settings,
-                    "UI_SYNNEFO_JS_URL", UI_SYNNEFO_MEDIA_URL + "js/")
+                    "UI_SYNNEFO_JS_URL", UI_MEDIA_URL + "js/")
 UI_SYNNEFO_JS_LIB_URL = getattr(settings,
                     "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
 UI_SYNNEFO_JS_WEB_URL = getattr(settings,
@@ -83,6 +89,17 @@ def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
     t = loader.get_template(current_template)
+    media_context = {
+       'UI_MEDIA_URL': UI_MEDIA_URL,
+       'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
+       'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
+       'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
+       'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
+       'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
+       'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
+       'DEBUG': settings.DEBUG
+    }
+    context.update(media_context)
     return HttpResponse(t.render(Context(context)))
 
 def home(request):
@@ -102,31 +119,8 @@ def home(request):
                'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
                'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
-
-               'UI_MEDIA_URL': UI_MEDIA_URL,
-               'SYNNEFO_MEDIA_URL': UI_SYNNEFO_MEDIA_URL,
-               'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
-               'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
-               'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
-
-               'DEBUG': settings.DEBUG}
+               }
     return template('home', context)
-
-def machines(request):
-    context = {'default_keywords': settings.DEFAULT_KEYWORDS}
-    return template('machines', context)
-
-def machines_icon(request):
-    context = {'default_keywords': settings.DEFAULT_KEYWORDS}
-    return template('machines_icon', context)
-
-def machines_list(request):
-    context = {'default_keywords': settings.DEFAULT_KEYWORDS}
-    return template('machines_list', context)
-
-def machines_single(request):
-    context = {'default_keywords': settings.DEFAULT_KEYWORDS}
-    return template('machines_single', context)
 
 def machines_console(request):
     host, port, password = ('','','')
@@ -283,26 +277,3 @@ def feedback_submit(request):
 
     return HttpResponse('{"status":"send"}');
 
-def images(request):
-    context = {}
-    return template('images', context)
-
-def disks(request):
-    context = {}
-    return template('disks', context)
-
-def networks(request):
-    context = {}
-    return template('networks', context)
-
-def files(request):
-    context = {}
-    return template('files', context)
-
-def desktops(request):
-    context = {}
-    return template('desktops', context)
-
-def apps(request):
-    context = {}
-    return template('apps', context)

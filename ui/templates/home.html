@@ -9,13 +9,15 @@
     <link href="http://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
     <link href='http://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
 
+    <link rel="shortcut icon" href="{{ UI_MEDIA_URL }}favicon.ico" />
+
     {% comment %}
     <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
     {% endcomment %}
 
-    <link rel="stylesheet" type="text/css" href="{{ UI_MEDIA_URL }}main.css"/>
+    <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
     <!--[if IE]>
-        <style type="text/css" media="all">@import url({{ UI_MEDIA_URL }}ie.css);</style>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie.css);</style>
     <![endif]-->
 
     <script src="{{ SYNNEFO_JS_LIB_URL }}jquery.js"></script>
@@ -51,15 +53,15 @@
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_single_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_list_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_networks_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_main_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_metadata_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_feedback_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_create_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_connect_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_main_view.js"></script>
 
     <!-- the following views require refactor -->
-    <script src="static/invitations.js"></script>
-    <script src="static/synnefo.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}invitations.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
     
     <script>
         // empty object for console to avoid errors in browsers that don't support it
@@ -171,7 +173,7 @@
 </head>
 
 <body id="app">
-    <!--<img id="okeanos-image" src="/static/body-bg2.png" />-->
+    <!--<img id="okeanos-image" src="{{ SYNNEFO_IMAGES_URL }}body-bg2.png" />-->
     <div id="container">
         <div id="header">
             <div id="user">
@@ -199,7 +201,7 @@
             </div>
             <div class="header-logo">
                 <a href="/">
-                    <img src="static/okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
+                    <img src="{{ SYNNEFO_IMAGES_URL }}okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
                 </a>
             </div>
         </div>
@@ -212,13 +214,13 @@
                 <ul class="css-tabs">
                     <li><a href="machines" title="{% trans "manage your virtual machines" %}"
                         class="primary" id="machines_view_link">
-                        <img src="static/machines-icon.png" /></a></li>
+                        <img src="{{ SYNNEFO_IMAGES_URL }}machines-icon.png" /></a></li>
                     <li><a href="networks" title="{% trans "configure networking" %}"
                         class="primary" id="networks_view_link">
-                        <img src="static/networks-icon.png" /></a></li>
+                        <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
                     <li class="hidden"><a href="disks" title="{% trans "manage your storage volumes" %}"
                         class="primary" id="disks_view_link">
-                        <img src="static/disks-icon.png" /></a></li>
+                        <img src="{{ SYNNEFO_IMAGES_URL }}disks-icon.png" /></a></li>
                 </ul>
                 </div>
                 <div class="css-panes">
@@ -257,7 +259,7 @@
             $("<link/>", {
                rel: "stylesheet",
                type: "text/css",
-               href: "static/opera.css"
+               href: "{{ SYNNEFO_CSS_URL }}opera.css"
             }).appendTo("head");
         }
 
@@ -290,7 +292,9 @@
             });
 
             $(".usermenu .invitations").click(show_invitations);
-            $(".usermenu .api").click(show_api_overlay);
+            $(".usermenu .api").click(function(){
+                synnefo.ui.main.api_info_view.show();
+            });
 
         });
         
@@ -459,6 +463,22 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
         </div>
     </div>
     
+    <div id="api-info-overlay" class="overlay-content overlay-info hidden">
+        <div class="description">
+            <p>{% blocktrans with EXTERNAL_CLIENT_URL as EXTERNAL_CLIENT_URL %}Use the following API key along with the <a
+                href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage
+            your cloud resources from outside this page.{% endblocktrans %}</p>
+        </div>
+        <div class="copy-content">
+            <p></p>
+        </div>
+        <div class="description subinfo">
+            <p>
+            {% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}
+            </p>
+        </div>
+    </div>
+
     <div class="api_overlay_template">
         <div class="api_overlay_content">
             <p>Use the following API key along with the <a href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage your cloud resources from outside this page.</p>
@@ -482,7 +502,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
     </div>
     
     <div id="loading-view" class="hidden">
-        <img src="/static/icons/indicators/small/progress.gif" />
+        <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
         <div class="header">Loading <span>~okeanos</span></div>
         <div class="info hidden"></div>
     </div>
@@ -513,10 +533,12 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
 
             synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
-            synnefo.config.indicators_icons_url = '{{ UI_MEDIA_URL }}icons/indicators/';
-            synnefo.config.machines_icons_url = '{{ UI_MEDIA_URL }}icons/machines/';
+            synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
+            synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
 
             synnefo.ui.init();
+
+            synnefo.ui.main.bind("initial", function(){})
         })
     </script>
 </body>

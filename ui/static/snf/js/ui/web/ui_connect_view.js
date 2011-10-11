@@ -37,6 +37,11 @@
             this.subinfo = this.info.find(".subinfo");
         },
 
+        beforeOpen: function() {
+            this.clip = new snf.util.ClipHelper();
+            this.connect.parent().append(this.clip.cont);
+        },
+
         handle_success: function(data) {
             this.error.hide();
             this.info.show();
@@ -49,7 +54,13 @@
 
             this.subinfo.html(data.subinfo).show();
             if (!data.subinfo) { this.subinfo.hide() };
-
+            
+            if (data.ssh) {
+                this.clip.cont.show();
+                this.clip.setText(data.link.title);
+            } else {
+                this.clip.cont.hide();
+            }
         },
 
         handle_error: function() {

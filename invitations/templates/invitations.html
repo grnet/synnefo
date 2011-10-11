@@ -26,11 +26,14 @@
         <span id="field_email_name">{% trans "Email" %}</span>
     </div>
     <div id="fields">
-        <div id="removable-name-container-1" class="removable-field-row"><input type="text" name="name_1" id="name_1" value="" class="textInput removable" /><input type="text" name="email_1" id="email_1" value="" class="textInput removable" /><img src="/static/spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
+        <div id="removable-name-container-1" class="removable-field-row"><input
+            type="text" name="name_1" id="name_1" value="" class="textInput
+            removable" /><input type="text" name="email_1" id="email_1" value=""
+            class="textInput removable" /><img src="{{ MEDIA_URL }}spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
         </div>
         <div id="add-name-container" class="add-field-container">
         <span class="add-field-trigger">
-            <img src="/static/add.gif" alt="" title="Add New Item" />
+            <img src="{{ MEDIA_URL }}add.gif" alt="" title="Add New Item" />
             {% trans "Add invitation" %}
         </span>
         </div>
@@ -38,7 +41,7 @@
     
     <p>
     <input class="submit" type="submit" value="{% trans "Send invitations" %}" />
-    <img src="/static/progress-tiny.gif" class="sending" />
+    <img src="{{ MEDIA_URL }}progress-tiny.gif" class="sending" />
     </p>
 </form>
 {% else %}
@@ -66,10 +69,10 @@ You have no invitations left in your account.
         {% for inv in invitations %}
         <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
                 {% if inv.accepted %}
-                <img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}">
+                <img src="{{ MEDIA_URL }}invitation_accepted.png" alt="{% trans "Invitation accepted" %}">
                 {% else %}
                     <span class="resend-invitation" id="inv-{{ inv.id }}">
-                        <img src="/static/resend.png" alt="{% trans "Resend invitation" %}" class="resend">
+                        <img src="{{ MEDIA_URL }}resend.png" alt="{% trans "Resend invitation" %}" class="resend">
                     </span>
                 {% endif %}
                 <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
@@ -80,8 +83,8 @@ You have no invitations left in your account.
     <div class="pages clearfix"></div>
 
     <div class="icons-info">
-        <span>(<img src="/static/invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
-        <span>(<img src="/static/resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
+        <span>(<img src="{{ MEDIA_URL }}invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
+        <span>(<img src="{{ MEDIA_URL }}resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
     </div>
     </div>
 </div>

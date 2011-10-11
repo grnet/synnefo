@@ -37,7 +37,7 @@ or implied, of GRNET S.A.
 
 <html>
     <head>
-        <link rel="stylesheet" type="text/css" href="../static/main.css"/>
+        <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
         <title>{% trans "Console" %}</title>
     </head>
     <body>
@@ -54,14 +54,14 @@ or implied, of GRNET S.A.
         <div id='console-header'>
             <div class="console-header-logo">
                 <a href="/">
-                    <img src="../static/okeanos_console.png" alt="{% trans "Okeanos Console" %}"/>
+                    <img src="{{ SYNNEFO_IMAGES_URL }}okeanos_console.png" alt="{% trans "Okeanos Console" %}"/>
                 </a>
             </div>
             <br/>
             <div class="help-text">{% trans "This is a slow connection meant only for troubleshooting. For an optimal experience use the machine's Connect button on the main panel." %}</div>
         </div>
         <div class="console-container">
-            <applet code="VncViewer.class" archive="../static/vncviewer/VncViewer.jar">
+            <applet code="VncViewer.class" archive="{{ SYNNEFO_MEDIA_URL }}vncviewer/VncViewer.jar">
                 <param name="HOST" value="{{host}}"></param>
                 <param name="PORT" value="{{port}}"></param>
                 <param name="PASSWORD" value="{{password}}"></param>

@@ -17,7 +17,7 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 }
 
 body {
-    background: url(./body-bg.png) repeat-x #FFFFFF;
+    background: url("../images/body-bg.png") repeat-x #FFFFFF;
     text-align:center;
     font-size: 16px;
 }
@@ -43,7 +43,7 @@ a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
 
 #header {
     height: 93px;
-    background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
     margin: 0 auto;
     width: 700px;
     text-align: left;
@@ -297,7 +297,7 @@ div.css-panes {
 #console-header {
     height: 67px;
     margin-bottom:15px;
-    background: url("./header-bg.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
 
 .header-logo {
@@ -316,7 +316,7 @@ div#footer-text{
 }
 
 #footer-bg {
-    background: url("./footer-bg.png") no-repeat scroll 0 0 #4085A5;
+    background: url("../images/footer-bg.png") no-repeat scroll 0 0 #4085A5;
     background-position:right;
 }
 
@@ -690,7 +690,7 @@ div.image-container {
 /* drag handle */
 .handle {
     -moz-box-shadow: 0 0 2px #000000;
-    background: url("./h30.png") repeat-x scroll 0 0 #FFFFFF;
+    background: url("../images/h30.png") repeat-x scroll 0 0 #FFFFFF;
     border: 1px solid #000000;
     cursor: move;
     display: block;
@@ -962,7 +962,7 @@ div.machine div.actions .disabled {
 }
 
 div.connect-arrow {
-    background: url(/static/connect-arrow.png) no-repeat;
+    background: url("../images/connect-arrow.png") no-repeat;
     height: 28px;
     width:14px;
     position: absolute;
@@ -978,7 +978,7 @@ div.connect-arrow {
 
 div.connect-arrow:hover, div.connect-arrow.border-hover, div.connect-arrow-ie, div.connect-arrow.border-ie {
     cursor: pointer;
-    background: url(/static/connect-arrow-hover.png) no-repeat;
+    background: url("../images/connect-arrow-hover.png") no-repeat;
     height: 28px;
     width:26px;
 }
@@ -1011,7 +1011,7 @@ div.connect-border:hover {
     margin: 1px 14px 0;
 }
 .machine .logo {
-    background-image: url("./icons/machines/medium/unknown-sprite.png");
+    background-image: url("../images/icons/machines/medium/unknown-sprite.png");
     background-repeat: no-repeat;
     cursor: pointer;
 }
@@ -1135,7 +1135,7 @@ span.rename {
 div.name:hover span.rename, span.rename_hovered {
     color: #3D3D3D;
     margin-top: 0.4em;
-    background-image: url(./pencil.png);
+    background-image: url("../images/pencil.png");
     background-position: 0 3px;
 }
 
@@ -1170,35 +1170,35 @@ div.network div.toggler {
 }
 
 .machine div.info div.down {
-    background: url(/static/down-arrow.png) no-repeat scroll 1px 1px;
+    background: url(../images/down-arrow.png) no-repeat scroll 1px 1px;
 }
 
 .single div.tags div.down {
-    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+    background: url(../images/down-arrow.png) no-repeat scroll 2px 2px;
 }
 
 .network div.network-machines div.down {
-    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+    background: url(../images/down-arrow.png) no-repeat scroll 2px 2px;
 }
 
 .network div.network-machine div.firewall div.down {
-    background: url(/static/down-arrow.png) no-repeat scroll 2px 2px;
+    background: url(../images/down-arrow.png) no-repeat scroll 2px 2px;
 }
 
 .machine div.info div.up {
-    background: url(/static/up-arrow.png) no-repeat scroll 1px 0;
+    background: url(../images/up-arrow.png) no-repeat scroll 1px 0;
 }
 
 .single div.tags div.up {
-    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+    background: url(../images/up-arrow.png) no-repeat scroll 2px 2px;
 }
 
 .network div.network-machines div.up {
-    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+    background: url(../images/up-arrow.png) no-repeat scroll 2px 2px;
 }
 
 .network div.network-machine div.firewall div.up {
-    background: url(/static/up-arrow.png) no-repeat scroll 2px 2px;
+    background: url(../images/up-arrow.png) no-repeat scroll 2px 2px;
 }
 
 button {
@@ -1308,15 +1308,15 @@ a#machines_view_icon_link:active, a#machines_view_list_link:active {
 }
 
 a#machines_view_icon_link span.ico {
-    background-image: url(./icon-view.png);
+    background-image: url("../images/icon-view.png");
 }
 
 a#machines_view_list_link span.ico {
-    background-image: url(./list-view.png);
+    background-image: url("../images/list-view.png");
 }
 
 a#machines_view_single_link span.ico {
-    background-image: url(./single-view.png);
+    background-image: url("../images/single-view.png");
 }
 
 #machinetype {
@@ -1665,7 +1665,7 @@ input.machine {
 }
 
 #error-success .close, .notification-box .close {
-    background-image: url("./close-popup.png");
+    background-image: url("../images/close-popup.png");
     background-repeat: no-repeat;
     cursor: pointer;
     height: 13px;
@@ -1711,7 +1711,7 @@ input.machine {
 #error-success.success h3 span.header-box, .notification-box h3 span.header-box {
     background-color: #71c837;
     display: block;
-    background-image: url("./save-green.png");
+    background-image: url("../images/save-green.png");
     background-position: right 0;
     background-repeat: no-repeat;
     width: 80px;
@@ -1722,7 +1722,7 @@ input.machine {
 }
 
 #error-success .popup-body, .notification-box .popup-body {
-    background: url("./popup-bg.png") repeat-x scroll 0 0 transparent;
+    background: url("../images/popup-bg.png") repeat-x scroll 0 0 transparent;
     margin-left: -16px;
     margin-right: -16px;
     margin-top: 1px;
@@ -1731,7 +1731,7 @@ input.machine {
 }
 
 #error-success .popup-body-inner, .notification-box .popup-body-inner {
-    background: url("./popup-inner-bg.png") repeat-x scroll 0 0 transparent;
+    background: url("../images/popup-inner-bg.png") repeat-x scroll 0 0 transparent;
     font-size: 80%;
     min-height: 120px;
     margin-left: 20px;
@@ -2013,7 +2013,7 @@ div.action_error button.details {
 }
 
 div.action_error button.close-action-error {
-    background-image: url("./option-action-remove.png");
+    background-image: url("../images/option-action-remove.png");
     background-color: #fff;
     background-repeat: no-repeat;
     background-position: center center;
@@ -2069,7 +2069,7 @@ div#user .username {
     padding-right: 18px;
     padding-left: 4em;
     height: 20px;
-    background: url("./down-arrow-light.png") no-repeat right;
+    background: url("../images/down-arrow-light.png") no-repeat right;
     background-position: right 6px;
     font-weight: normal;
 }
@@ -2081,7 +2081,7 @@ div#user .hovered {
 }
 
 div#user .hovered .username {
-    background-image: url("./down-arrow-lighter.png");
+    background-image: url("../images/down-arrow-lighter.png");
 }
 
 div#user .active {
@@ -2090,7 +2090,7 @@ div#user .active {
 
 div#user .active .username {
     color: #599EBD;
-    background-image: url("./down-arrow-lighter.png");
+    background-image: url("../images/down-arrow-lighter.png");
 }
 
 div#user .useractions {
@@ -2138,7 +2138,7 @@ div#user .useractions li.last {
 }
 
 div#user .useractions .logout a {
-    background-image: url("./icon-logout.png");
+    background-image: url("../images/icon-logout.png");
 }
 
 div#user .langmenu {
@@ -2199,7 +2199,7 @@ div.editbuttons div.save:hover, div.editbuttons div.cancel:hover {
 }
 
 div.editbuttons div.cancel:hover {
-    background-image: url("./cancel-onhover.png");
+    background-image: url("../images/cancel-onhover.png");
 }
 
 .editbuttons .cancel, .editbuttons .save {
@@ -2211,12 +2211,12 @@ div.editbuttons div.cancel:hover {
 }
 
 .editbuttons .cancel {
-    background-image: url("./cancel.png");
+    background-image: url("../images/cancel.png");
     margin-left: 3px;
 }
 
 .editbuttons .save {
-    background-image: url("./save.png");
+    background-image: url("../images/save.png");
     margin-left: 1px;
 }
 
@@ -2256,7 +2256,7 @@ div.editbuttons div.cancel:hover {
 }
 
 .large-spinner {
-    background: url("./icons/indicators/large/progress.gif");
+    background: url("../images/icons/indicators/large/progress.gif");
     margin-left: 298px;
     margin-top: 0px;
     height: 31px;
@@ -2321,7 +2321,7 @@ div.list table thead tr {
 }
 div.list table thead tr th {
     background-color: #CDE2EC;
-    background-image: url(bg.gif);
+    background-image: url("../images/bg.gif");
     background-repeat: no-repeat;
     background-position: right 11px;
     font-weight: normal;
@@ -2338,15 +2338,15 @@ div.list table thead .sorting_asc, div.list table thead .sorting_desc {
 }
 
 div.list table thead .sorting_asc {
-    background-image: url(asc.gif);
+    background-image: url("../images/asc.gif");
 }
 
 div.list table thead .sorting_desc {
-    background-image: url(desc.gif);
+    background-image: url("../images/desc.gif");
 }
 
 div.list table .selection div.expand-icon {
-    background-image: url(asc.gif);
+    background-image: url("../images/asc.gif");
     background-repeat: no-repeat;
     position: relative;
     cursor: pointer;
@@ -2833,7 +2833,7 @@ span.rename-network {
 div.name-div:hover span.rename-network {
     color: #3D3D3D;
     margin-top: 0.4em;
-    background-image: url(./pencil.png);
+    background-image: url("../images/pencil.png");
     background-position: 0 3px;
 }
 
@@ -2854,7 +2854,7 @@ div.network:hover a.rename {
     margin-left: -4px;
     width: 504px;
     clear: both;
-    background: url("./orange-border.png") no-repeat;
+    background: url("../images/orange-border.png") no-repeat;
     background-position: 33px bottom;
 }
 .network-contents.last-expanded {
@@ -3260,11 +3260,11 @@ div.machine a.manage-metadata:hover {
 }
 
 .metadata-actions .prev {
-    background: url("./roll-up.png") no-repeat scroll 0 0 transparent;
+    background: url("../images/roll-up.png") no-repeat scroll 0 0 transparent;
 }
 
 .metadata-actions .next {
-    background: url("./roll-down.png") no-repeat scroll 0 0 transparent;
+    background: url("../images/roll-down.png") no-repeat scroll 0 0 transparent;
 }
 
 .scrollable {
@@ -3441,7 +3441,7 @@ div.machine a.manage-metadata:hover {
 }
 
 .single .tags-down-arrow {
-    background: url("/static/tags-down-arrow.png") no-repeat scroll 1px 7px transparent;
+    background: url("../images/tags-down-arrow.png") no-repeat scroll 1px 7px transparent;
     float: left;
     height: 16px;
     width: 9px;
@@ -3524,7 +3524,7 @@ div.machine a.manage-metadata:hover {
     float: right;
     height: 18px;
     width: 10px;
-    background: url("./right-arrow.png") no-repeat scroll 3px 2px transparent;
+    background: url("../images/right-arrow.png") no-repeat scroll 3px 2px transparent;
 }
 
 .single .column3 .prev-label {
@@ -3534,7 +3534,7 @@ div.machine a.manage-metadata:hover {
 }
 
 .single .column3 .prev-arrow {
-    background: url("./left-arrow.png") no-repeat scroll 3px 2px transparent;
+    background: url("../images/left-arrow.png") no-repeat scroll 3px 2px transparent;
     float: left;
     height: 18px;
     width: 10px;
@@ -3610,7 +3610,7 @@ div.single div.column3 div.server-name:hover {
     height: 136px;
     margin-bottom: 10px;
     margin-left: 4px;
-    background-image: url("./icons/machines/large/unknown-sprite.png");
+    background-image: url("../images/icons/machines/large/unknown-sprite.png");
     background-repeat: no-repeat;
     cursor: pointer;
 }
@@ -3830,19 +3830,19 @@ tbody.machines div.action-indicator {
     top: -2px;
 }
 div.state .destroy, tbody.machines .destroy {
-    background-image: url("./icons/actions/medium/destroy.png");
+    background-image: url("../images/icons/actions/medium/destroy.png");
 }
 div.state .console, tbody.machines .console {
-    background-image: url("./icons/actions/medium/console.png");
+    background-image: url("../images/icons/actions/medium/console.png");
 }
 div.state .start, tbody.machines .start {
-    background-image: url("./icons/actions/medium/start.png");
+    background-image: url("../images/icons/actions/medium/start.png");
 }
 div.state .reboot, tbody.machines .reboot {
-    background-image: url("./icons/actions/medium/reboot.png");
+    background-image: url("../images/icons/actions/medium/reboot.png");
 }
 div.state .shutdown, tbody.machines .shutdown {
-    background-image: url("./icons/actions/medium/shutdown.png");
+    background-image: url("../images/icons/actions/medium/shutdown.png");
 }
 
 
@@ -4636,13 +4636,13 @@ table.list-machines .wave {
     position: relative;
     padding-top: 1em;
     padding: 0.5em;
-    background-image: url("./popup-bg.png");
+    background-image: url("../images/popup-bg.png");
     background-repeat: repeat-x;
 }
 
 .overlay .content {
     background-color: transparent;
-    background-image: url("./popup-inner-bg.png");
+    background-image: url("../images/popup-inner-bg.png");
     padding: 1em;
     font-size: 0.8em;
     background-repeat: repeat-x;
@@ -4678,13 +4678,13 @@ table.list-machines .wave {
 }
 
 .overlay-error .key.details.expand {
-    background-image: url("./plus-8.png");
+    background-image: url("../images/plus-8.png");
 }
 
 .overlay-error .key.details {
     background-color: #5189A3;
     cursor: pointer;
-    background-image: url("./minus-8.png");
+    background-image: url("../images/minus-8.png");
     background-repeat: no-repeat;
     background-position: 545px;
 }
@@ -4845,7 +4845,7 @@ table.list-machines .wave {
 }
 
 .meta-list .options-list li.options-object.create .options-object-cont {
-    background-image: url("./option-action-add.png");
+    background-image: url("../images/option-action-add.png");
     background-repeat: no-repeat;
     background-position: 90px 5px;
 }
@@ -4902,7 +4902,7 @@ table.list-machines .wave {
 }
 
 .options-list li .remove {
-    background-image: url("./option-action-remove.png");
+    background-image: url("../images/option-action-remove.png");
     width:10px;
     height:10px;
     right:5px;
@@ -4910,7 +4910,7 @@ table.list-machines .wave {
 }
 
 .options-list li .edit {
-    background-image: url("./option-action-edit.png");
+    background-image: url("../images/option-action-edit.png");
     width:10px;
     height:10px;
     right:5px;
@@ -4952,14 +4952,14 @@ table.list-machines .wave {
 
 #network-vms-select-content li.options-object:hover .options-object-cont,
 #network-vms-select-content li.options-object .options-object-cont {
-    background-image: url("./option-action-add-dark.png");
+    background-image: url("../images/option-action-add-dark.png");
     background-repeat: no-repeat;
     background-position: 160px 28px;
 }
 
 #network-vms-select-content li.selected:hover .options-object-cont,
 #network-vms-select-content li.selected .options-object-cont {
-    background-image: url("./option-action-remove.png") !important;
+    background-image: url("../images/option-action-remove.png") !important;
 }
 
 #metadata-overlay-content .view .value {
@@ -5105,7 +5105,7 @@ table.list-machines .wave {
 }
 
 .cont-toggler {
-    background-image: url("./down-arrow.png");
+    background-image: url("../images/down-arrow.png");
     background-position: right;
     background-repeat: no-repeat;
     background-color: #A1C8DB;
@@ -5129,7 +5129,7 @@ table.list-machines .wave {
 .cont-toggler.open {
     background-color: #98BDCF;
     border-color: #98BDCF;
-    background-image: url("./up-arrow.png");
+    background-image: url("../images/up-arrow.png");
 }
 
 .cont-toggler.open .label {
@@ -5207,7 +5207,7 @@ table.list-machines .wave {
 }
 
 .form-action.in-progress, button.in-progress {
-    background-image: url("./icons/indicators/medium/horizontal-progress.gif");
+    background-image: url("../images/icons/indicators/medium/horizontal-progress.gif");
     background-repeat: no-repeat;
     background-position: center center;
     color: transparent;
@@ -5544,7 +5544,7 @@ table.list-machines .wave {
 }
 
 .create-vm .steps-history .steps-history-cont.completed .steps-history-step {
-    background-image: url("./check.png");
+    background-image: url("../images/check.png");
 }
 
 .create-vm .steps-history .steps-history-cont.current .steps-history-step {
@@ -5840,7 +5840,7 @@ table.list-machines .wave {
     height: 20px;
     position: absolute;
     border: 1px solid #387693;
-    background-image: url("./clipboard.png");
+    background-image: url("../images/clipboard.png");
     background-repeat: no-repeat;
     background-position: center;
     cursor: pointer;

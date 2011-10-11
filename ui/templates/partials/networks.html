@@ -48,7 +48,7 @@
     <div class="templates">
     <!-- public network template -->
     <div class="network" id="public-template">
-        <img class="network-logos" src="static/internet.png" />
+        <img class="network-logos" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
         <div href="#" class="name-div">
             <h5 class="namecontainer">
                 <span class="name">{% trans "Internet" %}</span>
@@ -126,7 +126,7 @@
                 <span class="ip6 ipv6-text"></span>
             </div>
         </div>
-        <img class="logo" src="static/icons/machines/medium/debian-on.png" />
+        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}icons/machines/medium/debian-on.png" />
         <div class='network-remove-machine'>
             <!-- Removing servers from public network is not supported in 0.5
             <span class="remove-icon">X</span>
@@ -145,7 +145,7 @@
                         (<span class="firewall-off">{% trans "Off" %}</span>)
                     </span>
                     <span class="network-progress-indicator">
-                        <img src="/static/icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
+                        <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
                     </span>
                 </div>
             </div>
@@ -187,10 +187,10 @@
                     <div class="indicator3"></div>
                     <div class="indicator4"></div>
                 </div>
-                <img class="spinner" style="display:none" src="static/icons/indicators/medium/progress.gif" />
-                <img class="wave" style="display:none" src="static/icons/indicators/medium/wave.gif" />
+                <img class="spinner" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/progress.gif" />
+                <img class="wave" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/wave.gif" />
             </div>
-            <img class="network-logos" src="static/network.png" />
+            <img class="network-logos" src="{{ SYNNEFO_IMAGES_URL }}network.png" />
             <div href="#" class="name-div">
                 <h5 class="namecontainer editable">
                     <span class="name">{% trans "My Network 1" %}</span>
@@ -239,7 +239,7 @@
             <span class="message"></span>
             <button class="details">{% trans "Details" %}</button>
         </div>
-        <img class="logo" src="static/icons/machines/medium/debian-on.png" />
+        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}icons/machines/medium/debian-on.png" />
         <div class='network-remove-machine'><span class="remove-icon">X</span></div>
         <div href="#" class="machine-name-div">
             <h5 class="namecontainer editable">

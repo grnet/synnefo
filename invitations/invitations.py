@@ -56,6 +56,8 @@ from Crypto.Cipher import AES
 
 log = getLogger('synnefo.invitations')
 
+# override project MEDIA_URL
+MEDIA_URL = getattr(settings, 'INVITATIONS_MEDIA_URL', '/static/invitations/')
 
 def process_form(request):
     errors = []
@@ -90,7 +92,8 @@ def process_form(request):
     response = None
     if errors:
         data = render_to_string('invitations.html',
-                                {'invitations':
+                                {'MEDIA_URL': MEDIA_URL,
+                                 'invitations':
                                      invitations_for_user(request),
                                  'errors':
                                      errors,
@@ -103,7 +106,8 @@ def process_form(request):
     else:
         # form submitted
         data = render_to_string('invitations.html',
-                                {'invitations':
+                                {'MEDIA_URL': MEDIA_URL,
+                                 'invitations':
                                     invitations_for_user(request),
                                  'invitations_left':
                                     get_invitations_left(request.user)},
@@ -148,7 +152,8 @@ def inv_demux(request):
 
     if request.method == 'GET':
         data = render_to_string('invitations.html',
-                                {'invitations':
+                                {'MEDIA_URL': MEDIA_URL,
+                                 'invitations':
                                      invitations_for_user(request),
                                  'invitations_left':
                                      get_invitations_left(request.user)},

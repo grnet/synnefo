@@ -4562,7 +4562,7 @@ table.list-machines .wave {
     display: none;
 }
 
-.overlay .copy-content .clip-copy {
+.overlay .copy-content .clip-copy  {
     right: 10px;
     top:8px;
     border: 1px solid #fff;

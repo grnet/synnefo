@@ -24,6 +24,16 @@ COMPONENTS
       the value of settings.d/10-backend.conf:GANETI_CREATEINSTANCE_KWARGS
       to use 'snf-image+default'.
 
+UI STATIC FILES
+    * A major reorganization of static files has been commited. All ui and
+      invitations static files has been moved in their own separate directory
+      (ui/static/snf, ui/static/invitations).
+    * UI static files base url is now configurable via UI_MEDIA_URL.
+    * A symlink named after the current version of the ui application has been
+      committed in ui/static directory. The symlink will get updated after each
+      version upgrade to allow us provide unique urls of static files between
+      after each upgrade, see #1460.
+
 NEW/UPDATED SETTINGS
     * EMAIL_SUBJECT_PREFIX:
       Prepended to automated emails, set to someting that uniquely identifies
@@ -47,8 +57,17 @@ NEW/UPDATED SETTINGS
       error overlay.
     * UI_HANDLE_WINDOW_EXCEPTIONS in 30-ui.conf:
       Whether UI should display error overlay for all Javascript exceptions.
+    * UI_MEDIA_URL in 30-ui.conf:
+      Base url for ui static files, 
+      defaults to MEDIA_URL + 'snf-<latest_ui_version>/'.
+    * MEDIA_URL changed in 00-site.conf:
+      Changed to '/static/' since it is now used in ui app.
+    * TEMPLATE_CONTEXT_PROCESSORS changed in 00-apps.conf:
+      added 'django.core.context_processors.media' to allow access of MEDIA_URL
+      in template files.
     * GANETI_CREATEINSTANCE_KWARGS in 10-backend.conf:
       Must be updated to use snf-image as the Ganeti OS provider.
+      
     
 DB MIGRATION
     * Uniqueness constraints have been added to the metadata models.

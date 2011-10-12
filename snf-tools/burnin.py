@@ -717,11 +717,11 @@ def parse_arguments(args):
                            "FLAVOR ID instead of a randomly chosen one, " \
                            "useful if disk space is scarce",
                       default=None)
-    parser.add_option("--force-image",
-                      action="store", type="int", dest="force_imageid",
+    parser.add_option("--image-id",
+                      action="store", type="string", dest="force_imageid",
                       metavar="IMAGE ID",
-                      help="Instead of testing all available images, test " \
-                           "only the specified IMAGE ID",
+                      help="Test the specified image id, use 'all' to test " \
+                           "all available images (mandatory argument)",
                       default=None)
     parser.add_option("--show-stale",
                       action="store_true", dest="show_stale",
@@ -742,6 +742,20 @@ def parse_arguments(args):
     # Verify arguments
     if opts.delete_stale:
         opts.show_stale = True
+
+    if not opts.show_stale:
+        if not opts.force_imageid:
+            print >>sys.stderr, "The --image-id argument is mandatory."
+            parser.print_help()
+            sys.exit(1)
+
+        if opts.force_imageid != 'all':
+            try:
+                opts.force_imageid = int(opts.force_imageid)
+            except ValueError:
+                print >>sys.stderr, "Invalid value specified for --image-id." \
+                                    "Use a numeric id, or `all'."
+                sys.exit(1)
 
     return (opts, args)
 
@@ -785,10 +799,10 @@ def main():
     # The following cases run in parallel
     par_cases = []
 
-    if opts.force_imageid:
-        test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
-    else:
+    if opts.force_imageid == 'all':
         test_images = DIMAGES
+    else:
+        test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
 
     for image in test_images:
         imageid = image["id"]

@@ -61,12 +61,17 @@ and is broken in 4 separate dictionaries:
   * DISPATCHER_LOGGING is the logging configuration of the logic/dispatcher.py
     command line tool.
   
-  * RECONCILIATION_LOGGING is the logging configuration of the
-    logic/reconciliation.py command line tool.
-  
   * SNFADMIN_LOGGING is the logging configuration of the snf-admin tool.
     Consider using matching configuration for snf-admin and the synnefo.admin
     logger of the web app.
+
+Please note the following:
+  * As of Synnefo v0.7, by default the Django webapp logs to syslog, the
+    dispatcher logs to /var/log/synnefo/dispatcher.log and the console,
+    snf-admin logs to the console.
+  * Different handlers can be set to different logging levels:
+    for example, everything may appear to the console, but only INFO and higher
+    may actually be stored in a longer-term logfile.
 
 
 Admin Tools

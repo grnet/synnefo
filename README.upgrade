@@ -18,6 +18,8 @@ NEW DEPENDENCIES
       Step 13.
 
 COMPONENTS
+    * snf-admin has been updated with new functionality, be sure to upgrade any
+      locally installed versions.
     * snf-image replaces snf-ganeti-instance-image as the Ganeti OS provider
       used by Synnefo, and can live alongside snf-ganeti-instance-image.
       Once snf-image has been deployed on all Ganeti nodes, be sure to modify
@@ -74,8 +76,9 @@ DB MIGRATION
       A database migration is needed.
 
 LOGGING
-    * A new logging mechanism has been implemeted. See 00-logging.conf in
-      settings.
+    * A new logging mechanism has been implemeted. Please see 00-logging.conf
+      under settings.d/ and read the relevant section in README.admin for more
+      info.
 
 
 v0.6.1 -> v0.6.2

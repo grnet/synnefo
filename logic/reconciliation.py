@@ -132,10 +132,10 @@ def get_instances_from_ganeti():
     return snf_instances
 
 
+# Only for testing this module individually
 def main():
     print get_instances_from_ganeti()
 
 
 if __name__ == "__main__":
-    dictConfig(settings.RECONCILIATION_LOGGING)
     sys.exit(main())

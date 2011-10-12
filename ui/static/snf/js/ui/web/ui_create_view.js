@@ -51,6 +51,9 @@
         show_password: function() {
             this.$(".show-machine").addClass("in-progress");
             this.password.text(this.pass);
+            if (vms.get(this.vm_id)) {
+                this.$(".show-machine").removeClass("in-progress");
+            }
         },
 
         onClose: function() {

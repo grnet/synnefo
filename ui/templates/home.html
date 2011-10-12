@@ -526,6 +526,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
             synnefo.config.ajax_timeout = {{ timeout }};
             synnefo.config.skip_timeouts = {{ skip_timeouts }};
+            synnefo.VERSION = "{{ synnefo_version }}";
 
             // TODO: make it dynamic
             synnefo.config.api_url = '/api/v1.1';
@@ -539,6 +540,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
 
             synnefo.ui.main.bind("initial", function(){})
+
         })
     </script>
 </body>

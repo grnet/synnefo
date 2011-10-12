@@ -1,5 +1,5 @@
 #!/bin/sh
 
-ENABLED=true
+SNF_EVENTD_ENABLE=false
 SNF_USER="root"
 SNF_EVENTD_OPTS=""

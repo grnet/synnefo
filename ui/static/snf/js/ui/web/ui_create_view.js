@@ -217,7 +217,8 @@
                 this.image_details_os.text(_(image.get("OS")).capitalize());
                 this.image_details_kernel.text(image.get("kernel"));
 
-                var size = util.readablizeBytes(parseInt(image.get("size")) * 1024 * 1024);
+                var size = image.get_readable_size();
+
                 this.image_details_size.text(size);
                 this.image_details_gui.text(image.get("GUI"));
 
@@ -258,7 +259,7 @@
                            '</span></li>').format(img.get("name"), 
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.get("OS")),
-                                                  util.readablizeBytes(parseInt(img.get("size"))* 1024 * 1024),
+                                                  img.get_readable_size(),
                                                   util.truncate(img.get("description"),35)));
             image.data("image", img);
             image.data("image_id", img.id);
@@ -630,7 +631,7 @@
             set_detail("name");
             set_detail("os", _(image.get("OS")).capitalize());
             set_detail("gui", image.get("GUI"));
-            set_detail("size", util.readablizeBytes(image.get_size() * 1024 * 1024));
+            set_detail("size", image.get_readable_size());
             set_detail("kernel");
         },
 

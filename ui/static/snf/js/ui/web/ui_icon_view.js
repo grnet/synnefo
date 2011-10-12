@@ -554,7 +554,7 @@
             }
 
             this.sel('image_name').text(util.truncate(image.get('name'), 13)).attr("title", image.get('name'));
-            this.sel('image_size').text(image.get('metadata').values.size).attr('title', image.get('metadata').values.size);
+            this.sel('image_size').text(image.get_readable_size()).attr('title', image.get_readable_size());
 
             this.sel('cpu').text(flavor.get('cpu'));
             this.sel('ram').text(flavor.get('ram'));

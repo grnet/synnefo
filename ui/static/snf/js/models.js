@@ -150,6 +150,10 @@
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
 
+        get_readable_size: function() {
+            return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : "unknown";
+        },
+
         get_os: function() {
             return this.get("OS");
         },

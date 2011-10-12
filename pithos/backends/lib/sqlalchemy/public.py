@@ -43,7 +43,7 @@ class Public(DBWorker):
         metadata = MetaData()
         columns=[]
         columns.append(Column('path', String(2048), index=True))
-        self.public = Table('public', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
+        self.public = Table('public', metadata, *columns, mysql_engine='InnoDB')
         metadata.create_all(self.engine)
     
     

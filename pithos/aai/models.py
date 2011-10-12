@@ -43,7 +43,7 @@ class PithosUser(models.Model):
     realname = models.CharField('Real Name', max_length=255, default='')
     is_admin = models.BooleanField('Admin', default=False)
     affiliation = models.CharField('Affiliation', max_length=255, default='')
-    quota = models.IntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
+    quota = models.BigIntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
     auth_token_created = models.DateTimeField('Time of auth token creation')
     auth_token_expires = models.DateTimeField('Time of auth token expiration')

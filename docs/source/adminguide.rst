@@ -151,6 +151,16 @@ Configure and run apache::
   /etc/init.d/apache2 restart
   /etc/init.d/shibd restart
 
+The following tokens should be available at the destination, after passing through the apache module::
+
+  SHIB_EPPN = "eppn" # eduPersonPrincipalName
+  SHIB_NAME = "Shib-InetOrgPerson-givenName"
+  SHIB_SURNAME = "Shib-Person-surname"
+  SHIB_CN = "Shib-Person-commonName"
+  SHIB_DISPLAYNAME = "Shib-InetOrgPerson-displayName"
+  SHIB_EP_AFFILIATION = "Shib-EP-Affiliation"
+  SHIB_SESSION_ID = "Shib-Session-ID"
+
 MySQL Setup
 -----------
 

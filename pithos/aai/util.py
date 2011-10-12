@@ -35,6 +35,7 @@ import hashlib
 
 from time import asctime
 from datetime import datetime, timedelta
+from base64 import b64encode
 
 from django.conf import settings
 from django.db import transaction

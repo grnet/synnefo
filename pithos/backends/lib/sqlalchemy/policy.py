@@ -47,7 +47,7 @@ class Policy(DBWorker):
         columns.append(Column('path', String(2048), index=True))
         columns.append(Column('key', String(255)))
         columns.append(Column('value', String(255)))
-        self.policies = Table('policy', metadata, *columns, mysql_engine='InnoDB', mysql_charset='utf8')
+        self.policies = Table('policy', metadata, *columns, mysql_engine='InnoDB')
         metadata.create_all(self.engine)
     
     def policy_set(self, path, policy):

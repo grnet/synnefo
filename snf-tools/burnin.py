@@ -76,7 +76,7 @@ SNF_TEST_PREFIX = "snf-test-"
 
 # Setup logging (FIXME - verigak)
 logging.basicConfig(format="%(message)s")
-log = logging.getLogger("snf-test")
+log = logging.getLogger("burnin")
 log.setLevel(logging.INFO)
 
 
@@ -233,7 +233,6 @@ class SpawnServerTestCase(unittest.TestCase):
     def _verify_server_status(self, current_status, new_status):
         """Verify a server has switched to a specified status"""
         server = self.client.get_server_details(self.serverid)
-        self.assertIn(server["status"], (current_status, new_status))
         if server["status"] not in (current_status, new_status):
             return None  # Do not raise exception, return so the test fails
         self.assertEquals(server["status"], new_status)
@@ -584,16 +583,14 @@ def _run_cases_in_parallel(cases, fanout=1, runner=None):
 
     The cases iterable specifies the TestCases to be executed in parallel,
     by test runners running in distinct processes.
-
     The fanout parameter specifies the number of processes to spawn,
     and defaults to 1.
-
     The runner argument specifies the test runner class to use inside each
     runner process.
 
     """
     if runner is None:
-        runner = unittest.TextTestRunner()
+        runner = unittest.TextTestRunner(verbosity=2, failfast=True)
 
     # testq: The master process enqueues TestCase objects into this queue,
     #        test runner processes pick them up for execution, in parallel.
@@ -677,9 +674,10 @@ def parse_arguments(args):
                       action="store", type="string", dest="token",
                       help="The token to use for authentication to the API",
                       default=DEFAULT_TOKEN)
-    parser.add_option("--failfast",
-                      action="store_true", dest="failfast",
-                      help="Fail immediately if one of the tests fails",
+    parser.add_option("--nofailfast",
+                      action="store_true", dest="nofailfast",
+                      help="Do not fail immediately if one of the tests " \
+                           "fails (EXPERIMENTAL)",
                       default=False)
     parser.add_option("--action-timeout",
                       action="store", type="int", dest="action_timeout",
@@ -710,7 +708,7 @@ def parse_arguments(args):
                       metavar="COUNT",
                       help="Spawn up to COUNT child processes to execute " \
                            "in parallel, essentially have up to COUNT " \
-                           "server build requests outstanding",
+                           "server build requests outstanding (EXPERIMENTAL)",
                       default=1)
     parser.add_option("--force-flavor",
                       action="store", type="int", dest="force_flavorid",
@@ -718,7 +716,13 @@ def parse_arguments(args):
                       help="Force all server creations to use the specified "\
                            "FLAVOR ID instead of a randomly chosen one, " \
                            "useful if disk space is scarce",
-                      default=None)    # FIXME
+                      default=None)
+    parser.add_option("--force-image",
+                      action="store", type="int", dest="force_imageid",
+                      metavar="IMAGE ID",
+                      help="Instead of testing all available images, test " \
+                           "only the specified IMAGE ID",
+                      default=None)
     parser.add_option("--show-stale",
                       action="store_true", dest="show_stale",
                       help="Show stale servers from previous runs, whose "\
@@ -773,7 +777,7 @@ def main():
     # Run them: FIXME: In parallel, FAILEARLY, catchbreak?
     #unittest.main(verbosity=2, catchbreak=True)
 
-    runner = unittest.TextTestRunner(verbosity=2, failfast=opts.failfast)
+    runner = unittest.TextTestRunner(verbosity=2, failfast=not opts.nofailfast)
     # The following cases run sequentially
     seq_cases = [UnauthorizedTestCase, FlavorsTestCase, ImagesTestCase]
     _run_cases_in_parallel(seq_cases, fanout=3, runner=runner)
@@ -781,7 +785,12 @@ def main():
     # The following cases run in parallel
     par_cases = []
 
-    for image in DIMAGES:
+    if opts.force_imageid:
+        test_images = filter(lambda x: x["id"] == opts.force_imageid, DIMAGES)
+    else:
+        test_images = DIMAGES
+
+    for image in test_images:
         imageid = image["id"]
         imagename = image["name"]
         if opts.force_flavorid:
@@ -802,8 +811,6 @@ def main():
                                        query_interval=opts.query_interval)
         par_cases.append(case)
 
-    print "%s" % FlavorsTestCase
-    print "dict", __main__.__dict__
     _run_cases_in_parallel(par_cases, fanout=opts.fanout, runner=runner)
 
 if __name__ == "__main__":

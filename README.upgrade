@@ -12,7 +12,7 @@ HTML TEMPLATES
 
 NEW DEPENDENCIES
     * python-unittest2, python-paramiko needed by the new integration
-      test suite snf-tools/snf-test. Paramiko shipped with Squeeze uses
+      test suite snf-tools/burnin. Paramiko shipped with Squeeze uses
       broken RandomPool, produces warnings, see #576697.
     * snf-image must be installed on all Ganeti hosts, see README.deploy,
       Step 13.

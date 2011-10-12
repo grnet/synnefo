@@ -512,6 +512,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         # No actual RDP processing done. We assume the RDP server is there
         # if the connection to the RDP port is successful.
+        # FIXME: Use rdesktop, analyze exit code? see manpage [costasd]
         sock.close()
 
     def test_015_rdp_to_server_IPv6(self):

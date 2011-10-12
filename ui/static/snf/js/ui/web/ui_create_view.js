@@ -33,18 +33,29 @@
             this.copy = this.$(".clip-copy");
 
             this.$(".show-machine").click(_.bind(function(){
+                if (this.$(".show-machine").hasClass("in-progress")) {
+                    return;
+                }
                 this.hide();
                 snf.ui.main.show_vm_details(storage.vms.get(this.vm_id));
             }, this));
-            
+
+            _.bindAll(this, "handle_vm_added");
+            storage.vms.bind("add", this.handle_vm_added);
+        },
+
+        handle_vm_added: function() {
+            this.$(".show-machine").removeClass("in-progress");
         },
         
         show_password: function() {
+            this.$(".show-machine").addClass("in-progress");
             this.password.text(this.pass);
         },
 
         onClose: function() {
             this.password.text("");
+            this.vm_id = undefined;
         },
         
         beforeOpen: function() {
@@ -65,7 +76,7 @@
         show: function(pass, vm_id) {
             this.pass = pass;
             this.vm_id = vm_id;
-
+            
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
             this.show_password();
         }

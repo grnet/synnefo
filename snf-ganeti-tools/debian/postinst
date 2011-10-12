@@ -22,7 +22,6 @@ case "$1" in
     configure)
         echo "Updating rc.d links... "
         update-rc.d snf-ganeti-eventd defaults
-        echo "done\n"
         echo "Starting snf-ganeti-eventd...\n"
 	/etc/init.d/snf-ganeti-eventd start     
     ;;

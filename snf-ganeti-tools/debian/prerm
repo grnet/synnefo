@@ -19,11 +19,10 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-        echo "Stopping snf-ganeti-eventd...\n"
+        echo "Stopping snf-ganeti-eventd..."
 	/etc/init.d/snf-ganeti-eventd stop
 	echo "Removing rc.d links... "
 	update-rc.d snf-ganeti-eventd remove
-	echo "done\n"
     ;;
 
     failed-upgrade)

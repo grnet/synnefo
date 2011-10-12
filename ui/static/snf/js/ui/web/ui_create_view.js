@@ -236,6 +236,8 @@
             } else {
                 this.image_details.hide();
             }
+
+            this.validate();
         },
 
         reset_images: function() {
@@ -284,6 +286,14 @@
 
         get: function() {
             return {'image': this.selected_image};
+        },
+
+        validate: function() {
+            if (!this.selected_image) {
+                this.parent.$(".form-action.next").hide();
+            } else {
+                this.parent.$(".form-action.next").show();
+            }
         }
     });
 
@@ -441,8 +451,12 @@
 
             this.current_flavor = flv;
             this.trigger("change");
-            this.update_selected_flavor();
-            this.update_selected_predefined();
+            if (this.current_flavor) {
+                this.update_selected_flavor();
+                this.update_selected_predefined();
+            }
+            
+            this.validate();
         },
         
         select_default_flavor: function() {
@@ -503,6 +517,7 @@
 
         update_selected_flavor: function() {
             var flv = this.current_flavor;
+            if (!flv) { return }
             this.$(".option").removeClass("selected");
 
             this.$(".option.cpu.value-" + flv.get("cpu")).addClass("selected");
@@ -554,6 +569,7 @@
         update_layout: function() {
             this.update_selected_flavor();
             this.update_disabled_flavors();
+            this.validate();
         },
 
         reset: function() {
@@ -561,6 +577,14 @@
             this.flavors = [];
             this.flavors_data = {'cpu':[], 'mem':[], 'disk':[]};
             this.update_flavors_data();
+        },
+
+        validate: function() {
+            if (!this.current_flavor) {
+                this.parent.$(".form-action.next").hide();
+            } else {
+                this.parent.$(".form-action.next").show();
+            }
         },
 
         get: function() {
@@ -648,6 +672,7 @@
 
         update_layout: function() {
             var params = this.parent.get_params();
+            if (!params.image || !params.flavor) { return }
 
             if (!params.image) { return }
             var vm_name = "My {0} server".format(params.image.get("name"));

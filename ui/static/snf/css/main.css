@@ -5141,6 +5141,11 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
+.form-field.error label {
+    color: #ff0000;
+    text-decoration: underline;
+}
+
 .form-field input {
     border: 1px solid #aaa;
     width: 200px;

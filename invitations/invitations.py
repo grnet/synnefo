@@ -100,7 +100,7 @@ def process_form(request):
                                  'invitations_left':
                                      get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
-        response = HttpResponse(data)
+        response = HttpResponse(data, content_type='application/json')
         log.warn("Error adding invitation %s -> %s: %s",
                     request.user.uniq, email, errors)
     else:
@@ -112,8 +112,8 @@ def process_form(request):
                                  'invitations_left':
                                     get_invitations_left(request.user)},
                                 context_instance=RequestContext(request))
-        response = HttpResponse(data)
-        log.info("Added invitation %s -> %s", request.user.uniq, email)
+        response = HttpResponse(data, content_type='application/json')
+        #log.info("Added invitation %s -> %s", request.user.uniq, email)
 
     return response
 

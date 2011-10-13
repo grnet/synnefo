@@ -27,6 +27,7 @@
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.client.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.tools.min.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.dataTables.min.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.pagination.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}ZeroClipboard.js"></script>
 
 
@@ -57,6 +58,7 @@
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_networks_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_metadata_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_feedback_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL}}ui_invitations_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_create_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_connect_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL}}ui_main_view.js"></script>
@@ -293,7 +295,6 @@
                 synnefo.ui.logout();
             });
 
-            $(".usermenu .invitations").click(show_invitations);
             $(".usermenu .api").click(function(){
                 synnefo.ui.main.api_info_view.show();
             });
@@ -401,7 +402,7 @@
             <span class="reload-app">{% trans "Reload" %}</span>
         </div>
     </div>
-
+    {% include "partials/invitations.html" %}
     <div id="feedback-overlay-content" class="hidden overlay-content feedback-form">
         <div class="description">
             <p>
@@ -528,6 +529,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
             synnefo.config.ajax_timeout = {{ timeout }};
             synnefo.config.skip_timeouts = {{ skip_timeouts }};
+            synnefo.config.invitations_url = "{% url invitations %}";
             synnefo.VERSION = "{{ synnefo_version }}";
 
             // TODO: make it dynamic
@@ -541,7 +543,9 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
 
             synnefo.ui.init();
 
-            synnefo.ui.main.bind("initial", function(){})
+            synnefo.ui.main.bind("initial", function(){
+                $(".usermenu .invitations").click();
+            })
 
         })
     </script>

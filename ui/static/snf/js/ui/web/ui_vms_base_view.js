@@ -283,7 +283,7 @@
         connect_to_console: function(vm) {
             vm.call("console", function(console_data) {
                 var url = vm.get_console_url(console_data);
-                snf.util.open_window(url, "Console to '" + vm.get("name") + "'", {});
+                snf.util.open_window(url, "VM_" + vm.get("id") + "_CONSOLE", {});
             })
         }
 

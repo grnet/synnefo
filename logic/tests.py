@@ -239,19 +239,6 @@ class ProcessOpStatusTestCase(TestCase):
         self.assertEquals(get_rsapi_state(vm), 'DELETED')
         self.assertTrue(vm.deleted)
 
-    def test_unknown_op(self):
-        """Test notification for unknown Ganeti op raises exception"""
-        msg = self.msg_op
-        msg['operation'] = 'OP_INSTANCE_SOMETHING_ELSE'
-        msg['status'] = 'success'
-
-        # This machine is initially in BUILD
-        vm = VirtualMachine.objects.get(pk=30002)
-        self.assertRaises(VirtualMachine.InvalidBackendMsgError,
-                          backend.process_op_status,
-                          vm, msg["jobId"], msg["operation"],
-                          msg["status"], msg["logmsg"])
-
     def test_op_create_error(self):
         """Test notification for failed OP_INSTANCE_CREATE"""
         msg = self.msg_op

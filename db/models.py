@@ -263,7 +263,8 @@ class VirtualMachine(models.Model):
         ('OP_INSTANCE_REPLACE_DISKS', 'Replace Disks'),
         ('OP_INSTANCE_MIGRATE', 'Migrate Instance'),
         ('OP_INSTANCE_CONSOLE', 'Get Instance Console'),
-        ('OP_INSTANCE_RECREATE_DISKS', 'Recreate Disks')
+        ('OP_INSTANCE_RECREATE_DISKS', 'Recreate Disks'),
+        ('OP_INSTANCE_FAILOVER', 'Failover Instance')
     )
     # A backend job may be in one of the following possible states
     BACKEND_STATUSES = (
@@ -294,7 +295,8 @@ class VirtualMachine(models.Model):
         'OP_INSTANCE_REPLACE_DISKS' : None,
         'OP_INSTANCE_MIGRATE': None,
         'OP_INSTANCE_CONSOLE': None,
-        'OP_INSTANCE_RECREATE_DISKS': None
+        'OP_INSTANCE_RECREATE_DISKS': None,
+        'OP_INSTANCE_FAILOVER': None
     }
 
     # This dictionary contains the correspondence between

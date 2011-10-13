@@ -64,8 +64,9 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     also update the operating state of the VM.
 
     """
-    if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
-       status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]):
+    # See #1492, #1031, #1111 why this line has been removed
+    #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
+    if status not in [x[0] for x in VirtualMachine.BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
     vm.backendjobid = jobid
@@ -74,9 +75,10 @@ def process_op_status(vm, jobid, opcode, status, logmsg):
     vm.backendlogmsg = logmsg
 
     # Notifications of success change the operating state
-    if status == 'success' and VirtualMachine.OPER_STATE_FROM_OPCODE[opcode] is not None:
-        utils.update_state(vm, VirtualMachine.OPER_STATE_FROM_OPCODE[opcode])
-        # Set the deleted flag explicitly, to cater for admin-initiated removals
+    state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
+    if status == 'success' and state_for_success is not None:
+        utils.update_state(vm, state_for_success)
+        # Set the deleted flag explicitly, cater for admin-initiated removals
         if opcode == 'OP_INSTANCE_REMOVE':
             vm.deleted = True
 
@@ -135,7 +137,7 @@ def process_net_status(vm, nics):
             index=i,
             mac=nic.get('mac', ''),
             ipv4=nic.get('ip', ''),
-            ipv6=nic.get('ipv6',''),
+            ipv6=nic.get('ipv6', ''),
             firewall_profile=firewall_profile)
 
         # network nics modified, update network object
@@ -249,19 +251,19 @@ def create_instance(vm, flavor, image, password, personality):
     #
     # kw['pnode']=rapi.GetNodes()[0]
     kw['dry_run'] = settings.TEST
-    
+
     kw['beparams'] = {
         'auto_balance': True,
         'vcpus': flavor.cpu,
         'memory': flavor.ram}
-    
+
     kw['osparams'] = {
         'img_id': image.backend_id,
         'img_passwd': password,
         'img_format': image.format}
     if personality:
         kw['osparams']['img_personality'] = json.dumps(personality)
-    
+
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
 
@@ -414,11 +416,14 @@ def set_firewall_profile(vm, profile):
     rapi.ModifyInstance(vm.backend_id,
                         os_name=settings.GANETI_CREATEINSTANCE_KWARGS['os'])
 
+
 def get_ganeti_instances():
     return rapi.GetInstances()
 
+
 def get_ganeti_nodes():
     return rapi.GetNodes()
+
 
 def get_ganeti_jobs():
     return rapi.GetJobs()

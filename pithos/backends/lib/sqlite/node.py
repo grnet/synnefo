@@ -111,9 +111,19 @@ class Node(DBWorker):
                             foreign key (parent)
                             references nodes(node)
                             on update cascade
-                            on delete cascade )""")
+                            on delete cascade ) """)
         execute(""" create unique index if not exists idx_nodes_path
                     on nodes(path) """)
+        
+        execute(""" create table if not exists policy
+                          ( node   integer,
+                            key    text,
+                            value  text,
+                            primary key (node, key)
+                            foreign key (node)
+                            references nodes(node)
+                            on update cascade
+                            on delete cascade ) """)
         
         execute(""" create table if not exists statistics
                           ( node       integer,
@@ -125,7 +135,7 @@ class Node(DBWorker):
                             foreign key (node)
                             references nodes(node)
                             on update cascade
-                            on delete cascade )""")
+                            on delete cascade ) """)
         
         execute(""" create table if not exists versions
                           ( serial     integer primary key,
@@ -322,6 +332,15 @@ class Node(DBWorker):
         q = "delete from nodes where node = ?"
         self.execute(q, (node,))
         return True
+    
+    def policy_get(self, node):
+        q = "select key, value from policy where node = ?"
+        self.execute(q, (node,))
+        return dict(self.fetchall())
+    
+    def policy_set(self, node, policy):
+        q = "insert or replace into policy (node, key, value) values (?, ?, ?)"
+        self.executemany(q, ((node, k, v) for k, v in policy.iteritems()))
     
     def statistics_get(self, node, cluster=0):
         """Return population, total size and last mtime

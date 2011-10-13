@@ -119,6 +119,17 @@ class Node(DBWorker):
         # place an index on path
         Index('idx_nodes_path', self.nodes.c.path)
         
+        #create policy table
+        columns=[]
+        columns.append(Column('node', Integer,
+                              ForeignKey('nodes.node',
+                                         ondelete='CASCADE',
+                                         onupdate='CASCADE'),
+                              primary_key=True))
+        columns.append(Column('key', String(255), primary_key=True))
+        columns.append(Column('value', String(255)))
+        self.policies = Table('policy', metadata, *columns, mysql_engine='InnoDB')
+        
         #create statistics table
         columns=[]
         columns.append(Column('node', Integer,
@@ -365,6 +376,28 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node == node)
         self.conn.execute(s).close()
         return True
+    
+    def policy_get(self, node):
+        s = select([self.policies.c.key, self.policies.c.value],
+            self.policies.c.node==node)
+        r = self.conn.execute(s)
+        d = dict(r.fetchall())
+        r.close()
+        return d
+    
+    def policy_set(self, node, policy):
+        #insert or replace
+        for k, v in policy.iteritems():
+            s = self.policies.update().where(and_(self.policies.c.node == node,
+                                                  self.policies.c.key == k))
+            s = s.values(value = v)
+            rp = self.conn.execute(s)
+            rp.close()
+            if rp.rowcount == 0:
+                s = self.policies.insert()
+                values = {'node':node, 'key':k, 'value':v}
+                r = self.conn.execute(s, values)
+                r.close()
     
     def statistics_get(self, node, cluster=0):
         """Return population, total size and last mtime

@@ -2,6 +2,74 @@ Changelog
 =========
 
 
+2011-10-13, v0.7
+
+NEW FEATURES:
+    UI:
+        * From the ground-up rebuilt, refactored MVC-based UI (#1443)
+        * Document all settings introduced due to UI refactoring (#1447)
+        * UI asset files versioning (#1460)
+        * Improve feedback on completed steps during machine creation (#1461)
+    Images:
+        * Completely re-engineered image deployment mechanism based on
+          snf-image Ganeti OS provider, in isolated helper VM
+        * Support public and private images (#555)
+        * Support handling of VM filesystem, injection of arbitrary files
+          on VM creation (#491)
+        * Implement file injection as a task in snf-image (#1095)
+        * Remove all-host based processing of (potentially user-provided)
+          Images (#969)
+    API:
+        * Implement <personality> tag in OpenStack Compute API
+          for file injection (#985, #1093)
+        * Update API implementation for server/image metadata based on latest
+          draft version of spec (#1403)
+        * Support deletion of Flavors, support servers referring to
+          inexistent (deleted) Flavors (#1157)
+    Admin:
+        * Addition of --meta option to snf-admin image for easy setting
+          of image metadata values on image creation (#1107)
+    Deployment:
+        * Initial iteration of a system test suite, snf-burnin,
+          for end-to-end testing of Synnefo deployments (#1155)
+        * Re-engineered logging mechanism, for finer-grained control (#1033)
+        * Add init script for snf-ganeti-eventd, fix Debian packaging (#1323)
+        * Document removal of Flavors from circulation (#1472)
+        * Add generic service unavailable template (#1359)
+
+
+FIXES:
+    UI:
+        * Fix problems when reusing the Create machine wizard with IE8 (#997)
+        * Fix problematic update of the networks tab and minor fixes (#861)
+        * Fix "Connecting" and "progress" gif in networks tab (#863)
+        * Fix inconsistencies on machine transitions between views (#917)
+        * Fix IE rendering mode (#975)
+        * Fix UI machine/network creation overlays style clutter (#979)
+        * Have UI should reset action confirmations after state change (#981)
+        * UI barfs due to exception on "New Machine" wizard (#1473)
+        * UI throws exception on single-server view (#1483)
+    API:
+        * Fix incomplete constraints in ImageMetadata Model (#1255)
+    Deployment:
+        * Split initial_data.json to work around South "feature" (#1263)
+        * Fix missing snf-ganeti-instance-image package dependency (#1319)
+    Kamaki:
+        * The kamaki client lib uses the root logger (#1337)
+        * The kamaki client lib fails to set server metadata (#1399)
+    Invitations:
+        * FIx bug causing HTTP 500 error on /invitations/login (#1407)
+        * Fix sort order of flavors, sort by actual characteristicts (#1429)
+        * Fix display of error modal boxes, do notrefresh or display another
+          error (#1433)
+        * Fix positioning of machines in "Destroying" (#1437)
+        * Fix Metadata button shown as clickable while it's not (#1441)
+    Images:
+        * Missing dependency on 'qemu-img' in snf-image-helper (#1484)
+    Logic:
+        * Fix messages left in the queue due to unknown Ganeti opcodes (#1492)
+
+
 2011-09-15, v0.6.2
 
 FIXES:

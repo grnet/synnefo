@@ -28,10 +28,14 @@ div.confirm_single button {
     position: relative;
 }
 
-.firewall .cont-toggler {
+.single .cont-toggler, .firewall .cont-toggler {
     float: left;
 }
 
 .network-machines .cont-toggler {
     float: left;
+}
+
+.overlay-networks-create .form-actions {
+    float: none;
 }

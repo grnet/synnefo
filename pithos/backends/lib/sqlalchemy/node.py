@@ -128,7 +128,7 @@ class Node(DBWorker):
                               primary_key=True))
         columns.append(Column('population', Integer, nullable=False, default=0))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
-        columns.append(Column('mtime', DECIMAL))
+        columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
         columns.append(Column('cluster', Integer, nullable=False, default=0,
                               primary_key=True, autoincrement=False))
         self.statistics = Table('statistics', metadata, *columns, mysql_engine='InnoDB')
@@ -143,7 +143,7 @@ class Node(DBWorker):
         columns.append(Column('hash', String(255)))
         columns.append(Column('size', BigInteger, nullable=False, default=0))
         columns.append(Column('source', Integer))
-        columns.append(Column('mtime', DECIMAL))
+        columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
         columns.append(Column('muser', String(255), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
         self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')

@@ -3860,103 +3860,9 @@ div.state .shutdown, tbody.machines .shutdown {
     background-image: url("../images/icons/actions/medium/shutdown.png");
 }
 
-
-.no-invitations-left {
-    margin-bottom: 20px;
-    color: #E44848;
-}
-
-.invitations #field_name_name, .invitations #field_email_name {
-    float: left;
-    display: block;
-    width: 180px;
-}
-.invitations input {
-    width: 170px;
-}
-
-.invitations #fieldheaders span.description {
-    font-size: 0.8em;
-    color: #666;
-    margin-left: 2px;
-}
-
-.invitations #fields {
-    margin-top: 5px;
-}
-
-.invitations .add-field-container {
-    margin-top: 5px;
-}
-
-.invitations #errors {
-    padding: 5px;
-    background-color: #800000;
-}
-
-.invitations #errors p {
-    margin-bottom: 10px;
-    font-size: 0.95em;
-    padding-top:0;
-    margin-top:0;
-    color: #fff;
-}
-
-.invitations #errors li {
-    font-size: 0.85em;
-    color: #ddd;
-}
-
-.invitations #errors {
-    font-size: 100%;
-    margin-bottom: 10px;
-}
-
-#invsent {
-    padding-top: 10px;
-}
-
-#invsent h3.overlay-inner-title {
-    font-size: 1.2em;
-    font-weight: normal;
-    border-bottom: 1px solid #B0D0E0;
-}
-
-#invsent .icons-info img {
-    vertical-align: middle;
-}
-
-#invsent .icons-info {
-    margin-top: 10px;
-    font-size: 0.7em;
-}
-
-#invsent .icons-info span {
-    margin-right: 10px;
-}
-
-.notification-box .invitations {
-    padding-bottom: 0;
-}
-.notification-box .invitations .sub-text {
-    display: none;
-}
-
 h3.overlay-inner-title {
     color: #4085A5;
     font-size: 2em;
-}
-
-#invsent .message {
-    font-size: 0.9em;
-    padding: 5px 0;
-    margin-top: 5px;
-    margin-bottom: -10px;
-    color: #5CAD54;
-}
-
-#invsent .errormsg {
-    color: #AE2B34;
 }
 
 #add-name-container {
@@ -3969,84 +3875,6 @@ h3.overlay-inner-title {
 
 .add-field-trigger img {
     vertical-align: middle;
-}
-
-.invitations form {
-    margin-bottom: 20px;
-}
-
-#invsent h3 {
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-#invsent h3 span {
-    font-weight: normal;
-    font-size: 0.9em;
-    margin-right: 5px;
-    display: block;
-    margin-top: -2px;
-}
-
-#invsent ul {
-    margin-top: 3px;
-}
-
-#invsent li {
-    color: #4085A5;
-    font-size: 1.1em;
-    padding-top: 0.5em;
-    border-bottom: 1px solid #efefef;
-    padding-bottom: 0.5em;
-    font-size: 0.9em;
-    position: relative;
-}
-
-#invsent li:hover {
-    background-color: #efefef;
-}
-
-#invsent li img {
-    position: absolute;
-    left:20px;
-    bottom: 2px;
-}
-
-#invsent h3 img {
-    float: none;
-    vertical-align: middle;
-    margin-left: 3px;
-}
-
-#invsent .name {
-    float: left;
-    width: 55%;
-    padding-left: 20px;
-}
-
-#invsent .email {
-    float: left;
-    width: 40%;
-}
-
-#invsent li.accepted {
-    color: #ABD49C;
-}
-
-#invsent li img {
-    margin-left: -20px;
-    margin-top: 1px;
-}
-
-#invsent li img.resend {
-    cursor: pointer;
-}
-
-.invitations #field_email_name {
-}
-
-#invform #fields input {
-    margin-right: 10px;
 }
 
 .machine-now-building {
@@ -4562,10 +4390,6 @@ span.resend-msg {
 	color:#999;
 	border-color:#999;
 	background:#fff;
-}
-
-#invsent .pagination {
-    margin-top: 10px;
 }
 
 table.list-machines .wave {
@@ -5868,3 +5692,139 @@ table.list-machines .wave {
 }
 
 .password-cont .clip-copy { right: 10px; top: 8px;}
+
+
+.overlay-invitations {
+    width: 680px;
+}
+.invitations-form .sending .sending-msg {
+    font-size: 0.8em;
+    display: block !important;
+    margin-bottom: 5px;
+    color: #008800;
+}
+
+.invitations-form .send-error {
+    font-size: 0.8em;
+    margin-bottom: 5px;
+    color: #800;
+    padding: 3px;
+    display: none;
+}
+
+.invitations-form .error label {
+    color: #000 !important;
+}
+
+.invitations-form .form-field {
+    width: 49%;
+    float: left;
+}
+
+.invitations-view .left.none {
+    background-color: #880000;
+}
+
+.invitations-form {
+    position: relative;
+}
+
+.invitations-form .add-new-invitation {
+    position: absolute;
+    top:2px;
+    right: 20px;
+    width: 16px;
+    height: 16px;
+    background-image: url("../images/option-action-add.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    text-indent: 2000em;
+    background-color: #4085A5;
+}
+
+.invitations-view .left {
+    font-size: 1em;
+    color: #fff;
+    font-weight: bold;
+    background-color: #4085A5;
+    padding: 4px;
+}
+
+input.has-errors {
+    border-color: #ff0000;
+}
+
+.none-left .invitations-wrapper .invitations-list {
+    width: 100% !important;
+    border-left: none !important;
+    padding-left: 0;
+}
+
+.invitations-wrapper .invitations-list {
+    width: 33%;
+    float: left;
+    padding-left: 10px;
+    border-left: 1px solid #4085A5;
+    margin-left: -1px
+}
+
+.invitations-wrapper .invitations-form {
+    width: 65%;
+    float: left;
+    border-right: 1px solid #4085A5;
+}
+
+.invitations-wrapper label span {
+    color: #aaa;
+    font-size: 0.8em;
+}
+
+.invitations-wrapper label {
+    display: block;
+    font-size: 0.9em;
+    margin-bottom:10px;
+    font-weight: bold;
+}
+
+.invitations-view .add-new-invitation {
+    cursor: pointer;
+}
+
+.invitations-wrapper input.name {
+    width: 180px;
+}
+
+.invitations-wrapper input {
+    font-size: 0.9em;
+    width: 160px;
+    padding:4px;
+}
+
+.invitations-list .invitation-sent {
+    border-bottom: 1px solid #A1C8DB;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.invitations-view h3 {
+    margin-bottom: 10px;
+    color: #4085A5;
+}
+
+.invitations-list .invitation-sent.last,
+.invitations-list .invitation-sent:last-child {
+    border-bottom: none;
+}
+
+
+.invitations-list .email {
+    color: #D98147;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+.invitations-list .name {
+    color: #444;
+    font-size: 0.9em;
+}

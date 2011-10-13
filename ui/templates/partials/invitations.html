@@ -1,0 +1,44 @@
+{% load i18n %}
+<div id="invitations-overlay-content" class="hidden overlay-content invitations-view">
+    <div class="description">
+        <p>You have <span class="left"></span> invitations left</p>
+    </div>
+    <div class="invitations-wrapper clearfix">
+        <div class="invitations-form clearfix">
+            <h3>{% trans "Send new intivations" %}</h3>
+            <div class="add-new-invitation">add</div>
+            <div class="top-info success"></div>
+            <div class="form-entry-tpl clearfix hidden">
+                <div class="fields clearfix">
+                    <div class="form-field">
+                        <label>Name <span class="desc">e.g. John Smith</span></label>
+                        <input type="text" class="name"/>
+                    </div>
+                    <div class="form-field">
+                        <label>Email</label>
+                        <input type="text" class="email"/>
+                    </div>
+                    <div class="remove-invitation">remove</div>
+                </div>
+                <div class="send-error"></div>
+                <div class="sending-msg hidden">{% trans "Sending..." %}</div>
+            </div>
+            <div class="form-entries">
+            </div>
+            <div class="send-invitations">send invitations</div>
+        </div>
+        <div class="invitations-list clearfix">
+            <h3>{% trans "Intivations sent" %}</h3>
+            <div class="invitation-sent-tpl hidden">
+                <div class="action resend"></div>
+                <div class="name"></div>
+                <div class="email"></div>
+            </div>
+            <div class="invitations-sent-cont">
+            </div>
+            <div class="invitations-sent-pages"></div>
+            <div class="hidden invitations-sent-error">{% trans "Cannot display invitations history" %}</div>
+        </div>
+    </div>
+</div>
+

@@ -546,6 +546,7 @@
         load: function() {
             this.error_view = new views.ErrorView();
             this.feedback_view = new views.FeedbackView();
+            this.invitations_view = new views.InvitationsView();
             var self = this;
             // initialize overlay views
             
@@ -584,6 +585,9 @@
         },
 
         init_menu: function() {
+            $(".usermenu .invitations").click(_.bind(function(){
+                this.invitations_view.show();
+            }, this));
             $(".usermenu .feedback").click(_.bind(function(){
                 this.feedback_view.show();
             }, this));

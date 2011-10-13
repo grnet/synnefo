@@ -186,13 +186,14 @@ def account_meta(request, v_account):
     try:
         meta = request.backend.get_account_meta(request.user, v_account, until)
         groups = request.backend.get_account_groups(request.user, v_account)
+        policy = request.backend.get_account_policy(request.user, v_account)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse(status=204)
-    put_account_headers(response, request.quota, meta, groups)
+    put_account_headers(response, meta, groups, policy)
     return response
 
 @api_method('POST')
@@ -234,13 +235,14 @@ def container_list(request, v_account):
     try:
         meta = request.backend.get_account_meta(request.user, v_account, until)
         groups = request.backend.get_account_groups(request.user, v_account)
+        policy = request.backend.get_account_policy(request.user, v_account)
     except NotAllowedError:
         raise Unauthorized('Access denied')
     
     validate_modification_preconditions(request, meta)
     
     response = HttpResponse()
-    put_account_headers(response, request.quota, meta, groups)
+    put_account_headers(response, meta, groups, policy)
     
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
@@ -329,11 +331,6 @@ def container_create(request, v_account, v_container):
     #                       badRequest (400)
     
     meta, policy = get_container_headers(request)
-    try:
-        if policy and int(policy.get('quota', 0)) > request.quota:
-            policy['quota'] = request.quota
-    except:
-        raise BadRequest('Invalid quota header')
     
     try:
         request.backend.put_container(request.user, v_account, v_container, policy)
@@ -379,11 +376,6 @@ def container_update(request, v_account, v_container):
     if 'update' in request.GET:
         replace = False
     if policy:
-        try:
-            if int(policy.get('quota', 0)) > request.quota:
-                policy['quota'] = request.quota
-        except:
-            raise BadRequest('Invalid quota header')
         try:
             request.backend.update_container_policy(request.user, v_account,
                                                 v_container, policy, replace)

@@ -25,12 +25,13 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Oct 4, 2011)          Suggest upload/download methods using hashmaps.
+0.7 (Oct 13, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
 \                          Pass token as a request parameter when using ``POST`` via an HTML form.
 \                          Optionally use source account to update object from another object.
 \                          Use container ``POST`` to upload missing blocks of data.
+\                          Report policy in account headers.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -219,12 +220,10 @@ Cross-user requests are not allowed to use ``until`` and only include the accoun
 Reply Header Name           Value
 ==========================  =====================
 X-Account-Container-Count   The total number of containers
-X-Account-Object-Count      The total number of objects (**TBD**)
 X-Account-Bytes-Used        The total number of bytes stored
-X-Account-Bytes-Remaining   The total number of bytes remaining
-X-Account-Last-Login        The last login (**TBD**)
 X-Account-Until-Timestamp   The last account modification date until the timestamp provided
 X-Account-Group-*           Optional user defined groups
+X-Account-Policy-*          Account behavior and limits
 X-Account-Meta-*            Optional user defined metadata
 Last-Modified               The last account modification date (regardless of ``until``)
 ==========================  =====================
@@ -964,7 +963,7 @@ List of differences from the OOS API:
 * Support for ``X-Account-Meta-*`` style headers at the account level. Use ``POST`` to update.
 * Support for ``X-Container-Meta-*`` style headers at the container level. Can be set when creating via ``PUT``. Use ``POST`` to update.
 * Header ``X-Container-Object-Meta`` at the container level and parameter ``meta`` in container listings. (**TBD**)
-* Container policies to manage behavior and limits.
+* Account and container policies to manage behavior and limits. Container behavior overrides account settings. Account quota sets the maximum bytes limit, regardless of container values.
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``HEAD`` or ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.

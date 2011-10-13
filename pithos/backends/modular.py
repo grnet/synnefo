@@ -225,9 +225,13 @@ class ModularBackend(BaseBackend):
         
         logger.debug("get_account_policy: %s", account)
         if user != account:
-            raise NotAllowedError
+            if account not in self._allowed_accounts(user):
+                raise NotAllowedError
+            return {}
         path, node = self._lookup_account(account, True)
-        return self.node.policy_get(node)
+        policy = self.default_policy.copy()
+        policy.update(self.node.policy_get(node))
+        return policy
     
     @backend_method
     def update_account_policy(self, user, account, policy, replace=False):
@@ -337,7 +341,9 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_container(account, container)
-        return self.node.policy_get(node)
+        policy = self.default_policy.copy()
+        policy.update(self.node.policy_get(node))
+        return policy
     
     @backend_method
     def update_container_policy(self, user, account, container, policy, replace=False):

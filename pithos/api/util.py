@@ -119,13 +119,11 @@ def get_account_headers(request):
             groups[n].remove('')
     return meta, groups
 
-def put_account_headers(response, quota, meta, groups):
+def put_account_headers(response, meta, groups, policy):
     if 'count' in meta:
         response['X-Account-Container-Count'] = meta['count']
     if 'bytes' in meta:
         response['X-Account-Bytes-Used'] = meta['bytes']
-        if quota:
-            response['X-Account-Bytes-Remaining'] = quota - meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
         response[smart_str(k, strings_only=True)] = smart_str(meta[k], strings_only=True)
@@ -136,7 +134,9 @@ def put_account_headers(response, quota, meta, groups):
         k = format_header_key('X-Account-Group-' + k)
         v = smart_str(','.join(v), strings_only=True)
         response[k] = v
-    
+    for k, v in policy.iteritems():
+        response[smart_str(format_header_key('X-Account-Policy-' + k), strings_only=True)] = smart_str(v, strings_only=True)
+
 def get_container_headers(request):
     meta = get_header_prefix(request, 'X-Container-Meta-')
     policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in get_header_prefix(request, 'X-Container-Policy-').iteritems()])

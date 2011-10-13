@@ -39,4 +39,7 @@ from modular import ModularBackend
 def connect_backend():
 	options = getattr(settings, 'BACKEND', None)
 	c = globals()[options[0]]
-	return c(*options[1])
+	backend = c(*options[1])
+	backend.default_policy['quota'] = settings.DEFAULT_QUOTA
+	backend.default_policy['versioning'] = settings.DEFAULT_VERSIONING
+	return backend

@@ -107,7 +107,7 @@ class ModularBackend(BaseBackend):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         
-        self.default_policy = {'quota': 0, 'versioning': 'auto'}
+        self.default_policy = {'quota': 0, 'versioning': 'manual'}
         
         if path and not os.path.exists(path):
             os.makedirs(path)
@@ -220,16 +220,40 @@ class ModularBackend(BaseBackend):
                 self.permissions.group_addmany(account, k, v)
     
     @backend_method
-    def put_account(self, user, account):
+    def get_account_policy(self, user, account):
+        """Return a dictionary with the account policy."""
+        
+        logger.debug("get_account_policy: %s", account)
+        if user != account:
+            raise NotAllowedError
+        path, node = self._lookup_account(account, True)
+        return self.node.policy_get(node)
+    
+    @backend_method
+    def update_account_policy(self, user, account, policy, replace=False):
+        """Update the policy associated with the account."""
+        
+        logger.debug("update_account_policy: %s %s %s", account, policy, replace)
+        if user != account:
+            raise NotAllowedError
+        path, node = self._lookup_account(account, True)
+        self._check_policy(policy)
+        self._put_policy(node, policy, replace)
+    
+    @backend_method
+    def put_account(self, user, account, policy=None):
         """Create a new account with the given name."""
         
-        logger.debug("put_account: %s", account)
+        logger.debug("put_account: %s %s", account, policy)
         if user != account:
             raise NotAllowedError
         node = self.node.node_lookup(account)
         if node is not None:
             raise NameError('Account already exists')
-        self._put_path(user, self.ROOTNODE, account)
+        if policy:
+            self._check_policy(policy)
+        node = self._put_path(user, self.ROOTNODE, account)
+        self._put_policy(node, policy, True)
     
     @backend_method
     def delete_account(self, user, account):
@@ -317,18 +341,14 @@ class ModularBackend(BaseBackend):
     
     @backend_method
     def update_container_policy(self, user, account, container, policy, replace=False):
-        """Update the policy associated with the account."""
+        """Update the policy associated with the container."""
         
         logger.debug("update_container_policy: %s %s %s %s", account, container, policy, replace)
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_container(account, container)
         self._check_policy(policy)
-        if replace:
-            for k, v in self.default_policy.iteritems():
-                if k not in policy:
-                    policy[k] = v
-        self.node.policy_set(node, policy)
+        self._put_policy(node, policy, replace)
     
     @backend_method
     def put_container(self, user, account, container, policy=None):
@@ -347,10 +367,7 @@ class ModularBackend(BaseBackend):
             self._check_policy(policy)
         path = '/'.join((account, container))
         node = self._put_path(user, self._lookup_account(account, True)[1], path)
-        for k, v in self.default_policy.iteritems():
-            if k not in policy:
-                policy[k] = v
-        self.node.policy_set(node, policy)
+        self._put_policy(node, policy, True)
     
     @backend_method
     def delete_container(self, user, account, container, until=None):
@@ -803,6 +820,13 @@ class ModularBackend(BaseBackend):
                     raise ValueError
             else:
                 raise ValueError
+    
+    def _put_policy(self, node, policy, replace):
+        if replace:
+            for k, v in self.default_policy.iteritems():
+                if k not in policy:
+                    policy[k] = v
+        self.node.policy_set(node, policy)
     
     # Access control functions.
     

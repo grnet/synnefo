@@ -48,6 +48,8 @@ class BaseBackend(object):
         'hash_algorithm': Suggested is 'sha256'
         
         'block_size': Suggested is 4MB
+        
+        'default_policy': A dictionary with default policy settings
     """
     
     def list_accounts(self, user, marker=None, limit=10000):
@@ -110,11 +112,36 @@ class BaseBackend(object):
         """
         return
     
-    def put_account(self, user, account):
+    def get_account_policy(self, user, account):
+        """Return a dictionary with the account policy.
+        
+        The keys returned are:
+            'quota': The maximum bytes allowed (default is 0 - unlimited)
+            
+            'versioning': Can be 'auto', 'manual' or 'none' (default is 'manual')
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
+        return {}
+    
+    def update_account_policy(self, user, account, policy, replace=False):
+        """Update the policy associated with the account.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            ValueError: Invalid policy defined
+        """
+        return
+    
+    def put_account(self, user, account, policy=None):
         """Create a new account with the given name.
         
         Raises:
             NotAllowedError: Operation not permitted
+            
+            ValueError: Invalid policy defined
         """
         return
     
@@ -196,7 +223,7 @@ class BaseBackend(object):
         return {}
     
     def update_container_policy(self, user, account, container, policy, replace=False):
-        """Update the policy associated with the account.
+        """Update the policy associated with the container.
         
         Raises:
             NotAllowedError: Operation not permitted

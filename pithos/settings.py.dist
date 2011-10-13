@@ -157,8 +157,9 @@ INSTALLED_APPS = (
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = 30 * 24
 
-# Default quota for new users.
-DEFAULT_QUOTA = 10 * 1024 * 1024 * 1024
+# Default setting for new accounts.
+DEFAULT_QUOTA = 50 * 1024 * 1024 * 1024
+DEFAULT_VERSIONING = 'auto'
 
 # Show these many users per page in admin interface.
 ADMIN_PAGE_LIMIT = 100

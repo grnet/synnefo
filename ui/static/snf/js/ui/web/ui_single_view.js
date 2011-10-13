@@ -48,7 +48,7 @@
             'vms': '.single-container',
             'vm': '#single-vm-',
             'view': '#machinesview-single',
-            'tpl': 'div.single-container#machine-container-template',
+            'tpl': '.single-container-template',
             'spinner': '.large-spinner',
             'vm_spinner': '#single-vm-{0} .state .spinner',
             'vm_wave': '#single-vm-{0} img.wave',
@@ -151,6 +151,7 @@
         // stuff to do when a new vm has been created.
         // - create vm subviews
         post_add: function(vm) {
+            this.vm(vm).removeClass("single-container-template");
             this.show_vm_menu();
             this.show_current();
 

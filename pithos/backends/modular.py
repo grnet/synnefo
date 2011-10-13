@@ -132,7 +132,6 @@ class ModularBackend(BaseBackend):
         self.permissions = self.mod.permissions.Permissions(**params)
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.mod.permissions, x))
-        self.policy = self.mod.policy.Policy(**params)
         self.node = self.mod.node.Node(**params)
         for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
             setattr(self, x, getattr(self.mod.node, x))
@@ -313,8 +312,8 @@ class ModularBackend(BaseBackend):
             if container not in self._allowed_containers(user, account):
                 raise NotAllowedError
             return {}
-        path = self._lookup_container(account, container)[0]
-        return self.policy.policy_get(path)
+        path, node = self._lookup_container(account, container)
+        return self.node.policy_get(node)
     
     @backend_method
     def update_container_policy(self, user, account, container, policy, replace=False):
@@ -323,13 +322,13 @@ class ModularBackend(BaseBackend):
         logger.debug("update_container_policy: %s %s %s %s", account, container, policy, replace)
         if user != account:
             raise NotAllowedError
-        path = self._lookup_container(account, container)[0]
+        path, node = self._lookup_container(account, container)
         self._check_policy(policy)
         if replace:
             for k, v in self.default_policy.iteritems():
                 if k not in policy:
                     policy[k] = v
-        self.policy.policy_set(path, policy)
+        self.node.policy_set(node, policy)
     
     @backend_method
     def put_container(self, user, account, container, policy=None):
@@ -347,11 +346,11 @@ class ModularBackend(BaseBackend):
         if policy:
             self._check_policy(policy)
         path = '/'.join((account, container))
-        self._put_path(user, self._lookup_account(account, True)[1], path)
+        node = self._put_path(user, self._lookup_account(account, True)[1], path)
         for k, v in self.default_policy.iteritems():
             if k not in policy:
                 policy[k] = v
-        self.policy.policy_set(path, policy)
+        self.node.policy_set(node, policy)
     
     @backend_method
     def delete_container(self, user, account, container, until=None):
@@ -372,7 +371,6 @@ class ModularBackend(BaseBackend):
         self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
         self.node.node_purge_children(node, inf, CLUSTER_DELETED)
         self.node.node_remove(node)
-        self.policy.policy_unset(path)
     
     @backend_method
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):

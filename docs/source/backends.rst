@@ -33,14 +33,6 @@ Node
    :members:
    :undoc-members:
 
-Policy
-~~~~~~
-
-.. automodule:: pithos.backends.lib.sqlite.policy
-   :show-inheritance:
-   :members:
-   :undoc-members:
-
 Permissions
 ~~~~~~~~~~~
 

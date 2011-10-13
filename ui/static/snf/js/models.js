@@ -150,6 +150,10 @@
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
 
+        get_readable_size: function() {
+            return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : "unknown";
+        },
+
         get_os: function() {
             return this.get("OS");
         },
@@ -920,20 +924,6 @@
 
         // retrieve the metadata object
         get_meta: function() {
-            //return {
-                //'OS': 'debian',
-                //'username': 'vinilios',
-                //'group': 'webservers',
-                //'meta2': 'meta value',
-                //'looooooooooooooooong meta': 'short value',
-                //'short meta': 'loooooooooooooooooooooooooooooooooong value',
-                //'21421': 'fdsfds fds',
-                //'21421': 'fdsfds fds',
-                //'1fds 21421': 'fdsfds fds',
-                //'fds 21421': 'fdsfds fds',
-                //'fge 21421': 'fdsfds fds',
-                //'21421 rew rew': 'fdsfds fds'
-            //}
             try {
                 return this.get('metadata').values
             } catch (err) {

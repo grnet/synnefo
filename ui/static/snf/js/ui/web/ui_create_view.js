@@ -33,18 +33,32 @@
             this.copy = this.$(".clip-copy");
 
             this.$(".show-machine").click(_.bind(function(){
+                if (this.$(".show-machine").hasClass("in-progress")) {
+                    return;
+                }
                 this.hide();
                 snf.ui.main.show_vm_details(storage.vms.get(this.vm_id));
             }, this));
-            
+
+            _.bindAll(this, "handle_vm_added");
+            storage.vms.bind("add", this.handle_vm_added);
+        },
+
+        handle_vm_added: function() {
+            this.$(".show-machine").removeClass("in-progress");
         },
         
         show_password: function() {
+            this.$(".show-machine").addClass("in-progress");
             this.password.text(this.pass);
+            if (storage.vms.get(this.vm_id)) {
+                this.$(".show-machine").removeClass("in-progress");
+            }
         },
 
         onClose: function() {
             this.password.text("");
+            this.vm_id = undefined;
         },
         
         beforeOpen: function() {
@@ -65,7 +79,7 @@
         show: function(pass, vm_id) {
             this.pass = pass;
             this.vm_id = vm_id;
-
+            
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
             this.show_password();
         }
@@ -217,13 +231,16 @@
                 this.image_details_os.text(_(image.get("OS")).capitalize());
                 this.image_details_kernel.text(image.get("kernel"));
 
-                var size = util.readablizeBytes(parseInt(image.get("size")) * 1024 * 1024);
+                var size = image.get_readable_size();
+
                 this.image_details_size.text(size);
                 this.image_details_gui.text(image.get("GUI"));
 
             } else {
                 this.image_details.hide();
             }
+
+            this.validate();
         },
 
         reset_images: function() {
@@ -258,7 +275,7 @@
                            '</span></li>').format(img.get("name"), 
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.get("OS")),
-                                                  util.readablizeBytes(parseInt(img.get("size"))* 1024 * 1024),
+                                                  img.get_readable_size(),
                                                   util.truncate(img.get("description"),35)));
             image.data("image", img);
             image.data("image_id", img.id);
@@ -272,6 +289,14 @@
 
         get: function() {
             return {'image': this.selected_image};
+        },
+
+        validate: function() {
+            if (!this.selected_image) {
+                this.parent.$(".form-action.next").hide();
+            } else {
+                this.parent.$(".form-action.next").show();
+            }
         }
     });
 
@@ -429,8 +454,12 @@
 
             this.current_flavor = flv;
             this.trigger("change");
-            this.update_selected_flavor();
-            this.update_selected_predefined();
+            if (this.current_flavor) {
+                this.update_selected_flavor();
+                this.update_selected_predefined();
+            }
+            
+            this.validate();
         },
         
         select_default_flavor: function() {
@@ -491,6 +520,7 @@
 
         update_selected_flavor: function() {
             var flv = this.current_flavor;
+            if (!flv) { return }
             this.$(".option").removeClass("selected");
 
             this.$(".option.cpu.value-" + flv.get("cpu")).addClass("selected");
@@ -542,6 +572,7 @@
         update_layout: function() {
             this.update_selected_flavor();
             this.update_disabled_flavors();
+            this.validate();
         },
 
         reset: function() {
@@ -549,6 +580,14 @@
             this.flavors = [];
             this.flavors_data = {'cpu':[], 'mem':[], 'disk':[]};
             this.update_flavors_data();
+        },
+
+        validate: function() {
+            if (!this.current_flavor) {
+                this.parent.$(".form-action.next").hide();
+            } else {
+                this.parent.$(".form-action.next").show();
+            }
         },
 
         get: function() {
@@ -630,12 +669,13 @@
             set_detail("name");
             set_detail("os", _(image.get("OS")).capitalize());
             set_detail("gui", image.get("GUI"));
-            set_detail("size", util.readablizeBytes(image.get_size() * 1024 * 1024));
+            set_detail("size", image.get_readable_size());
             set_detail("kernel");
         },
 
         update_layout: function() {
             var params = this.parent.get_params();
+            if (!params.image || !params.flavor) { return }
 
             if (!params.image) { return }
             var vm_name = "My {0} server".format(params.image.get("name"));

@@ -62,6 +62,20 @@ div#wrapper {
     text-align: left;
 }
 
+#footer a {
+    color: #fff;
+}
+
+#footer .software .version {
+    font-weight: bold;
+}
+
+#footer .software {
+    font-size: 0.6em;
+    margin-top: 7px;
+    color: #fff;
+}
+
 #footer {
     height: 80px;
     background-color: #4085A5;
@@ -5139,6 +5153,11 @@ table.list-machines .wave {
 .overlay .form label {
     font-color: #444;
     margin-right: 10px;
+}
+
+.form-field.error label {
+    color: #ff0000;
+    text-decoration: underline;
 }
 
 .form-field input {

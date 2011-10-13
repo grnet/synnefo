@@ -113,6 +113,7 @@ def home(request):
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
+               'synnefo_version': SYNNEFO_JS_LIB_VERSION,
                'invitations_per_page': INVITATIONS_PER_PAGE,
                'delay_on_blur': json.dumps(DELAY_ON_BLUR),
                'blur_delay': json.dumps(BLUR_DELAY),

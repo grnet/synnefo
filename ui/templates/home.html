@@ -6,10 +6,10 @@
     <title>~okeanos</title>
 
     <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
-    <link href="http://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
 
-    <link rel="shortcut icon" href="{{ UI_MEDIA_URL }}favicon.ico" />
+    <link rel="shortcut icon" href="{{ SYNNEFO_IMAGES_URL }}favicon.ico" />
 
     {% comment %}
     <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
@@ -526,6 +526,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
             synnefo.config.ajax_timeout = {{ timeout }};
             synnefo.config.skip_timeouts = {{ skip_timeouts }};
+            synnefo.VERSION = "{{ synnefo_version }}";
 
             // TODO: make it dynamic
             synnefo.config.api_url = '/api/v1.1';
@@ -539,6 +540,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
 
             synnefo.ui.main.bind("initial", function(){})
+
         })
     </script>
 </body>

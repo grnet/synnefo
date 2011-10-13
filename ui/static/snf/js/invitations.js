@@ -21,8 +21,8 @@
 
 		var settings = $.extend({
 			maxFields: 5,
-			removeImgSrc: "/static/cross.png",
-			spacerImgSrc: "/static/spacer.gif",
+			removeImgSrc: "/static/invitations/cross.png",
+			spacerImgSrc: "/static/invitations/spacer.gif",
 			addTriggerClass: "add-field-trigger",
 			removeImgClass: "remove-field-trigger",
 			hideClass: "hide",

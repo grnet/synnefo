@@ -144,7 +144,7 @@ h5 {
 .machine-container .name,
 h5.namecontainer span,
 .single .machine-detail.title {
-    font-family: 'Ubuntu';
+    font-family: 'Ubuntu', sans-serif;
 }
 
 .create-container a {
@@ -5531,24 +5531,24 @@ table.list-machines .wave {
     font-size: 1.2em;
     color: #ffffff;
     font-weight: bold;
-    font-family: 'Ubuntu' !important;
+    font-family: 'Ubuntu', sans-serif !important;
 }
 
 .create-vm .steps-history .steps-history-cont.current .subnum {
     display: none;
     float: none;
     font-size: 0.9em;
-    font-family: 'Ubuntu' !important;
+    font-family: 'Ubuntu', sans-serif  !important;
 }
 
 .create-vm .steps-history .steps-history-cont.current .subtitle,
 .create-vm .steps-history .steps-history-cont.current .description {
-    font-family: 'Ubuntu' !important;
+    font-family: 'Ubuntu', sans-serif  !important;
 }
 
 .create-vm .steps-history .steps-history-cont.current .info {
     display: block;
-    font-family: 'Ubuntu' !important;
+    font-family: 'Ubuntu', sans-serif !important;
 }
 
 .create-vm .steps-history .steps-history-cont.completed .title,
@@ -5589,7 +5589,7 @@ table.list-machines .wave {
     padding: 4px;
     padding-left: 10px;
     font-size: 1em;
-    font-family: 'Ubuntu' !important;
+    font-family: 'Ubuntu', sans-serif  !important;
     margin-right: 5px;
     padding-top: 12px;
     background-position: right 30px;
@@ -5653,7 +5653,7 @@ table.list-machines .wave {
     color: #225871;
     font-size: 4em;
     margin-bottom: -5px;
-    font-family: 'Ubuntu';
+    font-family: 'Ubuntu', sans-serif;
     font-weight: normal !important;
 }
 

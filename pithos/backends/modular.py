@@ -188,7 +188,7 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_account(account, True)
-        self._put_metadata(user, node, meta, replace, False)
+        self._put_metadata(user, node, meta, replace)
     
     @backend_method
     def get_account_groups(self, user, account):
@@ -229,9 +229,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_account(account, True)
-        policy = self.default_policy.copy()
-        policy.update(self.node.policy_get(node))
-        return policy
+        return self._get_policy(node)
     
     @backend_method
     def update_account_policy(self, user, account, policy, replace=False):
@@ -329,7 +327,7 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_container(account, container)
-        self._put_metadata(user, node, meta, replace, False)
+        self._put_metadata(user, node, meta, replace)
     
     @backend_method
     def get_container_policy(self, user, account, container):
@@ -341,9 +339,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_container(account, container)
-        policy = self.default_policy.copy()
-        policy.update(self.node.policy_get(node))
-        return policy
+        return self._get_policy(node)
     
     @backend_method
     def update_container_policy(self, user, account, container, policy, replace=False):
@@ -529,28 +525,27 @@ class ModularBackend(BaseBackend):
         hashmap = self.mapper.map_retr(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
-    @backend_method
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
-        """Create/update an object with the specified size and partial hashes."""
-        
-        logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
+    def _update_object_hash(self, user, account, container, name, size, hash, meta={}, replace_meta=False, permissions=None):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
-        map = HashMap(self.block_size, self.hash_algorithm)
-        map.extend([binascii.unhexlify(x) for x in hashmap])
-        missing = self.blocker.block_ping(map)
-        if missing:
-            ie = IndexError()
-            ie.data = [binascii.hexlify(x) for x in missing]
-            raise ie
         if permissions is not None:
             path = '/'.join((account, container, name))
             self._check_permissions(path, permissions)
-        path, node = self._put_object_node(account, container, name)
-        hash = map.hash()
-        src_version_id, dest_version_id = self._copy_version(user, node, None, node, binascii.hexlify(hash), size)
-        self.mapper.map_stor(hash, map)
+        
+        account_path, account_node = self._lookup_account(account, True)
+        container_path, container_node = self._lookup_container(account, container)
+        path, node = self._put_object_node(container_path, container_node, name)
+        src_version_id, dest_version_id = self._put_version_duplicate(user, node, size, hash)
+        
+        # Check quota.
+        size_delta = size # Change with versioning.
+        if size_delta > 0:
+            if self._get_statistics(account_node)[1] + size_delta > self._get_policy(account_node)['quota'] or \
+               self._get_statistics(container_node)[1] + size_delta > self._get_policy(container_node)['quota']:
+                # This must be executed in a transaction, so the version is never created if it fails.
+                raise
+        
         if not replace_meta and src_version_id is not None:
             self.node.attribute_copy(src_version_id, dest_version_id)
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
@@ -558,23 +553,40 @@ class ModularBackend(BaseBackend):
             self.permissions.access_set(path, permissions)
         return dest_version_id
     
+    @backend_method
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
+        """Create/update an object with the specified size and partial hashes."""
+        
+        logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
+        map = HashMap(self.block_size, self.hash_algorithm)
+        map.extend([binascii.unhexlify(x) for x in hashmap])
+        missing = self.blocker.block_ping(map)
+        if missing:
+            ie = IndexError()
+            ie.data = [binascii.hexlify(x) for x in missing]
+            raise ie
+        
+        hash = map.hash()
+        dest_version_id = self._update_object_hash(user, account, container, name, size, binascii.hexlify(hash), meta, replace_meta, permissions)
+        self.mapper.map_stor(hash, map)
+        return dest_version_id
+    
     def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
-        if permissions is not None and user != dest_account:
-            raise NotAllowedError
         self._can_read(user, src_account, src_container, src_name)
-        self._can_write(user, dest_account, dest_container, dest_name)
-        src_path, src_node = self._lookup_object(src_account, src_container, src_name)
-        self._get_version(src_node, src_version)
-        if permissions is not None:
-            dest_path = '/'.join((dest_account, dest_container, dest_name))
-            self._check_permissions(dest_path, permissions)
-        dest_path, dest_node = self._put_object_node(dest_account, dest_container, dest_name)
-        src_version_id, dest_version_id = self._copy_version(user, src_node, src_version, dest_node)
-        if not replace_meta and src_version_id is not None:
+        path, node = self._lookup_object(src_account, src_container, src_name)
+        props = self._get_version(node, src_version)
+        src_version_id = props[self.SERIAL]
+        hash = props[self.HASH]
+        size = props[self.SIZE]
+        
+        if replace_meta:
+            meta = dest_meta
+        else:
+            meta = {}
+        dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, meta, True, permissions)
+        if not replace_meta:
             self.node.attribute_copy(src_version_id, dest_version_id)
-        self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
-        if permissions is not None:
-            self.permissions.access_set(dest_path, permissions)
+            self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
         return dest_version_id
     
     @backend_method
@@ -616,7 +628,7 @@ class ModularBackend(BaseBackend):
             return
         
         path, node = self._lookup_object(account, container, name)
-        self._copy_version(user, node, None, node, None, 0, CLUSTER_DELETED)
+        src_version_id, dest_version_id = self._put_version_duplicate(user, node, 0, None, CLUSTER_DELETED)
         self.permissions.access_clear(path)
     
     @backend_method
@@ -666,8 +678,7 @@ class ModularBackend(BaseBackend):
     
     # Path functions.
     
-    def _put_object_node(self, account, container, name):
-        path, parent = self._lookup_container(account, container)
+    def _put_object_node(self, path, parent, name):
         path = '/'.join((path, name))
         node = self.node.node_lookup(path)
         if node is None:
@@ -736,45 +747,33 @@ class ModularBackend(BaseBackend):
                 raise IndexError('Version does not exist')
         return props
     
-    def _copy_version(self, user, src_node, src_version, dest_node, dest_hash=None, dest_size=None, dest_cluster=CLUSTER_NORMAL):
+    def _put_version_duplicate(self, user, node, size=None, hash=None, cluster=CLUSTER_NORMAL):
+        """Create a new version of the node."""
         
-        # Get source serial and size.
-        if src_version is not None:
-            src_props = self._get_version(src_node, src_version)
-            src_version_id = src_props[self.SERIAL]
-            hash = src_props[self.HASH]
-            size = src_props[self.SIZE]
+        props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
+        if props is not None:
+            src_version_id = props[self.SERIAL]
+            src_hash = props[self.HASH]
+            src_size = props[self.SIZE]
         else:
-            # Latest or create from scratch.
-            try:
-                src_props = self._get_version(src_node)
-                src_version_id = src_props[self.SERIAL]
-                hash = src_props[self.HASH]
-                size = src_props[self.SIZE]
-            except NameError:
-                src_version_id = None
-                hash = None
-                size = 0
-        if dest_hash is not None:
-            hash = dest_hash
-        if dest_size is not None:
-            size = dest_size
+            src_version_id = None
+            src_hash = None
+            src_size = 0
+        if size is None:
+            hash = src_hash # This way hash can be set to None.
+            size = src_size
         
-        # Move the latest version at destination to CLUSTER_HISTORY and create new.
-        if src_node == dest_node and src_version is None and src_version_id is not None:
+        if src_version_id is not None:
             self.node.version_recluster(src_version_id, CLUSTER_HISTORY)
-        else:
-            dest_props = self.node.version_lookup(dest_node, inf, CLUSTER_NORMAL)
-            if dest_props is not None:
-                self.node.version_recluster(dest_props[self.SERIAL], CLUSTER_HISTORY)
-        dest_version_id, mtime = self.node.version_create(dest_node, hash, size, src_version_id, user, dest_cluster)
-        
+        dest_version_id, mtime = self.node.version_create(node, hash, size, src_version_id, user, cluster)
         return src_version_id, dest_version_id
     
-    def _put_metadata(self, user, node, meta, replace=False, copy_data=True):
+    def _put_metadata(self, user, node, meta, replace=False):
         """Create a new version and store metadata."""
         
-        src_version_id, dest_version_id = self._copy_version(user, node, None, node)
+        src_version_id, dest_version_id = self._put_version_duplicate(user, node)
+        
+        # TODO: Merge with other functions that update metadata...
         if not replace:
             if src_version_id is not None:
                 self.node.attribute_copy(src_version_id, dest_version_id)
@@ -833,6 +832,11 @@ class ModularBackend(BaseBackend):
                 if k not in policy:
                     policy[k] = v
         self.node.policy_set(node, policy)
+    
+    def _get_policy(self, node):
+        policy = self.default_policy.copy()
+        policy.update(self.node.policy_get(node))
+        return policy
     
     # Access control functions.
     

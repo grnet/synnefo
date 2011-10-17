@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import datetime
+
 from time import time, mktime
 
 from django.conf import settings
@@ -67,7 +69,7 @@ def login(request):
         except:
             return HttpResponseBadRequest('Missing necessary Shibboleth headers')
     
-    if 'renew' in request.GET:
+    if 'renew' in request.GET or user.auth_token_expires < datetime.datetime.now():
         create_auth_token(user)
     next = request.GET.get('next')
     if next is not None:

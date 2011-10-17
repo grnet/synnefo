@@ -28,8 +28,8 @@ test -x $DAEMON || exit 0
 
 . /lib/lsb/init-functions
 
-if [ -s $SNF_EVENTD_DEFAULTS_FILE ]; then
-    . $SNF_EVENTD_DEFAULTS_FILE
+if [ -s $SNF_EVENTD_DEFAULTS ]; then
+    . $SNF_EVENTD_DEFAULTS
 fi
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
@@ -57,15 +57,15 @@ eventd_start() {
 
 MASTER=`/usr/sbin/gnt-cluster getmaster`
 HOST=`/bin/hostname -f`
-if [ "x$MASTER" != x$HOST ]] ; 
-then 
-    log_warning_msg "snf-ganeti-eventd should run on the ganeti master only, aborting"
-    log_end_msg 0
-    exit 0
-fi
 
 case "$1" in
   start)
+        if [ "x$MASTER" != x$HOST ]; then
+            log_warning_msg "snf-ganeti-eventd should run on the ganeti master only, aborting"
+      	    log_end_msg 0
+    	    exit 0
+     	fi
+
         if "$SNF_EVENTD_ENABLE"; then
             log_daemon_msg "Starting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
             if [ -s $SNF_EVENTD_PID_FILE ] && kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
@@ -75,8 +75,8 @@ case "$1" in
             fi
             eventd_start
         else
-            if [ -s "$SNF_EVENTD_CONFIG_FILE" ]; then
-                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS_FILE, not starting..."
+            if [ -s "$SNF_EVENTD_DEFAULTS" ]; then
+                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS, not starting..."
             fi
         fi
         ;;
@@ -99,8 +99,8 @@ case "$1" in
             fi
             eventd_start
         else
-            if [ -s "$SNF_EVENTD_CONFIG_FILE" ]; then
-                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS_FILE, not starting..."
+            if [ -s "$SNF_EVENTD_DEFAULTS" ]; then
+                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS, not starting..."
             fi
         fi
         ;;

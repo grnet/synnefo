@@ -5707,8 +5707,10 @@ table.list-machines .wave {
 .invitations-form .send-error {
     font-size: 0.8em;
     margin-bottom: 5px;
+    margin-top: 5px;
     color: #800;
     padding: 3px;
+    padding-left: 0;
     display: none;
 }
 
@@ -5729,8 +5731,12 @@ table.list-machines .wave {
     position: relative;
 }
 
+.invitations-form h3 {
+    float: left;
+}
+
 .invitations-form .add-new-invitation {
-    position: absolute;
+    float:left;
     top:2px;
     right: 20px;
     width: 16px;
@@ -5738,8 +5744,10 @@ table.list-machines .wave {
     background-image: url("../images/option-action-add.png");
     background-repeat: no-repeat;
     background-position: center;
-    text-indent: 2000em;
+    text-indent: -50000em;
     background-color: #4085A5;
+    margin-left: 15px;
+    cursor: pointer;
 }
 
 .invitations-view .left {
@@ -5761,7 +5769,7 @@ input.has-errors {
 }
 
 .invitations-wrapper .invitations-list {
-    width: 33%;
+    width: 40%;
     float: left;
     padding-left: 10px;
     border-left: 1px solid #4085A5;
@@ -5769,7 +5777,7 @@ input.has-errors {
 }
 
 .invitations-wrapper .invitations-form {
-    width: 65%;
+    width: 57%;
     float: left;
     border-right: 1px solid #4085A5;
 }
@@ -5791,12 +5799,12 @@ input.has-errors {
 }
 
 .invitations-wrapper input.name {
-    width: 180px;
+    width: 150px;
 }
 
 .invitations-wrapper input {
     font-size: 0.9em;
-    width: 160px;
+    width: 155px;
     padding:4px;
 }
 
@@ -5804,6 +5812,7 @@ input.has-errors {
     border-bottom: 1px solid #A1C8DB;
     padding-bottom: 5px;
     margin-bottom: 5px;
+    position: relative;
 }
 
 .invitations-view h3 {
@@ -5817,14 +5826,120 @@ input.has-errors {
 }
 
 
-.invitations-list .email {
+.invitations-list .invitation-sent .email {
     color: #D98147;
     font-size: 0.8em;
     font-weight: bold;
     margin-top: 2px;
 }
 
+.invitations-list .pagination a,
+.invitations-list .pagination span {
+    padding: 0.2em 0.3em;
+}
+
+.invitations-list .pagination {
+    font-size: 0.75em;
+}
+
 .invitations-list .name {
     color: #444;
     font-size: 0.9em;
+}
+
+.invitations-list .status.sending {
+    background-image: url("../images/icons/indicators/small/progress.gif");
+}
+
+.invitations-list .status.sent {
+    background-image: url("../images/invitation_accepted.png");
+}
+
+.invitations-list .status.resend {
+    background-image: url("../images/resend.png");
+}
+
+.invitations-list .status.resend {
+    cursor: pointer;
+}
+
+.invitations-list .status {
+    width: 20px;
+    height: 15px;
+    position: absolute;
+    top:5px;
+    right: 2px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.invitations-form .form-entry:last-child {
+    border-bottom: none;
+}
+
+.invitations-form .form-entry {
+    position: relative;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    margin-right: 10px;
+}
+
+.invitations-form .send-invitations {
+    float: left;
+    padding: 5px;
+    color: #fff;
+    margin-right: 10px;
+    margin-top: 10px;
+}
+
+.invitations-form .form-entry.error {
+    padding-bottom: 0px;
+}
+
+.invitations-form .form-entry.error .remove-invitation {
+    bottom: 32px;
+}
+
+.invitations-form .remove-invitation {
+    padding: 5px;
+    background-image: url("../images/option-action-remove.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #fff;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    text-indent: -50000px;
+    position: absolute;
+    right: -10px;
+    bottom: 14px;
+}
+
+.invitations-list .resent-info,
+.invitations-form .top-info {
+    font-size: 0.8em;
+    margin-bottom: 10px;
+}
+
+.invitations-list .msg .email,
+.invitations-form .success .msg .email {
+    font-weight: bold;
+}
+
+.invitations-list .msg.err-msg,
+.invitations-list .success.msg,
+.invitations-form .success .msg {
+    background-color: #080;
+    color: white;
+    padding: 5px;
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+.invitations-list .msg.err-msg,
+.invitations-list .success.msg {
+    margin-right: 0px;
+}
+.invitations-list .msg.err-msg {
+    background-color: #800;
 }

@@ -16,6 +16,7 @@ FIXES:
 	Deployment:
         * Improve check for Ganeti master in snf-ganeti-eventd init script
           (#1323)
+		* Fix snf-ganeti-eventd init script ignored defaults file (#1505)
 
 
 2011-10-13, v0.7

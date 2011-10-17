@@ -329,6 +329,12 @@
             this.update_layout();
         },
 
+        validate_selected_flavor: function() {
+            if (!this.flavor_is_valid(this.current_flavor)) {
+                this.select_valid_flavor();
+            }
+        },
+
         reset_flavors: function() {
             this.$(".flavor-opts-list .option").remove();
             this.create_flavors();
@@ -353,6 +359,26 @@
         handle_predefined_click: function(el) {
             if (el.hasClass("disabled")) { return };
             this.set_current(el.data("flavor"))
+        },
+
+        select_valid_flavor: function() {
+            var found = false;
+            var self = this;
+            _.each(this.flavors, function(flv) {
+                if (self.flavor_is_valid(flv)) {
+                    found = flv;
+                    return false;
+                }
+            });
+            
+            if (found) {
+                this.set_current(found);
+            } else {
+                this.current_flavor = undefined;
+                this.validate();
+                this.$("li.predefined-selection").addClass("disabled");
+                this.$(".flavor-opts-list li").removeClass("selected");
+            }
         },
 
         update_valid_predefined: function() {
@@ -423,10 +449,12 @@
         
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
+
             var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), this.flavors);
             if (!existing) { return false };
-            if (this.unavailable_values && this.unavailable_values.disk.indexOf(flv.get("disk") > -1)) {
-                return false
+            
+            if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
+                return false;
             }
             return true;
         },
@@ -440,6 +468,7 @@
             });
 
             this.set_current(found);
+            this.validate_selected_flavor();
         },
 
         set_current: function(flv) {
@@ -573,6 +602,7 @@
             this.update_selected_flavor();
             this.update_disabled_flavors();
             this.validate();
+            this.validate_selected_flavor();
         },
 
         reset: function() {

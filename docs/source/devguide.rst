@@ -25,13 +25,14 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Oct 13, 2011)         Suggest upload/download methods using hashmaps.
+0.7 (Oct 17, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
 \                          Pass token as a request parameter when using ``POST`` via an HTML form.
 \                          Optionally use source account to update object from another object.
 \                          Use container ``POST`` to upload missing blocks of data.
 \                          Report policy in account headers.
+\                          Add insufficient quota reply.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -763,14 +764,15 @@ X-Object-Version            The object's new version
 
 The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separated user/group list, or a ``write=...`` comma-separated user/group list, or both separated by a semicolon (``;``). Groups are specified as ``<account>:<group>``. To publish the object, set ``X-Object-Public`` to ``true``. To unpublish, set to ``false``, or use an empty header value.
 
-===========================  ==============================
-Return Code                  Description
-===========================  ==============================
-201 (Created)                The object has been created
-409 (Conflict)               The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply - in simple text format)
-411 (Length Required)        Missing ``Content-Length`` or ``Content-Type`` in the request
-422 (Unprocessable Entity)   The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
-===========================  ==============================
+==============================  ==============================
+Return Code                     Description
+==============================  ==============================
+201 (Created)                   The object has been created
+409 (Conflict)                  The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply - in simple text format)
+411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+422 (Unprocessable Entity)      The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
+==============================  ==============================
 
 
 COPY
@@ -803,12 +805,13 @@ X-Object-Version            The object's new version
 
 |
 
-===========================  ==============================
-Return Code                  Description
-===========================  ==============================
-201 (Created)                The object has been created
-409 (Conflict)               There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
-===========================  ==============================
+==============================  ==============================
+Return Code                     Description
+==============================  ==============================
+201 (Created)                   The object has been created
+409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+==============================  ==============================
 
 
 MOVE
@@ -878,15 +881,16 @@ X-Object-Version            The object's new version
 
 |
 
-===========================  ==============================
-Return Code                  Description
-===========================  ==============================
-202 (Accepted)               The request has been accepted (not a data update)
-204 (No Content)             The request succeeded (data updated)
-409 (Conflict)               There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
-411 (Length Required)        Missing ``Content-Length`` in the request
-416 (Range Not Satisfiable)  The supplied range is invalid
-===========================  ==============================
+==============================  ==============================
+Return Code                     Description
+==============================  ==============================
+202 (Accepted)                  The request has been accepted (not a data update)
+204 (No Content)                The request succeeded (data updated)
+409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
+411 (Length Required)           Missing ``Content-Length`` in the request
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+416 (Range Not Satisfiable)     The supplied range is invalid
+==============================  ==============================
 
 The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have an ``X-Object-Data`` field, as in the following example. The token is passed as a request parameter. ::
 
@@ -906,11 +910,12 @@ X-Object-Version            The object's new version
 
 |
 
-===========================  ==============================
-Return Code                  Description
-===========================  ==============================
-201 (Created)                The object has been created
-===========================  ==============================
+==============================  ==============================
+Return Code                     Description
+==============================  ==============================
+201 (Created)                   The object has been created
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+==============================  ==============================
 
 
 DELETE

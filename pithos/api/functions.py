@@ -43,7 +43,7 @@ from django.utils.encoding import smart_unicode, smart_str
 from xml.dom import minidom
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
-    LengthRequired, PreconditionFailed, RangeNotSatisfiable, UnprocessableEntity)
+    LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (rename_meta_key, format_header_key, printable_header_dict, get_account_headers,
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
@@ -51,7 +51,7 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     object_data_response, put_object_block, hashmap_hash, api_method, json_encode_decimal)
 from pithos.backends import connect_backend
-from pithos.backends.base import NotAllowedError
+from pithos.backends.base import NotAllowedError, QuotaError
 
 
 logger = logging.getLogger(__name__)
@@ -838,6 +838,8 @@ def object_write(request, v_account, v_container, v_object):
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
         raise Conflict('\n'.join(e.data) + '\n')
+    except QuotaError:
+        raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
         try:
             request.backend.update_object_public(request.user, v_account,
@@ -884,6 +886,8 @@ def object_write_form(request, v_account, v_container, v_object):
         raise Unauthorized('Access denied')
     except NameError:
         raise ItemNotFound('Container does not exist')
+    except QuotaError:
+        raise RequestEntityTooLarge('Quota exceeded')
     
     response = HttpResponse(status=201)
     response['ETag'] = meta['hash']
@@ -1163,6 +1167,8 @@ def object_update(request, v_account, v_container, v_object):
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
         raise Conflict('\n'.join(e.data) + '\n')
+    except QuotaError:
+        raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
         try:
             request.backend.update_object_public(request.user, v_account,

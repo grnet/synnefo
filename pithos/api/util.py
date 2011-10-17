@@ -46,10 +46,10 @@ from django.utils.encoding import smart_str
 
 from pithos.api.compat import parse_http_date_safe, parse_http_date
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound,
-                                Conflict, LengthRequired, PreconditionFailed, RangeNotSatisfiable,
-                                ServiceUnavailable)
+                                Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
+                                RangeNotSatisfiable, ServiceUnavailable)
 from pithos.backends import connect_backend
-from pithos.backends.base import NotAllowedError
+from pithos.backends.base import NotAllowedError, QuotaError
 
 import logging
 import re
@@ -310,6 +310,8 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
         raise Conflict('\n'.join(e.data) + '\n')
+    except QuotaError:
+        raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
         try:
             request.backend.update_object_public(request.user, dest_account, dest_container, dest_name, public)

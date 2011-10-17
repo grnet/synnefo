@@ -34,6 +34,9 @@
 class NotAllowedError(Exception):
     pass
 
+class QuotaError(Exception):
+    pass
+
 class BaseBackend(object):
     """Abstract backend class that serves as a reference for actual implementations.
     
@@ -427,6 +430,8 @@ class BaseBackend(object):
             ValueError: Invalid users/groups in permissions
             
             AttributeError: Can not set permissions
+            
+            QuotaError: Account or container quota exceeded
         """
         return ''
     
@@ -452,6 +457,8 @@ class BaseBackend(object):
             ValueError: Invalid users/groups in permissions
             
             AttributeError: Can not set permissions
+            
+            QuotaError: Account or container quota exceeded
         """
         return ''
     
@@ -473,6 +480,8 @@ class BaseBackend(object):
             ValueError: Invalid users/groups in permissions
             
             AttributeError: Can not set permissions
+            
+            QuotaError: Account or container quota exceeded
         """
         return ''
     

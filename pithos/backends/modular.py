@@ -38,7 +38,7 @@ import logging
 import hashlib
 import binascii
 
-from base import NotAllowedError, BaseBackend
+from base import NotAllowedError, QuotaError, BaseBackend
 from lib.hashfiler import Mapper, Blocker
 
 ( CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED ) = range(3)
@@ -546,7 +546,7 @@ class ModularBackend(BaseBackend):
             if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
                (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
                 # This must be executed in a transaction, so the version is never created if it fails.
-                raise
+                raise QuotaError
         
         if not replace_meta and src_version_id is not None:
             self.node.attribute_copy(src_version_id, dest_version_id)

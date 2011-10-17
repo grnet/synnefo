@@ -2836,6 +2836,7 @@ span.rename-network, span.configure {
     font-size: 75%;
     font-weight: normal;
     margin-left: 10px;
+    margin-right: 10px;
     padding-left: 10px;
     text-align: left;
 }

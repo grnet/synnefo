@@ -14,7 +14,8 @@
                 "updated": "{{ inv.updated|date }}",
                 "accepted": {% if inv.accepted %}true{% else %}false{% endif %},
                 "targetname": "{{ inv.targetname|escapejs }}",
-                "target": "{{ inv.target|escapejs }}"
+                "target": "{{ inv.target|escapejs }}",
+                "id": "{{ inv.id }}"
             }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ],

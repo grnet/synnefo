@@ -319,7 +319,7 @@ def resend(request):
         log.exception(e)
         return HttpResponseServerError("Error sending invitation email")
 
-    return HttpResponse("Invitation has been resent")
+    return HttpResponse('{"resent":true}')
 
 
 def get_invitee_level(source):

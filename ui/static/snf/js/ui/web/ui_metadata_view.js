@@ -165,6 +165,7 @@
                     this.$(".editor .create").removeClass('in-progress');
                 }, this));
             } else {
+                this.editing = true;
                 this.editor.find(".form-field label").addClass("error");
             }
 
@@ -205,7 +206,9 @@
             })
             
             this.editor.find("input").keyup(_.bind(function(e){
+                e.keyCode = e.keyCode || e.which;
                 if (e.keyCode == 13) { this.submit_editor() };    
+                if (e.keyCode == 27) { this.close_editor() };    
             }, this));
 
             this.editor.find(".predefined-meta-key").click(function() {

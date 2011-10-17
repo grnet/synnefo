@@ -153,13 +153,13 @@ Configure and run apache::
 
 The following tokens should be available at the destination, after passing through the apache module::
 
-  SHIB_EPPN = "eppn" # eduPersonPrincipalName
-  SHIB_NAME = "Shib-InetOrgPerson-givenName"
-  SHIB_SURNAME = "Shib-Person-surname"
-  SHIB_CN = "Shib-Person-commonName"
-  SHIB_DISPLAYNAME = "Shib-InetOrgPerson-displayName"
-  SHIB_EP_AFFILIATION = "Shib-EP-Affiliation"
-  SHIB_SESSION_ID = "Shib-Session-ID"
+  eppn # eduPersonPrincipalName
+  Shib-InetOrgPerson-givenName
+  Shib-Person-surname
+  Shib-Person-commonName
+  Shib-InetOrgPerson-displayName
+  Shib-EP-Affiliation
+  Shib-Session-ID
 
 MySQL Setup
 -----------

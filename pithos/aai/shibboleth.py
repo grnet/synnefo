@@ -36,13 +36,13 @@ from util import register_user
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
-    SHIB_EPPN = "eppn" # eduPersonPrincipalName
-    SHIB_NAME = "Shib-InetOrgPerson-givenName"
-    SHIB_SURNAME = "Shib-Person-surname"
-    SHIB_CN = "Shib-Person-commonName"
-    SHIB_DISPLAYNAME = "Shib-InetOrgPerson-displayName"
-    SHIB_EP_AFFILIATION = "Shib-EP-Affiliation"
-    SHIB_SESSION_ID = "Shib-Session-ID"
+    SHIB_EPPN = "HTTP_EPPN" # eduPersonPrincipalName
+    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
+    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
+    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
+    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
+    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
+    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 
 class NoUniqueToken(BaseException):

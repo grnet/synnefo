@@ -541,8 +541,10 @@ class ModularBackend(BaseBackend):
         # Check quota.
         size_delta = size # Change with versioning.
         if size_delta > 0:
-            if self._get_statistics(account_node)[1] + size_delta > self._get_policy(account_node)['quota'] or \
-               self._get_statistics(container_node)[1] + size_delta > self._get_policy(container_node)['quota']:
+            account_quota = self._get_policy(account_node)['quota']
+            container_quota = self._get_policy(container_node)['quota']
+            if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
+               (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
                 # This must be executed in a transaction, so the version is never created if it fails.
                 raise
         

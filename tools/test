@@ -834,6 +834,10 @@ class ContainerPut(BaseTestCase):
         args = ['c1', 'o1']
         kwargs = {'length':101}
         self.assert_raises_fault(413, self.upload_random_data, *args, **kwargs)
+        
+        #reset quota
+        policy = {'quota':0}
+        self.client.set_container_policies('c1', **policy)
     
 class ContainerPost(BaseTestCase):
     def setUp(self):

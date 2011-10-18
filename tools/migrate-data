@@ -94,7 +94,7 @@ class DataMigration(Migration):
             print status
 
 if __name__ == "__main__":
-    pithosdb = ''
+    pithosdb = 'postgresql://gss@127.0.0.1/pithos'
     db = 'sqlite:///migrate.db'
     
     dt = DataMigration(pithosdb, db)

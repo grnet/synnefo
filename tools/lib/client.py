@@ -45,13 +45,16 @@ import datetime
 ERROR_CODES = {304:'Not Modified',
                400:'Bad Request',
                401:'Unauthorized',
+               403:'Forbidden',
                404:'Not Found',
                409:'Conflict',
                411:'Length Required',
                412:'Precondition Failed',
+               413:'Request Entity Too Large',
                416:'Range Not Satisfiable',
                422:'Unprocessable Entity',
-               503:'Service Unavailable'}
+               503:'Service Unavailable',
+               }
 
 class Fault(Exception):
     def __init__(self, data='', status=None):

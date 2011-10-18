@@ -243,7 +243,7 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, replace)
     
     @backend_method
-    def put_account(self, user, account, policy=None):
+    def put_account(self, user, account, policy={}):
         """Create a new account with the given name."""
         
         logger.debug("put_account: %s %s", account, policy)
@@ -353,7 +353,7 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, replace)
     
     @backend_method
-    def put_container(self, user, account, container, policy=None):
+    def put_container(self, user, account, container, policy={}):
         """Create a new container with the given name."""
         
         logger.debug("put_container: %s %s %s", account, container, policy)
@@ -541,8 +541,8 @@ class ModularBackend(BaseBackend):
         # Check quota.
         size_delta = size # Change with versioning.
         if size_delta > 0:
-            account_quota = self._get_policy(account_node)['quota']
-            container_quota = self._get_policy(container_node)['quota']
+            account_quota = long(self._get_policy(account_node)['quota'])
+            container_quota = long(self._get_policy(container_node)['quota'])
             if (account_quota > 0 and self._get_statistics(account_node)[1] + size_delta > account_quota) or \
                (container_quota > 0 and self._get_statistics(container_node)[1] + size_delta > container_quota):
                 # This must be executed in a transaction, so the version is never created if it fails.

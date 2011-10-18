@@ -124,6 +124,56 @@ Useful alias to add in ``~/.bashrc``::
 
   alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && /etc/init.d/apache2 restart'
 
+Gunicorn Setup
+--------------
+
+Add in ``/etc/apt/sources.list``::
+
+  deb http://backports.debian.org/debian-backports squeeze-backports main
+
+Then::
+
+  apt-get update
+  apt-get -t squeeze-backports install gunicorn
+  apt-get -t squeeze-backports install python-gevent
+
+Create ``/etc/gunicorn.d/pithos``::
+
+  CONFIG = {
+   'mode': 'django',
+   'working_dir': '/pithos/pithos',
+   'user': 'www-data',
+   'group': 'www-data',
+   'args': (
+        '--bind=[::]:8080',
+        '--worker-class=egg:gunicorn#gevent',
+        '--workers=4',
+        '--log-level=debug',
+        '/pithos/pithos/settings.py',
+   ),
+  }
+
+Replace the ``WSGI*`` directives in ``/etc/apache2/sites-available/pithos`` and ``/etc/apache2/sites-available/pithos-ssl`` with::
+
+  <Proxy *>
+    Order allow,deny
+    Allow from all
+  </Proxy>
+
+  SetEnv                proxy-sendchunked
+  SSLProxyEngine        off
+  ProxyErrorOverride    off
+
+  ProxyPass        /api http://localhost:8080 retry=0
+  ProxyPassReverse /api http://localhost:8080
+
+Configure and run::
+
+  /etc/init.d/gunicorn restart
+  a2enmod proxy
+  a2enmod proxy_http
+  /etc/init.d/apache2 restart
+
 Shibboleth Setup
 ----------------
 
@@ -135,15 +185,15 @@ Setup the files in ``/etc/shibboleth``.
 
 Add in ``/etc/apache2/sites-available/pithos-ssl``::
 
-	ShibConfig /etc/shibboleth/shibboleth2.xml
-	Alias      /shibboleth-sp /usr/share/shibboleth 
+  ShibConfig /etc/shibboleth/shibboleth2.xml
+  Alias      /shibboleth-sp /usr/share/shibboleth 
 
-	<Location /api/login>
-		AuthType shibboleth
-		ShibRequireSession On
-		ShibUseHeaders On
-		require valid-user
-	</Location>
+  <Location /api/login>
+    AuthType shibboleth
+    ShibRequireSession On
+    ShibUseHeaders On
+    require valid-user
+  </Location>
 
 Configure and run apache::
 

@@ -69,6 +69,7 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         self.client = Pithos_Client(get_server(), get_auth(), get_user(),
                                     get_api())
+        self._clean_account()
         self.invalid_client = Pithos_Client(get_server(), get_auth(), 'invalid',
                                             get_api())
         #self.headers = {
@@ -127,6 +128,9 @@ class BaseTestCase(unittest.TestCase):
         self.return_codes = (400, 401, 404, 503,)
     
     def tearDown(self):
+        self._clean_account()
+    
+    def _clean_account(self):
         for c in self.client.list_containers():
             while True:
                 #list objects returns at most 10000 objects

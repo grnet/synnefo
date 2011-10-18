@@ -78,8 +78,8 @@ $(document).ready(function(){
         equals(v1.get('state'), 'DESTROY', "From destroy to active should keep state to DESTROY");
         v1.set({'status': 'REBOOT'})
         equals(v1.get('state'), 'DESTROY', "From destroy to active should keep state to DESTROY");
-        v1.set({'status': 'DELETE'})
-        equals(v1.get('state'), 'DELETE', "Destroy should be kept until DELETE or ERROR");
+        v1.set({'status': 'DELETED'})
+        equals(v1.get('state'), 'DELETED', "Destroy should be kept until DELETE or ERROR");
 
         v1 = new vm({status:'BUILD'});
         equals(v1.get('state'), 'BUILD', "new vm with build as initial status")
@@ -315,122 +315,6 @@ $(document).ready(function(){
     })
 
 
-    module("VM List view");
-    test("test vm list views", function() {
-        vms.unbind();
-        expect(11);
-        
-        var api_mock = undefined;
-        function mock_api(data) {
-            if (api_mock != undefined) {
-                $.mockjaxClear(api_mock)
-            }
-
-            api_mock = $.mockjax({
-                url: '/api/v1.1/servers/detail*',
-                responseTime: 1,
-                responseText: {'servers':{'values':vms_data}}
-            });
-        }
-
-        $("body").append('<div id="demo-vm-view"><div id="demo-vm-view-tpl"><div class="spinner"></div></div></div>');
-        
-        // create the test vms view
-        // bind append calls when view 
-        // or vm gets updated
-        var DemoView = snf.views.VMListView.extend({
-            id_tpl: 'demo-vm-{0}',
-            view_id: "test",
-            selectors: {
-                'vms': '#demo-vm-view',
-                'vm': '#demo-vm-{0}',
-                'view': '#demo-vm-view',
-                'tpl': '#demo-vm-view-tpl',
-                'vm_cont_active': '#demo-vm-view',
-                'vm_cont_terminated': '#demo-vm-view',
-                'vm_spinner': '#demo-vm-{0} .spinner'
-            },
-
-            test: "initialize",
-            post_add: function(vm) {},
-            set_vm_handlers: function(vm) {},
-            set_handlers: function() {},
-            update_layout: function() {ok(1, "layout updated on '" + this.test + "'")},
-            post_update_vm: function(vm) {ok(1, 'vm['+vm.id+'] updated on '+this.test+'')},
-            post_remove_vm: function(vm) {ok(1, 'vm['+vm.id+'] removed on '+this.test+'')},
-            update_details: function(vm) {}
-        })
-
-        
-        // 1 call (only layout update
-        var view = new DemoView();
-        var vms_data = {};
-
-        // initial fetch
-        // 2 calls one for layout 1 for the first vm
-        view.test = "initial fetch 1 new vm";
-        vms_data = [{id:1, name:"server1", status:"ACTIVE"}];
-        mock_api(vms_data);
-        view.test = "initial fetch";
-        vms.fetch({async:false, refresh:true, update:false});
-        
-        // 1 new vm 1 unchanged
-        // 2 calls one for layout 1 for new vm
-        view.test = "1 new vm 1 unchanged";
-        vms_data = [{id:1, name:"server1", status:"ACTIVE"},
-                    {id:2, name:"server2", status:"ACTIVE"}];
-        mock_api(vms_data);
-        vms.fetch({async:false});
-
-        // 2 changed
-        // 4 calls 2 for layout 2 for vms
-        view.test = "2 existing changed";
-        vms_data = [{id:1, name:"server141", status:"REBOOT"},
-                    {id:2, name:"server2512", status:"REBOOT"}];
-        mock_api(vms_data);
-        vms.fetch({async:false});
-        
-        // 2 removed
-        // 4 calls 2 for layout 2 for vms
-        view.test = "2 vms removed";
-        vms_data = [{id:1, name:"server141", status:"DELETED"},
-                    {id:2, name:"server2512", status:"DELETED"}];
-        mock_api(vms_data);
-        vms.fetch({async:false});
-
-        vms.unbind();
-        delete view;
-        $.mockjaxClear();
-    });
-
-    module("API errors");
-    
-    test("test api error", function(){
-        expect(2);
-        vms.unbind();
-        
-        var api_mock = undefined;
-        function mock_api(data) {
-            if (api_mock != undefined) {
-                $.mockjaxClear(api_mock)
-            }
-
-            api_mock = $.mockjax({
-                url: '/api/v1.1/servers/detail*',
-                responseTime: 200,
-                responseText: {'servers':{'values':data}}
-            });
-        }
-
-        mock_api({});
-        
-        snf.api.bind("error", function() {ok(1,"error")});
-        snf.api.bind("abort", function() {ok(1,"abort")});
-
-        var a = snf.api.sync("read", {}, {url:"/api/v1.1/servers/detail"});
-        a.abort();
-    })
-
     module("network vm connections")
     test("network vm connections", function() {
 
@@ -446,5 +330,63 @@ $(document).ready(function(){
         
         nets.add({id:"p", nid:"p", name:"n1", linked_to:[1]});
         var n = nets.at(0);
+    })
+
+    module("images/flavors")
+    test("Test DELETE state image retrieval", function() {
+        snf.storage.images.reset();
+        snf.storage.vms.reset();
+
+        var images = snf.storage.images;
+        var vms = snf.storage.vms;
+
+        var img = images.add({name:"image 1", id:1}).last();
+        var vm1 = vms.add({imageRef:1, name:"vm1"}).last();
+        var vm2 = vms.add({imageRef:2, name:"vm2"}).last();
+            
+        equals(img, vm1.get_image());
+        
+        // reset is not called on 304
+        $.mockjax({
+            url: '/api/v1.1/images/2',
+            responseTime: 50,
+            status: 200,
+            responseText: {image:{name:"image 2", id:2}}
+        }); 
+        
+        
+        equals(images.length, 1, "1 image exists");
+        vm2.get_image();
+        equals(images.get(2).get("name"), "image 2", "image data parsed");
+        equals(images.length, 2);
+    })
+
+    test("Test DELETE state flavor retrieval", function() {
+        snf.storage.flavors.reset();
+        snf.storage.vms.reset();
+
+        var flavors = snf.storage.flavors;
+        var vms = snf.storage.vms;
+
+        var flv = flavors.add({id:1, cpu:1, disk:1, ram:1024}).last();
+        var vm1 = vms.add({flavorRef:1, name:"vm1"}).last();
+        var vm2 = vms.add({flavorRef:2, name:"vm2"}).last();
+            
+        equals(flv, vm1.get_flavor());
+        
+        // reset is not called on 304
+        $.mockjax({
+            url: '/api/v1.1/flavors/2',
+            responseTime: 50,
+            status: 200,
+            responseText: {flavor:{cpu:1, ram:2048, disk:100, id:2}}
+        }); 
+        
+        
+        equals(flavors.length, 1, "1 flavor exists");
+        vm2.get_flavor();
+        equals(flavors.get(2).get("ram"), 2048, "flavor data parsed");
+        equals(flavors.length, 2);
+        console.log(flavors);
     })
 })

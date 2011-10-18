@@ -1263,7 +1263,7 @@
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
 
         // update collection model with id passed
-        // making a direct call to the flavor
+        // making a direct call to the image
         // api url
         update_unknown_id: function(id) {
             var url = getUrl.call(this) + "/" + id;

@@ -1,0 +1,158 @@
+from django import http
+from django.template import RequestContext, loader
+from django.utils import simplejson as json
+from django.core import serializers
+
+# base view class
+# https://github.com/bfirsh/django-class-based-views/blob/master/class_based_views/base.py
+class View(object):
+    """
+    Intentionally simple parent class for all views. Only implements
+    dispatch-by-method and simple sanity checking.
+    """
+
+    method_names = ['GET', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE']
+
+    def __init__(self, *args, **kwargs):
+        """
+        Constructor. Called in the URLconf; can contain helpful extra
+        keyword arguments, and other things.
+        """
+        # Go through keyword arguments, and either save their values to our
+        # instance, or raise an error.
+        for key, value in kwargs.items():
+            if key in self.method_names:
+                raise TypeError(u"You tried to pass in the %s method name as a "
+                                u"keyword argument to %s(). Don't do that."
+                                % (key, self.__class__.__name__))
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise TypeError(u"%s() received an invalid keyword %r" % (
+                    self.__class__.__name__,
+                    key,
+                ))
+
+    def instance_to_dict(self, i, exclude_fields=[]):
+        """
+        Convert model instance to python dict
+        """
+        d = {}
+        for field in i._meta.get_all_field_names():
+            if field in exclude_fields:
+                continue
+
+            d[field] = i.__getattribute__(field)
+        return d
+
+    def qs_to_dict_iter(self, qs, exclude_fields=[]):
+        """
+        Convert queryset to an iterator of model instances dicts
+        """
+        for i in qs:
+            yield self.instance_to_dict(i, exclude_fields)
+
+    def json_response(self, data):
+        return http.HttpResponse(json.dumps(data))
+
+    @classmethod
+    def as_view(cls, *initargs, **initkwargs):
+        """
+        Main entry point for a request-response process.
+        """
+        def view(request, *args, **kwargs):
+            self = cls(*initargs, **initkwargs)
+            return self.dispatch(request, *args, **kwargs)
+        return view
+
+    def dispatch(self, request, *args, **kwargs):
+        # Try to dispatch to the right method for that; if it doesn't exist,
+        # raise a big error.
+        if hasattr(self, request.method.upper()):
+            self.request = request
+            self.args = args
+            self.kwargs = kwargs
+            data = request.raw_post_data
+
+            if request.method.upper() in ['POST', 'PUT']:
+                # Expect json data
+                if request.META.get('CONTENT_TYPE').startswith('application/json'):
+                    try:
+                        data = json.loads(data)
+                    except ValueError:
+                        raise http.HttpResponseServerError('Invalid JSON data.')
+                else:
+                    raise http.HttpResponseServerError('Unsupported Content-Type.')
+
+            return getattr(self, request.method.upper())(request, data, *args, **kwargs)
+        else:
+            allowed_methods = [m for m in self.method_names if hasattr(self, m)]
+            return http.HttpResponseNotAllowed(allowed_methods)
+
+
+class ResourceView(View):
+    method_names = ['GET', 'POST', 'PUT', 'DELETE']
+
+    model = None
+    exclude_fields = []
+
+    def queryset(self):
+        return self.model.objects.all()
+
+    def instance(self):
+        """
+        Retrieve selected instance based on url parameter
+
+        id parameter should be set in urlpatterns expression
+        """
+        try:
+            return self.queryset().get(pk=self.kwargs.get("id"))
+        except self.model.DoesNotExist:
+            raise http.Http404
+
+    def GET(self, request, data, *args, **kwargs):
+        return self.json_response(self.instance_to_dict(self.instance(),
+            self.exclude_fields))
+
+    def POST(self, request, data, *args, **kwargs):
+        pass
+
+    def DELETE(self, request, data, *args, **kwargs):
+        self.instance().delete()
+        return HttpResponse()
+
+
+class CollectionView(View):
+    method_names = ['GET', 'POST', 'PUT', 'DELETE']
+
+    model = None
+    exclude_fields = []
+
+    def queryset(self):
+        return self.model.objects.all()
+
+    def GET(self, request, data, *args, **kwargs):
+        return self.json_response(list(self.qs_to_dict_iter(self.queryset(),
+            self.exclude_fields)))
+
+    def PUT(self, request, data, *args, **kwargs):
+        pass
+
+    def DELETE(self, request, data, *args, **kwargs):
+        pass
+
+class UserResourceView(ResourceView):
+    """
+    Filter resource queryset for request user entries
+    """
+    def queryset(self):
+        return super(UserResourceView,
+                self).queryset().filter(user=self.request.user)
+
+class UserCollectionView(CollectionView):
+    """
+    Filter collection queryset for request user entries
+    """
+    def queryset(self):
+        return super(UserCollectionView, self).queryset().filter(user=self.request.user)
+

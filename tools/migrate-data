@@ -35,64 +35,47 @@
 
 from binascii import hexlify
 
-from sqlalchemy import create_engine
-from sqlalchemy import Table, Column, String, MetaData
+from sqlalchemy import Table
 from sqlalchemy.sql import select
 
 from pithos import settings
 from pithos.backends.modular import ModularBackend
 
 from lib.hashmap import HashMap
-from lib.migrate import Migration
+from lib.migrate import Migration, Cache
 
+import os
+    
 class DataMigration(Migration):
     def __init__(self, pithosdb, db):
         Migration.__init__(self,  pithosdb)
-        # XXX Need more columns for primary key - last modified timestamp...
-        engine = create_engine(db)
-        metadata = MetaData(engine)
-        
-        columns=[]
-        columns.append(Column('path', String(2048), primary_key=True))
-        columns.append(Column('hash', String(255)))
-        self.files = Table('files', metadata, *columns)
-        metadata.create_all(engine)
+        self.cache = Cache(db)
     
-    def cache_put(self, path, hash):
-        # Insert or replace.
-        s = self.files.delete().where(self.files.c.path==path)
-        r = self.conn.execute(s)
-        r.close()
-        s = self.files.insert()
-        r = self.conn.execute(s, {'path': path, 'hash': hash})
-        r.close()
-    
-    def cache_get(self, path):
-        s = select([self.files.c.hash], self.files.c.path == path)
-        r = self.conn.execute(s)
-        l = r.fetchone()
-        r.close()
-        if not l:
-            return l
-        return l[0]
+    def retrieve_files(self):
+        # Loop for all available files.
+        filebody = Table('filebody', self.metadata, autoload=True)
+        s = select([filebody.c.storedfilepath])
+        rp = self.conn.execute(s)
+        path = rp.fetchone()
+        while path:
+            yield path
+            path = rp.fetchone()
+        rp.close()
     
     def execute(self):
         blocksize = self.backend.block_size
         blockhash = self.backend.hash_algorithm
         
-        # Loop for all available files.
-        filebody = Table('filebody', self.metadata, autoload=True)
-        s = select([filebody.c.storedfilepath])
-        rp = self.conn.execute(s)
-        paths = rp.fetchall()
-        rp.close()
-        
-        for path in paths:
+        for (path,) in self.retrieve_files():
             map = HashMap(blocksize, blockhash)
-            map.load(path)
+            try:
+                map.load(open(path))
+            except Exception, e:
+                print e
+                continue
             hash = hexlify(map.hash())
             
-            if hash != self.cache_get(path):
+            if hash != self.cache.get(path):
                 missing = self.backend.blocker.block_ping(map) # XXX Backend hack...
                 status = '[>] ' + path
                 if missing:
@@ -105,7 +88,7 @@ class DataMigration(Migration):
                             self.backend.put_block(block)
                 else:
                     status += ' - no blocks missing'
-                self.cache_put(path, hash)
+                self.cache.put(path, hash)
             else:
                 status = '[-] ' + path
             print status

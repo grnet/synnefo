@@ -138,7 +138,7 @@ class BaseBackend(object):
         """
         return
     
-    def put_account(self, user, account, policy=None):
+    def put_account(self, user, account, policy={}):
         """Create a new account with the given name.
         
         Raises:
@@ -237,7 +237,7 @@ class BaseBackend(object):
         """
         return
     
-    def put_container(self, user, account, container, policy=None):
+    def put_container(self, user, account, container, policy={}):
         """Create a new container with the given name.
         
         Raises:

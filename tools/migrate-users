@@ -65,6 +65,6 @@ class UserMigration(Migration):
             user.save(update_timestamps=False)
 
 if __name__ == "__main__":
-    db = 'postgresql://gss:m0ust@rda@62.217.112.56/pithos'
+    db = 'postgresql://gss@localhost/pithos'
     m = UserMigration(db)
     m.execute()

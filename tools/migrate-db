@@ -1,0 +1,203 @@
+#!/usr/bin/env python
+
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
+from sqlalchemy import Table
+from sqlalchemy.sql import select
+
+from binascii import hexlify
+
+from pithos.backends.lib.hashfiler import Blocker
+from pithos.backends.lib.sqlalchemy import Node
+from pithos.aai.models import PithosUser
+
+from django.conf import settings
+
+from pithos.backends.modular import CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED
+from pithos.backends.lib.sqlalchemy.node import Node
+
+from lib.transfer import upload
+from lib.hashmap import HashMap, file_read_iterator
+from lib.client import Fault
+from lib.migrate import Migration, Cache
+from calendar import timegm
+
+import json
+import os
+import sys
+import hashlib
+import mimetypes
+
+class ObjectMigration(Migration):
+    def __init__(self, old_db, db, f):
+        Migration.__init__(self, old_db)
+        self.cache = Cache(db)
+    
+    def create_node(self, username, container, object, filepath, mimetype):
+        obj = ''
+        path = '/'.join(object.split('/')[:-1])
+        name =  object.split('/')[-1]
+        #create directory markers
+        for f in path.split('/'):
+            obj = '%s/%s' %(obj, f) if obj else f
+            try:
+                md5 = hashlib.md5()
+                meta = {'Content-Type':'application/directory',
+                        'hash':  md5.hexdigest().lower()}
+                self.backend.update_object_hashmap(username, username, container, obj, 0, [], meta) 
+            except NameError, e:
+                pass
+        
+        parent_path = '%s/%s' %(username, container)
+        parent_node = self.backend.node.node_lookup(parent_path)
+        path = '%s/%s' %(parent_path, object)
+        nodeid = self.backend.node.node_create(parent_node, path)
+        return nodeid
+    
+    def create_history(self, header_id, node_id, deleted=False):
+        i = 0
+        map = HashMap(self.backend.block_size, self.backend.hash_algorithm)
+        for t, rowcount  in self.retrieve_node_versions(header_id):
+            size, modyfied_by, filepath, mimetype, modificationdate = t
+            cluster = CLUSTER_HISTORY if i < rowcount - 1 else CLUSTER_NORMAL
+            cluster = cluster if not deleted else CLUSTER_DELETED
+            hash = self.cache.get(filepath)
+            if hash == None:
+                raise Exception("Missing hash") 
+            args = (node_id, hash, size, None, modyfied_by, cluster)
+            serial = self.backend.node.version_create(*args)[0]
+            meta = {'hash':hash,
+                    'content-type':mimetype}
+            self.backend.node.attribute_set(serial, ((k, v) for k, v in meta.iteritems()))
+            timestamp = timegm(modificationdate.timetuple())
+            microseconds = modificationdate.time().microsecond
+            f.write('update versions set mtime=\'%10d.%6d\' where serial=%s;' %(timestamp, microseconds, serial))
+            i += 1
+    
+    def create_metadata(self, header_id, node_id):
+        for t in self.retrieve_metadata(header_id):
+            pass
+    
+    def create_objects(self):
+        for username, headerid, folderid, filename, deleted, filepath, mimetype in self.retrieve_current_nodes():
+            path = self.retrieve_path(folderid)[1:]
+            container = 'pithos' if not deleted else 'trash'
+            
+            #create container if it does not exist
+            try:
+                self.backend._lookup_container(username, container)
+            except NameError:
+                self.backend.put_container(username, username, container) 
+            
+            #create node
+            object = '%s/%s' %(path, filename)
+            nodeid = self.create_node(username, container, object, filepath, mimetype)
+            
+            #create node history
+            self.create_history(headerid, nodeid, deleted)
+            
+            self.create_metadata(headerid, nodeid)
+            #self.set_public()
+            #self.statistics()
+            #self.set_permissions()
+    
+    def retrieve_path(self, child_id):
+        folderTable = Table('folder', self.metadata, autoload=True)
+        s = select([folderTable.c.parent_id, folderTable.c.name])
+        s = s.where(folderTable.c.id == child_id)
+        rp = self.conn.execute(s)
+        parent_id, foldername = rp.fetchone()
+        if not parent_id:
+            return ''
+        else:
+            return '%s/%s' %(self.retrieve_path(parent_id), foldername)
+    
+    def retrieve_current_nodes(self):
+        fileheader = Table('fileheader', self.metadata, autoload=True)
+        filebody = Table('filebody', self.metadata, autoload=True)
+        folder = Table('folder', self.metadata, autoload=True)
+        gss_user = Table('gss_user', self.metadata, autoload=True)
+        j = filebody.join(fileheader, filebody.c.id == fileheader.c.currentbody_id)
+        j = j.join(folder, fileheader.c.folder_id == folder.c.id)
+        j = j.join(gss_user, fileheader.c.owner_id == gss_user.c.id)
+        s = select([gss_user.c.username,  fileheader.c.id, fileheader.c.folder_id,
+                    fileheader.c.name,  fileheader.c.deleted, filebody.c.storedfilepath,
+                    filebody.c.mimetype], from_obj=j)
+        s = s.limit(1)
+        rp = self.conn.execute(s)
+        object = rp.fetchone()
+        while object:
+            yield object
+            object = rp.fetchone()
+        rp.close()
+    
+    def retrieve_node_versions(self, header_id):
+        filebody = Table('filebody', self.metadata, autoload=True)
+        gss_user = Table('gss_user', self.metadata, autoload=True)
+        j = filebody.join(gss_user, filebody.c.modifiedby_id == gss_user.c.id)
+        s = select([filebody.c.filesize, gss_user.c.username,
+                    filebody.c.storedfilepath, filebody.c.mimetype,
+                    filebody.c.modificationdate], from_obj=j)
+        s = s.where(filebody.c.header_id == header_id)
+        s = s.order_by(filebody.c.version)
+        rp = self.conn.execute(s)
+        version = rp.fetchone()
+        while version:
+            yield version, rp.rowcount
+            version = rp.fetchone()
+        rp.close()
+    
+    def retrieve_metadata(self, header_id):
+        filetag = Table('filetag', self.metadata, autoload=True)
+        s = filetag.select(filetag.c.fileid == header_id)
+        rp = self.conn.execute(s)
+        tag = rp.fetchone()
+        while tag:
+            yield tag
+            tag = tp.fetchone()
+        rp.close()
+    
+    def handle_deleted(self):
+        pass
+
+if __name__ == "__main__":
+    old_db = ''
+    db = ''
+    
+    f = open('fixdates.sql', 'w')
+    ot = ObjectMigration(old_db, db, f)
+    ot.create_objects()
+    f.close()
+    
+    

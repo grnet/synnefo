@@ -308,7 +308,7 @@
             this.vms.bind("pending:remove:add", _.bind(this.handle_pending_connections, this, "add"));
             this.vms.bind("pending:remove:clear", _.bind(this.handle_pending_connections, this, "clear"));
 
-            ret = models.Network.__super__.initialize.apply(this, arguments);
+            var ret = models.Network.__super__.initialize.apply(this, arguments);
 
             storage.vms.bind("change:linked_to_nets", _.bind(this.update_connections, this, "vm:change"));
             storage.vms.bind("add", _.bind(this.update_connections, this, "add"));

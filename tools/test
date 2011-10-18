@@ -817,6 +817,20 @@ class ContainerPut(BaseTestCase):
         self.client.create_container(self.containers[0])
         self.assertTrue(not self.client.create_container(self.containers[0]))
     
+    def test_quota(self):
+        self.client.create_container(self.containers[0])
+        
+        policy = {'quota':100}
+        self.client.set_container_policies('c1', **policy)
+        
+        meta = self.client.retrieve_container_metadata('c1')
+        self.assertTrue('x-container-policy-quota' in meta)
+        self.assertEqual(meta['x-container-policy-quota'], '100')
+        
+        args = ['c1', 'o1']
+        kwargs = {'length':101}
+        self.assert_raises_fault(413, self.upload_random_data, *args, **kwargs)
+    
 class ContainerPost(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
@@ -839,13 +853,13 @@ class ContainerDelete(BaseTestCase):
         self.containers = ['c1', 'c2']
         for c in self.containers:
             self.client.create_container(c)
-        self.upload_random_data(self.containers[1], o_names[0])
     
     def test_delete(self):
         status = self.client.delete_container(self.containers[0])[0]
         self.assertEqual(status, 204)
     
     def test_delete_non_empty(self):
+        self.upload_random_data(self.containers[1], o_names[0])
         self.assert_raises_fault(409, self.client.delete_container,
                                  self.containers[1])
     

@@ -40,7 +40,7 @@ from django.utils.http import urlencode
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 
-from pithos.aai.models import PithosUser
+from models import User
 
 
 def render_response(template, tab=None, status=200, **kwargs):
@@ -65,16 +65,22 @@ def requires_admin(func):
     return wrapper
 
 
-@requires_admin
 def index(request):
     stats = {}
-    stats['users'] = PithosUser.objects.count()
+    stats['users'] = User.objects.count()
     return render_response('index.html', tab='home', stats=stats)
 
 
 @requires_admin
+def admin(request):
+    stats = {}
+    stats['users'] = User.objects.count()
+    return render_response('admin.html', tab='home', stats=stats)
+
+
+@requires_admin
 def users_list(request):
-    users = PithosUser.objects.order_by('id')
+    users = User.objects.order_by('id')
     
     filter = request.GET.get('filter', '')
     if filter:
@@ -107,7 +113,7 @@ def users_create(request):
     if request.method == 'GET':
         return render_response('users_create.html')
     if request.method == 'POST':
-        user = PithosUser()
+        user = User()
         user.uniq = request.POST.get('uniq')
         user.realname = request.POST.get('realname')
         user.is_admin = True if request.POST.get('admin') else False
@@ -120,13 +126,13 @@ def users_create(request):
 
 @requires_admin
 def users_info(request, user_id):
-    user = PithosUser.objects.get(id=user_id)
+    user = User.objects.get(id=user_id)
     return render_response('users_info.html', user=user)
 
 
 @requires_admin
 def users_modify(request, user_id):
-    user = PithosUser.objects.get(id=user_id)
+    user = User.objects.get(id=user_id)
     user.uniq = request.POST.get('uniq')
     user.realname = request.POST.get('realname')
     user.is_admin = True if request.POST.get('admin') else False
@@ -139,6 +145,6 @@ def users_modify(request, user_id):
 
 @requires_admin
 def users_delete(request, user_id):
-    user = PithosUser.objects.get(id=user_id)
+    user = User.objects.get(id=user_id)
     user.delete()
     return redirect(users_list)

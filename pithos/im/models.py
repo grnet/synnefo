@@ -33,20 +33,35 @@
 
 import datetime
 
+from django.conf import settings
 from django.db import models
 
-from pithos import settings
 
-
-class PithosUser(models.Model):
+class User(models.Model):
+    
+    ACCOUNT_STATE = (
+        ('ACTIVE', 'Active'),
+        ('DELETED', 'Deleted'),
+        ('SUSPENDED', 'Suspended')
+    )
+    
     uniq = models.CharField('Unique ID', max_length=255, null=True)
+    
     realname = models.CharField('Real Name', max_length=255, default='')
-    is_admin = models.BooleanField('Admin', default=False)
+    email = models.CharField('Email', max_length=255, default='')
     affiliation = models.CharField('Affiliation', max_length=255, default='')
+    state = models.CharField('Account state', choices=ACCOUNT_STATE, max_length=16, default='ACTIVE')
+    
+    # Lose these...
     quota = models.BigIntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
+    max_invitations = models.IntegerField('Max number of invitations', null=True)
+    
+    is_admin = models.BooleanField('Admin', default=False)
+    
     auth_token = models.CharField('Authentication Token', max_length=32, null=True)
     auth_token_created = models.DateTimeField('Time of auth token creation')
     auth_token_expires = models.DateTimeField('Time of auth token expiration')
+    
     created = models.DateTimeField('Time of creation')
     updated = models.DateTimeField('Time of last update')
     
@@ -57,10 +72,25 @@ class PithosUser(models.Model):
                 self.auth_token_created = datetime.datetime.now()
                 self.auth_token_expires = datetime.datetime.now()
             self.updated = datetime.datetime.now()
-        super(PithosUser, self).save()
+        super(User, self).save()
     
     class Meta:
-        verbose_name = u'Pithos User'
+        verbose_name = u'User'
     
     def __unicode__(self):
         return self.uniq
+
+class Invitation(models.Model):
+    source = models.ForeignKey(User, related_name="source")
+    target = models.ForeignKey(User, related_name="target")
+    accepted = models.BooleanField('Is the invitation accepted?', default=False)
+    level = models.IntegerField('Invitation depth level', null=True)
+    
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = u'Invitation'
+
+    def __unicode__(self):
+        return "From: %s, To: %s" % (self.source, self.target)

@@ -31,42 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import hashlib
-
-from time import asctime
-from datetime import datetime, timedelta
-from base64 import b64encode
-
 from django.conf import settings
-from django.db import transaction
-
-from models import PithosUser
+from django.conf.urls.defaults import patterns
 
 
-@transaction.commit_on_success
-def register_user(uniq, realname, affiliation):
-    user = PithosUser()
-    user.uniq = uniq
-    user.realname = realname
-    user.affiliation = affiliation
-    user.save()
-    create_auth_token(user)
-    return user
-
-@transaction.commit_on_success
-def delete_user(user):
-    if user is not None:
-        user.delete()
-
-@transaction.commit_on_success
-def create_auth_token(user):
-    md5 = hashlib.md5()
-    md5.update(user.uniq)
-    md5.update(user.realname.encode('ascii', 'ignore'))
-    md5.update(asctime())
+urlpatterns = patterns('pithos.im.views',
+    (r'^$', 'index'),
+    (r'^login/?$', 'index'),
     
-    user.auth_token = b64encode(md5.digest())
-    user.auth_token_created = datetime.now()
-    user.auth_token_expires = user.auth_token_created + \
-                              timedelta(hours=settings.AUTH_TOKEN_DURATION)
-    user.save()
+    (r'^admin/?$', 'admin'),
+    
+    (r'^admin/users/?$', 'users_list'),
+    (r'^admin/users/(\d+)/?$', 'users_info'),
+    (r'^admin/users/create$', 'users_create'),
+    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
+    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
+)
+
+urlpatterns += patterns('',
+    (r'^login/shibboleth/?$', 'pithos.im.shibboleth.login')
+)
+
+urlpatterns += patterns('',
+    (r'^/static/(?P<path>.*)$', 'django.views.static.serve', {
+                    'document_root': settings.PROJECT_PATH + '/im/static'})
+)

@@ -31,47 +31,42 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from util import register_user
+import hashlib
+
+from time import asctime
+from datetime import datetime, timedelta
+from base64 import b64encode
+
+from django.conf import settings
+from django.db import transaction
+
+from models import User
 
 
-class Tokens:
-    # these are mapped by the Shibboleth SP software
-    SHIB_EPPN = "HTTP_EPPN" # eduPersonPrincipalName
-    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
-    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
-    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
-    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
-    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
-    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
+@transaction.commit_on_success
+def register_user(uniq, realname, affiliation):
+    user = User()
+    user.uniq = uniq
+    user.realname = realname
+    user.affiliation = affiliation
+    user.save()
+    create_auth_token(user)
+    return user
 
+@transaction.commit_on_success
+def delete_user(user):
+    if user is not None:
+        user.delete()
 
-class NoUniqueToken(BaseException):
-    def __init__(self, msg):
-        self.msg = msg
-
-
-class NoRealName(BaseException):
-    def __init__(self, msg):
-        self.msg = msg
-
-
-def register_shibboleth_user(tokens):
-    """Registers a Shibboleth user using the input hash as a source for data."""
+@transaction.commit_on_success
+def create_auth_token(user):
+    md5 = hashlib.md5()
+    md5.update(user.uniq)
+    md5.update(user.realname.encode('ascii', 'ignore'))
+    md5.update(asctime())
     
-    try:
-        eppn = tokens[Tokens.SHIB_EPPN]
-    except KeyError:
-        raise NoUniqueToken("Authentication does not return a unique token")
-    
-    if Tokens.SHIB_DISPLAYNAME in tokens:
-        realname = tokens[Tokens.SHIB_DISPLAYNAME]
-    elif Tokens.SHIB_CN in tokens:
-        realname = tokens[Tokens.SHIB_CN]
-    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-    else:
-        raise NoRealName("Authentication does not return the user's name")
-    
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    
-    return register_user(eppn, realname, affiliation)
+    user.auth_token = b64encode(md5.digest())
+    user.auth_token_created = datetime.now()
+    user.auth_token_expires = user.auth_token_created + \
+                              timedelta(hours=settings.AUTH_TOKEN_DURATION)
+    user.save()

@@ -33,16 +33,23 @@
 
 import datetime
 
-from time import time, mktime
-
-from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.http import urlencode
-from django.utils.cache import patch_vary_headers
+#from django.utils.cache import patch_vary_headers
 
-from models import PithosUser
-from shibboleth import Tokens, register_shibboleth_user
-from util import create_auth_token
+from models import User
+from util import register_user, create_auth_token
+
+
+class Tokens:
+    # these are mapped by the Shibboleth SP software
+    SHIB_EPPN = "HTTP_EPPN" # eduPersonPrincipalName
+    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
+    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
+    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
+    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
+    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
+    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 
 def login(request):
@@ -60,14 +67,26 @@ def login(request):
     """
     
     try:
-        user = PithosUser.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
+        user = User.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
     except:
         user = None
     if user is None:
         try:
-            user = register_shibboleth_user(request.META)
-        except:
-            return HttpResponseBadRequest('Missing necessary Shibboleth headers')
+            eppn = tokens[Tokens.SHIB_EPPN]
+        except KeyError:
+            return HttpResponseBadRequest("Missing unique token in request")
+        
+        if Tokens.SHIB_DISPLAYNAME in tokens:
+            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+        elif Tokens.SHIB_CN in tokens:
+            realname = tokens[Tokens.SHIB_CN]
+        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+        else:
+            return HttpResponseBadRequest("Missing user name in request")
+        
+        affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+        user = register_user(eppn, realname, affiliation)
     
     if 'renew' in request.GET or user.auth_token_expires < datetime.datetime.now():
         create_auth_token(user)

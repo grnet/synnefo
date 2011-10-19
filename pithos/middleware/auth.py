@@ -35,7 +35,7 @@ from time import time, mktime
 
 from django.conf import settings
 
-from pithos.aai.models import PithosUser
+from pithos.im.models import User
 
 
 class AuthMiddleware(object):
@@ -53,7 +53,7 @@ class AuthMiddleware(object):
         
         # Token was found, retrieve user from backing store.
         try:
-            user = PithosUser.objects.get(auth_token=token)
+            user = User.objects.get(auth_token=token)
         except:
             return
         

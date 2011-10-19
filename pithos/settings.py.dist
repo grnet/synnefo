@@ -147,8 +147,7 @@ INSTALLED_APPS = (
 #    'django.contrib.messages',
 #    'django.contrib.admin',
 #    'django.contrib.admindocs',
-    'pithos.aai',
-    'pithos.admin',
+    'pithos.im',
     'pithos.api',
     'pithos.public'
 )

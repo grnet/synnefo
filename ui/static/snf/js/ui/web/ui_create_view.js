@@ -520,6 +520,10 @@
                 this.add_flavor(flv);
             }, this));
             
+            this.sort_flavors(this.disks);
+            this.sort_flavors(this.cpus);
+            this.sort_flavors(this.mems);
+
             var self = this;
             this.$(".flavor-options li.option").click(function(){
                 var el = $(this);
@@ -534,6 +538,18 @@
                 if (el.hasClass("disk")) { self.last_choice = ["disk", $(this).data("value")] }
 
                 self.update_selected_from_ui();
+            })
+        },
+
+        sort_flavors: function(els) {
+            var prev = undefined;
+            els.find("li").each(function(i,el){
+                el = $(el);
+                if (!prev) { prev = el; return true };
+                if (el.data("value") < prev.data("value")) {
+                    prev.before(el);
+                }
+                prev = el;
             })
         },
         

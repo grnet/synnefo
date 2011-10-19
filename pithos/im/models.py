@@ -31,7 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
+import hashlib
+
+from time import asctime
+from datetime import datetime, timedelta
+from base64 import b64encode
 
 from django.conf import settings
 from django.db import models
@@ -68,11 +72,22 @@ class User(models.Model):
     def save(self, update_timestamps=True):
         if update_timestamps:
             if not self.id:
-                self.created = datetime.datetime.now()
-                self.auth_token_created = datetime.datetime.now()
-                self.auth_token_expires = datetime.datetime.now()
-            self.updated = datetime.datetime.now()
+                self.created = datetime.now()
+                #self.auth_token_created = datetime.now()
+                #self.auth_token_expires = datetime.now()
+            self.updated = datetime.now()
         super(User, self).save()
+    
+    def renew_token(self):
+        md5 = hashlib.md5()
+        md5.update(self.uniq)
+        md5.update(self.realname.encode('ascii', 'ignore'))
+        md5.update(asctime())
+        
+        self.auth_token = b64encode(md5.digest())
+        self.auth_token_created = datetime.now()
+        self.auth_token_expires = self.auth_token_created + \
+                                  timedelta(hours=settings.AUTH_TOKEN_DURATION)
     
     class Meta:
         verbose_name = u'User'

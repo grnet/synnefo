@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load formatters %}
+
 {% block body %}
 
 <div class="row">
@@ -32,7 +34,7 @@
       <td>{{ user.realname }}</td>
       <td>{{ user.is_admin }}</td>
       <td>{{ user.affiliation }}</td>
-      <td>{{ user.quota }}</td>
+      <td>{{ user.quota|GiB }} GiB</td>
       <td>{{ user.updated }}</td>
     </tr>
     {% endfor %}

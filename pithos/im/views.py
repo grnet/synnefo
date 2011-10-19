@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from datetime import datetime
 from functools import wraps
 from math import ceil
 
@@ -41,6 +42,7 @@ from django.shortcuts import redirect
 from django.template.loader import render_to_string
 
 from models import User
+from util import isoformat
 
 
 def render_response(template, tab=None, status=200, **kwargs):
@@ -118,8 +120,8 @@ def users_create(request):
         user.realname = request.POST.get('realname')
         user.is_admin = True if request.POST.get('admin') else False
         user.affiliation = request.POST.get('affiliation')
-        user.quota = int(request.POST.get('quota') or 0)
-        user.auth_token = request.POST.get('auth_token')
+        user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
+        user.renew_token()
         user.save()
         return redirect(users_info, user.id)
 
@@ -137,8 +139,14 @@ def users_modify(request, user_id):
     user.realname = request.POST.get('realname')
     user.is_admin = True if request.POST.get('admin') else False
     user.affiliation = request.POST.get('affiliation')
-    user.quota = int(request.POST.get('quota') or 0)
+    user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
     user.auth_token = request.POST.get('auth_token')
+    try:
+        auth_token_expires = request.POST.get('auth_token_expires')
+        d = datetime.strptime(auth_token_expires, '%Y-%m-%dT%H:%MZ')
+        user.auth_token_expires = d
+    except ValueError:
+        pass
     user.save()
     return redirect(users_info, user.id)
 

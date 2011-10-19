@@ -38,7 +38,6 @@ from django.utils.http import urlencode
 #from django.utils.cache import patch_vary_headers
 
 from models import User
-from util import register_user, create_auth_token
 
 
 class Tokens:
@@ -85,11 +84,16 @@ def login(request):
         else:
             return HttpResponseBadRequest("Missing user name in request")
         
-        affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-        user = register_user(eppn, realname, affiliation)
+        user = User()
+        user.uniq = eppn
+        user.realname = realname
+        user.affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+        user.renew_token()
+        user.save()
     
     if 'renew' in request.GET or user.auth_token_expires < datetime.datetime.now():
-        create_auth_token(user)
+        user.renew_token()
+        user.save()
     next = request.GET.get('next')
     if next is not None:
         # TODO: Avoid redirect loops.

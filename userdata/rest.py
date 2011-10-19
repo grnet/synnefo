@@ -2,6 +2,7 @@ from django import http
 from django.template import RequestContext, loader
 from django.utils import simplejson as json
 from django.core import serializers
+from django.core.urlresolvers import reverse
 
 # base view class
 # https://github.com/bfirsh/django-class-based-views/blob/master/class_based_views/base.py
@@ -32,28 +33,6 @@ class View(object):
                     self.__class__.__name__,
                     key,
                 ))
-
-    def instance_to_dict(self, i, exclude_fields=[]):
-        """
-        Convert model instance to python dict
-        """
-        d = {}
-        for field in i._meta.get_all_field_names():
-            if field in exclude_fields:
-                continue
-
-            d[field] = i.__getattribute__(field)
-        return d
-
-    def qs_to_dict_iter(self, qs, exclude_fields=[]):
-        """
-        Convert queryset to an iterator of model instances dicts
-        """
-        for i in qs:
-            yield self.instance_to_dict(i, exclude_fields)
-
-    def json_response(self, data):
-        return http.HttpResponse(json.dumps(data))
 
     @classmethod
     def as_view(cls, *initargs, **initkwargs):
@@ -89,8 +68,49 @@ class View(object):
             allowed_methods = [m for m in self.method_names if hasattr(self, m)]
             return http.HttpResponseNotAllowed(allowed_methods)
 
+class JSONRestView(View):
+    """
+    Class that provides helpers to produce a json response
+    """
 
-class ResourceView(View):
+    url_name = None
+    def __init__(self, url_name, *args, **kwargs):
+        self.url_name = url_name
+        return super(JSONRestView, self).__init__(*args, **kwargs)
+
+    def update_instance(self, i, data):
+        update_keys = data.keys()
+        for field in i._meta.get_all_field_names():
+            if field in update_keys:
+                i.__setattr__(field, data[field])
+
+        return i
+
+    def instance_to_dict(self, i, exclude_fields=[]):
+        """
+        Convert model instance to python dict
+        """
+        d = {}
+        d['uri'] = reverse(self.url_name, kwargs={'id': i.pk})
+
+        for field in i._meta.get_all_field_names():
+            if field in exclude_fields:
+                continue
+
+            d[field] = i.__getattribute__(field)
+        return d
+
+    def qs_to_dict_iter(self, qs, exclude_fields=[]):
+        """
+        Convert queryset to an iterator of model instances dicts
+        """
+        for i in qs:
+            yield self.instance_to_dict(i, exclude_fields)
+
+    def json_response(self, data):
+        return http.HttpResponse(json.dumps(data), mimetype="application/json")
+
+class ResourceView(JSONRestView):
     method_names = ['GET', 'POST', 'PUT', 'DELETE']
 
     model = None
@@ -115,15 +135,18 @@ class ResourceView(View):
             self.exclude_fields))
 
     def POST(self, request, data, *args, **kwargs):
-        pass
+        instance = self.instance()
+        self.update_instance(instance, data)
+        instance.save()
+        return self.GET(request, data, *args, **kwargs)
 
     def DELETE(self, request, data, *args, **kwargs):
         self.instance().delete()
-        return HttpResponse()
+        return self.json_response("")
 
 
-class CollectionView(View):
-    method_names = ['GET', 'POST', 'PUT', 'DELETE']
+class CollectionView(JSONRestView):
+    method_names = ['GET', 'POST']
 
     model = None
     exclude_fields = []
@@ -135,10 +158,7 @@ class CollectionView(View):
         return self.json_response(list(self.qs_to_dict_iter(self.queryset(),
             self.exclude_fields)))
 
-    def PUT(self, request, data, *args, **kwargs):
-        pass
-
-    def DELETE(self, request, data, *args, **kwargs):
+    def POST(self, request, data, *args, **kwargs):
         pass
 
 class UserResourceView(ResourceView):

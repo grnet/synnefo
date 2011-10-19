@@ -51,7 +51,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 
-def login(request):
+def shibboleth(request):
     """Register a user into the internal database
        and issue a token for subsequent requests.
        Users are authenticated by Shibboleth.
@@ -70,6 +70,8 @@ def login(request):
     except:
         user = None
     if user is None:
+        tokens = request.META
+        
         try:
             eppn = tokens[Tokens.SHIB_EPPN]
         except KeyError:
@@ -103,8 +105,9 @@ def login(request):
                                  'token': user.auth_token})
     
     response = HttpResponse()
-    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
+    # TODO: Cookie should only be set at the client side...
+    #expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    #response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
     if not next:
         response['X-Auth-User'] = user.uniq
         response['X-Auth-Token'] = user.auth_token

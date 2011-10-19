@@ -18,8 +18,9 @@
     var debug = _.bind(logger.debug, logger);
     
     // get url helper
-    var getUrl = function() {
-        return snf.config.api_url + "/" + this.path;
+    var getUrl = function(baseurl) {
+        var baseurl = baseurl || snf.config.api_url;
+        return baseurl + "/" + this.path;
     }
     
     // i18n
@@ -65,7 +66,7 @@
         },
 
         url: function(options) {
-            return getUrl.call(this) + "/" + this.id;
+            return getUrl.call(this, this.base_url) + "/" + this.id;
         },
 
         api_path: function(options) {
@@ -100,7 +101,7 @@
         api: snf.api,
         supportIncUpdates: true,
         url: function(options) {
-            return getUrl.call(this) + (options.details || this.details ? '/detail' : '');
+            return getUrl.call(this, this.base_url) + (options.details || this.details ? '/detail' : '');
         },
 
         fetch: function(options) {
@@ -1644,6 +1645,16 @@
         }
 
     })
+
+    models.PublicKey = models.Model.extend({
+        path: 'keys/',
+        base_url: '/ui/userdata'
+    })
+    
+    models.PublicKeys = models.Collection.extend({
+        path: 'keys/',
+        base_url: '/ui/userdata'
+    })
     
 
     // storage initialization
@@ -1651,6 +1662,7 @@
     snf.storage.flavors = new models.Flavors();
     snf.storage.networks = new models.Networks();
     snf.storage.vms = new models.VMS();
+    snf.storage.keys = new models.PublicKeys();
 
     //snf.storage.vms.fetch({update:true});
     //snf.storage.images.fetch({update:true});

@@ -1,7 +1,17 @@
 Changelog
 =========
 
+
+2011-10-19, v0.7.2
+
+FIXES:
+    UI:
+	    * Fix regressions with flavor sorting and image size checking
+		  (#1429, #1507)
+
+
 2011-10-17, v0.7.1
+
 FIXES:
     UI:
         * Fix Enter/Esc on machine rename not working in the UI (#1501)

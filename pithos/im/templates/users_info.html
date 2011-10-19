@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action="{% url im.views.users_modify user.id %}" method="post">
+<form action="{% url pithos.im.views.users_modify user.id %}" method="post">
   <div class="clearfix">
     <label for="user-id">ID</label>
     <div class="input">
@@ -76,13 +76,13 @@
     <button type="submit" class="btn primary">Save Changes</button>
     <button type="reset" class="btn">Reset</button>
         &nbsp;&nbsp;
-    <a class="btn danger needs-confirm" href="{% url im.views.users_delete user.id %}">Delete User</a>
+    <a class="btn danger needs-confirm" href="{% url pithos.im.views.users_delete user.id %}">Delete User</a>
   </div>
 
   <div class="alert-message block-message error">
     <p><strong>WARNING:</strong> Are you sure you want to delete this user?</p>
     <div class="alert-actions">
-      <a class="btn danger" href="{% url im.views.users_delete user.id %}">Delete</a>
+      <a class="btn danger" href="{% url pithos.im.views.users_delete user.id %}">Delete</a>
       <a class="btn alert-close">Cancel</a>
     </div>
   </div>

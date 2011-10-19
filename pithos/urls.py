@@ -37,5 +37,5 @@ urlpatterns = patterns('',
     (r'^v1(?:$|/)', include('pithos.api.urls')),
     (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
     (r'^public(?:$|/)', include('pithos.public.urls')),
-    (r'^im(?:$|/)', include('pithos.im.urls'))
+    (r'^im/', include('pithos.im.urls'))
 )

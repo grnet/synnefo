@@ -45,7 +45,7 @@ urlpatterns = patterns('pithos.im.views',
     (r'^admin/users/(\d+)/?$', 'users_info'),
     (r'^admin/users/create$', 'users_create'),
     (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
+    (r'^admin/users/(\d+)/delete/?$', 'users_delete')
 )
 
 urlpatterns += patterns('',
@@ -53,6 +53,6 @@ urlpatterns += patterns('',
 )
 
 urlpatterns += patterns('',
-    (r'^/static/(?P<path>.*)$', 'django.views.static.serve', {
-                    'document_root': settings.PROJECT_PATH + '/im/static'})
+    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
+                                {'document_root': settings.PROJECT_PATH + '/im/static'})
 )

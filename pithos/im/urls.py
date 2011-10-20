@@ -48,8 +48,10 @@ urlpatterns = patterns('pithos.im.views',
     (r'^admin/users/(\d+)/delete/?$', 'users_delete')
 )
 
-urlpatterns += patterns('pithos.im.login',
-    (r'^login/shibboleth/?$', 'shibboleth')
+urlpatterns += patterns('',
+    (r'^login/shibboleth/?$', 'pithos.im.shibboleth.login'),
+    (r'^login/twitter/?$', 'pithos.im.twitter.login'),
+    (r'^login/twitter/authenticated/?$', 'pithos.im.twitter.authenticated')
 )
 
 urlpatterns += patterns('',

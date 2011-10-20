@@ -33,6 +33,8 @@
 
 import datetime
 
+from urlparse import urlsplit, urlunsplit
+
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.http import urlencode
 #from django.utils.cache import patch_vary_headers
@@ -51,7 +53,7 @@ class Tokens:
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
 
-def shibboleth(request):
+def login(request):
     """Register a user into the internal database
        and issue a token for subsequent requests.
        Users are authenticated by Shibboleth.
@@ -99,10 +101,9 @@ def shibboleth(request):
     next = request.GET.get('next')
     if next is not None:
         # TODO: Avoid redirect loops.
-        if '?' in next:
-            next = next[:next.find('?')]
-        next += '?' + urlencode({'user': user.uniq,
-                                 'token': user.auth_token})
+        parts = list(urlsplit(next))
+        parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
+        next = urlunsplit(parts)
     
     response = HttpResponse()
     # TODO: Cookie should only be set at the client side...

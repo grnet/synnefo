@@ -162,3 +162,7 @@ DEFAULT_VERSIONING = 'auto'
 
 # Show these many users per page in admin interface.
 ADMIN_PAGE_LIMIT = 100
+
+# Authenticate via Twitter.
+TWITTER_TOKEN = ''
+TWITTER_SECRET = ''

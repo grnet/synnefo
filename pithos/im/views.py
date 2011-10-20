@@ -68,9 +68,8 @@ def requires_admin(func):
 
 
 def index(request):
-    stats = {}
-    stats['users'] = User.objects.count()
-    return render_response('index.html', tab='home', stats=stats)
+    # TODO: Get and pass on next variable.
+    return render_response('index.html')
 
 
 @requires_admin

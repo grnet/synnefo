@@ -107,8 +107,8 @@ def login(request):
     
     response = HttpResponse()
     # TODO: Cookie should only be set at the client side...
-    #expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    #response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
+    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
     if not next:
         response['X-Auth-User'] = user.uniq
         response['X-Auth-Token'] = user.auth_token

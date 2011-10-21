@@ -2,6 +2,13 @@ Changelog
 =========
 
 
+2011-10-21, v0.7.3
+
+FIXES:
+	UI:
+		* Fix two UI glitches with Firefox 3.6 (#1545, #1546)
+
+
 2011-10-19, v0.7.2
 
 FIXES:

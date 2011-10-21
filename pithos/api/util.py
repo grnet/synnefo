@@ -45,7 +45,7 @@ from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_str
 
 from pithos.api.compat import parse_http_date_safe, parse_http_date
-from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound,
+from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
                                 RangeNotSatisfiable, ServiceUnavailable)
 from pithos.backends import connect_backend
@@ -303,7 +303,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
                                                         dest_account, dest_container, dest_name,
                                                         meta, False, permissions, src_version)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except (NameError, IndexError):
         raise ItemNotFound('Container or object does not exist')
     except ValueError:
@@ -316,7 +316,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         try:
             request.backend.update_object_public(request.user, dest_account, dest_container, dest_name, public)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Object does not exist')
     return version_id
@@ -767,7 +767,7 @@ def request_serialization(request, format_allowed=False):
     
     return 'text'
 
-def api_method(http_method=None, format_allowed=False):
+def api_method(http_method=None, format_allowed=False, user_required=True):
     """Decorator function for views that implement an API method."""
     
     def decorator(func):
@@ -776,6 +776,8 @@ def api_method(http_method=None, format_allowed=False):
             try:
                 if http_method and request.method != http_method:
                     raise BadRequest('Method not allowed.')
+                if user_required and getattr(request, 'user', None) is None:
+                    raise Unauthorized('Access denied')
                 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:
@@ -797,6 +799,7 @@ def api_method(http_method=None, format_allowed=False):
                 fault = ServiceUnavailable('Unexpected error')
                 return render_fault(request, fault)
             finally:
-                request.backend.wrapper.conn.close()
+                if getattr(request, 'backend', None) is not None:
+                    request.backend.wrapper.conn.close()
         return wrapper
     return decorator

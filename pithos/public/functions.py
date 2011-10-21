@@ -52,14 +52,11 @@ def object_demux(request, v_account, v_container, v_object):
     else:
         return method_not_allowed(request)
 
-# TODO: Use a version of api_method that does not check for a token.
-
-@api_method('HEAD')
+@api_method('HEAD', user_required=False)
 def object_meta(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       badRequest (400)
     
     try:
@@ -78,14 +75,13 @@ def object_meta(request, v_account, v_container, v_object):
     put_object_meta(response, meta, True)
     return response
 
-@api_method('GET')
+@api_method('GET', user_required=False)
 def object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
     # Error Response Codes: serviceUnavailable (503),
     #                       rangeNotSatisfiable (416),
     #                       preconditionFailed (412),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       badRequest (400),
     #                       notModified (304)
     
@@ -139,6 +135,6 @@ def object_read(request, v_account, v_container, v_object):
     
     return object_data_response(request, sizes, hashmaps, meta, True)
 
-@api_method()
+@api_method(user_required=False)
 def method_not_allowed(request, **v_args):
     raise ItemNotFound('Object does not exist')

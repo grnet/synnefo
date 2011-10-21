@@ -25,7 +25,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Oct 17, 2011)         Suggest upload/download methods using hashmaps.
+0.7 (Oct 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
 \                          Pass token as a request parameter when using ``POST`` via an HTML form.
@@ -108,7 +108,8 @@ The allowable request operations and respective return codes per level are prese
 Return Code                Description
 =========================  ================================
 400 (Bad Request)          The request is invalid
-401 (Unauthorized)         Request not allowed
+401 (Unauthorized)         Missing or invalid token
+403 (Forbidden)            Request not allowed
 404 (Not Found)            The requested resource was not found
 503 (Service Unavailable)  The request cannot be completed because of an internal error
 =========================  ================================

@@ -141,12 +141,16 @@
         // TODO: implement me
     }
 
-    synnefo.util.ClipHelper = function(cont) {
+    synnefo.util.ClipHelper = function(cont, clear) {
+        this.force_empty = clear || false;
         this.cont = cont || $('<div class="clip-copy"></div>');
         this.clip = new ZeroClipboard.Client();
         this.clip.setHandCursor(true);
 
         this.el = this.cont;
+        if (this.force_empty) {
+            this.cont.empty();
+        }
         this.el.append(this.clip.getHTML(20,20));
 
         this.setText = function(t) {

@@ -63,7 +63,7 @@
         
         beforeOpen: function() {
             try { delete this.clipboard } catch (err) { console.log(err) };
-            this.clipboard = new util.ClipHelper(this.copy);
+            this.clipboard = new util.ClipHelper(this.copy, true);
         },
         
         onOpen: function() {

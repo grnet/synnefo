@@ -231,7 +231,7 @@ div.css-panes {
     margin-bottom: 10px;
 }
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
-.rounded, #sheet input, .error {
+.rounded, #sheet input, .error-rounded {
     border-radius: 5px;
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
@@ -4460,7 +4460,7 @@ table.list-machines .wave {
     margin-bottom: 5px;
 }
 
-.overlay h3.header {
+.overlay h3.overlay-header {
     font-size: 0.9em;
     text-align: left;
     padding: 0.8em;
@@ -4469,7 +4469,7 @@ table.list-machines .wave {
     border-bottom: 1px solid #ddd;
 }
 
-.overlay h3.header .title {
+.overlay h3.overlay-header .title {
     float: left;
 }
 
@@ -4544,12 +4544,12 @@ table.list-machines .wave {
     margin-top: 10px;
 }
 
-.overlay-error h3.header {
+.overlay-error h3.overlay-header {
     background-color: #800000;
     color: #fff;
 }
 
-.overlay-error.non-critical h3.header {
+.overlay-error.non-critical h3.overlay-header {
     background-color: #987249;
 }
 
@@ -4607,13 +4607,13 @@ table.list-machines .wave {
     cursor: pointer;
 }
 
-.overlay .header .subtitle {
+.overlay .overlay-header .subtitle {
     display: block;
     font-size: 0.8em;
     color: #ddd;
 }
 
-.overlay .header .subtitle img {
+.overlay .overlay-header .subtitle img {
     vertical-align: middle;
     margin-left: 10px;
     margin-bottom: 2px;
@@ -4625,15 +4625,15 @@ table.list-machines .wave {
     background-color: rgba(255,255,255,0.6)
 }
 
-.overlay-info .header {
+.overlay-info .overlay-header {
     background-color: #4085A5;
 }
 
-.overlay-info .header .title {
+.overlay-info .overlay-header .title {
     color: #fff;
 }
 
-.overlay-info .header .closeme {
+.overlay-info .overlay-header .closeme {
     color: #fff;
 }
 
@@ -5944,4 +5944,384 @@ input.has-errors {
 }
 .invitations-list .msg.err-msg {
     background-color: #800;
+}
+
+
+.models-view .quick-add {
+    text-decoration: underline; 
+    color: #4085A5;
+    cursor: pointer;
+}
+
+.empty .items-list {
+    margin-top: 0 !important;
+}
+
+.models-view .items-empty-msg {
+    border-top: 1px solid #aaa;
+    padding-top: 10px;
+    font-size: 1em;
+    margin-top:0 !important;
+}
+
+.models-view .items-empty-msg,
+.models-view .model-description {
+    color: #444;
+    margin: 10px 0;
+}
+
+.models-view .model-list .collection-action:hover {
+    background-color: #aaa;
+}
+
+.models-view .model-list .collection-action:hover {
+    background-color: #F95;
+    border-color: #F95;
+}
+
+.models-view .model-list .collection-action.in-progress {
+    background-color: #aaa;
+    color: #fff;
+    border-color: #aaa;
+    background-image: url("../images/icons/indicators/small/progress.gif") !important;
+}
+
+.models-view .model-list .collection-action.add-generate {
+    background-image: url("../images/option-action-generate-ssh.png");
+}
+
+.models-view .model-list .collection-action.add {
+    background-image: url("../images/option-action-add.png");
+    padding-right: 20px !important;
+}
+
+.models-view .model-list .collection-action {
+    float: right;
+    background-color: #FF7F2A;
+    color: #fff;
+    padding: 6px 8px;
+    margin-left: 10px;
+    cursor: pointer;
+    padding-right: 30px;
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-clip: border-box;
+    border-right: 5px solid #FF7F2A;
+}
+
+.models-view .items-list {
+    margin-top: 10px;
+}
+
+.models-view .model-list ul li.model-item:last-child {
+    margin-bottom: 0;
+}
+
+.models-view .model-list ul li.model-item {
+    background-color: #D4E2E8;
+    margin-bottom: 5px;
+    position: relative;
+}
+
+.models-view .model-list ul li.model-item .param {
+    float: left;
+    padding: 6px;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove {
+    margin-right: -15px !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove:hover .cancel {
+    color: inherit !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove:hover {
+    background-color: #F95;
+    color: inherit !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove span.cancel {
+    padding: 6px !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove span {
+    display: block;
+    float: left;
+    padding: 6px 15px;
+}
+
+.models-view .model-list ul li.model-item .item-action .cancel-remove:hover {
+    color: #fff !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove,
+.models-view .model-list ul li.model-item .item-action .do-confirm,
+.models-view .model-list ul li.model-item .item-action .cancel-remove {
+    display:none !important;
+    background-color: #D95D0A;
+    padding:0;
+    margin:0;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action.remove {
+    display: none;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action .cancel {
+    background-color: #F95;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action.confirm {
+    background-color: #FF7F2A;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action.confirm-remove,
+.models-view .model-list ul li.model-item.pending-delete .item-action.confirm-remove .do-confirm,
+.models-view .model-list ul li.model-item.pending-delete .item-action .cancel-remove {
+    display:block !important;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action {
+    display: block;
+}
+
+.models-view .model-list ul li.model-item.expanded .item-action,
+.models-view .model-list ul li.model-item:hover .item-action {
+    display: block;
+}
+
+.models-view .model-list ul li.model-item .item-action.hide {
+    background-image: url("../images/minus-8.png");
+}
+.models-view .model-list ul li.model-item .item-action.show:hover {
+    background-image: url("../images/plus-8.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.show {
+    background-image: url("../images/plus-8-dark.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.remove {
+    background-image: url("../images/option-action-remove.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.edit:hover {
+    background-image: url("../images/option-action-edit-light.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.edit {
+    background-image: url("../images/option-action-edit.png");
+}
+.models-view .model-list ul li.model-item .item-action.remove:hover {
+    background-color: #880000 !important;
+    border-color: #800 !important;
+}
+
+.models-view .model-list ul li.model-item.expanded .item-action.show,
+.models-view .model-list ul li.model-item.expanded .item-action.hide,
+.models-view .model-list ul li .item-actions .item-action:hover {
+    background-color: #4085A5;
+    color: #fff;
+    border-color: #4085A5;
+}
+
+.models-view .model-list ul li .item-actions {
+    position: absolute;
+    right: -10px;
+    top: 0px;
+}
+
+.models-view .model-list ul li .item-actions .item-action {
+    float: right;
+    padding: 6px;
+    margin-right: 10px;
+    display: none;
+    cursor: pointer;
+    padding-right: 20px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    border-right: 5px solid transparent;
+}
+
+.models-view .model-list h3 {
+    float: left;
+}
+
+.models-view h3 {
+    font-size: 1.2em;
+    margin-bottom: 1em;
+    margin-top: 5px;
+    color: #4085A5;
+}
+
+.models-view .form-actions {
+    font-size: 1.1em;
+}
+
+.models-view .model-list ul li,
+.models-view .model-list ul {
+    list-style: none;
+}
+
+.models-view .model-list ul li.header {
+    display: none;
+}
+
+.models-view .model-form textarea {
+    width: 99%;
+    height: 100px;
+    border: 1px solid #aaa;
+}
+
+
+.models-view .model-form .form-field {
+    margin-bottom: 10px;
+}
+
+.models-view .model-form label {
+    display: block;
+    color: #406A7D;
+    font-size: 1.1em;
+    margin: 0px 0 5px 0;
+}
+
+.models-view .model-form .inline label {
+    float: left;
+    margin-right: 10px;
+    margin-top: 10px !important;
+}
+
+#user_public_keys {
+    font-size: 0.7em;
+}
+
+#user_public_keys .download-button {
+    width: 30px;
+    height: 30px;
+}
+
+
+#user_public_keys .model-item .name {
+    font-weight: bold;
+    color: #4085A5;
+}
+
+#user_public_keys .model-item .publicid {
+    display: none;
+}
+
+#user_public_keys .model-item.expanded .publicid .param-content {
+    padding: 5px 5px;
+    overflow: auto;
+    background-color: #FFF;
+    border: 1px solid #4085A5;
+    border-left: none;
+    border-right: none;
+    font-size: 1.1em;
+}
+
+#user_public_keys .model-item.expanded .publicid .param-content textarea {
+    width: 100%;
+    height: 90px;
+    margin:0;
+    padding:0;
+    border:none;
+    overflow: auto;
+}
+
+#user_public_keys .model-item.expanded .publicid {
+    display: block;
+    background-color: #fff;
+    width: 100%;
+    margin-top: 0px;
+    margin-left: 0px;
+    color: #fff;
+    padding:0 !important;
+}
+
+.models-view .list-messages {
+    margin-top: 10px;
+}
+
+.models-view .list-messages .error,
+.models-view .list-messages .success,
+#user_public_keys .private-cont {
+    background-color: #AADE87;
+    color: #447821;
+    padding: 5px;
+    border: 1px solid #447821;
+    font-size: 1.1em;
+    margin-top: 5px;
+}
+
+.models-view .list-messages .error {
+    background-color: #DE8D87;
+    color:  #782421 !important;
+    border-color: #782421;
+}
+
+#user_public_keys .private-cont {
+    margin-top: 10px;
+}
+
+#user_public_keys .private-cont .private-msg {
+    float: left;
+    padding:5px;
+    margin-top: 5px;
+}
+
+#user_public_keys .private-cont textarea {
+    margin: 5px;
+    width: 97%;
+    height: 200px;
+}
+
+#user_public_keys .private-cont .close-private:hover {
+    color: #Fff;
+}
+
+#user_public_keys .private-cont .close-private {
+    float: right;
+    margin-right: 5px;
+    margin-top: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#user_public_keys .model-item .key-type {
+    background-color: #72ADC8;
+    color: #fff;
+    text-align: center;
+    font-size: 0.9em;
+    padding:2px 10px;
+    margin: 4px 5px;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+#user_public_keys .private-cont .down-button {
+    float: left;
+    margin-left: 5px;
+    border: 1px solid #447821;
+    margin-top:4px;
+    padding: 0px 3px;
+    padding-top: 3px;
+    background-color: #FFF;
+}
+
+.models-view .form-field.error label {
+    font-weight: bold;
+    color: #800 !important;
+}
+
+.models-view .form-field .errors {
+    margin: 5px 0;
+}
+
+.models-view .form-field .errors .error {
+    background-color: transparent;
+    border: none;
+    color: #800;
 }

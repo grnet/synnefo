@@ -70,14 +70,21 @@
     // appends global ajax handlers
     // handles changed-since url parameter based on api path
     api.sync = function(method, model, options) {
-
+        
         var type = methodMap[method];
         
         if (model && (model.skipMethods || []).indexOf(method) >= 0) {
             throw "Model does not support " + method + " calls";
         }
-        
+
         if (!options.url) {
+            var urlobject = model;
+
+            // fallback to collection url for item creation
+            if (method == "create" && model.isNew && model.isNew()) {
+                urlobject = model.collection;
+            }
+
             options.url = getUrl(model, options) || urlError();
             if (model && model.supportIncUpdates) {
                 options.url = options.refresh ? options.url : setChangesSince(options.url, type);

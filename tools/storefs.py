@@ -41,21 +41,20 @@ from stat import S_IFDIR, S_IFREG
 from sys import argv
 from time import time
 
-from lib.client import OOS_Client, Fault
-from lib.fuse import FUSE, FuseOSError, Operations
-
 from pithos.api.compat import parse_http_date
 
-DEFAULT_HOST = 'pithos.dev.grnet.gr'
+from lib.client import OOS_Client, Fault
+from lib.fuse import FUSE, FuseOSError, Operations
+from lib.util import get_user, get_auth, get_server
 
 
 epoch = int(time())
 
 
 class StoreFS(Operations):
-    def __init__(self, user, token, verbose=False):
+    def __init__(self, verbose=False):
         self.verbose = verbose
-        self.client = OOS_Client(DEFAULT_HOST, token, user)
+        self.client = OOS_Client(get_server(), get_auth(), get_user())
     
     def __call__(self, op, path, *args):
         container, sep, object = path[1:].partition('/')
@@ -147,7 +146,7 @@ class StoreFS(Operations):
         return [k[len(prefix):] for k in meta if k.startswith(prefix)]
     
     def account_readdir(self, fh):
-        return ['.', '..'] + self.client.list_containers()
+        return ['.', '..'] + self.client.list_containers() or []
     
     def account_removexattr(self, name):
         attr = 'xattr-' + name
@@ -198,8 +197,7 @@ class StoreFS(Operations):
         self.client.create_container(container, mode=mode)
     
     def container_readdir(self, container, fh):
-        params = {'delimiter': '/', 'prefix': ''}
-        objects = self.client.list_objects(container, params=params)
+        objects = self.client.list_objects(container, delimiter='/', prefix='')
         files = [o for o in objects if not o.endswith('/')]
         return ['.', '..'] + files
     
@@ -245,16 +243,17 @@ class StoreFS(Operations):
     
     def object_getattr(self, container, object, fh=None):
         meta = self._get_object_meta(container, object)
-        mode = int(meta.get('x-object-meta-mode', 0644))
         modified = parse_http_date(meta['last-modified'])
         uid = int(meta.get('x-account-meta-uid', 0))
         gid = int(meta.get('x-account-meta-gid', 0))
-        size = int(meta['content-length'])
+        size = int(meta.get('content-length', 0))
         
         if meta['content-type'] == 'application/directory':
+            mode = int(meta.get('x-object-meta-mode', 0755))
             flags = S_IFDIR
             nlink = 2
         else:
+            mode = int(meta.get('x-object-meta-mode', 0644))
             flags = S_IFREG
             nlink = 1
         
@@ -287,8 +286,8 @@ class StoreFS(Operations):
         return data[offset:offset + nbyte]
     
     def object_readdir(self, container, object, fh):
-        params = {'delimiter': '/', 'prefix': object}
-        objects = self.client.list_objects(container, params=params)
+        objects = self.client.list_objects(container, delimiter='/',
+                                            prefix=object)
         files = [o.rpartition('/')[2] for o in objects if not o.endswith('/')]
         return ['.', '..'] + files
     
@@ -325,11 +324,11 @@ class StoreFS(Operations):
         return len(data)
 
 
-if __name__ == "__main__":
-    if len(argv) != 4:
-        print 'usage: %s <user> <token> <mountpoint>' % argv[0]
+if __name__ == '__main__':
+    if len(argv) != 2:
+        print 'usage: %s <mountpoint>' % argv[0]
         exit(1)
     
     user = getuser()
-    fs = StoreFS(argv[1], argv[2], verbose=True)
-    fuse = FUSE(fs, argv[3], foreground=True)
+    fs = StoreFS(verbose=True)
+    fuse = FUSE(fs, argv[1], foreground=True)

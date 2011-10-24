@@ -6,9 +6,13 @@ html {
     text-indent: -6000px;
 }
 
-.overlay .content {
-    background: url("../images/meta-wiz-inner-bg.png") repeat-x scroll 0 0;
+.overlay-info .content {
+    background: url("../images/meta-wiz-inner-bg.png") repeat-x scroll 0 0 #E8F1F5;
     border: 1px solid #aaa;
+}
+
+.overlay-content .content {
+    background: #F7F9FB !important;
 }
 
 .create-vm .flavor-options-cont .flavor-options li {

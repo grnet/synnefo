@@ -78,10 +78,10 @@ class JSONRestView(View):
         self.url_name = url_name
         return super(JSONRestView, self).__init__(*args, **kwargs)
 
-    def update_instance(self, i, data):
+    def update_instance(self, i, data, exclude_fields=[]):
         update_keys = data.keys()
         for field in i._meta.get_all_field_names():
-            if field in update_keys:
+            if field in update_keys and (field not in exclude_fields):
                 i.__setattr__(field, data[field])
 
         return i
@@ -134,9 +134,9 @@ class ResourceView(JSONRestView):
         return self.json_response(self.instance_to_dict(self.instance(),
             self.exclude_fields))
 
-    def POST(self, request, data, *args, **kwargs):
+    def PUT(self, request, data, *args, **kwargs):
         instance = self.instance()
-        self.update_instance(instance, data)
+        self.update_instance(instance, data, self.exclude_fields)
         instance.save()
         return self.GET(request, data, *args, **kwargs)
 
@@ -159,7 +159,11 @@ class CollectionView(JSONRestView):
             self.exclude_fields)))
 
     def POST(self, request, data, *args, **kwargs):
-        pass
+        instance = self.model()
+        self.update_instance(instance, data, self.exclude_fields)
+        instance.save()
+        return self.json_response(self.instance_to_dict(instance,
+            self.exclude_fields))
 
 class UserResourceView(ResourceView):
     """
@@ -175,4 +179,12 @@ class UserCollectionView(CollectionView):
     """
     def queryset(self):
         return super(UserCollectionView, self).queryset().filter(user=self.request.user)
+
+    def POST(self, request, data, *args, **kwargs):
+        instance = self.model()
+        self.update_instance(instance, data, self.exclude_fields)
+        instance.user = request.user
+        instance.save()
+        return self.json_response(self.instance_to_dict(instance,
+            self.exclude_fields))
 

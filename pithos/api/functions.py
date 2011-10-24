@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 def top_demux(request):
     if request.method == 'GET':
-        if request.user:
+        if getattr(request, 'user', None) is not None:
             return account_list(request)
         return authenticate(request)
     else:
@@ -109,7 +109,7 @@ def object_demux(request, v_account, v_container, v_object):
     else:
         return method_not_allowed(request)
 
-@api_method('GET')
+@api_method('GET', user_required=False)
 def authenticate(request):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),

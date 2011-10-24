@@ -105,14 +105,31 @@
         },
 
         fetch: function(options) {
+            if (!options) { options = {} };
             // default to update
             if (!this.noUpdate) {
-                if (!options) { options = {} };
                 if (options.update === undefined) { options.update = true };
                 if (!options.removeMissing && options.refresh) { options.removeMissing = true };
+            } else {
+                if (options.refresh === undefined) {
+                    options.refresh = true;
+                }
             }
             // custom event foreach fetch
             return bb.Collection.prototype.fetch.call(this, options)
+        },
+
+        create: function(model, options) {
+            var coll = this;
+            options || (options = {});
+            model = this._prepareModel(model, options);
+            if (!model) return false;
+            var success = options.success;
+            options.success = function(nextModel, resp, xhr) {
+                if (success) success(nextModel, resp, xhr);
+            };
+            model.save(null, options);
+            return model;
         },
 
         get_fetcher: function(timeout, fast, limit, initial, params) {
@@ -1647,16 +1664,71 @@
     })
 
     models.PublicKey = models.Model.extend({
-        path: 'keys/',
-        base_url: '/ui/userdata'
+        path: 'keys',
+        base_url: '/ui/userdata',
+        details: false,
+        noUpdate: true,
+
+
+        get_public_key: function() {
+            return cryptico.publicKeyFromString(this.get("content"));
+        },
+
+        get_filename: function() {
+            return "{0}.pub".format(this.get("name"));
+        },
+
+        identify_type: function() {
+            try {
+                var cont = snf.util.validatePublicKey(this.get("content"));
+                var type = cont.split(" ")[0];
+                return synnefo.util.publicKeyTypesMap[type];
+            } catch (err) { return false };
+        }
+
     })
     
     models.PublicKeys = models.Collection.extend({
-        path: 'keys/',
-        base_url: '/ui/userdata'
+        model: models.PublicKey,
+        details: false,
+        path: 'keys',
+        base_url: '/ui/userdata',
+        noUpdate: true,
+
+        comparator: function(i) { return -parseInt(i.id || 0) },
+
+        generate_new: function(passphrase, length, save) {
+
+            var passphrase = passphrase || "";
+            var length = length || 1024;
+            var key = cryptico.generateRSAKey(passphrase, length);
+            
+            var b64enc = $.base64.encode;
+            return key;
+        },
+
+        add_crypto_key: function(key, success, error, options) {
+            var options = options || {};
+            var m = new models.PublicKey();
+            var name_tpl = "public key";
+            var name = name_tpl;
+            var name_count = 1;
+            
+            while(this.filter(function(m){ return m.get("name") == name }).length > 0) {
+                name = name_tpl + " " + name_count;
+                name_count++;
+            }
+
+            m.set({name: name});
+            m.set({content: "ssh-rsa AAAAB3NzaC1yc2EA" + cryptico.publicKeyString(key)});
+            
+            options.success = function () { return success(m) };
+            options.errror = error;
+            
+            this.create(m.attributes, options);
+        }
     })
     
-
     // storage initialization
     snf.storage.images = new models.Images();
     snf.storage.flavors = new models.Flavors();

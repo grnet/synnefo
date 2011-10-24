@@ -159,13 +159,13 @@
 
         set_title: function(title) {
             if (title || this.title) {
-                $(this.el).find(".header .title").html(title || this.title)
+                $(this.el).find(".overlay-header .title").html(title || this.title)
             }
         },
 
         set_subtitle: function(subtitle) {
             if (subtitle || this.subtitle) {
-                $(this.el).find(".header .subtitle").html(subtitle || this.subtitle)
+                $(this.el).find(".overlay-header .subtitle").html(subtitle || this.subtitle)
             }
         },
 

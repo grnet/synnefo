@@ -42,7 +42,6 @@ from django.db import models
 
 
 class User(models.Model):
-    
     ACCOUNT_STATE = (
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted'),
@@ -54,27 +53,30 @@ class User(models.Model):
     realname = models.CharField('Real Name', max_length=255, default='')
     email = models.CharField('Email', max_length=255, default='')
     affiliation = models.CharField('Affiliation', max_length=255, default='')
-    state = models.CharField('Account state', choices=ACCOUNT_STATE, max_length=16, default='ACTIVE')
+    state = models.CharField('Account state', choices=ACCOUNT_STATE,
+                                max_length=16, default='ACTIVE')
     
-    # Lose these...
-    quota = models.BigIntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
-    max_invitations = models.IntegerField('Max number of invitations', null=True)
+    level = models.IntegerField('Inviter level', default=4)
+    invitations = models.IntegerField('Invitations left', default=0)
     
-    is_admin = models.BooleanField('Admin', default=False)
+    # XXX Quota should be moved out of the user model
+    quota = models.BigIntegerField('Storage Limit',
+                                    default=settings.DEFAULT_QUOTA)
     
-    auth_token = models.CharField('Authentication Token', max_length=32, null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation')
-    auth_token_expires = models.DateTimeField('Time of auth token expiration')
+    is_admin = models.BooleanField('Admin?', default=False)
     
-    created = models.DateTimeField('Time of creation')
-    updated = models.DateTimeField('Time of last update')
+    auth_token = models.CharField('Authentication Token', max_length=32,
+                                    null=True, blank=True)
+    auth_token_created = models.DateTimeField('Token creation date')
+    auth_token_expires = models.DateTimeField('Token expiration date')
+    
+    created = models.DateTimeField('Creation date')
+    updated = models.DateTimeField('Update date')
     
     def save(self, update_timestamps=True):
         if update_timestamps:
             if not self.id:
                 self.created = datetime.now()
-                #self.auth_token_created = datetime.now()
-                #self.auth_token_expires = datetime.now()
             self.updated = datetime.now()
         super(User, self).save()
     
@@ -89,23 +91,19 @@ class User(models.Model):
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=settings.AUTH_TOKEN_DURATION)
     
-    class Meta:
-        verbose_name = u'User'
-    
     def __unicode__(self):
         return self.uniq
 
+
 class Invitation(models.Model):
-    source = models.ForeignKey(User, related_name="source")
-    target = models.ForeignKey(User, related_name="target")
-    accepted = models.BooleanField('Is the invitation accepted?', default=False)
-    level = models.IntegerField('Invitation depth level', null=True)
+    inviter = models.ForeignKey(User, related_name='invitations_sent',
+                                null=True)
+    realname = models.CharField('Real name', max_length=255)
+    uniq = models.CharField('Real name', max_length=255)
+    code = models.BigIntegerField('Invitation code', db_index=True)
+    is_accepted = models.BooleanField('Accepted?', default=False)
+    created = models.DateTimeField('Creation date', auto_now_add=True)
+    accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
     
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = u'Invitation'
-
     def __unicode__(self):
-        return "From: %s, To: %s" % (self.source, self.target)
+        return '%s -> %s [%d]' % (self.inviter, self.uniq, self.code)

@@ -31,18 +31,26 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+import logging
+import socket
+
 from datetime import datetime
 from functools import wraps
 from math import ceil
+from random import randint
+from smtplib import SMTPException
 
 from django.conf import settings
+from django.core.mail import send_mail
 from django.http import HttpResponse, HttpResponseRedirect
-from django.utils.http import urlencode
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.utils.http import urlencode
+from django.utils.translation import ugettext as _
 
-from models import User
-from util import isoformat
+from pithos.im.models import User, Invitation
+from pithos.im.util import isoformat
 
 
 def render_response(template, tab=None, status=200, **kwargs):
@@ -51,6 +59,18 @@ def render_response(template, tab=None, status=200, **kwargs):
     kwargs.setdefault('tab', tab)
     html = render_to_string(template, kwargs)
     return HttpResponse(html, status=status)
+
+
+def requires_login(func):
+    @wraps(func)
+    def wrapper(request, *args):
+        if not settings.BYPASS_ADMIN_AUTH:
+            if not request.user:
+                next = urlencode({'next': request.build_absolute_uri()})
+                login_uri = settings.LOGIN_URL + '?' + next
+                return HttpResponseRedirect(login_uri)
+        return func(request, *args)
+    return wrapper
 
 
 def requires_admin(func):
@@ -155,3 +175,56 @@ def users_delete(request, user_id):
     user = User.objects.get(id=user_id)
     user.delete()
     return redirect(users_list)
+
+
+def generate_invitation_code():
+    return randint(1, 2L**63 - 1)
+
+
+def send_invitation(inv):
+    url = settings.INVITATION_LOGIN_TARGET % inv.code
+    subject = _('Invitation to Pithos')
+    message = render_to_string('invitation.txt', {
+                'invitation': inv,
+                'url': url})
+    sender = settings.DEFAULT_FROM_EMAIL
+    send_mail(subject, message, sender, [inv.uniq])
+    inv.inviter.invitations = max(0, inv.inviter.invitations - 1)
+    inv.inviter.save()
+    logging.info('Sent invitation %s', inv)
+
+
+@requires_login
+def index(request):
+    status = None
+    message = None
+
+    if request.method == 'POST':
+        if request.user_obj.invitations > 0:
+            code = generate_invitation_code()
+            invitation, created = Invitation.objects.get_or_create(code=code)
+            invitation.inviter=request.user_obj
+            invitation.realname=request.POST.get('realname')
+            invitation.uniq=request.POST.get('uniq')
+            invitation.save()
+            
+            try:
+                send_invitation(invitation)
+                status = 'success'
+                message = _('Invitation sent to %s' % invitation.uniq)
+            except (SMTPException, socket.error) as e:
+                status = 'error'
+                message = e.strerror
+        else:
+            status = 'error'
+            message = _('No invitations left')
+
+    if request.GET.get('format') == 'json':
+        rep = {'invitations': request.user_obj.invitations}
+        return HttpResponse(json.dumps(rep))
+    
+    html = render_to_string('invitations.html', {
+            'user': request.user_obj,
+            'status': status,
+            'message': message})
+    return HttpResponse(html)

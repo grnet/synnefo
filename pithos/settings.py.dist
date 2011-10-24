@@ -166,3 +166,11 @@ ADMIN_PAGE_LIMIT = 100
 # Authenticate via Twitter.
 TWITTER_TOKEN = ''
 TWITTER_SECRET = ''
+
+# Address to use for outgoing emails
+DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
+
+# Where users should login with their invitation code
+INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
+                            '?code=%d' \
+                            '&next=https://pithos.dev.grnet.gr/ui'

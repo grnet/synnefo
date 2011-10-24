@@ -188,6 +188,7 @@
                         <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
                         <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
                         <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
+                        <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -363,7 +364,7 @@
 
     <div class="overlay" id="generic-overlay-tpl">
         <div class="overlay-inner">
-            <h3 class="header clearfix">
+            <h3 class="overlay-header clearfix">
                 <span class="subtitle"></span>
                 <span class="title"></span>
                 <span class="closeme">close</span></h3>
@@ -444,7 +445,7 @@
         </div>
     </div>
     <div class="modal" id="feedback-form" class="feedback notification-box">
-        <h3 class="popup-header">
+        <h3 class="popup-header overlay-header">
             <span class="header-box">{% trans "Send feedback" %}</span>
         </h3>
         <div class="popup-body">
@@ -520,6 +521,9 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
         <div class="header">Loading <span>~okeanos</span></div>
         <div class="info hidden"></div>
     </div>
+    <div id="user_public_keys" class="overlay-content overlay-content hidden">
+        {% include "userdata/public_keys_view.html" %}
+    </div>
     {% include "footer.html" %}
 
     <script>
@@ -552,6 +556,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
 
             synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
+            synnefo.config.images_url = '{{ SYNNEFO_IMAGES_URL }}';
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
 

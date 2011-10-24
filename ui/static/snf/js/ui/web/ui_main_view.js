@@ -588,6 +588,7 @@
             this.error_view = new views.ErrorView();
             this.feedback_view = new views.FeedbackView();
             this.invitations_view = new views.InvitationsView();
+            this.public_keys_view = new views.PublicKeysOverlay();
             var self = this;
             // initialize overlay views
             
@@ -631,6 +632,9 @@
             }, this));
             $(".usermenu .feedback").click(_.bind(function(){
                 this.feedback_view.show();
+            }, this));
+            $(".usermenu .public_keys").click(_.bind(function(){
+                this.public_keys_view.show();
             }, this));
         },
         

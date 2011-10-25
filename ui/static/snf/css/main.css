@@ -5113,8 +5113,13 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
+.create-vm .create-step-cont li.ssh-key-option.selected,
 .create-vm ul li.selected {
-    background-color: #5CA1C0;
+    background-color: #FF7F2A;
+    background-image:linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-o-linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-moz-linear-gradient(top, #FF9955, #E88B4D);
     color: #fff;
 }
 
@@ -5125,8 +5130,20 @@ table.list-machines .wave {
     padding-right: 3%;
 }
 
-.create-vm p.desc {
+.create-vm li p.desc {
     font-size: 0.9em;
+}
+
+.create-vm p.desc.warning {
+    color: #880000;
+}
+
+.create-vm p.desc.empty {
+    color: #000;
+}
+
+.create-vm p.desc {
+    font-size: 0.8em;
     color: #888;
     margin-bottom: 10px;
 }
@@ -5136,7 +5153,7 @@ table.list-machines .wave {
 }
 .create-vm li.role .values .val.selected,  .create-vm li.role .values .val.selected:hover {
     color: #fff;
-    background-color: #5CA1C0;
+    background-color: #FF9955;
 }
 
 .create-vm .images-filter-cont, .create-vm .flavors-predefined-cont {
@@ -5243,7 +5260,7 @@ table.list-machines .wave {
     border-left: 1px solid #A1C8DB;
 }
 
-.create-vm .images-info-cont h4, .create-vm .vm-confirm .param h4{
+.create-vm .images-info-cont h4, .create-vm .create-step-cont .param h4{
     color: #FF9955;
     margin-bottom: 1em;
     font-size: 1.2em;
@@ -5269,7 +5286,7 @@ table.list-machines .wave {
 }
 
 .create-vm .images-list .image-details.selected:hover {
-    background-color: #5CA1C0;
+    background-color: #FF7F2A;
 }
 
 .create-vm .images-list .image-details.selected {
@@ -5354,7 +5371,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current .title {
     display: block;
     top: 23px;
-    left: 39px;
+    left: 43px;
     font-size: 1.2em;
     color: #ffffff;
     font-weight: bold;
@@ -5394,7 +5411,7 @@ table.list-machines .wave {
 }
 
 .create-vm .steps-history .steps-history-cont.current .steps-history-step {
-    width: 380px;
+    width: 320px;
 }
 
 .create-vm .steps-history .steps-history-cont.current .num {
@@ -5409,12 +5426,12 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 462px;
+    width: 428px;
 }
 
 .create-vm .steps-history-step {
     padding: 4px;
-    padding-left: 10px;
+    padding-left: 7px;
     font-size: 1em;
     font-family: 'Ubuntu', sans-serif  !important;
     margin-right: 5px;
@@ -5445,7 +5462,7 @@ table.list-machines .wave {
     text-align: center;
     padding-bottom: 2px;
     left:0;
-    width: 60px;
+    width: 55px;
     margin-left:0;
     margin-top:0;
     font-size: 0.8em;
@@ -5458,7 +5475,7 @@ table.list-machines .wave {
 
 .create-vm .steps-history .steps-history-cont {
     height: 70px;
-    width: 60px;
+    width: 51px;
     float: left;
     color: #fff;
     border-right: 1px solid #A1C8DB;
@@ -5524,11 +5541,42 @@ table.list-machines .wave {
     overflow: auto;
 }
 
-.confirm-cont {
+.create-vm .vm-confirm .confirm-params span.cval {
+    margin-left: 8px;
+    color: #444;
+}
+
+.create-vm .vm-confirm .confirm-params span.ckey {
+    color: #4085A5;
+    font-weight: bold;
+}
+
+.create-vm .vm-confirm .confirm-params {
+    margin-bottom: 15px;
+}
+
+.create-vm .vm-confirm h3.vm-name {
+    background-repeat: no-repeat;
+    background-position: left center;
+    font-size: 1.4em;
+    padding-left: 1.45em;
+    color: #4085A5;
+}
+
+.create-vm .list-cont h4 a {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-right: 5px;
+    float: right;
+    color: #FF7F2A;
+}
+
+.create-vm .personalize-cont,
+.create-vm .confirm-cont {
     height: 250px;
 }
 
-.create-vm .vm-confirm .rename input.rename-field {
+.create-vm .create-step-cont .rename input.rename-field {
     font-size: 1.4em;
     padding: 5px;
     width: 93%;
@@ -5537,22 +5585,24 @@ table.list-machines .wave {
     background-repeat: no-repeat;
 }
 
-.create-vm .vm-confirm .rename label {
+.create-vm .create-step-cont .rename label {
     display: block;
 }
 
-.create-vm .vm-confirm .confirm-conts {
+.create-vm .create-step-cont .personalize-conts,
+.create-vm .create-step-cont .confirm-conts {
     margin-top: 20px;
 }
 
-.create-vm .vm-confirm .confirm-cont {
+.create-vm .create-step-cont .personalize-cont,
+.create-vm .create-step-cont .confirm-cont {
     width: 30%;
     margin-right: 2%;
     border-right: 1px solid #A1C8DB;
     float: left;
 }
 
-.create-vm .vm-confirm .confirm-cont ul li .value {
+.create-vm .create-step-cont .list-cont ul li .value {
     float: right;
     padding-top: 2px;
     display: block;
@@ -5560,15 +5610,15 @@ table.list-machines .wave {
     text-align: right;
 }
 
-.create-vm .vm-confirm .confirm-cont ul li.image-description .value,
-.create-vm .vm-confirm .confirm-cont ul li.image-name .value {
+.create-vm .create-step-cont .list-cont ul li.image-description .value,
+.create-vm .create-step-cont .list-cont ul li.image-name .value {
     float: none;
     width: auto;
     text-align:left;
     width: auto;
 }
 
-.create-vm .vm-confirm .confirm-cont ul li {
+.create-vm .create-step-cont .list-cont ul li {
     padding:0;
     margin:0;
     margin-bottom: 5px;
@@ -5577,17 +5627,44 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
-.create-vm .vm-confirm .confirm-cont.meta h4 {
+.create-vm .create-step-cont li.ssh-key-option .check {
+    float: right;
+    margin-right: 5px;
+    margin-top: 0px;
+}
+
+.create-vm .create-step-cont li.ssh-key-option.selected {
+}
+.create-vm .create-step-cont li.ssh-key-option.selected:hover {
+    background-color: #F95;
+}
+
+.create-vm .create-step-cont li.ssh-key-option:hover {
+    background-color: #eee;
+}
+
+.create-vm .create-step-cont li.ssh-key-option.selected {
+}
+
+.create-vm .create-step-cont li.ssh-key-option {
+    padding: 6px !important;
+}
+
+.create-vm .create-step-cont .list-cont.ssh {
+    width: 60%;
+}
+
+.create-vm .create-step-cont .list-cont.meta h4 {
     margin-right: 0;
 }
 
-.create-vm .vm-confirm .confirm-cont.meta {
+.create-vm .create-step-cont .list-cont.meta {
     margin-right:0;
     border-right: none;
     width: 195px;
 }
 
-.create-vm .confirm-cont > h4 {
+.create-vm .list-cont > h4 {
     font-size: 1.2em;
     margin-right: 10px;
     border-bottom: 1px solid #A1C8DB;
@@ -5595,47 +5672,47 @@ table.list-machines .wave {
     color: #387693;
 }
 
-.create-vm .confirm-cont .param.image-name {
+.create-vm .list-cont .param.image-name {
     margin-bottom: 0 !important;
     border-bottom: none !important;
 }
 
-.create-vm .confirm-cont .param h4 {
+.create-vm .list-cont .param h4 {
     margin-bottom: 0px !important;
     font-size: 1.1em !important; 
 }
 
-.create-vm .confirm-cont .param {
+.create-vm .list-cont .param {
     margin-bottom: 7px !important;
 }
 
-.create-vm .confirm-cont .value {
+.create-vm .list-cont .value {
     font-weight: bold;
 }
 
-.create-vm .confirm-cont .param .value {
+.create-vm .list-cont .param .value {
     font-size: 0.9em;
 }
 
-.create-vm .confirm-cont .param .title {
+.create-vm .list-cont .param .title {
     color: #387693;
 }
 
-.create-vm .confirm-cont .image-description {
+.create-vm .list-cont .image-description {
     margin-left:0;
 }
 
-.create-vm .confirm-cont .image-description .value {
+.create-vm .list-cont .image-description .value {
     font-weight: normal;
     margin-left: 0 !important;
 }
 
-.create-vm .confirm-cont .image-description .title {
+.create-vm .list-cont .image-description .title {
     display: none;
     font-size: 0.8em;
 }
 
-.create-vm .confirm-cont.meta .values span {
+.create-vm .list-cont.meta .values span {
     display:block;
     float: left;
     margin-right: 4px;
@@ -5645,7 +5722,7 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
-.create-vm .confirm-cont.meta .key {
+.create-vm .list-cont.meta .key {
     font-weight: bold;
     font-size: 0.9em;
     display: block;
@@ -5946,7 +6023,19 @@ input.has-errors {
     background-color: #800;
 }
 
-
+.overlay .models-view .previous-view-link {
+    margin: -10px;
+    margin-bottom:10px;
+    padding: 10px 5px;
+    background-image: url("../images/left-arrow.png");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    padding-left: 20px;
+    background-color: #93D070;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    text-decoration: underline;
+}
 .models-view .quick-add {
     text-decoration: underline; 
     color: #4085A5;

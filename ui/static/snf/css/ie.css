@@ -7,12 +7,12 @@ html {
 }
 
 .overlay-info .content {
-    background: url("../images/meta-wiz-inner-bg.png") repeat-x scroll 0 0 #E8F1F5;
+    background: url("../images/meta-wiz-inner-bg.png") repeat-x scroll 0 0 #FFF;
     border: 1px solid #aaa;
 }
 
 .overlay-content .content {
-    background: #F7F9FB !important;
+    background: #FFF !important;
 }
 
 .create-vm .flavor-options-cont .flavor-options li {

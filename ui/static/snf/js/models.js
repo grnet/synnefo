@@ -176,8 +176,47 @@
             return this.get("OS");
         },
 
+        get_created_user: function() {
+            return synnefo.config.os_created_users[this.get_os()] || "root";
+        },
+
         get_sort_order: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
+        },
+        
+        ssh_keys_path: function() {
+            prepend = '';
+            if (this.get_created_user() != 'root') {
+                prepend = '/home'
+            }
+            return '{1}/{0}/.ssh/authorized_keys'.format(this.get_created_user(), prepend);
+        },
+
+        _supports_ssh: function() {
+            if (synnefo.config.support_ssh_os_list.indexOf(this.get_os()) > -1) {
+                return true;
+            }
+            return false;
+        },
+
+        supports: function(feature) {
+            if (feature == "ssh") {
+                return this._supports_ssh()
+            }
+            return false;
+        },
+
+        personality_data_for_keys: function(keys) {
+            contents = '';
+            _.each(keys, function(key){
+                contents = contents + key.get("content") + "\n"
+            });
+            contents = $.base64.encode(contents);
+
+            return {
+                path: this.ssh_keys_path(),
+                contents: contents
+            }
         }
     });
 

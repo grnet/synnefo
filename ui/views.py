@@ -63,6 +63,13 @@ SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS", SUGGESTED_F
 SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
 SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES", SUGGESTED_ROLES_DEFAULT)
 
+SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",
+        ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu', 'centos'])
+
+OS_CREATED_USERS = getattr(settings, "UI_OS_CREATED_USERS", {'debian':'root',
+'fedora': 'root', 'okeanos': 'root', 'ubuntu': 'root', 'kubuntu': 'root',
+'centos': 'root', 'windows': 'Administrator'})
+
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
 BLUR_DELAY = getattr(settings, "UI_BLUR_DELAY", 8000)
@@ -123,6 +130,8 @@ def home(request):
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
                'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
                'vm_name_template': json.dumps(VM_NAME_TEMPLATE)
+               'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
+               'os_created_users': json.dumps(OS_CREATED_USERS),
                }
     return template('home', context)
 

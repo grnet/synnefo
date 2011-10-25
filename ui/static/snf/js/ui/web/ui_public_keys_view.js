@@ -525,11 +525,33 @@
         initialize: function(options) {
             views.PublicKeysOverlay.__super__.initialize.apply(this, arguments);
             this.subview = new views.PublicKeysView({el:this.$(".public-keys-view")});
+            
+            var self = this;
+            this.$(".previous-view-link").live('click', function(){
+                self.hide();
+            })
         },
 
-        show: function() {
+        show: function(view) {
+            this.from_view = view || undefined;
+            
+            if (this.from_view) {
+                this.$(".previous-view-link").show();
+            } else {
+                this.$(".previous-view-link").hide();
+            }
+
             this.subview.reset();
             views.PublicKeysOverlay.__super__.show.apply(this, arguments);
+        },
+        
+        onClose: function() {
+            if (this.from_view) {
+                this.hiding = true;
+                this.from_view.skip_reset_on_next_open = true;
+                this.from_view.show();
+                this.from_view = undefined;
+            }
         },
 
         init_handlers: function() {

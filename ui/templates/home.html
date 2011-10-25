@@ -559,6 +559,8 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.images_url = '{{ SYNNEFO_IMAGES_URL }}';
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
+            synnefo.config.os_created_users = {{ os_created_users|safe }};
 
             synnefo.ui.init();
 

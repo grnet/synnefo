@@ -96,6 +96,11 @@ def index(request):
 def admin(request):
     stats = {}
     stats['users'] = User.objects.count()
+    
+    invitations = Invitation.objects.all()
+    stats['invitations'] = invitations.count()
+    stats['invitations_accepted'] = invitations.filter(is_accepted=True).count()
+    
     return render_response('admin.html', tab='home', stats=stats)
 
 
@@ -148,7 +153,10 @@ def users_create(request):
 @requires_admin
 def users_info(request, user_id):
     user = User.objects.get(id=user_id)
-    return render_response('users_info.html', user=user)
+    states = [x[0] for x in User.ACCOUNT_STATE]
+    return render_response('users_info.html',
+                            user=user,
+                            states=states)
 
 
 @requires_admin
@@ -158,6 +166,8 @@ def users_modify(request, user_id):
     user.realname = request.POST.get('realname')
     user.is_admin = True if request.POST.get('admin') else False
     user.affiliation = request.POST.get('affiliation')
+    user.state = request.POST.get('state')
+    user.invitations = int(request.POST.get('invitations') or 0)
     user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
     user.auth_token = request.POST.get('auth_token')
     try:

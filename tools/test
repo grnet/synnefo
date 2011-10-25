@@ -629,15 +629,6 @@ class ContainerGet(BaseTestCase):
         self.assert_extended(objects, 'xml', 'object')
         node_name = objects.getElementsByTagName('name')[0]
         self.assertEqual(node_name.firstChild.data, '/objectname')
-        
-        #objects = self.client.list_objects('test', prefix='/')
-        #self.assertEqual(objects, ['/objectname'])
-        #
-        #objects = self.client.list_objects('test', path='/')
-        #self.assertEqual(objects, ['/objectname'])
-        #
-        #objects = self.client.list_objects('test', prefix='/', delimiter='n')
-        #self.assertEqual(objects, ['/object'])
 
     def test_list_objects_with_limit_marker(self):
         objects = self.client.list_objects(self.container[0], limit=2)
@@ -936,6 +927,25 @@ class ObjectGet(BaseTestCase):
                                         self.objects[0]['name'],
                                         self.objects[0]['meta'])
         self.assertEqual(o, self.objects[0]['data'])
+    
+    def test_objects_with_trailing_spaces(self):
+        self.client.create_container('test')
+        #create 'a' object
+        self.upload_random_data('test', 'a')
+        #look for 'a ' object
+        self.assert_raises_fault(404, self.client.retrieve_object,
+                                 'test', 'a ')
+        
+        #delete 'a' object
+        self.client.delete_object('test', 'a')
+        self.assert_raises_fault(404, self.client.retrieve_object,
+                                 'test', 'a')
+        
+        #create 'a ' object
+        self.upload_random_data('test', 'a ')
+        #look for 'a' object
+        self.assert_raises_fault(404, self.client.retrieve_object,
+                                 'test', 'a')
     
     def test_get_invalid(self):
         self.assert_raises_fault(404, self.client.retrieve_object,

@@ -195,7 +195,7 @@ def send_invitation(inv):
 
 
 @requires_login
-def index(request):
+def invite(request):
     status = None
     message = None
 

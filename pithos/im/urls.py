@@ -47,7 +47,7 @@ urlpatterns = patterns('pithos.im.views',
     (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
     (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
     
-    (r'^invite/?$', 'index')
+    (r'^invite/?$', 'invite')
 )
 
 urlpatterns += patterns('',

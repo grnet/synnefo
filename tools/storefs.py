@@ -41,7 +41,7 @@ from stat import S_IFDIR, S_IFREG
 from sys import argv
 from time import time
 
-from pithos.api.compat import parse_http_date
+from lib.compat import parse_http_date
 
 from lib.client import OOS_Client, Fault
 from lib.fuse import FUSE, FuseOSError, Operations

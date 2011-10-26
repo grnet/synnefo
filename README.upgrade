@@ -4,6 +4,20 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+v0.7 -> v0.8
+NEW/UPDATED SETTINGS
+    * New config file 31-userdata.conf, containing userdata app settings
+    * USERDATA_SSH_KEY_LENGTH:
+      Genetared SSH key bits length
+    * USERDATA_SSH_KEY_EXPONENT:
+      Generated SSH key exponent
+    * UI_SUPPORT_SSH_OS_LIST
+      A list of os names that support ssh public key assignment
+    * UI_OS_DEFAULT_USER_MAP
+      OS/username map to identify default user name for a specific os
+
+NEW DEPENDENCIES
+    * M2Crypto is needed for server side ssh key pair generation. 
 
 v0.6.2 -> v0.7
 HTML TEMPLATES

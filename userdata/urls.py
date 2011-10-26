@@ -7,5 +7,6 @@ urlpatterns = patterns('',
     url(r'^keys/(?P<id>\d+)',
     views.PublicKeyPairResourceView.as_view('keys_resource'),
         name="keys_resource"),
-    url(r'keys/generate', views.generate_key_pair)
+    url(r'keys/generate', views.generate_key_pair, name="generate_public_key"),
+    url(r'keys/download', views.download_private_key, name="download_public_key")
 )

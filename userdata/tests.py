@@ -81,3 +81,23 @@ class TestRestViews(TestCase):
         self.assertEqual(pk.name, "key pair 2")
         self.assertEqual(pk.content, "key 2 content")
 
+    def test_generate_views(self):
+        import base64
+
+        # just test that
+        resp = self.client.get("/keys/generate")
+        self.assertNotEqual(resp, "")
+
+        data = json.loads(resp.content)
+        self.assertEqual(data.has_key('private'), True)
+        self.assertEqual(data.has_key('private'), True)
+
+        # public key is base64 encoded
+        base64.b64decode(data['public'].replace("ssh-rsa ",""))
+
+        # remove header/footer
+        private = "".join(data['private'].split("\n")[1:-1])
+
+        # private key is base64 encoded
+        base64.b64decode(private)
+

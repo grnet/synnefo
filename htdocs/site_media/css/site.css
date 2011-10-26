@@ -1,13 +1,446 @@
-/*!
- * Bootstrap v1.3.0
- *
- * Copyright 2011 Twitter, Inc
- * Licensed under the Apache License v2.0
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Designed and built with all the love in the world @twitter by @mdo and @fat.
- * Date: Thu Sep 22 12:52:42 PDT 2011
- */
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+font,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td {
+  margin: 0;
+  padding: 0;
+  outline: 0;
+  border: 0;
+  vertical-align: baseline;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: 100%;
+  font-family: inherit;
+}
+body {
+  background: #fff;
+  color: #000;
+  line-height: 1;
+}
+ol, ul {
+  list-style: none;
+}
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  vertical-align: middle;
+}
+caption, th, td {
+  vertical-align: middle;
+  text-align: left;
+  font-weight: normal;
+}
+q, blockquote {
+  quotes: '' '';
+}
+q:before,
+q:after,
+blockquote:before,
+blockquote:after {
+  content: '';
+}
+a img {
+  border: none;
+}
+/*@import "grnetstyles/css3.less";*/
+/* float clearing for IE6 */
+* html .clearfix {
+  height: 1%;
+  overflow: visible;
+}
+/* float clearing for IE7 */
+* + html .clearfix {
+  min-height: 1%;
+}
+/* float clearing for everyone else */
+.clearfix:after {
+  clear: both;
+  content: ".";
+  display: block;
+  height: 0;
+  visibility: hidden;
+  font-size: 0;
+}
+.footer a {
+  color: #74AEC9;
+  text-decoration: underline;
+}
+.footer a:hover {
+  color: #4085A5;
+}
+body {
+  background-image: url("../images/bg.png");
+  background-repeat: repeat-x;
+  font-size: 13px;
+  font-family: verdana;
+  background-position: 0px -70px;
+}
+body.alt {
+  background-image: url("../images/bg-alt.png");
+}
+.container {
+  width: 870px;
+  margin: 0 auto;
+  margin-top: 30px;
+}
+.inner {
+  margin-top: 2.5em;
+  background-image: url("../images/bg-inner.png");
+  width: 100%;
+}
+.inner .left {
+  position: relative;
+  width: 180px;
+  float: left;
+}
+.inner .left ul {
+  margin-top: 90px;
+  color: #4085A5;
+  left: -16px;
+  padding-top: 40px;
+  padding-right: 10px;
+}
+.inner .left ul li {
+  font-size: 1.8em;
+  margin-bottom: 0.2em;
+  position: relative;
+}
+.inner .left ul li a.page-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  padding: 10px;
+  padding-left: 36px;
+}
+.inner .left ul li a.page-link:hover, .inner .left ul li.selected a.page-link {
+  text-shadow: none;
+  color: #fff;
+  background-color: #74AEC9;
+  border-left: 0px solid #92C1D7;
+  padding-left: 36px;
+}
+.inner .left ul li .close-button:hover {
+  background-color: #99C9E0;
+}
+.inner .left ul li .close-button {
+  display: block;
+  position: absolute;
+  left: -30px;
+  top: 0px;
+  font-size: 0.7em;
+  border: none;
+  background: transparent;
+  padding: 0;
+  padding-top: 13px;
+  padding-left: 9px;
+  margin: 0px;
+  text-decoration: none;
+  color: #fff;
+  width: 21px;
+  height: 30px;
+  font-weight: bold;
+  display: block;
+  visibility: hidden;
+}
+.inner .left ul li.current a.page-link {
+  color: #fff;
+  background-color: #74AEC9;
+  border-left: 30px solid #92C1D7;
+  padding-left: 36px;
+  margin-left: -30px;
+}
+.inner .video-cont, .inner .page-cont {
+  width: 690px;
+  float: right;
+}
+.inner .cols {
+  position: relative;
+}
+.page {
+  display: block;
+  top: 0;
+}
+.page-wrapper {
+  position: relative;
+}
+.page.text {
+  margin-left: 27px;
+  padding-top: 20px;
+  padding-right: 20px;
+  padding-bottom: 10px;
+}
+.page.text h2 {
+  font-size: 1.9em;
+  color: #4085A5;
+  margin-bottom: 1.2em;
+}
+.page.text h2 em {
+  color: #FCFDFE;
+}
+.page.text a {
+  color: #213D4A;
+}
+.page.text p em {
+  color: #4C6A78;
+  /*font-weight: bold;*/
+
+}
+.page.text h3 {
+  font-size: 1.2em;
+  color: #4394B9;
+  margin-bottom: 0.5em;
+  margin-top: 1.5em;
+}
+.page.text h4 {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 0.3em;
+}
+.page.text p {
+  color: #213D4A;
+  font-size: 1.1em;
+  margin-bottom: 1em;
+  text-align: justify;
+  line-height: 1.4em;
+}
+.inner .video {
+  width: 640px;
+  height: 360px;
+  background-color: #4085A5;
+  margin: 20px;
+  margin-left: 27px;
+  margin-bottom: 20px;
+  margin-top: 20px;
+  /*border: 1px solid #4085A5;*/
+
+}
+.logo {
+  text-align: center;
+}
+.logo img {
+  margin-left: 75px;
+}
+.inner-bottom {
+  width: 100%;
+}
+.inner-bottom .testuser {
+  display: none;
+  background: #000;
+  margin-right: 40px;
+  float: right;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+.gotoapp {
+  display: block;
+  padding: 0.7em 5em;
+  color: #fff;
+  font-size: 1.2em;
+  background-color: #FF7F2A;
+  cursor: pointer;
+  margin-right: -20px;
+}
+.gotoapp:hover {
+  background-color: #FF9955;
+}
+.page.text {
+  margin-right: 20px;
+  margin-top: 20px;
+}
+.inner-bottom.in-page .testuser {
+  margin-right: 60px;
+}
+.gotoapp {
+  color: #fff;
+  text-decoration: none;
+}
+.banner-coming {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+.footer {
+  text-align: center;
+  margin: 0 auto;
+  width: 870px;
+  margin: 2em auto;
+}
+.footer .links {
+  color: #4085A5;
+  margin-bottom: 1em;
+}
+.footer .links li {
+  display: inline;
+  margin-right: 1em;
+  padding-right: 1em;
+  border-right: 1px solid #4085A5;
+}
+.footer .links li a {
+  color: inherit;
+  text-decoration: none;
+}
+.footer .links li.last {
+  margin-right: 0;
+  padding-right: 0;
+  border: none;
+}
+.footer .bottom-text {
+  color: #74AEC9;
+}
+/*style 2*/
+body.style2 .page.text {
+  background-color: #7DB3CC;
+  padding-left: 20px;
+}
+body.style2 .page.text p, body.style2 .page.text h2 {
+  color: #fff;
+}
+#video div.vjs-big-play-button {
+  background: none !important;
+  border: none !important;
+  box-shadow: 4px 4px 20px #477589 !important;
+}
+#video div.vjs-big-play-button:hover {
+  background: none !important;
+  border: none !important;
+  box-shadow: 4px 4px 50px #477589 !important;
+  background: #4085A5 !important;
+}
+body {
+  text-align: center;
+}
+* html body legend {
+  margin: -8px 16px 0;
+  padding: 0;
+}
+html > body p code {
+  *white-space: normal;
+}
+.container {
+  text-align: left;
+}
+sup {
+  vertical-align: text-top;
+}
+sub {
+  vertical-align: text-bottom;
+}
+hr {
+  margin: -8px auto 11px;
+}
+img {
+  -ms-interpolation-mode: bicubic;
+}
+fieldset {
+  padding-top: 0;
+}
+textarea {
+  overflow: auto;
+}
+input.text {
+  margin: .5em 0;
+  border: 1px solid #bbb;
+  background-color: #ffffff;
+}
+input.text:focus {
+  border: 1px solid #666666;
+}
+input.title {
+  margin: .5em 0;
+  border: 1px solid #bbb;
+  background-color: #ffffff;
+}
+input.title:focus {
+  border: 1px solid #666666;
+}
+input.checkbox {
+  position: relative;
+  top: 0.25em;
+}
+input.radio {
+  position: relative;
+  top: 0.25em;
+}
+input.button {
+  position: relative;
+  top: 0.25em;
+}
+textarea {
+  margin: 0.5em 0;
+}
+select {
+  margin: 0.5em 0;
+}
+button {
+  position: relative;
+  top: 0.25em;
+}
+a {
+  color: #4085A5;
+}
+.menu li {
+  height: 50px;
+}
+.inner-bottom .testuser {
+  margin-right: 22px;
+}
+.inner-bottom .testuser a {
+  margin-right: 0px;
+}
 /* Reset.less
  * Props to Eric Meyer (meyerweb.com) for his CSS reset file. We're using an adapted version here	that cuts out some of the reset HTML elements we will never need here (i.e., dfn, samp, etc).
  * ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
@@ -173,7 +606,7 @@ textarea {
 /* Variables.less
  * Variables to customize the look and feel of Bootstrap
  * ----------------------------------------------------- */
-/* Variables.less
+/* Mixins.less
  * Snippets of reusable CSS to develop faster and keep code readable
  * ----------------------------------------------------------------- */
 /*
@@ -2306,6 +2739,7 @@ button.btn::-moz-focus-inner, input[type=submit].btn::-moz-focus-inner {
   font-weight: bold;
   color: #ffffff;
   text-transform: uppercase;
+  white-space: nowrap;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   border-radius: 3px;
@@ -2359,4 +2793,172 @@ button.btn::-moz-focus-inner, input[type=submit].btn::-moz-focus-inner {
   -webkit-box-shadow: 0 1px 4px rgba(0, 105, 214, 0.25);
   -moz-box-shadow: 0 1px 4px rgba(0, 105, 214, 0.25);
   box-shadow: 0 1px 4px rgba(0, 105, 214, 0.25);
+}
+html {
+  background-color: #FAFCFD;
+}
+body, html {
+  margin: 0;
+  font-size: 13px;
+}
+.inner {
+  min-height: 200px;
+}
+.container {
+  width: 670px;
+  margin-top: 0;
+}
+.container .logo img {
+  margin: 0;
+  padding: 0;
+  margin-top: 20px;
+}
+.intro-text {
+  padding: 20px 0px !important;
+  text-align: justify;
+}
+.intro-text em.bold {
+  color: #ffffff !important;
+  font-weight: bold;
+}
+.canlogin {
+  display: none;
+}
+.logohover {
+  position: relative;
+  cursor: pointer;
+}
+.logohover img {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+body .canlogin {
+  display: none;
+}
+body.auth .canlogin {
+  display: block !important;
+}
+.inner-bottom {
+  position: relative;
+  margin-bottom: 80px;
+  margin-top: -40px;
+}
+.inner-bottom .canlogin {
+  font-size: 0.9em;
+  position: absolute;
+  right: 20px;
+  top: 25px;
+}
+.inner-bottom .gotoapp {
+  padding: 0.5em 5em;
+  margin-right: 0;
+  -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  -moz-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.inner-bottom .gotoapp:hover {
+  color: #fff !important;
+}
+.downloads {
+  border-top: 2px solid #fff;
+  background-color: #DCE9F1;
+  background-color: #accfdf;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#8fb9cf), to(#accfdf));
+  background-image: -moz-linear-gradient(top, #8fb9cf, #accfdf);
+  background-image: -ms-linear-gradient(top, #8fb9cf, #accfdf);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #8fb9cf), color-stop(100%, #accfdf));
+  background-image: -webkit-linear-gradient(top, #8fb9cf, #accfdf);
+  background-image: -o-linear-gradient(top, #8fb9cf, #accfdf);
+  background-image: linear-gradient(top, #8fb9cf, #accfdf);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#8fb9cf', endColorstr='#accfdf', GradientType=0);
+  border-bottom: 1px solid #8FB9CF;
+  padding-bottom: 10px;
+}
+.downloads div.desc {
+  padding: 5px;
+  float: right;
+}
+.downloads div.desc p {
+  padding-top: 17px;
+  padding-right: 15px;
+  font-size: 0.9em;
+  text-align: justify;
+  color: #213D4A;
+}
+.downloads h4 {
+  float: left;
+  color: #ffffff;
+  margin-left: 18px;
+  margin-top: 18px;
+  width: 100px;
+  margin-right: 20px;
+  background-color: #5897B4;
+  text-align: center;
+  -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  -moz-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  font-size: 1em;
+}
+.downloads .download.last {
+  border-right: none;
+  margin-right: 0;
+  margin-left: 0;
+}
+.downloads .download {
+  width: 307px;
+  float: left;
+  margin: 10px 0;
+  margin-left: 22px;
+  margin-right: 13px;
+  background-color: #fff;
+  margin-top: 6px;
+  position: relative;
+  border: 1px solid #fff;
+  -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  -moz-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  background-repeat: no-repeat;
+  background-position: 10px center;
+}
+.downloads .download.osx {
+  background-image: url("../images/osx_logo.png");
+}
+.downloads .download.windows {
+  background-image: url("../images/windows_logo.png");
+}
+.downloads .download .subtitle {
+  display: none;
+  position: absolute;
+  top: 9px;
+  left: 50px;
+  font-size: 0.8em;
+  color: #FF7F2A;
+}
+.downloads .download .compat {
+  color: #888;
+  position: absolute;
+  bottom: 7px;
+  font-size: 0.7em;
+  left: 50px;
+}
+.downloads .download .link {
+  position: absolute;
+  right: 10px;
+  top: 15px;
+}
+.downloads .download .link a {
+  text-decoration: underline;
+}
+.downloads .download .title {
+  margin: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  margin-left: 50px;
+}
+.downloads .download:hover {
+  cursor: pointer;
+  border: 1px solid #fff;
+  background-color: #eee;
 }

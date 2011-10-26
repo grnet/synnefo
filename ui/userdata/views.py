@@ -3,8 +3,8 @@ from django.template import RequestContext, loader
 from django.utils import simplejson as json
 from django.conf import settings
 
-from synnefo.userdata import rest
-from synnefo.userdata.models import PublicKeyPair
+from synnefo.ui.userdata import rest
+from synnefo.ui.userdata.models import PublicKeyPair
 
 import M2Crypto as M2C
 import base64

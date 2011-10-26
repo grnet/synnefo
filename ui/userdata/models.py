@@ -13,6 +13,7 @@ class ProfileModel(models.Model):
 
     class Meta:
         abstract = True
+        app_label = 'userdata'
 
 
 class PublicKeyPair(ProfileModel):
@@ -22,3 +23,5 @@ class PublicKeyPair(ProfileModel):
     name = models.CharField(max_length=255, null=False, blank=False)
     content = models.TextField()
 
+    class Meta:
+        app_label = 'userdata'

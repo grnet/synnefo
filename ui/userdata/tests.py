@@ -11,8 +11,8 @@ from django.test.client import Client
 from django.core.urlresolvers import clear_url_caches
 from django.utils import simplejson as json
 
-from synnefo.userdata.models import User
-from synnefo.userdata.models import *
+from synnefo.ui.userdata.models import User
+from synnefo.ui.userdata.models import *
 
 class AaiClient(Client):
 
@@ -25,7 +25,7 @@ class TestRestViews(TestCase):
     fixtures = ['users']
 
     def setUp(self):
-        settings.ROOT_URLCONF = 'synnefo.userdata.urls'
+        settings.ROOT_URLCONF = 'synnefo.ui.userdata.urls'
         clear_url_caches()
         self.client = AaiClient()
         self.user = User.objects.get(pk=1)

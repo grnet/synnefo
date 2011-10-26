@@ -57,6 +57,10 @@ class AuthMiddleware(object):
         except:
             return
         
+        # Check if the is active.
+        if user.state != 'ACTIVE':
+            return
+        
         # Check if the token has expired.
         if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
             return

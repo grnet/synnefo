@@ -6,7 +6,13 @@ from django.conf import settings
 from synnefo.ui.userdata import rest
 from synnefo.ui.userdata.models import PublicKeyPair
 
-import M2Crypto as M2C
+
+SUPPORT_GENERATE_KEYS = True
+try:
+    import M2Crypto as M2C
+except ImportError, e:
+    SUPPORT_GENERATE_KEYS = False
+
 import base64
 
 class PublicKeyPairResourceView(rest.UserResourceView):
@@ -23,6 +29,9 @@ def generate_key_pair(request):
     """
     Response to generate private/public RSA key pair
     """
+    if not SUPPORT_GENERATE_KEYS:
+        raise Exception("Application does not support ssh keys generation")
+
     # generate RSA key
     key = M2C.RSA.gen_key(SSH_KEY_LENGTH, SSH_KEY_EXPONENT, lambda x: "");
 

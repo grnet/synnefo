@@ -16,8 +16,8 @@
     <h2>Welcome</h2>
     <p>Choose how to login. Or move on to <a href="admin">admin</a>.</p>
     <div class="row">
-      <div class="span4">
-        <h4>Traditional</h4>
+      <!--<div class="span4">
+        <h4>Local account</h4>
         <form action="" class="form-stacked">
           <fieldset>
             <div class="clearfix">
@@ -27,7 +27,7 @@
               </div>
             </div>
             <div class="clearfix">
-              <label for="password">Password</label>
+              <label for="password">Password:</label>
               <div class="input">
                 <input class="span3" id="user-password" name="password" type="password" />
               </div>
@@ -38,15 +38,15 @@
             <button type="submit" class="btn primary">Go</button>
           </div>
         </form>
-      </div>
+      </div>-->
       <div class="span4">
-        <h4>Stylish</h4>
+        <h4>Invitation</h4>
         <form action="{% url pithos.im.target.invitation.login %}" class="form-stacked">
           <fieldset>
             <div class="clearfix">
-              <label for="token">Invitation:</label>
+              <label for="code">Code:</label>
               <div class="input">
-                <input class="span3" id="user-token" name="token" type="text" />
+                <input class="span3" id="user-code" name="code" type="text" />
               </div>
             </div>
           </fieldset>
@@ -57,7 +57,7 @@
         </form>
       </div>
       <div class="span8">
-        <h4>Funky</h4>
+        <h4>Other provider</h4>
         <a href="{% url pithos.im.target.shibboleth.login %}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="Shibboleth"><img src="/im/static/shibboleth.png" width="120" height="120"></a>
         <a href="{% url pithos.im.target.twitter.login %}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="Twitter"><img src="/im/static/twitter.png" width="120" height="120"></a>
       </div>

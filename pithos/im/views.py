@@ -31,18 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+import logging
+import socket
+
 from datetime import datetime
 from functools import wraps
 from math import ceil
+from random import randint
+from smtplib import SMTPException
 
 from django.conf import settings
+from django.core.mail import send_mail
 from django.http import HttpResponse, HttpResponseRedirect
-from django.utils.http import urlencode
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.utils.http import urlencode
+from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
 
-from pithos.aai.models import PithosUser
-from pithos.api.util import isoformat
+from pithos.im.models import User, Invitation
+from pithos.im.util import isoformat
 
 
 def render_response(template, tab=None, status=200, **kwargs):
@@ -53,13 +62,25 @@ def render_response(template, tab=None, status=200, **kwargs):
     return HttpResponse(html, status=status)
 
 
+def requires_login(func):
+    @wraps(func)
+    def wrapper(request, *args):
+        if not settings.BYPASS_ADMIN_AUTH:
+            if not request.user:
+                next = urlencode({'next': request.build_absolute_uri()})
+                login_uri = reverse(index) + '?' + next
+                return HttpResponseRedirect(login_uri)
+        return func(request, *args)
+    return wrapper
+
+
 def requires_admin(func):
     @wraps(func)
     def wrapper(request, *args):
         if not settings.BYPASS_ADMIN_AUTH:
             if not request.user:
                 next = urlencode({'next': request.build_absolute_uri()})
-                login_uri = settings.LOGIN_URL + '?' + next
+                login_uri = reverse(index) + '?' + next
                 return HttpResponseRedirect(login_uri)
             if not request.user_obj.is_admin:
                 return HttpResponse('Forbidden', status=403)
@@ -67,16 +88,25 @@ def requires_admin(func):
     return wrapper
 
 
-@requires_admin
 def index(request):
+    return render_response('index.html', next=request.GET.get('next', ''))
+
+
+@requires_admin
+def admin(request):
     stats = {}
-    stats['users'] = PithosUser.objects.count()
-    return render_response('index.html', tab='home', stats=stats)
+    stats['users'] = User.objects.count()
+    
+    invitations = Invitation.objects.all()
+    stats['invitations'] = invitations.count()
+    stats['invitations_accepted'] = invitations.filter(is_accepted=True).count()
+    
+    return render_response('admin.html', tab='home', stats=stats)
 
 
 @requires_admin
 def users_list(request):
-    users = PithosUser.objects.order_by('id')
+    users = User.objects.order_by('id')
     
     filter = request.GET.get('filter', '')
     if filter:
@@ -109,31 +139,36 @@ def users_create(request):
     if request.method == 'GET':
         return render_response('users_create.html')
     if request.method == 'POST':
-        user = PithosUser()
+        user = User()
         user.uniq = request.POST.get('uniq')
         user.realname = request.POST.get('realname')
         user.is_admin = True if request.POST.get('admin') else False
         user.affiliation = request.POST.get('affiliation')
-        user.quota = int(request.POST.get('quota') or 0)
-        user.auth_token = request.POST.get('auth_token')
+        user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
+        user.renew_token()
         user.save()
         return redirect(users_info, user.id)
 
 
 @requires_admin
 def users_info(request, user_id):
-    user = PithosUser.objects.get(id=user_id)
-    return render_response('users_info.html', user=user)
+    user = User.objects.get(id=user_id)
+    states = [x[0] for x in User.ACCOUNT_STATE]
+    return render_response('users_info.html',
+                            user=user,
+                            states=states)
 
 
 @requires_admin
 def users_modify(request, user_id):
-    user = PithosUser.objects.get(id=user_id)
+    user = User.objects.get(id=user_id)
     user.uniq = request.POST.get('uniq')
     user.realname = request.POST.get('realname')
     user.is_admin = True if request.POST.get('admin') else False
     user.affiliation = request.POST.get('affiliation')
-    user.quota = int(request.POST.get('quota') or 0) * 1024 ** 3    # In GiB
+    user.state = request.POST.get('state')
+    user.invitations = int(request.POST.get('invitations') or 0)
+    user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
     user.auth_token = request.POST.get('auth_token')
     try:
         auth_token_expires = request.POST.get('auth_token_expires')
@@ -147,6 +182,59 @@ def users_modify(request, user_id):
 
 @requires_admin
 def users_delete(request, user_id):
-    user = PithosUser.objects.get(id=user_id)
+    user = User.objects.get(id=user_id)
     user.delete()
     return redirect(users_list)
+
+
+def generate_invitation_code():
+    return randint(1, 2L**63 - 1)
+
+
+def send_invitation(inv):
+    url = settings.INVITATION_LOGIN_TARGET % inv.code
+    subject = _('Invitation to Pithos')
+    message = render_to_string('invitation.txt', {
+                'invitation': inv,
+                'url': url})
+    sender = settings.DEFAULT_FROM_EMAIL
+    send_mail(subject, message, sender, [inv.uniq])
+    inv.inviter.invitations = max(0, inv.inviter.invitations - 1)
+    inv.inviter.save()
+    logging.info('Sent invitation %s', inv)
+
+
+@requires_login
+def invite(request):
+    status = None
+    message = None
+
+    if request.method == 'POST':
+        if request.user_obj.invitations > 0:
+            code = generate_invitation_code()
+            invitation, created = Invitation.objects.get_or_create(code=code)
+            invitation.inviter=request.user_obj
+            invitation.realname=request.POST.get('realname')
+            invitation.uniq=request.POST.get('uniq')
+            invitation.save()
+            
+            try:
+                send_invitation(invitation)
+                status = 'success'
+                message = _('Invitation sent to %s' % invitation.uniq)
+            except (SMTPException, socket.error) as e:
+                status = 'error'
+                message = e.strerror
+        else:
+            status = 'error'
+            message = _('No invitations left')
+
+    if request.GET.get('format') == 'json':
+        rep = {'invitations': request.user_obj.invitations}
+        return HttpResponse(json.dumps(rep))
+    
+    html = render_to_string('invitations.html', {
+            'user': request.user_obj,
+            'status': status,
+            'message': message})
+    return HttpResponse(html)

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{{ title|default:"User Admin" }}</title>
+  <link rel="stylesheet" href="/im/static/bootstrap.css">
+  <script src="/im/static/jquery.js"></script>
+  <script src="/im/static/jquery.tablesorter.js"></script>
+  <script src="/im/static/main.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="container">
+    <div style="padding: 5px 0px 0px 0px">
+      <img src="/im/static/banner.png" width="900" height="200">
+    </div>
+
+    <ul class="tabs">
+      <li{% ifequal tab "home" %} class="active"{% endifequal %}>
+        <a href="{% url pithos.im.views.admin %}">Home</a>
+      </li>
+      <li{% ifequal tab "users" %} class="active"{% endifequal %}>
+        <a href="{% url pithos.im.views.users_list %}">Users</a>
+      </li>
+    </ul>
+
+    {% block body %}{% endblock %}
+  </div>
+</body>
+</html>

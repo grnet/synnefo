@@ -69,9 +69,7 @@ backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
 #backend_db = 'postgresql://user:pass@host/db'
 BACKEND = ('ModularBackend', (backend_module, backend_path, backend_db))
 
-# Shibboleth-enabled path for authentication.
-LOGIN_URL = "/login"
-
+# Bypass authentication for user administration.
 BYPASS_ADMIN_AUTH = False
 
 # Local time zone for this installation. Choices can be found here:
@@ -147,8 +145,7 @@ INSTALLED_APPS = (
 #    'django.contrib.messages',
 #    'django.contrib.admin',
 #    'django.contrib.admindocs',
-    'pithos.aai',
-    'pithos.admin',
+    'pithos.im',
     'pithos.api',
     'pithos.public'
 )
@@ -163,3 +160,15 @@ DEFAULT_VERSIONING = 'auto'
 
 # Show these many users per page in admin interface.
 ADMIN_PAGE_LIMIT = 100
+
+# Authenticate via Twitter.
+TWITTER_KEY = ''
+TWITTER_SECRET = ''
+
+# Address to use for outgoing emails
+DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
+
+# Where users should login with their invitation code
+INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
+                            '?code=%d' \
+                            '&next=https://pithos.dev.grnet.gr/ui'

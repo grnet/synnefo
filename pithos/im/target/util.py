@@ -33,24 +33,34 @@
 
 import datetime
 
-from time import time, mktime
+from urlparse import urlsplit, urlunsplit
 
-from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse
 from django.utils.http import urlencode
-from django.utils.cache import patch_vary_headers
+#from django.utils.cache import patch_vary_headers
 
-from models import PithosUser
-from shibboleth import Tokens, register_shibboleth_user
-from util import create_auth_token
+from pithos.im.models import User
 
 
-def login(request):
-    """Register a user into the internal database
+def get_user(uniq, realname, affiliation):
+    """Find or register a user into the internal database
        and issue a token for subsequent requests.
-       Users are authenticated by Shibboleth.
-       
-       Return the unique username and the token
+    """
+    
+    try:
+        user = User.objects.get(uniq=uniq)
+    except User.DoesNotExist:
+        user = User()
+        user.uniq = uniq
+        user.realname = realname
+        user.affiliation = affiliation
+        user.renew_token()
+        user.save()
+    
+    return user
+
+def prepare_response(user, next='', renew=False):
+    """Return the unique username and the token
        as 'X-Auth-User' and 'X-Auth-Token' headers,
        or redirect to the URL provided in 'next'
        with the 'user' and 'token' as parameters.
@@ -59,29 +69,16 @@ def login(request):
        expired, if the 'renew' parameter is present.
     """
     
-    try:
-        user = PithosUser.objects.get(uniq=request.META[Tokens.SHIB_EPPN])
-    except:
-        user = None
-    if user is None:
-        try:
-            user = register_shibboleth_user(request.META)
-        except:
-            return HttpResponseBadRequest('Missing necessary Shibboleth headers')
-    
-    if 'renew' in request.GET or user.auth_token_expires < datetime.datetime.now():
-        create_auth_token(user)
-    next = request.GET.get('next')
-    if next is not None:
+    if renew or user.auth_token_expires < datetime.datetime.now():
+        user.renew_token()
+        user.save()
+    if next:
         # TODO: Avoid redirect loops.
-        if '?' in next:
-            next = next[:next.find('?')]
-        next += '?' + urlencode({'user': user.uniq,
-                                 'token': user.auth_token})
+        parts = list(urlsplit(next))
+        parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
+        next = urlunsplit(parts)
     
     response = HttpResponse()
-    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    response.set_cookie('X-Auth-Token', value=user.auth_token, expires=expire_fmt, path='/')
     if not next:
         response['X-Auth-User'] = user.uniq
         response['X-Auth-Token'] = user.auth_token

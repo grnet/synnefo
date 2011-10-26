@@ -31,42 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import hashlib
-
-from time import asctime
-from datetime import datetime, timedelta
-from base64 import b64encode
-
-from django.conf import settings
-from django.db import transaction
-
-from models import PithosUser
+from datetime import tzinfo, timedelta
 
 
-@transaction.commit_on_success
-def register_user(uniq, realname, affiliation):
-    user = PithosUser()
-    user.uniq = uniq
-    user.realname = realname
-    user.affiliation = affiliation
-    user.save()
-    create_auth_token(user)
-    return user
+class UTC(tzinfo):
+   def utcoffset(self, dt):
+       return timedelta(0)
 
-@transaction.commit_on_success
-def delete_user(user):
-    if user is not None:
-        user.delete()
+   def tzname(self, dt):
+       return 'UTC'
 
-@transaction.commit_on_success
-def create_auth_token(user):
-    md5 = hashlib.md5()
-    md5.update(user.uniq)
-    md5.update(user.realname.encode('ascii', 'ignore'))
-    md5.update(asctime())
-    
-    user.auth_token = b64encode(md5.digest())
-    user.auth_token_created = datetime.now()
-    user.auth_token_expires = user.auth_token_created + \
-                              timedelta(hours=settings.AUTH_TOKEN_DURATION)
-    user.save()
+   def dst(self, dt):
+       return timedelta(0)
+
+def isoformat(d):
+   """Return an ISO8601 date string that includes a timezone."""
+
+   return d.replace(tzinfo=UTC()).isoformat()

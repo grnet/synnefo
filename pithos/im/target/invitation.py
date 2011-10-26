@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,53 +25,35 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from util import register_user
+import logging
+
+from datetime import datetime
+
+from django.http import HttpResponseBadRequest
+
+from pithos.im.models import Invitation
+from pithos.im.target.util import get_user, prepare_response
 
 
-class Tokens:
-    # these are mapped by the Shibboleth SP software
-    SHIB_EPPN = "HTTP_EPPN" # eduPersonPrincipalName
-    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
-    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
-    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
-    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
-    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
-    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
-
-
-class NoUniqueToken(BaseException):
-    def __init__(self, msg):
-        self.msg = msg
-
-
-class NoRealName(BaseException):
-    def __init__(self, msg):
-        self.msg = msg
-
-
-def register_shibboleth_user(tokens):
-    """Registers a Shibboleth user using the input hash as a source for data."""
-    
+def login(request):
+    code = request.GET.get('code')
     try:
-        eppn = tokens[Tokens.SHIB_EPPN]
-    except KeyError:
-        raise NoUniqueToken("Authentication does not return a unique token")
+        invitation = Invitation.objects.get(code=code)
+    except Invitation.DoesNotExist:
+        return HttpResponseBadRequest('Does Not Exist')
     
-    if Tokens.SHIB_DISPLAYNAME in tokens:
-        realname = tokens[Tokens.SHIB_DISPLAYNAME]
-    elif Tokens.SHIB_CN in tokens:
-        realname = tokens[Tokens.SHIB_CN]
-    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
-    else:
-        raise NoRealName("Authentication does not return the user's name")
+    if not invitation.is_accepted:
+        invitation.is_accepted = True
+        invitation.accepted = datetime.now()
+        invitation.save()
+        logging.info('Accepted invitation %s', invitation)
     
-    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
-    
-    return register_user(eppn, realname, affiliation)
+    return prepare_response(get_user(invitation.uniq, invitation.realname, 'Invitation'),
+                            request.GET.get('next'),
+                            'renew' in request.GET)

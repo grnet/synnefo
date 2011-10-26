@@ -31,36 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
-
-from django.db import models
-
-from pithos import settings
+from django.conf import settings
+from django.conf.urls.defaults import patterns
 
 
-class PithosUser(models.Model):
-    uniq = models.CharField('Unique ID', max_length=255, null=True)
-    realname = models.CharField('Real Name', max_length=255, default='')
-    is_admin = models.BooleanField('Admin', default=False)
-    affiliation = models.CharField('Affiliation', max_length=255, default='')
-    quota = models.BigIntegerField('Storage Limit', default=settings.DEFAULT_QUOTA)
-    auth_token = models.CharField('Authentication Token', max_length=32, null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation')
-    auth_token_expires = models.DateTimeField('Time of auth token expiration')
-    created = models.DateTimeField('Time of creation')
-    updated = models.DateTimeField('Time of last update')
+urlpatterns = patterns('pithos.im.views',
+    (r'^$', 'index'),
+    (r'^login/?$', 'index'),
     
-    def save(self, update_timestamps=True):
-        if update_timestamps:
-            if not self.id:
-                self.created = datetime.datetime.now()
-                self.auth_token_created = datetime.datetime.now()
-                self.auth_token_expires = datetime.datetime.now()
-            self.updated = datetime.datetime.now()
-        super(PithosUser, self).save()
+    (r'^admin/?$', 'admin'),
     
-    class Meta:
-        verbose_name = u'Pithos User'
+    (r'^admin/users/?$', 'users_list'),
+    (r'^admin/users/(\d+)/?$', 'users_info'),
+    (r'^admin/users/create$', 'users_create'),
+    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
+    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
     
-    def __unicode__(self):
-        return self.uniq
+    (r'^invite/?$', 'invite')
+)
+
+urlpatterns += patterns('',
+    (r'^login/shibboleth/?$', 'pithos.im.target.shibboleth.login'),
+    (r'^login/twitter/?$', 'pithos.im.target.twitter.login'),
+    (r'^login/twitter/authenticated/?$', 'pithos.im.target.twitter.authenticated'),
+    (r'^login/invitation/?$', 'pithos.im.target.invitation.login')
+)
+
+urlpatterns += patterns('',
+    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
+                                {'document_root': settings.PROJECT_PATH + '/im/static'})
+)

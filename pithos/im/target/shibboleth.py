@@ -31,11 +31,41 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.http import HttpResponseBadRequest
 
-urlpatterns = patterns('',
-    (r'^v1(?:$|/)', include('pithos.api.urls')),
-    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'^public(?:$|/)', include('pithos.public.urls')),
-    (r'^im/', include('pithos.im.urls'))
-)
+from pithos.im.target.util import get_user, prepare_response
+
+
+class Tokens:
+    # these are mapped by the Shibboleth SP software
+    SHIB_EPPN = "HTTP_EPPN" # eduPersonPrincipalName
+    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
+    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
+    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
+    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
+    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
+    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
+
+
+def login(request):
+    tokens = request.META
+    
+    try:
+        eppn = tokens[Tokens.SHIB_EPPN]
+    except KeyError:
+        return HttpResponseBadRequest("Missing unique token in request")
+    
+    if Tokens.SHIB_DISPLAYNAME in tokens:
+        realname = tokens[Tokens.SHIB_DISPLAYNAME]
+    elif Tokens.SHIB_CN in tokens:
+        realname = tokens[Tokens.SHIB_CN]
+    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+    else:
+        return HttpResponseBadRequest("Missing user name in request")
+    
+    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+    
+    return prepare_response(get_user(eppn, realname, affiliation),
+                            request.GET.get('next'),
+                            'renew' in request.GET)

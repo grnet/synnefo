@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block body %}
+<ul class="unstyled">
+  <li><strong>{{ stats.users }}</strong> Users</li>
+  <li><strong>{{ stats.invitations }}</strong> Invitation{{ stats.invitations|pluralize }} sent (<strong>{{ stats.invitations_accepted }}</strong> accepted)</li>
+</ul>
+{% endblock body %}

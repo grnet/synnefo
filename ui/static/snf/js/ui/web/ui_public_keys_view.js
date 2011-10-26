@@ -356,6 +356,13 @@
                             '</div>');
             el.append(actions);
         },
+        
+        close_private: function() {
+            this.$(".private-cont").hide();
+            this.$(".private-cont textarea").val("");   
+            this.$('.private-cont [name=data]').val("");
+            this.$('.private-cont [name=name]').val("");
+        },
 
         init_handlers: function() {
             views.PublicKeysView.__super__.init_handlers.apply(this, arguments);
@@ -379,8 +386,7 @@
 
             var self = this;
             this.$(".private-cont .close-private").live("click", function(e) {
-                self.$(".private-cont").hide();
-                self.$(".private-cont textarea").val("");   
+                self.close_private();
             });
 
             this.$(".item-action.show, .item-action.hide").live("click", function(e) {
@@ -396,17 +402,15 @@
             });
         },
         
-        __generate_new: function(generate_text) {
-            var key = storage.keys.generate_new();
+        __save_new: function(generate_text, key) {
             var self = this;
-
-            storage.keys.add_crypto_key(key,
+            storage.keys.add_crypto_key(key.public,
                 _.bind(function(instance, data) {
                     self.update_models();
                     this.generating = false;
                     this.$(".add-generate").text(generate_text).removeClass(
                         "in-progress").addClass("download");
-                    this.show_download_private(key, instance);
+                    this.show_download_private(instance.get('name'), key.private, instance);
                 },this),
 
                 _.bind(function() {
@@ -418,6 +422,17 @@
                     this.$(".add-generate").text(generate_text).removeClass("in-progress").removeClass("download");
                 }, this)
             );
+        },
+
+        __generate_new: function(generate_text) {
+            var self = this;
+            var key = storage.keys.generate_new(_.bind(this.__save_new, this, generate_text), function(){
+                self.show_list_msg("error", "Cannot generate new key pair");
+                self.generating = false;
+                self.download_private = false;
+                self.$(".add-generate").text(generate_text).removeClass(
+                        "in-progress").addClass("download");
+            });
         },
 
         generate_new: function() {
@@ -433,24 +448,17 @@
 
         },
         
-        show_download_private: function(key, data) {
+        show_download_private: function(name, private) {
             var download_cont = this.$(".private-cont");
-            download_cont.find(".key-contents textarea").val("");
-            download_cont.find(".private-msg, .down-button").hide();
-
-            var pr = snf.util.promptSaveFile(download_cont.find(".down-button"), 
-                                             "{0}_private.pem".format(data.get("name")), key.privatePEM());
-            //pr = false;
-            if (pr) {
-                download_cont.find(".private-msg.download").show();
-                download_cont.find(".down-button").show();
-                download_cont.find(".key-contents textarea").val("").hide();
-            } else {
-                download_cont.find(".key-contents textarea").val(key.privatePEM()).show();
-                download_cont.find(".private-msg.copy").show();
-            }
-
             download_cont.show();
+            download_cont.find(".key-contents textarea").val("");
+            download_cont.find(".private-msg, .down-button").show();
+            download_cont.find(".private-msg.copy").hide();
+            download_cont.find(".private-msg.download").hide();
+            download_cont.find("textarea").hide();
+            download_cont.find("form").attr({action: snf.config.userdata_keys_url + '/download'})
+            download_cont.find('[name=data]').val(private);
+            download_cont.find('[name=name]').val(name);
         },
 
         update_list_item: function(el, model) {
@@ -507,6 +515,7 @@
             this.$(".list-messages").empty();
             this.$(".form-messages").empty();
             this.$(".model-item").removeClass("expanded");
+            this.close_private();
             this.close_form();
         }
 

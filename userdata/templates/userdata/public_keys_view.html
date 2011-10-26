@@ -21,12 +21,21 @@ between your computer and the virtual machines. </p>
                     <div class="private-download clearfix">
                         <div class="close-private">{% trans "close" %}</div>
                         <div class="private-msg download">
-                            {% trans "Download private by clicking the following icon" %}
                         </div>
                         <div class="private-msg copy">
                             {% trans "Create a file with the following contents" %}
                         </div>
-                        <div class="down-button" id="download-private-key"></div>
+                        <form target="_blank" id="private-key-form" method="post">
+                            <input type="hidden" name="data" />
+                            <input type="hidden" name="name" />
+
+                            <span class="form-text">{% trans "Your new public key has been added" %}</span>
+                            <input type="submit" class="down-button form-text"
+                            id="download-private-key" value="click here" />
+                            <span class="form-text">
+                                {% trans " to download private key." %}
+                            </span>
+                        </form>
                         <div class="key-contents clearfix"><textarea></textarea></div>
                     </div>
                 </div>

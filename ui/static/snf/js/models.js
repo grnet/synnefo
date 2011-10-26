@@ -1736,19 +1736,20 @@
 
         comparator: function(i) { return -parseInt(i.id || 0) },
 
-        generate_new: function(passphrase, length, save) {
-
-            var passphrase = passphrase || "";
-            var length = length || 1024;
-            var key = cryptico.generateRSAKey(passphrase, length);
-            
-            var b64enc = $.base64.encode;
-            return key;
+        generate_new: function(success, error) {
+            snf.api.sync('read', undefined, {
+                url: getUrl.call(this, this.base_url) + "/generate", 
+                success: success, 
+                error: error,
+                skip_api_error: true
+            });
         },
 
         add_crypto_key: function(key, success, error, options) {
             var options = options || {};
             var m = new models.PublicKey();
+
+            // guess a name
             var name_tpl = "public key";
             var name = name_tpl;
             var name_count = 1;
@@ -1757,9 +1758,9 @@
                 name = name_tpl + " " + name_count;
                 name_count++;
             }
-
+            
             m.set({name: name});
-            m.set({content: "ssh-rsa AAAAB3NzaC1yc2EA" + cryptico.publicKeyString(key)});
+            m.set({content: key});
             
             options.success = function () { return success(m) };
             options.errror = error;

@@ -6281,6 +6281,34 @@ input.has-errors {
     margin-top: 10px !important;
 }
 
+#user_public_keys .private-download {
+    margin: 5px 0;
+    margin-top: 6px;
+}
+
+#user_public_keys .private-cont form {
+    float: left;
+    margin-left: 5px;
+}
+
+#user_public_keys input.form-text:hover {
+    background: #F95;
+}
+
+#user_public_keys input.form-text {
+    background: #FF7F2A;
+    color: #fff;
+    border: 1px solid #F95;
+    padding: 0 5px;
+    margin: 0 5px;
+    margin-top: -1px;
+    cursor: pointer;
+}
+
+#user_public_keys .form-text {
+    float: left;
+}
+
 #user_public_keys {
     font-size: 0.7em;
 }
@@ -6373,7 +6401,6 @@ input.has-errors {
 #user_public_keys .private-cont .close-private {
     float: right;
     margin-right: 5px;
-    margin-top: 8px;
     font-weight: bold;
     cursor: pointer;
     text-decoration: underline;
@@ -6385,19 +6412,12 @@ input.has-errors {
     text-align: center;
     font-size: 0.9em;
     padding:2px 10px;
-    margin: 4px 5px;
+    margin: 4px 3px;
     margin-top: 5px;
     font-weight: bold;
 }
 
 #user_public_keys .private-cont .down-button {
-    float: left;
-    margin-left: 5px;
-    border: 1px solid #447821;
-    margin-top:4px;
-    padding: 0px 3px;
-    padding-top: 3px;
-    background-color: #FFF;
 }
 
 .models-view .form-field.error label {

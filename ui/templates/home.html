@@ -38,11 +38,11 @@
     <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js"></script>
 
     <!--[if (lt IE 7)]>
-        <script src="{{ SYNNEFO_JS_LIB_URL}}selectivizr.js"></script>
+        <script src="{{ SYNNEFO_JS_LIB_URL }}selectivizr.js"></script>
     <! [endif] -->
 
     <!--[if IE]>
-        <script src="{{ SYNNEFO_JS_URL}}ui/ie_fixes.js"></script>
+        <script src="{{ SYNNEFO_JS_URL }}ui/ie_fixes.js"></script>
     <![endif]-->
     
     <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
@@ -553,6 +553,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             // TODO: make it dynamic
             synnefo.config.api_url = '/api/v1.1';
             synnefo.config.logout_url = '{{ logout_redirect }}';
+            synnefo.config.userdata_keys_url = '{% url keys_collection %}';
 
             synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';

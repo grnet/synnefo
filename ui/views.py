@@ -63,12 +63,9 @@ SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS", SUGGESTED_F
 SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
 SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES", SUGGESTED_ROLES_DEFAULT)
 
-SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",
-        ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu', 'centos'])
+SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 
-OS_CREATED_USERS = getattr(settings, "UI_OS_CREATED_USERS", {'debian':'root',
-'fedora': 'root', 'okeanos': 'root', 'ubuntu': 'root', 'kubuntu': 'root',
-'centos': 'root', 'windows': 'Administrator'})
+OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
 
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)

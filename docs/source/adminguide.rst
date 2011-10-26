@@ -8,7 +8,7 @@ Assuming a clean debian squeeze (stable) installation, use the following steps t
 
 Install packages::
 
-  apt-get install git python-django python-setuptools python-sphinx
+  apt-get install git python-django python-setuptools python-sphinx python-httplib2
   apt-get install python-sqlalchemy python-mysqldb python-psycopg2
   apt-get install apache2 libapache2-mod-wsgi
 
@@ -45,8 +45,7 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT]
     RewriteRule ^/public(.*) /api/public$1 [PT]
-    RewriteRule ^/login(.*) https://%{HTTP_HOST}%{REQUEST_URI}
-    RewriteRule ^/admin(.*) https://%{HTTP_HOST}%{REQUEST_URI}
+    RewriteRule ^/im(.*) https://%{HTTP_HOST}%{REQUEST_URI}
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
@@ -78,8 +77,7 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT]
     RewriteRule ^/public(.*) /api/public$1 [PT]
-    RewriteRule ^/login(.*) /api/login$1 [PT]
-    RewriteRule ^/admin(.*) /api/admin$1 [PT]
+    RewriteRule ^/im(.*) /api/im$1 [PT]
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
@@ -88,7 +86,7 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
     ShibConfig /etc/shibboleth/shibboleth2.xml
     Alias      /shibboleth-sp /usr/share/shibboleth 
 
-    <Location /api/login>
+    <Location /api/im/login/shibboleth>
         AuthType shibboleth
         ShibRequireSession On
         ShibUseHeaders On

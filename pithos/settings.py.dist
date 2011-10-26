@@ -69,9 +69,7 @@ backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
 #backend_db = 'postgresql://user:pass@host/db'
 BACKEND = ('ModularBackend', (backend_module, backend_path, backend_db))
 
-# Shibboleth-enabled path for authentication.
-LOGIN_URL = "/login"
-
+# Bypass authentication for user administration.
 BYPASS_ADMIN_AUTH = False
 
 # Local time zone for this installation. Choices can be found here:

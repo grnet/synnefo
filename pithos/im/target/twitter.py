@@ -37,9 +37,10 @@ import oauth2 as oauth
 import urlparse
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
+from django.utils import simplejson as json
 
-from models import User
+from pithos.im.target.util import get_user, prepare_response
 
 # It's probably a good idea to put your consumer's OAuth token and
 # OAuth secret into your project's settings. 
@@ -57,15 +58,16 @@ def login(request):
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         raise Exception("Invalid response from Twitter.")
+    request_token = dict(urlparse.parse_qsl(content))
+    if request.GET.get('next'):
+        request_token['next'] = request.GET['next']
     
     # Step 2. Store the request token in a session for later use.
     response = HttpResponse()
-    response.set_cookie('Twitter-Request-Token', value=content, max_age=300)
+    response.set_cookie('Twitter-Request-Token', value=json.dumps(request_token), max_age=300)
     
     # Step 3. Redirect the user to the authentication URL.
-    request_token = dict(urlparse.parse_qsl(content))
-    url = "%s?oauth_token=%s" % (authenticate_url,
-        request_token['oauth_token'])
+    url = "%s?oauth_token=%s" % (authenticate_url, request_token['oauth_token'])
     response['Location'] = url
     response.status_code = 302
     
@@ -73,12 +75,17 @@ def login(request):
 
 def authenticated(request):
     # Step 1. Use the request token in the session to build a new client.
-    content = request.COOKIES.get('Twitter-Request-Token', None)
-    if not content:
+    data = request.COOKIES.get('Twitter-Request-Token', None)
+    if not data:
         raise Exception("Request token cookie not found.")
-    request_token = dict(urlparse.parse_qsl(content))
-    token = oauth.Token(request_token['oauth_token'],
-        request_token['oauth_token_secret'])
+    request_token = json.loads(data)
+    if not hasattr(request_token, '__getitem__'):
+        raise BadRequest('Invalid data formating')
+    try:
+        token = oauth.Token(request_token['oauth_token'],
+                            request_token['oauth_token_secret'])
+    except:
+        raise BadRequest('Invalid request token cookie formatting')
     client = oauth.Client(consumer, token)
     
     # Step 2. Request the authorized access token from Twitter.
@@ -99,23 +106,14 @@ def authenticated(request):
     access_token = dict(urlparse.parse_qsl(content))
     
     # Step 3. Lookup the user or create them if they don't exist.
-    try:
-        user = User.objects.get(uniq=access_token['screen_name'])
-    except User.DoesNotExist:
-        # When creating the user I just use their screen_name@twitter.com
-        # for their email and the oauth_token_secret for their password.
-        # These two things will likely never be used. Alternatively, you 
-        # can prompt them for their email here. Either way, the password 
-        # should never be used.
-        user = User()
-        user.uniq = '%s@twitter.com' % access_token['screen_name']
-        user.realname = access_token['oauth_token']
-        user.affiliation = 'Twitter'
-        user.renew_token()
-        user.auth_token = access_token['oauth_token_secret']
-        user.save()
     
-    response = HttpResponse()
-    response.content = user.uniq + '\n' + user.auth_token + '\n'
-    response.status_code = 200
-    return response
+    # When creating the user I just use their screen_name@twitter.com
+    # for their email and the oauth_token_secret for their password.
+    # These two things will likely never be used. Alternatively, you 
+    # can prompt them for their email here. Either way, the password 
+    # should never be used.
+    uniq = '%s@twitter.com' % access_token['screen_name']
+    realname = access_token['user_id']
+    
+    return prepare_response(get_user(uniq, realname, 'Twitter'),
+                            request_token.get('next'))

@@ -31,33 +31,41 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
-from django.conf.urls.defaults import patterns
+from django.http import HttpResponseBadRequest
+
+from pithos.im.target.util import get_user, prepare_response
 
 
-urlpatterns = patterns('pithos.im.views',
-    (r'^$', 'index'),
-    (r'^login/?$', 'index'),
+class Tokens:
+    # these are mapped by the Shibboleth SP software
+    SHIB_EPPN = "HTTP_EPPN" # eduPersonPrincipalName
+    SHIB_NAME = "HTTP_SHIB_INETORGPERSON_GIVENNAME"
+    SHIB_SURNAME = "HTTP_SHIB_PERSON_SURNAME"
+    SHIB_CN = "HTTP_SHIB_PERSON_COMMONNAME"
+    SHIB_DISPLAYNAME = "HTTP_SHIB_INETORGPERSON_DISPLAYNAME"
+    SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
+    SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
+
+
+def login(request):
+    tokens = request.META
     
-    (r'^admin/?$', 'admin'),
+    try:
+        eppn = tokens[Tokens.SHIB_EPPN]
+    except KeyError:
+        return HttpResponseBadRequest("Missing unique token in request")
     
-    (r'^admin/users/?$', 'users_list'),
-    (r'^admin/users/(\d+)/?$', 'users_info'),
-    (r'^admin/users/create$', 'users_create'),
-    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
+    if Tokens.SHIB_DISPLAYNAME in tokens:
+        realname = tokens[Tokens.SHIB_DISPLAYNAME]
+    elif Tokens.SHIB_CN in tokens:
+        realname = tokens[Tokens.SHIB_CN]
+    elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
+        realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+    else:
+        return HttpResponseBadRequest("Missing user name in request")
     
-    (r'^invite/?$', 'invite')
-)
-
-urlpatterns += patterns('',
-    (r'^login/shibboleth/?$', 'pithos.im.target.shibboleth.login'),
-    (r'^login/twitter/?$', 'pithos.im.target.twitter.login'),
-    (r'^login/twitter/authenticated/?$', 'pithos.im.target.twitter.authenticated'),
-    (r'^login/invitation/?$', 'pithos.im.target.invitation.login')
-)
-
-urlpatterns += patterns('',
-    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-                                {'document_root': settings.PROJECT_PATH + '/im/static'})
-)
+    affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
+    
+    return prepare_response(get_user(eppn, realname, affiliation),
+                            request.GET.get('next'),
+                            'renew' in request.GET)

@@ -40,6 +40,7 @@ from pithos.im.models import User
 
 class AuthMiddleware(object):
     def process_request(self, request):
+        request.user_obj = None
         request.user = None
         
         # Try to find token in a parameter, in a request header, or in a cookie.
@@ -48,6 +49,11 @@ class AuthMiddleware(object):
             token = request.META.get('HTTP_X_AUTH_TOKEN', None)
         if not token:
             token = request.COOKIES.get('X-Auth-Token', None)
+        if not token: # Back from an im login target.
+            if request.GET.get('user', None):
+                token = request.GET.get('token', None)
+                if token:
+                    request.set_auth_cookie = True
         if not token:
             return
         
@@ -67,3 +73,9 @@ class AuthMiddleware(object):
         
         request.user_obj = user
         request.user = user.uniq
+
+    def process_response(self, request, response):
+        if getattr(request, 'user_obj', None) and getattr(request, 'set_auth_cookie', False):
+            expire_fmt = request.user_obj.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+            response.set_cookie('X-Auth-Token', value=request.user_obj.auth_token, expires=expire_fmt, path='/')
+        return response

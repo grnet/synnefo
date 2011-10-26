@@ -35,18 +35,18 @@ import logging
 
 from datetime import datetime
 
-from django.http import HttpResponse
+from django.http import HttpResponseBadRequest
 
 from pithos.im.models import Invitation
+from pithos.im.target.util import get_user, prepare_response
 
 
 def login(request):
     code = request.GET.get('code')
-    next = request.GET.get('next')
     try:
         invitation = Invitation.objects.get(code=code)
     except Invitation.DoesNotExist:
-        return HttpResponse('Does Not Exist')
+        return HttpResponseBadRequest('Does Not Exist')
     
     if not invitation.is_accepted:
         invitation.is_accepted = True
@@ -54,6 +54,6 @@ def login(request):
         invitation.save()
         logging.info('Accepted invitation %s', invitation)
     
-    # XXX Login here
-    
-    return HttpResponse()
+    return prepare_response(get_user(invitation.uniq, invitation.realname, 'Invitation'),
+                            request.GET.get('next'),
+                            'renew' in request.GET)

@@ -48,6 +48,7 @@ from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
 
 from pithos.im.models import User, Invitation
 from pithos.im.util import isoformat
@@ -67,7 +68,7 @@ def requires_login(func):
         if not settings.BYPASS_ADMIN_AUTH:
             if not request.user:
                 next = urlencode({'next': request.build_absolute_uri()})
-                login_uri = settings.LOGIN_URL + '?' + next
+                login_uri = reverse(index) + '?' + next
                 return HttpResponseRedirect(login_uri)
         return func(request, *args)
     return wrapper
@@ -79,7 +80,7 @@ def requires_admin(func):
         if not settings.BYPASS_ADMIN_AUTH:
             if not request.user:
                 next = urlencode({'next': request.build_absolute_uri()})
-                login_uri = settings.LOGIN_URL + '?' + next
+                login_uri = reverse(index) + '?' + next
                 return HttpResponseRedirect(login_uri)
             if not request.user_obj.is_admin:
                 return HttpResponse('Forbidden', status=403)
@@ -88,8 +89,7 @@ def requires_admin(func):
 
 
 def index(request):
-    # TODO: Get and pass on next variable.
-    return render_response('index.html')
+    return render_response('index.html', next=request.GET.get('next', ''))
 
 
 @requires_admin

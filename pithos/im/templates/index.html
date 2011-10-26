@@ -34,13 +34,14 @@
             </div>
           </fieldset>
           <div class="">
+            <input type="hidden" name="next" value="{{ next }}">
             <button type="submit" class="btn primary">Go</button>
           </div>
         </form>
       </div>
       <div class="span4">
         <h4>Stylish</h4>
-        <form action="" class="form-stacked">
+        <form action="{% url pithos.im.target.invitation.login %}" class="form-stacked">
           <fieldset>
             <div class="clearfix">
               <label for="token">Invitation:</label>
@@ -50,14 +51,15 @@
             </div>
           </fieldset>
           <div class="">
+            <input type="hidden" name="next" value="{{ next }}">
             <button type="submit" class="btn primary">Go</button>
           </div>
         </form>
       </div>
       <div class="span8">
         <h4>Funky</h4>
-        <a href="login/shibboleth" alt="Shibboleth"><img src="/im/static/shibboleth.png" width="120" height="120"></a>
-        <a href="login/twitter" alt="Twitter"><img src="/im/static/twitter.png" width="120" height="120"></a>
+        <a href="{% url pithos.im.target.shibboleth.login %}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="Shibboleth"><img src="/im/static/shibboleth.png" width="120" height="120"></a>
+        <a href="{% url pithos.im.target.twitter.login %}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="Twitter"><img src="/im/static/twitter.png" width="120" height="120"></a>
       </div>
     </div>
   </div>

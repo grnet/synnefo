@@ -98,7 +98,7 @@
     models.Collection = bb.Collection.extend({
         sync: snf.api.sync,
         api: snf.api,
-
+        supportIncUpdates: true,
         url: function(options) {
             return getUrl.call(this) + (options.details || this.details ? '/detail' : '');
         },
@@ -1259,7 +1259,7 @@
         path: 'images',
         details: true,
         noUpdate: true,
-        
+        supportIncUpdates: false,
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
 
         // update collection model with id passed
@@ -1309,7 +1309,7 @@
         path: 'flavors',
         details: true,
         noUpdate: true,
-        
+        supportIncUpdates: false,
         // update collection model with id passed
         // making a direct call to the flavor
         // api url

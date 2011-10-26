@@ -79,7 +79,9 @@
         
         if (!options.url) {
             options.url = getUrl(model, options) || urlError();
-            options.url = options.refresh ? options.url : setChangesSince(options.url, type);
+            if (model && model.supportIncUpdates) {
+                options.url = options.refresh ? options.url : setChangesSince(options.url, type);
+            }
             if (!options.refresh && options.cache === undefined) {
                 options.cache = true;
             }

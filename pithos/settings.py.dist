@@ -172,3 +172,6 @@ DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
 INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
                             '?code=%d' \
                             '&next=https://pithos.dev.grnet.gr/ui'
+
+# Use to log to a file.
+LOGFILE = None

@@ -38,29 +38,34 @@ from django.conf import settings
 from pithos.im.models import User
 
 
+def get_user_from_token(token):
+    try:
+        return User.objects.get(auth_token=token)
+    except User.DoesNotExist:
+        return None
+
+
 class AuthMiddleware(object):
     def process_request(self, request):
         request.user = None
         request.user_uniq = None
         
-        # Try to find token in a parameter, in a request header, or in a cookie.
-        token = request.GET.get('X-Auth-Token', None)
-        if not token:
-            token = request.META.get('HTTP_X_AUTH_TOKEN', None)
-        if not token:
-            token = request.COOKIES.get('X-Auth-Token', None)
-        if not token: # Back from an im login target.
+        # Try to find token in a parameter, in a request header,
+        # or in a cookie.
+        user = get_user_from_token(request.GET.get('X-Auth-Token'))
+        if not user:
+            user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
+        if not user:
+            user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
+        if not user:
+            # Back from an im login target.
             if request.GET.get('user', None):
                 token = request.GET.get('token', None)
                 if token:
                     request.set_auth_cookie = True
-        if not token:
-            return
+                user = get_user_from_token(token)
         
-        # Token was found, retrieve user from backing store.
-        try:
-            user = User.objects.get(auth_token=token)
-        except:
+        if not user:
             return
         
         # Check if the is active.

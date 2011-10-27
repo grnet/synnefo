@@ -82,7 +82,7 @@ def requires_admin(func):
                 next = urlencode({'next': request.build_absolute_uri()})
                 login_uri = reverse(index) + '?' + next
                 return HttpResponseRedirect(login_uri)
-            if not request.user_obj.is_admin:
+            if not request.user.is_admin:
                 return HttpResponse('Forbidden', status=403)
         return func(request, *args)
     return wrapper
@@ -210,10 +210,10 @@ def invite(request):
     message = None
 
     if request.method == 'POST':
-        if request.user_obj.invitations > 0:
+        if request.user.invitations > 0:
             code = generate_invitation_code()
             invitation, created = Invitation.objects.get_or_create(code=code)
-            invitation.inviter=request.user_obj
+            invitation.inviter=request.user
             invitation.realname=request.POST.get('realname')
             invitation.uniq=request.POST.get('uniq')
             invitation.save()
@@ -230,11 +230,11 @@ def invite(request):
             message = _('No invitations left')
 
     if request.GET.get('format') == 'json':
-        rep = {'invitations': request.user_obj.invitations}
+        rep = {'invitations': request.user.invitations}
         return HttpResponse(json.dumps(rep))
     
     html = render_to_string('invitations.html', {
-            'user': request.user_obj,
+            'user': request.user,
             'status': status,
             'message': message})
     return HttpResponse(html)

@@ -1,7 +1,7 @@
 import os
 
-#DEFAULT_HOST = 'pithos.dev.grnet.gr'
-DEFAULT_HOST = '127.0.0.1:8000'
+DEFAULT_HOST = 'pithos.dev.grnet.gr'
+#DEFAULT_HOST = '127.0.0.1:8000'
 DEFAULT_API = 'v1'
 DEFAULT_USER = 'test'
 DEFAULT_AUTH = '0000'

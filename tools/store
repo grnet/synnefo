@@ -747,7 +747,7 @@ def print_versions(data, f=stdout):
         return
     f.write('versions:\n')
     for id, t in data['versions']:
-        f.write('%s @ %s\n' % (str(id).rjust(30), datetime.fromtimestamp(t)))
+        f.write('%s @ %s\n' % (str(id).rjust(30), datetime.fromtimestamp(float(t))))
 
 def main():
     try:

@@ -52,20 +52,17 @@ def object_demux(request, v_account, v_container, v_object):
     else:
         return method_not_allowed(request)
 
-# TODO: Use a version of api_method that does not check for a token.
-
-@api_method('HEAD')
+@api_method('HEAD', user_required=False)
 def object_meta(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       badRequest (400)
     
     try:
-        meta = request.backend.get_object_meta(request.user, v_account,
+        meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                 v_container, v_object)
-        public = request.backend.get_object_public(request.user, v_account,
+        public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
@@ -78,21 +75,20 @@ def object_meta(request, v_account, v_container, v_object):
     put_object_meta(response, meta, True)
     return response
 
-@api_method('GET')
+@api_method('GET', user_required=False)
 def object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
     # Error Response Codes: serviceUnavailable (503),
     #                       rangeNotSatisfiable (416),
     #                       preconditionFailed (412),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       badRequest (400),
     #                       notModified (304)
     
     try:
-        meta = request.backend.get_object_meta(request.user, v_account,
+        meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                 v_container, v_object)
-        public = request.backend.get_object_public(request.user, v_account,
+        public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
@@ -115,14 +111,14 @@ def object_read(request, v_account, v_container, v_object):
     if 'X-Object-Manifest' in meta:
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
-            objects = request.backend.list_objects(request.user, v_account,
+            objects = request.backend.list_objects(request.user_uniq, v_account,
                                 src_container, prefix=src_name, virtual=False)
         except:
             raise ItemNotFound('Object does not exist')
         
         try:
             for x in objects:
-                s, h = request.backend.get_object_hashmap(request.user,
+                s, h = request.backend.get_object_hashmap(request.user_uniq,
                                         v_account, src_container, x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
@@ -130,7 +126,7 @@ def object_read(request, v_account, v_container, v_object):
             raise ItemNotFound('Object does not exist')
     else:
         try:
-            s, h = request.backend.get_object_hashmap(request.user, v_account,
+            s, h = request.backend.get_object_hashmap(request.user_uniq, v_account,
                                                         v_container, v_object)
             sizes.append(s)
             hashmaps.append(h)
@@ -139,6 +135,6 @@ def object_read(request, v_account, v_container, v_object):
     
     return object_data_response(request, sizes, hashmaps, meta, True)
 
-@api_method()
+@api_method(user_required=False)
 def method_not_allowed(request, **v_args):
     raise ItemNotFound('Object does not exist')

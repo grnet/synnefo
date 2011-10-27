@@ -125,7 +125,7 @@ class BaseTestCase(unittest.TestCase):
                 'content_type',
                 'content_encoding',
                 'last_modified',)}
-        self.return_codes = (400, 401, 404, 503,)
+        self.return_codes = (400, 401, 403, 404, 503,)
     
     def tearDown(self):
         self._clean_account()
@@ -333,8 +333,8 @@ class AccountHead(BaseTestCase):
             size = size + int(m['x-container-bytes-used'])
         self.assertEqual(meta['x-account-bytes-used'], str(size))
     
-    def test_get_account_401(self):
-        self.assert_raises_fault(401,
+    def test_get_account_403(self):
+        self.assert_raises_fault(403,
                                  self.invalid_client.retrieve_account_metadata)
     
     def test_get_account_meta_until(self):
@@ -371,8 +371,8 @@ class AccountGet(BaseTestCase):
         containers = self.client.list_containers()
         self.assertEquals(self.containers, containers)
     
-    def test_list_401(self):
-        self.assert_raises_fault(401, self.invalid_client.list_containers)
+    def test_list_403(self):
+        self.assert_raises_fault(403, self.invalid_client.list_containers)
     
     def test_list_with_limit(self):
         limit = 2
@@ -509,7 +509,7 @@ class AccountPost(BaseTestCase):
         
     def test_invalid_account_update_meta(self):
         meta = {'test':'test', 'tost':'tost'}
-        self.assert_raises_fault(401,
+        self.assert_raises_fault(403,
                                  self.invalid_client.update_account_metadata,
                                  **meta)
     
@@ -629,15 +629,6 @@ class ContainerGet(BaseTestCase):
         self.assert_extended(objects, 'xml', 'object')
         node_name = objects.getElementsByTagName('name')[0]
         self.assertEqual(node_name.firstChild.data, '/objectname')
-        
-        #objects = self.client.list_objects('test', prefix='/')
-        #self.assertEqual(objects, ['/objectname'])
-        #
-        #objects = self.client.list_objects('test', path='/')
-        #self.assertEqual(objects, ['/objectname'])
-        #
-        #objects = self.client.list_objects('test', prefix='/', delimiter='n')
-        #self.assertEqual(objects, ['/object'])
 
     def test_list_objects_with_limit_marker(self):
         objects = self.client.list_objects(self.container[0], limit=2)
@@ -936,6 +927,25 @@ class ObjectGet(BaseTestCase):
                                         self.objects[0]['name'],
                                         self.objects[0]['meta'])
         self.assertEqual(o, self.objects[0]['data'])
+    
+    def test_objects_with_trailing_spaces(self):
+        self.client.create_container('test')
+        #create 'a' object
+        self.upload_random_data('test', 'a')
+        #look for 'a ' object
+        self.assert_raises_fault(404, self.client.retrieve_object,
+                                 'test', 'a ')
+        
+        #delete 'a' object
+        self.client.delete_object('test', 'a')
+        self.assert_raises_fault(404, self.client.retrieve_object,
+                                 'test', 'a')
+        
+        #create 'a ' object
+        self.upload_random_data('test', 'a ')
+        #look for 'a' object
+        self.assert_raises_fault(404, self.client.retrieve_object,
+                                 'test', 'a')
     
     def test_get_invalid(self):
         self.assert_raises_fault(404, self.client.retrieve_object,
@@ -1889,13 +1899,13 @@ class TestGreek(BaseTestCase):
                             '0009',
                             'διογένης',
                             get_api())
-        self.assert_not_raises_fault(401, chef.retrieve_object_metadata,
+        self.assert_not_raises_fault(403, chef.retrieve_object_metadata,
                                      'φάκελος', 'ο1', account=get_user())
         
         #check write access
         self.client.share_object('φάκελος', 'ο1', ['διογένης'], read=False)
         new_data = get_random_data()
-        self.assert_not_raises_fault(401, chef.update_object,
+        self.assert_not_raises_fault(403, chef.update_object,
                                      'φάκελος', 'ο1', StringIO(new_data),
                                      account=get_user())
         
@@ -1969,10 +1979,10 @@ class TestPermissions(BaseTestCase):
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_server(), token, account, get_api()) 
             if account in authorized or any:
-                self.assert_not_raises_fault(401, cl.retrieve_object_metadata,
+                self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o', account=get_user())
             else:
-                self.assert_raises_fault(401, cl.retrieve_object_metadata,
+                self.assert_raises_fault(403, cl.retrieve_object_metadata,
                                          'c', 'o', account=get_user())
         
         #check inheritance
@@ -1980,10 +1990,10 @@ class TestPermissions(BaseTestCase):
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_server(), token, account, get_api()) 
             if account in authorized or any:
-                self.assert_not_raises_fault(401, cl.retrieve_object_metadata,
+                self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o/also-shared', account=get_user())
             else:
-                self.assert_raises_fault(401, cl.retrieve_object_metadata,
+                self.assert_raises_fault(403, cl.retrieve_object_metadata,
                                          'c', 'o/also-shared', account=get_user())
     
     def assert_write(self, o_data, authorized=[], any=False):
@@ -1992,7 +2002,7 @@ class TestPermissions(BaseTestCase):
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
-                self.assert_not_raises_fault(401, cl.update_object,
+                self.assert_not_raises_fault(403, cl.update_object,
                                              'c', 'o', StringIO(new_data),
                                              account=get_user())
                 try:
@@ -2002,9 +2012,9 @@ class TestPermissions(BaseTestCase):
                     self.assertEqual(new_data, server_data[len(o_data):])
                     o_data = server_data
                 except Fault, f:
-                    self.failIf(f.status == 401)
+                    self.failIf(f.status == 403)
             else:
-                self.assert_raises_fault(401, cl.update_object,
+                self.assert_raises_fault(403, cl.update_object,
                                              'c', 'o', StringIO(new_data),
                                              account=get_user())
         
@@ -2016,7 +2026,7 @@ class TestPermissions(BaseTestCase):
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
-                self.assert_not_raises_fault(401, cl.update_object,
+                self.assert_not_raises_fault(403, cl.update_object,
                                              'c', o['name'],
                                              StringIO(new_data),
                                              account=get_user())
@@ -2026,9 +2036,9 @@ class TestPermissions(BaseTestCase):
                     self.assertEqual(new_data, server_data[len(o_data):])
                     o_data = server_data
                 except Fault, f:
-                    self.failIf(f.status == 401)
+                    self.failIf(f.status == 403)
             else:
-                self.assert_raises_fault(401, cl.update_object,
+                self.assert_raises_fault(403, cl.update_object,
                                              'c', o['name'],
                                              StringIO(new_data),
                                              account=get_user())

@@ -40,8 +40,11 @@ import logging
 class LoggingConfigMiddleware:
     def __init__(self):
         '''Initialise the logging setup from settings, called on first request.'''
-        if getattr(settings, 'DEBUG', False):
-            logging.basicConfig(level = logging.DEBUG, format = '%(asctime)s [%(levelname)s] %(name)s %(message)s', datefmt = '%Y-%m-%d %H:%M:%S')
-        else:
-            logging.basicConfig(level = logging.INFO, format = '%(asctime)s [%(levelname)s] %(name)s %(message)s', datefmt = '%Y-%m-%d %H:%M:%S')
+        args = {}
+        args['level'] = logging.DEBUG if getattr(settings, 'DEBUG', False) else logging.INFO
+        if settings.LOGFILE:
+            args['filename'] = settings.LOGFILE
+        args['format'] = '%(asctime)s [%(levelname)s] %(name)s %(message)s'
+        args['datefmt'] = '%Y-%m-%d %H:%M:%S'
+        logging.basicConfig(**args)
         raise MiddlewareNotUsed('Logging setup only.')

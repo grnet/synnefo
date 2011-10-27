@@ -33,9 +33,11 @@
 
 from time import time
 from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
+from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
-from sqlalchemy.sql import func, and_, or_, null, select, bindparam
+from sqlalchemy.sql import func, and_, or_, null, select, bindparam, text
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.engine.reflection import Inspector
 
 from dbworker import DBWorker
 
@@ -114,10 +116,12 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               autoincrement=False))
-        columns.append(Column('path', String(2048), default='', nullable=False))
+        path_length = 2048
+        path_length_in_bytes = path_length * 4
+        columns.append(Column('path', Text(path_length_in_bytes), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
         # place an index on path
-        Index('idx_nodes_path', self.nodes.c.path)
+        #Index('idx_nodes_path', self.nodes.c.path)
         
         #create policy table
         columns=[]
@@ -174,6 +178,16 @@ class Node(DBWorker):
         
         metadata.create_all(self.engine)
         
+        # the following code creates an index of specific length
+        # this can be accompliced in sqlalchemy >= 0.7.3
+        # providing mysql_length option during index creation
+        insp = Inspector.from_engine(self.engine)
+        indexes = [elem['name'] for elem in insp.get_indexes('nodes')]
+        if 'idx_nodes_path' not in indexes:
+            explicit_length = '(%s)' %path_length_in_bytes if self.engine.name == 'mysql' else ''
+            s = text('CREATE INDEX idx_nodes_path ON nodes (path%s)' %explicit_length)
+            self.conn.execute(s).close()
+        
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))
         rp = self.conn.execute(s)
@@ -199,7 +213,7 @@ class Node(DBWorker):
            Return None if the path is not found.
         """
         
-        s = select([self.nodes.c.node], self.nodes.c.path == path)
+        s = select([self.nodes.c.node], self.nodes.c.path.like(path))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -420,7 +434,6 @@ class Node(DBWorker):
            size of objects and mtime in the node's namespace.
            May be zero or positive or negative numbers.
         """
-        
         s = select([self.statistics.c.population, self.statistics.c.size],
             and_(self.statistics.c.node == node,
                  self.statistics.c.cluster == cluster))

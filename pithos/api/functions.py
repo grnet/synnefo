@@ -42,7 +42,7 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_unicode, smart_str
 from xml.dom import minidom
 
-from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, ItemNotFound, Conflict,
+from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (rename_meta_key, format_header_key, printable_header_dict, get_account_headers,
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 def top_demux(request):
     if request.method == 'GET':
-        if request.user:
+        if getattr(request, 'user', None) is not None:
             return account_list(request)
         return authenticate(request)
     else:
@@ -109,11 +109,11 @@ def object_demux(request, v_account, v_container, v_object):
     else:
         return method_not_allowed(request)
 
-@api_method('GET')
+@api_method('GET', user_required=False)
 def authenticate(request):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     x_auth_user = request.META.get('HTTP_X_AUTH_USER')
@@ -143,7 +143,7 @@ def account_list(request):
     if not limit:
         limit = 10000
     
-    accounts = request.backend.list_accounts(request.user, marker, limit)
+    accounts = request.backend.list_accounts(request.user_uniq, marker, limit)
     
     if request.serialization == 'text':
         if len(accounts) == 0:
@@ -157,10 +157,10 @@ def account_list(request):
     account_meta = []
     for x in accounts:
         try:
-            meta = request.backend.get_account_meta(request.user, x)
-            groups = request.backend.get_account_groups(request.user, x)
+            meta = request.backend.get_account_meta(request.user_uniq, x)
+            groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         else:
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(meta, 'until_timestamp', 'x_account_until_timestamp')
@@ -179,16 +179,16 @@ def account_list(request):
 def account_meta(request, v_account):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        meta = request.backend.get_account_meta(request.user, v_account, until)
-        groups = request.backend.get_account_groups(request.user, v_account)
-        policy = request.backend.get_account_policy(request.user, v_account)
+        meta = request.backend.get_account_meta(request.user_uniq, v_account, until)
+        groups = request.backend.get_account_groups(request.user_uniq, v_account)
+        policy = request.backend.get_account_policy(request.user_uniq, v_account)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     
     validate_modification_preconditions(request, meta)
     
@@ -200,7 +200,7 @@ def account_meta(request, v_account):
 def account_update(request, v_account):
     # Normal Response Codes: 202
     # Error Response Codes: serviceUnavailable (503),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     meta, groups = get_account_headers(request)
@@ -209,18 +209,18 @@ def account_update(request, v_account):
         replace = False
     if groups:
         try:
-            request.backend.update_account_groups(request.user, v_account,
+            request.backend.update_account_groups(request.user_uniq, v_account,
                                                     groups, replace)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except ValueError:
             raise BadRequest('Invalid groups header')
     if meta or replace:
         try:
-            request.backend.update_account_meta(request.user, v_account, meta,
+            request.backend.update_account_meta(request.user_uniq, v_account, meta,
                                                 replace)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
     return HttpResponse(status=202)
 
 @api_method('GET', format_allowed=True)
@@ -228,16 +228,16 @@ def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        meta = request.backend.get_account_meta(request.user, v_account, until)
-        groups = request.backend.get_account_groups(request.user, v_account)
-        policy = request.backend.get_account_policy(request.user, v_account)
+        meta = request.backend.get_account_meta(request.user_uniq, v_account, until)
+        groups = request.backend.get_account_groups(request.user_uniq, v_account)
+        policy = request.backend.get_account_policy(request.user_uniq, v_account)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     
     validate_modification_preconditions(request, meta)
     
@@ -254,10 +254,10 @@ def container_list(request, v_account):
         shared = True
     
     try:
-        containers = request.backend.list_containers(request.user, v_account,
+        containers = request.backend.list_containers(request.user_uniq, v_account,
                                                 marker, limit, shared, until)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         containers = []
     
@@ -273,12 +273,12 @@ def container_list(request, v_account):
     container_meta = []
     for x in containers:
         try:
-            meta = request.backend.get_container_meta(request.user, v_account,
+            meta = request.backend.get_container_meta(request.user_uniq, v_account,
                                                         x, until)
-            policy = request.backend.get_container_policy(request.user,
+            policy = request.backend.get_container_policy(request.user_uniq,
                                                             v_account, x)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             pass
         else:
@@ -300,19 +300,19 @@ def container_meta(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        meta = request.backend.get_container_meta(request.user, v_account,
+        meta = request.backend.get_container_meta(request.user_uniq, v_account,
                                                     v_container, until)
-        meta['object_meta'] = request.backend.list_object_meta(request.user,
+        meta['object_meta'] = request.backend.list_object_meta(request.user_uniq,
                                                 v_account, v_container, until)
-        policy = request.backend.get_container_policy(request.user, v_account,
+        policy = request.backend.get_container_policy(request.user_uniq, v_account,
                                                         v_container)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -327,16 +327,16 @@ def container_create(request, v_account, v_container):
     # Normal Response Codes: 201, 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     meta, policy = get_container_headers(request)
     
     try:
-        request.backend.put_container(request.user, v_account, v_container, policy)
+        request.backend.put_container(request.user_uniq, v_account, v_container, policy)
         ret = 201
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except ValueError:
         raise BadRequest('Invalid policy header')
     except NameError:
@@ -344,20 +344,20 @@ def container_create(request, v_account, v_container):
     
     if ret == 202 and policy:
         try:
-            request.backend.update_container_policy(request.user, v_account,
+            request.backend.update_container_policy(request.user_uniq, v_account,
                                             v_container, policy, replace=False)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Container does not exist')
         except ValueError:
             raise BadRequest('Invalid policy header')
     if meta:
         try:
-            request.backend.update_container_meta(request.user, v_account,
+            request.backend.update_container_meta(request.user_uniq, v_account,
                                             v_container, meta, replace=False)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Container does not exist')
     
@@ -368,7 +368,7 @@ def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     meta, policy = get_container_headers(request)
@@ -377,20 +377,20 @@ def container_update(request, v_account, v_container):
         replace = False
     if policy:
         try:
-            request.backend.update_container_policy(request.user, v_account,
+            request.backend.update_container_policy(request.user_uniq, v_account,
                                                 v_container, policy, replace)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Container does not exist')
         except ValueError:
             raise BadRequest('Invalid policy header')
     if meta or replace:
         try:
-            request.backend.update_container_meta(request.user, v_account,
+            request.backend.update_container_meta(request.user_uniq, v_account,
                                                     v_container, meta, replace)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Container does not exist')
     
@@ -417,15 +417,15 @@ def container_delete(request, v_account, v_container):
     # Error Response Codes: serviceUnavailable (503),
     #                       conflict (409),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        request.backend.delete_container(request.user, v_account, v_container,
+        request.backend.delete_container(request.user_uniq, v_account, v_container,
                                             until)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except IndexError:
@@ -437,19 +437,19 @@ def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        meta = request.backend.get_container_meta(request.user, v_account,
+        meta = request.backend.get_container_meta(request.user_uniq, v_account,
                                                     v_container, until)
-        meta['object_meta'] = request.backend.list_object_meta(request.user,
+        meta['object_meta'] = request.backend.list_object_meta(request.user_uniq,
                                                 v_account, v_container, until)
-        policy = request.backend.get_container_policy(request.user, v_account,
+        policy = request.backend.get_container_policy(request.user_uniq, v_account,
                                                         v_container)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -494,11 +494,11 @@ def object_list(request, v_account, v_container):
         shared = True
     
     try:
-        objects = request.backend.list_objects(request.user, v_account,
+        objects = request.backend.list_objects(request.user_uniq, v_account,
                                     v_container, prefix, delimiter, marker,
                                     limit, virtual, keys, shared, until)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
     
@@ -518,18 +518,18 @@ def object_list(request, v_account, v_container):
             object_meta.append({'subdir': x[0]})
         else:
             try:
-                meta = request.backend.get_object_meta(request.user, v_account,
+                meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                         v_container, x[0], x[1])
                 if until is None:
                     permissions = request.backend.get_object_permissions(
-                                    request.user, v_account, v_container, x[0])
-                    public = request.backend.get_object_public(request.user,
+                                    request.user_uniq, v_account, v_container, x[0])
+                    public = request.backend.get_object_public(request.user_uniq,
                                                 v_account, v_container, x[0])
                 else:
                     permissions = None
                     public = None
             except NotAllowedError:
-                raise Unauthorized('Access denied')
+                raise Forbidden('Not allowed')
             except NameError:
                 pass
             else:
@@ -553,23 +553,23 @@ def object_meta(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     version = request.GET.get('version')
     try:
-        meta = request.backend.get_object_meta(request.user, v_account,
+        meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                 v_container, v_object, version)
         if version is None:
-            permissions = request.backend.get_object_permissions(request.user,
+            permissions = request.backend.get_object_permissions(request.user_uniq,
                                             v_account, v_container, v_object)
-            public = request.backend.get_object_public(request.user, v_account,
+            public = request.backend.get_object_public(request.user_uniq, v_account,
                                                         v_container, v_object)
         else:
             permissions = None
             public = None
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -599,7 +599,7 @@ def object_read(request, v_account, v_container, v_object):
     #                       rangeNotSatisfiable (416),
     #                       preconditionFailed (412),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400),
     #                       notModified (304)
     
@@ -611,10 +611,10 @@ def object_read(request, v_account, v_container, v_object):
             raise BadRequest('No format specified for version list.')
         
         try:
-            v = request.backend.list_versions(request.user, v_account,
+            v = request.backend.list_versions(request.user_uniq, v_account,
                                                 v_container, v_object)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         d = {'versions': v}
         if request.serialization == 'xml':
             d['object'] = v_object
@@ -627,18 +627,18 @@ def object_read(request, v_account, v_container, v_object):
         return response
     
     try:
-        meta = request.backend.get_object_meta(request.user, v_account,
+        meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                 v_container, v_object, version)
         if version is None:
-            permissions = request.backend.get_object_permissions(request.user,
+            permissions = request.backend.get_object_permissions(request.user_uniq,
                                             v_account, v_container, v_object)
-            public = request.backend.get_object_public(request.user, v_account,
+            public = request.backend.get_object_public(request.user_uniq, v_account,
                                                         v_container, v_object)
         else:
             permissions = None
             public = None
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Object does not exist')
     except IndexError:
@@ -662,10 +662,10 @@ def object_read(request, v_account, v_container, v_object):
     if 'X-Object-Manifest' in meta:
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
-            objects = request.backend.list_objects(request.user, v_account,
+            objects = request.backend.list_objects(request.user_uniq, v_account,
                                 src_container, prefix=src_name, virtual=False)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except ValueError:
             raise BadRequest('Invalid X-Object-Manifest header')
         except NameError:
@@ -673,24 +673,24 @@ def object_read(request, v_account, v_container, v_object):
         
         try:
             for x in objects:
-                s, h = request.backend.get_object_hashmap(request.user,
+                s, h = request.backend.get_object_hashmap(request.user_uniq,
                                         v_account, src_container, x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Object does not exist')
         except IndexError:
             raise ItemNotFound('Version does not exist')
     else:
         try:
-            s, h = request.backend.get_object_hashmap(request.user, v_account,
+            s, h = request.backend.get_object_hashmap(request.user_uniq, v_account,
                                                 v_container, v_object, version)
             sizes.append(s)
             hashmaps.append(h)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Object does not exist')
         except IndexError:
@@ -727,16 +727,16 @@ def object_write(request, v_account, v_container, v_object):
     #                       lengthRequired (411),
     #                       conflict (409),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         try:
-            meta = request.backend.get_object_meta(request.user, v_account,
+            meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                         v_container, v_object)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             meta = {}
         validate_matching_preconditions(request, meta)
@@ -748,7 +748,7 @@ def object_write(request, v_account, v_container, v_object):
         
         src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
         if not src_account:
-            src_account = request.user
+            src_account = request.user_uniq
         if move_from:
             try:
                 src_container, src_name = split_container_object_string(move_from)
@@ -825,11 +825,11 @@ def object_write(request, v_account, v_container, v_object):
             raise UnprocessableEntity('Object ETag does not match')
     
     try:
-        version_id = request.backend.update_object_hashmap(request.user,
+        version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, hashmap, meta,
                         True, permissions)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except IndexError, e:
         raise Conflict('\n'.join(e.data) + '\n')
     except NameError:
@@ -842,10 +842,10 @@ def object_write(request, v_account, v_container, v_object):
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
         try:
-            request.backend.update_object_public(request.user, v_account,
+            request.backend.update_object_public(request.user_uniq, v_account,
                                                 v_container, v_object, public)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Object does not exist')
     
@@ -859,7 +859,7 @@ def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     if not request.FILES.has_key('X-Object-Data'):
@@ -880,10 +880,10 @@ def object_write_form(request, v_account, v_container, v_object):
     meta['hash'] = md5.hexdigest().lower()
     
     try:
-        version_id = request.backend.update_object_hashmap(request.user,
+        version_id = request.backend.update_object_hashmap(request.user_uniq,
                     v_account, v_container, v_object, size, hashmap, meta, True)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except QuotaError:
@@ -899,12 +899,12 @@ def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     dest_account = smart_unicode(request.META.get('HTTP_DESTINATION_ACCOUNT'), strings_only=True)
     if not dest_account:
-        dest_account = request.user
+        dest_account = request.user_uniq
     dest_path = smart_unicode(request.META.get('HTTP_DESTINATION'), strings_only=True)
     if not dest_path:
         raise BadRequest('Missing Destination header')
@@ -917,10 +917,10 @@ def object_copy(request, v_account, v_container, v_object):
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
-            meta = request.backend.get_object_meta(request.user, v_account,
+            meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                             v_container, v_object, src_version)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except (NameError, IndexError):
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
@@ -936,12 +936,12 @@ def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     dest_account = smart_unicode(request.META.get('HTTP_DESTINATION_ACCOUNT'), strings_only=True)
     if not dest_account:
-        dest_account = request.user
+        dest_account = request.user_uniq
     dest_path = smart_unicode(request.META.get('HTTP_DESTINATION'), strings_only=True)
     if not dest_path:
         raise BadRequest('Missing Destination header')
@@ -953,10 +953,10 @@ def object_move(request, v_account, v_container, v_object):
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         try:
-            meta = request.backend.get_object_meta(request.user, v_account,
+            meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                     v_container, v_object)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
@@ -973,7 +973,7 @@ def object_update(request, v_account, v_container, v_object):
     # Error Response Codes: serviceUnavailable (503),
     #                       conflict (409),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     meta, permissions, public = get_object_headers(request)
     content_type = meta.get('Content-Type')
@@ -981,10 +981,10 @@ def object_update(request, v_account, v_container, v_object):
         del(meta['Content-Type']) # Do not allow changing the Content-Type.
     
     try:
-        prev_meta = request.backend.get_object_meta(request.user, v_account,
+        prev_meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                     v_container, v_object)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -1009,10 +1009,10 @@ def object_update(request, v_account, v_container, v_object):
         # Do permissions first, as it may fail easier.
         if permissions is not None:
             try:
-                request.backend.update_object_permissions(request.user,
+                request.backend.update_object_permissions(request.user_uniq,
                                 v_account, v_container, v_object, permissions)
             except NotAllowedError:
-                raise Unauthorized('Access denied')
+                raise Forbidden('Not allowed')
             except NameError:
                 raise ItemNotFound('Object does not exist')
             except ValueError:
@@ -1021,18 +1021,18 @@ def object_update(request, v_account, v_container, v_object):
                 raise Conflict('\n'.join(e.data) + '\n')
         if public is not None:
             try:
-                request.backend.update_object_public(request.user, v_account,
+                request.backend.update_object_public(request.user_uniq, v_account,
                                                 v_container, v_object, public)
             except NotAllowedError:
-                raise Unauthorized('Access denied')
+                raise Forbidden('Not allowed')
             except NameError:
                 raise ItemNotFound('Object does not exist')
         if meta or replace:
             try:
-                version_id = request.backend.update_object_meta(request.user,
+                version_id = request.backend.update_object_meta(request.user_uniq,
                                 v_account, v_container, v_object, meta, replace)
             except NotAllowedError:
-                raise Unauthorized('Access denied')
+                raise Forbidden('Not allowed')
             except NameError:
                 raise ItemNotFound('Object does not exist')        
             response['X-Object-Version'] = version_id
@@ -1050,10 +1050,10 @@ def object_update(request, v_account, v_container, v_object):
         raise RangeNotSatisfiable('Invalid Content-Range header')
     
     try:
-        size, hashmap = request.backend.get_object_hashmap(request.user,
+        size, hashmap = request.backend.get_object_hashmap(request.user_uniq,
                                             v_account, v_container, v_object)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Object does not exist')
     
@@ -1065,16 +1065,16 @@ def object_update(request, v_account, v_container, v_object):
     if src_object:
         src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
         if not src_account:
-            src_account = request.user
+            src_account = request.user_uniq
         src_container, src_name = split_container_object_string(src_object)
         src_container = smart_unicode(src_container, strings_only=True)
         src_name = smart_unicode(src_name, strings_only=True)
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
-            src_size, src_hashmap = request.backend.get_object_hashmap(request.user,
+            src_size, src_hashmap = request.backend.get_object_hashmap(request.user_uniq,
                                         src_account, src_container, src_name, src_version)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Source object does not exist')
         
@@ -1156,11 +1156,11 @@ def object_update(request, v_account, v_container, v_object):
         hashmap = hashmap[:(int((size - 1) / request.backend.block_size) + 1)]
     meta.update({'hash': hashmap_hash(request, hashmap)}) # Update ETag.
     try:
-        version_id = request.backend.update_object_hashmap(request.user,
+        version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, hashmap, meta,
                         replace, permissions)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
@@ -1171,10 +1171,10 @@ def object_update(request, v_account, v_container, v_object):
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
         try:
-            request.backend.update_object_public(request.user, v_account,
+            request.backend.update_object_public(request.user_uniq, v_account,
                                                 v_container, v_object, public)
         except NotAllowedError:
-            raise Unauthorized('Access denied')
+            raise Forbidden('Not allowed')
         except NameError:
             raise ItemNotFound('Object does not exist')
     
@@ -1188,15 +1188,15 @@ def object_delete(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
-    #                       unauthorized (401),
+    #                       forbidden (403),
     #                       badRequest (400)
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        request.backend.delete_object(request.user, v_account, v_container,
+        request.backend.delete_object(request.user_uniq, v_account, v_container,
                                         v_object, until)
     except NotAllowedError:
-        raise Unauthorized('Access denied')
+        raise Forbidden('Not allowed')
     except NameError:
         raise ItemNotFound('Object does not exist')
     return HttpResponse(status=204)

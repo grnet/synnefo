@@ -67,18 +67,20 @@ class User(models.Model):
     
     auth_token = models.CharField('Authentication Token', max_length=32,
                                     null=True, blank=True)
-    auth_token_created = models.DateTimeField('Token creation date')
-    auth_token_expires = models.DateTimeField('Token expiration date')
+    auth_token_created = models.DateTimeField('Token creation date',
+                                                null=True)
+    auth_token_expires = models.DateTimeField('Token expiration date',
+                                                null=True)
     
     created = models.DateTimeField('Creation date')
     updated = models.DateTimeField('Update date')
     
-    def save(self, update_timestamps=True):
+    def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
                 self.created = datetime.now()
             self.updated = datetime.now()
-        super(User, self).save()
+        super(User, self).save(**kwargs)
     
     def renew_token(self):
         md5 = hashlib.md5()

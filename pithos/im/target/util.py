@@ -37,7 +37,6 @@ from urlparse import urlsplit, urlunsplit
 
 from django.http import HttpResponse
 from django.utils.http import urlencode
-#from django.utils.cache import patch_vary_headers
 
 from pithos.im.models import User
 
@@ -47,11 +46,8 @@ def get_user(uniq, realname, affiliation):
        and issue a token for subsequent requests.
     """
     
-    try:
-        user = User.objects.get(uniq=uniq)
-    except User.DoesNotExist:
-        user = User()
-        user.uniq = uniq
+    user, created = User.objects.get_or_create(uniq=uniq)
+    if created:
         user.realname = realname
         user.affiliation = affiliation
         user.renew_token()

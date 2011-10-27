@@ -37,8 +37,16 @@ from datetime import datetime
 
 from django.http import HttpResponseBadRequest
 
-from pithos.im.models import Invitation
-from pithos.im.target.util import get_user, prepare_response
+from pithos.im.models import User, Invitation
+from pithos.im.target.util import prepare_response
+
+
+INVITATIONS_PER_LEVEL = {
+    0   :   10000,
+    1   :   3,
+    2   :   2,
+    3   :   1,
+    4   :   0}
 
 
 def login(request):
@@ -54,6 +62,15 @@ def login(request):
         invitation.save()
         logging.info('Accepted invitation %s', invitation)
     
-    return prepare_response(get_user(invitation.uniq, invitation.realname, 'Invitation'),
-                            request.GET.get('next'),
-                            'renew' in request.GET)
+    user, created = User.objects.get_or_create(uniq=invitation.uniq)
+    if created:
+        user.realname = invitation.realname
+        user.affiliation = 'Invitation'
+        user.level = invitation.inviter.level + 1
+        user.invitations = INVITATIONS_PER_LEVEL.get(user.level, 0)
+        user.renew_token()
+        user.save()
+        logging.info('Created user %s', user)
+    
+    next = request.GET.get('next')
+    return prepare_response(user, next, 'renew' in request.GET)

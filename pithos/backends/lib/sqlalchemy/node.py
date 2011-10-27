@@ -37,7 +37,6 @@ from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, null, select, bindparam, text
 from sqlalchemy.ext.compiler import compiles
-#from sqlalchemy.dialects.mysql import VARBINARY
 from sqlalchemy.engine.reflection import Inspector
 
 from dbworker import DBWorker
@@ -185,7 +184,8 @@ class Node(DBWorker):
         insp = Inspector.from_engine(self.engine)
         indexes = [elem['name'] for elem in insp.get_indexes('nodes')]
         if 'idx_nodes_path' not in indexes:
-            s = text('CREATE INDEX idx_nodes_path ON nodes (path(%s))' %path_length_in_bytes)
+            explicit_length = '(%s)' %path_length_in_bytes if self.engine.name == 'mysql' else ''
+            s = text('CREATE INDEX idx_nodes_path ON nodes (path%s)' %explicit_length)
             self.conn.execute(s).close()
         
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
@@ -434,7 +434,6 @@ class Node(DBWorker):
            size of objects and mtime in the node's namespace.
            May be zero or positive or negative numbers.
         """
-        
         s = select([self.statistics.c.population, self.statistics.c.size],
             and_(self.statistics.c.node == node,
                  self.statistics.c.cluster == cluster))

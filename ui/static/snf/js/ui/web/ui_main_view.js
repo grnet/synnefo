@@ -252,9 +252,9 @@
     // menu wrapper view
     views.SelectView = views.View.extend({
         
-        initialize: function(view) {
+        initialize: function(view, router) {
             this.parent = view;
-
+            this.router = router;
             this.pane_view_selector = $(".css-tabs");
             this.machine_view_selector = $("#view-select");
             this.el = $(".css-tabs");
@@ -283,29 +283,29 @@
 
             this.pane_view_selector.find("a#machines_view_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.parent.show_view("machines");
+                this.router.vms_index();
             }, this))
             this.pane_view_selector.find("a#networks_view_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.parent.show_view("networks");
+                this.router.networks_view();
             }, this))
             this.pane_view_selector.find("a#disks_view_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.parent.show_view("disks");
+                this.router.disks_view();
             }, this))
             
             this.machine_view_selector.find("a#machines_view_icon_link").click(_.bind(function(ev){
                 ev.preventDefault();
                 var d = $.now();
-                this.parent.show_view("icon");
+                this.router.vms_icon_view();
             }, this))
             this.machine_view_selector.find("a#machines_view_list_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.parent.show_view("list");
+                this.router.vms_list_view();
             }, this))
             this.machine_view_selector.find("a#machines_view_single_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.parent.show_view("single");
+                this.router.vms_single_view();
             }, this))
         },
 
@@ -360,7 +360,8 @@
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
-                
+            
+            this.router = snf.router;
             this.empty_hidden = true;
             // fallback to browser error reporting (true for debug)
             this.skip_errors = true
@@ -563,7 +564,7 @@
             // on their creation
             var uhv = snf.config.update_hidden_views;
             snf.config.update_hidden_views = true;
-            this.initialize_views()
+            this.initialize_views();
             snf.config.update_hidden_views = uhv;
 
             window.setTimeout(function() {
@@ -576,7 +577,10 @@
             this.init_overlays();
             // display initial view
             this.loaded = true;
+            
+            // application start point
             this.show_initial_view();
+
             this.check_empty();
         },
 
@@ -608,8 +612,8 @@
         },
 
         initialize_views: function() {
+            this.select_view = new views.SelectView(this, this.router);
             this.empty_view = new views.EmptyView();
-            this.select_view = new views.SelectView(this);
             this.metadata_view = new views.MetadataView();
             this.multiple_actions_view = new views.MultipleActionsView();
             
@@ -634,7 +638,9 @@
         show_initial_view: function() {
           this.set_vm_view_handlers();
           this.hide_loading_view();
-          this.show_view(this.initial_view);
+          
+          bb.history.start();
+
           this.trigger("initial");
         },
 
@@ -644,16 +650,18 @@
         },
 
         set_vm_view_handlers: function() {
-            $("#createcontainer #create").click(_.bind(function(){
-                this.create_vm_view.show();
-            }, this))
+            var self = this;
+            $("#createcontainer #create").click(function(e){
+                e.preventDefault();
+                self.router.vm_create_view();
+            })
         },
 
         check_empty: function() {
             if (!this.loaded) { return }
             if (storage.vms.length == 0) {
                 this.show_view("machines");
-                this.show_empty();
+                this.router.show_welcome();
                 this.empty_hidden = false;
             } else {
                 this.hide_empty();
@@ -679,9 +687,7 @@
             $("#machines-pane-top").removeClass("empty");
 
             this.empty_view.hide(true);
-            if (this.current_view && !this.current_view.visible()) { 
-                this.current_view.show(); 
-            }
+            this.router.vms_index();
             this.empty_hidden = true;
             this.select_view.update_layout();
         },

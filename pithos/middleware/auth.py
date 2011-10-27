@@ -33,8 +33,6 @@
 
 from time import time, mktime
 
-from django.conf import settings
-
 from pithos.im.models import User
 
 
@@ -50,13 +48,10 @@ class AuthMiddleware(object):
         request.user = None
         request.user_uniq = None
         
-        # Try to find token in a parameter, in a request header,
-        # or in a cookie.
+        # Try to find token in a parameter, in a request header, or in a cookie.
         user = get_user_from_token(request.GET.get('X-Auth-Token'))
         if not user:
             user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
-        if not user:
-            user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
         if not user:
             # Back from an im login target.
             if request.GET.get('user', None):
@@ -64,7 +59,8 @@ class AuthMiddleware(object):
                 if token:
                     request.set_auth_cookie = True
                 user = get_user_from_token(token)
-        
+            if not user:
+                user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
         if not user:
             return
         
@@ -78,7 +74,7 @@ class AuthMiddleware(object):
         
         request.user = user
         request.user_uniq = user.uniq
-
+    
     def process_response(self, request, response):
         if getattr(request, 'user', None) and getattr(request, 'set_auth_cookie', False):
             expire_fmt = request.user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')

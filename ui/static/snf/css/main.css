@@ -2708,7 +2708,7 @@ div.network div.action-container {
 div.network div.net-actions .confirm_single {
     position: absolute;
     left: 96px;
-    width: 200px;
+    width: 150px;
     margin: 0 0px -5px 0;
     font-size: 100%;
 }
@@ -2732,6 +2732,8 @@ div.network div.machine-actions a.action-destroy.selected {
     color: #880000 !important;
 }
 
+div.network div.actions a.visible,
+div.network div.net-vm-actions a.visible,
 div.network div.actions a.selected:hover, div.network div.machine-actions a.selected {
     background-color: transparent !important;
     visibility: visible!important;

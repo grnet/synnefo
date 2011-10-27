@@ -55,16 +55,11 @@
         
         initialize: function() {
             this.actions = {};
+            this.ns_config = {};
+
             views.MultipleActionsView.__super__.initialize.call(this);
-            
-            // view elements
-            this.confirm_actions = this.$(".confirm_multiple_actions");
-            this.confirm_actions_yes = this.$(".confirm_multiple_actions button.yes");
-            this.confirm_actions_no = this.$(".confirm_multiple_actions button.no");
-            this.confirm_reboot = this.$(".confirm_reboot_required");
-            this.confirm_reboot_yes = this.$(".confirm_reboot_required button.yes");
-            this.confirm_reboot_no = this.$(".confirm_reboot_required button.no");
-            this.confirm_reboot_list = this.confirm_reboot.find(".reboot-machines-list");
+
+            this.ns_tpl = this.$(".confirm_multiple_actions-template").clone()
 
             this.init_handlers();
             this.update_layout();
@@ -74,6 +69,54 @@
             this.fix_position = _.throttle(this.fix_position, 100);
             this.update_layout = _.throttle(this.update_layout, 100);
             this.show_limit = 1;
+
+            this.init_ns("vms", {
+                msg_tpl:"Your actions will affect 1 machine",
+                msg_tpl_plural:"Your actions will affect {0} machines",
+                actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
+                limit: 1,
+                cancel_all: function() { snf.storage.vms.reset_pending_actions(); },
+                do_all: function() { snf.storage.vms.do_all_pending_actions(); }
+            });
+            
+            this.init_ns("nets", {
+                msg_tpl:"Your actions will affect 1 private network",
+                msg_tpl_plural:"Your actions will affect {0} private networks",
+                actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
+                limit: 1,
+                cancel_all: function() { snf.storage.networks.reset_pending_actions(); },
+                do_all: function() { snf.storage.networks.do_all_pending_actions(); }
+            });
+
+            this.init_ns("reboots", {
+                msg_tpl:"1 machine needs to be rebooted for changes to apply.",
+                msg_tpl_plural:"{0} machines needs to be rebooted for changes to apply.",
+                actions_msg: {confirm: "Reboot all", cancel: "Cancel all"},
+                limit: 0,
+                cancel_all: function() { snf.storage.vms.reset_reboot_required(); },
+                do_all: function() { snf.storage.vms.do_all_reboots(); }
+            });
+        },
+        
+        init_ns: function(ns, params) {
+            this.actions[ns] = {};
+            var nsconf = this.ns_config[ns] = params || {};
+            nsconf.cont = $(this.$("#conirm_multiple_cont_template").clone());
+            nsconf.cont.attr("id", "confirm_multiple_cont_" + ns);
+            $(this.el).find(".ns-confirms-cont").append(nsconf.cont).addClass(ns);
+            $(this.el).find(".ns-confirms-cont").append(nsconf.cont).addClass("confirm-ns");
+            nsconf.cont.find(".msg button.yes").text(
+                nsconf.actions_msg.confirm).click(_.bind(this.do_all, this, ns));
+            nsconf.cont.find(".msg button.no").text(
+                nsconf.actions_msg.cancel).click(_.bind(this.cancel_all, this, ns));
+        },
+
+        do_all: function(ns) {
+            this.ns_config[ns].do_all();
+        },
+
+        cancel_all: function(ns) {
+            this.ns_config[ns].cancel_all();
         },
 
         init_handlers: function() {
@@ -86,80 +129,93 @@
             $(window).scroll(_.bind(function(){
                 this.fix_position();
             }, this));
+
+            storage.vms.bind("change:pending_action", _.bind(this.handle_action_add, this, "vms"));
+            storage.vms.bind("change:reboot_required", _.bind(this.handle_action_add, this, "reboots"));
+            storage.networks.bind("change:actions", _.bind(this.handle_action_add, this, "nets"));
+        },
+
+        handle_action_add: function(type, model, action) {
+            var actions = this.actions[type];
             
-            // confirm/cancel button handlers
-            var self = this;
-            this.confirm_actions_yes.click(function(){ self.do_all(); })
-            this.confirm_actions_no.click(function(){
-                self.reset_actions();
-            });
-
-            this.confirm_reboot_yes.click(function(){ self.do_reboot_all(); })
-            this.confirm_reboot_no.click(function(){
-                self.reset_reboots();
-            });
-
-            storage.vms.bind("change:pending_action", _.bind(this.handle_vm_change, this));
-            storage.vms.bind("change:reboot_required", _.bind(this.handle_vm_change, this));
-
-        },
-
-        handle_vm_change: function(vm) {
-            if (vm.has_pending_action()) {
-                var action = vm.get("pending_action");
-                this.add_action(vm, action);
-            } else {
-                this.remove_action(vm);
-            }
-            this.update_layout();
-        },
-
-        add_action: function(vm, action) {
-            this._actions[vm.id] = {'vm': vm, 'action': action};
-        },
-
-        remove_action: function(vm) {
-            delete this._actions[vm.id];
-        },
-
-        reset: function() {
-            this._actions = {};
-            this.update_layout();
-        },
-        
-        reboot_vm: function(vm) {
-            vm.call("reboot");
-        },
-
-        do_reboot_all: function() {
-            _.each(storage.vms.get_reboot_required(), function(vm){
-                this.reboot_vm(vm)
-            }, this)  
-        },
-
-        do_all: function() {
-            _.each(this._actions, function(action){
-                action.vm.call(action.action);
-            }, this)  
-            this.reset_actions();
-        },
-
-        reset_reboots: function () {
-            _.each(storage.vms.get_reboot_required(), function(vm) {vm.set({'reboot_required': false})}, this);
-            this.update_layout();
-        },
-
-        reset_actions: function() {
-            _.each(this._actions, _.bind(function(action){
-                try {
-                    action.vm.clear_pending_action();
-                    this.remove_action(action.vm);
-                } catch(err) {
-                    console.error("vm " + action.vm.id + " failed to reset", err);
+            // TODO: remove type specific addition code in its own namespace
+            if (type == "nets") {
+                if (!action || action.is_empty()) {
+                    delete actions[model.id];
+                } else {
+                    actions[model.id] = {model: model, actions: action.actions};
                 }
-            }, this))  
+            }
+
+            if (type == "vms") {
+                _.each(actions, function(action) {
+                    if (action.model.id == model.id) {
+                        delete actions[action]
+                    }
+                });
+
+                var actobject = {};
+                actobject[action] = [[]];
+                actions[model.id] = {model: model, actions: actobject};
+                if (typeof action == "undefined") {
+                    delete actions[model.id]
+                }
+            }
+
+            if (type == "reboots") {
+                _.each(actions, function(action) {
+                    if (action.model.id == model.id) {
+                        delete actions[action]
+                    }
+                });
+                var actobject = {};
+                actobject['reboot'] = [[]];
+                actions[model.id] = {model: model, actions: actobject};
+                if (!action) {
+                    delete actions[model.id]
+                }
+            }
+            
+            this.update_layout();
         },
-        
+
+        update_actions_content: function(ns) {
+            var conf = this.ns_config[ns];
+            conf.cont.find(".details").empty();
+            conf.cont.find(".msg p").text("");
+            
+            var count = 0;
+            var actionscount = 0;
+            _.each(this.actions[ns], function(actions, model_id) {
+                count++;
+                _.each(actions.actions, function(params, act_name){
+                    if (params && params.length) {
+                        actionscount += params.length;
+                    } else {
+                        actionscount++;
+                    }
+                })
+                this.total_confirm_actions++;
+            });
+            
+            var limit = conf.limit;
+            if (ui.main.current_view.view_id == "vm_list") {
+                limit = 0;
+            }
+
+            if (actionscount > limit) {
+                conf.cont.show();
+                this.confirm_ns_open++;
+            } else {
+                conf.cont.hide();
+            }
+            
+            var msg = count > 1 ? conf.msg_tpl_plural : conf.msg_tpl;
+            conf.cont.find(".msg p").text(msg.format(count));
+
+            return conf.cont;
+        },
+
         fix_position: function() {
             $('.confirm_multiple').removeClass('fixed');
             if (($(this.el).offset().top +$(this.el).height())> ($(window).scrollTop() + $(window).height())) {
@@ -167,47 +223,28 @@
             }
         },
         
-        check_notify_limit: function() {
-            this.show_limit = 1;
-            if (ui.main.current_view && ['networks', 'vm_list'].indexOf(ui.main.current_view.view_id) > -1) {
-                this.show_limit = 0;
-            }
-        },
-        
-        update_reboot_required_list: function(vms) {
-            this.confirm_reboot_list.empty();
-        },
-
-        update_reboot_required: function() {
-            var vms = storage.vms.get_reboot_required();
-            if (vms.length) {
-                this.confirm_reboot.find(".actionLen").text(vms.length);
-                this.update_reboot_required_list();
-                this.confirm_reboot.show();
-                $(this.el).show();
-            } else {
-                if (!this.actions_visible) {
-                   $(this.el).hide();
-                }
-                this.confirm_reboot.hide();
-            }
-        },
-
         update_layout: function() {
-            this.check_notify_limit();
-            this.actions_visible = false;
+            this.confirm_ns_open = 0;
+            this.total_confirm_actions = 0;
 
-            if (_.size(this._actions) > this.show_limit) {
-                this.actions_visible = true;
+            $(this.el).show();
+            $(this.el).find("#conirm_multiple_cont_template").hide();
+            $(this.el).find(".confirm-ns").show();
+            
+            _.each(this.ns_config, _.bind(function(params, key) {
+                this.update_actions_content(key);
+            }, this));
+
+            if (this.confirm_ns_open > 0) {
                 $(this.el).show();
-                this.confirm_actions.show();
+                this.$(".confirm-all-cont").hide();
+                this.$(".ns-confirms-cont").show();
             } else {
                 $(this.el).hide();
-                this.confirm_actions.hide();
+                this.$(".confirm-all-cont").hide();
+                this.$(".ns-confirms-cont").hide();
             }
 
-            this.update_reboot_required();
-            this.confirm_actions.find(".actionLen").text(_.size(this._actions));
             $(window).trigger("resize");
         }
     })
@@ -759,7 +796,6 @@
         },
 
         _show_view: function(view_id) {
-            try {
                 // same view, visible
                 // get out of here asap
                 if (this.current_view && 
@@ -785,6 +821,7 @@
                 $(".large-spinner").remove();
 
                 storage.vms.reset_pending_actions();
+                storage.networks.reset_pending_actions();
                 storage.vms.stop_stats_update();
 
                 // show current view
@@ -819,9 +856,6 @@
                 this.select_view.title.text(this.get_title());
                 $(window).trigger("view:change");
                 return view;
-            } catch (err) {
-                snf.ui.trigger_error(-2, "Cannot show view: " + view_id, err);
-            }
         },
 
         reset_vm_actions: function() {

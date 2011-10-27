@@ -295,6 +295,105 @@
         this.initialize();
     };
     _.extend(VMNetworksList.prototype, bb.Events);
+        
+    models.ParamsList = function(){this.initialize.apply(this, arguments)};
+    _.extend(models.ParamsList.prototype, bb.Events, {
+
+        initialize: function(parent, param_name) {
+            this.parent = parent;
+            this.actions = {};
+            this.param_name = param_name;
+            this.length = 0;
+        },
+        
+        has_action: function(action) {
+            return this.actions[action] ? true : false;
+        },
+            
+        _parse_params: function(arguments) {
+            if (arguments.length <= 1) {
+                return [];
+            }
+
+            var args = _.toArray(arguments);
+            return args.splice(1);
+        },
+
+        contains: function(action, params) {
+            params = this._parse_params(arguments);
+            var has_action = this.has_action(action);
+            if (!has_action) { return false };
+
+            var paramsEqual = false;
+            _.each(this.actions[action], function(action_params) {
+                if (_.isEqual(action_params, params)) {
+                    paramsEqual = true;
+                }
+            });
+                
+            return paramsEqual;
+        },
+        
+        is_empty: function() {
+            return _.isEmpty(this.actions);
+        },
+
+        add: function(action, params) {
+            params = this._parse_params(arguments);
+            if (this.contains.apply(this, arguments)) { return this };
+            var isnew = false
+            if (!this.has_action(action)) {
+                this.actions[action] = [];
+                isnew = true;
+            };
+
+            this.actions[action].push(params);
+            this.parent.trigger("change:" + this.param_name, this.parent, this);
+            if (isnew) {
+                this.trigger("add", action, params);
+            } else {
+                this.trigger("change", action, params);
+            }
+            return this;
+        },
+        
+        remove_all: function(action) {
+            if (this.has_action(action)) {
+                delete this.actions[action];
+                this.parent.trigger("change:" + this.param_name, this.parent, this);
+                this.trigger("remove", action);
+            }
+            return this;
+        },
+
+        reset: function() {
+            this.actions = {};
+            this.parent.trigger("change:" + this.param_name, this.parent, this);
+            this.trigger("reset");
+            this.trigger("remove");
+        },
+
+        remove: function(action, params) {
+            params = this._parse_params(arguments);
+            if (!this.has_action(action)) { return this };
+            var index = -1;
+            _.each(this.actions[action], _.bind(function(action_params) {
+                if (_.isEqual(action_params, params)) {
+                    index = this.actions[action].indexOf(action_params);
+                }
+            }, this));
+            
+            if (index > -1) {
+                this.actions[action].splice(index, 1);
+                if (_.isEmpty(this.actions[action])) {
+                    delete this.actions[action];
+                }
+                this.parent.trigger("change:" + this.param_name, this.parent, this);
+                this.trigger("remove", action, params);
+            }
+        }
+
+    });
 
     // Image model
     models.Network = models.Model.extend({
@@ -318,6 +417,8 @@
             this.bind("change:linked_to", _.bind(this.update_connections, this, "net:change"));
             this.update_connections();
             this.update_state();
+            
+            this.set({"actions": new models.ParamsList(this, "actions")});
 
             return ret;
         },
@@ -406,6 +507,26 @@
             var vm_net_exists = vm.is_connected_to(this);
             return net_vm_exists && vm_net_exists;
         },
+        
+        call: function(action, params, success, error) {
+            if (action == "destroy") {
+                this.set({state:"DESTROY"});
+                this.get("actions").remove("destroy");
+                this.remove(_.bind(function(){
+                    success();
+                }, this), error);
+            }
+            
+            if (action == "disconnect") {
+                _.each(params, _.bind(function(vm_id) {
+                    var vm = snf.storage.vms.get(vm_id);
+                    this.get("actions").remove("disconnect", vm_id);
+                    if (vm) {
+                        this.remove_vm(vm, success, error);
+                    }
+                }, this));
+            }
+        },
 
         add_vm: function (vm, callback, error, options) {
             var payload = {add:{serverRef:"" + vm.id}};
@@ -459,6 +580,15 @@
 
         in_progress: function() {
             return models.Network.STATES_TRANSITIONS[this.get("state")] != undefined;
+        },
+
+        do_all_pending_actions: function(success, error) {
+            var destroy = this.get("actions").has_action("destroy");
+            _.each(this.get("actions").actions, _.bind(function(params, action) {
+                _.each(params, _.bind(function(with_params) {
+                    this.call(action, with_params, success, error);
+                }, this));
+            }, this));
         }
     });
     
@@ -1242,6 +1372,18 @@
             return data;
         },
 
+        reset_pending_actions: function() {
+            this.each(function(net) {
+                net.get("actions").reset();
+            })
+        },
+
+        do_all_pending_actions: function() {
+            this.each(function(net) {
+                net.do_all_pending_actions();
+            })
+        },
+
         parse_net_api_data: function(data) {
             if (data.servers && data.servers.values) {
                 data['linked_to'] = data.servers.values;
@@ -1412,6 +1554,29 @@
         reset_pending_actions: function() {
             this.each(function(vm) {
                 vm.clear_pending_action();
+            })
+        },
+
+        do_all_pending_actions: function(success, error) {
+            this.each(function(vm) {
+                if (vm.has_pending_action()) {
+                    vm.call(vm.pending_action, success, error);
+                    vm.clear_pending_action();
+                }
+            })
+        },
+        
+        do_all_reboots: function(success, error) {
+            this.each(function(vm) {
+                if (vm.get("reboot_required")) {
+                    vm.call("reboot", success, error);
+                }
+            });
+        },
+
+        reset_reboot_required: function() {
+            this.each(function(vm) {
+                vm.set({'reboot_required': undefined});
             })
         },
         

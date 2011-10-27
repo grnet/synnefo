@@ -247,12 +247,12 @@
             if (!this.parent.network.is_public()) {
                 this.disconnect.click(_.bind(function(e){
                     e.preventDefault();
-                    this.confirm_disconnect();
+                    this.parent.network.get("actions").add("disconnect", this.vm.id);
+                    this.parent.network.get("actions").remove("destroy");
                 }, this));
                 this.cancel.click(_.bind(function(e){
+                    this.parent.network.get("actions").remove("disconnect", this.vm.id);
                     e.preventDefault()
-                    this.confirm_el.hide();
-                    this.disconnect.removeClass("selected");
                 }, this));
                 this.confirm.click(_.bind(function(e){
                     e.preventDefault()
@@ -268,24 +268,40 @@
                 }, this));
 
                 this.$(".remove-icon").click(_.bind(function(){
-                    this.confirm_disconnect();
+                    this.parent.network.get("actions").add("disconnect", this.vm.id);
+                    this.parent.network.get("actions").remove("destroy");
                 }, this));
 
                 this.vm_connect.click(_.bind(function() {
                     this.connect_overlay.show(this.vm);
+                }, this));
+                
+                this.parent.network.bind("change:actions", _.bind(function(model, action){
+                    if (this.parent.network.get("actions").contains("disconnect", this.vm.id)) {
+                        this.confirm_disconnect();
+                    } else {
+                        this.cancel_disconnect();
+                    }
                 }, this));
             }
             
             var vm = this.vm;
             this.details.click(function(){
                 snf.ui.main.show_vm_details(vm);
-            })
+            });
 
+        },
+
+        cancel_disconnect: function() {
+            this.confirm_el.hide();
+            this.disconnect.removeClass("selected");
+            this.$(".net-vm-actions a").removeClass("visible");
         },
 
         confirm_disconnect: function() {
             this.confirm_el.show();
             this.disconnect.addClass("selected");
+            this.$(".net-vm-actions a").addClass("visible");
         },
 
         init_layout: function() {
@@ -625,6 +641,7 @@
 
             this.$(".action-add").click(_.bind(function(e){
                 e.preventDefault();
+                this.network.get("actions").remove("destroy");
                 this.show_connect_vms();
             }, this))
 
@@ -635,14 +652,21 @@
 
             this.$(".net-actions .destroy a").click(_.bind(function(e){
                 e.preventDefault();
-                this.confirm_destroy();
+                self.network.get("actions").add("destroy");
+                self.network.get("actions").remove_all("disconnect");
             }, this));
+
+            self.network.bind("change:actions", _.bind(function(net, action) {
+                if (this.network.get("actions").contains("destroy")) {
+                    this.confirm_destroy();
+                } else {
+                    this.cancel_destroy();
+                }
+            }, this))
 
             this.$(".net-actions button.no").click(function(e){
                 e.preventDefault();
-                var el = $(this);
-                el.closest(".confirm_single").hide();
-                el.parent().parent().find("a.selected").removeClass("selected");
+                self.network.get("actions").remove("destroy");
             });
 
             this.$(".net-actions button.yes").click(function(e){
@@ -650,8 +674,7 @@
                 var el = $(this);
                 el.closest(".confirm_single").hide();
                 el.parent().parent().find(".selected").removeClass("selected");
-                self.network.remove(function() {
-                    self.network.set({state:"DESTROY"});
+                self.network.call('destroy', {}, function(){
                     el.closest(".confirm_single").removeClass("in-progress");
                 });
                 el.closest(".confirm_single").addClass("in-progress");
@@ -677,9 +700,16 @@
                                                             _.bind(this.connect_vms, this));
         },
 
+        cancel_destroy: function() {
+            this.$(".net-actions .destroy .confirm_single").hide();
+            this.$(".net-actions .destroy a.selected").removeClass("selected");
+            this.$(".net-actions a").removeClass("visible");
+        },
+
         confirm_destroy: function() {
             this.$(".destroy .confirm_single").show();
             this.$(".destroy a").addClass("selected");
+            this.$(".net-actions a").addClass("visible");
         },
 
         connect_vms: function(vms) {

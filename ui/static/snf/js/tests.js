@@ -387,6 +387,29 @@ $(document).ready(function(){
         vm2.get_flavor();
         equals(flavors.get(2).get("ram"), 2048, "flavor data parsed");
         equals(flavors.length, 2);
-        console.log(flavors);
     })
+
+    test("actions list object", function(){
+        var m = new models.Image();
+        var l = new models.ParamsList(m, "actions");
+        var count = 0;
+
+        l.add("destroy");
+        equals(l.has_action("destroy"), true);
+        equals(l.contains("destroy"), true);
+
+        l.add("destroy", 1, {});
+        equals(l.has_action("destroy"), true);
+        equals(l.contains("destroy", 1, {}), true);
+
+        l.remove("destroy", 1, {});
+        equals(l.contains("destroy", 1, {}), false);
+
+        m.bind("change:actions", function() { count ++});
+        l.add("destroy");
+        
+        equals(count, 0);
+        l.add("destroy", 1, {});
+        equals(count, 1);
+    });
 })

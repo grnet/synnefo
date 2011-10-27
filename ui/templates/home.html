@@ -239,16 +239,26 @@
                     <div id="disks-pane" class="pane"></div>
 
                     <div class="confirm_multiple clearfix" id="multiple_actions_container">
-                        <div class="confirm_multiple_actions confirm_multiple_cont clearfix">
-                            <p>{% trans "Your actions will affect" %} <span class="actionLen">XX</span> {% trans "machines" %}</p>
-                            <button class="yes">{% trans "Confirm All" %}</button>
-                            <button class="no">{% trans "Cancel All" %}</button>
+                        <div class="confirm_multiple_actions confirm-all-cont global hidden confirm_multiple_cont clearfix">
+                            <div class="confirm-all msg">
+                                <p>You requested multiple actions to execute (<span
+                                    class"show">show all</span>)</p>
+                                <button class="yes">Confirm all</button>
+                                <button class="no">Cancel all</button>
+                            </div>
+                            <div class="details"></div>
                         </div>
-                        <div class="confirm_reboot_required confirm_multiple_cont clearfix">
-                            <p><span class="actionLen"></span> {% trans "machines needs to be rebooted for changes to apply" %}</p>
-                            <button class="yes">{% trans "Reboot All" %}</button>
-                            <button class="no">{% trans "Cancel All" %}</button>
-                            <div class="reboot-machines-list"></div>
+                        <div class="ns-confirms-cont">
+                            <div class="confirm_multiple_actions hidden confirm_multiple_cont
+                                ns-confirm clearfix"
+                                id="conirm_multiple_cont_template">
+                                <div class="confirm-all msg">
+                                    <p></p>
+                                    <button class="yes"></button>
+                                    <button class="no"></button>
+                                </div>
+                                <div class="details"></div>
+                            </div>
                         </div>
                     </div>
 

@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,40 +25,22 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
-from django.conf.urls.defaults import patterns
+from django.http import HttpResponse, HttpResponseRedirect
+
+from pithos.im.target.util import prepare_response
 
 
-urlpatterns = patterns('pithos.im.views',
-    (r'^$', 'index'),
-    (r'^login/?$', 'index'),
+def login(request):
+    next = request.GET.get('next')
+    if not next:
+        return HttpResponse('')
+    if not user:
+        return HttpResponseRedirect(next)
     
-    (r'^admin/?$', 'admin'),
-    
-    (r'^admin/users/?$', 'users_list'),
-    (r'^admin/users/(\d+)/?$', 'users_info'),
-    (r'^admin/users/create$', 'users_create'),
-    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
-    
-    (r'^invite/?$', 'invite')
-)
-
-urlpatterns += patterns('',
-    (r'^login/shibboleth/?$', 'pithos.im.target.shibboleth.login'),
-    (r'^login/twitter/?$', 'pithos.im.target.twitter.login'),
-    (r'^login/twitter/authenticated/?$', 'pithos.im.target.twitter.authenticated'),
-    (r'^login/invitation/?$', 'pithos.im.target.invitation.login'),
-    (r'^login/dummy/?$', 'pithos.im.target.dummy.login')
-)
-
-urlpatterns += patterns('',
-    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-                                {'document_root': settings.PROJECT_PATH + '/im/static'})
-)
+    return prepare_response(user, next)

@@ -36,7 +36,7 @@
 from lib.migrate import Migration
 
 from sqlalchemy import Table
-from pithos.aai.models import PithosUser
+from pithos.im.models import User
 
 import base64
 
@@ -46,25 +46,32 @@ class UserMigration(Migration):
         self.gss_users = Table('gss_user', self.metadata, autoload=True)
     
     def execute(self):
-        s = self.gss_users.select()
-        users = self.conn.execute(s).fetchall()
-        l = []
-        for u in users:
-            user = PithosUser()
+        for u in self.retrieve_users():
+            user = User()
             user.pk = u['id']
             user.uniq = u['username']
             user.realname = u['name']
-            user.is_admin = False
             user.affiliation = u['homeorganization'] if u['homeorganization'] else ''
             user.auth_token = base64.b64encode(u['authtoken'])
             user.auth_token_created = u['creationdate']
             user.auth_token_expires = u['authtokenexpirydate']
             user.created = u['creationdate']
             user.updated = u['modificationdate']
+            user.email = u['email']
+            user.active = 'ACTIVE' if u['active'] else 'SUSPENDED'
             print '#', user
             user.save(update_timestamps=False)
+    
+    def retrieve_users(self):
+        s = self.gss_users.select()
+        rp = self.conn.execute(s)
+        user = rp.fetchone()
+        while user:
+            yield user
+            user = rp.fetchone()
+        rp.close()
 
 if __name__ == "__main__":
-    db = 'postgresql://gss@localhost/pithos'
+    db = 'postgresql://gss@127.0.0.1/pithos'
     m = UserMigration(db)
     m.execute()

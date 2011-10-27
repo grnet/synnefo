@@ -60,9 +60,9 @@ def object_meta(request, v_account, v_container, v_object):
     #                       badRequest (400)
     
     try:
-        meta = request.backend.get_object_meta(request.user, v_account,
+        meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                 v_container, v_object)
-        public = request.backend.get_object_public(request.user, v_account,
+        public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
@@ -86,9 +86,9 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     try:
-        meta = request.backend.get_object_meta(request.user, v_account,
+        meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                 v_container, v_object)
-        public = request.backend.get_object_public(request.user, v_account,
+        public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
         raise ItemNotFound('Object does not exist')
@@ -111,14 +111,14 @@ def object_read(request, v_account, v_container, v_object):
     if 'X-Object-Manifest' in meta:
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
-            objects = request.backend.list_objects(request.user, v_account,
+            objects = request.backend.list_objects(request.user_uniq, v_account,
                                 src_container, prefix=src_name, virtual=False)
         except:
             raise ItemNotFound('Object does not exist')
         
         try:
             for x in objects:
-                s, h = request.backend.get_object_hashmap(request.user,
+                s, h = request.backend.get_object_hashmap(request.user_uniq,
                                         v_account, src_container, x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
@@ -126,7 +126,7 @@ def object_read(request, v_account, v_container, v_object):
             raise ItemNotFound('Object does not exist')
     else:
         try:
-            s, h = request.backend.get_object_hashmap(request.user, v_account,
+            s, h = request.backend.get_object_hashmap(request.user_uniq, v_account,
                                                         v_container, v_object)
             sizes.append(s)
             hashmaps.append(h)

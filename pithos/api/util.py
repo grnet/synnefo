@@ -200,10 +200,10 @@ def update_manifest_meta(request, v_account, meta):
         bytes = 0
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
-            objects = request.backend.list_objects(request.user, v_account,
+            objects = request.backend.list_objects(request.user_uniq, v_account,
                                 src_container, prefix=src_name, virtual=False)
             for x in objects:
-                src_meta = request.backend.get_object_meta(request.user,
+                src_meta = request.backend.get_object_meta(request.user_uniq,
                                         v_account, src_container, x[0], x[1])
                 hash += src_meta['hash']
                 bytes += src_meta['bytes']
@@ -231,7 +231,7 @@ def update_sharing_meta(request, permissions, v_account, v_container, v_object, 
     meta['X-Object-Sharing'] = '; '.join(ret)
     if '/'.join((v_account, v_container, v_object)) != perm_path:
         meta['X-Object-Shared-By'] = perm_path
-    if request.user != v_account:
+    if request.user_uniq != v_account:
         meta['X-Object-Allowed-To'] = allowed
 
 def update_public_meta(public, meta):
@@ -295,11 +295,11 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:
-            version_id = request.backend.move_object(request.user, src_account, src_container, src_name,
+            version_id = request.backend.move_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
                                                         meta, False, permissions)
         else:
-            version_id = request.backend.copy_object(request.user, src_account, src_container, src_name,
+            version_id = request.backend.copy_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
                                                         meta, False, permissions, src_version)
     except NotAllowedError:
@@ -314,7 +314,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
         try:
-            request.backend.update_object_public(request.user, dest_account, dest_container, dest_name, public)
+            request.backend.update_object_public(request.user_uniq, dest_account, dest_container, dest_name, public)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:

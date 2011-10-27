@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
 import hashlib
 
 from time import asctime
@@ -59,10 +60,6 @@ class User(models.Model):
     level = models.IntegerField('Inviter level', default=4)
     invitations = models.IntegerField('Invitations left', default=0)
     
-    # XXX Quota should be moved out of the user model
-    quota = models.BigIntegerField('Storage Limit',
-                                    default=settings.DEFAULT_QUOTA)
-    
     is_admin = models.BooleanField('Admin?', default=False)
     
     auth_token = models.CharField('Authentication Token', max_length=32,
@@ -72,6 +69,13 @@ class User(models.Model):
     
     created = models.DateTimeField('Creation date')
     updated = models.DateTimeField('Update date')
+    
+    # Custom quota property.
+    def _get_quota(self):
+        return settings.DEFAULT_QUOTA
+    def _set_quota(self, value):
+        logging.debug('Set quota to: %s', value)
+    quota = property(_get_quota,_set_quota)
     
     def save(self, update_timestamps=True):
         if update_timestamps:

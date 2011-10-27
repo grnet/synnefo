@@ -40,7 +40,7 @@ def login(request):
     next = request.GET.get('next')
     if not next:
         return HttpResponse('')
-    if not user:
+    if not request.user:
         return HttpResponseRedirect(next)
     
-    return prepare_response(user, next)
+    return prepare_response(request.user, next)

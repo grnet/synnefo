@@ -2850,6 +2850,12 @@ body.auth .canlogin {
   right: 20px;
   top: 25px;
 }
+.inner-bottom .nologin {
+  font-size: 0.9em;
+  position: absolute;
+  right: 20px;
+  top: 25px;
+}
 .inner-bottom .gotoapp {
   padding: 0.5em 5em;
   margin-right: 0;

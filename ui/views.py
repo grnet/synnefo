@@ -129,7 +129,7 @@ def home(request):
                'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
                'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
-               'vm_name_template': json.dumps(VM_NAME_TEMPLATE)
+               'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),

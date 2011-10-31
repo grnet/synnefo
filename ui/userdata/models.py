@@ -35,4 +35,4 @@ class PublicKeyPair(ProfileModel):
 
     @classmethod
     def user_limit_exceeded(cls, user):
-        return PublicKeyPair.objects.filter(user=user).count() >= settings.MAX_SSH_KEYS_PER_USER
+        return PublicKeyPair.objects.filter(user=user).count() >= settings.USERDATA_MAX_SSH_KEYS_PER_USER

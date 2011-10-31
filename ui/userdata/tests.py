@@ -110,7 +110,7 @@ class TestRestViews(TestCase):
         self.assertEqual(resp.content, """{"non_field_key": "__all__", "errors": """
                                        """{"name": ["This field cannot be blank."]}}""")
 
-        settings.MAX_SSH_KEYS_PER_USER = 2
+        settings.USERDATA_MAX_SSH_KEYS_PER_USER = 2
 
         # test ssh limit
         resp = self.client.post("/keys", json.dumps({'name':'key1', 'content':"""key 1 content"""}),

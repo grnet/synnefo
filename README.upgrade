@@ -7,17 +7,22 @@ For more information, please see README.deploy.
 v0.7 -> v0.8
 NEW/UPDATED SETTINGS
     * New config file 31-userdata.conf, containing userdata app settings
-    * USERDATA_SSH_KEY_LENGTH:
+    * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
       Genetared SSH key bits length
-    * USERDATA_SSH_KEY_EXPONENT:
+    * USERDATA_SSH_KEY_EXPONENT in 31-userdata.conf:
       Generated SSH key exponent
-    * UI_SUPPORT_SSH_OS_LIST
+    * USERDATA_MAX_SSH_KEYS_PER_USER in 31-userdata.conf:
+      Maximum number of ssh keys a user is allowed to have
+    * UI_SUPPORT_SSH_OS_LIST, in 30-ui.conf:
       A list of os names that support ssh public key assignment
-    * UI_OS_DEFAULT_USER_MAP
+    * UI_OS_DEFAULT_USER_MAP, in 30-ui.conf:
       OS/username map to identify default user name for a specific os
+    * VM_CREATE_NAME_TPL, in 30-ui.conf:
+      Template to be used for suggesting the user a default name for newly created
+      vms. {0} gets replaced by the image OS value
 
 NEW DEPENDENCIES
-    * M2Crypto is needed for server side ssh key pair generation. 
+    * M2Crypto is needed for server side ssh key pair generation (tested with 0.20.1). 
 
 v0.6.2 -> v0.7
 HTML TEMPLATES

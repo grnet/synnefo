@@ -92,7 +92,7 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 
 # ssh keys
-MAX_SSH_KEYS_PER_USER = getattr(settings, "MAX_SSH_KEYS_PER_USER")
+MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")

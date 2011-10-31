@@ -23,10 +23,12 @@
         create_success_msg: 'Public key created successfully.',
         create_failed_msg: 'Failed to create public key.',
 
+
         initialize: function(options) {
             views.PublicKeysView.__super__.initialize.apply(this, arguments);
             this.$(".private-cont").hide();
             _.bindAll(this);
+            this.keys_limit = snf.config.userdata_keys_limit || 10000;
         },
 
         append_actions: function(el, model) {
@@ -110,8 +112,19 @@
 
         __generate_new: function(generate_text) {
             var self = this;
-            var key = storage.keys.generate_new(_.bind(this.__save_new, this, generate_text), function(){
-                self.show_list_msg("error", "Cannot generate new key pair");
+            var key = storage.keys.generate_new(_.bind(this.__save_new, this, generate_text), function(xhr){
+                var resp_error = "";
+                // try to parse response
+                try {
+                    json_resp = JSON.parse(xhr.responseText);
+                    resp_error = json_resp.errors[json_resp.non_field_key].join("<br />");
+                } catch (err) {}
+                
+                var msg = "Cannot generate new key pair";
+                if (resp_error) {
+                    msg += " ({0})".format(resp_error);
+                }
+                self.show_list_msg("error", msg);
                 self.generating = false;
                 self.download_private = false;
                 self.$(".add-generate").text(generate_text).removeClass(
@@ -151,6 +164,21 @@
             el.find(".publicid .param-content textarea").val(model.get("content"));
             el.find(".publicid").attr("title", _(model.get("content")).truncate(1000, "..."));
             return el;
+        },
+
+        update_list: function() {
+            views.PublicKeysView.__super__.update_list.apply(this, arguments);
+            this.check_limit();
+        },
+
+        check_limit: function() {
+            if (snf.storage.keys.length >= this.keys_limit) {
+                this.$(".collection-action").hide();
+                this.$(".limit-msg").show();
+            } else {
+                this.$(".collection-action").show();
+                this.$(".limit-msg").hide();
+            }
         },
 
         update_form_from_model: function(model) {

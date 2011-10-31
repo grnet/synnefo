@@ -148,6 +148,7 @@
         reset_form_errors: function() {
             this.form.find(".form-field").removeClass("error");
             this.form.find(".form-field .errors").empty();
+            this.form.find(".form-messages").empty();
         },
 
         show_form_errors: function(errors) {
@@ -163,11 +164,16 @@
                     field.find(".errors").append(error_el);
                 });
             }, this));
-            //var el = $('<div class="error">{1}</div>'.format(type, msg));
-            //this.list_messages.append(el);
+            
+            var msg = errors[''];
+            if (msg) {
+                var el = $('<div class="error">{0}</div>'.format(msg));
+                this.$(".form-messages").append(el);
+            }
         },
 
         clean_form_errors: function() {
+
         },
         
         submit_form: function() {
@@ -272,14 +278,27 @@
                     this.show_list_msg("success", this.create_success_msg || "Entry created");
                 }, this),
 
-                error: _.bind(function(){
-                    this.show_form_errors({'': this.create_failed_msg || 'Entry submition failed'})
+                error: _.bind(function(data, xhr){
+                    var resp_error = "";
+                    // try to parse response
+                    try {
+                        json_resp = JSON.parse(xhr.responseText);
+                        resp_error = json_resp.errors[json_resp.non_field_key].join("<br />");
+                    } catch (err) {}
+
+                    var form_error = resp_error != "" ? 
+                                this.create_failed_msg + " ({0})".format(resp_error) : 
+                                this.create_failed_msg;
+
+                    this.show_form_errors({'': form_error || 'Entry submition failed'})
                 }, this),
 
                 complete: _.bind(function(){
                     this.submiting = false;
                     this.form.find("form-action.submit").addClass("in-progress");
-                }, this)
+                }, this),
+
+                skip_api_error: true
             }
 
             if (this.editing_id && this.collection.get(this.editing_id)) {

@@ -10,6 +10,7 @@ from django.conf import settings
 from django.test.client import Client
 from django.core.urlresolvers import clear_url_caches
 from django.utils import simplejson as json
+from django.conf import settings
 
 from synnefo.ui.userdata.models import User
 from synnefo.ui.userdata.models import *
@@ -101,3 +102,23 @@ class TestRestViews(TestCase):
         # private key is base64 encoded
         base64.b64decode(private)
 
+    def test_invalid_data(self):
+        resp = self.client.post("/keys", json.dumps({'content':"""key 2 content"""}),
+                content_type='application/json')
+
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content, """{"non_field_key": "__all__", "errors": """
+                                       """{"name": ["This field cannot be blank."]}}""")
+
+        settings.MAX_SSH_KEYS_PER_USER = 2
+
+        # test ssh limit
+        resp = self.client.post("/keys", json.dumps({'name':'key1', 'content':"""key 1 content"""}),
+                content_type='application/json')
+        resp = self.client.post("/keys", json.dumps({'name':'key1', 'content':"""key 1 content"""}),
+                content_type='application/json')
+        resp = self.client.post("/keys", json.dumps({'name':'key1', 'content':"""key 1 content"""}),
+                content_type='application/json')
+        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.content, """{"non_field_key": "__all__", "errors": """
+                                       """{"__all__": ["SSH keys limit exceeded."]}}""")

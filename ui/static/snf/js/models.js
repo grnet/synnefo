@@ -1764,6 +1764,7 @@
             
             options.success = function () { return success(m) };
             options.errror = error;
+            options.skip_api_error = true;
             
             this.create(m.attributes, options);
         }

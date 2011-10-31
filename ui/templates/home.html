@@ -554,6 +554,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.api_url = '/api/v1.1';
             synnefo.config.logout_url = '{{ logout_redirect }}';
             synnefo.config.userdata_keys_url = '{% url keys_collection %}';
+            synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
 
             synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
             synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';

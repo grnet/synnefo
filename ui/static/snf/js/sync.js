@@ -226,7 +226,7 @@
             
             // determine if we need to call our callback wrapper
             var call_api_handler = true;
-
+            
             // request handles errors by itself, s
             if (handler_type == "error" && this.skip_api_error) {
                 call_api_handler = false

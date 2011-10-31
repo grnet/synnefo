@@ -6357,10 +6357,16 @@ input.has-errors {
     padding:0 !important;
 }
 
+.models-view .form-messages {
+    margin-bottom: 10px;
+}
+
 .models-view .list-messages {
     margin-top: 10px;
 }
 
+.models-view .form-messages .error,
+.models-view .form-messages .success,
 .models-view .list-messages .error,
 .models-view .list-messages .success,
 #user_public_keys .private-cont {
@@ -6372,10 +6378,18 @@ input.has-errors {
     margin-top: 5px;
 }
 
+.models-view .form-messages .error,
 .models-view .list-messages .error {
     background-color: #DE8D87;
     color:  #782421 !important;
     border-color: #782421;
+}
+
+#user_public_keys .limit-msg {
+    color: #800;
+    position: absolute;
+    right: 20px;
+    top: 25px;
 }
 
 #user_public_keys .private-cont {

@@ -91,6 +91,9 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 
+# ssh keys
+MAX_SSH_KEYS_PER_USER = getattr(settings, "MAX_SSH_KEYS_PER_USER")
+
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -129,6 +132,7 @@ def home(request):
                'vm_name_template': json.dumps(VM_NAME_TEMPLATE)
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
                'os_created_users': json.dumps(OS_CREATED_USERS),
+               'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                }
     return template('home', context)
 

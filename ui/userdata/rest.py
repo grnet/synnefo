@@ -4,6 +4,8 @@ from django.utils import simplejson as json
 from django.core import serializers
 from django.core.urlresolvers import reverse
 
+from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
+
 # base view class
 # https://github.com/bfirsh/django-class-based-views/blob/master/class_based_views/base.py
 class View(object):
@@ -62,8 +64,14 @@ class View(object):
                         raise http.HttpResponseServerError('Invalid JSON data.')
                 else:
                     raise http.HttpResponseServerError('Unsupported Content-Type.')
+            try:
+                return getattr(self, request.method.upper())(request, data, *args, **kwargs)
+            except ValidationError, e:
+                # specific response for validation errors
+                return http.HttpResponseServerError(json.dumps({'errors':
+                    e.message_dict, 'non_field_key':
+                    NON_FIELD_ERRORS }))
 
-            return getattr(self, request.method.upper())(request, data, *args, **kwargs)
         else:
             allowed_methods = [m for m in self.method_names if hasattr(self, m)]
             return http.HttpResponseNotAllowed(allowed_methods)
@@ -137,6 +145,7 @@ class ResourceView(JSONRestView):
     def PUT(self, request, data, *args, **kwargs):
         instance = self.instance()
         self.update_instance(instance, data, self.exclude_fields)
+        instance.full_clean()
         instance.save()
         return self.GET(request, data, *args, **kwargs)
 
@@ -161,6 +170,7 @@ class CollectionView(JSONRestView):
     def POST(self, request, data, *args, **kwargs):
         instance = self.model()
         self.update_instance(instance, data, self.exclude_fields)
+        instance.full_clean()
         instance.save()
         return self.json_response(self.instance_to_dict(instance,
             self.exclude_fields))
@@ -184,6 +194,7 @@ class UserCollectionView(CollectionView):
         instance = self.model()
         self.update_instance(instance, data, self.exclude_fields)
         instance.user = request.user
+        instance.full_clean()
         instance.save()
         return self.json_response(self.instance_to_dict(instance,
             self.exclude_fields))

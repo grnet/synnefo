@@ -32,6 +32,10 @@ def generate_key_pair(request):
     if not SUPPORT_GENERATE_KEYS:
         raise Exception("Application does not support ssh keys generation")
 
+    if PublicKeyPair.user_limit_exceeded(request.user):
+        raise http.HttpResponseServerError("SSH keys limit exceeded");
+
+
     # generate RSA key
     key = M2C.RSA.gen_key(SSH_KEY_LENGTH, SSH_KEY_EXPONENT, lambda x: "");
 

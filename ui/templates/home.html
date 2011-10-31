@@ -556,12 +556,6 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
 
             synnefo.ui.main.bind("initial", function(){
-
-                $(".header-logo").click(function(e){
-                    e.preventDefault();
-                    synnefo.ui.main.create_vm_view.password_view.show("pass",
-                    synnefo.storage.vms.at(0).id);
-                })
             })
 
         })

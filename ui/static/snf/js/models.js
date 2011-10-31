@@ -480,6 +480,12 @@
             return ret;
         },
 
+        toJSON: function() {
+            var attrs = _.clone(this.attributes);
+            attrs.actions = _.clone(this.get("actions").actions);
+            return attrs;
+        },
+
         update_state: function() {
             if (this.vms.pending.length) {
                 this.set({state: "CONNECTING"});

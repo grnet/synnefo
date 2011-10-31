@@ -85,6 +85,8 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
                     "UI_SYNNEFO_JS_WEB_URL",
                     UI_SYNNEFO_JS_URL + "ui/web/")
 
+VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
+
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -120,6 +122,7 @@ def home(request):
                'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
                'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
+               'vm_name_template': json.dumps(VM_NAME_TEMPLATE)
                }
     return template('home', context)
 

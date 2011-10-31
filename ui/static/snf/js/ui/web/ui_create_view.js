@@ -720,7 +720,8 @@
             if (!params.image || !params.flavor) { return }
 
             if (!params.image) { return }
-            var vm_name = "My {0} server".format(params.image.get("name"));
+            var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
+            var vm_name = vm_name_tpl.format(params.image.get("name"));
             var orig_name = vm_name;
             
             var existing = true;

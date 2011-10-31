@@ -531,6 +531,8 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             }
             
             // synnefo js config
+            synnefo.VERSION = "{{ synnefo_version }}";
+
             synnefo.config.update_interval = {{ update_interval }};
             synnefo.config.delay_on_blur = {{ delay_on_blur }};
             synnefo.config.blur_delay = {{ blur_delay }};
@@ -539,7 +541,8 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.ajax_timeout = {{ timeout }};
             synnefo.config.skip_timeouts = {{ skip_timeouts }};
             synnefo.config.invitations_url = "{% url invitations %}";
-            synnefo.VERSION = "{{ synnefo_version }}";
+            synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.vm_name_template = {{ vm_name_template|safe }};
 
             // TODO: make it dynamic
             synnefo.config.api_url = '/api/v1.1';

@@ -1737,6 +1737,7 @@
         comparator: function(i) { return -parseInt(i.id || 0) },
 
         generate_new: function(success, error) {
+            console.log(getUrl.call(this, this.base_url) + "/generate")
             snf.api.sync('read', undefined, {
                 url: getUrl.call(this, this.base_url) + "/generate", 
                 success: success, 

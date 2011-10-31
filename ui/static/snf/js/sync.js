@@ -85,8 +85,8 @@
                 urlobject = model.collection;
             }
 
-            options.url = getUrl(model, options) || urlError();
-            if (model && model.supportIncUpdates) {
+            options.url = getUrl(urlobject, options) || urlError();
+            if (urlobject && urlobject.supportIncUpdates) {
                 options.url = options.refresh ? options.url : setChangesSince(options.url, type);
             }
             if (!options.refresh && options.cache === undefined) {

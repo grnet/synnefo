@@ -124,7 +124,12 @@
             }
             
             this.update_current_vm();
-            snf.router.vm_details_view(this.current_vm_instance.id);
+
+            // this might fail when vms get empty
+            // catch the exception
+            try {
+                snf.router.vm_details_view(this.current_vm_instance.id);
+            } catch (err) {};
         },
 
         show_prev: function() {

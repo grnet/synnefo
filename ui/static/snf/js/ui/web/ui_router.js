@@ -28,11 +28,9 @@
             "machines/list/":                   "vms_list_view",
             "machines/single/details/:vm":      "vm_details_view",
             "machines/single/":                 "vms_single_view",
-            "machines/create/":                 "vms_create_view",
-            "machines/create/:step":            "vms_create_view",
 
             // network views
-            "machines/single/":                 "vms_single_view",
+            "networks/":                        "networks_view",
         },
         
         show_welcome: function() {
@@ -81,14 +79,19 @@
             if (step) {
                 ui.main.create_vm_view.show_step(parseInt(step));
             }
-            this.navigate("machines/create/");
         },
 
         vm_details_view: function(vm) {
             this.navigate("machines/single/details/" + vm);
             ui.main.show_view("single");
             ui.main.current_view.show_vm(snf.storage.vms.get(parseInt(vm)));
-        } 
+        },
+
+        networks_view: function() {
+            this.navigate("networks/");
+            ui.main.show_view("networks");
+        }
+
     });
 
     snf.router = new WebAppRouter(); 

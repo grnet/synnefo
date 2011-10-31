@@ -77,7 +77,6 @@
         oneInstance: true,
         fixed: false,
 
-        
         initialize: function(options, selector) {
             this.defaults = {
                 load: false,

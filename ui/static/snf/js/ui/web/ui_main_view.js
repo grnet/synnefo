@@ -645,8 +645,7 @@
         },
 
         show_vm_details: function(vm) {
-            snf.ui.main.show_view("single")
-            snf.ui.main.current_view.show_vm(vm);
+            this.router.vm_details_view(vm.id);
         },
 
         set_vm_view_handlers: function() {

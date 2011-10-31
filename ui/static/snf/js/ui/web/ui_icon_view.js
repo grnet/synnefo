@@ -314,7 +314,7 @@
 
                 case "mouseup":
                     logo.addClass('single-image-state4');
-                    this.view.connect_overlay.show(this.vm);
+                    //this.view.connect_overlay.show(this.vm);
                     break;
 
                 case "mousedown":

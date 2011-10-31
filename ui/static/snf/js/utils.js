@@ -141,39 +141,14 @@
         // TODO: implement me
     }
 
-    synnefo.util.ClipHelper = function(cont, clear) {
-        this.force_empty = clear || false;
-        this.cont = cont || $('<div class="clip-copy"></div>');
-        this.clip = new ZeroClipboard.Client();
-        this.clip.setHandCursor(true);
-
-        this.el = this.cont;
-        if (this.force_empty) {
-            this.cont.empty();
-        }
-        this.el.append(this.clip.getHTML(20,20));
-
-        this.setText = function(t) {
-            this.clip.setText(t);
-        }
-
-        var copy_prompt = "Click to copy to clipboard";
-        this.el.attr({title: copy_prompt});
-        this.el.tooltip();
-        var el = this.el;
-
-        this.clip.addEventListener('complete', _.bind(function(client, text) {
-            var tip = el.data("tooltip")
-            tip.hide().getTip().text("Copied");
-            
-            window.setTimeout(function() {
-                tip.show();
-            }, 70)
-
-            window.setTimeout(function() {
-                tip.hide().getTip().text(copy_prompt);
-            }, 3000)
-        }, this));
+    synnefo.util.ClipHelper = function(wrapper, text, settings) {
+        settings = settings || {};
+        this.el = $('<div class="clip-copy"></div>');
+        wrapper.append(this.el);
+        this.clip = $(this.el).zclip(_.extend({
+            path: synnefo.config.js_url + "lib/ZeroClipboard.swf",
+            copy: text
+        }, settings));
     }
 
     synnefo.util.truncate = function(string, size, append, words) {

@@ -28,7 +28,7 @@
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.tools.min.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.dataTables.min.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.pagination.js"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}ZeroClipboard.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.zclip.js"></script>
 
 
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js"></script>
@@ -74,9 +74,6 @@
         if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
             window.console.error = function() {}};
         
-        // initialize zero clipboard
-        ZeroClipboard.setMoviePath( '{{ SYNNEFO_JS_LIB_URL}}ZeroClipboard.swf' );
-
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
         
@@ -556,6 +553,12 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
 
             synnefo.ui.main.bind("initial", function(){
+
+                $(".header-logo").click(function(e){
+                    e.preventDefault();
+                    synnefo.ui.main.create_vm_view.password_view.show("pass",
+                    synnefo.storage.vms.at(0).id);
+                })
             })
 
         })

@@ -30,7 +30,7 @@
             _.bindAll(this, 'show_password');
 
             this.password = this.$("#new-machine-password");
-            this.copy = this.$(".clip-copy");
+            this.copy = this.$(".clipboard");
 
             this.$(".show-machine").click(_.bind(function(){
                 if (this.$(".show-machine").hasClass("in-progress")) {
@@ -42,6 +42,7 @@
 
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);
+            this.password.text("");
         },
 
         handle_vm_added: function() {
@@ -54,26 +55,22 @@
             if (storage.vms.get(this.vm_id)) {
                 this.$(".show-machine").removeClass("in-progress");
             }
+            
+            this.clip = new snf.util.ClipHelper(this.copy, this.pass);
         },
 
         onClose: function() {
             this.password.text("");
             this.vm_id = undefined;
+            try { delete this.clip; } catch (err) {};
         },
         
         beforeOpen: function() {
-            try { delete this.clipboard } catch (err) { console.log(err) };
-            this.clipboard = new util.ClipHelper(this.copy, true);
+            this.copy.empty();
         },
         
         onOpen: function() {
-            this.copy.show();
-            try {
-                this.clipboard.setText(this.pass);
-                this.copy.show();
-            } catch (err) {
-                this.copy.hide();
-            }
+            this.show_password();
         },
 
         show: function(pass, vm_id) {
@@ -81,7 +78,6 @@
             this.vm_id = vm_id;
             
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
-            this.show_password();
         }
     })
 

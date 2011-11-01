@@ -40,108 +40,164 @@ from binascii import hexlify
 
 from pithos.backends.lib.hashfiler import Blocker
 from pithos.backends.lib.sqlalchemy import Node
-from pithos.aai.models import PithosUser
 
 from django.conf import settings
 
 from pithos.backends.modular import CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED
-from pithos.backends.lib.sqlalchemy.node import Node
+from pithos.backends.lib.sqlalchemy.node import Node, ROOTNODE
 
 from lib.transfer import upload
 from lib.hashmap import HashMap, file_read_iterator
 from lib.client import Fault
 from lib.migrate import Migration, Cache
 from calendar import timegm
+from decimal import Decimal
+from collections import defaultdict
 
 import json
 import os
 import sys
 import hashlib
 import mimetypes
+import time
+import datetime
+
+(ID, CREATIONDATE, MODIFICATIONDATE, DELETED, ICON, NAME, VERSION, CREATEDBY_ID, MODIFIEDBY_ID, OWNER_ID, PARENT_ID, READFORALL, SHARED, USER) = range(14)
 
 class ObjectMigration(Migration):
     def __init__(self, old_db, db, f):
         Migration.__init__(self, old_db)
         self.cache = Cache(db)
     
-    def create_node(self, username, container, object, filepath, mimetype):
-        obj = ''
-        path = '/'.join(object.split('/')[:-1])
-        name =  object.split('/')[-1]
-        #create directory markers
-        for f in path.split('/'):
-            obj = '%s/%s' %(obj, f) if obj else f
-            try:
-                md5 = hashlib.md5()
-                meta = {'Content-Type':'application/directory',
-                        'hash':  md5.hexdigest().lower()}
-                self.backend.update_object_hashmap(username, username, container, obj, 0, [], meta) 
-            except NameError, e:
-                pass
-        
-        parent_path = '%s/%s' %(username, container)
-        parent_node = self.backend.node.node_lookup(parent_path)
-        path = '%s/%s' %(parent_path, object)
-        nodeid = self.backend.node.node_create(parent_node, path)
-        return nodeid
+    def create_node(self, username, container, object):
+        node = self.backend.node.node_lookup(object)
+        if not node:
+            parent_path = '%s/%s' %(username, container)
+            parent_node = self.backend.node.node_lookup(parent_path)
+            if not parent_node:
+                raise Exception('Missing node')
+            node = self.backend.node.node_create(parent_node, object)
+        return node
     
     def create_history(self, header_id, node_id, deleted=False):
         i = 0
         map = HashMap(self.backend.block_size, self.backend.hash_algorithm)
+        v = []
+        stored_versions = self.backend.node.node_get_versions(node_id, ['mtime'])
+        stored_versions_mtime = [datetime.datetime.utcfromtimestamp(elem[0]) for elem in stored_versions]
         for t, rowcount  in self.retrieve_node_versions(header_id):
-            size, modyfied_by, filepath, mimetype, modificationdate = t
+            size, modyfied_by, filepath, mimetype, mdate = t
+            if mdate in stored_versions_mtime:
+                continue
             cluster = CLUSTER_HISTORY if i < rowcount - 1 else CLUSTER_NORMAL
             cluster = cluster if not deleted else CLUSTER_DELETED
             hash = self.cache.get(filepath)
             if hash == None:
-                raise Exception("Missing hash") 
-            args = (node_id, hash, size, None, modyfied_by, cluster)
-            serial = self.backend.node.version_create(*args)[0]
-            meta = {'hash':hash,
-                    'content-type':mimetype}
-            self.backend.node.attribute_set(serial, ((k, v) for k, v in meta.iteritems()))
-            timestamp = timegm(modificationdate.timetuple())
-            microseconds = modificationdate.time().microsecond
-            f.write('update versions set mtime=\'%10d.%6d\' where serial=%s;' %(timestamp, microseconds, serial))
+                raise Exception("Missing hash")
+            args = node_id, hash, size, modyfied_by, cluster, mimetype, mdate
+            v.append(self.create_version(*args))
             i += 1
+        return v
     
-    def create_metadata(self, header_id, node_id):
-        for t in self.retrieve_metadata(header_id):
-            pass
+    def create_version(self, node_id, hash, size, modyfied_by, cluster, mimetype, mdate):
+        args = (node_id, hash, size, None, modyfied_by, cluster)
+        serial = self.backend.node.version_create(*args)[0]
+        meta = {'hash':hash,
+                'content-type':mimetype}
+        self.backend.node.attribute_set(serial, ((k, v) for k, v in meta.iteritems()))
+        timestamp = timegm(mdate.timetuple())
+        microseconds = mdate.time().microsecond
+        values = timestamp, microseconds, serial
+        f.write('update versions set mtime=\'%10d.%6d\' where serial=%s;' %values)
+        return serial
+    
+    def create_tags(self, header_id, node_id, vserials):
+        tags = self.retrieve_tags(header_id)
+        if not tags:
+            return
+        for v in vserials:
+            self.backend.node.attribute_set(v, (('tag', tags),))
+    
+    def create_permissions(self, fid, path, owner):
+        fpath, permissions = self.backend.permissions.access_inherit(path)
+        if not permissions:
+            permissions = self.retrieve_permissions(fid)
+            keys = ('read', 'write')
+            for k in keys:
+                if owner in permissions[k]:
+                    permissions[k].remove(owner)
+            self.backend.permissions.access_set(path, permissions)
     
     def create_objects(self):
-        for username, headerid, folderid, filename, deleted, filepath, mimetype in self.retrieve_current_nodes():
-            path = self.retrieve_path(folderid)[1:]
-            container = 'pithos' if not deleted else 'trash'
+        for t in self.retrieve_current_nodes():
+            username, headerid, folderid, filename, deleted, filepath, mimetype, public, owner_id = t
+            containers = ['pithos', 'trash']
             
-            #create container if it does not exist
-            try:
-                self.backend._lookup_container(username, container)
-            except NameError:
-                self.backend.put_container(username, username, container) 
+            for c in containers:
+                #create container if it does not exist
+                try:
+                    self.backend._lookup_container(username, c)
+                except NameError, e:
+                    self.backend.put_container(username, username, c) 
+            
+            container = 'pithos' if not deleted else 'trash'
+            path = self.build_path(folderid)
             
             #create node
-            object = '%s/%s' %(path, filename)
-            nodeid = self.create_node(username, container, object, filepath, mimetype)
+            object = '%s/%s/%s/%s' %(username, container, path, filename)
+            args = username, container, object, filepath, mimetype
+            nodeid = self.create_node(*args)
             
-            #create node history
-            self.create_history(headerid, nodeid, deleted)
+            #create node history 
+            vserials = self.create_history(headerid, nodeid, deleted)
             
-            self.create_metadata(headerid, nodeid)
-            #self.set_public()
-            #self.statistics()
-            #self.set_permissions()
+            #set object tags
+            self.create_tags(headerid, nodeid, vserials)
+            
+            #set object's publicity
+            if public:
+                self.backend.permissions.public_set(object)
+            
+            #set object's permissions
+            self.create_permissions(headerid, object, username)
     
-    def retrieve_path(self, child_id):
-        folderTable = Table('folder', self.metadata, autoload=True)
-        s = select([folderTable.c.parent_id, folderTable.c.name])
-        s = s.where(folderTable.c.id == child_id)
+    def build_path(self, child_id):
+        folder = Table('folder', self.metadata, autoload=True)
+        user = Table('gss_user', self.metadata, autoload=True)
+        j = folder.join(user, folder.c.owner_id == user.c.id)
+        s = select([folder, user.c.username], from_obj=j)
+        s = s.where(folder.c.id == child_id)
+        s.order_by(folder.c.modificationdate)
         rp = self.conn.execute(s)
-        parent_id, foldername = rp.fetchone()
-        if not parent_id:
+        t = rp.fetchone()
+        md5 = hashlib.md5()
+        hash = md5.hexdigest().lower()
+        size = 0
+        if not t[PARENT_ID]:
             return ''
         else:
-            return '%s/%s' %(self.retrieve_path(parent_id), foldername)
+            container_path = t[USER]
+            container_path += '/trash' if t[DELETED] else '/pithos'
+            parent_node = self.backend.node.node_lookup(container_path)
+            if not parent_node:
+                raise Exception('Missing node:', container_path)
+            parent_path = self.build_path(t[PARENT_ID])
+            path = '%s/%s/%s' %(container_path, parent_path, t[NAME]) if parent_path else '%s/%s' %(container_path, t[NAME])
+            node = self.backend.node.node_lookup(path)
+            if not node:
+                node = self.backend.node.node_create(parent_node, path)
+                if not node:
+                    raise Exception('Unable to create node:', path)
+                
+                #create versions
+                v = self.create_version(node, hash, size, t[USER], CLUSTER_NORMAL, 'application/directory', t[CREATIONDATE])
+                if t[CREATIONDATE] != t[MODIFICATIONDATE]:
+                    self.backend.node.version_recluster(v, CLUSTER_HISTORY)
+                    self.create_version(node, hash, size, t[USER], CLUSTER_NORMAL, 'application/directory', t[MODIFICATIONDATE])
+                
+                #set permissions
+                self.create_permissions(t[ID], path, t[USER])
+            return '%s/%s' %(parent_path, t[NAME]) if parent_path else t[NAME]
     
     def retrieve_current_nodes(self):
         fileheader = Table('fileheader', self.metadata, autoload=True)
@@ -152,9 +208,9 @@ class ObjectMigration(Migration):
         j = j.join(folder, fileheader.c.folder_id == folder.c.id)
         j = j.join(gss_user, fileheader.c.owner_id == gss_user.c.id)
         s = select([gss_user.c.username,  fileheader.c.id, fileheader.c.folder_id,
-                    fileheader.c.name,  fileheader.c.deleted, filebody.c.storedfilepath,
-                    filebody.c.mimetype], from_obj=j)
-        s = s.limit(1)
+                    fileheader.c.name,  fileheader.c.deleted,
+                    filebody.c.storedfilepath, filebody.c.mimetype,
+                    fileheader.c.readforall, fileheader.c.owner_id], from_obj=j)
         rp = self.conn.execute(s)
         object = rp.fetchone()
         while object:
@@ -178,19 +234,77 @@ class ObjectMigration(Migration):
             version = rp.fetchone()
         rp.close()
     
-    def retrieve_metadata(self, header_id):
+    def retrieve_tags(self, header_id):
         filetag = Table('filetag', self.metadata, autoload=True)
-        s = filetag.select(filetag.c.fileid == header_id)
+        s = select([filetag.c.tag], filetag.c.fileid == header_id)
         rp = self.conn.execute(s)
-        tag = rp.fetchone()
-        while tag:
-            yield tag
-            tag = tp.fetchone()
+        tags = rp.fetchall() if rp.returns_rows else []
+        tags = [elem[0] for elem in tags]
         rp.close()
+        return ','.join(tags) if tags else ''
     
-    def handle_deleted(self):
-        pass
+    def retrieve_permissions(self, id, is_folder=True):
+        permissions = {}
+        if is_folder:
+            ftable = Table('folder_permission', self.metadata, autoload=True)
+        else:
+            ftable = Table('fileheader_permission', self.metadata, autoload=True)
+        permission = Table('permission', self.metadata, autoload=True)
+        group = Table('gss_group', self.metadata, autoload=True)
+        user = Table('gss_user', self.metadata, autoload=True)
+        j = ftable.join(permission, ftable.c.permissions_id == permission.c.id)
+        j1 = j.join(group, group.c.id == permission.c.group_id)
+        j2 = j.join(user, user.c.id == permission.c.user_id)
+        
+        permissions = defaultdict(list)
+        
+        #get folder read groups
+        s = select([group.c.name], from_obj=j1)
+        if is_folder:
+            s = s.where(ftable.c.folder_id == id)
+        else:
+            s = s.where(ftable.c.fileheader_id == id)
+        s = s.where(permission.c.read == True)
+        s = s.where(permission.c.group_id != None)
+        rp = self.conn.execute(s)
+        permissions['read'].extend([e[0] for e in rp.fetchall()])
 
+        #get folder read users
+        s = select([user.c.username], from_obj=j2)
+        if is_folder:
+            s = s.where(ftable.c.folder_id == id)
+        else:
+            s = s.where(ftable.c.fileheader_id == id)
+        s = s.where(permission.c.read == True)
+        s = s.where(permission.c.user_id != None)
+        rp = self.conn.execute(s)
+        permissions['read'].extend([e[0] for e in rp.fetchall()])
+        
+        #get folder write groups
+        s = select([group.c.name], from_obj=j1)
+        if is_folder:
+            s = s.where(ftable.c.folder_id == id)
+        else:
+            s = s.where(ftable.c.fileheader_id == id)
+        s = s.where(permission.c.write == True)
+        s = s.where(permission.c.group_id != None)
+        rp = self.conn.execute(s)
+        permissions['write'].extend([e[0] for e in rp.fetchall()])
+        
+        #get folder write groups
+        s = select([user.c.username], from_obj=j2)
+        if is_folder:
+            s = s.where(ftable.c.folder_id == id)
+        else:
+            s = s.where(ftable.c.fileheader_id == id)
+        s = s.where(permission.c.write == True)
+        s = s.where(permission.c.user_id != None)
+        rp = self.conn.execute(s)
+        permissions['write'].extend([e[0] for e in rp.fetchall()])
+        
+        rp.close()
+        return permissions
+    
 if __name__ == "__main__":
     old_db = ''
     db = ''

@@ -1190,7 +1190,7 @@ Assuming an authentication token is obtained, the following high-level operation
 
     curl -X PUT -D - \
          -H "X-Auth-Token: 0000" \
-         -H "Content-Type: application/folder" \
+         -H "Content-Type: application/directory" \
          https://pithos.dev.grnet.gr/v1/user/pithos/folder
 
 * Add a new object ::

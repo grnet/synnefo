@@ -38,7 +38,7 @@ Enter the pithos dir, copy settings.py.dist to settings.py.
 
 Then run:
     python manage.py syncdb
-    python manage.py loaddata aai/fixtures/auth_test_data.json (to load sample users)
+    python manage.py loaddata im/fixtures/auth_test_data.json (to load sample users)
     python manage.py runserver
 
 This server is useful during development, but should not be used for deployment.

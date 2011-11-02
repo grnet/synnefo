@@ -907,7 +907,7 @@
             var image = storage.images.get(this.get('imageRef'));
             if (!image) {
                 storage.images.update_unknown_id(this.get('imageRef'));
-                image = storage.flavors.get(this.get('imageRef'));
+                image = storage.images.get(this.get('imageRef'));
             }
             return image;
         },

@@ -362,11 +362,10 @@
             this.input.val(this.network.get("name"));
             this.el.append(this.input);
             this.input.focus();
-            this.input.bind("keypress", _.bind(function(ev){
-                if (ev.which == 13) {
-                    this.submit();
-                }
-                if (ev.keyCode == 17) {this.editing = false; this.update_layout()};
+            this.input.bind("keydown", _.bind(function(ev){
+                ev.keyCode = ev.keyCode || ev.which;
+                if (ev.keyCode == 13) { this.submit(); };
+                if (ev.keyCode == 27) {this.editing = false; this.update_layout()};
             }, this));
         },
 

@@ -193,10 +193,10 @@
             // give edit focus
             this.$('input').focus();
             // handle enter press
-            this.$('input').keypress(function(ev){
-                if (ev.charCode == 13) {
-                    self.submit();
-                }
+            this.$('input').keydown(function(ev){
+                ev.keyCode = ev.keyCode || ev.which;
+                if (ev.keyCode == 13) { self.submit(); }
+                if (ev.keyCode == 27) { self.renaming = false; self.update_layout(); }
             })
         },
         

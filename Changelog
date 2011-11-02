@@ -2,6 +2,40 @@ Changelog
 =========
 
 
+2011-10-21, v0.7.3
+
+FIXES:
+	UI:
+		* Fix two UI glitches with Firefox 3.6 (#1545, #1546)
+
+
+2011-10-19, v0.7.2
+
+FIXES:
+    UI:
+	    * Fix regressions with flavor sorting and image size checking
+		  (#1429, #1507)
+
+
+2011-10-17, v0.7.1
+
+FIXES:
+    UI:
+        * Fix Enter/Esc on machine rename not working in the UI (#1501)
+	    * Fix UI barfs if a VM is based on an Image with state=DELETED (#1494)
+        * Fix UI user logout action does not work (#1497)
+    Images:
+        * Fix erroneous reference to $(HELPER_DIR) in /etc/default /snf-image
+          (#1498)
+        * Fix typo in snf-image-helper ChangePassword task (#1500)
+        * Show timestamps on execution of helper tasks in snf-image helper VM
+          (#1499)
+	Deployment:
+        * Improve check for Ganeti master in snf-ganeti-eventd init script
+          (#1323)
+		* Fix snf-ganeti-eventd init script ignored defaults file (#1505)
+
+
 2011-10-13, v0.7
 
 NEW FEATURES:

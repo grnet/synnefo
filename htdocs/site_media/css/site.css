@@ -2850,6 +2850,9 @@ body.auth .canlogin {
   right: 20px;
   top: 25px;
 }
+body.auth .inner-bottom .nologin {
+  display: none;
+}
 .inner-bottom .nologin {
   font-size: 0.9em;
   position: absolute;
@@ -2866,7 +2869,11 @@ body.auth .canlogin {
 .inner-bottom .gotoapp:hover {
   color: #fff !important;
 }
+body.auth .downloads {
+  display: block;
+}
 .downloads {
+  display: none;
   border-top: 2px solid #fff;
   background-color: #DCE9F1;
   background-color: #accfdf;

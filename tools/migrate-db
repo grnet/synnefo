@@ -116,7 +116,7 @@ class ObjectMigration(Migration):
         if not tags:
             return
         for v in vserials:
-            self.backend.node.attribute_set(v, (('tag', tags),))
+            self.backend.node.attribute_set(v, (('X-Object-Meta-Tag', tags),))
     
     def create_permissions(self, fid, path, owner):
         fpath, permissions = self.backend.permissions.access_inherit(path)
@@ -142,22 +142,18 @@ class ObjectMigration(Migration):
             
             container = 'pithos' if not deleted else 'trash'
             path = self.build_path(folderid)
-            
             #create node
-            object = '%s/%s/%s/%s' %(username, container, path, filename)
-            args = username, container, object, filepath, mimetype
+            object = '%s/%s' %(username, container)
+            object = '%s/%s/%s' %(object, path, filename) if path else '%s/%s' %(object, filename)
+            args = username, container, object
             nodeid = self.create_node(*args)
-            
             #create node history 
             vserials = self.create_history(headerid, nodeid, deleted)
-            
             #set object tags
             self.create_tags(headerid, nodeid, vserials)
-            
             #set object's publicity
             if public:
                 self.backend.permissions.public_set(object)
-            
             #set object's permissions
             self.create_permissions(headerid, object, username)
     
@@ -211,6 +207,7 @@ class ObjectMigration(Migration):
                     fileheader.c.name,  fileheader.c.deleted,
                     filebody.c.storedfilepath, filebody.c.mimetype,
                     fileheader.c.readforall, fileheader.c.owner_id], from_obj=j)
+        
         rp = self.conn.execute(s)
         object = rp.fetchone()
         while object:

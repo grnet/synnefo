@@ -127,7 +127,7 @@ body {
   background-repeat: repeat-x;
   font-size: 13px;
   font-family: verdana;
-  background-position: 0px -70px;
+  background-position: 0px -120px;
 }
 body.alt {
   background-image: url("../images/bg-alt.png");

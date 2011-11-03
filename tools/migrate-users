@@ -36,6 +36,8 @@
 from lib.migrate import Migration
 
 from sqlalchemy import Table
+from sqlalchemy.sql import select
+
 from pithos.im.models import User
 
 import base64
@@ -61,6 +63,11 @@ class UserMigration(Migration):
             user.active = 'ACTIVE' if u['active'] else 'SUSPENDED'
             print '#', user
             user.save(update_timestamps=False)
+            
+            #create user groups
+            for (owner, group, members) in self.retrieve_groups(u['username']):
+                self.backend.permissions.group_addmany(owner, group, members)
+    
     
     def retrieve_users(self):
         s = self.gss_users.select()
@@ -70,8 +77,29 @@ class UserMigration(Migration):
             yield user
             user = rp.fetchone()
         rp.close()
+    
+    def retrieve_groups(self, owner):
+        gss_group = Table('gss_group', self.metadata, autoload=True)
+        gss_user = Table('gss_user', self.metadata, autoload=True)
+        group_user = Table('gss_group_gss_user', self.metadata, autoload=True)
+        j1 = gss_group.join(gss_user, gss_group.c.owner_id == gss_user.c.id)
+        j2 = group_user.join(gss_user, group_user.c.members_id == gss_user.c.id)
+        s = select([gss_group.c.id, gss_group.c.name, gss_user.c.username], from_obj=j1)
+        s = s.where(gss_user.c.username == owner)
+        rp = self.conn.execute(s)
+        gr = rp.fetchone()
+        while gr:
+            id, group, owner = gr
+            s = select([gss_user.c.username], from_obj=j2)
+            s = s.where(group_user.c.groupsmember_id == id)
+            rp2 = self.conn.execute(s)
+            members = rp2.fetchall()
+            rp2.close()
+            yield owner, group, (m[0] for m in members)
+            gr = rp.fetchone()
+        rp.close()
 
 if __name__ == "__main__":
-    db = 'postgresql://gss@127.0.0.1/pithos'
+    db = ''
     m = UserMigration(db)
     m.execute()

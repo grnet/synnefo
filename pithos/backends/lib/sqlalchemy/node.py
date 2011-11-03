@@ -117,11 +117,8 @@ class Node(DBWorker):
                                          onupdate='CASCADE'),
                               autoincrement=False))
         path_length = 2048
-        path_length_in_bytes = path_length * 4
-        columns.append(Column('path', Text(path_length_in_bytes), default='', nullable=False))
+        columns.append(Column('path', String(path_length), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
-        # place an index on path
-        #Index('idx_nodes_path', self.nodes.c.path)
         
         #create policy table
         columns=[]
@@ -184,7 +181,7 @@ class Node(DBWorker):
         insp = Inspector.from_engine(self.engine)
         indexes = [elem['name'] for elem in insp.get_indexes('nodes')]
         if 'idx_nodes_path' not in indexes:
-            explicit_length = '(%s)' %path_length_in_bytes if self.engine.name == 'mysql' else ''
+            explicit_length = '(%s)' %path_length if self.engine.name == 'mysql' else ''
             s = text('CREATE INDEX idx_nodes_path ON nodes (path%s)' %explicit_length)
             self.conn.execute(s).close()
         

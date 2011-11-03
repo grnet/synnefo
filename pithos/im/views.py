@@ -188,7 +188,13 @@ def users_delete(request, user_id):
 
 
 def generate_invitation_code():
-    return randint(1, 2L**63 - 1)
+    while True:
+        code = randint(1, 2L**63 - 1)
+        try:
+            Invitation.objects.get(code=code)
+            # An invitation with this code already exists, try again
+        except Invitation.DoesNotExist:
+            return code
 
 
 def send_invitation(inv):
@@ -199,8 +205,6 @@ def send_invitation(inv):
                 'url': url})
     sender = settings.DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [inv.uniq])
-    inv.inviter.invitations = max(0, inv.inviter.invitations - 1)
-    inv.inviter.save()
     logging.info('Sent invitation %s', inv)
 
 
@@ -208,20 +212,26 @@ def send_invitation(inv):
 def invite(request):
     status = None
     message = None
+    inviter = request.user
 
     if request.method == 'POST':
-        if request.user.invitations > 0:
+        uniq = request.POST.get('uniq')
+        realname = request.POST.get('realname')
+        
+        if inviter.invitations > 0:
             code = generate_invitation_code()
-            invitation, created = Invitation.objects.get_or_create(code=code)
-            invitation.inviter=request.user
-            invitation.realname=request.POST.get('realname')
-            invitation.uniq=request.POST.get('uniq')
-            invitation.save()
+            invitation, created = Invitation.objects.get_or_create(
+                inviter=inviter,
+                uniq=uniq,
+                defaults={'code': code, 'realname': realname})
             
             try:
                 send_invitation(invitation)
+                if created:
+                    inviter.invitations = max(0, inviter.invitations - 1)
+                    inviter.save()
                 status = 'success'
-                message = _('Invitation sent to %s' % invitation.uniq)
+                message = _('Invitation sent to %s' % uniq)
             except (SMTPException, socket.error) as e:
                 status = 'error'
                 message = e.strerror
@@ -230,11 +240,15 @@ def invite(request):
             message = _('No invitations left')
 
     if request.GET.get('format') == 'json':
-        rep = {'invitations': request.user.invitations}
+        sent = [{'email': inv.uniq,
+                 'realname': inv.realname,
+                 'is_accepted': inv.is_accepted}
+                    for inv in inviter.invitations_sent.all()]
+        rep = {'invitations': inviter.invitations, 'sent': sent}
         return HttpResponse(json.dumps(rep))
     
     html = render_to_string('invitations.html', {
-            'user': request.user,
+            'user': inviter,
             'status': status,
             'message': message})
     return HttpResponse(html)

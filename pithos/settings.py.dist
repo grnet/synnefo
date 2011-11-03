@@ -168,6 +168,14 @@ TWITTER_SECRET = ''
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
 
+INVITATIONS_PER_LEVEL = {
+    0   :   1000,
+    1   :   0,
+    2   :   0,
+    3   :   0,
+    4   :   0
+}
+
 # Where users should login with their invitation code
 INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
                             '?code=%d' \

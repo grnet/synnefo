@@ -35,18 +35,11 @@ import logging
 
 from datetime import datetime
 
+from django.conf import settings
 from django.http import HttpResponseBadRequest
 
 from pithos.im.models import User, Invitation
 from pithos.im.target.util import prepare_response
-
-
-INVITATIONS_PER_LEVEL = {
-    0   :   10000,
-    1   :   3,
-    2   :   2,
-    3   :   1,
-    4   :   0}
 
 
 def login(request):
@@ -54,7 +47,7 @@ def login(request):
     try:
         invitation = Invitation.objects.get(code=code)
     except Invitation.DoesNotExist:
-        return HttpResponseBadRequest('Does Not Exist')
+        return HttpResponseBadRequest('Wrong invitation code')
     
     if not invitation.is_accepted:
         invitation.is_accepted = True
@@ -62,12 +55,13 @@ def login(request):
         invitation.save()
         logging.info('Accepted invitation %s', invitation)
     
-    user, created = User.objects.get_or_create(uniq=invitation.uniq)
+    user, created = User.objects.get_or_create(uniq=invitation.uniq,
+        defaults={
+            'realname': invitation.realname,
+            'affiliation': 'Invitation',
+            'level': invitation.inviter.level + 1
+        })
     if created:
-        user.realname = invitation.realname
-        user.affiliation = 'Invitation'
-        user.level = invitation.inviter.level + 1
-        user.invitations = INVITATIONS_PER_LEVEL.get(user.level, 0)
         user.renew_token()
         user.save()
         logging.info('Created user %s', user)

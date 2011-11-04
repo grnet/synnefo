@@ -147,7 +147,8 @@ INSTALLED_APPS = (
 #    'django.contrib.admindocs',
     'pithos.im',
     'pithos.api',
-    'pithos.public'
+    'pithos.public',
+    'pithos.ui'
 )
 
 # Set the expiration time of newly created auth tokens
@@ -167,6 +168,8 @@ TWITTER_SECRET = ''
 
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
+FEEDBACK_FROM_EMAIL = DEFAULT_FROM_EMAIL
+FEEDBACK_CONTACT_EMAIL = 'support@pithos.grnet.gr'
 
 INVITATIONS_PER_LEVEL = {
     0   :   1000,

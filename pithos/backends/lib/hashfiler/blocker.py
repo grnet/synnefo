@@ -115,6 +115,9 @@ class Blocker(object):
         block = None
 
         for h in hashes:
+            if h == self.emptyhash:
+                append('')
+                continue
             with self._get_rear_block(h, 0) as rbl:
                 if not rbl:
                     break

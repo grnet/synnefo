@@ -38,8 +38,8 @@ from datetime import datetime
 from django.conf import settings
 from django.http import HttpResponseBadRequest
 
-from pithos.im.models import User, Invitation
-from pithos.im.target.util import prepare_response
+from pithos.im.models import Invitation
+from pithos.im.target.util import get_or_create_user, prepare_response
 
 
 def login(request):
@@ -55,16 +55,9 @@ def login(request):
         invitation.save()
         logging.info('Accepted invitation %s', invitation)
     
-    user, created = User.objects.get_or_create(uniq=invitation.uniq,
-        defaults={
-            'realname': invitation.realname,
-            'affiliation': 'Invitation',
-            'level': invitation.inviter.level + 1
-        })
-    if created:
-        user.renew_token()
-        user.save()
-        logging.info('Created user %s', user)
-    
+    user = get_or_create_user(invitation.uniq,
+                                invitation.realname,
+                                'Invitation',
+                                invitation.inviter.level + 1)
     next = request.GET.get('next')
     return prepare_response(user, next, 'renew' in request.GET)

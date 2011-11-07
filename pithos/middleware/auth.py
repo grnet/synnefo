@@ -60,7 +60,10 @@ class AuthMiddleware(object):
                     request.set_auth_cookie = True
                 user = get_user_from_token(token)
             if not user:
-                user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
+                cookie_value = request.COOKIES.get('_pithos2_a')
+                if cookie_value and '|' in cookie_value:
+                    token = cookie_value.split('|', 1)[1]
+                    user = get_user_from_token(token)
         if not user:
             return
         
@@ -78,5 +81,6 @@ class AuthMiddleware(object):
     def process_response(self, request, response):
         if getattr(request, 'user', None) and getattr(request, 'set_auth_cookie', False):
             expire_fmt = request.user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-            response.set_cookie('X-Auth-Token', value=request.user.auth_token, expires=expire_fmt, path='/')
+            cookie_value = request.user.uniq + '|' + request.user.auth_token
+            response.set_cookie('_pithos2_a', value=cookie_value, expires=expire_fmt, path='/')
         return response

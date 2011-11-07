@@ -33,7 +33,7 @@
 
 from django.http import HttpResponseBadRequest
 
-from pithos.im.target.util import get_user, prepare_response
+from pithos.im.target.util import get_or_create_user, prepare_response
 
 
 class Tokens:
@@ -66,6 +66,6 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    return prepare_response(get_user(eppn, realname, affiliation),
+    return prepare_response(get_or_create_user(eppn, realname, affiliation, 0),
                             request.GET.get('next'),
                             'renew' in request.GET)

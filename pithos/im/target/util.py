@@ -36,6 +36,7 @@ import datetime
 
 from urlparse import urlsplit, urlunsplit
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.utils.http import urlencode
 

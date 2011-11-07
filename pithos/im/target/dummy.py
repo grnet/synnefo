@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseBadRequest
 
 from pithos.im.target.util import prepare_response
 
@@ -39,8 +39,8 @@ from pithos.im.target.util import prepare_response
 def login(request):
     next = request.GET.get('next')
     if not next:
-        return HttpResponse('')
+        return HttpResponseBadRequest('No next step provided')
     if not request.user:
-        return HttpResponseRedirect(next)
+        return HttpResponseBadRequest('User not found')
     
     return prepare_response(request.user, next)

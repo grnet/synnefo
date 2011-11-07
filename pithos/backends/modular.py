@@ -560,6 +560,8 @@ class ModularBackend(BaseBackend):
         """Create/update an object with the specified size and partial hashes."""
         
         logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
+        if size == 0: # No such thing as an empty hashmap.
+            hashmap = [self.put_block('')]
         map = HashMap(self.block_size, self.hash_algorithm)
         map.extend([binascii.unhexlify(x) for x in hashmap])
         missing = self.blocker.block_ping(map)

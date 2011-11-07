@@ -45,7 +45,9 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT]
     RewriteRule ^/public(.*) /api/public$1 [PT]
+    RewriteRule ^/tools(.*) /api/ui$1 [PT]
     RewriteRule ^/im(.*) https://%{HTTP_HOST}%{REQUEST_URI}
+    RewriteRule ^/login(.*) https://%{HTTP_HOST}%{REQUEST_URI}
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
@@ -77,7 +79,9 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT]
     RewriteRule ^/public(.*) /api/public$1 [PT]
+    RewriteRule ^/tools(.*) /api/ui$1 [PT]
     RewriteRule ^/im(.*) /api/im$1 [PT]
+    RewriteRule ^/login(.*) /api/im/login/dummy$1 [PT]
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos

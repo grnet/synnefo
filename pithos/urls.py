@@ -31,11 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import include, patterns
+
 
 urlpatterns = patterns('',
     (r'^v1(?:$|/)', include('pithos.api.urls')),
     (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
     (r'^public(?:$|/)', include('pithos.public.urls')),
-    (r'^im/', include('pithos.im.urls'))
+    (r'^im/', include('pithos.im.urls')),
+    (r'^ui', include('pithos.ui.urls'))
 )

@@ -5571,6 +5571,18 @@ table.list-machines .wave {
     color: #FF7F2A;
 }
 
+.create-vm .confirm-params {
+    overflow: auto;
+}
+
+.create-vm .vm-confirm .ssh.confirm-params {
+    max-height: 150px;
+}
+
+.create-vm .personalize-cont .confirm-params {
+    max-height: 216px;
+}
+
 .create-vm .personalize-cont,
 .create-vm .confirm-cont {
     height: 250px;

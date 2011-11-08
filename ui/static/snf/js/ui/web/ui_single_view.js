@@ -146,7 +146,14 @@
             // current vm removed or does not exist after an update
             this.show_vm_menu();
             if (!this.current_vm_instance || this.current_vm_instance.id == vm.id) {
-                this.show_next();
+                this.current_vm++;
+                if (this.current_vm >= storage.vms.models.length) {
+                    this.current_vm = 0;
+                }
+                this.update_current_vm();
+                this.show_current();
+            // this might fail when vms get empty
+            // catch the exception
             } else {
                 this.show_current();
             }

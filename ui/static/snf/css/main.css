@@ -5218,8 +5218,9 @@ table.list-machines .wave {
 }
 
 .create-vm .flavor-options-cont .flavor-options {
-    margin-bottom: 25px;
+    margin-bottom: 18px;
 }
+
 
 .create-vm .flavor-options .metric {
     font-size: 0.8em;
@@ -5237,6 +5238,11 @@ table.list-machines .wave {
     font-size: 0.8em;
     float: right;
     margin-top: 4px;
+}
+
+.create-vm .flavor-options .disk-type-option .metric {
+    display: none !important;
+    max-width: 80px;
 }
 
 .create-vm .flavor-options .selected .value {

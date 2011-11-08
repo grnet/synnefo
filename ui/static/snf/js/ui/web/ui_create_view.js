@@ -315,6 +315,13 @@
 
             this.predefined = this.$(".predefined-list");
             this.update_predefined_flavors();
+
+            this.disk_types = {
+                'DTYPE1': {name:'Disk type 1', description: 'type 1 small description'},
+                'DTYPE2': {name:'Disk type 2', description: 'type 2 small description'},
+                'DTYPE3': {name:'Disk type 3', description: 'type 3 small description'}
+            }
+            this.selected_disk_type = {value:'DTYPE1', details:this.disk_types['DTYPE1']};
         },
 
         handle_image_change: function(data) {
@@ -322,7 +329,34 @@
             this.update_valid_predefined();
             this.update_flavors_data();
             this.reset_flavors();
+            this.reset_disk_types();
             this.update_layout();
+        },
+
+        reset_disk_types: function() {
+            var list = this.$(".flavors-disktype-list").empty();
+            _.each(this.disk_types, _.bind(function(data, value){
+                var el = $(('<li id="disktype-{0}" class="disk-type-option">' +
+                            '<span class="value">{1}</span><span class="metric">' +
+                            '{2}</span>' +
+                            '</li>').format(value, data.name, data.description))
+
+                el.data("value", value);
+                el.data("details", data);
+
+                list.append(el);
+                if (value == this.selected_disk_type.value) { el.addClass("selected"); }
+
+                el.click(_.bind(function() {
+                    list.find("li").removeClass("selected");
+                    if ($(el).hasClass("disabled")) { return };
+                    this.selected_disk_type = {
+                        value: value, 
+                        details: data
+                    };
+                    $(el).addClass("selected");
+                }, this));
+            }, this));
         },
 
         validate_selected_flavor: function() {
@@ -354,7 +388,7 @@
 
         handle_predefined_click: function(el) {
             if (el.hasClass("disabled")) { return };
-            this.set_current(el.data("flavor"))
+            this.set_current(el.data("flavor"));
         },
 
         select_valid_flavor: function() {
@@ -633,7 +667,8 @@
         },
 
         get: function() {
-            return {'flavor': this.current_flavor}
+            return {'flavor': this.current_flavor,
+                    'disktype': this.selected_disk_type }
         }
 
     });
@@ -848,6 +883,7 @@
         
         update_flavor_details: function() {
             var flavor = this.parent.get_params().flavor;
+            var disktype = this.parent.get_params().disktype;
 
             function set_detail(sel, key) {
                 var val = key;
@@ -858,6 +894,7 @@
             set_detail("cpu", flavor.get("cpu") + "x");
             set_detail("ram", flavor.get("ram") + " MB");
             set_detail("disk", util.readablizeBytes(flavor.get("disk") * 1024 * 1024 * 1024));
+            set_detail("disktype", disktype.details.name);
         },
 
         update_image_details: function() {
@@ -1034,6 +1071,7 @@
                 }
 
                 extra['personality'] = personality;
+                var disktype = data.disktype;
                 storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){
                     this.close_all();
                     this.password_view.show(data.server.adminPass, data.server.id);

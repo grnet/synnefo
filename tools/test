@@ -72,44 +72,13 @@ class BaseTestCase(unittest.TestCase):
         self._clean_account()
         self.invalid_client = Pithos_Client(get_server(), get_auth(), 'invalid',
                                             get_api())
-        #self.headers = {
-        #    'account': ('x-account-container-count',
-        #                'x-account-bytes-used',
-        #                'last-modified',
-        #                'content-length',
-        #                'date',
-        #                'content_type',
-        #                'server',),
-        #    'object': ('etag',
-        #               'content-length',
-        #               'content_type',
-        #               'content-encoding',
-        #               'last-modified',
-        #               'date',
-        #               'x-object-manifest',
-        #               'content-range',
-        #               'x-object-modified-by',
-        #               'x-object-version',
-        #               'x-object-version-timestamp',
-        #               'server',),
-        #    'container': ('x-container-object-count',
-        #                  'x-container-bytes-used',
-        #                  'content_type',
-        #                  'last-modified',
-        #                  'content-length',
-        #                  'date',
-        #                  'x-container-block-size',
-        #                  'x-container-block-hash',
-        #                  'x-container-policy-quota',
-        #                  'x-container-policy-versioning',
-        #                  'server',
-        #                  'x-container-object-meta',
-        #                  'x-container-policy-versioning',
-        #                  'server',)}
-        #
-        #self.contentTypes = {'xml':'application/xml',
-        #                     'json':'application/json',
-        #                     '':'text/plain'}
+        
+        #keep track of initial account groups
+        self.initial_groups = self.client.retrieve_account_groups()
+        
+        #keep track of initial account meta
+        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
+        
         self.extended = {
             'container':(
                 'name',
@@ -128,6 +97,19 @@ class BaseTestCase(unittest.TestCase):
         self.return_codes = (400, 401, 403, 404, 503,)
     
     def tearDown(self):
+        #delete additionally created meta
+        l = []
+        for m in self.client.retrieve_account_metadata(restricted=True):
+            if m not in self.initial_meta:
+                l.append(m)
+        self.client.delete_account_metadata(l)
+        
+        #delete additionally created groups
+        l = []
+        for g in self.client.retrieve_account_groups():
+            if g not in self.initial_groups:
+                l.append(g)
+        self.client.unset_account_groups(l)
         self._clean_account()
     
     def _clean_account(self):
@@ -149,16 +131,6 @@ class BaseTestCase(unittest.TestCase):
         else:
             l.append(codes)
         self.assertTrue(status in l)
-    
-    #def assert_headers(self, headers, type, **exp_meta):
-    #    prefix = 'x-%s-meta-' %type
-    #    system_headers = [h for h in headers if not h.startswith(prefix)]
-    #    for k,v in headers.items():
-    #        if k in system_headers:
-    #            self.assertTrue(k in headers[type])
-    #        elif exp_meta:
-    #            k = k.split(prefix)[-1]
-    #            self.assertEqual(v, exp_meta[k])
     
     def assert_extended(self, data, format, type, size=10000):
         if format == 'xml':
@@ -294,32 +266,9 @@ class AccountHead(BaseTestCase):
         for item in self.containers:
             self.client.create_container(item)
         
-                #keep track of initial account groups
-        self.initial_groups = self.client.retrieve_account_groups()
-        
-        #keep track of initial account meta
-        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
-        
         meta = {'foo':'bar'}
         self.client.update_account_metadata(**meta)
-        self.updated_meta = self.initial_meta.update(meta)
-    
-    def tearDown(self):
-        #delete additionally created meta
-        l = []
-        for m in self.client.retrieve_account_metadata(restricted=True):
-            if m not in self.initial_meta:
-                l.append(m)
-        self.client.delete_account_metadata(l)
-        
-        #delete additionally created groups
-        l = []
-        for g in self.client.retrieve_account_groups():
-            if g not in self.initial_groups:
-                l.append(g)
-        self.client.unset_account_groups(l)
-        
-        BaseTestCase.tearDown(self)
+        #self.updated_meta = self.initial_meta.update(meta)
     
     def test_get_account_meta(self):
         meta = self.client.retrieve_account_metadata()
@@ -470,32 +419,9 @@ class AccountPost(BaseTestCase):
         for item in self.containers:
             self.client.create_container(item)
         
-        #keep track of initial account groups
-        self.initial_groups = self.client.retrieve_account_groups()
-        
-        #keep track of initial account meta
-        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
-        
         meta = {'foo':'bar'}
         self.client.update_account_metadata(**meta)
-        self.updated_meta = self.initial_meta.update(meta)
-    
-    def tearDown(self):
-        #delete additionally created meta
-        l = []
-        for m in self.client.retrieve_account_metadata(restricted=True):
-            if m not in self.initial_meta:
-                l.append(m)
-        self.client.delete_account_metadata(l)
-        
-        #delete additionally created groups
-        l = []
-        for g in self.client.retrieve_account_groups():
-            if g not in self.initial_groups:
-                l.append(g)
-        self.client.unset_account_groups(l)
-        
-        BaseTestCase.tearDown(self)
+        #self.updated_meta = self.initial_meta.update(meta)
     
     def test_update_meta(self):
         with AssertMappingInvariant(self.client.retrieve_account_groups):
@@ -650,7 +576,7 @@ class ContainerGet(BaseTestCase):
             self.assertEqual(objects, l[start:end])
     
     #takes too long
-    def _test_list_limit_exceeds(self):
+    def test_list_limit_exceeds(self):
         self.client.create_container('pithos')
         
         for i in range(10001):
@@ -864,9 +790,6 @@ class ContainerDelete(BaseTestCase):
     
     def test_delete_invalid(self):
         self.assert_raises_fault(404, self.client.delete_container, 'c3')
-
-class ObjectHead(BaseTestCase):
-    pass
 
 class ObjectGet(BaseTestCase):
     def setUp(self):
@@ -1570,12 +1493,12 @@ class ObjectPost(BaseTestCase):
             self.assert_raises_fault(400, self.test_update_object,
                                      content_length = 1000)
     
-    def test_update_object_invalid_range(self):
+    def _test_update_object_invalid_range(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj[0]['name']):
             self.assert_raises_fault(416, self.test_update_object, 499, 0, True)
     
-    def test_update_object_invalid_range_and_length(self):
+    def _test_update_object_invalid_range_and_length(self):
         with AssertContentInvariant(self.client.retrieve_object,
                                     self.containers[0], self.obj[0]['name']):
             self.assert_raises_fault([400, 416], self.test_update_object, 499, 0, True,
@@ -1755,31 +1678,6 @@ class ListSharing(BaseTestCase):
         self.assertTrue('o2' not in my_shared_objects)
     
 class TestGreek(BaseTestCase):
-    def setUp(self):
-        BaseTestCase.setUp(self)
-        #keep track of initial account groups
-        self.initial_groups = self.client.retrieve_account_groups()
-        
-        #keep track of initial account meta
-        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
-    
-    def tearDown(self):
-        #delete additionally created meta
-        l = []
-        for m in self.client.retrieve_account_metadata(restricted=True):
-            if m not in self.initial_meta:
-                l.append(m)
-        self.client.delete_account_metadata(l)
-        
-        #delete additionally created groups
-        l = []
-        for g in self.client.retrieve_account_groups():
-            if g not in self.initial_groups:
-                l.append(g)
-        self.client.unset_account_groups(l)
-        
-        BaseTestCase.tearDown(self)
-    
     def test_create_container(self):
         self.client.create_container('φάκελος')
         self.assert_container_exists('φάκελος')
@@ -1948,32 +1846,11 @@ class TestGreek(BaseTestCase):
 class TestPermissions(BaseTestCase):
     def setUp(self):
         BaseTestCase.setUp(self)
-        #keep track of initial account groups
-        self.initial_groups = self.client.retrieve_account_groups()
-        #keep track of initial account meta
-        self.initial_meta = self.client.retrieve_account_metadata(restricted=True)
         
         #create a group
         self.authorized = ['chazapis', 'verigak', 'gtsouk']
         groups = {'pithosdev':','.join(self.authorized)}
         self.client.set_account_groups(**groups)
-    
-    def tearDown(self):
-        #delete additionally created meta
-        l = []
-        for m in self.client.retrieve_account_metadata(restricted=True):
-            if m not in self.initial_meta:
-                l.append(m)
-        self.client.delete_account_metadata(l)
-        
-        #delete additionally created groups
-        l = []
-        for g in self.client.retrieve_account_groups():
-            if g not in self.initial_groups:
-                l.append(g)
-        self.client.unset_account_groups(l)
-        
-        BaseTestCase.tearDown(self)
     
     def assert_read(self, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():

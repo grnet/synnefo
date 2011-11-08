@@ -9,7 +9,8 @@ from synnefo.ui.userdata.models import PublicKeyPair
 
 SUPPORT_GENERATE_KEYS = True
 try:
-    import M2Crypto as M2C
+    from paramiko import rsakey
+    from paramiko.message import Message
 except ImportError, e:
     SUPPORT_GENERATE_KEYS = False
 
@@ -24,7 +25,6 @@ class PublicKeyPairCollectionView(rest.UserCollectionView):
     exclude_fields = ["user"]
 
 SSH_KEY_LENGTH = getattr(settings, 'USERDATA_SSH_KEY_LENGTH', 2048)
-SSH_KEY_EXPONENT = getattr(settings, 'USERDATA_SSH_KEY_EXPONENT', 65537)
 def generate_key_pair(request):
     """
     Response to generate private/public RSA key pair
@@ -37,15 +37,18 @@ def generate_key_pair(request):
 
 
     # generate RSA key
-    key = M2C.RSA.gen_key(SSH_KEY_LENGTH, SSH_KEY_EXPONENT, lambda x: "");
+    key = rsakey.RSA.generate(SSH_KEY_LENGTH);
 
     # get PEM string
-    pem_buffer = M2C.BIO.MemoryBuffer()
-    M2C.m2.rsa_write_key_no_cipher(key.rsa, pem_buffer._ptr(), lambda : "")
-    pem = pem_buffer.getvalue()
+    pem = key.exportKey('PEM')
+
+    public_data = Message()
+    public_data.add_string('ssh-rsa')
+    public_data.add_mpint(key.key.e)
+    public_data.add_mpint(key.key.n)
 
     # generate public content
-    public = "ssh-rsa %s" % base64.b64encode('\x00\x00\x00\x07ssh-rsa%s%s' % (key.pub()[0], key.pub()[1]))
+    public = str("ssh-rsa %s" % base64.b64encode(str(public_data)))
 
     data = {'private': pem, 'public': public}
     return http.HttpResponse(json.dumps(data), mimetype="application/json")

@@ -27,6 +27,7 @@ class TestRestViews(TestCase):
 
     def setUp(self):
         settings.ROOT_URLCONF = 'synnefo.ui.userdata.urls'
+        settings.SKIP_SSH_VALIDATION = True
         clear_url_caches()
         self.client = AaiClient()
         self.user = User.objects.get(pk=1)
@@ -39,13 +40,13 @@ class TestRestViews(TestCase):
                 content="content1")
 
         resp = self.client.get("/keys")
-        self.assertEqual(resp.content, """[{"content": "content1", "uri": "/keys/1", "name": "key pair 1", "id": 1}]""")
+        self.assertEqual(resp.content, """[{"content": "content1", "id": 1, "uri": "/keys/1", "name": "key pair 1", "fingerprint": ""}]""")
 
         PublicKeyPair.objects.create(user=self.user, name="key pair 2",
                 content="content2")
 
         resp = self.client.get("/keys")
-        self.assertEqual(resp.content, """[{"content": "content1", "uri": "/keys/1", "name": "key pair 1", "id": 1}, {"content": "content2", "uri": "/keys/2", "name": "key pair 2", "id": 2}]""")
+        self.assertEqual(resp.content, """[{"content": "content1", "id": 1, "uri": "/keys/1", "name": "key pair 1", "fingerprint": ""}, {"content": "content2", "id": 2, "uri": "/keys/2", "name": "key pair 2", "fingerprint": ""}]""")
 
     def test_keys_resourse_get(self):
         resp = self.client.get("/keys/1")
@@ -55,7 +56,7 @@ class TestRestViews(TestCase):
         PublicKeyPair.objects.create(user=self.user, name="key pair 1",
                 content="content1")
         resp = self.client.get("/keys/1")
-        self.assertEqual(resp.content, """{"content": "content1", "uri": "/keys/1", "name": "key pair 1", "id": 1}""")
+        self.assertEqual(resp.content, """{"content": "content1", "id": 1, "uri": "/keys/1", "name": "key pair 1", "fingerprint": ""}""")
 
         # update
         resp = self.client.put("/keys/1", json.dumps({'name':'key pair 1 new name'}),

@@ -136,6 +136,9 @@ class ModularBackend(BaseBackend):
         for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
             setattr(self, x, getattr(self.mod.node, x))
     
+    def close(self):
+        self.wrapper.close()
+    
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""

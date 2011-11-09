@@ -39,6 +39,9 @@ class DBWrapper(object):
     def __init__(self, db):
         self.conn = sqlite3.connect(db, check_same_thread=False)
     
+    def close(self):
+        self.conn.close()
+    
     def execute(self):
         self.conn.execute('begin deferred')
     

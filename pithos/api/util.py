@@ -800,6 +800,6 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:
-                    request.backend.wrapper.conn.close()
+                    request.backend.close()
         return wrapper
     return decorator

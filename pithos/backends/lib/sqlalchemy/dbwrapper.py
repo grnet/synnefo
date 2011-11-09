@@ -55,6 +55,9 @@ class DBWrapper(object):
         self.conn = self.engine.connect()
         self.trans = None
     
+    def close(self):
+        self.conn.close()
+    
     def execute(self):
         self.trans = self.conn.begin()
     

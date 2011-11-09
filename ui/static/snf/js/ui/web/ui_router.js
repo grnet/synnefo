@@ -30,7 +30,7 @@
             "machines/single/":                 "vms_single_view",
 
             // network views
-            "networks/":                        "networks_view",
+            "networks/":                        "networks_view"
         },
         
         show_welcome: function() {

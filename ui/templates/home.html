@@ -18,8 +18,12 @@
     {% endcomment %}
 
     <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
+
     <!--[if IE]>
         <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie.css);</style>
+    <![endif]-->
+    <!--[if (lte IE 7)]>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie7.css);</style>
     <![endif]-->
 
     <script src="{{ SYNNEFO_JS_LIB_URL }}jquery.js"></script>

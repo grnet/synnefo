@@ -172,8 +172,8 @@ FEEDBACK_FROM_EMAIL = DEFAULT_FROM_EMAIL
 FEEDBACK_CONTACT_EMAIL = 'support@pithos.grnet.gr'
 
 INVITATIONS_PER_LEVEL = {
-    0   :   3,
-    1   :   0,
+    0   :   100,
+    1   :   2,
     2   :   0,
     3   :   0,
     4   :   0

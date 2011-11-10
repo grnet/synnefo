@@ -283,8 +283,10 @@
                 snf.api.timeouts_occured++;
                 return;
             } else {
-                // reset and continue to error trigger
+                // reset trigger error
                 snf.api.timeouts_occured = 0;
+                var args = _.toArray(arguments);
+                api.trigger("error", args);
             }
         }
 
@@ -389,12 +391,15 @@
         // TODO: move this out of here :/
         if (options.is_recurrent) {
             snf.api.bind("change:recurrent", _.bind(function() {
-                this.faster(true);
+                if (this.running) {
+                    this.faster(true);
+                }
             }, this));
         }
         
         // callback wrapper
         function _cb() {
+            if (!this.running) { this.stop() }
             if (this._called >= this.interval_increase_count) {
                 this._called = 0;
                 this.slower(false);

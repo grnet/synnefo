@@ -33,6 +33,7 @@
 
 from functools import wraps
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
@@ -134,7 +135,9 @@ def flavors_create(request):
 @requires_admin
 def flavors_info(request, flavor_id):
     flavor = models.Flavor.objects.get(id=flavor_id)
-    html = render('flavors_info.html', 'flavors', flavor=flavor)
+    html = render('flavors_info.html', 'flavors',
+                    flavor=flavor,
+                    disk_templates=settings.GANETI_DISK_TEMPLATES)
     return HttpResponse(html)
 
 
@@ -144,6 +147,7 @@ def flavors_modify(request, flavor_id):
     flavor.cpu = int(request.POST.get('cpu'))
     flavor.ram = int(request.POST.get('ram'))
     flavor.disk = int(request.POST.get('disk'))
+    flavor.disk_template = request.POST.get('disk_template')
     flavor.deleted = True if request.POST.get('deleted') else False
     flavor.save()
     log.info('User %s modified Flavor %s', request.user.name, flavor.name)

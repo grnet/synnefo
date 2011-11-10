@@ -24,6 +24,13 @@ NEW/UPDATED SETTINGS
 NEW DEPENDENCIES
     * M2Crypto is needed for server side ssh key pair generation (tested with 0.20.1). 
 
+v0.7 -> v0.8
+API
+    * A new 'disk_template' attribute has been added to Flavors.
+      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
+      in 20-api.conf to control its value. A database migration is needed.
+
+
 v0.6.2 -> v0.7
 HTML TEMPLATES
     * Included a generic service unavailable template based on

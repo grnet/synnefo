@@ -1,13 +1,13 @@
 import base64
 import binascii
 import md5
+import re
 
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
 from django.db.models.signals import pre_save
-from django.dispatch import receiver
 
 from synnefo.db import models as synnefo_models
 
@@ -37,7 +37,7 @@ class PublicKeyPair(ProfileModel):
     """
     name = models.CharField(max_length=255, null=False, blank=False)
     content = models.TextField()
-    fingerprint = models.CharField(max_length=100, null=False, blank=False)
+    fingerprint = models.CharField(max_length=100, null=False, blank=True)
 
     class Meta:
         app_label = 'userdata'
@@ -58,11 +58,13 @@ class PublicKeyPair(ProfileModel):
         data = base64.b64decode(data)
 
         if key_type == "ssh-rsa":
-            key = rsakey.RSA(data=data)
+            key = rsakey.RSAKey(data=data)
         elif key_type == "ssh-dss":
-            key = dsskey.DSS(data=data)
+            key = dsskey.DSSKey(data=data)
         else:
             raise Exception("Invalid key type")
+
+        return key
 
     def clean_key(self):
         key = None
@@ -77,14 +79,16 @@ class PublicKeyPair(ProfileModel):
 
     def update_fingerprint(self):
         try:
-            self.fingerprint = md5.new(self.get_key_object().get_fingerprint()).digest()
+            fp = binascii.hexlify(self.get_key_object().get_fingerprint())
+            self.fingerprint = ":".join(re.findall(r"..", fp))
         except:
             self.fingerprint = "unknown fingerprint"
+
+    def save(self, *args, **kwargs):
+        self.update_fingerprint()
+        super(PublicKeyPair, self).save(*args, **kwargs)
 
     @classmethod
     def user_limit_exceeded(cls, user):
         return PublicKeyPair.objects.filter(user=user).count() >= settings.USERDATA_MAX_SSH_KEYS_PER_USER
 
-@receiver(pre_save, sender=PublicKeyPair)
-def update_key_fingerprint(sender, **kwargs):
-    sender.fingerprint = "lalalallaal"

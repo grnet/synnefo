@@ -14,6 +14,7 @@ from django.conf import settings
 
 from synnefo.ui.userdata.models import User
 from synnefo.ui.userdata.models import *
+from synnefo.db.models import SynnefoUser
 
 class AaiClient(Client):
 
@@ -87,7 +88,7 @@ class TestRestViews(TestCase):
         import base64
 
         # just test that
-        resp = self.client.get("/keys/generate")
+        resp = self.client.post("/keys/generate")
         self.assertNotEqual(resp, "")
 
         data = json.loads(resp.content)
@@ -102,6 +103,13 @@ class TestRestViews(TestCase):
 
         # private key is base64 encoded
         base64.b64decode(private)
+
+        new_key = PublicKeyPair()
+        new_key.content = data['public']
+        new_key.name = "new key"
+        new_key.user = SynnefoUser.objects.all()[0]
+        new_key.full_clean()
+        new_key.save()
 
     def test_invalid_data(self):
         resp = self.client.post("/keys", json.dumps({'content':"""key 2 content"""}),

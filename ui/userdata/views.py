@@ -29,6 +29,10 @@ def generate_key_pair(request):
     """
     Response to generate private/public RSA key pair
     """
+
+    if request.method != "POST":
+        return http.HttpResponseNotAllowed(["POST"])
+
     if not SUPPORT_GENERATE_KEYS:
         raise Exception("Application does not support ssh keys generation")
 
@@ -37,6 +41,9 @@ def generate_key_pair(request):
 
 
     # generate RSA key
+    from Crypto import Random
+    Random.atfork()
+
     key = rsakey.RSA.generate(SSH_KEY_LENGTH);
 
     # get PEM string
@@ -64,3 +71,4 @@ def download_private_key(request):
     response['Content-Disposition'] = 'attachment; filename=%s.pem' % name
     response.write(data)
     return response
+

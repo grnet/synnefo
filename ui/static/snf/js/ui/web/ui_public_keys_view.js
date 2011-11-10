@@ -162,6 +162,7 @@
             el.find(".name").text(model.get("name"));
             el.find(".key-type").text(model.identify_type() || "unknown");
             el.find(".publicid .param-content textarea").val(model.get("content"));
+            el.find(".fingerprint .text").text(model.get("fingerprint"));
             el.find(".publicid").attr("title", _(model.get("content")).truncate(1000, "..."));
             return el;
         },

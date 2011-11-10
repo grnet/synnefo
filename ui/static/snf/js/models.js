@@ -1749,7 +1749,7 @@
         comparator: function(i) { return -parseInt(i.id || 0) },
 
         generate_new: function(success, error) {
-            snf.api.sync('read', undefined, {
+            snf.api.sync('create', undefined, {
                 url: getUrl.call(this, this.base_url) + "/generate", 
                 success: success, 
                 error: error,

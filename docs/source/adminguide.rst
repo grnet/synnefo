@@ -159,6 +159,10 @@ Replace the ``WSGI*`` directives in ``/etc/apache2/sites-available/pithos`` and 
   ProxyPass        /api http://localhost:8080 retry=0
   ProxyPassReverse /api http://localhost:8080
 
+Make sure that in ``settings.py``::
+
+  USE_X_FORWARDED_HOST = True
+
 Configure and run::
 
   /etc/init.d/gunicorn restart

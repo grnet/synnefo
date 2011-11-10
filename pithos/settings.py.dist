@@ -184,5 +184,8 @@ INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
                             '?code=%d' \
                             '&next=https://pithos.dev.grnet.gr/ui'
 
+# The server is behind a proy (apache and gunicorn setup).
+USE_X_FORWARDED_HOST = False
+
 # Use to log to a file.
 LOGFILE = None

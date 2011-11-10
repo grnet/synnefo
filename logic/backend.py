@@ -265,7 +265,7 @@ def create_instance(vm, flavor, image, password, personality):
         kw['osparams']['img_personality'] = json.dumps(personality)
     
     image_meta = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
-    kw['osparams']['img_properties'] = image_meta
+    kw['osparams']['img_properties'] = json.dumps(image_meta)
     
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)

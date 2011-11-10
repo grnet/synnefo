@@ -395,19 +395,24 @@
 
             if (focus === "focus") {
                 this.focused = true;
-                this.set_interval_timeouts(snf.config.update_interval);
+                this.set_interval_timeouts();
             } else {
                 this.focused = false;
-                this.set_interval_timeouts(snf.config.blur_delay);
+                this.set_interval_timeouts();
             }
         },
 
         set_interval_timeouts: function(time) {
-            _.each([this._networks, this._vms], function(fetcher){
+            _.each([this._networks, this._vms], _.bind(function(fetcher){
                 if (!fetcher) { return };
-                fetcher.timeout = time;
-                fetcher.stop().start();
-            })
+                if (this.focused) {
+                    fetcher.interval = fetcher.normal_interval;
+                } else {
+                    fetcher.interval = fetcher.maximum_interval;
+                }
+
+                fetcher.stop(false).start(false);
+            }, this));
         },
         
         vms_handlers_registered: false,
@@ -520,12 +525,16 @@
         },  
 
         init_intervals: function() {
-            this._networks = storage.networks.get_fetcher(snf.config.update_interval, 
-                                                          snf.config.update_interval / 2, 
-                                                          1, true, undefined);
-            this._vms = storage.vms.get_fetcher(snf.config.update_interval, 
-                                                snf.config.update_interval / 2, 
-                                                1, true, undefined);
+            var fetcher_params = [snf.config.update_interval, 
+                                  snf.config.update_interval_increase || 500,
+                                  snf.config.fast_interval || snf.config.update_interval/2, 
+                                  snf.config.update_interval_increase_after_calls || 4,
+                                  snf.config.update_interval_max || 20000,
+                                  true, 
+                                  {is_recurrent: true}]
+            
+            this._networks = storage.networks.get_fetcher.apply(storage.networks, _.clone(fetcher_params));
+            this._vms = storage.vms.get_fetcher.apply(storage.vms, _.clone(fetcher_params));
         },
 
         stop_intervals: function() {

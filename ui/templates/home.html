@@ -541,8 +541,11 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.VERSION = "{{ synnefo_version }}";
 
             synnefo.config.update_interval = {{ update_interval }};
+            synnefo.config.update_interval_increase = {{ update_interval_increase }};
+            synnefo.config.fast_interval = {{ update_interval_fast }};
+            synnefo.config.update_interval_increase_after_calls = {{ update_interval_increase_after_calls }};
+            synnefo.config.update_interval_max = {{ update_interval_max }};
             synnefo.config.delay_on_blur = {{ delay_on_blur }};
-            synnefo.config.blur_delay = {{ blur_delay }};
             synnefo.config.update_hidden_views = {{ update_hidden_views }};
             synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
             synnefo.config.ajax_timeout = {{ timeout }};

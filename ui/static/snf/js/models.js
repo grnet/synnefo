@@ -132,15 +132,17 @@
             return model;
         },
 
-        get_fetcher: function(timeout, fast, limit, initial, params) {
+        get_fetcher: function(interval, increase, fast, increase_after_calls, max, initial_call, params) {
             var fetch_params = params || {};
             fetch_params.skips_timeouts = true;
-
-            var timeout = parseInt(timeout);
-            var fast = fast || 1000;
-            var limit = limit;
-            var initial_call = initial || true;
             
+            var handler_options = {};
+            handler_options.interval = interval;
+            handler_options.increase = increase;
+            handler_options.fast = fast;
+            handler_options.increase_after_calls = increase_after_calls;
+            handler_options.max= max;
+
             var last_ajax = undefined;
             var cb = _.bind(function() {
                 // clone to avoid referenced objects
@@ -151,9 +153,9 @@
                 }
                 last_ajax = this.fetch(params);
             }, this);
-            var updater = new snf.api.updateHandler({'callback': cb, timeout:timeout, 
-                                                    fast:fast, limit:limit, 
-                                                    call_on_start:initial_call});
+            handler_options.callback = cb;
+
+            var updater = new snf.api.updateHandler(_.extend(handler_options, fetch_params));
 
             snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster(true)}, this)), 1000);
             return updater;
@@ -827,7 +829,7 @@
             var cb = _.bind(function(data){
                 this.update_stats();
             }, this);
-            var fetcher = new snf.api.updateHandler({'callback': cb, timeout:timeout});
+            var fetcher = new snf.api.updateHandler({'callback': cb, interval:timeout});
             return fetcher;
         },
 
@@ -931,7 +933,8 @@
             // do we need to change the interval ??
             if (data.stats.refresh * 1000 != this.stats_update_interval) {
                 this.stats_update_interval = data.stats.refresh * 1000;
-                this.stats_fetcher.timeout = this.stats_update_interval;
+                this.stats_fetcher.interval = this.stats_update_interval;
+                this.stats_fetcher.maximum_interval = this.stats_update_interval;
                 this.stats_fetcher.stop();
                 this.stats_fetcher.start(false);
             }
@@ -1743,7 +1746,6 @@
         comparator: function(i) { return -parseInt(i.id || 0) },
 
         generate_new: function(success, error) {
-            console.log(getUrl.call(this, this.base_url) + "/generate")
             snf.api.sync('read', undefined, {
                 url: getUrl.call(this, this.base_url) + "/generate", 
                 success: success, 

@@ -358,7 +358,7 @@
         this.fast_interval = options.fast || 1000;
     
         // after how many calls to increase the interval
-        this.interval_increase_count = options.increase_after_calls || 3;
+        this.interval_increase_count = options.increase_after_calls || 0;
 
         // increase the timer by this value after interval_increase_count calls
         this.interval_increase = options.increase || 500;
@@ -410,23 +410,19 @@
         // start from faster timeout and start increasing
         this.faster = function(do_call) {
             if (!this.running) { return }
-            // increase disabled do nothin..
-            if (this.interval_increase_factor <= 0 ) {
-                return
-            }
+
             this.interval = this.fast_interval;
             this.setInterval(do_call);
         }
 
         // slow down
         this.slower = function(do_call) {
-            this.interval = this.interval + this.interval_increase;
-
             if (this.interval == this.maximum_interval) {
                 // no need to increase
                 return;
             }
             
+            this.interval = this.interval + this.interval_increase;
             // increase timeout
             if (this.interval > this.maximum_interval) {
                 this.interval = this.maximum_interval;

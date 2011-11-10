@@ -407,11 +407,12 @@
                 if (!fetcher) { return };
                 if (this.focused) {
                     fetcher.interval = fetcher.normal_interval;
+                    fetcher.stop(false).start(true);
                 } else {
                     fetcher.interval = fetcher.maximum_interval;
+                    fetcher.stop(false).start(false);
                 }
 
-                fetcher.stop(false).start(false);
             }, this));
         },
         

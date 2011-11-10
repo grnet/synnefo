@@ -148,9 +148,12 @@
                 // clone to avoid referenced objects
                 var params = _.clone(fetch_params);
                 updater._ajax = last_ajax;
-                if (last_ajax) {
-                    last_ajax.abort();
+
+                // wait for previous request to finish
+                if (last_ajax && last_ajax.readyState == 0) {
+                    return;
                 }
+
                 last_ajax = this.fetch(params);
             }, this);
             handler_options.callback = cb;

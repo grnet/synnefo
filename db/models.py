@@ -169,8 +169,10 @@ class Limit(models.Model):
 
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
-    ram = models.IntegerField('Size of RAM', default=0)             # Size in MiB
-    disk = models.IntegerField('Size of Disk space', default=0)     # Size in GiB
+    ram = models.IntegerField('RAM size in MiB', default=0)
+    disk = models.IntegerField('Disk size in GiB', default=0)
+    disk_template = models.CharField('Disk template', max_length=32,
+                                default=settings.DEFAULT_GANETI_DISK_TEMPLATE)
     deleted = models.BooleanField('Deleted', default=False)
     
     class Meta:

@@ -465,6 +465,14 @@ class CreateFlavor(Command):
     syntax = '<cpu>[,<cpu>,...] <ram>[,<ram>,...] <disk>[,<disk>,...]'
     description = 'create one or more flavors'
     
+    def add_options(self, parser):
+        disk_templates = ', '.join(t for t in settings.GANETI_DISK_TEMPLATES)
+        parser.add_option('--disk-template',
+            dest='disk_template',
+            metavar='TEMPLATE',
+            default=settings.DEFAULT_GANETI_DISK_TEMPLATE,
+            help='available disk templates: %s' % disk_templates)
+    
     def main(self, cpu, ram, disk):
         cpus = cpu.split(',')
         rams = ram.split(',')
@@ -479,8 +487,13 @@ class CreateFlavor(Command):
                 return
         
         created = []
+        
         for cpu, ram, disk in flavors:
-            flavor = models.Flavor.objects.create(cpu=cpu, ram=ram, disk=disk)
+            flavor = models.Flavor.objects.create(
+                cpu=cpu,
+                ram=ram,
+                disk=disk,
+                disk_template=self.disk_template)
             created.append(flavor)
         
         print_items(created, detail=True)

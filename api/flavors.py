@@ -57,6 +57,7 @@ def flavor_to_dict(flavor, detail=True):
         d['ram'] = flavor.ram
         d['disk'] = flavor.disk
         d['cpu'] = flavor.cpu
+        d['SNF:disk_template'] = flavor.disk_template
     return d
 
 

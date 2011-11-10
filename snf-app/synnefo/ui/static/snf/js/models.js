@@ -1727,7 +1727,6 @@
             // do not add non existing DELETED entries
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
-                    console.error("non exising deleted vm", data)
                     return false;
                 }
             }

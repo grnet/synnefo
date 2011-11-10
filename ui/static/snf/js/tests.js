@@ -412,4 +412,57 @@ $(document).ready(function(){
         l.add("destroy", 1, {});
         equals(count, 1);
     });
+
+    module("update handlers")
+    test("update handlers", function() {
+        // this test is based on multiple timeouts
+        // so the results might differ between different browsers
+        // or browser load
+        stop();
+
+        var counter = 0;
+        var cb = function() {
+            counter++;
+        }
+        
+        var opts = {
+            callback:cb,
+            interval: 10,
+            fast: 5,
+            increase: 5,
+            max: 15,
+            increase_after_calls: 3,
+            initial_call: false
+        }
+
+        var h = new snf.api.updateHandler(opts);
+        h.start();
+
+        var add = $.browser.msie ? 8 : 0;
+
+        window.setTimeout(function(){
+            h.stop();
+            start();
+            // 4 calls, limit reached
+            equals(counter, 4, "normal calls");
+            equals(h.interval, opts.max, "limit reached");
+
+            stop();
+            h.start(false);
+            h.faster();
+            window.setTimeout(function(){
+                // 11 calls, limit reached
+                start();
+                equals(counter, 11, "faster calls");
+                equals(h.interval, opts.max, "limit reached");
+                h.stop();
+                stop();
+                window.setTimeout(function(){
+                    // no additional calls because we stopped it
+                    start();
+                    equals(counter, 11, "no additional calls")
+                }, 50 + add)
+            }, 50 + add)
+        }, 43 + add)
+    })
 })

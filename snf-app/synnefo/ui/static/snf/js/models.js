@@ -53,7 +53,7 @@
     
     // get url helper
     var getUrl = function(baseurl) {
-        var baseurl = baseurl || snf.config.api_url;
+        var baseurl = baseurl || snf.config.api_urls[this.api_type];
         return baseurl + "/" + this.path;
     }
     
@@ -64,6 +64,7 @@
     models.Model = bb.Model.extend({
         sync: snf.api.sync,
         api: snf.api,
+        api_type: 'compute',
         has_status: false,
 
         initialize: function() {
@@ -71,6 +72,8 @@
                 this.bind("change:status", this.handle_remove);
                 this.handle_remove();
             }
+            
+            this.api.call = _.bind(this.api.call, this);
             models.Model.__super__.initialize.apply(this, arguments)
         },
 
@@ -133,7 +136,14 @@
     models.Collection = bb.Collection.extend({
         sync: snf.api.sync,
         api: snf.api,
+        api_type: 'compute',
         supportIncUpdates: true,
+
+        initialize: function() {
+            models.Collection.__super__.initialize.apply(this, arguments);
+            this.api.call = _.bind(this.api.call, this);
+        },
+
         url: function(options) {
             return getUrl.call(this, this.base_url) + (options.details || this.details ? '/detail' : '');
         },
@@ -1832,6 +1842,7 @@
     snf.storage.networks = new models.Networks();
     snf.storage.vms = new models.VMS();
     snf.storage.keys = new models.PublicKeys();
+    snf.storage.custom_images = new models.PublicKeys();
 
     //snf.storage.vms.fetch({update:true});
     //snf.storage.images.fetch({update:true});

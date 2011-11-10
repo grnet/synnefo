@@ -368,7 +368,7 @@
             
             // prepare the params
             var params = {
-                url: snf.config.api_url + "/" + url,
+                url: snf.config.api_urls[this.api_type] + "/" + url,
                 data: data,
                 success: success,
                 complete: function() { api.trigger("call"); complete(this) },

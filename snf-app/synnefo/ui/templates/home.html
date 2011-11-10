@@ -559,10 +559,15 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.vm_name_template = {{ vm_name_template|safe }};
             synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
 
-            // TODO: make it dynamic
-            synnefo.config.api_url = '/api/v1.1';
+   			// TODO: make it dynamic
+            synnefo.config.api_urls = {
+                'compute': '/api/v1.1', 
+                'glance':'/images/v1.1'
+            };
+
             // TODO: configurable userdata urls in models.js
             synnefo.config.userdata_url = '/ui/userdata';
+
             synnefo.config.logout_url = '{{ logout_redirect }}';
             synnefo.config.userdata_keys_url = '{% url keys_collection %}';
             synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};

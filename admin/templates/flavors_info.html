@@ -45,6 +45,17 @@
   </div>
 
   <div class="clearfix">
+    <label for="flavor-disk-template">State</label>
+    <div class="input">
+      <select class="medium" id="flavor-disk-template" name="disk_template">
+        {% for disk_template in disk_templates %}
+        <option{% ifequal disk_template flavor.disk_template %} selected{% endifequal %}>{{ disk_template }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="clearfix">
     <label for="flavor-deleted">Deleted</label>
     <div class="input">
       <ul class="inputs-list">

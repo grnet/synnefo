@@ -98,6 +98,7 @@
                     this.$(".add-generate").text(generate_text).removeClass(
                         "in-progress").addClass("download");
                     this.show_download_private(instance.get('name'), key.private, instance);
+                    this.enable_create();
                 },this),
 
                 _.bind(function() {
@@ -107,6 +108,7 @@
                     this.download_private = false;
 
                     this.$(".add-generate").text(generate_text).removeClass("in-progress").removeClass("download");
+                    this.enable_create();
                 }, this)
             );
         },
@@ -130,20 +132,32 @@
                 self.download_private = false;
                 self.$(".add-generate").text(generate_text).removeClass(
                         "in-progress").addClass("download");
+                self.enable_create();
             });
         },
 
         generate_new: function() {
             if (this.generating) { return false };
+
             this.$(".private-cont").hide();
             this.generating = true;
             this.download_private = false;
-
+            this.disable_create();
             var generate_text = this.$(".add-generate").text();
             this.$(".add-generate").text("Generating...").addClass("in-progress").removeClass("download");
             
             window.setTimeout(_.bind(this.__generate_new, this, generate_text), 400);
 
+        },
+
+        disable_create: function() {
+            this.create_disabled = true;
+            this.$(".collection-action.add").addClass("disabled");
+        },
+        
+        enable_create: function() {
+            this.create_disabled = false;
+            this.$(".collection-action.add").removeClass("disabled");
         },
         
         show_download_private: function(name, private) {

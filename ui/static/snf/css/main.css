@@ -6071,6 +6071,16 @@ input.has-errors {
     margin: 10px 0;
 }
 
+.models-view .model-list .collection-action.disabled {
+    background-color: #aaa;
+    border-color: #aaa;
+    cursor: default;
+}
+.models-view .model-list .collection-action.disabled:hover {
+    background-color: #aaa;
+    border-color: #aaa;
+}
+
 .models-view .model-list .collection-action:hover {
     background-color: #aaa;
 }

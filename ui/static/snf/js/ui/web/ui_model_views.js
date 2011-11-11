@@ -46,6 +46,7 @@
             this.loading.show();
             this.update_models();
             this.items = [];
+            this.create_disabled = false;
             this.submiting = false;
         },
         
@@ -96,6 +97,7 @@
         },
 
         show_form: function(model) {
+            if (this.create_disabled) { return };
             var create = (model === undefined || model.id === undefined ? true : false);
         
             if (create) {

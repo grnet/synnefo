@@ -1746,8 +1746,6 @@
         base_url: '/ui/userdata',
         noUpdate: true,
 
-        comparator: function(i) { return -parseInt(i.id || 0) },
-
         generate_new: function(success, error) {
             snf.api.sync('create', undefined, {
                 url: getUrl.call(this, this.base_url) + "/generate", 

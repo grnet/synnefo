@@ -341,7 +341,9 @@
                     this.update_list_item(this.item_el(model.id), model);
                     return;
                 };
-                this.list.append(this.new_list_el(model))
+                var item_el = this.new_list_el(model);
+                this.list.prepend(item_el);
+                this.trigger("item:add", this.list, item_el, model);
             }, this));
 
             this.check_empty();

@@ -30,6 +30,12 @@
             this.$(".private-cont").hide();
             _.bindAll(this);
             this.keys_limit = snf.config.userdata_keys_limit || 10000;
+            this.bind("item:add", this.animate_on_add);
+        },
+
+        animate_on_add: function(list, el, model) {
+            el.hide();
+            el.fadeIn(400);
         },
 
         append_actions: function(el, model) {

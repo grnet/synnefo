@@ -21,6 +21,7 @@
 
         confirm_delete_msg: 'Are you sure you want to remove this key ?',
         create_success_msg: 'Public key created successfully.',
+        update_success_msg: 'Public key updated successfully.',
         create_failed_msg: 'Failed to create public key.',
 
 

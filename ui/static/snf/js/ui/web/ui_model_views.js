@@ -96,7 +96,7 @@
         },
 
         show_form: function(model) {
-            var create = (model === undefined ? true : false);
+            var create = (model === undefined || model.id === undefined ? true : false);
         
             if (create) {
                 this.form.find(".new-title").show();
@@ -270,12 +270,16 @@
         save_model: function(data) {
             this.form.find("form-action.submit").addClass("in-progress");
             this.submiting = true;
-
+            var created = this.creating;
             var options = {
                 success: _.bind(function(){
                     this.update_models();
                     this.close_form();
-                    this.show_list_msg("success", this.create_success_msg || "Entry created");
+                    if (created) {
+                        this.show_list_msg("success", this.create_success_msg || "Entry created");
+                    } else {
+                        this.show_list_msg("success", this.update_success_msg || "Entry updated");
+                    }
                 }, this),
 
                 error: _.bind(function(data, xhr){

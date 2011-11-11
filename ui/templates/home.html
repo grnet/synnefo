@@ -557,6 +557,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.config.invitations_url = "{% url invitations %}";
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.vm_name_template = {{ vm_name_template|safe }};
+            synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
 
             // TODO: make it dynamic
             synnefo.config.api_url = '/api/v1.1';

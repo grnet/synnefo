@@ -235,6 +235,14 @@
 
         get_disk_size: function() {
             return parseInt(this.get("disk") * 1000)
+        },
+
+        get_disk_template_info: function() {
+            var info = snf.config.flavors_disk_templates_info[this.get("disk_template")];
+            if (!info) {
+                info = { name: this.get("disk_template"), description:'' };
+            }
+            return info
         }
 
     });
@@ -1537,7 +1545,7 @@
 
         parse: function (resp, xhr) {
             // FIXME: depricated global var
-            return resp.flavors.values;
+            return _.map(resp.flavors.values, function(o) { o.disk_template = o['SNF:disk_template']; return o});
         },
 
         comparator: function(flv) {
@@ -1563,13 +1571,14 @@
             return index;
         },
 
-        get_flavor: function(cpu, mem, disk, filter_list) {
+        get_flavor: function(cpu, mem, disk, disk_template, filter_list) {
             if (!filter_list) { filter_list = this.models };
-
+            
             return this.select(function(flv){
                 if (flv.get("cpu") == cpu + "" &&
                    flv.get("ram") == mem + "" &&
                    flv.get("disk") == disk + "" &&
+                   flv.get("disk_template") == disk_template &&
                    filter_list.indexOf(flv) > -1) { return true; }
             })[0];
         },

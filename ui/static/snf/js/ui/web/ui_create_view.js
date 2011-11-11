@@ -304,24 +304,18 @@
 
             this.cpus = this.$(".flavors-cpu-list");
             this.disks = this.$(".flavors-disk-list");
+            this.disk_templates = this.$(".flavors-disk-template-list");
             this.mems = this.$(".flavors-mem-list");
 
             this.predefined_flavors = SUGGESTED_FLAVORS;
             this.predefined_flavors_keys = _.keys(SUGGESTED_FLAVORS);
             this.predefined_flavors_keys = _.sortBy(this.predefined_flavors_keys, _.bind(function(k){
                 var flv = this.predefined_flavors[k];
-                return flv.ram * flv.cpu * flv.disk;
+                return (flv.ram * flv.cpu * flv.disk) + flv.disk_template;
             }, this));
 
             this.predefined = this.$(".predefined-list");
             this.update_predefined_flavors();
-
-            this.disk_types = {
-                'DTYPE1': {name:'Disk type 1', description: 'type 1 small description'},
-                'DTYPE2': {name:'Disk type 2', description: 'type 2 small description'},
-                'DTYPE3': {name:'Disk type 3', description: 'type 3 small description'}
-            }
-            this.selected_disk_type = {value:'DTYPE1', details:this.disk_types['DTYPE1']};
         },
 
         handle_image_change: function(data) {
@@ -329,34 +323,7 @@
             this.update_valid_predefined();
             this.update_flavors_data();
             this.reset_flavors();
-            this.reset_disk_types();
             this.update_layout();
-        },
-
-        reset_disk_types: function() {
-            var list = this.$(".flavors-disktype-list").empty();
-            _.each(this.disk_types, _.bind(function(data, value){
-                var el = $(('<li id="disktype-{0}" class="disk-type-option">' +
-                            '<span class="value">{1}</span><span class="metric">' +
-                            '{2}</span>' +
-                            '</li>').format(value, data.name, data.description))
-
-                el.data("value", value);
-                el.data("details", data);
-
-                list.append(el);
-                if (value == this.selected_disk_type.value) { el.addClass("selected"); }
-
-                el.click(_.bind(function() {
-                    list.find("li").removeClass("selected");
-                    if ($(el).hasClass("disabled")) { return };
-                    this.selected_disk_type = {
-                        value: value, 
-                        details: data
-                    };
-                    $(el).addClass("selected");
-                }, this));
-            }, this));
         },
 
         validate_selected_flavor: function() {
@@ -378,7 +345,7 @@
                            '{1}</li>').format(key, _(key).capitalize()));
 
                 this.predefined.append(el);
-                el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, this.flavors)})
+                el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, val.disk_template, this.flavors)});
                 el.click(_.bind(function() {
                     this.handle_predefined_click(el);
                 }, this))
@@ -415,7 +382,7 @@
             this.update_unavailable_values();
             var self = this;
             this.valid_predefined = _.select(_.map(this.predefined_flavors, function(flv, key){
-                var existing = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, self.flavors);
+                var existing = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
                 // non existing
                 if (!existing) {
                     return false;
@@ -441,7 +408,7 @@
 
             _.each(this.valid_predefined, function(key){
                 var flv = self.predefined_flavors[key];
-                var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, self.flavors);
+                var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
 
                 if (exists && (exists.id == self.current_flavor.id)) {
                     $("#predefined-flavor-" + key).addClass("selected");
@@ -461,7 +428,7 @@
             if (!this.current_flavor) {
                 _.each(this.valid_predefined, function(key) {
                     var flv = self.predefined_flavors[key];
-                    var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, self.flavors);
+                    var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
                     if (exists && !set) {
                         self.set_current(exists);
                         set = true;
@@ -480,7 +447,7 @@
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
 
-            var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), this.flavors);
+            var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), flv.get("disk_template"), this.flavors);
             if (!existing) { return false };
             
             if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
@@ -544,7 +511,7 @@
         create_flavors: function() {
             var flavors = this.get_active_flavors();
             var valid_flavors = this.get_valid_flavors();
-            this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[]};
+            this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[] };
 
             _.each(flavors, _.bind(function(flv){
                 this.add_flavor(flv);
@@ -553,6 +520,7 @@
             this.sort_flavors(this.disks);
             this.sort_flavors(this.cpus);
             this.sort_flavors(this.mems);
+            this.sort_flavors(this.disk_templates);
 
             var self = this;
             this.$(".flavor-options li.option").click(function(){
@@ -566,9 +534,18 @@
                 if (el.hasClass("mem")) { self.last_choice = ["ram", $(this).data("value")] }
                 if (el.hasClass("cpu")) { self.last_choice = ["cpu", $(this).data("value")] }
                 if (el.hasClass("disk")) { self.last_choice = ["disk", $(this).data("value")] }
+                if (el.hasClass("disk_template")) { self.last_choice = ["disk_template", $(this).data("value")] }
 
                 self.update_selected_from_ui();
             })
+
+            this.$(".flavor-options li.disk_template.option").mouseover(function(){
+                $(this).parent().find(".description").hide();
+                $(this).find(".description").show();
+            }).mouseout(function(){
+                $(this).parent().find(".description").hide();
+                $(this).parent().find(".selected .description").show();
+            });
         },
 
         sort_flavors: function(els) {
@@ -587,6 +564,7 @@
             var args = [this.$(".option.cpu.selected").data("value"), 
                 this.$(".option.mem.selected").data("value"), 
                 this.$(".option.disk.selected").data("value"),
+                this.$(".option.disk_template.selected").data("value"),
             this.flavors];
 
             var flv = storage.flavors.get_flavor.apply(storage.flavors, args);
@@ -601,11 +579,17 @@
             this.$(".option.cpu.value-" + flv.get("cpu")).addClass("selected");
             this.$(".option.mem.value-" + flv.get("ram")).addClass("selected");
             this.$(".option.disk.value-" + flv.get("disk")).addClass("selected");
+            this.$(".option.disk_template.value-" + flv.get("disk_template")).addClass("selected");
+            this.$(".option.disk_template .description").hide();
+            this.$(".option.disk_template.value-" + flv.get("disk_template") + " .description").show();
         },
         
-        __added_flavors: {'cpu':[], 'ram':[], 'disk':[]},
+        __added_flavors: {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[]},
         add_flavor: function(flv) {
-            var values = {'cpu': flv.get('cpu'), 'mem': flv.get('ram'), 'disk': flv.get('disk')};
+            var values = {'cpu': flv.get('cpu'), 
+                          'mem': flv.get('ram'), 
+                          'disk': flv.get('disk'), 
+                          'disk_template': flv.get('disk_template')};
 
             disabled = "";
             
@@ -632,7 +616,20 @@
                 this.disks.append(disk);
                 this.__added_flavors.disk.push(values.disk)
             }
+            
+            if (this.__added_flavors.disk_template.indexOf(values.disk_template) == -1) {
+                var template_info = flv.get_disk_template_info();
+                var disk_template = $(('<li class="option disk_template value-{0}">' + 
+                                       '<span class="name">{1}</span>' +
+                                       '<span class="description">{2}</span>' +
+                                       '</li>').format(values.disk_template, 
+                                            template_info.name, 
+                                            template_info.description)).data('value', 
+                                                                values.disk_template);
 
+                this.disk_templates.append(disk_template);
+                this.__added_flavors.disk_template.push(values.disk_template)
+            }
             
         },
         
@@ -667,8 +664,7 @@
         },
 
         get: function() {
-            return {'flavor': this.current_flavor,
-                    'disktype': this.selected_disk_type }
+            return {'flavor': this.current_flavor}
         }
 
     });
@@ -883,7 +879,6 @@
         
         update_flavor_details: function() {
             var flavor = this.parent.get_params().flavor;
-            var disktype = this.parent.get_params().disktype;
 
             function set_detail(sel, key) {
                 var val = key;
@@ -894,7 +889,7 @@
             set_detail("cpu", flavor.get("cpu") + "x");
             set_detail("ram", flavor.get("ram") + " MB");
             set_detail("disk", util.readablizeBytes(flavor.get("disk") * 1024 * 1024 * 1024));
-            set_detail("disktype", disktype.details.name);
+            set_detail("disktype", flavor.get_disk_template_info().name);
         },
 
         update_image_details: function() {
@@ -1071,7 +1066,6 @@
                 }
 
                 extra['personality'] = personality;
-                var disktype = data.disktype;
                 storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){
                     this.close_all();
                     this.password_view.show(data.server.adminPass, data.server.id);

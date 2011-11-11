@@ -98,6 +98,8 @@ VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 # ssh keys
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 
+FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
+
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -139,6 +141,7 @@ def home(request):
                'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
                'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
                'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
+               'flavors_disk_templates_info': json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),

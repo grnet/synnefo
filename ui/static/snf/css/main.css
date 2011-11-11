@@ -5240,9 +5240,28 @@ table.list-machines .wave {
     margin-top: 4px;
 }
 
-.create-vm .flavor-options .disk-type-option .metric {
-    display: none !important;
-    max-width: 80px;
+.create-vm .flavor-options .flavors-disk-template-list {
+    position: relative;
+    margin-top:10px;
+}
+
+.create-vm .flavor-options .disk_template.option {
+    z-index: 10;
+}
+
+.create-vm .flavor-options .disk_template.option .description {
+    display: none;
+    position: absolute;
+    top: 0px;
+    right:0;
+    color: #888;
+    font-style: italic;
+    display: block;
+    background-color: #fff;
+    width: 40%;
+    height: 100%;
+    text-align: right;
+    z-index: 0;
 }
 
 .create-vm .flavor-options .selected .value {
@@ -5620,12 +5639,21 @@ table.list-machines .wave {
     float: left;
 }
 
+.create-vm .create-step-cont .confirm-cont ul li .title {
+    width: 55px;
+    float: left;
+}
+
 .create-vm .create-step-cont .list-cont ul li .value {
     float: right;
     padding-top: 2px;
     display: block;
     width: 90px;
     text-align: right;
+}
+
+.create-vm .create-step-cont .list-cont ul li.flavor-disktype .value {
+    width: 45px;
 }
 
 .create-vm .create-step-cont .list-cont ul li.image-description .value,

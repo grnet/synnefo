@@ -5123,6 +5123,25 @@ table.list-machines .wave {
     color: #fff;
 }
 
+.create-vm .images-list-cont.loading .loading-indicator {
+    display: block !important;
+}
+
+.create-vm .images-list-cont .loading-indicator {
+    display: none;
+    position: absolute;
+    right: -13px;
+    top: 2px;
+    width: 30px;
+    height: 10px;
+    background-repeat: no-repeat;
+    background-image: url("../images/icons/indicators/medium/progress.gif");
+}
+
+.create-vm .images-list-cont h4 {
+    position: relative;
+}
+
 .create-vm .images-list-cont {
     width: 40%;
     float: left;

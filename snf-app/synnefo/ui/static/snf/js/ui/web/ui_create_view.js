@@ -167,6 +167,7 @@
             this.selected_type = "system";
             this.selected_categories = [];
             this.images = [];
+            this.custom_images = [];
 
             // update
             this.update_images();
@@ -191,9 +192,15 @@
         update_images: function() {
             this.images = storage.images.active();
             this.images_ids = _.map(this.images, function(img){return img.id});
-            if (this.selected_type == "custom") { this.images = []; this.images_ids = []; }
-
+            if (this.selected_type == "custom") { 
+                this.update_custom_images();
+            }
             return this.images;
+        },
+
+        update_custom_images: function() {
+            this.images = storage.glance.images.active();
+            this.images_ids = _.map(this.images, function(img){return img.id});
         },
 
         update_layout: function() {
@@ -225,14 +232,47 @@
         },
         
         select_type: function(type) {
+
             this.selected_type = type;
             this.types.removeClass("selected");
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
+            
+            var check_load_date = new Date() - (this.last_custom_load || 0);
+            if (type == "custom" && check_load_date > 30000) {
 
-            this.reset_categories();
-            this.update_images();
-            this.reset_images();
-            this.select_image();
+                if (snf.storage.glance.images.length == 0) {
+                    this.$(".images-list-cont .empty").hide();
+                    this.$(".images-list-cont .loading").show();
+                    this.$(".images-list-cont .images-list").hide();
+                }
+
+                this.show_list_loading();
+                snf.storage.glance.images.fetch({refresh:true, success: _.bind(function(){
+                    this.last_custom_load = new Date();
+                    this.$(".images-list-cont .loading").hide();
+                    this.reset_categories();
+                    this.update_images();
+                    this.reset_images();
+                    this.select_image();
+                    this.$(".images-list-cont .images-list").show();
+                    this.hide_list_loading();
+                }, this)});
+            } else {
+                this.reset_categories();
+                this.update_images();
+                this.reset_images();
+                this.select_image();
+                this.hide_list_loading();
+            }
+
+        },
+
+        show_list_loading: function() {
+            this.$(".images-list-cont").addClass("loading");
+        },
+
+        hide_list_loading: function() {
+            this.$(".images-list-cont").removeClass("loading");
         },
 
         select_image: function(image) {

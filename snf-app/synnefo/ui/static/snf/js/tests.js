@@ -43,6 +43,11 @@ $(document).ready(function(){
     vms = snf.storage.vms;
     nets = snf.storage.networks;
 
+    synnefo.config.api_urls = {
+        'compute': '/api/v1.1', 
+        'glance':'/images/v1.1'
+    };
+
     module("VM Model")
 
     test("model change events", function(){

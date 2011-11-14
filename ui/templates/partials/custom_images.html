@@ -1,0 +1,79 @@
+{% load i18n %}
+<div class="custom-images-view clearfix">
+    <div class="loading-models">{% trans "Loading..." %}</div>
+    <div class="models-view">
+            <div class="previous-view-link"><div class="change-view-action">Back to
+                    machine create wizard</div></div>
+
+            <div class="list-wrapper model-list">
+                <h3 class="list-title hidden">{% trans "My OS images" %}</h3>
+                <div class="top-actions clearfix">
+                    <div class="collection-action add add-new">{% trans "register new image" %}</div>
+                </div>
+                <div class="limit-msg">{% trans "Custom images limit reached." %}</div>
+                <div class="model-description">
+                <p>Your custom images. </p>
+                </div>
+                <div class="list-messages">
+                </div>
+                <div class="hidden public-key-item clearfix" id="model-item-tpl">
+                    <div class="param image-type"></div>
+                    <div class="param name"></div>
+                </div>
+                <ul class="items-list">
+                    <li class="items-empty-msg hidden msg">
+                    <div class="title">{% trans "No custom images registered" %}
+                        <span class="quick-add">register one</span> now</div>
+                    </li>
+                </ul>
+            </div>
+            <div class="form-wrapper model-form-cont clearfix">
+                <h3 class="new-title hidden">{% trans "Register new image" %}</h3>
+                <h3 class="edit-title hidden">{% trans "Edit registered image" %}</h3>
+                <form class="model-form">
+                    <div class="form-messages">
+                    </div>
+                    <div class="model-form-fields">
+                        <div class="left-fieldset">
+                            <div class="form-field">
+                                <label for="input-name">{% trans "Image name" %}*</label>
+                                <div class="errors"></div>
+                                <input type="text" 
+                                        class="input-name inline" 
+                                        id="input-name" />
+                                <div class="field-desc">{% trans "provide the image name" %}</div>
+                            </div>
+                            <div class="form-field">
+                                <label for="">{% trans "Image url" %}</label>
+                                <div class="errors"></div>
+                                <input type="text" class="long input-url inline"/>
+                                <div class="field-desc">{% trans "provide the image url" %}</div>
+                            </div>
+                        </div>
+                        <div class="right-fieldset">
+                            <div class="form-field inline clearfix">
+                                <label for="custom-img-form-input-public">{% trans "Image is public" %}</label>
+                                <input  id="custom-img-form-input-public" 
+                                        type="checkbox" 
+                                        class="checkbox input-name inline"/>
+                                <div class="errors"></div>
+                                <div class="field-desc">{% trans "provide the image name" %}</div>
+                            </div>
+                            <div class="form-field">
+                                <label for="">{% trans "Image url" %}</label>
+                                <div class="errors"></div>
+                                <input type="text" class="input-url inline"/>
+                                <div class="field-desc">{% trans "provide the image url" %}</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="form-actions clearfix">
+                    <div class="form-action submit">{% trans "Submit" %}</div>
+                    <div class="form-action cancel">{% trans "Cancel" %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

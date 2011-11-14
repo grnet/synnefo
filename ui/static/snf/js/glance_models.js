@@ -20,11 +20,15 @@
 
     
     models.Image = snf.models.Image.extend({
-        api_type: 'glance'
+        //api_type: 'glance'
     })
 
     models.Images = snf.models.Images.extend({
-        api_type: 'glance'
+        //api_type: 'glance'
+
+        parse: function() {
+            return [];
+        }
     })
     
     // storage initialization

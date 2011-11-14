@@ -69,6 +69,7 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js"></script>
 
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_router.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_main_view.js"></script>
@@ -195,6 +196,7 @@
                         <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
                         <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
                         <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
+                        <li class="custom_images"><a class="action" href="#">{% trans "custom images..." %}</a></li>
                         <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
                     </ul>
                 </div>
@@ -530,6 +532,9 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
     <div id="user_public_keys" class="overlay-content overlay-content hidden">
         {% include "userdata/public_keys_view.html" %}
     </div>
+    <div id="user_custom_images" class="overlay-content overlay-content hidden">
+        {% include "partials/custom_images.html" %}
+    </div>
     {% include "footer.html" %}
 
     <script>
@@ -584,6 +589,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.ui.init();
 
             synnefo.ui.main.bind("initial", function(){
+                synnefo.ui.main.custom_images_view.show();
             })
 
         })

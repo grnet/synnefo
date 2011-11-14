@@ -6382,6 +6382,20 @@ input.has-errors {
     margin-top: 10px !important;
 }
 
+.models-view .model-form input.long {
+    width: 400px;
+}
+
+.models-view .model-form .inline input {
+    width: auto;
+    margin-top: 10px;
+}
+
+.models-view .model-form .inline .errors,
+.models-view .model-form .inline .field-desc {
+    clear: both;
+}
+
 #user_public_keys .private-download {
     margin: 5px 0;
     margin-top: 6px;
@@ -6410,6 +6424,7 @@ input.has-errors {
     float: left;
 }
 
+#user_custom_images,
 #user_public_keys {
     font-size: 0.7em;
 }
@@ -6553,6 +6568,12 @@ input.has-errors {
 }
 
 #user_public_keys .private-cont .down-button {
+}
+
+.models-view .form-field .field-desc {
+    font-style: italic;
+    font-size: 1em;
+    color: #888;
 }
 
 .models-view .form-field.error label {

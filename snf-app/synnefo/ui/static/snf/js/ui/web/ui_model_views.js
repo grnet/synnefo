@@ -70,7 +70,7 @@
             this.content = this.$(".content");
             this.list = this.$(".model-list .items-list");
             this.list_cont = this.$(".model-list");
-            this.form = this.$(".model-form");
+            this.form = this.$(".model-form-cont");
             this.empty_msg = this.$(".items-empty-msg");
             
             this.init_collection_handlers();
@@ -90,7 +90,7 @@
         
         init_handlers: function() {
             this.$(".add-new").click(_.bind(this.show_form, this, undefined));
-
+            
             this.form.find(".form-action.cancel").click(this.close_form);
             this.form.find(".form-action.submit").click(this.submit_form);
             
@@ -263,9 +263,6 @@
             el.find(".item-actions .confirm-remove .do-confirm").click(_.bind(this.delete_model, this, model)).hide();
             el.find(".item-actions .confirm-remove .cancel-remove").click(_.bind(this.cancel_confirm_remove, 
                                                                         this, el, model)).hide();
-            
-            // initialize download link
-            snf.util.promptSaveFile(el.find(".item-actions .download"), model.get_filename(), model.get("content"))
         },
 
         show_confirm_remove: function(el, model) {

@@ -50,6 +50,8 @@ from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
 
+from urllib import quote
+
 from pithos.im.models import User, Invitation
 from pithos.im.util import isoformat
 
@@ -132,8 +134,7 @@ def users_list(request):
                             page=page,
                             prev=prev,
                             next=next)
-
-
+    
 @requires_admin
 def users_create(request):
     if request.method == 'GET':
@@ -148,7 +149,6 @@ def users_create(request):
         user.renew_token()
         user.save()
         return redirect(users_info, user.id)
-
 
 @requires_admin
 def users_info(request, user_id):
@@ -202,7 +202,10 @@ def send_invitation(inv):
     subject = _('Invitation to Pithos')
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
-                'url': url})
+                'url': url,
+                'baseurl': settings.BASE_URL,
+                'service': settings.SERVICE_NAME,
+                'support': settings.SUPPORT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [inv.uniq])
     logging.info('Sent invitation %s', inv)
@@ -252,3 +255,136 @@ def invite(request):
             'status': status,
             'message': message})
     return HttpResponse(html)
+
+def send_verification(user):
+    url = settings.ACTIVATION_LOGIN_TARGET % quote(user.auth_token)
+    message = render_to_string('activation.txt', {
+            'user': user,
+            'url': url,
+            'baseurl': settings.BASE_URL,
+            'service': settings.SERVICE_NAME,
+            'support': settings.SUPPORT_EMAIL})
+    sender = settings.DEFAULT_FROM_EMAIL
+    send_mail('Pithos account activation', message, sender, [user.email])
+    logging.info('Sent activation %s', user)
+
+def local_create(request):
+    if request.method == 'GET':
+        return render_response('local_create.html')
+    elif request.method == 'POST':
+        username = request.POST.get('uniq')
+        realname = request.POST.get('realname')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        status = 'success'
+        if not username:
+            status = 'error'
+            message = 'No username provided'
+        elif not password:
+            status = 'error'
+            message = 'No password provided'
+        elif not email:
+            status = 'error'
+            message = 'No email provided'
+        
+        if status == 'success':
+            username = '%s@local' % username
+            try:
+                user = User.objects.get(uniq=username)
+                status = 'error'
+                message = 'Username is not available'
+            except User.DoesNotExist:
+                user = User()
+                user.uniq = username 
+                user.realname = realname
+                user.email = request.POST.get('email')
+                user.password = request.POST.get('password')
+                user.is_admin = False
+                user.quota = 0
+                user.state = 'UNVERIFIED'
+                user.level = 1
+                user.renew_token()
+                try:
+                    send_verification(user)
+                    message = _('Verification sent to %s' % user.email)
+                    user.save()
+                except (SMTPException, socket.error) as e:
+                    status = 'error'
+                    name = 'strerror'
+                    message = getattr(e, name) if hasattr(e, name) else e
+        
+        html = render_to_string('local_create.html', {
+                'status': status,
+                'message': message})
+        return HttpResponse(html)
+
+def send_password(user):
+    url = settings.PASSWORD_RESET_TARGET % quote(user.auth_token)
+    message = render_to_string('password.txt', {
+            'user': user,
+            'url': url,
+            'baseurl': settings.BASE_URL,
+            'service': settings.SERVICE_NAME,
+            'support': settings.SUPPORT_EMAIL})
+    sender = settings.DEFAULT_FROM_EMAIL
+    send_mail('Pithos password recovering', message, sender, [user.email])
+    logging.info('Sent password %s', user)
+
+def reclaim_password(request):
+    if request.method == 'GET':
+        return render_response('reclaim.html')
+    elif request.method == 'POST':
+        username = request.POST.get('uniq')
+        username = '%s@local' % username
+        try:
+            user = User.objects.get(uniq=username)
+            try:
+                send_password(user)
+                status = 'success'
+                message = _('Password reset sent to %s' % user.email)
+                user.save()
+            except (SMTPException, socket.error) as e:
+                status = 'error'
+                name = 'strerror'
+                message = getattr(e, name) if hasattr(e, name) else e
+        except User.DoesNotExist:
+            status = 'error'
+            message = 'Username does not exist'
+        
+        html = render_to_string('reclaim.html', {
+                'status': status,
+                'message': message})
+        return HttpResponse(html)
+
+def reset_password(request):
+    if request.method == 'GET':
+        token = request.GET.get('auth')
+        next = request.GET.get('next')
+        kwargs = {'auth': token,
+                  'next': next}
+        if not token:
+            kwargs.update({'status': 'error',
+                           'message': 'Missing token'})
+        html = render_to_string('reset.html', kwargs)
+        return HttpResponse(html)
+    elif request.method == 'POST':
+        token = request.POST.get('auth')
+        password = request.POST.get('password')
+        url = request.POST.get('next')
+        if not token:
+            status = 'error'
+            message = 'Bad Request: missing token'
+        try:
+            user = User.objects.get(auth_token=token)
+            user.password = password
+            user.save()
+            if url:
+                return HttpResponseRedirect(url)
+        except User.DoesNotExist:
+            status = 'error'
+            message = 'Bad Request: invalid token'
+            
+        html = render_to_string('reset.html', {
+                'status': status,
+                'message': message})
+        return HttpResponse(html)

@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,45 +25,60 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.conf import settings
-from django.conf.urls.defaults import patterns
 
+from pithos.im.target.util import prepare_response
+from pithos.im.models import User
 
-urlpatterns = patterns('pithos.im.views',
-    (r'^$', 'index'),
-    (r'^login/?$', 'index'),
+def login(request):
+    username = '%s@local' % request.POST.get('username')
+    password = request.POST.get('password')
     
-    (r'^admin/?$', 'admin'),
+    if not username:
+        return HttpResponseBadRequest('No user')
     
-    (r'^admin/users/?$', 'users_list'),
-    (r'^admin/users/(\d+)/?$', 'users_info'),
-    (r'^admin/users/create$', 'users_create'),
-    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
+    if not username:
+        return HttpResponseBadRequest('No password')
     
-    (r'^invite/?$', 'invite')
-)
+    try:
+        user = User.objects.get(uniq=username)
+    except User.DoesNotExist:
+        return HttpResponseBadRequest('No such user')
+    
+    if not password or user.password != password:
+        return HttpResponseBadRequest('Wrong password')
+    
+    if user.state == 'UNVERIFIED':
+        return HttpResponseBadRequest('Unverified account')
+    
+    next = request.POST.get('next')
+    if not next:
+        return HttpResponse('')
+    if not request.user:
+        return HttpResponseRedirect(next)
+    
+    return prepare_response(request.user, next)
 
-urlpatterns += patterns('',
-    (r'^login/shibboleth/?$', 'pithos.im.target.shibboleth.login'),
-    (r'^login/twitter/?$', 'pithos.im.target.twitter.login'),
-    (r'^login/twitter/authenticated/?$', 'pithos.im.target.twitter.authenticated'),
-    (r'^login/invitation/?$', 'pithos.im.target.invitation.login'),
-    (r'^login/local/$', 'pithos.im.target.local.login'),
-    (r'^login/local/activate/?$', 'pithos.im.target.local.activate'),
-    (r'^login/local/create/$', 'pithos.im.views.local_create'),
-    (r'^login/local/reclaim/$', 'pithos.im.views.reclaim_password'),
-    (r'^login/local/reset/$', 'pithos.im.views.reset_password'),
-    (r'^login/dummy/?$', 'pithos.im.target.dummy.login')
-)
-
-urlpatterns += patterns('',
-    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-                                {'document_root': settings.PROJECT_PATH + '/im/static'})
-)
+def activate(request):
+    token = request.GET.get('auth')
+    url = request.GET.get('next')
+    try:
+        user = User.objects.get(auth_token=token)
+    except User.DoesNotExist:
+        return HttpResponseBadRequest('No such user')
+    
+    url = '%s?next=%sui' %(url, settings.BASE_URL)
+    user.state = 'ACTIVE'
+    user.renew_token()
+    user.save()
+    response = HttpResponse()
+    response['Location'] = url
+    response.status_code = 302
+    return response

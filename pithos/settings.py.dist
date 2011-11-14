@@ -179,10 +179,27 @@ INVITATIONS_PER_LEVEL = {
     4   :   0
 }
 
+BASE_URL = ''
+
+SERVICE_NAME = 'Pithos+'
+
+SUPPORT_EMAIL = ''
+
 # Where users should login with their invitation code
 INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
                             '?code=%d' \
                             '&next=https://pithos.dev.grnet.gr/ui'
+
+# Where users should activate their local account
+ACTIVATION_LOGIN_TARGET = BASEPATH + 'im/login/local/activate/' \
+                            '?auth=%s' \
+                            '&next=' + BASE_URL + 'im/login'
+
+# Where users should reset their local password
+PASSWORD_RESET_TARGET = BASE_URL + 'im/login/local/reset/' \
+                            '?auth=%s' \
+                            '&next=' + BASE_URL + 'im/login?next=' + BASE_URL + 'ui'
+
 
 # The server is behind a proy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False

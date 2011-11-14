@@ -46,7 +46,8 @@ class User(models.Model):
     ACCOUNT_STATE = (
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted'),
-        ('SUSPENDED', 'Suspended')
+        ('SUSPENDED', 'Suspended'),
+        ('UNVERIFIED', 'Unverified')
     )
     
     uniq = models.CharField('Unique ID', max_length=255, null=True)
@@ -57,8 +58,12 @@ class User(models.Model):
     state = models.CharField('Account state', choices=ACCOUNT_STATE,
                                 max_length=16, default='ACTIVE')
     
+    #for invitations
     level = models.IntegerField('Inviter level', default=4)
     invitations = models.IntegerField('Invitations left', default=0)
+    
+    #for local
+    password = models.CharField('Password', max_length=255, default='')
     
     is_admin = models.BooleanField('Admin?', default=False)
     

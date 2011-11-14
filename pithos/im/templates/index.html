@@ -1,24 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>{{ title|default:"User Login" }}</title>
-  <link rel="stylesheet" href="/im/static/bootstrap.css">
-  <script src="/im/static/jquery.js"></script>
-  <script src="/im/static/jquery.tablesorter.js"></script>
-  <script src="/im/static/main.js"></script>
-</head>
-<body>
-  <div class="container">
-    <div style="padding: 5px 0px 0px 0px">
-      <img src="/im/static/banner.png" width="900" height="200">
-    </div>
-    <h2>Welcome</h2>
-    <p>Choose how to login. Or move on to <a href="admin">admin</a>.</p>
+{% extends 'local_base.html'%}
+
+{% block title%}
+        <h2>Welcome</h2>
+        <p>Choose how to login. Or move on to <a href="admin">admin</a>.</p>
+{% endblock title%}
+    
+{% block body%}
     <div class="row">
-      <!--<div class="span4">
+      <div class="span4">
         <h4>Local account</h4>
-        <form action="" class="form-stacked">
+        <form action="{% url pithos.im.target.local.login %}" method="post" class="form-stacked">
           <fieldset>
             <div class="clearfix">
               <label for="username">Username:</label>
@@ -33,12 +24,19 @@
               </div>
             </div>
           </fieldset>
+         <div>
+            <a href="{% url pithos.im.views.local_create %}">Sign up</a>
+         </div>
+         <div>
+            <a href="{% url pithos.im.views.reclaim_password %}">Forgot your password?</a>
+         </div>
+         <br>
           <div class="">
             <input type="hidden" name="next" value="{{ next }}">
             <button type="submit" class="btn primary">Go</button>
           </div>
         </form>
-      </div>-->
+      </div>
       <div class="span4">
         <h4>Invitation</h4>
         <form action="{% url pithos.im.target.invitation.login %}" class="form-stacked">
@@ -62,6 +60,4 @@
         <a href="{% url pithos.im.target.twitter.login %}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="Twitter"><img src="/im/static/twitter.png" width="120" height="120"></a>
       </div>
     </div>
-  </div>
-</body>
-</html>
+{% endblock body%}

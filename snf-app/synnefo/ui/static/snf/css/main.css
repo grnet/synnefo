@@ -5633,6 +5633,11 @@ table.list-machines .wave {
     color: #4085A5;
 }
 
+.create-vm .images-list-cont h4 a {
+    margin-top: 3px;
+    margin-right: -2px !important;
+}
+.create-vm .images-list-cont h4 a,
 .create-vm .list-cont h4 a {
     font-size: 0.8em;
     font-weight: normal;

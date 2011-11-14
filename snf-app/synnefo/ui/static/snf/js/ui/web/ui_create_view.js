@@ -163,7 +163,7 @@
             this.categories_list = this.$(".category-filters");
 
             // params initialization
-            this.type_selections = ["system", "custom"]
+            this.type_selections = ["system", "custom", "public"]
             this.selected_type = "system";
             this.selected_categories = [];
             this.images = [];
@@ -186,6 +186,14 @@
             var self = this;
             this.types.live("click", function() {
                 self.select_type($(this).attr("id").replace("type-select-",""));
+            });
+
+            this.$(".register-custom-image").live("click", function(){
+                var confirm_close = true;
+                if (confirm_close) {
+                    snf.ui.main.custom_images_view.show(self.parent);
+                } else {
+                }
             })
         },
 
@@ -265,6 +273,15 @@
                 this.hide_list_loading();
             }
 
+            this.update_layout_for_type(type);
+        },
+
+        update_layout_for_type: function(type) {
+            if (type == "custom") {
+                this.$(".custom-action").show();
+            } else {
+                this.$(".custom-action").hide();
+            }
         },
 
         show_list_loading: function() {
@@ -354,6 +371,7 @@
 
         reset: function() {
             this.selected_image = undefined;
+            this.selected_type = "system";
             this.reset_images();
         },
 
@@ -764,8 +782,7 @@
 
             var self = this;
             this.$(".create-ssh-key").click(function() {
-                var confirm_close = true || confirm("This action will close the virtual machine creation wizard." +
-                                            " Are you sure you want to continue ?")
+                var confirm_close = true;
                 if (confirm_close) {
                     snf.ui.main.public_keys_view.show(self.parent);
                 } else {

@@ -89,8 +89,9 @@
                         <div class="image-types-cont">
                             <h4>Image type</h4>
                             <ul class="type-filter">
-                                <li id="type-select-system">System</li>
-                                <li id="type-select-custom">Custom</li>
+                                <li id="type-select-system">Predefined</li>
+                                <li id="type-select-custom">Personal</li>
+                                <li id="type-select-public">Public</li>
                             </ul>
                         </div>
                         <div class="categories-filters-cont">
@@ -102,11 +103,16 @@
                     </div>
                 </div>
                 <div class="images-list-cont content-cont">
-                    <h4>{% trans "Available images" %} <span class="loading-indicator"></span></h4>
-                        <ul class="images-list">
-                        </ul>
-                        <span class="empty">{% trans "no images available" %}</span>
-                        <span class="loading hidden">{% trans "loading..." %}</span>
+                    <h4>{% trans "Available images" %}
+                        <span class="loading-indicator"></span>
+                        <span class="custom-action">
+                        <a href="#" class="register-custom-image">{% trans "create image" %}</a>
+                        </span>
+                    </h4>
+                    <ul class="images-list">
+                    </ul>
+                    <span class="empty">{% trans "no images available" %}</span>
+                    <span class="loading hidden">{% trans "loading..." %}</span>
                 </div>
                 <div class="images-info-cont content-cont">
                     <h4>Image title</h4>

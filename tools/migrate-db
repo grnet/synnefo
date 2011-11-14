@@ -34,7 +34,7 @@
 # or implied, of GRNET S.A.
 
 from sqlalchemy import Table
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, and_
 
 from binascii import hexlify
 
@@ -47,7 +47,7 @@ from pithos.backends.modular import CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DEL
 from pithos.backends.lib.sqlalchemy.node import Node, ROOTNODE
 
 from lib.transfer import upload
-from lib.hashmap import HashMap, file_read_iterator
+from lib.hashmap import HashMap
 from lib.client import Fault
 from lib.migrate import Migration, Cache
 from calendar import timegm
@@ -118,15 +118,26 @@ class ObjectMigration(Migration):
         for v in vserials:
             self.backend.node.attribute_set(v, (('X-Object-Meta-Tag', tags),))
     
-    def create_permissions(self, fid, path, owner):
-        fpath, permissions = self.backend.permissions.access_inherit(path)
-        if not permissions:
-            permissions = self.retrieve_permissions(fid)
+    def create_permissions(self, fid, path, owner, is_folder=True):
+        fpath, fpermissions = self.backend.permissions.access_inherit(path)
+        permissions = self.retrieve_permissions(fid, is_folder)
+        if not fpermissions:
             keys = ('read', 'write')
             for k in keys:
                 if owner in permissions[k]:
                     permissions[k].remove(owner)
             self.backend.permissions.access_set(path, permissions)
+        else:
+            keys = ('read', 'write')
+            common_p = {}
+            for k in keys:
+                if owner in permissions[k]:
+                    permissions[k].remove(owner)
+                common = set(fpermissions[k]).intersection(set(permissions[k]))
+                common_p[k] = list(common)
+            #keep only the common permissions
+            #trade off for securing access only to explicitly authorized users
+            self.backend.permissions.access_set(fpath, common_p)
     
     def create_objects(self):
         for t in self.retrieve_current_nodes():
@@ -155,7 +166,7 @@ class ObjectMigration(Migration):
             if public:
                 self.backend.permissions.public_set(object)
             #set object's permissions
-            self.create_permissions(headerid, object, username)
+            self.create_permissions(headerid, object, username, is_folder=False)
     
     def build_path(self, child_id):
         folder = Table('folder', self.metadata, autoload=True)
@@ -192,7 +203,7 @@ class ObjectMigration(Migration):
                     self.create_version(node, hash, size, t[USER], CLUSTER_NORMAL, 'application/directory', t[MODIFICATIONDATE])
                 
                 #set permissions
-                self.create_permissions(t[ID], path, t[USER])
+                self.create_permissions(t[ID], path, t[USER], is_folder=True)
             return '%s/%s' %(parent_path, t[NAME]) if parent_path else t[NAME]
     
     def retrieve_current_nodes(self):
@@ -207,7 +218,6 @@ class ObjectMigration(Migration):
                     fileheader.c.name,  fileheader.c.deleted,
                     filebody.c.storedfilepath, filebody.c.mimetype,
                     fileheader.c.readforall, fileheader.c.owner_id], from_obj=j)
-        
         rp = self.conn.execute(s)
         object = rp.fetchone()
         while object:
@@ -255,51 +265,41 @@ class ObjectMigration(Migration):
         
         permissions = defaultdict(list)
         
-        #get folder read groups
-        s = select([group.c.name], from_obj=j1)
-        if is_folder:
-            s = s.where(ftable.c.folder_id == id)
-        else:
-            s = s.where(ftable.c.fileheader_id == id)
-        s = s.where(permission.c.read == True)
-        s = s.where(permission.c.group_id != None)
-        rp = self.conn.execute(s)
-        permissions['read'].extend([e[0] for e in rp.fetchall()])
-
-        #get folder read users
-        s = select([user.c.username], from_obj=j2)
-        if is_folder:
-            s = s.where(ftable.c.folder_id == id)
-        else:
-            s = s.where(ftable.c.fileheader_id == id)
-        s = s.where(permission.c.read == True)
-        s = s.where(permission.c.user_id != None)
-        rp = self.conn.execute(s)
-        permissions['read'].extend([e[0] for e in rp.fetchall()])
+        def _get_permissions(self, action='read', get_groups=True):
+            if get_groups:
+                col, j = group.c.name, j1
+                cond2 = permission.c.group_id != None
+            else:
+                col, j = user.c.username, j2
+                cond2 = permission.c.user_id != None
+            s = select([col], from_obj=j)
+            if is_folder:
+                s = s.where(ftable.c.folder_id == id)
+            else:
+                s = s.where(ftable.c.fileheader_id == id)
+            if action == 'read':
+                cond1 = permission.c.read == True
+            else:
+                cond1 = permission.c.write == True
+            s = s.where(and_(cond1, cond2))
+            print '>', s, s.compile().params
+            rp = self.conn.execute(s)
+            p = permissions[action].extend([e[0] for e in rp.fetchall()])
+            rp.close()
+            return p
         
-        #get folder write groups
-        s = select([group.c.name], from_obj=j1)
-        if is_folder:
-            s = s.where(ftable.c.folder_id == id)
-        else:
-            s = s.where(ftable.c.fileheader_id == id)
-        s = s.where(permission.c.write == True)
-        s = s.where(permission.c.group_id != None)
-        rp = self.conn.execute(s)
-        permissions['write'].extend([e[0] for e in rp.fetchall()])
+        #get object read groups
+        _get_permissions(self, action='read', get_groups=True)
         
-        #get folder write groups
-        s = select([user.c.username], from_obj=j2)
-        if is_folder:
-            s = s.where(ftable.c.folder_id == id)
-        else:
-            s = s.where(ftable.c.fileheader_id == id)
-        s = s.where(permission.c.write == True)
-        s = s.where(permission.c.user_id != None)
-        rp = self.conn.execute(s)
-        permissions['write'].extend([e[0] for e in rp.fetchall()])
+        #get object read users
+        _get_permissions(self, action='read', get_groups=False)
         
-        rp.close()
+        #get object write groups
+        _get_permissions(self, action='write', get_groups=True)
+        
+        #get object write groups
+        _get_permissions(self, action='write', get_groups=False)
+        
         return permissions
     
 if __name__ == "__main__":

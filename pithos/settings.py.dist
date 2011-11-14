@@ -147,7 +147,8 @@ INSTALLED_APPS = (
 #    'django.contrib.admindocs',
     'pithos.im',
     'pithos.api',
-    'pithos.public'
+    'pithos.public',
+    'pithos.ui'
 )
 
 # Set the expiration time of newly created auth tokens
@@ -167,10 +168,12 @@ TWITTER_SECRET = ''
 
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
+FEEDBACK_FROM_EMAIL = DEFAULT_FROM_EMAIL
+FEEDBACK_CONTACT_EMAIL = 'support@pithos.grnet.gr'
 
 INVITATIONS_PER_LEVEL = {
-    0   :   1000,
-    1   :   0,
+    0   :   100,
+    1   :   2,
     2   :   0,
     3   :   0,
     4   :   0
@@ -180,6 +183,9 @@ INVITATIONS_PER_LEVEL = {
 INVITATION_LOGIN_TARGET = 'https://pithos.dev.grnet.gr/im/login/invitation' \
                             '?code=%d' \
                             '&next=https://pithos.dev.grnet.gr/ui'
+
+# The server is behind a proy (apache and gunicorn setup).
+USE_X_FORWARDED_HOST = False
 
 # Use to log to a file.
 LOGFILE = None

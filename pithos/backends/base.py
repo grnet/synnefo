@@ -55,6 +55,10 @@ class BaseBackend(object):
         'default_policy': A dictionary with default policy settings
     """
     
+    def close(self):
+        """Close the backend connection."""
+        pass
+    
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access.
         

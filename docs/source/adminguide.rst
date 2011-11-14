@@ -43,9 +43,11 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
     </Directory>
 
     RewriteEngine On
-    RewriteRule ^/v(.*) /api/v$1 [PT]
-    RewriteRule ^/public(.*) /api/public$1 [PT]
-    RewriteRule ^/im(.*) https://%{HTTP_HOST}%{REQUEST_URI}
+    RewriteRule ^/v(.*) /api/v$1 [PT,NE]
+    RewriteRule ^/public(.*) /api/public$1 [PT,NE]
+    RewriteRule ^/tools(.*) /api/ui$1 [PT,NE]
+    RewriteRule ^/im(.*) https://%{HTTP_HOST}%{REQUEST_URI} [NE]
+    RewriteRule ^/login(.*) https://%{HTTP_HOST}%{REQUEST_URI} [NE]
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
@@ -75,23 +77,15 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
     </Directory>
 
     RewriteEngine On
-    RewriteRule ^/v(.*) /api/v$1 [PT]
-    RewriteRule ^/public(.*) /api/public$1 [PT]
-    RewriteRule ^/im(.*) /api/im$1 [PT]
+    RewriteRule ^/v(.*) /api/v$1 [PT,NE]
+    RewriteRule ^/public(.*) /api/public$1 [PT,NE]
+    RewriteRule ^/tools(.*) /api/ui$1 [PT,NE]
+    RewriteRule ^/im(.*) /api/im$1 [PT,NE]
+    RewriteRule ^/login(.*) /api/im/login/dummy$1 [PT,NE]
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
     # WSGIProcessGroup pithos
-
-    ShibConfig /etc/shibboleth/shibboleth2.xml
-    Alias      /shibboleth-sp /usr/share/shibboleth 
-
-    <Location /api/im/login/shibboleth>
-        AuthType shibboleth
-        ShibRequireSession On
-        ShibUseHeaders On
-        require valid-user
-    </Location>
 
     LogLevel warn
     ErrorLog ${APACHE_LOG_DIR}/pithos.error.log
@@ -165,6 +159,10 @@ Replace the ``WSGI*`` directives in ``/etc/apache2/sites-available/pithos`` and 
   ProxyPass        /api http://localhost:8080 retry=0
   ProxyPassReverse /api http://localhost:8080
 
+Make sure that in ``settings.py``::
+
+  USE_X_FORWARDED_HOST = True
+
 Configure and run::
 
   /etc/init.d/gunicorn restart
@@ -186,7 +184,7 @@ Add in ``/etc/apache2/sites-available/pithos-ssl``::
   ShibConfig /etc/shibboleth/shibboleth2.xml
   Alias      /shibboleth-sp /usr/share/shibboleth 
 
-  <Location /api/login>
+  <Location /api/im/login/shibboleth>
     AuthType shibboleth
     ShibRequireSession On
     ShibUseHeaders On

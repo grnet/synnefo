@@ -9,14 +9,6 @@ BaseBackend
 
 .. autoclass:: pithos.backends.base.BaseBackend
 
-SimpleBackend
--------------
-
-.. autoclass:: pithos.backends.simple.SimpleBackend
-   :show-inheritance:
-   :members:
-   :inherited-members:
-
 ModularBackend
 --------------
 
@@ -28,7 +20,7 @@ ModularBackend
 Node
 ~~~~
 
-.. automodule:: pithos.backends.lib.sqlite.node
+.. automodule:: pithos.backends.lib.sqlalchemy.node
    :show-inheritance:
    :members:
    :undoc-members:
@@ -36,7 +28,7 @@ Node
 Permissions
 ~~~~~~~~~~~
 
-.. automodule:: pithos.backends.lib.sqlite.permissions
+.. automodule:: pithos.backends.lib.sqlalchemy.permissions
    :show-inheritance:
    :members:
    :undoc-members:

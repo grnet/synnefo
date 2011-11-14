@@ -56,6 +56,7 @@ import re
 import hashlib
 import uuid
 import decimal
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -787,8 +788,16 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 
                 # Fill in custom request variables.
                 request.serialization = request_serialization(request, format_allowed)
-                request.backend = connect_backend()
-
+                
+                #suppress mysql warnings
+                original_filters = warnings.filters[:]
+                warnings.simplefilter('ignore')
+                try:
+                    request.backend = connect_backend()
+                finally:
+                    #restore warnings
+                    warnings.filters = original_filters
+                
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
                 return response
@@ -800,6 +809,6 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:
-                    request.backend.wrapper.conn.close()
+                    request.backend.close()
         return wrapper
     return decorator

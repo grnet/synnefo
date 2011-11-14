@@ -31,27 +31,34 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
 import datetime
 
 from urlparse import urlsplit, urlunsplit
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.utils.http import urlencode
 
 from pithos.im.models import User
 
 
-def get_user(uniq, realname, affiliation):
+def get_or_create_user(uniq, realname, affiliation, level):
     """Find or register a user into the internal database
        and issue a token for subsequent requests.
     """
     
-    user, created = User.objects.get_or_create(uniq=uniq)
+    user, created = User.objects.get_or_create(uniq=uniq,
+        defaults={
+            'realname': realname,
+            'affiliation': affiliation,
+            'level': level,
+            'invitations': settings.INVITATIONS_PER_LEVEL[level]
+        })
     if created:
-        user.realname = realname
-        user.affiliation = affiliation
         user.renew_token()
         user.save()
+        logging.info('Created user %s', user)
     
     return user
 

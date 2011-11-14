@@ -234,7 +234,7 @@ def invite(request):
                 message = _('Invitation sent to %s' % uniq)
             except (SMTPException, socket.error) as e:
                 status = 'error'
-                message = e.strerror
+                message = getattr(e, 'strerror', '')
         else:
             status = 'error'
             message = _('No invitations left')

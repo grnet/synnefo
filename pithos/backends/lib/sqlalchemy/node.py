@@ -79,8 +79,7 @@ def strprevling(prefix):
     s = prefix[:-1]
     c = ord(prefix[-1])
     if c > 0:
-        #s += unichr(c-1) + unichr(0xffff)
-        s += unichr(c-1)
+        s += unichr(c-1) + unichr(0xffff)
     return s
 
 

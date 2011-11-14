@@ -294,6 +294,16 @@ class BaseBackend(object):
         """
         return []
     
+    def list_public(self, user, account, container):
+        """Return a list of object (name, version_id) tuples existing under a container and are public.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            NameError: Container does not exist
+        """
+        return []
+    
     def list_object_meta(self, user, account, container, until=None):
         """Return a list with all the container's object meta keys.
         

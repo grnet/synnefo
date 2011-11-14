@@ -7,13 +7,14 @@ from setuptools import setup, find_packages
 VERSION = os.popen("git describe --abbrev=0 --tags").read().strip(' \nv')
 
 setup(
-    name='Pithos',
+    name='Pithos Tools',
     version=VERSION,
-    description='Pithos file storage service and tools',
+    description='Pithos file storage service tools',
     author='GRNET',
     author_email='pithos@grnet.gr',
     url='http://code.grnet.gr/projects/pithos',
-    packages=['pithos'],
+    scripts=['pithos-sh', 'pithos-sync', 'pithos-fs'],
+    packages=['lib'],
     license='BSD',
     classifiers=[
         'Development Status :: 3 - Alpha',

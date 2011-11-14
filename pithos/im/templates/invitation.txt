@@ -3,7 +3,7 @@
 Αγαπητέ/η {{ invitation.realname }},
 
 Ο/Η {{ invitation.inviter.realname }} σας έχει προσκαλέσει να χρησιμοποιήσετε
-την υπηρεσία Pithos της ΕΔΕΤ κατά την Alpha (πιλοτική) φάση λειτουργίας της.
+την υπηρεσία {{ service }} της ΕΔΕΤ κατά την Alpha (πιλοτική) φάση λειτουργίας της.
 
 Για να αποκτήσετε πρόσβαση, χρησιμοποιήστε τον παρακάτω σύνδεσμο:
 
@@ -16,7 +16,7 @@
 υπηρεσίας, δεν αποκλείεται να εμφανιστούν προβλήματα στο λογισμικό
 διαχείρισης ή η υπηρεσία να μην είναι διαθέσιμη κατά διαστήματα. Για
 αυτό το λόγο, σας παρακαλούμε να μη μεταφέρετε ακόμη σημαντικά κομμάτια
-της δουλειάς σας στην υπηρεσία Pithos. Επίσης, παρακαλούμε να έχετε
+της δουλειάς σας στην υπηρεσία {{ service }}. Επίσης, παρακαλούμε να έχετε
 υπόψη σας ότι όλα τα δεδομένα, θα διαγραφούν κατά τη μετάβαση από την
 έκδοση Alpha στην έκδοση Beta. Θα υπάρξει έγκαιρη ειδοποίησή σας πριν
 από τη μετάβαση αυτή.
@@ -25,13 +25,16 @@
 περιέχει το mail αυτό μπορείτε να ξαναμπείτε, κάθε φορά που επιθυμείτε
 να χρησιμοποιήσετε την υπηρεσία από άλλο browser.
 
-Περισσότερα για την υπηρεσία θα βρείτε στο http://pithos.dev.grnet.gr, αφού
+Περισσότερα για την υπηρεσία θα βρείτε στο {{ baseurl }}, αφού
 έχετε ενεργοποιήσει την πρόσκλησή σας.
 
 Αναμένουμε τα σχόλια και τις παρατηρήσεις σας, για να βελτιώσουμε τη
 λειτουργικότητα και την αξιοπιστία της καινοτομικής αυτής υπηρεσίας.
 
-Σας ευχαριστούμε πολύ για τη συμμετοχή στην Alpha λειτουργία του Pithos.
+Για όποιες παρατηρήσεις ή προβλήματα στη λειτουργεία της υπηρεσίας μπορείτε να
+απευθυνθείτε στο {{ support }}.
+
+Σας ευχαριστούμε πολύ για τη συμμετοχή στην Alpha λειτουργία του {{ service }}.
 
 Με εκτίμηση,
 
@@ -41,7 +44,7 @@
 
 Dear {{ invitation.realname }},
 
-{{ invitation.inviter.realname }} has invited you to use GRNET's Pithos service
+{{ invitation.inviter.realname }} has invited you to use GRNET's {{ service }} service
 during its Alpha test phase.
 
 To access the service, please use the following link:
@@ -54,19 +57,21 @@ This service is, for a few weeks, in Alpha. Although every care has been
 taken to ensure high quality, it is possible there may still be software
 bugs, or periods of limited service availability. For this reason, we
 kindly request you do not transfer important parts of your work to
-Pithos, yet. Also, please bear in mind that all data, will be deleted
+{{ service }}, yet. Also, please bear in mind that all data, will be deleted
 when the service moves to Beta test. Before the transition, you will be
 notified in time.
 
 Please keep this mail in your mailbox, as you need the link above to
 re-enter the service, should you wish to login using a different browser.
 
-For more information, please visit http://pithos.dev.grnet.gr, after
+For more information, please visit {{ baseurl }}, after
 activating your invitation.
 
 We look forward to your feedback, to improve the functionality and
 reliability of this innovative service.
 
-Thank you for participating in the Alpha test of Pithos.
+For any remarks or problems you can contact {{ support }}.
+
+Thank you for participating in the Alpha test of {{ service }}.
 
 Greek Research and Technonogy Network - GRNET

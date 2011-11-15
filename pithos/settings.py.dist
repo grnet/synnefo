@@ -174,8 +174,10 @@ TWITTER_SECRET = ''
 
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
+DEFAULT_CONTACT_EMAIL = 'support@pithos.grnet.gr'
+
 FEEDBACK_FROM_EMAIL = DEFAULT_FROM_EMAIL
-FEEDBACK_CONTACT_EMAIL = 'support@pithos.grnet.gr'
+FEEDBACK_CONTACT_EMAIL = DEFAULT_CONTACT_EMAIL
 
 INVITATIONS_PER_LEVEL = {
     0   :   100,
@@ -185,11 +187,8 @@ INVITATIONS_PER_LEVEL = {
     4   :   0
 }
 
-BASE_URL = ''
-
+BASE_URL = 'http://plus.pithos.grnet.gr'
 SERVICE_NAME = 'Pithos+'
-
-SUPPORT_EMAIL = ''
 
 # Where users should login with their invitation code
 INVITATION_LOGIN_TARGET = BASE_URL + 'im/login/invitation' \
@@ -197,7 +196,7 @@ INVITATION_LOGIN_TARGET = BASE_URL + 'im/login/invitation' \
                             '&next=' + BASE_URL + 'ui'
 
 # Where users should activate their local account
-ACTIVATION_LOGIN_TARGET = BASEPATH + 'im/login/local/activate/' \
+ACTIVATION_LOGIN_TARGET = BASE_URL + 'im/login/local/activate/' \
                             '?auth=%s' \
                             '&next=' + BASE_URL + 'im/login'
 
@@ -205,7 +204,6 @@ ACTIVATION_LOGIN_TARGET = BASEPATH + 'im/login/local/activate/' \
 PASSWORD_RESET_TARGET = BASE_URL + 'im/login/local/reset/' \
                             '?auth=%s' \
                             '&next=' + BASE_URL + 'im/login?next=' + BASE_URL + 'ui'
-
 
 # The server is behind a proy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False

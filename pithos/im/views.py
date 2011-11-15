@@ -205,7 +205,7 @@ def send_invitation(inv):
                 'url': url,
                 'baseurl': settings.BASE_URL,
                 'service': settings.SERVICE_NAME,
-                'support': settings.SUPPORT_EMAIL})
+                'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [inv.uniq])
     logging.info('Sent invitation %s', inv)
@@ -263,7 +263,7 @@ def send_verification(user):
             'url': url,
             'baseurl': settings.BASE_URL,
             'service': settings.SERVICE_NAME,
-            'support': settings.SUPPORT_EMAIL})
+            'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
     send_mail('Pithos account activation', message, sender, [user.email])
     logging.info('Sent activation %s', user)
@@ -325,7 +325,7 @@ def send_password(user):
             'url': url,
             'baseurl': settings.BASE_URL,
             'service': settings.SERVICE_NAME,
-            'support': settings.SUPPORT_EMAIL})
+            'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
     send_mail('Pithos password recovering', message, sender, [user.email])
     logging.info('Sent password %s', user)

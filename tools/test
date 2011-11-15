@@ -423,7 +423,7 @@ class AccountPost(BaseTestCase):
         
         meta = {'foo':'bar'}
         self.client.update_account_metadata(**meta)
-        #self.updated_meta = self.initial_meta.update(meta)
+        self.updated_meta = self.initial_meta.update(meta)
     
     def test_update_meta(self):
         with AssertMappingInvariant(self.client.retrieve_account_groups):

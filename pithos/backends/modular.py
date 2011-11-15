@@ -39,7 +39,6 @@ import hashlib
 import binascii
 
 from base import NotAllowedError, QuotaError, BaseBackend
-from lib.hashfiler import Mapper, Blocker
 
 ( CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED ) = range(3)
 
@@ -100,41 +99,42 @@ def backend_method(func=None, autocommit=1):
 class ModularBackend(BaseBackend):
     """A modular backend.
     
-    Uses modules for SQL functions and hashfiler for storage.
+    Uses modules for SQL functions and storage.
     """
     
-    def __init__(self, mod, path, db):
+    def __init__(self, db_module, db_connection, block_module, block_path):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         
         self.default_policy = {'quota': 0, 'versioning': 'manual'}
         
-        if path and not os.path.exists(path):
-            os.makedirs(path)
-        if not os.path.isdir(path):
-            raise RuntimeError("Cannot open path '%s'" % (path,))
-        
-        __import__(mod)
-        self.mod = sys.modules[mod]
-        self.db = db
-        self.wrapper = self.mod.dbwrapper.DBWrapper(db)
-        
-        params = {'blocksize': self.block_size,
-                  'blockpath': os.path.join(path + '/blocks'),
-                  'hashtype': self.hash_algorithm}
-        self.blocker = Blocker(**params)
-        
-        params = {'mappath': os.path.join(path + '/maps'),
-                  'namelen': self.blocker.hashlen}
-        self.mapper = Mapper(**params)
+        __import__(db_module)
+        self.db_module = sys.modules[db_module]
+        self.wrapper = self.db_module.DBWrapper(db_connection)
         
         params = {'wrapper': self.wrapper}
-        self.permissions = self.mod.permissions.Permissions(**params)
+        self.permissions = self.db_module.Permissions(**params)
         for x in ['READ', 'WRITE']:
-            setattr(self, x, getattr(self.mod.permissions, x))
-        self.node = self.mod.node.Node(**params)
+            setattr(self, x, getattr(self.db_module, x))
+        self.node = self.db_module.Node(**params)
         for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
-            setattr(self, x, getattr(self.mod.node, x))
+            setattr(self, x, getattr(self.db_module, x))
+        
+        __import__(block_module)
+        self.block_module = sys.modules[block_module]
+        
+        if block_path and not os.path.exists(block_path):
+            os.makedirs(block_path)
+        if not os.path.isdir(block_path):
+            raise RuntimeError("Cannot open path '%s'" % (block_path,))
+        
+        params = {'blocksize': self.block_size,
+                  'blockpath': os.path.join(block_path + '/blocks'),
+                  'hashtype': self.hash_algorithm}
+        self.blocker = self.block_module.Blocker(**params)
+        params = {'mappath': os.path.join(block_path + '/maps'),
+                  'namelen': self.blocker.hashlen}
+        self.mapper = self.block_module.Mapper(**params)
     
     def close(self):
         self.wrapper.close()

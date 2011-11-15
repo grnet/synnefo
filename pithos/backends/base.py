@@ -55,6 +55,10 @@ class BaseBackend(object):
         'default_policy': A dictionary with default policy settings
     """
     
+    def __init__(self, db_module, db_connection, block_module, block_path):
+        """Initialize backend with supplied modules and options."""
+        pass
+    
     def close(self):
         """Close the backend connection."""
         pass

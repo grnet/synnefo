@@ -32,8 +32,10 @@
 # or implied, of GRNET S.A.
 
 from dbwrapper import DBWrapper
-from node import Node
-from permissions import Permissions
+from node import Node, ROOTNODE, SERIAL, HASH, SIZE, MTIME, MUSER, CLUSTER
+from permissions import Permissions, READ, WRITE
 
-__all__ = ["DBWrapper", "Node", "Permissions"]
+__all__ = ["DBWrapper",
+           "Node", "ROOTNODE", "SERIAL", "HASH", "SIZE", "MTIME", "MUSER", "CLUSTER",
+           "Permissions", "READ", "WRITE"]
 

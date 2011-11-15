@@ -39,14 +39,14 @@ from modular import ModularBackend
 
 
 def connect_backend():
-    options = getattr(settings, 'BACKEND', None)
-    c = globals()[options[0]]
-    
     # Suppress mysql warnings.
     original_filters = warnings.filters[:]
     warnings.simplefilter('ignore')
     try:
-        backend = c(*options[1])
+        backend = ModularBackend(settings.BACKEND_DB_MODULE,
+                                 settings.BACKEND_DB_CONNECTION,
+                                 settings.BACKEND_BLOCK_MODULE,
+                                 settings.BACKEND_BLOCK_PATH)
     finally:
         # Restore warnings.
         warnings.filters = original_filters

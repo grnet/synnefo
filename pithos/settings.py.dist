@@ -58,16 +58,22 @@ DATABASES = {
     }
 }
 
-# The backend to use and its initilization options.
+# The backend modules to use and their initilization options.
 
-# Modular.
-backend_module = 'pithos.backends.lib.sqlite'
-backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')
-backend_db = os.path.join(PROJECT_PATH, 'data/pithos/db')
-#backend_module = 'pithos.backends.lib.sqlalchemy'
-#backend_path = os.path.join(PROJECT_PATH, 'data/pithos/')
-#backend_db = 'postgresql://user:pass@host/db'
-BACKEND = ('ModularBackend', (backend_module, backend_path, backend_db))
+# SQLite.
+#BACKEND_DB_MODULE = 'pithos.backends.lib.sqlite'
+#BACKEND_DB_CONNECTION = os.path.join(PROJECT_PATH, 'backend.db')
+
+# SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
+BACKEND_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
+BACKEND_DB_CONNECTION = 'sqlite:///' + os.path.join(PROJECT_PATH, 'backend.db')
+#BACKEND_DB_CONNECTION = 'mysql://user:pass@host/db'
+#BACKEND_DB_CONNECTION = 'postgresql://user:pass@host/db'
+
+# Block storage.
+BACKEND_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
+BACKEND_BLOCK_PATH = os.path.join(PROJECT_PATH, 'data/')
+
 
 # Bypass authentication for user administration.
 BYPASS_ADMIN_AUTH = False

@@ -41,6 +41,8 @@ from base64 import b64encode
 from django.conf import settings
 from django.db import models
 
+from pithos.im.interface import get_quota, set_quota
+
 
 class User(models.Model):
     ACCOUNT_STATE = (
@@ -79,11 +81,11 @@ class User(models.Model):
     
     @property
     def quota(self):
-        return settings.DEFAULT_QUOTA
+        return get_quota(self.uniq)
 
     @quota.setter
     def quota(self, value):
-        logging.debug('Set quota to: %s', value)
+        set_quota(self.uniq, value)
     
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:

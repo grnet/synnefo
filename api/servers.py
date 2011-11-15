@@ -215,9 +215,12 @@ def create_server(request):
         raise faults.OverLimit("Maximum number of personalities exceeded")
     
     for p in personality:
+        # Verify that personalities are well-formed
         try:
             assert isinstance(p, dict)
-            assert set(p.keys()) == set(['path', 'contents'])
+            keys = set(p.keys())
+            allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
+            assert keys.issubset(allowed)
             contents = p['contents']
             if len(contents) > settings.MAX_PERSONALITY_SIZE:
                 # No need to decode if contents already exceed limit

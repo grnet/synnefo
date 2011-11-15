@@ -5,10 +5,16 @@ This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
 v0.7 -> v0.8
+NEW APPS
+    * The 'synnefo.ui.userdata' application has been added in
+      settings.d/00-apps.conf.
+    * The new app has migrations defined.
+      Use './manage.py migrate' to migrate *all* apps.
+
 NEW/UPDATED SETTINGS
     * New config file 31-userdata.conf, containing userdata app settings
     * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
-      Genetared SSH key bits length
+      Key length in bits for generated ssh keys
     * USERDATA_SSH_KEY_EXPONENT in 31-userdata.conf:
       Generated SSH key exponent
     * USERDATA_MAX_SSH_KEYS_PER_USER in 31-userdata.conf:
@@ -18,14 +24,17 @@ NEW/UPDATED SETTINGS
     * UI_OS_DEFAULT_USER_MAP, in 30-ui.conf:
       OS/username map to identify default user name for a specific os
     * VM_CREATE_NAME_TPL, in 30-ui.conf:
-      Template to be used for suggesting the user a default name for newly created
-      vms. {0} gets replaced by the image OS value
+      Template to be used for suggesting the user a default name for newly
+      created VMs. String {0} gets replaced by the value of metadata key "os"
+      for the Image.
     * UI_FLAVORS_DISK_TEMPLATES_INFO added in 30-ui.conf:
       Name/description metadata for the available flavor disk templates
     * VM_CREATE_SUGGESTED_FLAVORS in 30-ui.conf:
       Updated flavor data to include disk_template value.
-    * GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
-      in 20-api.conf to control its value.
+    * GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE in 20-api.conf:
+      The list of disk templates supported by the Ganeti backend.
+      The default template to be used when migrating Flavors with no value for
+      disk_template (i.e., 'drbd').
 
 UI
     * synnefo.ui.userdata application has been added in INSTALLED_APPS.
@@ -34,6 +43,18 @@ UI
 API
     * A new 'disk_template' attribute has been added to Flavors.
       A database migration is needed.
+
+
+v0.7.3 -> v0.8
+API
+    * A new 'disk_template' attribute has been added to Flavors.
+      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
+      in 20-api.conf to control its value. A database migration is needed.
+
+ADMIN TOOLS
+    * A new --disk-template flag has been added to snf-admin to choose a
+      disk template when creating flavors. Similarly, disk_template support
+      in flavors has beed added to the admin web interface.
 
 
 v0.6.2 -> v0.7

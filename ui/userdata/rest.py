@@ -1,3 +1,37 @@
+#
+# Copyright 2011 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 from django import http
 from django.template import RequestContext, loader
 from django.utils import simplejson as json
@@ -8,6 +42,8 @@ from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
 # base view class
 # https://github.com/bfirsh/django-class-based-views/blob/master/class_based_views/base.py
+
+
 class View(object):
     """
     Intentionally simple parent class for all views. Only implements
@@ -25,8 +61,8 @@ class View(object):
         # instance, or raise an error.
         for key, value in kwargs.items():
             if key in self.method_names:
-                raise TypeError(u"You tried to pass in the %s method name as a "
-                                u"keyword argument to %s(). Don't do that."
+                raise TypeError(u"You tried to pass in the %s method name as a"
+                                u" keyword argument to %s(). Don't do that."
                                 % (key, self.__class__.__name__))
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -76,6 +112,7 @@ class View(object):
             allowed_methods = [m for m in self.method_names if hasattr(self, m)]
             return http.HttpResponseNotAllowed(allowed_methods)
 
+
 class JSONRestView(View):
     """
     Class that provides helpers to produce a json response
@@ -117,6 +154,7 @@ class JSONRestView(View):
 
     def json_response(self, data):
         return http.HttpResponse(json.dumps(data), mimetype="application/json")
+
 
 class ResourceView(JSONRestView):
     method_names = ['GET', 'POST', 'PUT', 'DELETE']
@@ -175,6 +213,7 @@ class CollectionView(JSONRestView):
         return self.json_response(self.instance_to_dict(instance,
             self.exclude_fields))
 
+
 class UserResourceView(ResourceView):
     """
     Filter resource queryset for request user entries
@@ -182,6 +221,7 @@ class UserResourceView(ResourceView):
     def queryset(self):
         return super(UserResourceView,
                 self).queryset().filter(user=self.request.user)
+
 
 class UserCollectionView(CollectionView):
     """
@@ -198,4 +238,3 @@ class UserCollectionView(CollectionView):
         instance.save()
         return self.json_response(self.instance_to_dict(instance,
             self.exclude_fields))
-

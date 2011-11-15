@@ -57,16 +57,20 @@ TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
 UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE", 500)
 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
-                                "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT", 3)
+                                "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT",
+                                3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
 
 # predefined values settings
 VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 SUGGESTED_FLAVORS_DEFAULT = {}
-SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS", SUGGESTED_FLAVORS_DEFAULT)
-SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
-SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES", SUGGESTED_ROLES_DEFAULT)
+SUGGESTED_FLAVORS = getattr(settings, "VM_CREATE_SUGGESTED_FLAVORS",
+                            SUGGESTED_FLAVORS_DEFAULT)
+SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server",
+                           "Web server", "Proxy"]
+SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES",
+                          SUGGESTED_ROLES_DEFAULT)
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 
@@ -98,7 +102,6 @@ VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 # ssh keys
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 
-FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -156,7 +159,8 @@ def machines_console(request):
     machine = request.GET.get('machine','')
     host_ip = request.GET.get('host_ip','')
     host_ip_v6 = request.GET.get('host_ip_v6','')
-    context = {'host': host, 'port': port, 'password': password, 'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
+    context = {'host': host, 'port': port, 'password': password,
+               'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', context)
 
 def js_tests(request):
@@ -188,16 +192,20 @@ CONNECT_WINDOWS_WINDOWS_SUBMESSAGE = _("""Save this file to disk for future use"
 CONNECT_PROMPT_MESSAGES = {
     'linux': {
             'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
-            'windows': [CONNECT_LINUX_WINDOWS_MESSAGE, CONNECT_LINUX_WINDOWS_SUBMESSAGE]
+            'windows': [CONNECT_LINUX_WINDOWS_MESSAGE,
+                        CONNECT_LINUX_WINDOWS_SUBMESSAGE]
         },
     'windows': {
-            'linux': [CONNECT_WINDOWS_LINUX_MESSAGE, CONNECT_WINDOWS_LINUX_SUBMESSAGE],
-            'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE, CONNECT_WINDOWS_WINDOWS_SUBMESSAGE]
+            'linux': [CONNECT_WINDOWS_LINUX_MESSAGE,
+                      CONNECT_WINDOWS_LINUX_SUBMESSAGE],
+            'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE,
+                        CONNECT_WINDOWS_WINDOWS_SUBMESSAGE]
         }
     }
 
 # retrieve domain prefix from settings
-DOMAIN_PREFIX = getattr(settings, 'MACHINE_DOMAIN_PREFIX', getattr(settings, 'BACKEND_PREFIX_ID', ""))
+DOMAIN_PREFIX = getattr(settings, 'MACHINE_DOMAIN_PREFIX', getattr(settings,
+                        'BACKEND_PREFIX_ID', ""))
 
 # domain template string
 DOMAIN_TPL = "%s%%s" % DOMAIN_PREFIX
@@ -265,7 +273,8 @@ def machines_connect(request):
             connect_message = CONNECT_PROMPT_MESSAGES[host_os][operating_system][0]
             subinfo = CONNECT_PROMPT_MESSAGES[host_os][operating_system][1]
         except KeyError:
-            connect_message = _("You are trying to connect from a %s machine to a %s machine") % (host_os, operating_system)
+            connect_message = _("You are trying to connect from a %s "
+                                "machine to a %s machine") % (host_os, operating_system)
             subinfo = ""
 
         response_object = {
@@ -276,7 +285,8 @@ def machines_connect(request):
                 'subinfo': unicode(subinfo),
                 'link': {'title': unicode(link_title), 'url': link_url}
             }
-        response = HttpResponse(json.dumps(response_object), mimetype='application/json')  #no windows, no rdp
+        response = HttpResponse(json.dumps(response_object),
+                                mimetype='application/json')  #no windows, no rdp
 
     return response
 
@@ -295,7 +305,8 @@ def feedback_submit(request):
 
     mail_subject = unicode(_("Feedback from synnefo application"))
 
-    mail_context = {'message': message, 'data': data, 'allow_data_send': allow_data_send, 'request': request}
+    mail_context = {'message': message, 'data': data,
+                    'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)
 
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,

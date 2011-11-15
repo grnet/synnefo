@@ -38,6 +38,8 @@ from lib.client import Pithos_Client, Fault
 from lib.util import get_user, get_auth, get_server, get_api
 from xml.dom import minidom
 from StringIO import StringIO
+from hashlib import new as newhasher
+from binascii import hexlify
 import json
 import unittest
 import time as _time
@@ -1279,7 +1281,10 @@ class ObjectPut(BaseTestCase):
         zero_data = self.client.retrieve_object(c, o)
         
         self.assertEqual(int(zero_meta['content-length']), 0)
-        self.assertEqual(zero_hash, [])
+        hasher = newhasher('sha256')
+        hasher.update("")
+        emptyhash = hasher.digest()
+        self.assertEqual(zero_hash, [hexlify(emptyhash)])
         self.assertEqual(zero_data, '')
     
     def test_create_object_by_hashmap(self):

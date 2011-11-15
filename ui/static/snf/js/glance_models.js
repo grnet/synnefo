@@ -25,9 +25,9 @@
 
     models.Images = snf.models.Images.extend({
         //api_type: 'glance'
-
-        parse: function() {
-            return [];
+        
+        personal: function() {
+            return _.filter(this.active(), function(i) { return i.get("serverRef") });
         }
     })
     

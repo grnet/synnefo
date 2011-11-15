@@ -160,8 +160,11 @@
         },
 
         reset_form: function(model) {
-            if (!model) {
+            if (!model.id) {
                 this.form.find("input, textarea").val("");
+                this.form.find("select").each(function() {
+                    $(this).get(0).selectedIndex = 0;
+                });
                 return;
             }
 
@@ -210,6 +213,10 @@
 
         clean_form_errors: function() {
 
+        },
+
+        get_save_params: function(data, options) {
+            return options;
         },
         
         submit_form: function() {
@@ -340,9 +347,9 @@
 
             if (this.editing_id && this.collection.get(this.editing_id)) {
                 var model = this.collection.get(this.editing_id);
-                model.save(data, options);
+                model.save(data, this.get_save_params(data, options));
             } else {
-                this.collection.create(data, options);
+                this.collection.create(data, this.get_save_params(data, options));
             }
         },
 

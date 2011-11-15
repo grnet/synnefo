@@ -158,19 +158,19 @@
             this.image_details_os = this.$(".images-info-cont .os p");
             this.image_details_kernel = this.$(".images-info-cont .kernel p");
             this.image_details_gui = this.$(".images-info-cont .gui p");
+            this.image_details_vm = this.$(".images-info-cont .vm-name p");
 
             this.types = this.$(".type-filter li");
             this.categories_list = this.$(".category-filters");
-
+            
             // params initialization
             this.type_selections = ["system", "custom", "public"]
-            this.selected_type = "system";
+            this.selected_type = undefined;
+
             this.selected_categories = [];
             this.images = [];
+            this.images_ids = [];
             this.custom_images = [];
-
-            // update
-            this.update_images();
 
             // handlers initialization
             this.init_handlers();
@@ -198,21 +198,32 @@
         },
 
         update_images: function() {
-            this.images = storage.images.active();
-            this.images_ids = _.map(this.images, function(img){return img.id});
+            if (this.selected_type == "system") { 
+                this.update_predefined_images();
+            }
             if (this.selected_type == "custom") { 
                 this.update_custom_images();
             }
             return this.images;
         },
 
+        update_predefined_images: function() {
+            this.images = storage.images.predefined();
+            this.images_ids = _.map(this.images, function(img){return img.id});
+        },
+
         update_custom_images: function() {
-            this.images = storage.glance.images.active();
+            if (this.selected_image && !storage.glance.images.get(this.selected_image.id)) {
+                this.selected_image = undefined;
+            }
+            this.images = storage.glance.images.personal();
             this.images_ids = _.map(this.images, function(img){return img.id});
         },
 
         update_layout: function() {
-            this.select_type(this.selected_type);
+            if (this.selected_type != "system") {
+                this.select_type(this.selected_type);
+            }
         },
         
         get_categories: function(images) {
@@ -240,14 +251,20 @@
         },
         
         select_type: function(type) {
-
+            this.selected_image = undefined;
             this.selected_type = type;
             this.types.removeClass("selected");
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
             
             var check_load_date = new Date() - (this.last_custom_load || 0);
-            if (type == "custom" && check_load_date > 30000) {
+            
+            if (type == "system") {
+                this.storage = storage.images;
+            } else if (type == "custom") {
+                this.storage = storage.glance.images;
+            }
 
+            if (type == "custom" && check_load_date > 30000) {
                 if (snf.storage.glance.images.length == 0) {
                     this.$(".images-list-cont .empty").hide();
                     this.$(".images-list-cont .loading").show();
@@ -261,15 +278,17 @@
                     this.reset_categories();
                     this.update_images();
                     this.reset_images();
-                    this.select_image();
                     this.$(".images-list-cont .images-list").show();
                     this.hide_list_loading();
+                    this.selected_image = undefined;
+                    this.select_image();
                 }, this)});
+                this.selected_image = undefined;
+                this.select_image();
             } else {
                 this.reset_categories();
                 this.update_images();
                 this.reset_images();
-                this.select_image();
                 this.hide_list_loading();
             }
 
@@ -297,31 +316,53 @@
                 if (this.selected_image && this.images_ids.indexOf(this.selected_image.id) > -1) {
                     image = this.selected_image;
                 } else {
-                    image = storage.images.get(this.images_ids[0]);
+                    image = this.storage.get(this.images_ids[0]);
                 }
             }
-
+            
             if (!this.images_ids.length) { image = this.selected_image || undefined };
             
+            if ((!this.selected_image && image) || (this.selected_image != image))
+                this.trigger("change", image);
+
             this.selected_image = image;
-            this.trigger("change", image);
-            
+                
             if (image) {
                 this.image_details.show();
                 this.images_list.find(".image-details").removeClass("selected");
                 this.images_list.find(".image-details#create-vm-image-" + this.selected_image.id).addClass("selected");
-                
-                this.image_details_desc.text(image.get("description"));
+
+                this.image_details_desc.hide().parent().hide();
+                if (image.get("description"))
+                    this.image_details_desc.text(image.get("description")).show().parent().show();
                 
                 var img = snf.ui.helpers.os_icon_tag(image.get("OS"))
-                this.image_details_title.html(img + image.get("name"));
-                this.image_details_os.text(_(image.get("OS")).capitalize());
-                this.image_details_kernel.text(image.get("kernel"));
 
+                this.image_details_title.hide().parent().hide();
+                if (image.get("name"))
+                    this.image_details_title.html(img + image.get("name")).show().parent().show();
+
+                this.image_details_os.hide().parent().hide();
+                if (image.get("OS"))
+                    this.image_details_os.text(_(image.get("OS")).capitalize()).show().parent().show();
+
+                this.image_details_kernel.hide().parent().hide();
+                if (image.get("kernel"))
+                    this.image_details_kernel.text(image.get("kernel")).show().parent().show();
+
+                this.image_details_size.hide().parent().hide();
                 var size = image.get_readable_size();
+                if (size && size != "unknown")
+                    this.image_details_size.text(size).show().parent().show();
 
-                this.image_details_size.text(size);
-                this.image_details_gui.text(image.get("GUI"));
+                this.image_details_vm.hide().parent().hide();
+                var vm_name = (vm = image.get_vm()) ? vm.get("name") : undefined;
+                if (vm_name)
+                    this.image_details_vm.text(_(vm_name).truncate(4)).show().parent().show();
+
+                this.image_details_gui.hide().parent().hide();
+                if (image.get("GUI"))
+                    this.image_details_gui.text(image.get("GUI")).show().parent().show();
 
             } else {
                 this.image_details.hide();
@@ -370,9 +411,7 @@
         },
 
         reset: function() {
-            this.selected_image = undefined;
-            this.selected_type = "system";
-            this.reset_images();
+            this.select_type("system");
         },
 
         get: function() {
@@ -1193,8 +1232,6 @@
         },
 
         onShow: function() {
-            this.reset()
-            this.update_layout();
         },
 
         update_layout: function() {

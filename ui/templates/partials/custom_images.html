@@ -36,34 +36,41 @@
                     <div class="model-form-fields">
                         <div class="left-fieldset">
                             <div class="form-field">
-                                <label for="input-name">{% trans "Image name" %}*</label>
+                                <label for="">{% trans "Image name" %}*</label>
                                 <div class="errors"></div>
-                                <input type="text" 
-                                        class="input-name inline" 
-                                        id="input-name" />
+                                <input type="text" class="input-name inline"
+                                name="image-name" />
                                 <div class="field-desc">{% trans "provide the image name" %}</div>
                             </div>
                             <div class="form-field">
-                                <label for="">{% trans "Image url" %}</label>
+                                <label for="">{% trans "Image url" %}*</label>
                                 <div class="errors"></div>
-                                <input type="text" class="long input-url inline"/>
+                                <input type="text" class="long input-url inline"
+                                name="image-url"/>
                                 <div class="field-desc">{% trans "provide the image url" %}</div>
                             </div>
                         </div>
                         <div class="right-fieldset">
                             <div class="form-field inline clearfix">
-                                <label for="custom-img-form-input-public">{% trans "Image is public" %}</label>
-                                <input  id="custom-img-form-input-public" 
-                                        type="checkbox" 
-                                        class="checkbox input-name inline"/>
+                                <label for="">{% trans "Image is public" %}</label>
+                                <input type="checkbox" class="checkbox
+                                input-public inline" name="image-public" />
                                 <div class="errors"></div>
                                 <div class="field-desc">{% trans "provide the image name" %}</div>
                             </div>
-                            <div class="form-field">
-                                <label for="">{% trans "Image url" %}</label>
+                        </div>
+                        <div class="right-fieldset">
+                            <div class="form-field inline clearfix">
+                                <label for="">{% trans "Image format" %}</label>
+                                <select class="input-format inline" name="image-format">
+                                    <option value="dump">Ext3 dump</option>
+                                    <option value="rawdump">Raw ext2/3/4 dump</option>
+                                    <option value="lvm">lvm snapshot</option>
+                                    <option value="ntfsclone">Windows Image produced by ntfsclone</option>
+                                    <option value="ntfsdump">Raw NTFS dump</option>
+                                </select>
                                 <div class="errors"></div>
-                                <input type="text" class="input-url inline"/>
-                                <div class="field-desc">{% trans "provide the image url" %}</div>
+                                <div class="field-desc">{% trans "select the image format" %}</div>
                             </div>
                         </div>
                     </div>

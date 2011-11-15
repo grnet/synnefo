@@ -6396,6 +6396,11 @@ input.has-errors {
     margin-top: 10px;
 }
 
+.models-view .model-form .inline select {
+    width: auto;
+    margin-top: 7px;
+}
+
 .models-view .model-form .inline .errors,
 .models-view .model-form .inline .field-desc {
     clear: both;

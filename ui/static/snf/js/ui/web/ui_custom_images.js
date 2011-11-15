@@ -15,8 +15,10 @@
 
     // shortcuts
     var bb = root.Backbone;
-    
+    var urlregex = new RegExp("^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
+
     views.CustomImagesView = views.CollectionView.extend({
+
         collection: storage.glance.images,
 
         confirm_delete_msg: 'Are you sure you want to remove this image ?',
@@ -72,23 +74,39 @@
             this.form.find("input.input-name").val(model.get("name"));
         },
 
+        get_save_params: function(data, options) {
+            options.data = {'image': {'serverRef':3, 'name': "test image"}};
+            return options
+        },
+
         get_form_data: function() {
             return {
                 'name': this.form.find("input.input-name").val(),
-                'content': this.form.find("textarea.input-content").val()
+                'url': this.form.find("input.input-url").val(),
+                'format': this.form.find("input.input-forma").val(),
+                'is_public': this.form.find("input.input-public").val()
             }
         },
         
         get_fields_map: function() {
-            return {'name': "input.input-name", 'content': "textarea.input-content"};
+            return {
+                    'name': "input.input-name", 
+                    'url': "input.input-url",
+                    'public': "input.input-public",
+                    'format': "input.input-format"
+                };
         },
         
         validate_data: function(data) {
             var user_data = _.clone(data)
             var errors = new snf.util.errorList();
-
+            
             if (!data.name || _.clean(data.name) == "") {
                 errors.add("name", "Provide a valid image name");
+            }
+
+            if (!data.url || _.clean(data.url) == "" || !urlregex.test(data.url)) {
+                errors.add("url", "Provide a valid url");
             }
 
             return errors;

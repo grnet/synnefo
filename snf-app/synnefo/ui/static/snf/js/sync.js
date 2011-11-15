@@ -62,9 +62,9 @@
     // handles url retrieval based on the object passed
     // on most occasions in the synnefo api this will call
     // the model/collection url method
-    var getUrl = function(object, options) {
+    var getUrl = function(object, options, method) {
         if (!(object && object.url)) return null;
-        return _.isFunction(object.url) ? object.url(options) : object.url;
+        return _.isFunction(object.url) ? object.url(options, method) : object.url;
     };
     
     // Call history (set of api paths with the dates the path last called)
@@ -104,7 +104,7 @@
     // appends global ajax handlers
     // handles changed-since url parameter based on api path
     api.sync = function(method, model, options) {
-        
+
         var type = methodMap[method];
         
         if (model && (model.skipMethods || []).indexOf(method) >= 0) {
@@ -119,7 +119,7 @@
                 urlobject = model.collection;
             }
 
-            options.url = getUrl(urlobject, options) || urlError();
+            options.url = getUrl(urlobject, options, method) || urlError();
             if (urlobject && urlobject.supportIncUpdates) {
                 options.url = options.refresh ? options.url : setChangesSince(options.url, type);
             }

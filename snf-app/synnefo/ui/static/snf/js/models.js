@@ -144,8 +144,9 @@
             this.api.call = _.bind(this.api.call, this);
         },
 
-        url: function(options) {
-            return getUrl.call(this, this.base_url) + (options.details || this.details ? '/detail' : '');
+        url: function(options, method) {
+            return getUrl.call(this, this.base_url) + (
+                    options.details || this.details && method != 'create' ? '/detail' : '');
         },
 
         fetch: function(options) {
@@ -234,6 +235,13 @@
 
         get_sort_order: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
+        },
+
+        get_vm: function() {
+            var vm_id = this.get("serverRef");
+            var vm = undefined;
+            vm = storage.vms.get(vm_id);
+            return vm;
         },
         
         ssh_keys_path: function() {
@@ -1567,6 +1575,10 @@
 
         active: function() {
             return this.filter(function(img){return img.get('status') != "DELETED"});
+        },
+
+        predefined: function() {
+            return _.filter(this.active(), function(i) { return !i.get("serverRef")});
         }
     })
 

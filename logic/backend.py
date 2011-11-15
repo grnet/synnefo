@@ -239,7 +239,7 @@ def create_instance(vm, flavor, image, password, personality):
     kw['mode'] = 'create'
     kw['name'] = vm.backend_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
-    # kw['disk_template'] = settings.GANETI_DISK_TEMPLATE
+    kw['disk_template'] = flavor.disk_template
     kw['disks'] = [{"size": sz}]
     kw['nics'] = [nic]
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS

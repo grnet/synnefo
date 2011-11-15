@@ -5208,6 +5208,7 @@ table.list-machines .wave {
     display: block;
     float: left;
     margin-right: 10px;
+    margin-bottom: 10px;
     padding: 10px 15px;
     border: 1px solid #aaa;
     background-image:-webkit-linear-gradient(top, #D1E7F0, #E8F4FA);
@@ -5218,7 +5219,7 @@ table.list-machines .wave {
 }
 
 .create-vm .flavor-options-cont .flavor-options {
-    margin-bottom: 18px;
+    margin-bottom: 2px;
 }
 
 
@@ -5240,28 +5241,48 @@ table.list-machines .wave {
     margin-top: 4px;
 }
 
+.disktip {
+    padding: 4px;
+    top: 20px;
+}
+
 .create-vm .flavor-options .flavors-disk-template-list {
     position: relative;
-    margin-top:10px;
 }
 
 .create-vm .flavor-options .disk_template.option {
     z-index: 10;
+    min-width: 50px;
+    text-align: center;
+}
+
+/*0 position is -470px*/
+.create-vm .flavor-options .disk-template-description {
+    font-size: 0.8em;
+    color: #444;
+    background-image: url("../images/horizontal-pointer.png");
+    background-repeat: repeat-x;
+    background-position: -470px 0;
+    padding-top: 15px;
+    margin-top: -10px;
+    font-style: italic;
 }
 
 .create-vm .flavor-options .disk_template.option .description {
     display: none;
     position: absolute;
-    top: 0px;
-    right:0;
+    bottom: -20px;
+    left:0;
     color: #888;
     font-style: italic;
     display: block;
     background-color: #fff;
-    width: 40%;
-    height: 100%;
-    text-align: right;
+    width: 100%;
+    text-align: left;
     z-index: 0;
+    border-top: 1px solid #ddd;
+    padding-top: 3px;
+    display: none;
 }
 
 .create-vm .flavor-options .selected .value {

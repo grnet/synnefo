@@ -272,7 +272,7 @@
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.get("OS")),
                                                   img.get_readable_size(),
-                                                  util.truncate(img.get("description"),35)));
+                                                  util.truncate(img.get("description"), 35)));
             image.data("image", img);
             image.data("image_id", img.id);
             this.images_list.append(image);
@@ -539,13 +539,13 @@
                 self.update_selected_from_ui();
             })
 
-            this.$(".flavor-options li.disk_template.option").mouseover(function(){
-                $(this).parent().find(".description").hide();
-                $(this).find(".description").show();
-            }).mouseout(function(){
-                $(this).parent().find(".description").hide();
-                $(this).parent().find(".selected .description").show();
-            });
+            //this.$(".flavor-options li.disk_template.option").mouseover(function(){
+                //$(this).parent().find(".description").hide();
+                //$(this).find(".description").show();
+            //}).mouseout(function(){
+                //$(this).parent().find(".description").hide();
+                //$(this).parent().find(".selected .description").show();
+            //});
         },
 
         sort_flavors: function(els) {
@@ -580,8 +580,15 @@
             this.$(".option.mem.value-" + flv.get("ram")).addClass("selected");
             this.$(".option.disk.value-" + flv.get("disk")).addClass("selected");
             this.$(".option.disk_template.value-" + flv.get("disk_template")).addClass("selected");
-            this.$(".option.disk_template .description").hide();
-            this.$(".option.disk_template.value-" + flv.get("disk_template") + " .description").show();
+            
+            var disk_el = this.$(".option.disk_template.value-" + flv.get("disk_template"));
+            var basebgpos = 470;
+                
+            var append_to_bg_pos = 40 + (disk_el.index() * 91);
+            var bg_pos = basebgpos - append_to_bg_pos;
+
+            this.$(".disk-template-description").css({backgroundPosition:'-' + bg_pos + 'px top'})
+            this.$(".disk-template-description p").html(flv.get_disk_template_info().description || "");
         },
         
         __added_flavors: {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[]},
@@ -619,15 +626,15 @@
             
             if (this.__added_flavors.disk_template.indexOf(values.disk_template) == -1) {
                 var template_info = flv.get_disk_template_info();
-                var disk_template = $(('<li class="option disk_template value-{0}">' + 
-                                       '<span class="name">{1}</span>' +
-                                       '<span class="description">{2}</span>' +
+                var disk_template = $(('<li title="{2}" class="option disk_template value-{0}">' + 
+                                       '<span class="value name">{1}</span>' +
                                        '</li>').format(values.disk_template, 
                                             template_info.name, 
                                             template_info.description)).data('value', 
                                                                 values.disk_template);
 
                 this.disk_templates.append(disk_template);
+                //disk_template.tooltip({position:'top center', offset:[-5,0], delay:100, tipClass:'tooltip disktip'});
                 this.__added_flavors.disk_template.push(values.disk_template)
             }
             

@@ -31,10 +31,15 @@
 
             cont.html("");
             cont.text(token);
+            
+            this.cont = cont;
+            this.token = token;
+            try { delete this.clip; } catch (err) {};
+        },
 
-            var clip = new snf.util.ClipHelper();
-            cont.parent().append(clip.cont);
-            clip.setText(token);
+        onOpen: function() {
+            views.ApiInfoView.__super__.onOpen(this, arguments);
+            this.clip = new snf.util.ClipHelper(this.cont.parent(), this.token);
         },
 
         onClose: function() {

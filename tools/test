@@ -576,7 +576,7 @@ class ContainerGet(BaseTestCase):
             self.assertEqual(objects, l[start:end])
     
     #takes too long
-    def test_list_limit_exceeds(self):
+    def _test_list_limit_exceeds(self):
         self.client.create_container('pithos')
         
         for i in range(10001):

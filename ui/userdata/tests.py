@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 #
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.conf import settings
 from django.test.client import Client
 from django.core.urlresolvers import clear_url_caches
@@ -50,7 +50,7 @@ class AaiClient(Client):
         request['HTTP_X_AUTH_TOKEN'] = '46e427d657b20defe352804f0eb6f8a2'
         return super(AaiClient, self).request(**request)
 
-class TestRestViews(TestCase):
+class TestRestViews(TransactionTestCase):
 
     fixtures = ['users']
 

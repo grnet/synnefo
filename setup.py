@@ -9,11 +9,11 @@ VERSION = os.popen("git describe --abbrev=0 --tags").read().strip(' \nv')
 setup(
     name='Pithos',
     version=VERSION,
-    description='Pithos file storage service and tools',
+    description='Pithos file storage service',
     author='GRNET',
     author_email='pithos@grnet.gr',
     url='http://code.grnet.gr/projects/pithos',
-    packages=['pithos'],
+    packages=find_packages(),
     license='BSD',
     classifiers=[
         'Development Status :: 3 - Alpha',

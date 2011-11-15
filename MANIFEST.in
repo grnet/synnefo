@@ -1,0 +1,6 @@
+global-include */templates/* */fixtures/* */static/*
+global-exclude */.DS_Store
+exclude */settings.py
+include */settings.py.dist
+prune docs
+prune tools

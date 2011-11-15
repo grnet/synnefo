@@ -8,6 +8,8 @@ v0.7 -> v0.8
 NEW APPS
     * The 'synnefo.ui.userdata' application has been added in
       settings.d/00-apps.conf.
+    * The new app has migrations defined.
+      Use './manage.py migrate' to migrate *all* apps.
 
 NEW/UPDATED SETTINGS
     * New config file 31-userdata.conf, containing userdata app settings

@@ -2903,7 +2903,7 @@ body.auth .downloads {
 .downloads h4 {
   float: left;
   color: #ffffff;
-  margin-left: 18px;
+  margin-left: 15px;
   margin-top: 18px;
   width: 100px;
   margin-right: 20px;
@@ -2914,17 +2914,19 @@ body.auth .downloads {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   font-size: 1em;
 }
+.downloads .downloads-list {
+    margin-left: 20px;
+}
 .downloads .download.last {
   border-right: none;
   margin-right: 0;
   margin-left: 0;
 }
 .downloads .download {
-  width: 307px;
+  width: 197px;
   float: left;
   margin: 10px 0;
-  margin-left: 22px;
-  margin-right: 13px;
+  margin-right: 18px;
   background-color: #fff;
   margin-top: 6px;
   position: relative;
@@ -2940,6 +2942,9 @@ body.auth .downloads {
 }
 .downloads .download.windows {
   background-image: url("../images/windows_logo.png");
+}
+.downloads .download.linux {
+  background-image: url("../images/linux_logo.png");
 }
 .downloads .download .subtitle {
   display: none;

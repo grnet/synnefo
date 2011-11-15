@@ -31,15 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import warnings
+
 from django.conf import settings
 
 from modular import ModularBackend
 
 
 def connect_backend():
-	options = getattr(settings, 'BACKEND', None)
-	c = globals()[options[0]]
-	backend = c(*options[1])
-	backend.default_policy['quota'] = settings.DEFAULT_QUOTA
-	backend.default_policy['versioning'] = settings.DEFAULT_VERSIONING
-	return backend
+    options = getattr(settings, 'BACKEND', None)
+    c = globals()[options[0]]
+    
+    # Suppress mysql warnings.
+    original_filters = warnings.filters[:]
+    warnings.simplefilter('ignore')
+    try:
+        backend = c(*options[1])
+    finally:
+        # Restore warnings.
+        warnings.filters = original_filters
+    
+    # Set defaults.
+    backend.default_policy['quota'] = settings.DEFAULT_QUOTA
+    backend.default_policy['versioning'] = settings.DEFAULT_VERSIONING
+    
+    return backend

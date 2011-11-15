@@ -50,7 +50,6 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
     object_data_response, put_object_block, hashmap_hash, api_method, json_encode_decimal)
-from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError
 
 

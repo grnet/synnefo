@@ -56,7 +56,7 @@ import re
 import hashlib
 import uuid
 import decimal
-import warnings
+
 
 logger = logging.getLogger(__name__)
 
@@ -788,15 +788,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 
                 # Fill in custom request variables.
                 request.serialization = request_serialization(request, format_allowed)
-                
-                #suppress mysql warnings
-                original_filters = warnings.filters[:]
-                warnings.simplefilter('ignore')
-                try:
-                    request.backend = connect_backend()
-                finally:
-                    #restore warnings
-                    warnings.filters = original_filters
+                request.backend = connect_backend()
                 
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)

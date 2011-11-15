@@ -39,7 +39,7 @@ from django.conf import settings
 
 from synnefo.ui.userdata import rest
 from synnefo.ui.userdata.models import PublicKeyPair
-
+from synnefo.ui.userdata.util import exportKey
 
 SUPPORT_GENERATE_KEYS = True
 try:
@@ -81,7 +81,7 @@ def generate_key_pair(request):
     key = rsakey.RSA.generate(SSH_KEY_LENGTH);
 
     # get PEM string
-    pem = key.exportKey('PEM')
+    pem = exportKey(key, 'PEM')
 
     public_data = Message()
     public_data.add_string('ssh-rsa')

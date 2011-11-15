@@ -141,39 +141,14 @@
         // TODO: implement me
     }
 
-    synnefo.util.ClipHelper = function(cont, clear) {
-        this.force_empty = clear || false;
-        this.cont = cont || $('<div class="clip-copy"></div>');
-        this.clip = new ZeroClipboard.Client();
-        this.clip.setHandCursor(true);
-
-        this.el = this.cont;
-        if (this.force_empty) {
-            this.cont.empty();
-        }
-        this.el.append(this.clip.getHTML(20,20));
-
-        this.setText = function(t) {
-            this.clip.setText(t);
-        }
-
-        var copy_prompt = "Click to copy to clipboard";
-        this.el.attr({title: copy_prompt});
-        this.el.tooltip();
-        var el = this.el;
-
-        this.clip.addEventListener('complete', _.bind(function(client, text) {
-            var tip = el.data("tooltip")
-            tip.hide().getTip().text("Copied");
-            
-            window.setTimeout(function() {
-                tip.show();
-            }, 70)
-
-            window.setTimeout(function() {
-                tip.hide().getTip().text(copy_prompt);
-            }, 3000)
-        }, this));
+    synnefo.util.ClipHelper = function(wrapper, text, settings) {
+        settings = settings || {};
+        this.el = $('<div class="clip-copy"></div>');
+        wrapper.append(this.el);
+        this.clip = $(this.el).zclip(_.extend({
+            path: synnefo.config.js_url + "lib/ZeroClipboard.swf",
+            copy: text
+        }, settings));
     }
 
     synnefo.util.truncate = function(string, size, append, words) {
@@ -260,6 +235,173 @@
         }, opts)
         
         window.open(url, name, opts);
+    }
+    
+    synnefo.util.readFileContents = function(f, cb) {
+        var reader = new FileReader();
+        var start = 0;
+        var stop = f.size - 1;
+
+        reader.onloadend = function(e) {
+            return cb(e.target.result);
+        }
+        
+        var data = reader.readAsText(f);
+    },
+    
+    synnefo.util.generateKey = function(passphrase, length) {
+        var passphrase = passphrase || "";
+        var length = length || 1024;
+        var key = cryptico.generateRSAKey(passphrase, length);
+
+        _.extend(key.prototype, {
+            download: function() {
+            }
+        });
+
+        return key;
+    }
+    
+    synnefo.util.publicKeyTypesMap = {
+        "ecdsa-sha2-nistp256": "ecdsa",
+        "ssh-dss" : "dsa",
+        "ssh-rsa": "rsa"
+    }
+
+    synnefo.util.validatePublicKey = function(key) {
+        var b64 = _(key).trim().split("\n").join("").split("\r\n").join("");
+        var type = "rsa";
+
+        // in case key starts with something like ssh-rsa
+        if (b64.split(" ").length > 1) {
+            var parts = key.split(" ");
+            
+            // identify key type
+            type_key = parts[0];
+            if (parseInt(type_key) >= 768) {
+                type = "rsa1";
+                
+                if (parts[1] == 65537) {
+                    if (parts.length == 3) {
+                        return [parts[0], parts[1], parts[2]].join(" ")
+                    }
+                }
+                // invalid rsa1 key
+                throw "Invalid rsa1 key";
+            }
+            
+            b64 = parts[1];
+            if (!synnefo.util.publicKeyTypesMap[type_key]) { throw "Invalid rsa key (cannot identify encryption)" }
+
+            try {
+                var data = $.base64.decode(b64);
+                return [parts[0], parts[1]].join(" ");
+            } catch (err) {
+                throw "Invalid key content";
+            }
+
+            throw "Invalid key content";
+        }
+        
+        // no type defined check rsa
+        if (_(b64).startsWith("AAAAB3NzaC1yc2EA")) {
+            try {
+                var data = $.base64.decode(b64);
+                return ["ssh-rsa", b64].join(" ");
+            } catch (err) {
+                throw "Invalid content for rsa key";
+            }
+        }
+
+        if (_(b64).startsWith("AAAAE2Vj")) {
+            try {
+                var data = $.base64.decode(b64);
+                return ["ecdsa-sha2-nistp256", b64].join(" ");
+            } catch (err) {
+                throw "Invalid content for ecdsa key";
+            }
+        }
+
+        if (_(b64).startsWith("AAAAB3N")) {
+            try {
+                var data = $.base64.decode(b64);
+                return ["ssh-dss", b64].join(" ");
+            } catch (err) {
+                throw "Invalid content for dss key (" + err + ")";
+            }
+        }
+
+        throw "Invalid key content";
+    }
+    
+    // detect flash `like a boss`
+    // http://stackoverflow.com/questions/998245/how-can-i-detect-if-flash-is-installed-and-if-not-display-a-hidden-div-that-inf/3336320#3336320 
+    synnefo.util.hasFlash = function() {
+        var hasFlash = false;
+        try {
+            var fo = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
+            if (fo) hasFlash = true;
+        } catch(e) {
+          if(navigator.mimeTypes ["application/x-shockwave-flash"] != undefined) hasFlash = true;
+        }
+        return hasFlash;
+    }
+
+    synnefo.util.promptSaveFile = function(selector, filename, data, options) {
+        if (!synnefo.util.hasFlash()) { return };
+        try {
+            return $(selector).downloadify(_.extend({
+                filename: function(){ return filename },
+                data: function(){ return data },
+                onComplete: function(){},
+                onCancel: function(){},
+                onError: function(){
+                    console.log("ERROR", arguments);
+                },
+                swf: synnefo.config.media_url + 'js/lib/media/downloadify.swf',
+                downloadImage: synnefo.config.images_url + 'download.png',
+                transparent: true,
+                append: false,
+                height:20,
+                width: 20,
+                dataType: 'string'
+          }, options));
+        } catch (err) {
+            return false;
+        }
+    }
+
+    synnefo.util.canReadFile = function() {
+        if ($.browser.msie) { return false };
+        if (window.FileReader && window.File) {
+            var f = File.prototype.__proto__;
+            if (f.slice || f.webkitSlice || f.mozSlice) {
+                return true
+            }
+        }
+        return false;
+    }
+
+    synnefo.util.errorList = function() {
+        
+        this.initialize = function() {
+            this.errors = {};
+        }
+
+        this.add = function(key, msg) {
+            this.errors[key] = this.errors[key] || [];
+            this.errors[key].push(msg);
+        }
+
+        this.get = function(key) {
+            return this.errors[key];
+        }
+
+        this.empty = function() {
+            return _.isEmpty(this.errors);
+        }
+
+        this.initialize();
     }
 
     synnefo.util.stacktrace = function() {

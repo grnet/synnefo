@@ -6,9 +6,13 @@ html {
     text-indent: -6000px;
 }
 
-.overlay .content {
-    background: url("../images/meta-wiz-inner-bg.png") repeat-x scroll 0 0;
+.overlay-info .content {
+    background: url("../images/meta-wiz-inner-bg.png") repeat-x scroll 0 0 #FFF;
     border: 1px solid #aaa;
+}
+
+.overlay-content .content {
+    background: #FFF !important;
 }
 
 .create-vm .flavor-options-cont .flavor-options li {
@@ -21,7 +25,7 @@ html {
 }
 
 div.confirm_single button {
-    padding-bottom: 0px;
+    padding-bottom: 1px;
 }
 
 .create-vm {
@@ -39,3 +43,4 @@ div.confirm_single button {
 .overlay-networks-create .form-actions {
     float: none;
 }
+

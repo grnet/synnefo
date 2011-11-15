@@ -15,6 +15,9 @@
   // Save the previous value of the `Backbone` variable.
   var previousBackbone = root.Backbone;
 
+  // Create a local reference to slice.
+  var slice = Array.prototype.slice;
+
   // The top-level namespace. All public Backbone classes and modules will
   // be attached to this. Exported for both CommonJS and the browser.
   var Backbone;
@@ -70,8 +73,11 @@
     // Passing `"all"` will bind the callback to all events fired.
     bind : function(ev, callback, context) {
       var calls = this._callbacks || (this._callbacks = {});
-      var list  = calls[ev] || (calls[ev] = []);
-      list.push([callback, context]);
+      var list  = calls[ev] || (calls[ev] = {});
+      var tail = list.tail || (list.tail = list.next = {});
+      tail.callback = callback;
+      tail.context = context;
+      list.tail = tail.next = {};
       return this;
     },
 
@@ -79,20 +85,18 @@
     // callbacks for the event. If `ev` is null, removes all bound callbacks
     // for all events.
     unbind : function(ev, callback) {
-      var calls;
+      var calls, node, prev;
       if (!ev) {
-        this._callbacks = {};
+        this._callbacks = null;
       } else if (calls = this._callbacks) {
         if (!callback) {
-          calls[ev] = [];
-        } else {
-          var list = calls[ev];
-          if (!list) return this;
-          for (var i = 0, l = list.length; i < l; i++) {
-            if (list[i] && callback === list[i][0]) {
-              list[i] = null;
-              break;
-            }
+          calls[ev] = {};
+        } else if (node = calls[ev]) {
+          while ((prev = node) && (node = node.next)) {
+            if (node.callback !== callback) continue;
+            prev.next = node.next;
+            node.context = node.callback = null;
+            break;
           }
         }
       }
@@ -103,21 +107,12 @@
     // same arguments as `trigger` is, apart from the event name.
     // Listening for `"all"` passes the true event name as the first argument.
     trigger : function(eventName) {
-      var list, calls, ev, callback, args;
-      var both = 2;
+      var node, calls, callback, args, ev, events = ['all', eventName];
       if (!(calls = this._callbacks)) return this;
-      while (both--) {
-        ev = both ? eventName : 'all';
-        if (list = calls[ev]) {
-          for (var i = 0, l = list.length; i < l; i++) {
-            if (!(callback = list[i])) {
-              list.splice(i, 1); i--; l--;
-            } else {
-              args = both ? Array.prototype.slice.call(arguments, 1) : arguments;
-              callback[0].apply(callback[1] || this, args);
-            }
-          }
-        }
+      while (ev = events.pop()) {
+        if (!(node = calls[ev])) continue;
+        args = ev == 'all' ? arguments : slice.call(arguments, 1);
+        while (node = node.next) if (callback = node.callback) callback.apply(node.context || this, args);
       }
       return this;
     }
@@ -149,10 +144,6 @@
   // Attach all inheritable methods to the Model prototype.
   _.extend(Backbone.Model.prototype, Backbone.Events, {
 
-    // A snapshot of the model's previous attributes, taken immediately
-    // after the last `"change"` event was fired.
-    _previousAttributes : null,
-
     // Has the item been changed since the last `"change"` event?
     _changed : false,
 
@@ -179,7 +170,7 @@
       var html;
       if (html = this._escapedAttributes[attr]) return html;
       var val = this.attributes[attr];
-      return this._escapedAttributes[attr] = escapeHTML(val == null ? '' : '' + val);
+      return this._escapedAttributes[attr] = _.escape(val == null ? '' : '' + val);
     },
 
     // Returns `true` if the attribute contains a value that is not null
@@ -236,6 +227,9 @@
       var validObj = {};
       validObj[attr] = void 0;
       if (!options.silent && this.validate && !this._performValidation(validObj, options)) return false;
+
+      // changedAttributes needs to know if an attribute has been unset.
+      (this._unsetAttributes || (this._unsetAttributes = [])).push(attr);
 
       // Remove the attribute.
       delete this.attributes[attr];
@@ -350,6 +344,7 @@
     change : function(options) {
       this.trigger('change', this, options);
       this._previousAttributes = _.clone(this.attributes);
+      this._unsetAttributes = null;
       this._changed = false;
     },
 
@@ -363,17 +358,25 @@
     // Return an object containing all the attributes that have changed, or false
     // if there are no changed attributes. Useful for determining what parts of a
     // view need to be updated and/or what attributes need to be persisted to
-    // the server.
+    // the server. Unset attributes will be set to undefined.
     changedAttributes : function(now) {
       now || (now = this.attributes);
-      var old = this._previousAttributes;
+      var old = this._previousAttributes, unset = this._unsetAttributes;
+
       var changed = false;
       for (var attr in now) {
         if (!_.isEqual(old[attr], now[attr])) {
-          changed = changed || {};
+          changed || (changed = {});
           changed[attr] = now[attr];
         }
       }
+
+      if (unset) {
+        changed || (changed = {});
+        var len = unset.length;
+        while (len--) changed[unset[len]] = void 0;
+      }
+
       return changed;
     },
 
@@ -478,7 +481,7 @@
     },
 
     // Get the model at the given index.
-    at: function(index) {
+    at : function(index) {
       return this.models[index];
     },
 
@@ -592,7 +595,7 @@
     // Proxy to _'s chain. Can't be proxied the same way the rest of the
     // underscore methods are proxied because it relies on the underscore
     // constructor.
-    chain: function () {
+    chain : function () {
       return _(this.models).chain();
     },
 
@@ -605,11 +608,11 @@
     },
 
     // Prepare a model to be added to this collection
-    _prepareModel: function(model, options) {
+    _prepareModel : function(model, options) {
       if (!(model instanceof Backbone.Model)) {
         var attrs = model;
         model = new this.model(attrs, {collection: this});
-        if (model.validate && !model._performValidation(attrs, options)) model = false;
+        if (model.validate && !model._performValidation(model.attributes, options)) model = false;
       } else if (!model.collection) {
         model.collection = this;
       }
@@ -633,6 +636,7 @@
       this.models.splice(index, 0, model);
       model.bind('all', this._onModelEvent);
       this.length++;
+      options.index = index;
       if (!options.silent) model.trigger('add', model, this, options);
       return model;
     },
@@ -645,8 +649,10 @@
       if (!model) return null;
       delete this._byId[model.id];
       delete this._byCid[model.cid];
-      this.models.splice(this.indexOf(model), 1);
+      var index = this.indexOf(model);
+      this.models.splice(index, 1);
       this.length--;
+      options.index = index;
       if (!options.silent) model.trigger('remove', model, this, options);
       this._removeReference(model);
       return model;
@@ -727,7 +733,7 @@
       if (!_.isRegExp(route)) route = this._routeToRegExp(route);
       Backbone.history.route(route, _.bind(function(fragment) {
         var args = this._extractParameters(route, fragment);
-        callback.apply(this, args);
+        callback && callback.apply(this, args);
         this.trigger.apply(this, ['route:' + name].concat(args));
       }, this));
     },
@@ -802,12 +808,13 @@
           fragment = window.location.pathname;
           var search = window.location.search;
           if (search) fragment += search;
-          if (fragment.indexOf(this.options.root) == 0) fragment = fragment.substr(this.options.root.length);
         } else {
           fragment = window.location.hash;
         }
       }
-      return decodeURIComponent(fragment.replace(hashStrip, ''));
+      fragment = decodeURIComponent(fragment.replace(hashStrip, ''));
+      if (!fragment.indexOf(this.options.root)) fragment = fragment.substr(this.options.root.length);
+      return fragment;
     },
 
     // Start the hash change handling, returning `true` if the current URL matches
@@ -929,7 +936,7 @@
   // This should be prefered to global lookups, if you're dealing with
   // a specific view.
   var selectorDelegate = function(selector) {
-    return $(this.el).find(selector);
+    return $(selector, this.el);
   };
 
   // Cached regex to split keys for `delegate`.
@@ -977,7 +984,7 @@
       return el;
     },
 
-    // Set callbacks, where `this.callbacks` is a hash of
+    // Set callbacks, where `this.events` is a hash of
     //
     // *{"event selector": "callback"}*
     //
@@ -994,7 +1001,7 @@
     delegateEvents : function(events) {
       if (!(events || (events = this.events))) return;
       if (_.isFunction(events)) events = events.call(this);
-      $(this.el).unbind('.delegateEvents' + this.cid);
+      this.undelegateEvents();
       for (var key in events) {
         var method = this[events[key]];
         if (!method) throw new Error('Event "' + events[key] + '" does not exist');
@@ -1008,6 +1015,11 @@
           $(this.el).delegate(selector, eventName, method);
         }
       }
+    },
+
+    // Clears all callbacks previously bound to the view with `delegateEvents`.
+    undelegateEvents : function() {
+      $(this.el).unbind('.delegateEvents' + this.cid);
     },
 
     // Performs the initial configuration of a View with a set of options.
@@ -1063,7 +1075,7 @@
 
   // Override this function to change the manner in which Backbone persists
   // models to the server. You will be passed the type of request, and the
-  // model in question. By default, uses makes a RESTful Ajax request
+  // model in question. By default, makes a RESTful Ajax request
   // to the model's `url()`. Some possible customizations could be:
   //
   // * Use `setTimeout` to batch rapid-fire updates into a single request.
@@ -1080,18 +1092,15 @@
     var type = methodMap[method];
 
     // Default JSON-request options.
-    var params = _.extend({
-      type:         type,
-      dataType:     'json'
-    }, options);
+    var params = {type : type, dataType : 'json'};
 
     // Ensure that we have a URL.
-    if (!params.url) {
+    if (!options.url) {
       params.url = getUrl(model, options) || urlError();
     }
 
     // Ensure that we have the appropriate request data.
-    if (!params.data && model && (method == 'create' || method == 'update')) {
+    if (!options.data && model && (method == 'create' || method == 'update')) {
       params.contentType = 'application/json';
       params.data = JSON.stringify(model.toJSON());
     }
@@ -1099,7 +1108,7 @@
     // For older servers, emulate JSON by encoding the request into an HTML-form.
     if (Backbone.emulateJSON) {
       params.contentType = 'application/x-www-form-urlencoded';
-      params.data        = params.data ? {model : params.data} : {};
+      params.data = params.data ? {model : params.data} : {};
     }
 
     // For older servers, emulate HTTP by mimicking the HTTP method with `_method`
@@ -1118,9 +1127,9 @@
     if (params.type !== 'GET' && !Backbone.emulateJSON) {
       params.processData = false;
     }
-        
-    // Make the request.
-    return $.ajax(params);
+
+    // Make the request, allowing the user to override any Ajax options.
+    return $.ajax(_.extend(params, options));
   };
 
   // Helpers
@@ -1181,19 +1190,15 @@
   };
 
   // Wrap an optional error callback with a fallback error event.
-  var wrapError = function(onError, model, options) {
-    return function(resp) {
+  var wrapError = function(onError, originalModel, options) {
+    return function(model, resp) {
+      var model = originalModel;
       if (onError) {
         onError(model, resp, options);
       } else {
         model.trigger('error', model, resp, options);
       }
     };
-  };
-
-  // Helper function to escape a string for HTML rendering.
-  var escapeHTML = function(string) {
-    return string.replace(/&(?!\w+;|#\d+;|#x[\da-f]+;)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/\//g,'&#x2F;');
   };
 
 }).call(this);

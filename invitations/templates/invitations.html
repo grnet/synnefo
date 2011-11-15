@@ -1,90 +1,25 @@
-{% load i18n %}
-<div class="invitations-left">({% blocktrans count invitations_left as left %}
-{{ left }} invitation left
-{% plural %}
-{{ left }} invitations left
-{% endblocktrans %})</div>
-
-{% if invitations_left > 0 %}
-<form action="/invitations/" method="post" id="invform">
-    {% csrf_token %}
-    
-    {% if errors %}
-    <div id="errors" class="error-msg">
-        <p>{% trans "Invite error(s) occured" %}</p>
-
-        <ul>
-        {% for error in errors %}
-            <li>- {{ error }}</li>
-        {% endfor %}
-        </ul>
-        </div>
-    {% endif %}
-
-    <div id="fieldheaders" class="clearfix">
-        <span id="field_name_name">{% trans "Name" %}<span class="description">(e.g. John Smith)</span></span>
-        <span id="field_email_name">{% trans "Email" %}</span>
-    </div>
-    <div id="fields">
-        <div id="removable-name-container-1" class="removable-field-row"><input
-            type="text" name="name_1" id="name_1" value="" class="textInput
-            removable" /><input type="text" name="email_1" id="email_1" value=""
-            class="textInput removable" /><img src="{{ MEDIA_URL }}spacer.gif" width="16" height="16" alt="" title="Remove This Item" class="" />
-        </div>
-        <div id="add-name-container" class="add-field-container">
-        <span class="add-field-trigger">
-            <img src="{{ MEDIA_URL }}add.gif" alt="" title="Add New Item" />
-            {% trans "Add invitation" %}
-        </span>
-        </div>
-    </div>
-    
-    <p>
-    <input class="submit" type="submit" value="{% trans "Send invitations" %}" />
-    <img src="{{ MEDIA_URL }}progress-tiny.gif" class="sending" />
-    </p>
-</form>
-{% else %}
-
-<div class="no-invitations-left">
-<p>
-{% blocktrans %}
-You have no invitations left in your account.
-{% endblocktrans %}
-</p>
-</div>
-{% endif %}
-
-<div id="invsent">
-    
-    <h3 class="clearfix overlay-inner-title">{% trans "Sent invitations" %}</h3>
-
-    <div class="messages">
-        <div class="message errormsg"></div>
-        <div class="message success"></div>
-    </div>
-    
-    <div>
-        <ul class="invsent-list">
+{% spaceless %}
+{"errors": [
+        {% if errors %}
+            {% for error in errors %}
+                {
+                    "msg": "{{ error|escapejs }}"
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        {% endif %}
+    ],
+    "invitations" : [
         {% for inv in invitations %}
-        <li class="clearfix {% if inv.accepted %}accepted{% endif %}">
-                {% if inv.accepted %}
-                <img src="{{ MEDIA_URL }}invitation_accepted.png" alt="{% trans "Invitation accepted" %}">
-                {% else %}
-                    <span class="resend-invitation" id="inv-{{ inv.id }}">
-                        <img src="{{ MEDIA_URL }}resend.png" alt="{% trans "Resend invitation" %}" class="resend">
-                    </span>
-                {% endif %}
-                <span class="name">{{ inv.targetname }}</span> <span class="email">{{ inv.target }}</span>
-            </li>
+            {
+                "updated": "{{ inv.updated|date }}",
+                "accepted": {% if inv.accepted %}true{% else %}false{% endif %},
+                "targetname": "{{ inv.targetname|escapejs }}",
+                "target": "{{ inv.target|escapejs }}",
+                "id": "{{ inv.id }}"
+            }{% if not forloop.last %},{% endif %}
         {% endfor %}
-    </ul>
+    ],
+    "invitations_left": "{{ invitations_left|escapejs }}"
 
-    <div class="pages clearfix"></div>
-
-    <div class="icons-info">
-        <span>(<img src="{{ MEDIA_URL }}invitation_accepted.png" alt="{% trans "Invitation accepted" %}"> = {% trans "Invitation has been accepted" %})</span>
-        <span>(<img src="{{ MEDIA_URL }}resend.png" alt="{% trans "Resend invitation" %}"> = {% trans "Send invitation again" %})</span>
-    </div>
-    </div>
-</div>
+    }
+{% endspaceless %}

@@ -30,7 +30,7 @@
             _.bindAll(this, 'show_password');
 
             this.password = this.$("#new-machine-password");
-            this.copy = this.$(".clip-copy");
+            this.copy = this.$(".clipboard");
 
             this.$(".show-machine").click(_.bind(function(){
                 if (this.$(".show-machine").hasClass("in-progress")) {
@@ -42,6 +42,7 @@
 
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);
+            this.password.text("");
         },
 
         handle_vm_added: function() {
@@ -54,26 +55,22 @@
             if (storage.vms.get(this.vm_id)) {
                 this.$(".show-machine").removeClass("in-progress");
             }
+            
+            this.clip = new snf.util.ClipHelper(this.copy, this.pass);
         },
 
         onClose: function() {
             this.password.text("");
             this.vm_id = undefined;
+            try { delete this.clip; } catch (err) {};
         },
         
         beforeOpen: function() {
-            try { delete this.clipboard } catch (err) { console.log(err) };
-            this.clipboard = new util.ClipHelper(this.copy, true);
+            this.copy.empty();
         },
         
         onOpen: function() {
-            this.copy.show();
-            try {
-                this.clipboard.setText(this.pass);
-                this.copy.show();
-            } catch (err) {
-                this.copy.hide();
-            }
+            this.show_password();
         },
 
         show: function(pass, vm_id) {
@@ -81,7 +78,6 @@
             this.vm_id = vm_id;
             
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
-            this.show_password();
         }
     })
 
@@ -276,7 +272,7 @@
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.get("OS")),
                                                   img.get_readable_size(),
-                                                  util.truncate(img.get("description"),35)));
+                                                  util.truncate(img.get("description"), 35)));
             image.data("image", img);
             image.data("image_id", img.id);
             this.images_list.append(image);
@@ -308,13 +304,14 @@
 
             this.cpus = this.$(".flavors-cpu-list");
             this.disks = this.$(".flavors-disk-list");
+            this.disk_templates = this.$(".flavors-disk-template-list");
             this.mems = this.$(".flavors-mem-list");
 
             this.predefined_flavors = SUGGESTED_FLAVORS;
             this.predefined_flavors_keys = _.keys(SUGGESTED_FLAVORS);
             this.predefined_flavors_keys = _.sortBy(this.predefined_flavors_keys, _.bind(function(k){
                 var flv = this.predefined_flavors[k];
-                return flv.ram * flv.cpu * flv.disk;
+                return (flv.ram * flv.cpu * flv.disk) + flv.disk_template;
             }, this));
 
             this.predefined = this.$(".predefined-list");
@@ -348,7 +345,7 @@
                            '{1}</li>').format(key, _(key).capitalize()));
 
                 this.predefined.append(el);
-                el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, this.flavors)})
+                el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, val.disk_template, this.flavors)});
                 el.click(_.bind(function() {
                     this.handle_predefined_click(el);
                 }, this))
@@ -358,7 +355,7 @@
 
         handle_predefined_click: function(el) {
             if (el.hasClass("disabled")) { return };
-            this.set_current(el.data("flavor"))
+            this.set_current(el.data("flavor"));
         },
 
         select_valid_flavor: function() {
@@ -385,7 +382,7 @@
             this.update_unavailable_values();
             var self = this;
             this.valid_predefined = _.select(_.map(this.predefined_flavors, function(flv, key){
-                var existing = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, self.flavors);
+                var existing = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
                 // non existing
                 if (!existing) {
                     return false;
@@ -411,7 +408,7 @@
 
             _.each(this.valid_predefined, function(key){
                 var flv = self.predefined_flavors[key];
-                var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, self.flavors);
+                var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
 
                 if (exists && (exists.id == self.current_flavor.id)) {
                     $("#predefined-flavor-" + key).addClass("selected");
@@ -431,7 +428,7 @@
             if (!this.current_flavor) {
                 _.each(this.valid_predefined, function(key) {
                     var flv = self.predefined_flavors[key];
-                    var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, self.flavors);
+                    var exists = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
                     if (exists && !set) {
                         self.set_current(exists);
                         set = true;
@@ -450,7 +447,7 @@
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
 
-            var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), this.flavors);
+            var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), flv.get("disk_template"), this.flavors);
             if (!existing) { return false };
             
             if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
@@ -514,7 +511,7 @@
         create_flavors: function() {
             var flavors = this.get_active_flavors();
             var valid_flavors = this.get_valid_flavors();
-            this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[]};
+            this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[] };
 
             _.each(flavors, _.bind(function(flv){
                 this.add_flavor(flv);
@@ -523,6 +520,7 @@
             this.sort_flavors(this.disks);
             this.sort_flavors(this.cpus);
             this.sort_flavors(this.mems);
+            this.sort_flavors(this.disk_templates);
 
             var self = this;
             this.$(".flavor-options li.option").click(function(){
@@ -536,9 +534,18 @@
                 if (el.hasClass("mem")) { self.last_choice = ["ram", $(this).data("value")] }
                 if (el.hasClass("cpu")) { self.last_choice = ["cpu", $(this).data("value")] }
                 if (el.hasClass("disk")) { self.last_choice = ["disk", $(this).data("value")] }
+                if (el.hasClass("disk_template")) { self.last_choice = ["disk_template", $(this).data("value")] }
 
                 self.update_selected_from_ui();
             })
+
+            //this.$(".flavor-options li.disk_template.option").mouseover(function(){
+                //$(this).parent().find(".description").hide();
+                //$(this).find(".description").show();
+            //}).mouseout(function(){
+                //$(this).parent().find(".description").hide();
+                //$(this).parent().find(".selected .description").show();
+            //});
         },
 
         sort_flavors: function(els) {
@@ -557,6 +564,7 @@
             var args = [this.$(".option.cpu.selected").data("value"), 
                 this.$(".option.mem.selected").data("value"), 
                 this.$(".option.disk.selected").data("value"),
+                this.$(".option.disk_template.selected").data("value"),
             this.flavors];
 
             var flv = storage.flavors.get_flavor.apply(storage.flavors, args);
@@ -571,11 +579,24 @@
             this.$(".option.cpu.value-" + flv.get("cpu")).addClass("selected");
             this.$(".option.mem.value-" + flv.get("ram")).addClass("selected");
             this.$(".option.disk.value-" + flv.get("disk")).addClass("selected");
+            this.$(".option.disk_template.value-" + flv.get("disk_template")).addClass("selected");
+            
+            var disk_el = this.$(".option.disk_template.value-" + flv.get("disk_template"));
+            var basebgpos = 470;
+                
+            var append_to_bg_pos = 40 + (disk_el.index() * 91);
+            var bg_pos = basebgpos - append_to_bg_pos;
+
+            this.$(".disk-template-description").css({backgroundPosition:'-' + bg_pos + 'px top'})
+            this.$(".disk-template-description p").html(flv.get_disk_template_info().description || "");
         },
         
-        __added_flavors: {'cpu':[], 'ram':[], 'disk':[]},
+        __added_flavors: {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[]},
         add_flavor: function(flv) {
-            var values = {'cpu': flv.get('cpu'), 'mem': flv.get('ram'), 'disk': flv.get('disk')};
+            var values = {'cpu': flv.get('cpu'), 
+                          'mem': flv.get('ram'), 
+                          'disk': flv.get('disk'), 
+                          'disk_template': flv.get('disk_template')};
 
             disabled = "";
             
@@ -602,7 +623,20 @@
                 this.disks.append(disk);
                 this.__added_flavors.disk.push(values.disk)
             }
+            
+            if (this.__added_flavors.disk_template.indexOf(values.disk_template) == -1) {
+                var template_info = flv.get_disk_template_info();
+                var disk_template = $(('<li title="{2}" class="option disk_template value-{0}">' + 
+                                       '<span class="value name">{1}</span>' +
+                                       '</li>').format(values.disk_template, 
+                                            template_info.name, 
+                                            template_info.description)).data('value', 
+                                                                values.disk_template);
 
+                this.disk_templates.append(disk_template);
+                //disk_template.tooltip({position:'top center', offset:[-5,0], delay:100, tipClass:'tooltip disktip'});
+                this.__added_flavors.disk_template.push(values.disk_template)
+            }
             
         },
         
@@ -642,16 +676,27 @@
 
     });
 
-    views.CreateSubmitView = views.CreateVMStepView.extend({
+    views.CreatePersonalizeView = views.CreateVMStepView.extend({
         step: 3,
         initialize: function() {
             views.CreateSubmitView.__super__.initialize.apply(this, arguments);
             this.roles = this.$("li.predefined-meta.role .values");
-            this.confirm = this.$(".confirm-params ul");
             this.name = this.$("input.rename-field");
             this.name_changed = false;
             this.init_suggested_roles();
             this.init_handlers();
+            this.ssh_list = this.$(".ssh ul");
+            this.selected_keys = [];
+
+            var self = this;
+            this.$(".create-ssh-key").click(function() {
+                var confirm_close = true || confirm("This action will close the virtual machine creation wizard." +
+                                            " Are you sure you want to continue ?")
+                if (confirm_close) {
+                    snf.ui.main.public_keys_view.show(self.parent);
+                } else {
+                }
+            });
         },
 
         init_suggested_roles: function() {
@@ -667,13 +712,56 @@
                     $(this).parent().find(".val").removeClass("selected");
                     $(this).toggleClass("selected");
                 })
-            })
+            });
+            
+            var self = this;
+            $(".ssh li.ssh-key-option").live("click", function(e) {
+                var key = $(this).data("model");
+                self.select_key(key);
+            });
+        },
+
+        select_key: function(key) {
+            var exists = this.selected_keys.indexOf(key.id);
+            if (exists > -1) {
+                this.selected_keys.splice(exists, 1);
+            } else {
+                this.selected_keys.push(key.id);
+            }
+            this.update_ui_keys_selections(this.selected_keys);
+        },
+
+        update_ui_keys_selections: function(keys) {
+            var self = this;
+            self.$(".ssh-key-option").removeClass("selected");
+            self.$(".ssh-key-option .check").attr("checked", false);
+            _.each(keys, function(kid) {
+                $("#ssh-key-option-" + kid).addClass("selected");
+                $("#ssh-key-option-" + kid).find(".check").attr("checked", true);
+            });
+        },
+
+        update_ssh_keys: function() {
+            this.ssh_list.empty();
+            var keys = snf.storage.keys.models;
+            if (keys.length == 0) { 
+                this.$(".ssh .empty").show();
+            } else {
+                this.$(".ssh .empty").hide();
+            }
+            _.each(keys, _.bind(function(key){
+                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(key.get("name"), key.id));
+                var check = $('<input class="check" type="checkbox"></input>')
+                el.append(check);
+                el.data("model", key);
+                this.ssh_list.append(el);
+            }, this));
         },
 
         init_handlers: function() {
             this.name.bind("keypress", _.bind(function(e) {
                 this.name_changed = true;
-                if (e.keyCode == 13) { this.parent.submit() };    
+                if (e.keyCode == 13) { this.parent.set_step(4); this.parent.update_layout() };    
             }, this));
 
             this.name.bind("click", _.bind(function() {
@@ -681,6 +769,114 @@
                     this.name.val("");
                 }
             }, this))
+        },
+
+        show: function() {
+            views.CreatePersonalizeView.__super__.show.apply(this, arguments);
+            this.update_layout();
+        },
+        
+        update_layout: function() {
+            var params = this.parent.get_params();
+
+            if (!params.image || !params.flavor) { return }
+
+            if (!params.image) { return }
+            var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
+            var vm_name = vm_name_tpl.format(params.image.get("name"));
+            var orig_name = vm_name;
+            
+            var existing = true;
+            var j = 0;
+
+            while (existing && !this.name_changed) {
+                var existing = storage.vms.select(function(vm){return vm.get("name") == vm_name}).length
+                if (existing) {
+                    j++;
+                    vm_name = orig_name + " " + j;
+                }
+            }
+
+            if (!_(this.name.val()).trim() || !this.name_changed) {
+                this.name.val(vm_name);
+            }
+
+            if (!this.name_changed && this.parent.visible()) {
+                if (!$.browser.msie && !$.browser.opera) {
+                    this.$("#create-vm-name").select();
+                } else {
+                    window.setTimeout(_.bind(function(){
+                        this.$("#create-vm-name").select();
+                    }, this), 400)
+                }
+            }
+            
+            var img = snf.ui.helpers.os_icon_path(params.image.get("OS"))
+            this.name.css({backgroundImage:"url({0})".format(img)})
+            
+            if (!params.image.supports('ssh')) {
+                this.disable_ssh_keys();
+            } else {
+                this.enable_ssh_keys();
+                this.update_ssh_keys();
+            }
+
+            this.update_ui_keys_selections(this.selected_keys);
+        },
+
+        disable_ssh_keys: function() {
+            this.$(".disabled.desc").show();
+            this.$(".empty.desc").hide();
+            this.$(".ssh .confirm-params").hide();
+            this.selected_keys = [];
+        },
+
+        enable_ssh_keys: function() {
+            this.$(".ssh .confirm-params").show();
+            this.$(".disabled.desc").hide();
+        },
+
+        reset: function() {
+            this.roles.find(".val").removeClass("selected");
+            this.name_changed = false;
+            this.selected_keys = [];
+            this.update_layout();
+        },
+
+        get_meta: function() {
+            if (this.roles.find(".selected").length == 0) {
+                return false;
+            }
+
+            var role = $(this.roles.find(".selected").get(0)).data("value");
+            return {'Role': role }
+        },
+
+        get: function() {
+            var val = {'name': this.name.val() };
+            if (this.get_meta()) {
+                val.metadata = this.get_meta();
+            }
+
+            val.keys = _.map(this.selected_keys, function(k){ return snf.storage.keys.get(k)});
+            
+            return val;
+        }
+    });
+
+    views.CreateSubmitView = views.CreateVMStepView.extend({
+        step: 4,
+        initialize: function() {
+            views.CreateSubmitView.__super__.initialize.apply(this, arguments);
+            this.roles = this.$("li.predefined-meta.role .values");
+            this.confirm = this.$(".confirm-params ul");
+            this.name = this.$("h3.vm-name");
+            this.keys = this.$(".confirm-params.ssh");
+            this.meta = this.$(".confirm-params.meta");
+            this.init_handlers();
+        },
+
+        init_handlers: function() {
         },
 
         show: function() {
@@ -700,6 +896,7 @@
             set_detail("cpu", flavor.get("cpu") + "x");
             set_detail("ram", flavor.get("ram") + " MB");
             set_detail("disk", util.readablizeBytes(flavor.get("disk") * 1024 * 1024 * 1024));
+            set_detail("disktype", flavor.get_disk_template_info().name);
         },
 
         update_image_details: function() {
@@ -719,72 +916,73 @@
             set_detail("kernel");
         },
 
+        update_selected_keys: function(keys) {
+            this.keys.empty();
+            if (!keys || keys.length == 0) {
+                this.keys.append(this.make("li", {'class':'empty'}, 'No keys selected'))
+            }
+            _.each(keys, _.bind(function(key) {
+                var el = this.make("li", {'class':'selected-ssh-key'}, key.get('name'));
+                this.keys.append(el);
+            }, this))
+        },
+
+        update_selected_meta: function(meta) {
+            this.meta.empty();
+            if (!meta || meta.length == 0) {
+                this.meta.append(this.make("li", {'class':'empty'}, 'No tags selected'))
+            }
+            _.each(meta, _.bind(function(value, key) {
+                var el = this.make("li", {'class':"confirm-value"});
+                var name = this.make("span", {'class':"ckey"}, key);
+                var value = this.make("span", {'class':"cval"}, value);
+
+                $(el).append(name)
+                $(el).append(value);
+                this.meta.append(el);
+            }, this));
+        },
+
         update_layout: function() {
             var params = this.parent.get_params();
             if (!params.image || !params.flavor) { return }
 
             if (!params.image) { return }
-            var vm_name = "My {0} server".format(params.image.get("name"));
-            var orig_name = vm_name;
-            
-            var existing = true;
-            var j = 0;
 
-            while (existing && !this.name_changed) {
-                var existing = storage.vms.select(function(vm){return vm.get("name") == vm_name}).length
-                if (existing) {
-                    j++;
-                    vm_name = orig_name + " " + j;
-                }
-            }
-            if (!_(this.name.val()).trim() || !this.name_changed) {
-                this.name.val(vm_name);
-            }
+            this.name.text(params.name);
 
             this.confirm.find("li.image .value").text(params.flavor.get("image"));
             this.confirm.find("li.cpu .value").text(params.flavor.get("cpu") + "x");
             this.confirm.find("li.mem .value").text(params.flavor.get("ram"));
             this.confirm.find("li.disk .value").text(params.flavor.get("disk"));
 
-            if (!this.name_changed && this.parent.visible()) {
-                if (!$.browser.msie && !$.browser.opera) {
-                    this.$("#create-vm-name").select();
-                } else {
-                    window.setTimeout(_.bind(function(){
-                        this.$("#create-vm-name").select();
-                    }, this), 400)
-                }
-            }
-            
             var img = snf.ui.helpers.os_icon_path(params.image.get("OS"))
             this.name.css({backgroundImage:"url({0})".format(img)})
 
             this.update_image_details();
             this.update_flavor_details();
+
+            if (!params.image.supports('ssh')) {
+                this.keys.hide();
+                this.keys.prev().hide();
+            } else {
+                this.keys.show();
+                this.keys.prev().show();
+                this.update_selected_keys(params.keys);
+            }
+            
+            this.update_selected_meta(params.metadata);
         },
 
         reset: function() {
-            this.roles.find(".val").removeClass("selected");
-            this.name_changed = false;
             this.update_layout();
         },
 
         get_meta: function() {
-            if (this.roles.find(".selected").length == 0) {
-                return false;
-            }
-
-            var role = $(this.roles.find(".selected").get(0)).data("value");
-            return {'Role': role }
         },
 
         get: function() {
-            var val = {'name': this.name.val() };
-            if (this.get_meta()) {
-                val.metadata = this.get_meta();
-            }
-            
-            return val;
+            return {};
         }
     });
 
@@ -809,7 +1007,8 @@
             this.steps[1].bind("change", _.bind(function(data) {this.trigger("image:change", data)}, this));
 
             this.steps[2] = new views.CreateFlavorSelectView(this);
-            this.steps[3] = new views.CreateSubmitView(this);
+            this.steps[3] = new views.CreatePersonalizeView(this);
+            this.steps[4] = new views.CreateSubmitView(this);
 
             this.cancel_btn = this.$(".create-controls .cancel");
             this.next_btn = this.$(".create-controls .next");
@@ -862,11 +1061,19 @@
             if (this.submiting) { return };
             var data = this.get_params();
             var meta = {};
+            var extra = {};
+            var personality = [];
+
             if (this.validate(data)) {
                 this.submit_btn.addClass("in-progress");
                 this.submiting = true;
                 if (data.metadata) { meta = data.metadata; }
-                storage.vms.create(data.name, data.image, data.flavor, meta, {}, _.bind(function(data){
+                if (data.keys && data.keys.length > 0) {
+                    personality.push(data.image.personality_data_for_keys(data.keys))
+                }
+
+                extra['personality'] = personality;
+                storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){
                     this.close_all();
                     this.password_view.show(data.server.adminPass, data.server.id);
                     this.submiting = false;
@@ -884,10 +1091,12 @@
             this.steps[1].reset();
             this.steps[2].reset();
             this.steps[3].reset();
+            this.steps[4].reset();
 
             this.steps[1].show();
             this.steps[2].show();
             this.steps[3].show();
+            this.steps[4].show();
 
             this.submit_btn.removeClass("in-progress");
         },
@@ -903,11 +1112,16 @@
         },
 
         beforeOpen: function() {
-            this.submiting = false;
-            this.reset();
-            this.current_step = 1;
-            this.$(".steps-container").css({"margin-left":0 + "px"});
-            this.show_step(1);
+            if (!this.skip_reset_on_next_open) {
+                this.submiting = false;
+                this.reset();
+                this.current_step = 1;
+                this.$(".steps-container").css({"margin-left":0 + "px"});
+                this.show_step(1);
+            }
+            
+            this.skip_reset_on_next_open = false;
+            this.update_layout();
         },
         
         set_step: function(step) {

@@ -127,6 +127,9 @@ Synnefo deployment.
    if the invitations application is deployed, the following dependencies should
    be installed:
     * pycrypto==2.1.0
+   
+   for server side ssh key pair generation to work the following module is required:
+    * M2Crypto==0.20.1
 
    The integration test suite snf-tools/snf-test depends on:
     * python-unittest2 [unittest2==0.5.1]

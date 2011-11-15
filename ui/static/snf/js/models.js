@@ -18,8 +18,9 @@
     var debug = _.bind(logger.debug, logger);
     
     // get url helper
-    var getUrl = function() {
-        return snf.config.api_url + "/" + this.path;
+    var getUrl = function(baseurl) {
+        var baseurl = baseurl || snf.config.api_url;
+        return baseurl + "/" + this.path;
     }
     
     // i18n
@@ -65,7 +66,7 @@
         },
 
         url: function(options) {
-            return getUrl.call(this) + "/" + this.id;
+            return getUrl.call(this, this.base_url) + "/" + this.id;
         },
 
         api_path: function(options) {
@@ -98,44 +99,66 @@
     models.Collection = bb.Collection.extend({
         sync: snf.api.sync,
         api: snf.api,
-
+        supportIncUpdates: true,
         url: function(options) {
-            return getUrl.call(this) + (options.details || this.details ? '/detail' : '');
+            return getUrl.call(this, this.base_url) + (options.details || this.details ? '/detail' : '');
         },
 
         fetch: function(options) {
+            if (!options) { options = {} };
             // default to update
             if (!this.noUpdate) {
-                if (!options) { options = {} };
                 if (options.update === undefined) { options.update = true };
                 if (!options.removeMissing && options.refresh) { options.removeMissing = true };
+            } else {
+                if (options.refresh === undefined) {
+                    options.refresh = true;
+                }
             }
             // custom event foreach fetch
             return bb.Collection.prototype.fetch.call(this, options)
         },
 
-        get_fetcher: function(timeout, fast, limit, initial, params) {
+        create: function(model, options) {
+            var coll = this;
+            options || (options = {});
+            model = this._prepareModel(model, options);
+            if (!model) return false;
+            var success = options.success;
+            options.success = function(nextModel, resp, xhr) {
+                if (success) success(nextModel, resp, xhr);
+            };
+            model.save(null, options);
+            return model;
+        },
+
+        get_fetcher: function(interval, increase, fast, increase_after_calls, max, initial_call, params) {
             var fetch_params = params || {};
             fetch_params.skips_timeouts = true;
-
-            var timeout = parseInt(timeout);
-            var fast = fast || 1000;
-            var limit = limit;
-            var initial_call = initial || true;
             
+            var handler_options = {};
+            handler_options.interval = interval;
+            handler_options.increase = increase;
+            handler_options.fast = fast;
+            handler_options.increase_after_calls = increase_after_calls;
+            handler_options.max= max;
+
             var last_ajax = undefined;
             var cb = _.bind(function() {
                 // clone to avoid referenced objects
                 var params = _.clone(fetch_params);
                 updater._ajax = last_ajax;
-                if (last_ajax) {
-                    last_ajax.abort();
+
+                // wait for previous request to finish
+                if (last_ajax && last_ajax.readyState == 0) {
+                    return;
                 }
+
                 last_ajax = this.fetch(params);
             }, this);
-            var updater = new snf.api.updateHandler({'callback': cb, timeout:timeout, 
-                                                    fast:fast, limit:limit, 
-                                                    call_on_start:initial_call});
+            handler_options.callback = cb;
+
+            var updater = new snf.api.updateHandler(_.extend(handler_options, fetch_params));
 
             snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster(true)}, this)), 1000);
             return updater;
@@ -158,8 +181,47 @@
             return this.get("OS");
         },
 
+        get_created_user: function() {
+            return synnefo.config.os_created_users[this.get_os()] || "root";
+        },
+
         get_sort_order: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
+        },
+        
+        ssh_keys_path: function() {
+            prepend = '';
+            if (this.get_created_user() != 'root') {
+                prepend = '/home'
+            }
+            return '{1}/{0}/.ssh/authorized_keys'.format(this.get_created_user(), prepend);
+        },
+
+        _supports_ssh: function() {
+            if (synnefo.config.support_ssh_os_list.indexOf(this.get_os()) > -1) {
+                return true;
+            }
+            return false;
+        },
+
+        supports: function(feature) {
+            if (feature == "ssh") {
+                return this._supports_ssh()
+            }
+            return false;
+        },
+
+        personality_data_for_keys: function(keys) {
+            contents = '';
+            _.each(keys, function(key){
+                contents = contents + key.get("content") + "\n"
+            });
+            contents = $.base64.encode(contents);
+
+            return {
+                path: this.ssh_keys_path(),
+                contents: contents
+            }
         }
     });
 
@@ -173,6 +235,14 @@
 
         get_disk_size: function() {
             return parseInt(this.get("disk") * 1000)
+        },
+
+        get_disk_template_info: function() {
+            var info = snf.config.flavors_disk_templates_info[this.get("disk_template")];
+            if (!info) {
+                info = { name: this.get("disk_template"), description:'' };
+            }
+            return info
         }
 
     });
@@ -295,6 +365,105 @@
         this.initialize();
     };
     _.extend(VMNetworksList.prototype, bb.Events);
+        
+    models.ParamsList = function(){this.initialize.apply(this, arguments)};
+    _.extend(models.ParamsList.prototype, bb.Events, {
+
+        initialize: function(parent, param_name) {
+            this.parent = parent;
+            this.actions = {};
+            this.param_name = param_name;
+            this.length = 0;
+        },
+        
+        has_action: function(action) {
+            return this.actions[action] ? true : false;
+        },
+            
+        _parse_params: function(arguments) {
+            if (arguments.length <= 1) {
+                return [];
+            }
+
+            var args = _.toArray(arguments);
+            return args.splice(1);
+        },
+
+        contains: function(action, params) {
+            params = this._parse_params(arguments);
+            var has_action = this.has_action(action);
+            if (!has_action) { return false };
+
+            var paramsEqual = false;
+            _.each(this.actions[action], function(action_params) {
+                if (_.isEqual(action_params, params)) {
+                    paramsEqual = true;
+                }
+            });
+                
+            return paramsEqual;
+        },
+        
+        is_empty: function() {
+            return _.isEmpty(this.actions);
+        },
+
+        add: function(action, params) {
+            params = this._parse_params(arguments);
+            if (this.contains.apply(this, arguments)) { return this };
+            var isnew = false
+            if (!this.has_action(action)) {
+                this.actions[action] = [];
+                isnew = true;
+            };
+
+            this.actions[action].push(params);
+            this.parent.trigger("change:" + this.param_name, this.parent, this);
+            if (isnew) {
+                this.trigger("add", action, params);
+            } else {
+                this.trigger("change", action, params);
+            }
+            return this;
+        },
+        
+        remove_all: function(action) {
+            if (this.has_action(action)) {
+                delete this.actions[action];
+                this.parent.trigger("change:" + this.param_name, this.parent, this);
+                this.trigger("remove", action);
+            }
+            return this;
+        },
+
+        reset: function() {
+            this.actions = {};
+            this.parent.trigger("change:" + this.param_name, this.parent, this);
+            this.trigger("reset");
+            this.trigger("remove");
+        },
+
+        remove: function(action, params) {
+            params = this._parse_params(arguments);
+            if (!this.has_action(action)) { return this };
+            var index = -1;
+            _.each(this.actions[action], _.bind(function(action_params) {
+                if (_.isEqual(action_params, params)) {
+                    index = this.actions[action].indexOf(action_params);
+                }
+            }, this));
+            
+            if (index > -1) {
+                this.actions[action].splice(index, 1);
+                if (_.isEmpty(this.actions[action])) {
+                    delete this.actions[action];
+                }
+                this.parent.trigger("change:" + this.param_name, this.parent, this);
+                this.trigger("remove", action, params);
+            }
+        }
+
+    });
 
     // Image model
     models.Network = models.Model.extend({
@@ -308,7 +477,7 @@
             this.vms.bind("pending:remove:add", _.bind(this.handle_pending_connections, this, "add"));
             this.vms.bind("pending:remove:clear", _.bind(this.handle_pending_connections, this, "clear"));
 
-            ret = models.Network.__super__.initialize.apply(this, arguments);
+            var ret = models.Network.__super__.initialize.apply(this, arguments);
 
             storage.vms.bind("change:linked_to_nets", _.bind(this.update_connections, this, "vm:change"));
             storage.vms.bind("add", _.bind(this.update_connections, this, "add"));
@@ -318,8 +487,16 @@
             this.bind("change:linked_to", _.bind(this.update_connections, this, "net:change"));
             this.update_connections();
             this.update_state();
+            
+            this.set({"actions": new models.ParamsList(this, "actions")});
 
             return ret;
+        },
+
+        toJSON: function() {
+            var attrs = _.clone(this.attributes);
+            attrs.actions = _.clone(this.get("actions").actions);
+            return attrs;
         },
 
         update_state: function() {
@@ -406,6 +583,26 @@
             var vm_net_exists = vm.is_connected_to(this);
             return net_vm_exists && vm_net_exists;
         },
+        
+        call: function(action, params, success, error) {
+            if (action == "destroy") {
+                this.set({state:"DESTROY"});
+                this.get("actions").remove("destroy");
+                this.remove(_.bind(function(){
+                    success();
+                }, this), error);
+            }
+            
+            if (action == "disconnect") {
+                _.each(params, _.bind(function(vm_id) {
+                    var vm = snf.storage.vms.get(vm_id);
+                    this.get("actions").remove("disconnect", vm_id);
+                    if (vm) {
+                        this.remove_vm(vm, success, error);
+                    }
+                }, this));
+            }
+        },
 
         add_vm: function (vm, callback, error, options) {
             var payload = {add:{serverRef:"" + vm.id}};
@@ -459,6 +656,15 @@
 
         in_progress: function() {
             return models.Network.STATES_TRANSITIONS[this.get("state")] != undefined;
+        },
+
+        do_all_pending_actions: function(success, error) {
+            var destroy = this.get("actions").has_action("destroy");
+            _.each(this.get("actions").actions, _.bind(function(params, action) {
+                _.each(params, _.bind(function(with_params) {
+                    this.call(action, with_params, success, error);
+                }, this));
+            }, this));
         }
     });
     
@@ -634,7 +840,7 @@
             var cb = _.bind(function(data){
                 this.update_stats();
             }, this);
-            var fetcher = new snf.api.updateHandler({'callback': cb, timeout:timeout});
+            var fetcher = new snf.api.updateHandler({'callback': cb, interval:timeout});
             return fetcher;
         },
 
@@ -738,7 +944,8 @@
             // do we need to change the interval ??
             if (data.stats.refresh * 1000 != this.stats_update_interval) {
                 this.stats_update_interval = data.stats.refresh * 1000;
-                this.stats_fetcher.timeout = this.stats_update_interval;
+                this.stats_fetcher.interval = this.stats_update_interval;
+                this.stats_fetcher.maximum_interval = this.stats_update_interval;
                 this.stats_fetcher.stop();
                 this.stats_fetcher.start(false);
             }
@@ -1242,6 +1449,18 @@
             return data;
         },
 
+        reset_pending_actions: function() {
+            this.each(function(net) {
+                net.get("actions").reset();
+            })
+        },
+
+        do_all_pending_actions: function() {
+            this.each(function(net) {
+                net.do_all_pending_actions();
+            })
+        },
+
         parse_net_api_data: function(data) {
             if (data.servers && data.servers.values) {
                 data['linked_to'] = data.servers.values;
@@ -1259,11 +1478,11 @@
         path: 'images',
         details: true,
         noUpdate: true,
-        
+        supportIncUpdates: false,
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
 
         // update collection model with id passed
-        // making a direct call to the flavor
+        // making a direct call to the image
         // api url
         update_unknown_id: function(id) {
             var url = getUrl.call(this) + "/" + id;
@@ -1309,7 +1528,7 @@
         path: 'flavors',
         details: true,
         noUpdate: true,
-        
+        supportIncUpdates: false,
         // update collection model with id passed
         // making a direct call to the flavor
         // api url
@@ -1326,7 +1545,7 @@
 
         parse: function (resp, xhr) {
             // FIXME: depricated global var
-            return resp.flavors.values;
+            return _.map(resp.flavors.values, function(o) { o.disk_template = o['SNF:disk_template']; return o});
         },
 
         comparator: function(flv) {
@@ -1352,13 +1571,14 @@
             return index;
         },
 
-        get_flavor: function(cpu, mem, disk, filter_list) {
+        get_flavor: function(cpu, mem, disk, disk_template, filter_list) {
             if (!filter_list) { filter_list = this.models };
-
+            
             return this.select(function(flv){
                 if (flv.get("cpu") == cpu + "" &&
                    flv.get("ram") == mem + "" &&
                    flv.get("disk") == disk + "" &&
+                   flv.get("disk_template") == disk_template &&
                    filter_list.indexOf(flv) > -1) { return true; }
             })[0];
         },
@@ -1412,6 +1632,29 @@
         reset_pending_actions: function() {
             this.each(function(vm) {
                 vm.clear_pending_action();
+            })
+        },
+
+        do_all_pending_actions: function(success, error) {
+            this.each(function(vm) {
+                if (vm.has_pending_action()) {
+                    vm.call(vm.pending_action, success, error);
+                    vm.clear_pending_action();
+                }
+            })
+        },
+        
+        do_all_reboots: function(success, error) {
+            this.each(function(vm) {
+                if (vm.get("reboot_required")) {
+                    vm.call("reboot", success, error);
+                }
+            });
+        },
+
+        reset_reboot_required: function() {
+            this.each(function(vm) {
+                vm.set({'reboot_required': undefined});
             })
         },
         
@@ -1479,13 +1722,79 @@
         }
 
     })
-    
 
+    models.PublicKey = models.Model.extend({
+        path: 'keys',
+        base_url: '/ui/userdata',
+        details: false,
+        noUpdate: true,
+
+
+        get_public_key: function() {
+            return cryptico.publicKeyFromString(this.get("content"));
+        },
+
+        get_filename: function() {
+            return "{0}.pub".format(this.get("name"));
+        },
+
+        identify_type: function() {
+            try {
+                var cont = snf.util.validatePublicKey(this.get("content"));
+                var type = cont.split(" ")[0];
+                return synnefo.util.publicKeyTypesMap[type];
+            } catch (err) { return false };
+        }
+
+    })
+    
+    models.PublicKeys = models.Collection.extend({
+        model: models.PublicKey,
+        details: false,
+        path: 'keys',
+        base_url: '/ui/userdata',
+        noUpdate: true,
+
+        generate_new: function(success, error) {
+            snf.api.sync('create', undefined, {
+                url: getUrl.call(this, this.base_url) + "/generate", 
+                success: success, 
+                error: error,
+                skip_api_error: true
+            });
+        },
+
+        add_crypto_key: function(key, success, error, options) {
+            var options = options || {};
+            var m = new models.PublicKey();
+
+            // guess a name
+            var name_tpl = "public key";
+            var name = name_tpl;
+            var name_count = 1;
+            
+            while(this.filter(function(m){ return m.get("name") == name }).length > 0) {
+                name = name_tpl + " " + name_count;
+                name_count++;
+            }
+            
+            m.set({name: name});
+            m.set({content: key});
+            
+            options.success = function () { return success(m) };
+            options.errror = error;
+            options.skip_api_error = true;
+            
+            this.create(m.attributes, options);
+        }
+    })
+    
     // storage initialization
     snf.storage.images = new models.Images();
     snf.storage.flavors = new models.Flavors();
     snf.storage.networks = new models.Networks();
     snf.storage.vms = new models.VMS();
+    snf.storage.keys = new models.PublicKeys();
 
     //snf.storage.vms.fetch({update:true});
     //snf.storage.images.fetch({update:true});

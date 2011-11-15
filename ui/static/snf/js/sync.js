@@ -70,16 +70,25 @@
     // appends global ajax handlers
     // handles changed-since url parameter based on api path
     api.sync = function(method, model, options) {
-
+        
         var type = methodMap[method];
         
         if (model && (model.skipMethods || []).indexOf(method) >= 0) {
             throw "Model does not support " + method + " calls";
         }
-        
+
         if (!options.url) {
-            options.url = getUrl(model, options) || urlError();
-            options.url = options.refresh ? options.url : setChangesSince(options.url, type);
+            var urlobject = model;
+
+            // fallback to collection url for item creation
+            if (method == "create" && model.isNew && model.isNew()) {
+                urlobject = model.collection;
+            }
+
+            options.url = getUrl(urlobject, options) || urlError();
+            if (urlobject && urlobject.supportIncUpdates) {
+                options.url = options.refresh ? options.url : setChangesSince(options.url, type);
+            }
             if (!options.refresh && options.cache === undefined) {
                 options.cache = true;
             }
@@ -187,6 +196,7 @@
                         var d = this.date_send || xhr.getResponseHeader('Date');
                         if (d) { addApiCallDate(this.url, new Date(d), ajax_options.type); };
                     }
+
                     return;
                 }
                 
@@ -208,6 +218,12 @@
             if (arguments[1] === "notmodified") {
                 return;
             }
+
+            if (["beforeSend", "complete"].indexOf(cb_type) == -1 && this.is_recurrent) {
+                // trigger event to notify that a recurrent event
+                // has returned status other than notmodified
+                snf.api.trigger("change:recurrent");
+            }
             
             // prepare arguments for error callbacks
             var cb_args = _.toArray(arguments);
@@ -217,7 +233,7 @@
             
             // determine if we need to call our callback wrapper
             var call_api_handler = true;
-
+            
             // request handles errors by itself, s
             if (handler_type == "error" && this.skip_api_error) {
                 call_api_handler = false
@@ -260,14 +276,17 @@
         // exceed the skips_timeouts limit
         //
         // check only requests with skips_timeouts option set
+        
         if (xhr === "timeout" && _.last(arguments).skips_timeouts) {
             var skip_timeouts = snf.config.skip_timeouts || 1;
             if (snf.api.timeouts_occured < skip_timeouts) {
                 snf.api.timeouts_occured++;
                 return;
             } else {
-                // reset and continue to error trigger
+                // reset trigger error
                 snf.api.timeouts_occured = 0;
+                var args = _.toArray(arguments);
+                api.trigger("error", args);
             }
         }
 
@@ -332,75 +351,132 @@
     // in fixed intervals
     api.updateHandler = function(options) {
         this.cb = options.callback;
-        this.limit = options.limit;
-        this.timeout = options.timeout;
 
-        this.normal_timeout = options.timeout;
-        this.fast_timeout = options.fast;
+        // the interval with which we start
+        this.interval = this.normal_interval = options.interval || 4000;
 
+        // fast interval
+        // set when faster() gets called
+        this.fast_interval = options.fast || 1000;
+    
+        // after how many calls to increase the interval
+        this.interval_increase_count = options.increase_after_calls || 0;
+
+        // increase the timer by this value after interval_increase_count calls
+        this.interval_increase = options.increase || 500;
+        
+        // maximum interval limit
+        this.maximum_interval = options.max || 60000;
+        
+        // make a call before interval starts
+        this.call_on_start = options.initial_call === undefined ? true : options.initial_call;
+            
+        this.increase_enabled = this.interval_increase_count === 0;
+
+        if (this.increase_enabled) {
+            this.maximum_interval = this.interval;
+            this.interval_increase_count = 1;
+        }
+        
+        // inner params
         this._called = 0;
-        this.interval = undefined;
-        this.call_on_start = options.call_on_start || true;
-
+        this._first_call_date = undefined;
+        this.window_interval = undefined;
+        
+        // state params
         this.running = false;
         this.last_call = false;
         
-        // wrapper
+        // helper for api calls
+        // TODO: move this out of here :/
+        if (options.is_recurrent) {
+            snf.api.bind("change:recurrent", _.bind(function() {
+                if (this.running) {
+                    this.faster(true);
+                }
+            }, this));
+        }
+        
+        // callback wrapper
         function _cb() {
-            if (this.fast_timeout == this.timeout){
-                this._called++;
+            if (!this.running) { this.stop() }
+            if (this._called >= this.interval_increase_count) {
+                this._called = 0;
+                this.slower(false);
             }
-
-            if (this._called >= this.limit && this.fast_timeout == this.timeout) {
-                this.timeout = this.normal_timeout;
-                this.setInterval()
-            }
+            
             this.cb();
             this.last_call = new Date;
+            this._called++;
         };
 
         _cb = _.bind(_cb, this);
 
+        // start from faster timeout and start increasing
         this.faster = function(do_call) {
-            this.timeout = this.fast_timeout;
-            this._called = 0;
+            if (!this.running) { return }
+
+            this.interval = this.fast_interval;
             this.setInterval(do_call);
         }
 
+        // slow down
+        this.slower = function(do_call) {
+            if (this.interval == this.maximum_interval) {
+                // no need to increase
+                return;
+            }
+            
+            this.interval = this.interval + this.interval_increase;
+            // increase timeout
+            if (this.interval > this.maximum_interval) {
+                this.interval = this.maximum_interval;
+            }
+            
+            this.setInterval(do_call);
+        }
+        
+        // reset internal
         this.setInterval = function(do_call) {
             this.trigger("clear");
-            window.clearInterval(this.interval);
             
-            this.interval = window.setInterval(_cb, this.timeout);
+            // reset times called
+            this._called = 0;
+            
+            window.clearInterval(this.window_interval);
+            this.window_interval = window.setInterval(_cb, this.interval);
+
             this.running = true;
             
-            var call = do_call || this.call_on_start;
+            // if no do_call set, fallback to object creation option
+            // else force what was requested
+            var call = do_call === undefined ? this.call_on_start : do_call;
             
-            if (this.last_call) {
-                var next_call = (this.timeout - ((new Date) - this.last_call));
-                if (next_call < this.timeout/2) {
+            if (this.last_call && do_call !== false) {
+                var next_call = (this.interval - ((new Date) - this.last_call));
+                if (next_call < this.interval/2) {
                     call = true;
                 } else {
                     call = false;
                 }
             }
-
+            
             if (call) {
                 _cb();
             }
+
             return this;
         }
 
         this.start = function (call_on_start) {
             if (this.running) { this.stop() };
-            this.call_on_start = call_on_start == undefined ? this.call_on_start : call_on_start;
-            this.setInterval();
+            this.setInterval(call_on_start);
             return this;
         }
 
         this.stop = function() {
             this.trigger("clear");
-            window.clearInterval(this.interval);
+            window.clearInterval(this.window_interval);
             this.running = false;
             return this;
         }

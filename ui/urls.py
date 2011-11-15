@@ -42,6 +42,7 @@ urlpatterns = patterns('',
     url(r'^feedback$', 'synnefo.ui.views.feedback_submit', name='feedback'),
     url(r'^static/(.*)$', 'django.views.static.serve',
     {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
+    url(r'ui/userdata/', include('synnefo.ui.userdata.urls'))
 )
 
 if settings.DEBUG or settings.TEST:

@@ -231,7 +231,7 @@ div.css-panes {
     margin-bottom: 10px;
 }
 /* CSS3 border radius for various elements. yea - CSS isn't perfect */
-.rounded, #sheet input, .error {
+.rounded, #sheet input, .error-rounded {
     border-radius: 5px;
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
@@ -2708,7 +2708,7 @@ div.network div.action-container {
 div.network div.net-actions .confirm_single {
     position: absolute;
     left: 96px;
-    width: 200px;
+    width: 150px;
     margin: 0 0px -5px 0;
     font-size: 100%;
 }
@@ -2732,6 +2732,8 @@ div.network div.machine-actions a.action-destroy.selected {
     color: #880000 !important;
 }
 
+div.network div.actions a.visible,
+div.network div.net-vm-actions a.visible,
 div.network div.actions a.selected:hover, div.network div.machine-actions a.selected {
     background-color: transparent !important;
     visibility: visible!important;
@@ -3860,103 +3862,9 @@ div.state .shutdown, tbody.machines .shutdown {
     background-image: url("../images/icons/actions/medium/shutdown.png");
 }
 
-
-.no-invitations-left {
-    margin-bottom: 20px;
-    color: #E44848;
-}
-
-.invitations #field_name_name, .invitations #field_email_name {
-    float: left;
-    display: block;
-    width: 180px;
-}
-.invitations input {
-    width: 170px;
-}
-
-.invitations #fieldheaders span.description {
-    font-size: 0.8em;
-    color: #666;
-    margin-left: 2px;
-}
-
-.invitations #fields {
-    margin-top: 5px;
-}
-
-.invitations .add-field-container {
-    margin-top: 5px;
-}
-
-.invitations #errors {
-    padding: 5px;
-    background-color: #800000;
-}
-
-.invitations #errors p {
-    margin-bottom: 10px;
-    font-size: 0.95em;
-    padding-top:0;
-    margin-top:0;
-    color: #fff;
-}
-
-.invitations #errors li {
-    font-size: 0.85em;
-    color: #ddd;
-}
-
-.invitations #errors {
-    font-size: 100%;
-    margin-bottom: 10px;
-}
-
-#invsent {
-    padding-top: 10px;
-}
-
-#invsent h3.overlay-inner-title {
-    font-size: 1.2em;
-    font-weight: normal;
-    border-bottom: 1px solid #B0D0E0;
-}
-
-#invsent .icons-info img {
-    vertical-align: middle;
-}
-
-#invsent .icons-info {
-    margin-top: 10px;
-    font-size: 0.7em;
-}
-
-#invsent .icons-info span {
-    margin-right: 10px;
-}
-
-.notification-box .invitations {
-    padding-bottom: 0;
-}
-.notification-box .invitations .sub-text {
-    display: none;
-}
-
 h3.overlay-inner-title {
     color: #4085A5;
     font-size: 2em;
-}
-
-#invsent .message {
-    font-size: 0.9em;
-    padding: 5px 0;
-    margin-top: 5px;
-    margin-bottom: -10px;
-    color: #5CAD54;
-}
-
-#invsent .errormsg {
-    color: #AE2B34;
 }
 
 #add-name-container {
@@ -3969,84 +3877,6 @@ h3.overlay-inner-title {
 
 .add-field-trigger img {
     vertical-align: middle;
-}
-
-.invitations form {
-    margin-bottom: 20px;
-}
-
-#invsent h3 {
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-#invsent h3 span {
-    font-weight: normal;
-    font-size: 0.9em;
-    margin-right: 5px;
-    display: block;
-    margin-top: -2px;
-}
-
-#invsent ul {
-    margin-top: 3px;
-}
-
-#invsent li {
-    color: #4085A5;
-    font-size: 1.1em;
-    padding-top: 0.5em;
-    border-bottom: 1px solid #efefef;
-    padding-bottom: 0.5em;
-    font-size: 0.9em;
-    position: relative;
-}
-
-#invsent li:hover {
-    background-color: #efefef;
-}
-
-#invsent li img {
-    position: absolute;
-    left:20px;
-    bottom: 2px;
-}
-
-#invsent h3 img {
-    float: none;
-    vertical-align: middle;
-    margin-left: 3px;
-}
-
-#invsent .name {
-    float: left;
-    width: 55%;
-    padding-left: 20px;
-}
-
-#invsent .email {
-    float: left;
-    width: 40%;
-}
-
-#invsent li.accepted {
-    color: #ABD49C;
-}
-
-#invsent li img {
-    margin-left: -20px;
-    margin-top: 1px;
-}
-
-#invsent li img.resend {
-    cursor: pointer;
-}
-
-.invitations #field_email_name {
-}
-
-#invform #fields input {
-    margin-right: 10px;
 }
 
 .machine-now-building {
@@ -4564,10 +4394,6 @@ span.resend-msg {
 	background:#fff;
 }
 
-#invsent .pagination {
-    margin-top: 10px;
-}
-
 table.list-machines .wave {
     float: none !important;
     margin: 0 !important;
@@ -4634,7 +4460,7 @@ table.list-machines .wave {
     margin-bottom: 5px;
 }
 
-.overlay h3.header {
+.overlay h3.overlay-header {
     font-size: 0.9em;
     text-align: left;
     padding: 0.8em;
@@ -4643,7 +4469,7 @@ table.list-machines .wave {
     border-bottom: 1px solid #ddd;
 }
 
-.overlay h3.header .title {
+.overlay h3.overlay-header .title {
     float: left;
 }
 
@@ -4718,12 +4544,12 @@ table.list-machines .wave {
     margin-top: 10px;
 }
 
-.overlay-error h3.header {
+.overlay-error h3.overlay-header {
     background-color: #800000;
     color: #fff;
 }
 
-.overlay-error.non-critical h3.header {
+.overlay-error.non-critical h3.overlay-header {
     background-color: #987249;
 }
 
@@ -4781,13 +4607,13 @@ table.list-machines .wave {
     cursor: pointer;
 }
 
-.overlay .header .subtitle {
+.overlay .overlay-header .subtitle {
     display: block;
     font-size: 0.8em;
     color: #ddd;
 }
 
-.overlay .header .subtitle img {
+.overlay .overlay-header .subtitle img {
     vertical-align: middle;
     margin-left: 10px;
     margin-bottom: 2px;
@@ -4799,15 +4625,15 @@ table.list-machines .wave {
     background-color: rgba(255,255,255,0.6)
 }
 
-.overlay-info .header {
+.overlay-info .overlay-header {
     background-color: #4085A5;
 }
 
-.overlay-info .header .title {
+.overlay-info .overlay-header .title {
     color: #fff;
 }
 
-.overlay-info .header .closeme {
+.overlay-info .overlay-header .closeme {
     color: #fff;
 }
 
@@ -5287,8 +5113,13 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
+.create-vm .create-step-cont li.ssh-key-option.selected,
 .create-vm ul li.selected {
-    background-color: #5CA1C0;
+    background-color: #FF7F2A;
+    background-image:linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-o-linear-gradient(top, #FF9955, #E88B4D);
+    background-image:-moz-linear-gradient(top, #FF9955, #E88B4D);
     color: #fff;
 }
 
@@ -5299,8 +5130,20 @@ table.list-machines .wave {
     padding-right: 3%;
 }
 
-.create-vm p.desc {
+.create-vm li p.desc {
     font-size: 0.9em;
+}
+
+.create-vm p.desc.warning {
+    color: #880000;
+}
+
+.create-vm p.desc.empty {
+    color: #000;
+}
+
+.create-vm p.desc {
+    font-size: 0.8em;
     color: #888;
     margin-bottom: 10px;
 }
@@ -5310,7 +5153,7 @@ table.list-machines .wave {
 }
 .create-vm li.role .values .val.selected,  .create-vm li.role .values .val.selected:hover {
     color: #fff;
-    background-color: #5CA1C0;
+    background-color: #FF9955;
 }
 
 .create-vm .images-filter-cont, .create-vm .flavors-predefined-cont {
@@ -5365,6 +5208,7 @@ table.list-machines .wave {
     display: block;
     float: left;
     margin-right: 10px;
+    margin-bottom: 10px;
     padding: 10px 15px;
     border: 1px solid #aaa;
     background-image:-webkit-linear-gradient(top, #D1E7F0, #E8F4FA);
@@ -5375,8 +5219,9 @@ table.list-machines .wave {
 }
 
 .create-vm .flavor-options-cont .flavor-options {
-    margin-bottom: 25px;
+    margin-bottom: 2px;
 }
+
 
 .create-vm .flavor-options .metric {
     font-size: 0.8em;
@@ -5394,6 +5239,50 @@ table.list-machines .wave {
     font-size: 0.8em;
     float: right;
     margin-top: 4px;
+}
+
+.disktip {
+    padding: 4px;
+    top: 20px;
+}
+
+.create-vm .flavor-options .flavors-disk-template-list {
+    position: relative;
+}
+
+.create-vm .flavor-options .disk_template.option {
+    z-index: 10;
+    min-width: 50px;
+    text-align: center;
+}
+
+/*0 position is -470px*/
+.create-vm .flavor-options .disk-template-description {
+    font-size: 0.8em;
+    color: #444;
+    background-image: url("../images/horizontal-pointer.png");
+    background-repeat: repeat-x;
+    background-position: -470px 0;
+    padding-top: 15px;
+    margin-top: -10px;
+    font-style: italic;
+}
+
+.create-vm .flavor-options .disk_template.option .description {
+    display: none;
+    position: absolute;
+    bottom: -20px;
+    left:0;
+    color: #888;
+    font-style: italic;
+    display: block;
+    background-color: #fff;
+    width: 100%;
+    text-align: left;
+    z-index: 0;
+    border-top: 1px solid #ddd;
+    padding-top: 3px;
+    display: none;
 }
 
 .create-vm .flavor-options .selected .value {
@@ -5417,7 +5306,7 @@ table.list-machines .wave {
     border-left: 1px solid #A1C8DB;
 }
 
-.create-vm .images-info-cont h4, .create-vm .vm-confirm .param h4{
+.create-vm .images-info-cont h4, .create-vm .create-step-cont .param h4{
     color: #FF9955;
     margin-bottom: 1em;
     font-size: 1.2em;
@@ -5443,7 +5332,7 @@ table.list-machines .wave {
 }
 
 .create-vm .images-list .image-details.selected:hover {
-    background-color: #5CA1C0;
+    background-color: #FF7F2A;
 }
 
 .create-vm .images-list .image-details.selected {
@@ -5528,7 +5417,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current .title {
     display: block;
     top: 23px;
-    left: 39px;
+    left: 43px;
     font-size: 1.2em;
     color: #ffffff;
     font-weight: bold;
@@ -5568,7 +5457,7 @@ table.list-machines .wave {
 }
 
 .create-vm .steps-history .steps-history-cont.current .steps-history-step {
-    width: 380px;
+    width: 320px;
 }
 
 .create-vm .steps-history .steps-history-cont.current .num {
@@ -5583,12 +5472,12 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 462px;
+    width: 428px;
 }
 
 .create-vm .steps-history-step {
     padding: 4px;
-    padding-left: 10px;
+    padding-left: 7px;
     font-size: 1em;
     font-family: 'Ubuntu', sans-serif  !important;
     margin-right: 5px;
@@ -5619,7 +5508,7 @@ table.list-machines .wave {
     text-align: center;
     padding-bottom: 2px;
     left:0;
-    width: 60px;
+    width: 55px;
     margin-left:0;
     margin-top:0;
     font-size: 0.8em;
@@ -5632,7 +5521,7 @@ table.list-machines .wave {
 
 .create-vm .steps-history .steps-history-cont {
     height: 70px;
-    width: 60px;
+    width: 51px;
     float: left;
     color: #fff;
     border-right: 1px solid #A1C8DB;
@@ -5698,11 +5587,54 @@ table.list-machines .wave {
     overflow: auto;
 }
 
-.confirm-cont {
+.create-vm .vm-confirm .confirm-params span.cval {
+    margin-left: 8px;
+    color: #444;
+}
+
+.create-vm .vm-confirm .confirm-params span.ckey {
+    color: #4085A5;
+    font-weight: bold;
+}
+
+.create-vm .vm-confirm .confirm-params {
+    margin-bottom: 15px;
+}
+
+.create-vm .vm-confirm h3.vm-name {
+    background-repeat: no-repeat;
+    background-position: left center;
+    font-size: 1.4em;
+    padding-left: 1.45em;
+    color: #4085A5;
+}
+
+.create-vm .list-cont h4 a {
+    font-size: 0.8em;
+    font-weight: normal;
+    margin-right: 5px;
+    float: right;
+    color: #FF7F2A;
+}
+
+.create-vm .confirm-params {
+    overflow: auto;
+}
+
+.create-vm .vm-confirm .ssh.confirm-params {
+    max-height: 150px;
+}
+
+.create-vm .personalize-cont .confirm-params {
+    max-height: 216px;
+}
+
+.create-vm .personalize-cont,
+.create-vm .confirm-cont {
     height: 250px;
 }
 
-.create-vm .vm-confirm .rename input.rename-field {
+.create-vm .create-step-cont .rename input.rename-field {
     font-size: 1.4em;
     padding: 5px;
     width: 93%;
@@ -5711,22 +5643,29 @@ table.list-machines .wave {
     background-repeat: no-repeat;
 }
 
-.create-vm .vm-confirm .rename label {
+.create-vm .create-step-cont .rename label {
     display: block;
 }
 
-.create-vm .vm-confirm .confirm-conts {
+.create-vm .create-step-cont .personalize-conts,
+.create-vm .create-step-cont .confirm-conts {
     margin-top: 20px;
 }
 
-.create-vm .vm-confirm .confirm-cont {
+.create-vm .create-step-cont .personalize-cont,
+.create-vm .create-step-cont .confirm-cont {
     width: 30%;
     margin-right: 2%;
     border-right: 1px solid #A1C8DB;
     float: left;
 }
 
-.create-vm .vm-confirm .confirm-cont ul li .value {
+.create-vm .create-step-cont .confirm-cont ul li .title {
+    width: 55px;
+    float: left;
+}
+
+.create-vm .create-step-cont .list-cont ul li .value {
     float: right;
     padding-top: 2px;
     display: block;
@@ -5734,15 +5673,19 @@ table.list-machines .wave {
     text-align: right;
 }
 
-.create-vm .vm-confirm .confirm-cont ul li.image-description .value,
-.create-vm .vm-confirm .confirm-cont ul li.image-name .value {
+.create-vm .create-step-cont .list-cont ul li.flavor-disktype .value {
+    width: 45px;
+}
+
+.create-vm .create-step-cont .list-cont ul li.image-description .value,
+.create-vm .create-step-cont .list-cont ul li.image-name .value {
     float: none;
     width: auto;
     text-align:left;
     width: auto;
 }
 
-.create-vm .vm-confirm .confirm-cont ul li {
+.create-vm .create-step-cont .list-cont ul li {
     padding:0;
     margin:0;
     margin-bottom: 5px;
@@ -5751,17 +5694,44 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
-.create-vm .vm-confirm .confirm-cont.meta h4 {
+.create-vm .create-step-cont li.ssh-key-option .check {
+    float: right;
+    margin-right: 5px;
+    margin-top: 0px;
+}
+
+.create-vm .create-step-cont li.ssh-key-option.selected {
+}
+.create-vm .create-step-cont li.ssh-key-option.selected:hover {
+    background-color: #F95;
+}
+
+.create-vm .create-step-cont li.ssh-key-option:hover {
+    background-color: #eee;
+}
+
+.create-vm .create-step-cont li.ssh-key-option.selected {
+}
+
+.create-vm .create-step-cont li.ssh-key-option {
+    padding: 6px !important;
+}
+
+.create-vm .create-step-cont .list-cont.ssh {
+    width: 60%;
+}
+
+.create-vm .create-step-cont .list-cont.meta h4 {
     margin-right: 0;
 }
 
-.create-vm .vm-confirm .confirm-cont.meta {
+.create-vm .create-step-cont .list-cont.meta {
     margin-right:0;
     border-right: none;
     width: 195px;
 }
 
-.create-vm .confirm-cont > h4 {
+.create-vm .list-cont > h4 {
     font-size: 1.2em;
     margin-right: 10px;
     border-bottom: 1px solid #A1C8DB;
@@ -5769,47 +5739,47 @@ table.list-machines .wave {
     color: #387693;
 }
 
-.create-vm .confirm-cont .param.image-name {
+.create-vm .list-cont .param.image-name {
     margin-bottom: 0 !important;
     border-bottom: none !important;
 }
 
-.create-vm .confirm-cont .param h4 {
+.create-vm .list-cont .param h4 {
     margin-bottom: 0px !important;
     font-size: 1.1em !important; 
 }
 
-.create-vm .confirm-cont .param {
+.create-vm .list-cont .param {
     margin-bottom: 7px !important;
 }
 
-.create-vm .confirm-cont .value {
+.create-vm .list-cont .value {
     font-weight: bold;
 }
 
-.create-vm .confirm-cont .param .value {
+.create-vm .list-cont .param .value {
     font-size: 0.9em;
 }
 
-.create-vm .confirm-cont .param .title {
+.create-vm .list-cont .param .title {
     color: #387693;
 }
 
-.create-vm .confirm-cont .image-description {
+.create-vm .list-cont .image-description {
     margin-left:0;
 }
 
-.create-vm .confirm-cont .image-description .value {
+.create-vm .list-cont .image-description .value {
     font-weight: normal;
     margin-left: 0 !important;
 }
 
-.create-vm .confirm-cont .image-description .title {
+.create-vm .list-cont .image-description .title {
     display: none;
     font-size: 0.8em;
 }
 
-.create-vm .confirm-cont.meta .values span {
+.create-vm .list-cont.meta .values span {
     display:block;
     float: left;
     margin-right: 4px;
@@ -5819,7 +5789,7 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
-.create-vm .confirm-cont.meta .key {
+.create-vm .list-cont.meta .key {
     font-weight: bold;
     font-size: 0.9em;
     display: block;
@@ -5868,3 +5838,710 @@ table.list-machines .wave {
 }
 
 .password-cont .clip-copy { right: 10px; top: 8px;}
+
+
+.overlay-invitations {
+    width: 680px;
+}
+.invitations-form .sending .sending-msg {
+    font-size: 0.8em;
+    display: block !important;
+    margin-bottom: 5px;
+    color: #008800;
+}
+
+.invitations-form .send-error {
+    font-size: 0.8em;
+    margin-bottom: 5px;
+    margin-top: 5px;
+    color: #800;
+    padding: 3px;
+    padding-left: 0;
+    display: none;
+}
+
+.invitations-form .error label {
+    color: #000 !important;
+}
+
+.invitations-form .form-field {
+    width: 49%;
+    float: left;
+}
+
+.invitations-view .left.none {
+    background-color: #880000;
+}
+
+.invitations-form {
+    position: relative;
+}
+
+.invitations-form h3 {
+    float: left;
+}
+
+.invitations-form .add-new-invitation {
+    float:left;
+    top:2px;
+    right: 20px;
+    width: 16px;
+    height: 16px;
+    background-image: url("../images/option-action-add.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    text-indent: -50000em;
+    background-color: #4085A5;
+    margin-left: 15px;
+    cursor: pointer;
+}
+
+.invitations-view .left {
+    font-size: 1em;
+    color: #fff;
+    font-weight: bold;
+    background-color: #4085A5;
+    padding: 4px;
+}
+
+input.has-errors {
+    border-color: #ff0000;
+}
+
+.none-left .invitations-wrapper .invitations-list {
+    width: 100% !important;
+    border-left: none !important;
+    padding-left: 0;
+}
+
+.invitations-wrapper .invitations-list {
+    width: 40%;
+    float: left;
+    padding-left: 10px;
+    border-left: 1px solid #4085A5;
+    margin-left: -1px
+}
+
+.invitations-wrapper .invitations-form {
+    width: 57%;
+    float: left;
+    border-right: 1px solid #4085A5;
+}
+
+.invitations-wrapper label span {
+    color: #aaa;
+    font-size: 0.8em;
+}
+
+.invitations-wrapper label {
+    display: block;
+    font-size: 0.9em;
+    margin-bottom:10px;
+    font-weight: bold;
+}
+
+.invitations-view .add-new-invitation {
+    cursor: pointer;
+}
+
+.invitations-wrapper input.name {
+    width: 150px;
+}
+
+.invitations-wrapper input {
+    font-size: 0.9em;
+    width: 155px;
+    padding:4px;
+}
+
+.invitations-list .invitation-sent {
+    border-bottom: 1px solid #A1C8DB;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+    position: relative;
+}
+
+.invitations-view h3 {
+    margin-bottom: 10px;
+    color: #4085A5;
+}
+
+.invitations-list .invitation-sent.last,
+.invitations-list .invitation-sent:last-child {
+    border-bottom: none;
+}
+
+
+.invitations-list .invitation-sent .email {
+    color: #D98147;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+.invitations-list .pagination a,
+.invitations-list .pagination span {
+    padding: 0.2em 0.3em;
+}
+
+.invitations-list .pagination {
+    font-size: 0.75em;
+}
+
+.invitations-list .name {
+    color: #444;
+    font-size: 0.9em;
+}
+
+.invitations-list .status.sending {
+    background-image: url("../images/icons/indicators/small/progress.gif");
+}
+
+.invitations-list .status.sent {
+    background-image: url("../images/invitation_accepted.png");
+}
+
+.invitations-list .status.resend {
+    background-image: url("../images/resend.png");
+}
+
+.invitations-list .status.resend {
+    cursor: pointer;
+}
+
+.invitations-list .status {
+    width: 20px;
+    height: 15px;
+    position: absolute;
+    top:5px;
+    right: 2px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.invitations-form .form-entry:last-child {
+    border-bottom: none;
+}
+
+.invitations-form .form-entry {
+    position: relative;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    margin-right: 10px;
+}
+
+.invitations-form .send-invitations {
+    float: left;
+    padding: 5px;
+    color: #fff;
+    margin-right: 10px;
+    margin-top: 10px;
+}
+
+.invitations-form .form-entry.error {
+    padding-bottom: 0px;
+}
+
+.invitations-form .form-entry.error .remove-invitation {
+    bottom: 32px;
+}
+
+.invitations-form .remove-invitation {
+    padding: 5px;
+    background-image: url("../images/option-action-remove.png");
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #fff;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    text-indent: -50000px;
+    position: absolute;
+    right: -10px;
+    bottom: 14px;
+}
+
+.invitations-list .resent-info,
+.invitations-form .top-info {
+    font-size: 0.8em;
+    margin-bottom: 10px;
+}
+
+.invitations-list .msg .email,
+.invitations-form .success .msg .email {
+    font-weight: bold;
+}
+
+.invitations-list .msg.err-msg,
+.invitations-list .success.msg,
+.invitations-form .success .msg {
+    background-color: #080;
+    color: white;
+    padding: 5px;
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+.invitations-list .msg.err-msg,
+.invitations-list .success.msg {
+    margin-right: 0px;
+}
+.invitations-list .msg.err-msg {
+    background-color: #800;
+}
+
+.overlay .models-view .previous-view-link {
+    margin: -10px;
+    margin-bottom:10px;
+    padding: 10px 5px;
+    background-image: url("../images/left-arrow.png");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    padding-left: 20px;
+    background-color: #93D070;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    text-decoration: underline;
+}
+.models-view .quick-add {
+    text-decoration: underline; 
+    color: #4085A5;
+    cursor: pointer;
+}
+
+.empty .items-list {
+    margin-top: 0 !important;
+}
+
+.models-view .items-empty-msg {
+    border-top: 1px solid #aaa;
+    padding-top: 10px;
+    font-size: 1em;
+    margin-top:0 !important;
+}
+
+.models-view .items-empty-msg,
+.models-view .model-description {
+    color: #444;
+    margin: 10px 0;
+}
+
+.models-view .model-list .collection-action.disabled {
+    background-color: #aaa;
+    border-color: #aaa;
+    cursor: default;
+}
+.models-view .model-list .collection-action.disabled:hover {
+    background-color: #aaa;
+    border-color: #aaa;
+}
+
+.models-view .model-list .collection-action:hover {
+    background-color: #aaa;
+}
+
+.models-view .model-list .collection-action:hover {
+    background-color: #F95;
+    border-color: #F95;
+}
+
+.models-view .model-list .collection-action.in-progress {
+    background-color: #aaa;
+    color: #fff;
+    border-color: #aaa;
+    background-image: url("../images/icons/indicators/small/progress.gif") !important;
+}
+
+.models-view .model-list .collection-action.add-generate {
+    background-image: url("../images/option-action-generate-ssh.png");
+}
+
+.models-view .model-list .collection-action.add {
+    background-image: url("../images/option-action-add.png");
+    padding-right: 20px !important;
+}
+
+.models-view .model-list .collection-action {
+    float: right;
+    background-color: #FF7F2A;
+    color: #fff;
+    padding: 6px 8px;
+    margin-left: 10px;
+    cursor: pointer;
+    padding-right: 30px;
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-clip: border-box;
+    border-right: 5px solid #FF7F2A;
+}
+
+.models-view .items-list {
+    margin-top: 10px;
+}
+
+.models-view .model-list ul li.model-item:last-child {
+    margin-bottom: 0;
+}
+
+.models-view .model-list ul li.model-item {
+    background-color: #D4E2E8;
+    margin-bottom: 5px;
+    position: relative;
+}
+
+.models-view .model-list ul li.model-item .param {
+    float: left;
+    padding: 6px;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove {
+    margin-right: -15px !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove:hover .cancel {
+    color: inherit !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove:hover {
+    background-color: #F95;
+    color: inherit !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove span.cancel {
+    padding: 6px !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove span {
+    display: block;
+    float: left;
+    padding: 6px 15px;
+}
+
+.models-view .model-list ul li.model-item .item-action .cancel-remove:hover {
+    color: #fff !important;
+}
+
+.models-view .model-list ul li.model-item .item-action.confirm-remove,
+.models-view .model-list ul li.model-item .item-action .do-confirm,
+.models-view .model-list ul li.model-item .item-action .cancel-remove {
+    display:none !important;
+    background-color: #D95D0A;
+    padding:0;
+    margin:0;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action.remove {
+    display: none;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action .cancel {
+    background-color: #F95;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action.confirm {
+    background-color: #FF7F2A;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action.confirm-remove,
+.models-view .model-list ul li.model-item.pending-delete .item-action.confirm-remove .do-confirm,
+.models-view .model-list ul li.model-item.pending-delete .item-action .cancel-remove {
+    display:block !important;
+}
+
+.models-view .model-list ul li.model-item.pending-delete .item-action {
+    display: block;
+}
+
+.models-view .model-list ul li.model-item.expanded .item-action,
+.models-view .model-list ul li.model-item:hover .item-action {
+    display: block;
+}
+
+.models-view .model-list ul li.model-item .item-action.hide {
+    background-image: url("../images/minus-8.png");
+}
+.models-view .model-list ul li.model-item .item-action.show:hover {
+    background-image: url("../images/plus-8.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.show {
+    background-image: url("../images/plus-8-dark.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.remove {
+    background-image: url("../images/option-action-remove.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.edit:hover {
+    background-image: url("../images/option-action-edit-light.png");
+}
+
+.models-view .model-list ul li.model-item .item-action.edit {
+    background-image: url("../images/option-action-edit.png");
+}
+.models-view .model-list ul li.model-item .item-action.remove:hover {
+    background-color: #880000 !important;
+    border-color: #800 !important;
+}
+
+.models-view .model-list ul li.model-item.expanded .item-action.show,
+.models-view .model-list ul li.model-item.expanded .item-action.hide,
+.models-view .model-list ul li .item-actions .item-action:hover {
+    background-color: #4085A5;
+    color: #fff;
+    border-color: #4085A5;
+}
+
+.models-view .model-list ul li .item-actions {
+    position: absolute;
+    right: -10px;
+    top: 0px;
+}
+
+.models-view .model-list ul li .item-actions .item-action {
+    float: right;
+    padding: 6px;
+    margin-right: 10px;
+    display: none;
+    cursor: pointer;
+    padding-right: 20px;
+    background-repeat: no-repeat;
+    background-position: right center;
+    border-right: 5px solid transparent;
+}
+
+.models-view .model-list h3 {
+    float: left;
+}
+
+.models-view h3 {
+    font-size: 1.2em;
+    margin-bottom: 1em;
+    margin-top: 5px;
+    color: #4085A5;
+}
+
+.models-view .form-actions {
+    font-size: 1.1em;
+}
+
+.models-view .model-list ul li,
+.models-view .model-list ul {
+    list-style: none;
+}
+
+.models-view .model-list ul li.header {
+    display: none;
+}
+
+.models-view .model-form textarea {
+    width: 99%;
+    height: 100px;
+    border: 1px solid #aaa;
+}
+
+
+.models-view .model-form .form-field {
+    margin-bottom: 10px;
+}
+
+.models-view .model-form label {
+    display: block;
+    color: #406A7D;
+    font-size: 1.1em;
+    margin: 0px 0 5px 0;
+}
+
+.models-view .model-form .inline label {
+    float: left;
+    margin-right: 10px;
+    margin-top: 10px !important;
+}
+
+#user_public_keys .private-download {
+    margin: 5px 0;
+    margin-top: 6px;
+}
+
+#user_public_keys .private-cont form {
+    float: left;
+    margin-left: 5px;
+}
+
+#user_public_keys input.form-text:hover {
+    background: #F95;
+}
+
+#user_public_keys input.form-text {
+    background: #FF7F2A;
+    color: #fff;
+    border: 1px solid #F95;
+    padding: 0 5px;
+    margin: 0 5px;
+    margin-top: -1px;
+    cursor: pointer;
+}
+
+#user_public_keys .form-text {
+    float: left;
+}
+
+#user_public_keys {
+    font-size: 0.7em;
+}
+
+#user_public_keys .download-button {
+    width: 30px;
+    height: 30px;
+}
+
+
+#user_public_keys #model-item-tpl {
+    display: none;
+}
+#user_public_keys .model-item .name {
+    color: #4085A5;
+    font-size: 1.2em;
+}
+
+#user_public_keys .model-item .fingerprint .flabel {
+    color: #888;
+    float: left;
+    margin-right: 5px;
+}
+
+#user_public_keys .model-item .fingerprint {
+    float: none;
+    clear: both;
+    color: #444;
+    font-family: monospace;
+    letter-spacing: 1px;
+    padding: 4px;
+    font-size: 0.9em;
+    border-top: 1px solid #fff;
+}
+
+#user_public_keys .model-item .publicid {
+    display: none;
+}
+
+#user_public_keys .model-item.expanded .publicid .param-content {
+    padding: 5px 5px;
+    overflow: auto;
+    background-color: #FFF;
+    border: 1px solid #4085A5;
+    border-left: none;
+    border-right: none;
+    font-size: 1.1em;
+}
+
+#user_public_keys .model-item.expanded .publicid .param-content textarea {
+    width: 100%;
+    height: 90px;
+    margin:0;
+    padding:0;
+    border:none;
+    overflow: auto;
+}
+
+#user_public_keys .model-item.expanded .publicid {
+    display: block;
+    background-color: #fff;
+    width: 100%;
+    margin-top: 0px;
+    margin-left: 0px;
+    color: #fff;
+    padding:0 !important;
+}
+
+.models-view .form-messages {
+    margin-bottom: 10px;
+}
+
+.models-view .list-messages {
+    margin-top: 10px;
+}
+
+.models-view .form-messages .error,
+.models-view .form-messages .success,
+.models-view .list-messages .error,
+.models-view .list-messages .success,
+#user_public_keys .private-cont {
+    background-color: #AADE87;
+    color: #447821;
+    padding: 5px;
+    border: 1px solid #447821;
+    font-size: 1.1em;
+    margin-top: 5px;
+}
+
+.models-view .form-messages .error,
+.models-view .list-messages .error {
+    background-color: #DE8D87;
+    color:  #782421 !important;
+    border-color: #782421;
+}
+
+#user_public_keys .limit-msg {
+    color: #800;
+    position: absolute;
+    right: 20px;
+    top: 25px;
+}
+
+#user_public_keys .private-cont {
+    margin-top: 10px;
+}
+
+#user_public_keys .private-cont .private-msg {
+    float: left;
+    padding:5px;
+    margin-top: 5px;
+}
+
+#user_public_keys .private-cont textarea {
+    margin: 5px;
+    width: 97%;
+    height: 200px;
+}
+
+#user_public_keys .private-cont .close-private:hover {
+    color: #Fff;
+}
+
+#user_public_keys .private-cont .close-private {
+    float: right;
+    margin-right: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+#user_public_keys .model-item .key-type {
+    background-color: #72ADC8;
+    color: #fff;
+    text-align: center;
+    font-size: 0.9em;
+    padding:2px 10px;
+    margin: 4px 6px;
+    margin-top: 7px;
+    font-weight: bold;
+}
+
+#user_public_keys .private-cont .down-button {
+}
+
+.models-view .form-field.error label {
+    font-weight: bold;
+    color: #800 !important;
+}
+
+.models-view .form-field .errors {
+    margin: 5px 0;
+}
+
+.models-view .form-field .errors .error {
+    background-color: transparent;
+    border: none;
+    color: #800;
+}

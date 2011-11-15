@@ -122,10 +122,14 @@
             if (this.current_vm >= storage.vms.models.length) {
                 this.current_vm = 0;
             }
-
+            
             this.update_current_vm();
-            this.show_current();
-            this.__update_layout();
+
+            // this might fail when vms get empty
+            // catch the exception
+            try {
+                snf.router.vm_details_view(this.current_vm_instance.id);
+            } catch (err) {};
         },
 
         show_prev: function() {
@@ -133,16 +137,23 @@
             if (this.current_vm < 0) {
                 this.current_vm = storage.vms.length - 1;
             }
+
             this.update_current_vm();
-            this.show_current();
-            this.__update_layout();
+            snf.router.vm_details_view(this.current_vm_instance.id);
         },
 
         post_remove_vm: function(vm) {
             // current vm removed or does not exist after an update
             this.show_vm_menu();
             if (!this.current_vm_instance || this.current_vm_instance.id == vm.id) {
-                this.show_next();
+                this.current_vm++;
+                if (this.current_vm >= storage.vms.models.length) {
+                    this.current_vm = 0;
+                }
+                this.update_current_vm();
+                this.show_current();
+            // this might fail when vms get empty
+            // catch the exception
             } else {
                 this.show_current();
             }
@@ -236,7 +247,7 @@
                 }
                 self.current_vm = id;
                 self.update_current_vm();
-                self.show_current();
+                snf.router.vm_details_view(self.current_vm_instance.id);
             })
         },
 

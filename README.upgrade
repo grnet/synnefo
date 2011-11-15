@@ -4,6 +4,37 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+v0.7 -> v0.8
+NEW/UPDATED SETTINGS
+    * New config file 31-userdata.conf, containing userdata app settings
+    * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
+      Genetared SSH key bits length
+    * USERDATA_SSH_KEY_EXPONENT in 31-userdata.conf:
+      Generated SSH key exponent
+    * USERDATA_MAX_SSH_KEYS_PER_USER in 31-userdata.conf:
+      Maximum number of ssh keys a user is allowed to have
+    * UI_SUPPORT_SSH_OS_LIST, in 30-ui.conf:
+      A list of os names that support ssh public key assignment
+    * UI_OS_DEFAULT_USER_MAP, in 30-ui.conf:
+      OS/username map to identify default user name for a specific os
+    * VM_CREATE_NAME_TPL, in 30-ui.conf:
+      Template to be used for suggesting the user a default name for newly created
+      vms. {0} gets replaced by the image OS value
+    * UI_FLAVORS_DISK_TEMPLATES_INFO added in 30-ui.conf:
+      Name/description metadata for the available flavor disk templates
+    * VM_CREATE_SUGGESTED_FLAVORS in 30-ui.conf:
+      Updated flavor data to include disk_template value.
+    * GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
+      in 20-api.conf to control its value.
+
+UI
+    * synnefo.ui.userdata application has been added in INSTALLED_APPS.
+      Database migration is needed for the creation of application db tables.
+
+API
+    * A new 'disk_template' attribute has been added to Flavors.
+      A database migration is needed.
+
 
 v0.7.3 -> v0.8
 API

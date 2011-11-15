@@ -1,0 +1,9 @@
+body, html {
+}
+div.confirm_single button {
+    padding-bottom: 5px;
+}
+div.list table thead tr th {
+    border: none;
+    border-bottom: 1px solid #aaa;
+}

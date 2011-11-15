@@ -38,8 +38,12 @@
         },
 
         beforeOpen: function() {
-            this.clip = new snf.util.ClipHelper();
-            this.connect.parent().append(this.clip.cont);
+            this.$(".clipboard").empty();
+        },
+
+        beforeClose: function() {
+            this.$(".clipboard").empty();
+            try { delete this.clip; } catch (err) {};
         },
 
         handle_success: function(data) {
@@ -56,10 +60,9 @@
             if (!data.subinfo) { this.subinfo.hide() };
             
             if (data.ssh) {
-                this.clip.cont.show();
-                this.clip.setText(data.link.title);
+                var ssh_msg = data.link.title;
+                this.clip = new snf.util.ClipHelper(this.$(".clipboard"), ssh_msg);
             } else {
-                this.clip.cont.hide();
             }
         },
 

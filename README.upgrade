@@ -20,15 +20,20 @@ NEW/UPDATED SETTINGS
     * VM_CREATE_NAME_TPL, in 30-ui.conf:
       Template to be used for suggesting the user a default name for newly created
       vms. {0} gets replaced by the image OS value
+    * UI_FLAVORS_DISK_TEMPLATES_INFO added in 30-ui.conf:
+      Name/description metadata for the available flavor disk templates
+    * VM_CREATE_SUGGESTED_FLAVORS in 30-ui.conf:
+      Updated flavor data to include disk_template value.
+    * GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
+      in 20-api.conf to control its value.
 
-NEW DEPENDENCIES
-    * M2Crypto is needed for server side ssh key pair generation (tested with 0.20.1). 
+UI
+    * synnefo.ui.userdata application has been added in INSTALLED_APPS.
+      Database migration is needed for the creation of application db tables.
 
-v0.7 -> v0.8
 API
     * A new 'disk_template' attribute has been added to Flavors.
-      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
-      in 20-api.conf to control its value. A database migration is needed.
+      A database migration is needed.
 
 
 v0.6.2 -> v0.7

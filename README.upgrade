@@ -7,7 +7,8 @@ For more information, please see README.deploy.
 v0.7 -> v0.8
 NEW APPS
     * The 'synnefo.ui.userdata' application has been added in
-      settings.d/00-apps.conf.
+      settings.d/00-apps.conf. Application urls appended in ui/urls.py.
+      If no custom ROOT_URLCONF module is used, no url change is needed.
     * The new app has migrations defined.
       Use './manage.py migrate' to migrate *all* apps.
 

@@ -34,13 +34,13 @@
 
 import base64
 import binascii
-import md5
 import re
+
+from hashlib import md5
 
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
-
 from django.db.models.signals import pre_save
 
 from synnefo.db import models as synnefo_models

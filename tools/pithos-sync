@@ -36,6 +36,7 @@
 import os
 import sqlite3
 import sys
+import shutil
 
 from lib import transfer
 from lib.client import Pithos_Client, Fault
@@ -52,20 +53,76 @@ def get_container():
         return DEFAULT_CONTAINER
 
 
-SQL_CREATE_TABLE = '''CREATE TABLE IF NOT EXISTS files (
-                        path TEXT PRIMARY KEY, hash TEXT)'''
+def create_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    if not os.path.isdir(path):
+        raise RuntimeError("Cannot open '%s'" % (path,))
+
 
 client = None
+lpath = None
+trash = None
 lstate = None
 cstate = None
 rstate = None
 
+class Trash(object):
+    def __init__(self):
+        self.tpath = os.path.join(lpath, 'trash')
+        create_dir(self.tpath)
+        
+        dbpath = os.path.join(lpath, 'trash.db')
+        self.conn = sqlite3.connect(dbpath)
+        sql = '''CREATE TABLE IF NOT EXISTS files (
+                    path TEXT PRIMARY KEY, hash TEXT)'''
+        self.conn.execute(sql)
+        self.conn.commit()
+    
+    def put(self, path, hash):
+        # XXX Maintain path.
+        shutil.copy(path, basename(path))
+        sql = 'INSERT OR REPLACE INTO files VALUES (?, ?)'
+        self.conn.execute(sql, (basename(path), hash))
+        self.conn.commit()
+    
+    def search(self, hash):
+        sql = 'SELECT path FROM files WHERE hash = ?'
+        ret = self.conn.execute(sql, (hash,)).fetchone()
+        return ret[0] if ret else None
+    
+    def empty(self):
+        sql = 'DELETE FROM files'
+        self.conn.execute(sql)
+        self.conn.commit()
+        shutil.rmtree(self.tpath)
+
+
+class CurrentState(object):
+    def __init__(self, dir):
+        self.dir = dir
+    
+    def get(self, path):
+        fullpath = os.path.join(self.dir, path)
+        if os.path.exists(fullpath):
+            if os.path.isdir(fullpath):
+                return 'DIR'
+            else:
+                return merkle(fullpath)
+        else:
+            return 'DEL'
+    
+    def fullpath(self, path):
+        return os.path.join(self.dir, path)
+
 
 class LocalState(object):
     def __init__(self):
-        dbpath = os.path.expanduser('~/.psyncdb')
+        dbpath = os.path.join(lpath, 'state.db')
         self.conn = sqlite3.connect(dbpath)
-        self.conn.execute(SQL_CREATE_TABLE)
+        sql = '''CREATE TABLE IF NOT EXISTS files (
+                    path TEXT PRIMARY KEY, hash TEXT)'''
+        self.conn.execute(sql)
         self.conn.commit()
     
     def get(self, path):
@@ -77,6 +134,11 @@ class LocalState(object):
         sql = 'INSERT OR REPLACE INTO files VALUES (?, ?)'
         self.conn.execute(sql, (path, hash))
         self.conn.commit()
+
+    def search(self, hash):
+        sql = 'SELECT path FROM files WHERE hash = ?'
+        ret = self.conn.execute(sql, (hash,)).fetchone()
+        return ret[0] if ret else None
 
 
 class CurrentState(object):
@@ -113,7 +175,7 @@ class RemoteState(object):
             return meta['etag']
 
 
-def download(path, S):
+def update_local(path, S):
     fullpath = cstate.fullpath(path)
     if S == 'DEL':
         os.remove(fullpath)
@@ -122,11 +184,18 @@ def download(path, S):
             os.remove(fullpath)
         os.mkdir(fullpath)
     else:
+        # XXX Covert paths.
+        # file = lstate.search(S)
+        # if file:
+        #     shutil.copy(file, fullpath)
+        # else:
+        #     transfer.download(client, get_container(), path, fullpath)
         transfer.download(client, get_container(), path, fullpath)
+        # XXX Check either MD5 or Merkle hashes.
         assert cstate.get(path) == S
 
 
-def upload(path, S):
+def update_remote(path, S):
     fullpath = cstate.fullpath(path)
     if S == 'DEL':
         client.delete_object(get_container(), path)
@@ -154,14 +223,14 @@ def sync(path):
     if C == L:
         # No local changes
         if R != L:
-            download(path, R)
+            update_local(path, R)
             lstate.put(path, R)
         return
     
     if R == L:
         # No remote changes
         if C != L:
-            upload(path, C)
+            update_remote(path, C)
             lstate.put(path, C)
         return
     
@@ -173,7 +242,7 @@ def sync(path):
     else:
         # Conflict, try to resolve it
         resolve_conflict(path)
-        download(path, R)
+        update_local(path, R)
         lstate.put(path, R)
 
 
@@ -212,7 +281,7 @@ def walk(dir):
 
 
 def main():
-    global client, lstate, cstate, rstate
+    global client, lpath, trash, lstate, cstate, rstate
     
     if len(sys.argv) != 2:
         print 'syntax: %s <dir>' % sys.argv[0]
@@ -221,6 +290,10 @@ def main():
     dir = sys.argv[1]
     client = Pithos_Client(get_server(), get_auth(), get_user())
     
+    lpath = os.path.expanduser('~/.pithos-sync/')
+    create_dir(lpath)
+    
+    trash = Trash()
     lstate = LocalState()
     cstate = CurrentState(dir)
     rstate = RemoteState(client)

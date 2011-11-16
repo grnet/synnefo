@@ -5208,7 +5208,7 @@ table.list-machines .wave {
     display: block;
     float: left;
     margin-right: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 9px;
     padding: 9px 14px;
     border: 1px solid #aaa;
     background-image:-webkit-linear-gradient(top, #D1E7F0, #E8F4FA);
@@ -5268,9 +5268,9 @@ table.list-machines .wave {
     font-style: italic;
     display:block;
     overflow: auto;
-    min-height: 30px;
     padding-bottom: 0px;
     margin-bottom: 7px;
+    width: 100%;
 }
 
 .create-vm .flavor-options .disk_template.option .description {

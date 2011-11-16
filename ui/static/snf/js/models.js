@@ -148,10 +148,13 @@
                 // clone to avoid referenced objects
                 var params = _.clone(fetch_params);
                 updater._ajax = last_ajax;
-
+                
                 // wait for previous request to finish
-                if (last_ajax && last_ajax.readyState == 0) {
-                    return;
+                if (last_ajax && last_ajax.readyState < 4 && last_ajax.statusText != "timeout") {
+                    // opera readystate for 304 responses is 0
+                    if (!($.browser.opera && last_ajax.readyState == 0 && last_ajax.status == 304)) {
+                        return;
+                    }
                 }
 
                 last_ajax = this.fetch(params);

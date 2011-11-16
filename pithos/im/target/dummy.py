@@ -43,4 +43,4 @@ def login(request):
     if not request.user:
         return HttpResponseBadRequest('User not found')
     
-    return prepare_response(request.user, next)
+    return prepare_response(request, request.user, next)

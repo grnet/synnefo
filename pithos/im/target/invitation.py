@@ -60,4 +60,4 @@ def login(request):
                                 'Invitation',
                                 invitation.inviter.level + 1)
     next = request.GET.get('next')
-    return prepare_response(user, next, 'renew' in request.GET)
+    return prepare_response(request, user, next, 'renew' in request.GET)

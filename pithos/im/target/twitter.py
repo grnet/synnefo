@@ -115,5 +115,6 @@ def authenticated(request):
     uniq = '%s@twitter.com' % access_token['screen_name']
     realname = access_token['user_id']
     
-    return prepare_response(get_or_create_user(uniq, realname, 'Twitter', 0),
+    return prepare_response(request,
+                            get_or_create_user(uniq, realname, 'Twitter', 0),
                             request_token.get('next'))

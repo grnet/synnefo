@@ -35,6 +35,7 @@ import logging
 import datetime
 
 from urlparse import urlsplit, urlunsplit
+from urllib import quote
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -62,7 +63,7 @@ def get_or_create_user(uniq, realname, affiliation, level):
     
     return user
 
-def prepare_response(user, next='', renew=False):
+def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
        as 'X-Auth-User' and 'X-Auth-Token' headers,
        or redirect to the URL provided in 'next'
@@ -78,10 +79,16 @@ def prepare_response(user, next='', renew=False):
     if next:
         # TODO: Avoid redirect loops.
         parts = list(urlsplit(next))
-        parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
-        next = urlunsplit(parts)
+        # Do not pass on user and token if we are on the same server.
+        if request.get_host() != parts[1]:
+            parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
+            next = urlunsplit(parts)
     
     response = HttpResponse()
+    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    cookie_value = quote(user.uniq + '|' + user.auth_token)
+    response.set_cookie('_pithos2_a', value=cookie_value, expires=expire_fmt, path='/')
+
     if not next:
         response['X-Auth-User'] = user.uniq
         response['X-Auth-Token'] = user.auth_token

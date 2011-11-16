@@ -59,12 +59,12 @@ def login(request):
         return HttpResponseBadRequest('Unverified account')
     
     next = request.POST.get('next')
-    if not next:
-        return HttpResponse('')
-    if not request.user:
-        return HttpResponseRedirect(next)
+    #if not next:
+    #    return HttpResponse('')
+    #if not request.user:
+    #    return HttpResponseRedirect(next)
     
-    return prepare_response(request.user, next)
+    return prepare_response(request, user, next)
 
 def activate(request):
     token = request.GET.get('auth')

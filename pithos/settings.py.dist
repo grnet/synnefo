@@ -187,7 +187,7 @@ INVITATIONS_PER_LEVEL = {
     4   :   0
 }
 
-BASE_URL = 'http://plus.pithos.grnet.gr'
+BASE_URL = 'http://plus.pithos.grnet.gr/'
 SERVICE_NAME = 'Pithos+'
 
 # Where users should login with their invitation code

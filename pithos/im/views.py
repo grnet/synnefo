@@ -197,13 +197,13 @@ def generate_invitation_code():
             return code
 
 
-def send_invitation(inv):
-    url = settings.INVITATION_LOGIN_TARGET % inv.code
+def send_invitation(baseurl, inv):
+    url = settings.INVITATION_LOGIN_TARGET % (baseurl, inv.code, quote(baseurl))
     subject = _('Invitation to Pithos')
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
-                'baseurl': settings.BASE_URL,
+                'baseurl': baseurl,
                 'service': settings.SERVICE_NAME,
                 'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
@@ -229,7 +229,7 @@ def invite(request):
                 defaults={'code': code, 'realname': realname})
             
             try:
-                send_invitation(invitation)
+                send_invitation(request.get_host(), invitation)
                 if created:
                     inviter.invitations = max(0, inviter.invitations - 1)
                     inviter.save()
@@ -256,12 +256,15 @@ def invite(request):
             'message': message})
     return HttpResponse(html)
 
-def send_verification(user):
-    url = settings.ACTIVATION_LOGIN_TARGET % quote(user.auth_token)
+def send_verification(baseurl, user):
+    next = quote('http://%s' % baseurl)
+    url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
+                                              quote(user.auth_token),
+                                              next)
     message = render_to_string('activation.txt', {
             'user': user,
             'url': url,
-            'baseurl': settings.BASE_URL,
+            'baseurl': baseurl,
             'service': settings.SERVICE_NAME,
             'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
@@ -277,6 +280,7 @@ def local_create(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         status = 'success'
+        cookie_value = None
         if not username:
             status = 'error'
             message = 'No username provided'
@@ -305,7 +309,7 @@ def local_create(request):
                 user.level = 1
                 user.renew_token()
                 try:
-                    send_verification(user)
+                    send_verification(request.get_host(), user)
                     message = _('Verification sent to %s' % user.email)
                     user.save()
                 except (SMTPException, socket.error) as e:
@@ -316,14 +320,18 @@ def local_create(request):
         html = render_to_string('local_create.html', {
                 'status': status,
                 'message': message})
-        return HttpResponse(html)
+        response = HttpResponse(html)
+        return response
 
-def send_password(user):
-    url = settings.PASSWORD_RESET_TARGET % quote(user.auth_token)
+def send_password(baseurl, user):
+    next = quote('http://%s' % baseurl)
+    url = settings.PASSWORD_RESET_TARGET % (baseurl,
+                                            quote(user.uniq),
+                                            next)
     message = render_to_string('password.txt', {
             'user': user,
             'url': url,
-            'baseurl': settings.BASE_URL,
+            'baseurl': baseurl,
             'service': settings.SERVICE_NAME,
             'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
@@ -339,9 +347,10 @@ def reclaim_password(request):
         try:
             user = User.objects.get(uniq=username)
             try:
-                send_password(user)
+                send_password(request.get_host(), user)
                 status = 'success'
                 message = _('Password reset sent to %s' % user.email)
+                user.status = 'UNVERIFIED'
                 user.save()
             except (SMTPException, socket.error) as e:
                 status = 'error'
@@ -352,39 +361,6 @@ def reclaim_password(request):
             message = 'Username does not exist'
         
         html = render_to_string('reclaim.html', {
-                'status': status,
-                'message': message})
-        return HttpResponse(html)
-
-def reset_password(request):
-    if request.method == 'GET':
-        token = request.GET.get('auth')
-        next = request.GET.get('next')
-        kwargs = {'auth': token,
-                  'next': next}
-        if not token:
-            kwargs.update({'status': 'error',
-                           'message': 'Missing token'})
-        html = render_to_string('reset.html', kwargs)
-        return HttpResponse(html)
-    elif request.method == 'POST':
-        token = request.POST.get('auth')
-        password = request.POST.get('password')
-        url = request.POST.get('next')
-        if not token:
-            status = 'error'
-            message = 'Bad Request: missing token'
-        try:
-            user = User.objects.get(auth_token=token)
-            user.password = password
-            user.save()
-            if url:
-                return HttpResponseRedirect(url)
-        except User.DoesNotExist:
-            status = 'error'
-            message = 'Bad Request: invalid token'
-            
-        html = render_to_string('reset.html', {
                 'status': status,
                 'message': message})
         return HttpResponse(html)

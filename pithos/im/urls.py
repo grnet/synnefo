@@ -47,20 +47,21 @@ urlpatterns = patterns('pithos.im.views',
     (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
     (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
     
-    (r'^invite/?$', 'invite')
+    (r'^invite/?$', 'invite'),
+    (r'^local/create/?$', 'local_create'),
+    (r'^local/reclaim/?$', 'reclaim_password'),
+    
 )
 
-urlpatterns += patterns('',
-    (r'^login/shibboleth/?$', 'pithos.im.target.shibboleth.login'),
-    (r'^login/twitter/?$', 'pithos.im.target.twitter.login'),
-    (r'^login/twitter/authenticated/?$', 'pithos.im.target.twitter.authenticated'),
-    (r'^login/invitation/?$', 'pithos.im.target.invitation.login'),
-    (r'^login/local/$', 'pithos.im.target.local.login'),
-    (r'^login/local/activate/?$', 'pithos.im.target.local.activate'),
-    (r'^login/local/create/$', 'pithos.im.views.local_create'),
-    (r'^login/local/reclaim/$', 'pithos.im.views.reclaim_password'),
-    (r'^login/local/reset/$', 'pithos.im.views.reset_password'),
-    (r'^login/dummy/?$', 'pithos.im.target.dummy.login')
+urlpatterns += patterns('pithos.im.target',
+    (r'^login/shibboleth/?$', 'shibboleth.login'),
+    (r'^login/twitter/?$', 'twitter.login'),
+    (r'^login/twitter/authenticated/?$', 'twitter.authenticated'),
+    (r'^login/invitation/?$', 'invitation.login'),
+    (r'^local/?$', 'local.login'),
+    (r'^local/activate/?$', 'local.activate'),
+    (r'^local/reset/?$', 'local.reset_password'),
+    (r'^login/dummy/?$', 'dummy.login')
 )
 
 urlpatterns += patterns('',

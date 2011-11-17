@@ -33,9 +33,12 @@
 
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.conf import settings
+from django.template.loader import render_to_string
 
 from pithos.im.target.util import prepare_response
 from pithos.im.models import User
+
+from urllib import unquote
 
 def login(request):
     username = '%s@local' % request.POST.get('username')
@@ -59,26 +62,60 @@ def login(request):
         return HttpResponseBadRequest('Unverified account')
     
     next = request.POST.get('next')
-    #if not next:
-    #    return HttpResponse('')
-    #if not request.user:
-    #    return HttpResponseRedirect(next)
-    
     return prepare_response(request, user, next)
 
 def activate(request):
     token = request.GET.get('auth')
-    url = request.GET.get('next')
+    next = request.GET.get('next')
     try:
         user = User.objects.get(auth_token=token)
     except User.DoesNotExist:
         return HttpResponseBadRequest('No such user')
     
-    url = '%s?next=%sui' %(url, settings.BASE_URL)
     user.state = 'ACTIVE'
-    user.renew_token()
     user.save()
-    response = HttpResponse()
-    response['Location'] = url
-    response.status_code = 302
-    return response
+    return prepare_response(request, user, next, renew=True)
+
+def reset_password(request):
+    if request.method == 'GET':
+        cookie_value = unquote(request.COOKIES.get('_pithos2_a', ''))
+        if cookie_value and '|' in cookie_value:
+            token = cookie_value.split('|', 1)[1]
+        else:
+            token = request.GET.get('auth')
+        next = request.GET.get('next')
+        username = request.GET.get('username')
+        kwargs = {'auth': token,
+                  'next': next,
+                  'username' : username}
+        if not token:
+            kwargs.update({'status': 'error',
+                           'message': 'Missing token'})
+        html = render_to_string('reset.html', kwargs)
+        return HttpResponse(html)
+    elif request.method == 'POST':
+        token = request.POST.get('auth')
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        next = request.POST.get('next')
+        if not token:
+            status = 'error'
+            message = 'Bad Request: missing token'
+        try:
+            user = User.objects.get(auth_token=token)
+            if username != user.uniq:
+                status = 'error'
+                message = 'Bad Request: username mismatch'
+            else:
+                user.password = password
+                user.status = 'NORMAL'
+                user.save()
+                return prepare_response(request, user, next, renew=True)
+        except User.DoesNotExist:
+            status = 'error'
+            message = 'Bad Request: invalid token'
+            
+        html = render_to_string('reset.html', {
+                'status': status,
+                'message': message})
+        return HttpResponse(html)

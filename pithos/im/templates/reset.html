@@ -5,7 +5,7 @@
 {% endblock title%}
 
 {% block body %}
-<form action="{% url pithos.im.views.reset_password %}" method="post">
+<form action="{% url pithos.im.target.local.reset_password %}" method="post">
   <div class="clearfix">
     <label for="user-uniq">password</label>
     <div class="input">
@@ -16,6 +16,7 @@
   <div class="actions">
     <input type="hidden" name="auth" value="{{ auth }}">
     <input type="hidden" name="next" value="{{ next }}">
+    <input type="hidden" name="username" value="{{ username }}">
     <button type="submit" class="btn primary">Reset</button>
   </div>
 </form>

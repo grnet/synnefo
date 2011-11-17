@@ -169,8 +169,8 @@ DEFAULT_VERSIONING = 'auto'
 ADMIN_PAGE_LIMIT = 100
 
 # Authenticate via Twitter.
-TWITTER_KEY = ''
-TWITTER_SECRET = ''
+TWITTER_KEY = 'spapagian'
+TWITTER_SECRET = 'US3ojWXBer'
 
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'
@@ -187,23 +187,22 @@ INVITATIONS_PER_LEVEL = {
     4   :   0
 }
 
-BASE_URL = 'http://plus.pithos.grnet.gr/'
 SERVICE_NAME = 'Pithos+'
 
 # Where users should login with their invitation code
-INVITATION_LOGIN_TARGET = BASE_URL + 'im/login/invitation' \
+INVITATION_LOGIN_TARGET = 'http://%s/im/login/invitation' \
                             '?code=%d' \
-                            '&next=' + BASE_URL + 'ui'
+                            '&next=%s'
 
 # Where users should activate their local account
-ACTIVATION_LOGIN_TARGET = BASE_URL + 'im/login/local/activate/' \
+ACTIVATION_LOGIN_TARGET = 'http://%s/im/local/activate/' \
                             '?auth=%s' \
-                            '&next=' + BASE_URL + 'im/login'
+                            '&next=%s'
 
 # Where users should reset their local password
-PASSWORD_RESET_TARGET = BASE_URL + 'im/login/local/reset/' \
-                            '?auth=%s' \
-                            '&next=' + BASE_URL + 'im/login?next=' + BASE_URL + 'ui'
+PASSWORD_RESET_TARGET = 'http://%s/im/local/reset/' \
+                            '?username=%s' \
+                            '&next=%s'
 
 # The server is behind a proy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False

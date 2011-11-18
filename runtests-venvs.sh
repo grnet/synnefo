@@ -37,9 +37,23 @@
 
 set -e
 
-echo "Running Django tests..." >&2
-python synnefo/manage.py test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings_test
+virtualenv --no-site-packages -ppython2.7 env
+source env/bin/activate
+pip install -r requirements.pip
+python setup.py install
+cd env
+echo "running django tests..." >&2
+synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=settings_test
+cd ..
+deactivate
 
-echo "Running snf-ganeti-tools tests..." >&2
-PYTHONPATH=snf-ganeti-tools:$PYTHONPATH ./snf-ganeti-tools/test/synnefo.ganeti_unittest.py
+virtualenv --no-site-packages -ppython2.7 env
+source env/bin/activate
+pip install -r requirements.pip
+python setup.py install
+cd env
+echo "running django tests..." >&2
+synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=settings_test
+cd ..
+deactivate
 

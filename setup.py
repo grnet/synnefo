@@ -1,0 +1,78 @@
+import os
+import sys
+
+from setuptools import setup, find_packages
+
+here = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+
+# Package info
+VERSION = "0.1"
+README = open(os.path.join(here, 'README')).read()
+CHANGES = open(os.path.join(here, 'Changelog')).read()
+SHORT_DESCRIPTION = "Package short description"
+
+# Package meta
+CLASSIFIERS = []
+
+# Package requirements
+INSTALL_REQUIRES = [
+    'Django==1.2.4',
+    'simplejson==2.1.3',
+    'pycurl==7.19.0',
+    'python-dateutil==1.4.1',
+    'IPy==0.75',
+    'south==0.7.1',
+    'pycrypto==2.1.0',
+    'amqplib==0.6.1',
+    'python-daemon==1.5.5'
+]
+
+EXTRAS_REQUIRES = {
+        'DISPATCHER': ['amqplib==0.6.1', 'python-daemon==1.5.5',],
+        'INVITATIONS': ['pycrypto==2.1.0'],
+        'SSH_KEYS': ['pycrypto==2.1.0'],
+        'BURNIN': ['unittest2==0.5.1', 'paramiko==1.7.6', 'python-prctl==1.3.0']
+}
+
+TESTS_REQUIRES = [
+]
+
+PACKAGE_DATA = {
+    '': ['migrations/*.py'],
+    'synnefo': ['settings.d/*.conf'],
+}
+
+dist = setup(
+    name = 'synnefo',
+    version = VERSION,
+    license = "BSD",
+    url = 'http://code.grnet.gr/',
+    description = SHORT_DESCRIPTION,
+    long_description=README + '\n\n' +  CHANGES,
+    classifiers = CLASSIFIERS,
+
+    author = "Package author",
+    author_email = "author@grnet.gr",
+    maintainer = "Package maintainer",
+    maintainer_email = "maintainer@grnet.gr",
+
+    packages = find_packages(),
+    include_package_data = True,
+    package_data = PACKAGE_DATA,
+    zip_safe = False,
+
+    install_requires = INSTALL_REQUIRES,
+    extras_require = EXTRAS_REQUIRES,
+    tests_require = TESTS_REQUIRES,
+
+    entry_points = {
+     'console_scripts': [
+         'synnefo-manage = synnefo.manage:main',
+         'synnefo-dispatcher = synnefo.logic.dispatcher:main',
+         'synnefo-burnin = synnefo.tools.burnin:main',
+         'synnefo-admin = synnefo.tools.admin:main',
+         'synnefo-cloud = synnefo.tools.cloud:main',
+         ],
+      },
+    )
+

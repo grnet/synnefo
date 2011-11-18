@@ -37,10 +37,12 @@ import os
 import sqlite3
 import sys
 import shutil
+import pickle
+import binascii
 
 from lib import transfer
 from lib.client import Pithos_Client, Fault
-from lib.hashmap import merkle
+from lib.hashmap import HashMap, merkle
 from lib.util import get_user, get_auth, get_server
 
 
@@ -60,19 +62,27 @@ def create_dir(path):
         raise RuntimeError("Cannot open '%s'" % (path,))
 
 
+def copy_file(src, dst):
+    path = os.dirname(dst)
+    create_dir(path)
+    shutil.copyfile(src, dst)
+
+
 client = None
-lpath = None
+conf = None
+confdir = None
 trash = None
 lstate = None
 cstate = None
 rstate = None
 
+
 class Trash(object):
     def __init__(self):
-        self.tpath = os.path.join(lpath, 'trash')
-        create_dir(self.tpath)
+        self.path = os.path.join(confdir, 'trash')
+        create_dir(self.path)
         
-        dbpath = os.path.join(lpath, 'trash.db')
+        dbpath = os.path.join(confdir, 'trash.db')
         self.conn = sqlite3.connect(dbpath)
         sql = '''CREATE TABLE IF NOT EXISTS files (
                     path TEXT PRIMARY KEY, hash TEXT)'''
@@ -80,10 +90,9 @@ class Trash(object):
         self.conn.commit()
     
     def put(self, path, hash):
-        # XXX Maintain path.
-        shutil.copy(path, basename(path))
+        copy_file(path, os.path.join(self.path, path))
         sql = 'INSERT OR REPLACE INTO files VALUES (?, ?)'
-        self.conn.execute(sql, (basename(path), hash))
+        self.conn.execute(sql, (path, hash))
         self.conn.commit()
     
     def search(self, hash):
@@ -95,30 +104,17 @@ class Trash(object):
         sql = 'DELETE FROM files'
         self.conn.execute(sql)
         self.conn.commit()
-        shutil.rmtree(self.tpath)
-
-
-class CurrentState(object):
-    def __init__(self, dir):
-        self.dir = dir
-    
-    def get(self, path):
-        fullpath = os.path.join(self.dir, path)
-        if os.path.exists(fullpath):
-            if os.path.isdir(fullpath):
-                return 'DIR'
-            else:
-                return merkle(fullpath)
-        else:
-            return 'DEL'
+        shutil.rmtree(self.path)
     
     def fullpath(self, path):
-        return os.path.join(self.dir, path)
+        return os.path.join(self.path, path)
 
 
 class LocalState(object):
-    def __init__(self):
-        dbpath = os.path.join(lpath, 'state.db')
+    def __init__(self, path):
+        self.path = path
+        
+        dbpath = os.path.join(confdir, 'state.db')
         self.conn = sqlite3.connect(dbpath)
         sql = '''CREATE TABLE IF NOT EXISTS files (
                     path TEXT PRIMARY KEY, hash TEXT)'''
@@ -139,24 +135,27 @@ class LocalState(object):
         sql = 'SELECT path FROM files WHERE hash = ?'
         ret = self.conn.execute(sql, (hash,)).fetchone()
         return ret[0] if ret else None
+    
+    def fullpath(self, path):
+        return os.path.join(self.path, path)
 
 
 class CurrentState(object):
-    def __init__(self, dir):
-        self.dir = dir
+    def __init__(self, path):
+        self.path = path
     
     def get(self, path):
-        fullpath = os.path.join(self.dir, path)
+        fullpath = os.path.join(self.path, path)
         if os.path.exists(fullpath):
             if os.path.isdir(fullpath):
                 return 'DIR'
             else:
-                return merkle(fullpath)
+                return merkle(fullpath, conf['blocksize'], conf['blockhash'])
         else:
             return 'DEL'
     
     def fullpath(self, path):
-        return os.path.join(self.dir, path)
+        return os.path.join(self.path, path)
 
 
 class RemoteState(object):
@@ -172,7 +171,10 @@ class RemoteState(object):
         if meta.get('content-type', None) == 'application/directory':
             return 'DIR'
         else:
-            return meta['etag']
+            data = client.retrieve_object(self.container, path, format='json')
+            hashmap = HashMap(conf['blocksize'], conf['blockhash'])
+            hashmap += [binascii.unhexlify(x) for x in data['hashes']]
+            return binascii.hexlify(hashmap.hash())
 
 
 def update_local(path, S):
@@ -184,14 +186,18 @@ def update_local(path, S):
             os.remove(fullpath)
         os.mkdir(fullpath)
     else:
-        # XXX Covert paths.
-        # file = lstate.search(S)
-        # if file:
-        #     shutil.copy(file, fullpath)
-        # else:
-        #     transfer.download(client, get_container(), path, fullpath)
-        transfer.download(client, get_container(), path, fullpath)
-        # XXX Check either MD5 or Merkle hashes.
+        # First, search for local copy
+        file = lstate.search(S)
+        if file:
+            copy_file(lstate.fullpath(file), fullpath)
+        else:
+            # Search for copy in trash
+            file = trash.search(S)
+            if file:
+                copy_file(trash.fullpath(file), fullpath)
+            else:
+                # Download
+                transfer.download(client, get_container(), path, fullpath)
         assert cstate.get(path) == S
 
 
@@ -281,7 +287,7 @@ def walk(dir):
 
 
 def main():
-    global client, lpath, trash, lstate, cstate, rstate
+    global client, conf, confdir, trash, lstate, cstate, rstate
     
     if len(sys.argv) != 2:
         print 'syntax: %s <dir>' % sys.argv[0]
@@ -290,17 +296,41 @@ def main():
     dir = sys.argv[1]
     client = Pithos_Client(get_server(), get_auth(), get_user())
     
-    lpath = os.path.expanduser('~/.pithos-sync/')
-    create_dir(lpath)
+    container = get_container()
+    try:
+        meta = client.retrieve_container_metadata(container)
+    except Fault:
+        raise RuntimeError("Cannot open container '%s'" % (container,))
+    
+    conf = {'local': dir,
+            'remote': container,
+            'blocksize': int(meta['x-container-block-size']),
+            'blockhash': meta['x-container-block-hash']}
+    confdir = os.path.expanduser('~/.pithos-sync/')
+    
+    conffile = os.path.join(confdir, 'config')
+    if os.path.isfile(conffile):
+        try:
+            if (conf != pickle.loads(open(conffile, 'rb').read())):
+                raise ValueError
+        except:
+            shutil.rmtree(confdir)
+    create_dir(confdir)
     
     trash = Trash()
-    lstate = LocalState()
+    lstate = LocalState(dir)
     cstate = CurrentState(dir)
     rstate = RemoteState(client)
     
     for path in walk(dir):
         print 'Syncing', path
         sync(path)
+    
+    f = open(conffile, 'wb')
+    f.write(pickle.dumps(conf))
+    f.close()
+    
+    trash.empty()
 
 
 if __name__ == '__main__':

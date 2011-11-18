@@ -169,8 +169,8 @@ DEFAULT_VERSIONING = 'auto'
 ADMIN_PAGE_LIMIT = 100
 
 # Authenticate via Twitter.
-TWITTER_KEY = 'spapagian'
-TWITTER_SECRET = 'US3ojWXBer'
+TWITTER_KEY = ''
+TWITTER_SECRET = ''
 
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = 'Pithos <no-reply@grnet.gr>'

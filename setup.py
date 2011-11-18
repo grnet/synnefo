@@ -1,15 +1,17 @@
 import os
-import sys
 
 from setuptools import setup, find_packages
 
-here = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 # Package info
-VERSION = "0.1"
-README = open(os.path.join(here, 'README')).read()
-CHANGES = open(os.path.join(here, 'Changelog')).read()
-SHORT_DESCRIPTION = "Package short description"
+VERSION = '0.1'
+README = open(os.path.join(HERE, 'README')).read()
+CHANGES = open(os.path.join(HERE, 'Changelog')).read()
+SHORT_DESCRIPTION = 'Package short description'
+
+PACKAGES_ROOT = '.'
+PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
 
 # Package meta
 CLASSIFIERS = []
@@ -38,25 +40,29 @@ TESTS_REQUIRES = [
 ]
 
 PACKAGE_DATA = {
-    '': ['migrations/*.py', 'fixtures/*.json', 'fixtures/*.xml'],
-    'synnefo': ['settings.d/*.conf'],
+    '': ['templates/*.html', 'fixtures/*.json',
+         'templates/*.xml', 'templates/partials/*.html',
+         'templates/userdata/*.html'],
+
+    'synnefo': ['settings.d/*.conf']
 }
 
-dist = setup(
+setup(
     name = 'synnefo',
     version = VERSION,
-    license = "BSD",
+    license = 'BSD',
     url = 'http://code.grnet.gr/',
     description = SHORT_DESCRIPTION,
     long_description=README + '\n\n' +  CHANGES,
     classifiers = CLASSIFIERS,
 
-    author = "Package author",
-    author_email = "author@grnet.gr",
-    maintainer = "Package maintainer",
-    maintainer_email = "maintainer@grnet.gr",
+    author = 'Package author',
+    author_email = 'author@grnet.gr',
+    maintainer = 'Package maintainer',
+    maintainer_email = 'maintainer@grnet.gr',
 
-    packages = find_packages(),
+    packages = PACKAGES,
+    package_dir= {'': PACKAGES_ROOT},
     include_package_data = True,
     package_data = PACKAGE_DATA,
     zip_safe = False,

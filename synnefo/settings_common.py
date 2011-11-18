@@ -34,14 +34,9 @@
 import os.path
 import glob
 
-from synnefo.settings_common import *
-
-SYNNEFO_DIST_SETTINGS_DIR = '/etc/synnefo'
-
-# extend common settings with settings set in /etc/synnefo dir
-conffiles = glob.glob(os.path.join(SYNNEFO_DIST_SETTINGS_DIR, '*.conf'))
+conffiles = glob.glob(os.path.join(os.path.dirname(__file__),
+                      'settings.d', '*.conf'))
 conffiles.sort()
 for f in conffiles:
     execfile(os.path.abspath(f))
-
 

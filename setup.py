@@ -38,7 +38,7 @@ TESTS_REQUIRES = [
 ]
 
 PACKAGE_DATA = {
-    '': ['migrations/*.py'],
+    '': ['migrations/*.py', 'fixtures/*.json', 'fixtures/*.xml'],
     'synnefo': ['settings.d/*.conf'],
 }
 

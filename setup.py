@@ -74,7 +74,7 @@ setup(
     entry_points = {
      'console_scripts': [
          'synnefo-manage = synnefo.manage:main',
-         'synnefo-dispatcher = synnefo.logic.dispatcher:main',
+         'synnefo-dispatcher = synnefo.logic.dispatcher:scriptmain',
          'synnefo-burnin = synnefo.tools.burnin:main',
          'synnefo-admin = synnefo.tools.admin:main',
          'synnefo-cloud = synnefo.tools.cloud:main',

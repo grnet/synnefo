@@ -440,17 +440,17 @@ def main():
     if opts.debug:
         debug_mode()
         return
-    
+
     files_preserve = []
     for handler in log.handlers:
         stream = getattr(handler, 'stream')
         if stream and hasattr(stream, 'fileno'):
             files_preserve.append(handler.stream)
-    
+
     daemon_context = daemon.DaemonContext(
         files_preserve=files_preserve,
         umask=022)
-    
+
     daemon_context.open()
 
     # Catch every exception, make sure it gets logged properly
@@ -461,8 +461,11 @@ def main():
         raise
 
 
-if __name__ == "__main__":
+def scriptmain():
     dictConfig(settings.DISPATCHER_LOGGING)
     sys.exit(main())
+
+if __name__ == "__main__":
+    scriptmain()
 
 # vim: set sta sts=4 shiftwidth=4 sw=4 et ai :

@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,21 +25,60 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, include
+import datetime
+
+from functools import wraps
+
+from django.http import HttpResponse, HttpResponseBadRequest
+
+from synnefo.db.models import SynnefoUser
+from synnefo.plankton.backend import BackendWrapper, BackendException
 
 
-urlpatterns = patterns('',
-    (r'^', include('synnefo.ui.urls')),
-    (r'^admin', include('synnefo.admin.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^helpdesk/?', include('synnefo.helpdesk.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^invitations/?', include('synnefo.invitations.urls')),
-    (r'^lang/$', 'synnefo.ui.i18n.set_language')
-)
+def get_user_from_token(token):
+    try:
+        user = SynnefoUser.objects.get(auth_token=token)
+    except SynnefoUser.DoesNotExist:
+        return None
+    
+    expires = user.auth_token_expires
+    if not expires or expires < datetime.datetime.now():
+        return None
+    
+    return user
+
+
+def get_request_user(request):
+    user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
+    if not user:
+        user = get_user_from_token(request.COOKIES.get('X-Auth-Token'))
+    return user
+
+
+def plankton_method(method):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if request.method != method:
+                raise HttpResponse(status=405)
+            
+            user = get_request_user(request)
+            if not user:
+                return HttpResponse(status=401)
+            request.user = user
+            request.backend = BackendWrapper(user.uniq)
+            try:
+                return func(request, *args, **kwargs)
+            except (AssertionError, BackendException) as e:
+                message = e.args[0] if e.args else ''
+                return HttpResponseBadRequest(message)
+            finally:
+                request.backend.close()
+        return wrapper
+    return decorator

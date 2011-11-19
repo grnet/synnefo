@@ -56,26 +56,26 @@ class Store(object):
              'namelen': self.blocker.hashlen}
         self.mapper = Mapper(**p)
     
-    def map_get(hash):
+    def map_get(self, hash):
         return self.mapper.map_retr(hash)
     
-    def map_put(hash, map):
+    def map_put(self, hash, map):
         self.mapper.map_stor(hash, map)
     
-    def block_get(hash):
+    def block_get(self, hash):
         blocks = self.blocker.block_retr((hash,))
         if not blocks:
             return None
         return blocks[0]
     
-    def block_put(data):
+    def block_put(self, data):
         hashes, absent = self.blocker.block_stor((data,))
         return hashes[0]
     
-    def block_update(hash, offset, data):
+    def block_update(self, hash, offset, data):
         h, e = self.blocker.block_delta(hash, ((offset, data),))
         return h
     
-    def block_search(map):
+    def block_search(self, map):
         return self.blocker.block_ping(map)
 

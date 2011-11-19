@@ -123,18 +123,10 @@ class ModularBackend(BaseBackend):
         __import__(block_module)
         self.block_module = sys.modules[block_module]
         
-        if block_path and not os.path.exists(block_path):
-            os.makedirs(block_path)
-        if not os.path.isdir(block_path):
-            raise RuntimeError("Cannot open path '%s'" % (block_path,))
-        
-        params = {'blocksize': self.block_size,
-                  'blockpath': os.path.join(block_path + '/blocks'),
-                  'hashtype': self.hash_algorithm}
-        self.blocker = self.block_module.Blocker(**params)
-        params = {'mappath': os.path.join(block_path + '/maps'),
-                  'namelen': self.blocker.hashlen}
-        self.mapper = self.block_module.Mapper(**params)
+        params = {'path': block_path,
+                  'block_size': self.block_size,
+                  'hash_algorithm': self.hash_algorithm}
+        self.store = self.block_module.Store(**params)
     
     def close(self):
         self.wrapper.close()
@@ -525,7 +517,7 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
-        hashmap = self.mapper.map_retr(binascii.unhexlify(props[self.HASH]))
+        hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
     def _update_object_hash(self, user, account, container, name, size, hash, meta={}, replace_meta=False, permissions=None):
@@ -567,7 +559,7 @@ class ModularBackend(BaseBackend):
             hashmap = [self.put_block('')]
         map = HashMap(self.block_size, self.hash_algorithm)
         map.extend([binascii.unhexlify(x) for x in hashmap])
-        missing = self.blocker.block_ping(map)
+        missing = self.store.block_search(map)
         if missing:
             ie = IndexError()
             ie.data = [binascii.hexlify(x) for x in missing]
@@ -575,7 +567,7 @@ class ModularBackend(BaseBackend):
         
         hash = map.hash()
         dest_version_id = self._update_object_hash(user, account, container, name, size, binascii.hexlify(hash), meta, replace_meta, permissions)
-        self.mapper.map_stor(hash, map)
+        self.store.map_put(hash, map)
         return dest_version_id
     
     def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
@@ -660,18 +652,17 @@ class ModularBackend(BaseBackend):
         """Return a block's data."""
         
         logger.debug("get_block: %s", hash)
-        blocks = self.blocker.block_retr((binascii.unhexlify(hash),))
-        if not blocks:
+        block = self.store.block_get(binascii.unhexlify(hash))
+        if not block:
             raise NameError('Block does not exist')
-        return blocks[0]
+        return block
     
     @backend_method(autocommit=0)
     def put_block(self, data):
         """Store a block and return the hash."""
         
         logger.debug("put_block: %s", len(data))
-        hashes, absent = self.blocker.block_stor((data,))
-        return binascii.hexlify(hashes[0])
+        return binascii.hexlify(self.store.block_put(data))
     
     @backend_method(autocommit=0)
     def update_block(self, hash, data, offset=0):
@@ -680,7 +671,7 @@ class ModularBackend(BaseBackend):
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
-        h, e = self.blocker.block_delta(binascii.unhexlify(hash), ((offset, data),))
+        h = self.store.block_update(binascii.unhexlify(hash), offset, data)
         return binascii.hexlify(h)
     
     # Path functions.

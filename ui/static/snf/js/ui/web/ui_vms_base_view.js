@@ -343,13 +343,11 @@
 
         // update the actions layout, depending on the selected actions
         update_layout: function() {
-            try {
-                // it doesn't seem to work without this
-                // some serious debugging is needed to 
-                // find out what is going on
+
+            if (!this.vm_handlers_initialized) {
                 this.vm = storage.vms.get(this.vm.id);
                 this.init_vm_handlers();
-            } catch (err) { console.error(err); return }
+            }
 
             if (!this.vm) { return }
             
@@ -401,7 +399,7 @@
                 
                 this.view.hide_indicator(this.vm);
             }
-            
+                
             // update action link styles and shit
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
@@ -421,7 +419,6 @@
                     this.action(action).addClass("disabled");
                     this.action_confirm(action).hide();
                 }
-
             }, this);
         },
         
@@ -429,10 +426,12 @@
             try {
                 this.vm.unbind("action:fail", this.update_layout)
                 this.vm.unbind("action:fail:reset", this.update_layout)
-            } catch (err) {};
-
+            } catch (err) { console.log("Error")};
+            
             this.vm.bind("action:fail", this.update_layout)
             this.vm.bind("action:fail:reset", this.update_layout)
+
+            this.vm_handlers_initialized = true;
         },
         
         set_hover_handlers: function() {

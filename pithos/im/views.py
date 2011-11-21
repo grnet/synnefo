@@ -229,7 +229,7 @@ def invite(request):
                 defaults={'code': code, 'realname': realname})
             
             try:
-                send_invitation(request.get_host(), invitation)
+                send_invitation(request.build_absolute_uri('/').rstrip('/'), invitation)
                 if created:
                     inviter.invitations = max(0, inviter.invitations - 1)
                     inviter.save()
@@ -257,10 +257,9 @@ def invite(request):
     return HttpResponse(html)
 
 def send_verification(baseurl, user):
-    next = quote('http://%s' % baseurl)
     url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
                                               quote(user.auth_token),
-                                              next)
+                                              quote(baseurl))
     message = render_to_string('activation.txt', {
             'user': user,
             'url': url,
@@ -309,7 +308,7 @@ def local_create(request):
                 user.level = 1
                 user.renew_token()
                 try:
-                    send_verification(request.get_host(), user)
+                    send_verification(request.build_absolute_uri('/').rstrip('/'), user)
                     message = _('Verification sent to %s' % user.email)
                     user.save()
                 except (SMTPException, socket.error) as e:
@@ -324,10 +323,9 @@ def local_create(request):
         return response
 
 def send_password(baseurl, user):
-    next = quote('http://%s' % baseurl)
     url = settings.PASSWORD_RESET_TARGET % (baseurl,
                                             quote(user.uniq),
-                                            next)
+                                            quote(baseurl))
     message = render_to_string('password.txt', {
             'user': user,
             'url': url,
@@ -347,7 +345,7 @@ def reclaim_password(request):
         try:
             user = User.objects.get(uniq=username)
             try:
-                send_password(request.get_host(), user)
+                send_password(request.build_absolute_uri('/').rstrip('/'), user)
                 status = 'success'
                 message = _('Password reset sent to %s' % user.email)
                 user.status = 'UNVERIFIED'

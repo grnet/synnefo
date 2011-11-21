@@ -228,7 +228,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the serials of versions deleted.
+           the hashes of versions deleted.
            Clears out nodes with no remaining versions.
         """
         
@@ -255,7 +255,7 @@ class Node(DBWorker):
              "and cluster = ? "
              "and mtime <= ?")
         execute(q, args)
-        serials = [r[SERIAL] for r in self.fetchall()]
+        hashes = [r[HASH] for r in self.fetchall()]
         q = ("delete from versions "
              "where node in (select node "
                             "from nodes "
@@ -270,12 +270,12 @@ class Node(DBWorker):
                                    "where node = n.node) = 0 "
                             "and parent = ?)")
         execute(q, (parent,))
-        return serials
+        return hashes
     
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
            node and cluster, and return
-           the serials of versions deleted.
+           the hashes of versions deleted.
            Clears out the node if it has no remaining versions.
         """
         
@@ -297,7 +297,7 @@ class Node(DBWorker):
              "and cluster = ? "
              "and mtime <= ?")
         execute(q, args)
-        serials = [r[SERIAL] for r in self.fetchall()]
+        hashes = [r[HASH] for r in self.fetchall()]
         q = ("delete from versions "
              "where node = ? "
              "and cluster = ? "
@@ -310,7 +310,7 @@ class Node(DBWorker):
                                    "where node = n.node) = 0 "
                             "and node = ?)")
         execute(q, (node,))
-        return serials
+        return hashes
     
     def node_remove(self, node):
         """Remove the node specified.

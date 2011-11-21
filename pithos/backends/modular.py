@@ -376,13 +376,17 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_container(account, container)
         
         if until is not None:
-            self.node.node_purge_children(node, until, CLUSTER_HISTORY)
+            hashes = self.node.node_purge_children(node, until, CLUSTER_HISTORY)
+            for h in hashes:
+                self.store.map_delete(h)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             return
         
         if self._get_statistics(node)[0] > 0:
             raise IndexError('Container is not empty')
-        self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
+        hashes = self.node.node_purge_children(node, until, CLUSTER_HISTORY)
+        for h in hashes:
+            self.store.map_delete(h)
         self.node.node_purge_children(node, inf, CLUSTER_DELETED)
         self.node.node_remove(node)
     
@@ -615,8 +619,10 @@ class ModularBackend(BaseBackend):
             node = self.node.node_lookup(path)
             if node is None:
                 return
-            self.node.node_purge(node, until, CLUSTER_NORMAL)
-            self.node.node_purge(node, until, CLUSTER_HISTORY)
+            hashes = self.node.node_purge(node, until, CLUSTER_NORMAL)
+            hashes += self.node.node_purge(node, until, CLUSTER_HISTORY)
+            for h in hashes:
+                self.store.map_delete(h)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
             try:
                 props = self._get_version(node)

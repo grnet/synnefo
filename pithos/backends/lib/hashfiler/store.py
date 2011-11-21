@@ -56,11 +56,14 @@ class Store(object):
              'namelen': self.blocker.hashlen}
         self.mapper = Mapper(**p)
     
-    def map_get(self, hash):
-        return self.mapper.map_retr(hash)
+    def map_get(self, name):
+        return self.mapper.map_retr(name)
     
-    def map_put(self, hash, map):
-        self.mapper.map_stor(hash, map)
+    def map_put(self, name, map):
+        self.mapper.map_stor(name, map)
+    
+    def map_delete(self, name):
+        pass
     
     def block_get(self, hash):
         blocks = self.blocker.block_retr((hash,))

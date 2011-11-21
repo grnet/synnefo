@@ -248,14 +248,14 @@ class Node(DBWorker):
         self.statistics_update(parent, -nr, -size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
         
-        q = ("select serial from versions "
+        q = ("select hash from versions "
              "where node in (select node "
                             "from nodes "
                             "where parent = ?) "
              "and cluster = ? "
              "and mtime <= ?")
         execute(q, args)
-        hashes = [r[HASH] for r in self.fetchall()]
+        hashes = [r[0] for r in self.fetchall()]
         q = ("delete from versions "
              "where node in (select node "
                             "from nodes "
@@ -292,12 +292,12 @@ class Node(DBWorker):
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
         
-        q = ("select serial from versions "
+        q = ("select hash from versions "
              "where node = ? "
              "and cluster = ? "
              "and mtime <= ?")
         execute(q, args)
-        hashes = [r[HASH] for r in self.fetchall()]
+        hashes = [r[0] for r in self.fetchall()]
         q = ("delete from versions "
              "where node = ? "
              "and cluster = ? "

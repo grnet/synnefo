@@ -316,6 +316,8 @@ class BaseBackend(object):
             
             'bytes': The total data size
             
+            'hash': The hashmap hash
+            
             'modified': Last modification timestamp (overall)
             
             'modified_by': The user that committed the object (version requested)

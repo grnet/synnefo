@@ -1,1 +1,10 @@
-Upgrade notes.
+UPGRADE
+=======
+
+0.7.9 -> 0.7.10
+---------------
+* Update settings.py (BACKEND*, SERVICE_NAME, *_EMAIL, *_TARGET)
+* Update 'attributes' table in mysql:
+    
+	mysql> update attributes set `key`='ETag' where `key`='hash';
+

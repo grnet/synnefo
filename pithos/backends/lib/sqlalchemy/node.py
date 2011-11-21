@@ -269,7 +269,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the serials of versions deleted.
+           the hashes of versions deleted.
            Clears out nodes with no remaining versions.
         """
         #update statistics
@@ -292,10 +292,10 @@ class Node(DBWorker):
         self.statistics_update(parent, -nr, size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, size, mtime, cluster)
         
-        s = select([self.versions.c.serial])
+        s = select([self.versions.c.hash])
         s = s.where(where_clause)
         r = self.conn.execute(s)
-        serials = [row[SERIAL] for row in r.fetchall()]
+        hashes = [row[0] for row in r.fetchall()]
         r.close()
         
         #delete versions
@@ -314,12 +314,12 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
         
-        return serials
+        return hashes
     
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
            node and cluster, and return
-           the serials of versions deleted.
+           the hashes of versions deleted.
            Clears out the node if it has no remaining versions.
         """
         
@@ -340,10 +340,10 @@ class Node(DBWorker):
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
         
-        s = select([self.versions.c.serial])
+        s = select([self.versions.c.hash])
         s = s.where(where_clause)
         r = self.conn.execute(s)
-        serials = [r[SERIAL] for r in r.fetchall()]
+        hashes = [r[0] for r in r.fetchall()]
         r.close()
         
         #delete versions
@@ -362,7 +362,7 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
         self.conn.execute(s).close()
         
-        return serials
+        return hashes
     
     def node_remove(self, node):
         """Remove the node specified.

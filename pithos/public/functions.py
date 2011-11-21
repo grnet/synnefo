@@ -71,8 +71,8 @@ def object_meta(request, v_account, v_container, v_object):
         raise ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
     
-    response = HttpResponse(status=204)
-    put_object_meta(response, meta, True)
+    response = HttpResponse(status=200)
+    put_object_headers(response, meta, True)
     return response
 
 @api_method('GET', user_required=False)
@@ -103,7 +103,7 @@ def object_read(request, v_account, v_container, v_object):
         validate_matching_preconditions(request, meta)
     except NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['hash']
+        response['ETag'] = meta['ETag']
         return response
     
     sizes = []

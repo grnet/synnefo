@@ -31,7 +31,54 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from store import Store
+import os
 
-__all__ = ["Store"]
+from blocker import Blocker
+from mapper import Mapper
+
+class Store(object):
+    """Store.
+       Required contstructor parameters: path, block_size, hash_algorithm.
+    """
+    
+    def __init__(self, **params):
+        path = params['path']
+        if path and not os.path.exists(path):
+            os.makedirs(path)
+        if not os.path.isdir(path):
+            raise RuntimeError("Cannot open path '%s'" % (path,))
+        
+        p = {'blocksize': params['block_size'],
+             'blockpath': os.path.join(path + '/blocks'),
+             'hashtype': params['hash_algorithm']}
+        self.blocker = Blocker(**p)
+        p = {'mappath': os.path.join(path + '/maps'),
+             'namelen': self.blocker.hashlen}
+        self.mapper = Mapper(**p)
+    
+    def map_get(self, name):
+        return self.mapper.map_retr(name)
+    
+    def map_put(self, name, map):
+        self.mapper.map_stor(name, map)
+    
+    def map_delete(self, name):
+        pass
+    
+    def block_get(self, hash):
+        blocks = self.blocker.block_retr((hash,))
+        if not blocks:
+            return None
+        return blocks[0]
+    
+    def block_put(self, data):
+        hashes, absent = self.blocker.block_stor((data,))
+        return hashes[0]
+    
+    def block_update(self, hash, offset, data):
+        h, e = self.blocker.block_delta(hash, ((offset, data),))
+        return h
+    
+    def block_search(self, map):
+        return self.blocker.block_ping(map)
 

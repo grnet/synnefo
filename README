@@ -5,11 +5,11 @@ This is the top-level documentation file for the
 Synnefo cloud management software.
 
 Consult:
-  * README.develop: for information on how to setup a development environment
-  * README.deploy:  for information on how to deploy the application
-  * README.ci:      for information on how to setup a Jenkins-based
-                   continuous integration system
-  * README.i18n:    for information on application internationalization
+  * docs/develop.rst: for information on how to setup a development environment
+  * docs/deploy.rst:  for information on how to deploy the application
+  * docs/ci.rst:      for information on how to setup a Jenkins-based
+                      continuous integration system
+  * docs/i18n.rst:    for information on application internationalization
 
 
 Synnefo may be distributed under the terms of the following license:

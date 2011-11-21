@@ -18,3 +18,4 @@ selenium-server-standalone-2.0b2.jar
 settings.d/*-local.conf
 *.egg-info
 /dist
+_build

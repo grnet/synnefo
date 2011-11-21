@@ -1,4 +1,7 @@
-DEVELOP.txt - Information on how to setup a development environment.
+Developers guide
+================
+
+Information on how to setup a development environment.
 
 This file documents the installation of a development environment for Synnefo.
 It should be read alongside README.deploy.
@@ -8,7 +11,7 @@ outlined in README.deploy, and development-specific notes.
 
 
 Installing the development environment
-======================================
+--------------------------------------
 
 For a basic development environment you need to follow steps 0-15
 of README.deploy, which should be read in its entirety *before* this document.
@@ -106,7 +109,7 @@ Development-specific guidelines on each step:
 
 
 South Database Migrations
-=========================
+------------------------=
 
 * Initial Migration
 
@@ -233,7 +236,7 @@ http://south.aeracode.org/
 
 
 UI Testing
-==========
+----------
 The functional ui tests require the Selenium server and the synnefo app to
 be running.
 
@@ -244,7 +247,7 @@ be running.
 
 
 Test coverage
-=============
+-------------
 
 In order to get code coverage reports you need to install django-test-coverage
 

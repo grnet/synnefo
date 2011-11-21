@@ -1,4 +1,5 @@
-README.deploy -- Instructions for a basic Synnefo deployment
+Deployment guide
+================
 
 This document describes the basic steps to obtain a basic, working Synnefo
 deployment. It begins by examining the different node roles, then moves to the
@@ -8,7 +9,7 @@ It is current as of Synnefo v0.7.
 
 
 Node types
-===========
+-----------
 
 Nodes in a Synnefo deployment belong in one of the following types:
 
@@ -54,7 +55,7 @@ Nodes in a Synnefo deployment belong in one of the following types:
 
 
 Installation Process
-=====================
+---------------------
 
 This section describes the installation process of the various node roles in a
 Synnefo deployment.

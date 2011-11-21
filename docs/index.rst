@@ -12,13 +12,13 @@ Contents:
    :maxdepth: 2
 
    intro
-   upgrade
    deploy
    admin
    develop
    ci
    storage
    i18n
+   upgrade
 
 
 

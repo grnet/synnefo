@@ -1,10 +1,12 @@
-README.Upgrade
-===============
+Upgrade
+=======
 
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
 v0.7 -> v0.8
+------------
+
 NEW APPS
     * The 'synnefo.ui.userdata' application has been added in
       settings.d/00-apps.conf. Application urls appended in ui/urls.py.
@@ -47,6 +49,8 @@ API
 
 
 v0.7.3 -> v0.8
+--------------
+
 API
     * A new 'disk_template' attribute has been added to Flavors.
       GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
@@ -59,6 +63,8 @@ ADMIN TOOLS
 
 
 v0.6.2 -> v0.7
+--------------
+
 HTML TEMPLATES
     * Included a generic service unavailable template based on
       generic_info_tpl.html, as ui/static/service_unavailable.html.
@@ -135,6 +141,8 @@ LOGGING
 
 
 v0.6.1 -> v0.6.2
+----------------
+
 ADMIN INTERFACE
     * The models were changed so that Flavors and SynnefoUsers now have
       a deleted state. The admin tools were updated so that models are
@@ -147,6 +155,8 @@ COMPONENTS
 
 
 v0.5.5 -> v0.6
+--------------
+
 ADMIN INTERFACE
     * A new Web-based admin interface is available under /admin.
       It is accessible by users of type 'ADMIN' in the DB, with
@@ -174,6 +184,8 @@ NEW SETTINGS
 
 
 v0.5.4 -> v0.5.5
+----------------
+
 LOGGING
     * Changed the default logging settings for the dispatcher to also log
       to /var/log/synnefo/dispatcher.log, redirecting stderr and stdout there
@@ -199,6 +211,8 @@ COMPONENTS
 
 
 v0.5.3 -> v0.5.4
+----------------
+
 REPOSITORY
     * Split Synnefo Ganeti tools to snf-ganeti-tools, with Debian packaging
 
@@ -231,6 +245,8 @@ EXTERNAL COMPONENTS
 
 
 v0.5.2 -> v0.5.3
+----------------
+
 NEW SETTINGS
     * 30-ui.conf:LOGOUT_URL
     * 00-admins.conf:DEFAULT_FROM_EMAIL
@@ -242,6 +258,8 @@ REMOVED SETTINGS
 
 
 v0.5.1 -> v0.5.2
+----------------
+
 NEW SETTINGS
     * 10-backend.py:GANETI_CREATEINSTANCE_KWARGS
 
@@ -254,3 +272,4 @@ BACKEND CHANGES
       lib/python2.6/site-packages/ganeti/rapi/rlib2.py
       to honor the wait_for_sync flag, see Synnefo #835.
       Patch provided under contrib/patches/ganeti-rlib2.py-v0.5.2
+

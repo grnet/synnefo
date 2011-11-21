@@ -1,4 +1,7 @@
-README.storage -- Instructions for RADOS cluster deployment and administration
+Storage guide
+=============
+
+Instructions for RADOS cluster deployment and administration
 
 This document describes the basic steps to obtain a working RADOS cluster /
 object store installation, to be used as a storage backend for synnefo, and
@@ -17,7 +20,7 @@ administer the cluster, are also available in the respective manpages.
 
 
 RADOS Intro
-===========
+-----------
 RADOS is the object storage component of Ceph.
 
 An object, in this context, means a named entity that has
@@ -32,7 +35,7 @@ and replicating them for fault tolerance.
 
 
 Node types
-==========
+----------
 
 Nodes in a RADOS deployment belong in one of the following types:
 
@@ -91,7 +94,7 @@ Nodes in a RADOS deployment belong in one of the following types:
    
 
 Replication and Fault tolerance
-===============================
+-------------------------------
 
 The objects in each pool are paritioned in a (per-pool configurable) number
 of placement groups (pgs), and each placement group is mapped to a nubmer of
@@ -116,7 +119,7 @@ peering inside the RADOS cluster can be found in the original RADOS paper
 
 
 Journaling
-===========
+-----------
 
 The OSD maintains a journal to help keep all on-disk data in a consistent state
 while still keep write latency low. That is, each OSD normally has a back-end
@@ -139,7 +142,7 @@ few differences. There are two basic journaling modes:
 
 
 Authentication
-==============
+--------------
 
 Ceph supports cephx secure authentication between the nodes, this to make your
 cluster more secure. There are some issues with the cephx authentication,
@@ -149,7 +152,7 @@ fine-grained cephx authentication acroos the cluster.
 
 
 RADOS Cluster design and configuration
-======================================
+--------------------------------------
 
 This section proposes and describes a sample cluster configuration.
 
@@ -277,7 +280,7 @@ This section proposes and describes a sample cluster configuration.
 
 
 Installation Process
-====================
+--------------------
 
 This section describes the installation process of the various software
 components in a RADOS cluster.
@@ -327,7 +330,7 @@ components in a RADOS cluster.
 
 
 Administration Notes
-====================
+--------------------
 
 This section includes some notes on the RADOS cluster administration.
 

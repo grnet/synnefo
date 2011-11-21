@@ -1,4 +1,5 @@
-README.admin - Administration notes
+Administration
+==============
 
 This file contains notes related to administration of a working Synnefo
 deployment. This document should be read *after* README.deploy, which contains
@@ -6,14 +7,14 @@ step-by-step Synnefo deployment instructions.
 
 
 Database
-========
+--------
 
 MySQL: manage.py dbshell seems to ignore the setting of 'init_command'
        in settings.DATABASES
 
 
 Reconciliation mechanism
-========================
+------------------------
 
 On certain occasions, such as a Ganeti or RabbitMQ failure, the VM state in the
 system's database may differ from that in the Ganeti installation. The
@@ -40,7 +41,7 @@ gnt-instance info.
 
 
 Logging
-=======
+-------
 
 Logging in Synnefo is using Python's logging module. The module is configured
 using dictionary configuration, whose format is described here:
@@ -75,7 +76,7 @@ Please note the following:
 
 
 Admin Tools
-===========
+-----------
 
 snf-admin is a tool used to perform various administrative tasks. It needs to
 be able to access the django database, so the following should be able to import

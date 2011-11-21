@@ -91,7 +91,11 @@ def requires_admin(func):
 
 
 def index(request):
-    return render_response('index.html', next=request.GET.get('next', ''))
+    kwargs = {'standard_modules':settings.IM_STANDARD_MODULES,
+              'other_modules':settings.IM_OTHER_MODULES}
+    return render_response('index.html',
+                           next=request.GET.get('next', ''),
+                           **kwargs)
 
 
 @requires_admin

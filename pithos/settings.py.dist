@@ -209,3 +209,7 @@ USE_X_FORWARDED_HOST = False
 
 # Use to log to a file.
 LOGFILE = None
+
+# Identity Management enabled modules
+IM_STANDARD_MODULES = ['invitation']
+IM_OTHER_MODULES = ['twitter', 'shibboleth']

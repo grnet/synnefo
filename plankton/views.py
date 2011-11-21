@@ -43,12 +43,28 @@ from synnefo.plankton.util import plankton_method
 from synnefo.util.log import getLogger
 
 
-SHORT_IMAGE_META = ('id', 'status', 'name', 'disk_format', 'container_format',
-                    'size')
+FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
+           'size_max')
 
-IMAGE_META = SHORT_IMAGE_META + ('checksum', 'location', 'created_at',
-                            'updated_at', 'deleted_at', 'is_public', 'owner')
+PARAMS = ('sort_key', 'sort_dir')
 
+SORT_KEY_OPTIONS = ('id', 'name', 'status', 'size', 'disk_format',
+                    'container_format', 'created_at', 'updated_at')
+
+SORT_DIR_OPTIONS = ('asc', 'desc')
+
+LIST_FIELDS = ('status', 'name', 'disk_format', 'container_format', 'size',
+               'id')
+
+DETAIL_FIELDS = ('name', 'disk_format', 'container_format', 'size', 'checksum',
+                 'location', 'created_at', 'updated_at', 'deleted_at',
+                 'status', 'is_public', 'owner', 'properties', 'id')
+
+ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
+              'checksum', 'is_public', 'owner', 'properties', 'location')
+
+UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
+                 'owner', 'properties')
 
 log = getLogger('synnefo.plankton')
 
@@ -66,62 +82,75 @@ def image_demux(request, image_id):
         return get(request, image_id)
     elif request.method == 'HEAD':
         return get_meta(request, image_id)
+    elif request.method == 'PUT':
+        return update(request, image_id)
     else:
-        return HttpResponseNotAllowed(['GET', 'HEAD'])
+        return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
 
 
-@plankton_method('GET')
-def list_public(request, detail=False):
-    """Return a list of public VM images."""
-    
-    log.debug('list_public detail=%s', detail)
-    
-    kwargs = {}   # Args to be passed to list_public_images
-    for key in ('name', 'container_format', 'disk_format', 'status',
-                'size_min', 'size_max', 'sort_key', 'sort_dir'):
-        val = request.GET.get(key)
-        if val is None:
-            continue
-        if key in ('size_min', 'size_max') and val is not None:
-            val = int(val)
-        kwargs[key] = val
-    
-    images = request.backend.list_public_images(**kwargs)
-    
-    # Remove keys that should not be returned
-    if detail:
-        image_keys = IMAGE_META + ('properties',)
-    else:
-        image_keys = SHORT_IMAGE_META
-    for image in images:
-        for key in image.keys():
-            if key not in image_keys:
-                del image[key]
-    
-    data = json.dumps(images, indent=settings.DEBUG)
-    return HttpResponse(data)
-
-
-def _set_response_headers(response, image):
-    for key in IMAGE_META:
-        name = 'x-image-meta-' + key.replace('_', '-')
-        response[name] = image.get(key, '')
-    for key, val in image.get('properties', {}).items():
-        name = 'x-image-meta-property-' + key
-        response[name] = val
-
-
-@plankton_method('HEAD')
-def get_meta(request, image_id):
-    """Return detailed metadata on a specific image"""
-    
-    image = request.backend.get_public_image(image_id)
-    if not image:
-        return HttpResponseNotFound()
-    
+def create_image_response(image):
     response = HttpResponse()
-    _set_response_headers(response, image)
+    
+    for key in DETAIL_FIELDS:
+        if key == 'properties':
+            for k, v in image.get('properties', {}).items():
+                name = 'x-image-meta-property-' + k.replace('_', '-')
+                response[name] = v
+        else:
+            name = 'x-image-meta-' + key.replace('_', '-')
+            response[name] = image.get(key, '')
+    
     return response
+
+
+def get_image_headers(request):
+    def normalize(s):
+        return ''.join('_' if c in punctuation else c.lower() for c in s)
+    
+    META_PREFIX = 'HTTP_X_IMAGE_META_'
+    META_PREFIX_LEN = len(META_PREFIX)
+    META_PROPERTY_PREFIX = 'HTTP_X_IMAGE_META_PROPERTY_'
+    META_PROPERTY_PREFIX_LEN = len(META_PROPERTY_PREFIX)
+    
+    headers = {'properties': {}}
+    
+    for key, val in request.META.items():
+        if key.startswith(META_PROPERTY_PREFIX):
+            name = normalize(key[META_PROPERTY_PREFIX_LEN:])
+            headers['properties'][name] = val
+        elif key.startswith(META_PREFIX):
+            name = normalize(key[META_PREFIX_LEN:])
+            headers[name] = val
+    
+    if headers.get('is_public').lower() == 'true':
+        headers['is_public'] = True
+    else:
+        headers['is_public'] = False
+    
+    return headers
+
+
+@plankton_method('POST')
+def add(request):
+    """Add a new virtual machine image"""
+    
+    params = get_image_headers(request)
+    log.debug('add %s', params)
+    
+    assert set(params.keys()).issubset(set(ADD_FIELDS))
+    
+    if 'id' in params:
+        return HttpResponse(status=409)     # Custom IDs are not supported
+    
+    if 'location' in params:
+        image = request.backend.register_image(**params)
+    else:
+        params['data'] = request.raw_post_data
+        image = request.backend.put_image(**params)
+    
+    if not image:
+        return HttpResponse(status=500)
+    return create_image_response(image)
 
 
 @plankton_method('GET')
@@ -132,8 +161,7 @@ def get(request, image_id):
     if not image:
         return HttpResponseNotFound()
     
-    response = HttpResponse()
-    _set_response_headers(response, image)
+    response = create_image_response(image)
     data = request.backend.get_image_data(image)
     response.content = data
     response['Content-Length'] = len(data)
@@ -142,48 +170,58 @@ def get(request, image_id):
     return response
 
 
-@plankton_method('POST')
-def add(request):
-    if request.META.get('HTTP_X_IMAGE_META_ID'):
-        return HttpResponse(status=409)     # Custom IDs are not supported
-    
-    kwargs = {}    # Args for 'put_image' or 'register_image'
-    for key in ('name', 'store', 'disk_format', 'container_format', 'size',
-                'checksum', 'owner', 'location'):
-        name = 'HTTP_X_IMAGE_META_' + key.upper()
-        val = request.META.get(name)
-        if val is not None:
-            kwargs[key] = val
-    
-    log.debug('add %s', kwargs)
-    
-    if request.META.get('HTTP_X_IMAGE_META_IS_PUBLIC', '').lower() == 'true':
-        kwargs['is_public'] = True
-    else:
-        kwargs['is_public'] = False
-    
-    properties = {}
-    META_PROPERTY_PREFIX = 'HTTP_X_IMAGE_META_PROPERTY_'
-    META_PROPERTY_PREFIX_LEN = len(META_PROPERTY_PREFIX)
-    for key, val in request.META.items():
-        if key.startswith(META_PROPERTY_PREFIX):
-            name = ''.join(c.lower() if c not in punctuation else '_'
-                           for c in key[META_PROPERTY_PREFIX_LEN:])
-            properties[name] = val
-    
-    log.debug('add properties=%s', properties)
-    
-    kwargs['properties'] = properties
-    
-    if 'location' in kwargs:
-        image = request.backend.register_image(**kwargs)
-    else:
-        kwargs['data'] = request.raw_post_data
-        image = request.backend.put_image(**kwargs)
-    
+@plankton_method('HEAD')
+def get_meta(request, image_id):
+    """Return detailed metadata on a specific image"""
+
+    image = request.backend.get_public_image(image_id)
     if not image:
-        return HttpResponse(status=500)
+        return HttpResponseNotFound()
+    return create_image_response(image)
+
+
+@plankton_method('GET')
+def list_public(request, detail=False):
+    """Return a list of public VM images."""
+
+    def get_request_params(keys):
+        params = {}
+        for key in keys:
+            val = request.GET.get(key, None)
+            if val is not None:
+                params[key] = val
+        return params
+
+    log.debug('list_public detail=%s', detail)
+
+    filters = get_request_params(FILTERS)
+    params = get_request_params(PARAMS)
+
+    params.setdefault('sort_key', 'created_at')
+    params.setdefault('sort_dir', 'desc')
+
+    assert params['sort_key'] in SORT_KEY_OPTIONS
+    assert params['sort_dir'] in SORT_DIR_OPTIONS
+
+    images = request.backend.list_public_images(filters, params)
     
-    response = HttpResponse()
-    _set_response_headers(response, image)
-    return response
+    # Remove keys that should not be returned
+    fields = DETAIL_FIELDS if detail else LIST_FIELDS
+    for image in images:
+        for key in image.keys():
+            if key not in fields:
+                del image[key]
+
+    data = json.dumps(images, indent=settings.DEBUG)
+    return HttpResponse(data)
+
+
+@plankton_method('PUT')
+def update(request, image_id):
+    """Updating an Image"""
+    
+    params = get_image_headers(request)
+    log.debug('update %s', params)
+    
+    assert set(params.keys()).issubset(set(UPDATE_FIELDS))
+    

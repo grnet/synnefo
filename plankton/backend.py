@@ -82,13 +82,13 @@ class BackendWrapper(object):
     def close(self):
         self.backend.wrapper.conn.close()
 
-    def _get_image(self, user, account, container, name):
-        meta = self.backend.get_object_meta(user, account, container, name)
+    def _get_image(self, user, account, container, object):
+        meta = self.backend.get_object_meta(user, account, container, object)
         image = {
             '_user': user,
             '_account': account,
             '_container': container,
-            '_name': name}
+            '_object': object}
         
         for key in ('id', 'status', 'name', 'disk_format', 'container_format',
                     'size', 'checksum', 'deleted_at'):
@@ -96,18 +96,18 @@ class BackendWrapper(object):
             if val is not None:
                 image[key] = val
         
-        image['location'] = 'pithos://%s/%s/%s' % (account, container, name)
+        image['location'] = 'pithos://%s/%s/%s' % (account, container, object)
         image['updated_at'] = format_timestamp(meta['modified'])
         image['owner'] = account
         
         # Get the creation date from the date of the first version
         version, created = self.backend.list_versions(user, account, container,
-                                                      name=name)[0]
+                                                      name=object)[0]
         image['created_at'] = format_timestamp(created)
         
         # Mark as public if there is a * entry for read
         action, path, perm = self.backend.get_object_permissions(None, account,
-                                                            container, name)
+                                                            container, object)
         image['is_public'] = '*' in perm['read']
         
         properties = meta.get(PLANKTON_PREFIX + 'properties', None)
@@ -130,9 +130,7 @@ class BackendWrapper(object):
         
         for account in backend.list_accounts(None):
             listargs['account'] = account
-            print '*', account
             for path, version_id in backend.list_objects(**listargs):
-                print '*', path, listargs
                 try:
                     image = self._get_image(None, account, container, path)
                     if image['id'] == image_id:
@@ -144,7 +142,7 @@ class BackendWrapper(object):
     
     def get_image_data(self, image):
         size, hashmap = self.backend.get_object_hashmap(image['_user'],
-                image['_account'], image['_container'], image['_name'])
+                image['_account'], image['_container'], image['_object'])
         
         buf = []
         for hash in hashmap:
@@ -278,77 +276,48 @@ class BackendWrapper(object):
         
         return self.get_public_image(image_meta['id'])
     
-    def iter_public_images(self, name=None, container_format=None,
-            disk_format=None, status=None, size_min=None, size_max=None):
-        
-        def add_filter(kwargs, key, val):
-            if val is not None and key not in kwargs['keys']:
-                kwargs['keys'].append(PLANKTON_PREFIX + key)
-        
-        def match(image, attr, val):
-            if val is None:
-                return True
-            return image.get(attr, None) == val
-        
-        def match_gte(image, attr, val):
-            if val is None:
-                return True
-            return image.get(attr, 0) >= val
-        
-        def match_lte(image, attr, val):
-            if val is None:
-                return True
-            return image.get(attr, 0) <= val
-        
-        backend = self.backend
+    def iter_public_images(self, filters):
+        user = None
         container = self.container
         
-        # Args to be passed to 'list_objects'
-        listargs = {
-            'user': None,
-            'container': container,
-            'prefix': '',
-            'delimiter': '/',
-            'keys': []}
+        keys = set()
+        for key, val in filters.items():
+            if key in ('size_min', 'size_max'):
+                key = 'size'
+            keys.add(PLANKTON_PREFIX + key)
+        keys = list(keys)
         
-        add_filter(listargs, 'name', name)
-        add_filter(listargs, 'container_format', container_format)
-        add_filter(listargs, 'disk_format', disk_format)
-        add_filter(listargs, 'status', status)
-        add_filter(listargs, 'size', size_min)
-        add_filter(listargs, 'size', size_max)
-        
-        for account in backend.list_accounts(None):
-            listargs['account'] = account
-            for path, version_id in backend.list_objects(**listargs):
+        for account in self.backend.list_accounts(None):
+            for path, version_id in self.backend.list_objects(user, account,
+                    container, prefix='', delimiter='/', keys=keys):
                 try:
-                    image = self._get_image(None, account, container, path)
+                    image = self._get_image(user, account, container, path)
                 except NotAllowedError:
                     continue
-                if not match(image, 'name', name):
-                    continue
-                if not match(image, 'container_format', container_format):
-                    continue
-                if not match(image, 'disk_format', disk_format):
-                    continue
-                if not match(image, 'status', status):
-                    continue
-                if not match_gte(image, 'size', size_min):
-                    continue
-                if not match_lte(image, 'size', size_max):
-                    continue
-                yield image
-
-    def list_public_images(self, name=None, container_format=None,
-            disk_format=None, status=None, size_min=None, size_max=None,
-            sort_key='created_at', sort_dir='desc'):
+                
+                skip = False
+                for key, val in filters.items():
+                    if key == 'size_min':
+                        if image['size'] < int(val):
+                            skip = True
+                            break
+                    elif key == 'size_max':
+                        if image['size'] > int(val):
+                            skip = True
+                            break
+                    else:
+                        if image[key] != val:
+                            skip = True
+                            break
+                
+                if not skip:
+                    yield image
+    
+    def list_public_images(self, filters, params):
+        images = list(self.iter_public_images(filters))
         
-        assert sort_key in ('id', 'name', 'status', 'size', 'disk_format',
-                            'container_format', 'created_at', 'updated_at')
-        assert sort_dir in ('asc', 'desc')
+        key = itemgetter(params['sort_key'])
+        reverse = params['sort_dir'] == 'desc'
+        images.sort(key=key, reverse=reverse)
         
-        images = list(self.iter_public_images(name, container_format,
-                                    disk_format, status, size_min, size_max))
-        reverse = sort_dir == 'desc'
-        images.sort(key=itemgetter(sort_key), reverse=reverse)
         return images

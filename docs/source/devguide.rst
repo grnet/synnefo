@@ -25,7 +25,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.7 (Oct 21, 2011)         Suggest upload/download methods using hashmaps.
+0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
 \                          Pass token as a request parameter when using ``POST`` via an HTML form.
@@ -33,6 +33,7 @@ Revision                   Description
 \                          Use container ``POST`` to upload missing blocks of data.
 \                          Report policy in account headers.
 \                          Add insufficient quota reply.
+\                          Use special meta to always report Merkle hash.
 0.6 (Sept 13, 2011)        Reply with Merkle hash as the ETag when updating objects.
 \                          Include version id in object replace/change replies.
 \                          Change conflict (409) replies format to text.
@@ -437,6 +438,7 @@ content_type                The MIME content type of the object
 content_encoding            The encoding of the object (optional)
 content-disposition         The presentation style of the object (optional)
 last_modified               The last object modification date (regardless of version)
+x_object_hash               The Merkle hash
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
 x_object_modified_by        The user that committed the object's version
@@ -600,6 +602,7 @@ Content-Type                The MIME content type of the object
 Last-Modified               The last object modification date (regardless of version)
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
+X-Object-Hash               The Merkle hash
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
@@ -695,6 +698,7 @@ Content-Range               The range of data included (only on a single range r
 Last-Modified               The last object modification date (regardless of version)
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
+X-Object-Hash               The Merkle hash
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
@@ -979,6 +983,7 @@ List of differences from the OOS API:
 * Multi-range object ``GET`` support as outlined in RFC2616.
 * Object hashmap retrieval through ``GET`` and the ``format`` parameter.
 * Object create via hashmap through ``PUT`` and the ``format`` parameter.
+* The object's Merkle hash is always returned in the ``X-Object-Hash`` header.
 * Object create using ``POST`` to support standard HTML forms.
 * Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``. New ETag corresponds to the Merkle hash of the object's hashmap.
 * Include new version identifier in replies for object replace/change requests.

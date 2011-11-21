@@ -173,11 +173,12 @@ def get_object_headers(request):
     return meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
-    response['ETag'] = meta['hash']
+    response['ETag'] = meta['ETag']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     if not restricted:
+        response['X-Object-Hash'] = meta['hash']
         response['X-Object-Modified-By'] = smart_str(meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
@@ -197,7 +198,7 @@ def update_manifest_meta(request, v_account, meta):
     """Update metadata if the object has an X-Object-Manifest."""
     
     if 'X-Object-Manifest' in meta:
-        hash = ''
+        etag = ''
         bytes = 0
         try:
             src_container, src_name = split_container_object_string('/' + meta['X-Object-Manifest'])
@@ -206,15 +207,15 @@ def update_manifest_meta(request, v_account, meta):
             for x in objects:
                 src_meta = request.backend.get_object_meta(request.user_uniq,
                                         v_account, src_container, x[0], x[1])
-                hash += src_meta['hash']
+                etag += src_meta['ETag']
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.
             return
         meta['bytes'] = bytes
         md5 = hashlib.md5()
-        md5.update(hash)
-        meta['hash'] = md5.hexdigest().lower()
+        md5.update(etag)
+        meta['ETag'] = md5.hexdigest().lower()
 
 def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
     if permissions is None:
@@ -261,20 +262,20 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
     
-    hash = meta.get('hash', None)
+    etag = meta.get('ETag', None)
     
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None:
-        if hash is None:
+        if etag is None:
             raise PreconditionFailed('Resource does not exist')
-        if if_match != '*' and hash not in [x.lower() for x in parse_etags(if_match)]:
+        if if_match != '*' and etag not in [x.lower() for x in parse_etags(if_match)]:
             raise PreconditionFailed('Resource ETag does not match')
     
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
     if if_none_match is not None:
         # TODO: If this passes, must ignore If-Modified-Since header.
-        if hash is not None:
-            if if_none_match == '*' or hash in [x.lower() for x in parse_etags(if_none_match)]:
+        if etag is not None:
+            if if_none_match == '*' or etag in [x.lower() for x in parse_etags(if_none_match)]:
                 # TODO: Continue if an If-Modified-Since header is present.
                 if request.method in ('HEAD', 'GET'):
                     raise NotModified('Resource ETag matches')
@@ -665,7 +666,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
                     ranges = [(0, size)]
                     ret = 200
             except ValueError:
-                if if_range != meta['hash']:
+                if if_range != meta['ETag']:
                     ranges = [(0, size)]
                     ret = 200
     

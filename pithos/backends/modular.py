@@ -384,7 +384,7 @@ class ModularBackend(BaseBackend):
         
         if self._get_statistics(node)[0] > 0:
             raise IndexError('Container is not empty')
-        hashes = self.node.node_purge_children(node, until, CLUSTER_HISTORY)
+        hashes = self.node.node_purge_children(node, inf, CLUSTER_HISTORY)
         for h in hashes:
             self.store.map_delete(h)
         self.node.node_purge_children(node, inf, CLUSTER_DELETED)
@@ -446,7 +446,7 @@ class ModularBackend(BaseBackend):
                 modified = del_props[self.MTIME]
         
         meta = dict(self.node.attribute_get(props[self.SERIAL]))
-        meta.update({'name': name, 'bytes': props[self.SIZE]})
+        meta.update({'name': name, 'bytes': props[self.SIZE], 'hash':props[self.HASH]})
         meta.update({'version': props[self.SERIAL], 'version_timestamp': props[self.MTIME]})
         meta.update({'modified': modified, 'modified_by': props[self.MUSER]})
         return meta
@@ -623,12 +623,10 @@ class ModularBackend(BaseBackend):
             hashes += self.node.node_purge(node, until, CLUSTER_HISTORY)
             for h in hashes:
                 self.store.map_delete(h)
-            self.node.node_purge_children(node, until, CLUSTER_DELETED)
+            self.node.node_purge(node, until, CLUSTER_DELETED)
             try:
                 props = self._get_version(node)
             except NameError:
-                pass
-            else:
                 self.permissions.access_clear(path)
             return
         

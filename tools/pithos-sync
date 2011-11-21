@@ -38,7 +38,6 @@ import sqlite3
 import sys
 import shutil
 import pickle
-import binascii
 
 from lib import transfer
 from lib.client import Pithos_Client, Fault
@@ -63,7 +62,8 @@ def create_dir(path):
 
 
 def copy_file(src, dst):
-    path = os.dirname(dst)
+    print '***', 'COPYING', src, dst
+    path = os.path.dirname(dst)
     create_dir(path)
     shutil.copyfile(src, dst)
 
@@ -89,8 +89,9 @@ class Trash(object):
         self.conn.execute(sql)
         self.conn.commit()
     
-    def put(self, path, hash):
-        copy_file(path, os.path.join(self.path, path))
+    def put(self, fullpath, path, hash):
+        copy_file(fullpath, os.path.join(self.path, path))
+        os.remove(fullpath)
         sql = 'INSERT OR REPLACE INTO files VALUES (?, ?)'
         self.conn.execute(sql, (path, hash))
         self.conn.commit()
@@ -171,19 +172,19 @@ class RemoteState(object):
         if meta.get('content-type', None) == 'application/directory':
             return 'DIR'
         else:
-            data = client.retrieve_object(self.container, path, format='json')
-            hashmap = HashMap(conf['blocksize'], conf['blockhash'])
-            hashmap += [binascii.unhexlify(x) for x in data['hashes']]
-            return binascii.hexlify(hashmap.hash())
+            return meta['x-object-hash']
 
 
 def update_local(path, S):
+    # XXX If something is already here, put it in trash and delete it.
+    # XXX If we have a directory already here, put all files in trash.
     fullpath = cstate.fullpath(path)
     if S == 'DEL':
-        os.remove(fullpath)
+        trash.put(fullpath, path, S)
     elif S == 'DIR':
         if os.path.exists(fullpath):
-            os.remove(fullpath)
+            trash.put(fullpath, path, S)
+        # XXX Strip trailing slash (or escape).
         os.mkdir(fullpath)
     else:
         # First, search for local copy
@@ -194,6 +195,7 @@ def update_local(path, S):
             # Search for copy in trash
             file = trash.search(S)
             if file:
+                # XXX Move from trash (not copy).
                 copy_file(trash.fullpath(file), fullpath)
             else:
                 # Download
@@ -216,6 +218,7 @@ def update_remote(path, S):
 
 
 def resolve_conflict(path):
+    # XXX Check if this works with dirs.
     fullpath = cstate.fullpath(path)
     if os.path.exists(fullpath):
         os.rename(fullpath, fullpath + '.local')
@@ -273,6 +276,7 @@ def walk(dir):
         
         for object in client.list_objects(get_container(), prefix=root,
                                             delimiter='/', format='json'):
+            # XXX Check subdirs.
             if 'subdir' in object:
                 continue
             name = str(object['name'])

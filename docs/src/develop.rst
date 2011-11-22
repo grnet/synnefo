@@ -259,7 +259,24 @@ Then edit your settings.py and configure the test runner:
 
 .. include:: i18n.rst
 
-Building synnefo package
+Building Synnefo package
 ------------------------
 
-.. todo:: document building instructions
+To create a python package from the Synnefo source code run::
+
+    $ python setup.py sdist
+
+this command will create a ``tar.gz`` python source package using
+the version number provided in ``setup.py``.
+
+Building Synnefo documentation
+------------------------------
+
+Make sure you have ``sphinx`` installed.
+
+.. code-block:: bash
+
+    $ cd docs
+    $ make html
+
+html files are generated in ``docs/_build/html`` directory

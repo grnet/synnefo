@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 # Package info
-VERSION = '0.1'
+VERSION = '0.8rc1'
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'

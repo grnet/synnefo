@@ -34,6 +34,7 @@
 import json
 import logging
 import socket
+import csv
 
 from datetime import datetime
 from functools import wraps
@@ -138,21 +139,6 @@ def users_list(request):
                             page=page,
                             prev=prev,
                             next=next)
-    
-@requires_admin
-def users_create(request):
-    if request.method == 'GET':
-        return render_response('users_create.html')
-    if request.method == 'POST':
-        user = User()
-        user.uniq = request.POST.get('uniq')
-        user.realname = request.POST.get('realname')
-        user.is_admin = True if request.POST.get('admin') else False
-        user.affiliation = request.POST.get('affiliation')
-        user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
-        user.renew_token()
-        user.save()
-        return redirect(users_info, user.id)
 
 @requires_admin
 def users_info(request, user_id):
@@ -366,3 +352,78 @@ def reclaim_password(request):
                 'status': status,
                 'message': message})
         return HttpResponse(html)
+
+@requires_admin
+def invitations_list(request):
+    invitations = Invitation.objects.order_by('id')
+    
+    filter = request.GET.get('filter', '')
+    if filter:
+        if filter.startswith('-'):
+            invitations = invitations.exclude(uniq__icontains=filter[1:])
+        else:
+            invitations = invitations.filter(uniq__icontains=filter)
+    
+    try:
+        page = int(request.GET.get('page', 1))
+    except ValueError:
+        page = 1
+    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
+    limit = offset + settings.ADMIN_PAGE_LIMIT
+    
+    npages = int(ceil(1.0 * invitations.count() / settings.ADMIN_PAGE_LIMIT))
+    prev = page - 1 if page > 1 else None
+    next = page + 1 if page < npages else None
+    return render_response('invitations_list.html',
+                            invitations=invitations[offset:limit],
+                            filter=filter,
+                            pages=range(1, npages + 1),
+                            page=page,
+                            prev=prev,
+                            next=next)
+
+@requires_admin
+def invitations_export(request):
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=invitations.csv'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID',
+      'Uniq',
+      'Real Name',
+      'Code',
+      'Inviter Uniq',
+      'Inviter Real Name',
+      'Is_accepted',
+      'Created',
+      'Accepted',])
+    invitations = Invitation.objects.order_by('id')
+    for inv in invitations:
+        writer.writerow([inv.id,
+      inv.uniq,
+      inv.realname.encode("utf-8"),
+      inv.code,
+      inv.inviter.uniq,
+      inv.inviter.realname.encode("utf-8"),
+      inv.is_accepted,
+      inv.created,
+      inv.accepted,
+      ])
+
+    return response
+
+@requires_admin
+def users_create(request):
+    if request.method == 'GET':
+        return render_response('users_create.html')
+    if request.method == 'POST':
+        user = User()
+        user.uniq = request.POST.get('uniq')
+        user.realname = request.POST.get('realname')
+        user.is_admin = True if request.POST.get('admin') else False
+        user.affiliation = request.POST.get('affiliation')
+        user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
+        user.renew_token()
+        user.save()
+        return redirect(users_info, user.id)

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% load formatters %}
+
+{% block body %}
+
+<div class="row">
+  <div class="offset10 span3">
+    <form method="get">
+      <div class="input">
+        <input class="span3" name="filter" type="search" placeholder="search" value="{{ filter }}">
+      </div>
+    </form>
+  </div>
+</div>
+
+<table class="zebra-striped id-sorted">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Uniq</th>
+      <th>Real Name</th>
+      <th>Code</th>
+      <th>Inviter Uniq</th>
+      <th>Inviter Real Name</th>
+      <th>Is_accepted</th>
+      <th>Created</th>
+      <th>Accepted</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in invitations %}
+    <tr>
+      <td>{{ inv.id }}</td>
+      <td>{{ inv.uniq }}</td>
+      <td>{{ inv.realname }}</td>
+      <td>{{ inv.code }}</td>
+      <td>{{ inv.inviter.uniq }}</td>
+      <td>{{ inv.inviter.realname }}</td>
+      <td>{{ inv.is_accepted }}</td>
+      <td>{{ inv.created }}</td>
+      <td>{{ inv.accepted }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if pages|length > 1 %}
+<div class="pagination">
+  <ul>
+    {% if prev %}
+      <li class="prev"><a href="?page={{ prev }}{% if filter %}&filter={{ filter }}{% endif %}">&larr; Previous</a></li>
+    {% else %}
+      <li class="prev disabled"><a href="#">&larr; Previous</a></li>
+    {% endif %}
+
+    {% for p in pages %}
+      <li{% if page == p %} class="active"{% endif %}><a href="?page={{ p }}{% if filter %}&filter={{ filter }}{% endif %}">{{ p }}</a></li>
+    {% endfor %}
+
+    {% if next %}
+      <li class="next"><a href="?page={{ next }}{% if filter %}&filter={{ filter }}{% endif %}">&rarr; Next</a></li>
+    {% else %}
+      <li class="next disabled"><a href="#">&rarr; Next</a></li>
+    {% endif %}
+  </ul>
+</div>
+{% endif %}
+
+<form action="{% url pithos.im.views.invitations_export %}" method="post">
+<button  type="submit" class="btn primary">Export</button>
+</form>
+
+<br /><br />
+{% endblock body %}

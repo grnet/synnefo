@@ -206,6 +206,9 @@ PASSWORD_RESET_TARGET = '%s/im/local/reset/' \
 # The server is behind a proy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False
 
+# Set umask (needed for gunicorn setup).
+#os.umask(0077)
+
 # Use to log to a file.
 LOGFILE = None
 

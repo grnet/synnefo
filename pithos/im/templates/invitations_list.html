@@ -67,9 +67,7 @@
 </div>
 {% endif %}
 
-<form action="{% url pithos.im.views.invitations_export %}" method="post">
-<button  type="submit" class="btn primary">Export</button>
-</form>
+<a class="btn success" href="{% url pithos.im.views.invitations_export %}">Export</a>
 
 <br /><br />
 {% endblock body %}

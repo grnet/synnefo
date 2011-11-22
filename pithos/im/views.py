@@ -390,26 +390,54 @@ def invitations_export(request):
 
     writer = csv.writer(response)
     writer.writerow(['ID',
-      'Uniq',
-      'Real Name',
-      'Code',
-      'Inviter Uniq',
-      'Inviter Real Name',
-      'Is_accepted',
-      'Created',
-      'Accepted',])
+                     'Uniq',
+                     'Real Name',
+                     'Code',
+                     'Inviter Uniq',
+                     'Inviter Real Name',
+                     'Is_accepted',
+                     'Created',
+                     'Accepted',])
     invitations = Invitation.objects.order_by('id')
     for inv in invitations:
         writer.writerow([inv.id,
-      inv.uniq,
-      inv.realname.encode("utf-8"),
-      inv.code,
-      inv.inviter.uniq,
-      inv.inviter.realname.encode("utf-8"),
-      inv.is_accepted,
-      inv.created,
-      inv.accepted,
-      ])
+                         inv.uniq.encode("utf-8"),
+                         inv.realname.encode("utf-8"),
+                         inv.code,
+                         inv.inviter.uniq.encode("utf-8"),
+                         inv.inviter.realname.encode("utf-8"),
+                         inv.is_accepted,
+                         inv.created,
+                         inv.accepted])
+
+    return response
+
+
+@requires_admin
+def users_export(request):
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=users.csv'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID',
+                     'Uniq',
+                     'Real Name',
+                     'Admin',
+                     'Affiliation',
+                     'State',
+                     'Quota (GiB)',
+                     'Updated',])
+    users = User.objects.order_by('id')
+    for u in users:
+        writer.writerow([u.id,
+                         u.uniq.encode("utf-8"),
+                         u.realname.encode("utf-8"),
+                         u.is_admin,
+                         u.affiliation.encode("utf-8"),
+                         u.state.encode("utf-8"),
+                         u.quota,
+                         u.updated])
 
     return response
 

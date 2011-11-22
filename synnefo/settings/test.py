@@ -10,4 +10,3 @@ DATABASES = {
     }
 }
 
-print locals()

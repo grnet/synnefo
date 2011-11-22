@@ -59,9 +59,9 @@ def format_timestamp(t):
     return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
 
 
-def set_image_attrs(meta, **kwargs):
+def set_plankton_attr(d, **kwargs):
     for key, val in kwargs.items():
-        meta[PLANKTON_PREFIX + key] = str(val) if val is not None else ''
+        d[PLANKTON_PREFIX + key] = str(val) if val is not None else ''
 
 
 class BackendException(Exception): pass
@@ -106,9 +106,9 @@ class BackendWrapper(object):
         image['created_at'] = format_timestamp(created)
         
         # Mark as public if there is a * entry for read
-        action, path, perm = self.backend.get_object_permissions(None, account,
+        action, path, perm = self.backend.get_object_permissions(user, account,
                                                             container, object)
-        image['is_public'] = '*' in perm['read']
+        image['is_public'] = '*' in perm.get('read', [])
         
         properties = meta.get(PLANKTON_PREFIX + 'properties', None)
         if properties:
@@ -116,23 +116,25 @@ class BackendWrapper(object):
         
         return image
     
-    def get_public_image(self, image_id):
+    def get_image(self, image_id):
         backend = self.backend
+        
+        user = self.user
         container = self.container
         
         # Arguments to be passed to list_objects
         listargs = {
-            'user': None,
+            'user': user,
             'container': container,
             'prefix': '',
             'delimiter': '/',
             'keys': [PLANKTON_PREFIX + 'id']}
         
-        for account in backend.list_accounts(None):
+        for account in backend.list_accounts(user):
             listargs['account'] = account
             for path, version_id in backend.list_objects(**listargs):
                 try:
-                    image = self._get_image(None, account, container, path)
+                    image = self._get_image(user, account, container, path)
                     if image['id'] == image_id:
                         return image
                 except NotAllowedError:
@@ -209,7 +211,7 @@ class BackendWrapper(object):
         backend.update_object_permissions(user, account, container, object,
                                           permissions)
         
-        return self.get_public_image(image_meta['id'])
+        return self.get_image(image_meta['id'])
     
     def put_image(self, name, data, store=None, disk_format=None,
             container_format=None, size=None, checksum=None, is_public=False,
@@ -245,23 +247,20 @@ class BackendWrapper(object):
         
         meta = {'hash': hexdigest}
         
-        image_meta = {
-            'id': str(UUID(bytes=digest)),
-            'name': name,
-            'status': 'available',
-            'store': store,
-            'disk_format': disk_format,
-            'container_format': container_format,
-            'size': size or len(data),
-            'checksum': checksum or hexdigest,
-            'owner': owner,
-            'deleted_at': ''}
+        set_plankton_attr(meta,
+            id=str(UUID(bytes=digest)),
+            name=name,
+            status='available',
+            store=store,
+            disk_format=disk_format,
+            container_format=container_format,
+            size=size or len(data),
+            checksum=checksum or hexdigest,
+            owner=owner,
+            deleted_at='')
         
         if properties:
-            image_meta['properties'] = json.dumps(properties)
-        
-        for key, val in image_meta.items():
-            meta[PLANKTON_PREFIX + key] = str(val) if val is not None else ''
+            set_plankton_attr(meta, properties=json.dumps(properties))
         
         backend.update_object_hashmap(
                 user=self.user,
@@ -274,7 +273,7 @@ class BackendWrapper(object):
                 replace_meta=True,
                 permissions=permissions)
         
-        return self.get_public_image(image_meta['id'])
+        return self.get_image(image_meta['id'])
     
     def iter_public_images(self, filters):
         user = None
@@ -321,3 +320,36 @@ class BackendWrapper(object):
         images.sort(key=key, reverse=reverse)
         
         return images
+    
+    def update_image(self, image_id, meta):
+        image = self.get_image(image_id)
+        if not image:
+            return None
+        
+        user = self.user
+        account = image['_account']
+        container = image['_container']
+        object = image['_object']
+        
+        is_public = meta.pop('is_public', None)
+        if is_public is not None:
+            action, path, permissions = self.backend.get_object_permissions(
+                    user, account, container, object)
+            read_permissions = set(permissions.get('read', []))
+            if is_public:
+                read_permissions.add('*')
+            else:
+                read_permissions.discard('*')
+            permissions['read'] = list(read_permissions)
+            self.backend.update_object_permissions(user, account, container,
+                    object, permissions)
+        
+        m = {}
+        set_plankton_attr(m, **meta)
+        
+        properties = meta.get('properties', None)
+        if properties:
+            set_plankton_attr(m, properties=json.dumps(properties))
+        
+        self.backend.update_object_meta(user, account, container, object, m)
+        return self.get_image(image_id)

@@ -64,7 +64,7 @@ ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
               'checksum', 'is_public', 'owner', 'properties', 'location')
 
 UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
-                 'owner', 'properties')
+                 'owner', 'properties', 'status')
 
 log = getLogger('synnefo.plankton')
 
@@ -122,10 +122,12 @@ def get_image_headers(request):
             name = normalize(key[META_PREFIX_LEN:])
             headers[name] = val
     
-    if headers.get('is_public').lower() == 'true':
-        headers['is_public'] = True
-    else:
-        headers['is_public'] = False
+    is_public = headers.get('is_public', None)
+    if is_public is not None:
+        headers['is_public'] = True if is_public.lower() == 'true' else False
+    
+    if not headers['properties']:
+        del headers['properties']
     
     return headers
 
@@ -157,7 +159,7 @@ def add(request):
 def get(request, image_id):
     """Retrieve a virtual machine image"""
     
-    image = request.backend.get_public_image(image_id)
+    image = request.backend.get_image(image_id)
     if not image:
         return HttpResponseNotFound()
     
@@ -174,7 +176,7 @@ def get(request, image_id):
 def get_meta(request, image_id):
     """Return detailed metadata on a specific image"""
 
-    image = request.backend.get_public_image(image_id)
+    image = request.backend.get_image(image_id)
     if not image:
         return HttpResponseNotFound()
     return create_image_response(image)
@@ -220,8 +222,14 @@ def list_public(request, detail=False):
 def update(request, image_id):
     """Updating an Image"""
     
-    params = get_image_headers(request)
-    log.debug('update %s', params)
+    meta = get_image_headers(request)
+    log.debug('update %s', meta)
     
-    assert set(params.keys()).issubset(set(UPDATE_FIELDS))
+    assert set(meta.keys()).issubset(set(UPDATE_FIELDS))
+    
+    image = request.backend.update_image(image_id, meta)
+    
+    if not image:
+        return HttpResponse(status=500)
+    return create_image_response(image)
     

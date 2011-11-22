@@ -74,7 +74,6 @@ BACKEND_DB_CONNECTION = 'sqlite:///' + os.path.join(PROJECT_PATH, 'backend.db')
 BACKEND_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 BACKEND_BLOCK_PATH = os.path.join(PROJECT_PATH, 'data/')
 
-
 # Bypass authentication for user administration.
 BYPASS_ADMIN_AUTH = False
 
@@ -211,5 +210,5 @@ USE_X_FORWARDED_HOST = False
 LOGFILE = None
 
 # Identity Management enabled modules
-IM_STANDARD_MODULES = ['invitation']
+IM_STANDARD_MODULES = ['local', 'invitation']
 IM_OTHER_MODULES = ['twitter', 'shibboleth']

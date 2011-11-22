@@ -7,7 +7,7 @@
     
 {% block body%}
     <div class="row">
-        {% if "local" in standard_modules %}
+    {% if "local" in standard_modules %}
       <div class="span4">
         <h4>Local account</h4>
         <form action="{% url pithos.im.target.local.login %}" method="post" class="form-stacked">
@@ -38,8 +38,8 @@
           </div>
         </form>
       </div>
-  {% endif %}
-  {% if "invitation" in standard_modules %}
+    {% endif %}
+    {% if "invitation" in standard_modules %}
       <div class="span4">
         <h4>Invitation</h4>
         <form action="{% url pithos.im.target.invitation.login %}" class="form-stacked">
@@ -57,14 +57,14 @@
           </div>
         </form>
       </div>
-  {% endif %}
-  {% if other_modules %}
+    {% endif %}
+    {% if other_modules %}
       <div class="span8">
         <h4>Other provider</h4>
         {% for o in other_modules %}
             <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="{{ o|title }}"><img src="/im/static/{{ o }}.png" width="120" height="120"></a>
         {% endfor %}
       </div>
-  {% endif %}
+    {% endif %}
     </div>
 {% endblock body%}

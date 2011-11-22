@@ -45,22 +45,10 @@ urlpatterns = patterns('pithos.im.views',
     (r'^admin/users/(\d+)/?$', 'users_info'),
     (r'^admin/users/create$', 'users_create'),
     (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
-    
-    (r'^invite/?$', 'invite'),
-    (r'^local/create/?$', 'local_create'),
-    (r'^local/reclaim/?$', 'reclaim_password'),
-    
+    (r'^admin/users/(\d+)/delete/?$', 'users_delete')
 )
 
 urlpatterns += patterns('pithos.im.target',
-    (r'^login/shibboleth/?$', 'shibboleth.login'),
-    (r'^login/twitter/?$', 'twitter.login'),
-    (r'^login/twitter/authenticated/?$', 'twitter.authenticated'),
-    (r'^login/invitation/?$', 'invitation.login'),
-    (r'^local/?$', 'local.login'),
-    (r'^local/activate/?$', 'local.activate'),
-    (r'^local/reset/?$', 'local.reset_password'),
     (r'^login/dummy/?$', 'dummy.login')
 )
 
@@ -68,3 +56,33 @@ urlpatterns += patterns('',
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
                                 {'document_root': settings.PROJECT_PATH + '/im/static'})
 )
+
+if 'local' in settings.IM_STANDARD_MODULES:
+    urlpatterns += patterns('pithos.im.views',
+        (r'^local/create/?$', 'local_create'),
+        (r'^local/reclaim/?$', 'reclaim_password')
+    )
+    urlpatterns += patterns('pithos.im.target',
+        (r'^local/?$', 'local.login'),
+        (r'^local/activate/?$', 'local.activate'),
+        (r'^local/reset/?$', 'local.reset_password')
+    )
+
+if 'invitation' in settings.IM_STANDARD_MODULES:
+    urlpatterns += patterns('pithos.im.views',
+        (r'^invite/?$', 'invite'),
+    )
+    urlpatterns += patterns('pithos.im.target',
+        (r'^login/invitation/?$', 'invitation.login')
+    )
+
+if 'shibboleth' in settings.IM_OTHER_MODULES:
+    urlpatterns += patterns('pithos.im.target',
+        (r'^login/shibboleth/?$', 'shibboleth.login')
+    )
+
+if 'twitter' in settings.IM_OTHER_MODULES:
+    urlpatterns += patterns('pithos.im.target',
+        (r'^login/twitter/?$', 'twitter.login'),
+        (r'^login/twitter/authenticated/?$', 'twitter.authenticated')
+    )

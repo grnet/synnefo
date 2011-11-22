@@ -1,5 +1,7 @@
-import os
+import distribute_setup
+distribute_setup.use_setuptools()
 
+import os
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
@@ -42,7 +44,7 @@ TESTS_REQUIRES = [
 PACKAGE_DATA = {
     '': ['templates/*.html', 'fixtures/*.json',
          'templates/*.xml', 'templates/partials/*.html',
-         'templates/userdata/*.html'],
+         'templates/*.txt', 'templates/userdata/*.html'],
 
     'synnefo': ['settings.d/*.conf']
 }

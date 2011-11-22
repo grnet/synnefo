@@ -1,1 +1,2 @@
 recursive-include docs *.rst
+recursive-include synnefo *.html *.js *.txt *.css *.jpg *.png *.gif

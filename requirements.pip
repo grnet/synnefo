@@ -12,3 +12,4 @@ python-daemon==1.5.5
 pycrypto==2.1.0
 IPy==0.75
 -e git+https://code.grnet.gr/git/vncauthproxy@v1.0#egg=vncauthproxy
+paramiko==1.7.6

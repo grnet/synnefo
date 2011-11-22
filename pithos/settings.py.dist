@@ -186,7 +186,7 @@ INVITATIONS_PER_LEVEL = {
     4   :   0
 }
 
-SERVICE_NAME = 'Pithos+'
+SERVICE_NAME = 'Pithos'
 
 # Where users should login with their invitation code
 INVITATION_LOGIN_TARGET = '%s/im/login/invitation' \

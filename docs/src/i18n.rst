@@ -1,3 +1,6 @@
+Internationalization guide
+==========================
+
 DJANGO TRANSLATIONS OF STATIC TEXT
 
 0) From our project's base, we add directory locale
@@ -52,3 +55,4 @@ then we add on the settings.py the language code e.g.,
 
 More info:
 http://docs.djangoproject.com/en/dev/topics/i18n/internationalization/
+

@@ -1,25 +1,24 @@
-.. Synnefo documentation master file, created by
-   sphinx-quickstart on Mon Nov 21 10:56:41 2011.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Synnefo project documentation
+=============================
 
-Welcome to Synnefo's documentation!
-===================================
-
-Contents:
+Synnefo is a software infrastructure for management of IaaS clouds.
+It combines a Django-based implementation of OpenStack Compute API with 
+Google Ganeti for VM management at the backend.
 
 .. toctree::
    :maxdepth: 2
 
-   intro
-   deploy
-   admin
-   develop
-   ci
-   storage
-   i18n
-   upgrade
-
+   src/intro
+   src/install
+   src/deployment
+   src/settings
+   src/admin
+   src/develop
+   src/ci
+   src/storage
+   src/i18n
+   src/upgrade
+   src/changelog
 
 
 Indices and tables

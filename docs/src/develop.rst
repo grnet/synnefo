@@ -9,7 +9,6 @@ It should be read alongside README.deploy.
 It contains development-specific ammendments to the basic deployment steps
 outlined in README.deploy, and development-specific notes.
 
-
 Installing the development environment
 --------------------------------------
 

@@ -255,3 +255,11 @@ In order to get code coverage reports you need to install django-test-coverage
 Then edit your settings.py and configure the test runner:
 
    TEST_RUNNER = 'django-test-coverage.runner.run_tests'
+
+
+.. include:: i18n.rst
+
+Building synnefo package
+------------------------
+
+.. todo:: document building instructions

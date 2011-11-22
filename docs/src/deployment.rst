@@ -2,7 +2,7 @@ Deployment
 ==========
 
 Node types
------------
+----------
 
 Nodes in a Synnefo deployment belong in one of the following types:
 
@@ -52,4 +52,22 @@ Services:
    a deployment-specific KVM ifup script
    properly configured `NFDHCPD`_
 
+
+UI deployment
+-------------
+
+Using Apache
+************
+
+.. todo:: document apache configuration
+
+Using nginx
+***********
+
+.. todo:: document nginx configuration
+
+Serving static files
+********************
+
+.. todo:: document serving static files instructions
 

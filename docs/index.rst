@@ -10,13 +10,13 @@ Google Ganeti for VM management at the backend.
 
    src/intro
    src/install
+   src/configuration
    src/deployment
    src/settings
    src/admin
    src/develop
    src/ci
    src/storage
-   src/i18n
    src/upgrade
    src/changelog
 

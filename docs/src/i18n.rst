@@ -1,5 +1,5 @@
 Internationalization guide
-==========================
+--------------------------
 
 DJANGO TRANSLATIONS OF STATIC TEXT
 

@@ -5,11 +5,12 @@ This is the top-level documentation file for the
 Synnefo cloud management software.
 
 Consult:
-  * docs/develop.rst: for information on how to setup a development environment
-  * docs/deploy.rst:  for information on how to deploy the application
-  * docs/ci.rst:      for information on how to setup a Jenkins-based
-                      continuous integration system
-  * docs/i18n.rst:    for information on application internationalization
+  * docs/src/develop.rst: for information on how to setup a development environment
+  * docs/src/install.rst: for information on how to install the application
+  * docs/src/deploy.rst:  for information on how to deploy the application
+  * docs/src/ci.rst:      for information on how to setup a Jenkins-based
+                          continuous integration system
+  * docs/src/i18n.rst:    for information on application internationalization
 
 
 Synnefo may be distributed under the terms of the following license:

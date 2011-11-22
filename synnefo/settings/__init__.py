@@ -34,7 +34,8 @@
 import os.path
 import glob
 
-from synnefo.settings_common import *
+# import common settings
+from synnefo.settings.common import *
 
 SYNNEFO_DIST_SETTINGS_DIR = '/etc/synnefo'
 

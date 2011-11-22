@@ -3,6 +3,8 @@
 # API configuration
 #####################
 
+from deploy import *
+
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.
 API_ROOT_URL = APP_INSTALL_URL + '/api'

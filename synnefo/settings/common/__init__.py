@@ -31,12 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os.path
-import glob
-
-conffiles = glob.glob(os.path.join(os.path.dirname(__file__),
-                      'settings.d', '*.conf'))
-conffiles.sort()
-for f in conffiles:
-    execfile(os.path.abspath(f))
+from synnefo.settings.common.admins import *
+from synnefo.settings.common.apps import *
+from synnefo.settings.common.deploy import *
+from synnefo.settings.common.logging import *
+from synnefo.settings.common.site import *
+from synnefo.settings.common.backend import *
+from synnefo.settings.common.database import *
+from synnefo.settings.common.queues import *
+from synnefo.settings.common.api import *
+from synnefo.settings.common.ui import *
+from synnefo.settings.common.userdata import *
+from synnefo.settings.common.aai import *
+from synnefo.settings.common.invitations import *
+from synnefo.settings.common.reconciliation import *
+from synnefo.settings.common.helpdesk import *
+from synnefo.settings.common.tests import *
 

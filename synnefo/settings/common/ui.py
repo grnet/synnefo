@@ -3,8 +3,10 @@
 # UI settings
 ###################
 
+from admins import *
+
 # base url for ui static files
-# if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/' 
+# if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
 #UI_MEDIA_URL = MEDIA_URL + 'snf/'
 
 # UI requests to the API layer time out after that many milliseconds
@@ -44,7 +46,7 @@ FEEDBACK_EMAIL_FROM = DEFAULT_FROM_EMAIL
 # settings.LOGIN_URL will be used)
 #LOGOUT_URL = ""
 
-# Flavor options that we provide to the user as predefined 
+# Flavor options that we provide to the user as predefined
 # cpu/ram/disk combinations on vm create wizard
 VM_CREATE_SUGGESTED_FLAVORS = {
     'small': {
@@ -92,10 +94,10 @@ UI_FLAVORS_DISK_TEMPLATES_INFO = {
 #######################
 
 # Whether to increase the time of recurrent requests (networks/vms update) if
-# window loses its focus 
+# window loses its focus
 UI_DELAY_ON_BLUR = False
 
-# Whether not visible vm views will update their content if vm changes 
+# Whether not visible vm views will update their content if vm changes
 UI_UPDATE_HIDDEN_VIEWS = False
 
 # After how many timeouts of reccurent ajax requests to display the timeout
@@ -110,7 +112,7 @@ UI_SUPPORT_SSH_OS_LIST = ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu', 'c
 
 # OS/username map to identify default user name for the specified os
 UI_OS_DEFAULT_USER_MAP = {
-    'debian':'root', 'fedora': 'root', 'okeanos': 'root', 
-    'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root', 
+    'debian':'root', 'fedora': 'root', 'okeanos': 'root',
+    'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root',
     'windows': 'Administrator'
 }

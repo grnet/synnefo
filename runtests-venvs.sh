@@ -37,23 +37,29 @@
 
 set -e
 
-virtualenv --no-site-packages -ppython2.7 env
+virtualenv --no-site-packages -ppython2.6 env
 source env/bin/activate
+PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
 python setup.py install
 cd env
+# avoid vncauthproxy errors
+rm bin/vncauthproxy.py
 echo "running django tests..." >&2
-synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=settings_test
+synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
 
 virtualenv --no-site-packages -ppython2.7 env
 source env/bin/activate
+PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
 python setup.py install
 cd env
+# avoid vncauthproxy errors
+rm bin/vncauthproxy.py
 echo "running django tests..." >&2
-synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=settings_test
+synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
 

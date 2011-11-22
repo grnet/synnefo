@@ -38,7 +38,7 @@
 set -e
 
 echo "Running Django tests..." >&2
-python synnefo/manage.py test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings_test
+python synnefo/manage.py test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 
 echo "Running snf-ganeti-tools tests..." >&2
 PYTHONPATH=snf-ganeti-tools:$PYTHONPATH ./snf-ganeti-tools/test/synnefo.ganeti_unittest.py

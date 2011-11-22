@@ -41,7 +41,9 @@ virtualenv --no-site-packages -ppython2.6 env
 source env/bin/activate
 PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
-python setup.py install
+rm -rf build dist
+python setup.py sdist
+pip install dist/synnefo-0.8rc1.tar.gz
 cd env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py
@@ -54,7 +56,9 @@ virtualenv --no-site-packages -ppython2.7 env
 source env/bin/activate
 PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
-python setup.py install
+rm -rf build dist
+python setup.py sdist
+pip install dist/synnefo-0.8rc1.tar.gz
 cd env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py

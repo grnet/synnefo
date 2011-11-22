@@ -37,13 +37,14 @@
 
 set -e
 
+rm -rf env
 virtualenv --no-site-packages -ppython2.6 env
 source env/bin/activate
-PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
+export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
 rm -rf build dist
 python setup.py sdist
-pip install dist/synnefo-0.8rc1.tar.gz
+pip install dist/synnefo-*.tar.gz
 cd env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py
@@ -52,13 +53,14 @@ synnefo-manage test aai admin api db helpdesk invitations logic userdata --setti
 cd ..
 deactivate
 
+rm -rf env
 virtualenv --no-site-packages -ppython2.7 env
 source env/bin/activate
-PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
+export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
 rm -rf build dist
 python setup.py sdist
-pip install dist/synnefo-0.8rc1.tar.gz
+pip install dist/synnefo-*.tar.gz
 cd env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py
@@ -66,4 +68,4 @@ echo "running django tests..." >&2
 synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
-
+rm -rf env

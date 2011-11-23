@@ -32,9 +32,51 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns
+from django.http import HttpResponseNotAllowed
 
-urlpatterns = patterns('synnefo.plankton.views',
-    (r'^images/$', 'demux'),
-    (r'^images/detail', 'list_public', {'detail': True}),
-    (r'^images/([\w-]+)', 'image_demux')
+from synnefo.plankton import views
+
+
+def demux(request):
+    if request.method == 'GET':
+        return views.list_public_images(request)
+    elif request.method == 'POST':
+        return views.add_image(request)
+    else:
+        return HttpResponseNotAllowed(['GET', 'POST'])
+
+def demux_image(request, image_id):
+    if request.method == 'GET':
+        return views.get_image(request, image_id)
+    elif request.method == 'HEAD':
+        return views.get_image_meta(request, image_id)
+    elif request.method == 'PUT':
+        return views.update_image(request, image_id)
+    else:
+        return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
+
+def demux_image_members(request, image_id):
+    if request.method == 'GET':
+        return views.list_image_members(request, image_id)
+    elif request.method == 'PUT':
+        return views.update_image_members(request, image_id)
+    else:
+        return HttpResponseNotAllowed(['GET', 'PUT'])
+
+def demux_members(request, image_id, member):
+    if request.method == 'DELETE':
+        return views.remove_image_member(request, image_id, member)
+    elif request.method == 'PUT':
+        return views.add_image_member(request, image_id, member)
+    else:
+        return HttpResponseNotAllowed(['DELETE', 'PUT'])
+
+
+urlpatterns = patterns('',
+    (r'^images/$', demux),
+    (r'^images/detail$', views.list_public_images, {'detail': True}),
+    (r'^images/([\w-]+)$', demux_image),
+    (r'^images/([\w-]+)/members$', demux_image_members),
+    (r'^images/([\w-]+)/members/(\w+)$', demux_members),
+    (r'^shared-images/(\w+)$', views.list_shared_images)
 )

@@ -80,7 +80,7 @@ class BackendWrapper(object):
             pass    # Container already exists
     
     def close(self):
-        self.backend.wrapper.conn.close()
+        self.backend.close()
 
     def _get_image(self, user, account, container, object):
         meta = self.backend.get_object_meta(user, account, container, object)
@@ -115,6 +115,67 @@ class BackendWrapper(object):
             image['properties'] = json.loads(properties)
         
         return image
+    
+    def add_user(self, image_id, user):
+        image = self.get_image(image_id)
+        assert image, "Image not found"
+        
+        account = image['_account']
+        container = image['_container']
+        object = image['_object']
+        
+        action, path, permissions = self.backend.get_object_permissions(
+                self.user, account, container, object)
+        read_permissions = set(permissions.get('read', []))
+        read_permissions.add(user)
+        permissions['read'] = list(read_permissions)
+        self.backend.update_object_permissions(self.user, account, container,
+                object, permissions)
+    
+    def remove_user(self, image_id, user):
+        image = self.get_image(image_id)
+        assert image, "Image not found"
+        
+        account = image['_account']
+        container = image['_container']
+        object = image['_object']
+        
+        action, path, permissions = self.backend.get_object_permissions(
+                self.user, account, container, object)
+        try:
+            permissions.get('read', []).remove(user)
+        except ValueError:
+            return      # User did not have access anyway
+        self.backend.update_object_permissions(self.user, account, container,
+                object, permissions)
+    
+    def replace_users(self, image_id, users):
+        image = self.get_image(image_id)
+        assert image, "Image not found"
+
+        account = image['_account']
+        container = image['_container']
+        object = image['_object']
+
+        action, path, permissions = self.backend.get_object_permissions(
+                self.user, account, container, object)
+        permissions['read'] = users
+        if image.get('is_public', False):
+            permissions['read'].append('*')
+        self.backend.update_object_permissions(self.user, account, container,
+                object, permissions)
+    
+    def list_users(self, image_id):
+        image = self.get_image(image_id)
+        assert image, "Image not found"
+        
+        account = image['_account']
+        container = image['_container']
+        object = image['_object']
+        
+        action, path, permissions = self.backend.get_object_permissions(
+                self.user, account, container, object)
+        return [user for user in permissions.get('read', []) if user != '*']
     
     def get_image(self, image_id):
         backend = self.backend
@@ -173,7 +234,7 @@ class BackendWrapper(object):
         assert container_format in settings.IMAGE_CONTAINER_FORMATS
         
         sz, hashmap = self.backend.get_object_hashmap(user, account,
-                container, name)
+                container, object)
         if size is not None and size != sz:
             raise BackendException("Invalid size")
         
@@ -240,6 +301,7 @@ class BackendWrapper(object):
 
         digest = m.digest()
         hexdigest = hexlify(digest)
+        image_id = str(UUID(bytes=digest))
         if checksum is not None and checksum != hexdigest:
             raise BackendException("Invalid checksum")
         
@@ -248,7 +310,7 @@ class BackendWrapper(object):
         meta = {'hash': hexdigest}
         
         set_plankton_attr(meta,
-            id=str(UUID(bytes=digest)),
+            id=image_id,
             name=name,
             status='available',
             store=store,
@@ -273,7 +335,7 @@ class BackendWrapper(object):
                 replace_meta=True,
                 permissions=permissions)
         
-        return self.get_image(image_meta['id'])
+        return self.get_image(image_id)
     
     def iter_public_images(self, filters):
         user = None
@@ -312,6 +374,20 @@ class BackendWrapper(object):
                 if not skip:
                     yield image
     
+    def iter_shared_images(self):
+        user = self.user
+        container = self.container
+        
+        for account in self.backend.list_accounts(user):
+            for path, version_id in self.backend.list_objects(user, account,
+                    container, prefix='', delimiter='/'):
+                try:
+                    image = self._get_image(user, account, container, path)
+                    if 'id' in image:
+                        yield image
+                except NotAllowedError:
+                    continue
+    
     def list_public_images(self, filters, params):
         images = list(self.iter_public_images(filters))
         
@@ -323,8 +399,7 @@ class BackendWrapper(object):
     
     def update_image(self, image_id, meta):
         image = self.get_image(image_id)
-        if not image:
-            return None
+        assert image, "Image not found"
         
         user = self.user
         account = image['_account']

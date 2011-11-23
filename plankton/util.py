@@ -34,8 +34,11 @@
 import datetime
 
 from functools import wraps
+from traceback import format_exc
 
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.conf import settings
+from django.http import (HttpResponse, HttpResponseBadRequest,
+        HttpResponseServerError)
 
 from synnefo.db.models import SynnefoUser
 from synnefo.plankton.backend import BackendWrapper, BackendException
@@ -78,6 +81,12 @@ def plankton_method(method):
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''
                 return HttpResponseBadRequest(message)
+            except Exception as e:
+                if settings.DEBUG:
+                    message = format_exc(e)
+                else:
+                    message = ''
+                return HttpResponseServerError(message)
             finally:
                 request.backend.close()
         return wrapper

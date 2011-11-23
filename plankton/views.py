@@ -36,8 +36,7 @@ import json
 from string import punctuation
 
 from django.conf import settings
-from django.http import (HttpResponse, HttpResponseNotAllowed,
-        HttpResponseNotFound)
+from django.http import HttpResponse, HttpResponseNotFound
 
 from synnefo.plankton.util import plankton_method
 from synnefo.util.log import getLogger
@@ -66,29 +65,11 @@ ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
 UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
                  'owner', 'properties', 'status')
 
+
 log = getLogger('synnefo.plankton')
 
 
-def demux(request):
-    if request.method == 'GET':
-        return list_public(request)
-    elif request.method == 'POST':
-        return add(request)
-    else:
-        return HttpResponseNotAllowed(['GET', 'POST'])
-
-def image_demux(request, image_id):
-    if request.method == 'GET':
-        return get(request, image_id)
-    elif request.method == 'HEAD':
-        return get_meta(request, image_id)
-    elif request.method == 'PUT':
-        return update(request, image_id)
-    else:
-        return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
-
-
-def create_image_response(image):
+def _create_image_response(image):
     response = HttpResponse()
     
     for key in DETAIL_FIELDS:
@@ -103,7 +84,7 @@ def create_image_response(image):
     return response
 
 
-def get_image_headers(request):
+def _get_image_headers(request):
     def normalize(s):
         return ''.join('_' if c in punctuation else c.lower() for c in s)
     
@@ -133,11 +114,26 @@ def get_image_headers(request):
 
 
 @plankton_method('POST')
-def add(request):
-    """Add a new virtual machine image"""
+def add_image(request):
+    """Add a new virtual machine image
     
-    params = get_image_headers(request)
-    log.debug('add %s', params)
+    Described in:
+    3.6. Adding a New Virtual Machine Image
+    
+    Implementation notes:
+      * The implementation is very inefficient as it loads the whole image
+        in memory.
+    
+    Limitations:
+      * x-image-meta-id is not supported. Will always return 409 Conflict.
+    
+    Extensions:
+      * An x-image-meta-location header can be passed with a link to file,
+        instead of uploading the data.
+    """
+    
+    params = _get_image_headers(request)
+    log.debug('add_image %s', params)
     
     assert set(params.keys()).issubset(set(ADD_FIELDS))
     
@@ -152,18 +148,43 @@ def add(request):
     
     if not image:
         return HttpResponse(status=500)
-    return create_image_response(image)
+    
+    return _create_image_response(image)
+
+
+@plankton_method('PUT')
+def add_image_member(request, image_id, member):
+    """Add a member to an image
+    
+    Described in:
+    3.9. Adding a Member to an Image
+    
+    Limitations:
+      * Passing a body to enable `can_share` is not supported.
+    """
+    
+    log.debug('add_image_member %s %s', image_id, member)
+    request.backend.add_user(image_id, member)
+    return HttpResponse(status=204)
 
 
 @plankton_method('GET')
-def get(request, image_id):
-    """Retrieve a virtual machine image"""
+def get_image(request, image_id):
+    """Retrieve a virtual machine image
+    
+    Described in:
+    3.5. Retrieving a Virtual Machine Image
+    
+    Implementation notes:
+      * The implementation is very inefficient as it loads the whole image
+        in memory.
+    """
     
     image = request.backend.get_image(image_id)
     if not image:
         return HttpResponseNotFound()
     
-    response = create_image_response(image)
+    response = _create_image_response(image)
     data = request.backend.get_image_data(image)
     response.content = data
     response['Content-Length'] = len(data)
@@ -173,18 +194,45 @@ def get(request, image_id):
 
 
 @plankton_method('HEAD')
-def get_meta(request, image_id):
-    """Return detailed metadata on a specific image"""
+def get_image_meta(request, image_id):
+    """Return detailed metadata on a specific image
+    
+    Described in:
+    3.4. Requesting Detailed Metadata on a Specific Image
+    """
 
     image = request.backend.get_image(image_id)
     if not image:
         return HttpResponseNotFound()
-    return create_image_response(image)
+    return _create_image_response(image)
 
 
 @plankton_method('GET')
-def list_public(request, detail=False):
-    """Return a list of public VM images."""
+def list_image_members(request, image_id):
+    """List image memberships
+
+    Described in:
+    3.7. Requesting Image Memberships
+    """
+    
+    members = [{'member_id': user, 'can_share': False}
+                for user in request.backend.list_users(image_id)]
+    data = json.dumps({'members': members}, indent=settings.DEBUG)
+    return HttpResponse(data)
+
+
+@plankton_method('GET')
+def list_public_images(request, detail=False):
+    """Return a list of public VM images.
+    
+    Described in:
+    3.1. Requesting a List of Public VM Images
+    3.2. Requesting Detailed Metadata on Public VM Images
+    3.3. Filtering Images Returned via GET /images andGET /images/detail
+    
+    Extensions:
+      * Image ID is returned in both compact and detail listings
+    """
 
     def get_request_params(keys):
         params = {}
@@ -194,7 +242,7 @@ def list_public(request, detail=False):
                 params[key] = val
         return params
 
-    log.debug('list_public detail=%s', detail)
+    log.debug('list_public_images detail=%s', detail)
 
     filters = get_request_params(FILTERS)
     params = get_request_params(PARAMS)
@@ -218,18 +266,84 @@ def list_public(request, detail=False):
     return HttpResponse(data)
 
 
-@plankton_method('PUT')
-def update(request, image_id):
-    """Updating an Image"""
+@plankton_method('GET')
+def list_shared_images(request, member):
+    """Request shared images
     
-    meta = get_image_headers(request)
-    log.debug('update %s', meta)
+    Described in:
+    3.8. Requesting Shared Images
+    
+    Implementation notes:
+      * It is not clear what this method should do. We only allow member to
+        be the user making the request.
+    """
+    
+    log.debug('list_shared_images %s', member)
+    if member != request.user.uniq:
+        return HttpResponse(status=403)
+    
+    images = []
+    for image in request.backend.iter_shared_images():
+        images.append({'image_id': image['id'], 'can_share': False})
+    
+    data = json.dumps({'shared_images': images}, indent=settings.DEBUG)
+    return HttpResponse(data)
+
+
+@plankton_method('DELETE')
+def remove_image_member(request, image_id, member):
+    """Remove a member from an image
+
+    Described in:
+    33.10. Removing a Member from an Image
+    """
+
+    log.debug('remove_image_member %s %s', image_id, member)
+    request.backend.remove_user(image_id, member)
+    return HttpResponse(status=204)
+
+
+@plankton_method('PUT')
+def update_image(request, image_id):
+    """Update an image
+    
+    Described in:
+    3.6.2. Updating an Image
+    
+    Implementation notes:
+      * It is not clear which metadata are allowed to be updated. We support:
+        name, disk_format, container_format, is_public, owner, properties
+        and status.
+    """
+    
+    meta = _get_image_headers(request)
+    log.debug('update_image %s', meta)
     
     assert set(meta.keys()).issubset(set(UPDATE_FIELDS))
     
     image = request.backend.update_image(image_id, meta)
+    return _create_image_response(image)
+
+
+@plankton_method('PUT')
+def update_image_members(request, image_id):
+    """Replace a membership list for an image
     
-    if not image:
-        return HttpResponse(status=500)
-    return create_image_response(image)
+    Described in:
+    3.11. Replacing a Membership List for an Image
     
+    Limitations:
+      * can_share value is ignored
+    """
+    
+    log.debug('update_image_members %s', image_id)
+    members = []
+    try:
+        data = json.loads(request.raw_post_data)
+        for member in data['memberships']:
+            members.append(member['member_id'])
+    except (ValueError, KeyError, TypeError):
+        return HttpResponse(status=400)
+    
+    request.backend.replace_users(image_id, members)
+    return HttpResponse(status=204)

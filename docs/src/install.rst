@@ -4,9 +4,12 @@ Installation
 This document describes the basic steps to obtain a basic, working Synnefo
 deployment. 
 
-The Synnefo Django project needs to be installed on nodes of type `APISERVER`_, 
-`LOGIC`_ and `WEBAPP`_ nodes with properly configured  :ref:`settings`. 
+The Synnefo package needs to be installed on nodes of type :ref:`APISERVER_NODE`, 
+:ref:`LOGIC_NODE` and :ref:`WEBAPP_NODE` nodes with properly configured  
+:ref:`settings <configuration>`. 
 
+This guide also covers in some detail instructions on how to set up additional
+additional software required by Synnefo to run properly.
 
 
 Prerequisites
@@ -18,7 +21,7 @@ Synnefo requires a working Ganeti installation at the backend. Installation
 of Ganeti is not covered by this document, please refer to
 `ganeti documentation <http://docs.ganeti.org/ganeti/current/html>`_ for all the 
 gory details. A successful Ganeti installation concludes with a working 
-`GANETI-MASTER`_ and a number of `GANETI-NODEs`_.
+:ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs <GANETI_NODES>`.
 
 
 Ganeti monitoring daemon
@@ -350,18 +353,68 @@ by checking out git repository::
     $ python setup.py install
 
 this should be enough for synnefo to get installed in your system-wide or
-``virtualenv`` python packages.
+``virtualenv`` python installation and the following commands should be 
+available from the command line::
 
+    $ synnefo-manage
+    $ synnefo-dispatcher
+    $ synnefo-admin
+
+Notice that Synnefo installation does not handle the creation of
+``/etc/synnefo/`` directory which is the place where custom configuration 
+files are loaded from. You are encouraged to create this directory and place a 
+file named ``settings.conf`` containing the following:
+
+.. code-block:: python
+    
+    # database configuration
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+            'NAME': '',                      # Or path to database file if using sqlite3.
+            'USER': '',                      # Not used with sqlite3.
+            'PASSWORD': '',                  # Not used with sqlite3.
+            'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+            'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        }
+    }
+    
+    # where synnefo static files exist
+    MEDIA_ROOT = '/var/lib/synnefo/static/'
+    
+    # rabitmq configuration
+    RABBIT_HOST = ""
+    RABBIT_USERNAME = ""
+    RABBIT_PASSWORD = ""
+    RABBIT_VHOST = "/"
+
+    GANETI_MASTER_IP = ""
+    GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "<username>", "<password>")
+
+    # This prefix gets used when determining the instance names
+    # of Synnefo VMs at the Ganeti backend.
+    # The dash must always appear in the name!
+    BACKEND_PREFIX_ID = "<prefix>-"
+
+this is just to get you started on how to configure your Synnefo installation.
+From this point you can continue your read to the `Initial configuration`_ section 
+in this document which contains quickstart instructions for some of the initial
+configuration required for Synnefo to get up and running.
+
+For additional instructions about Synnefo settings files and what the available 
+options are, you can refer to the :ref:`configuration` guide.
 
 Initial configuration
 ---------------------
 
-.. todo:: write some documentation here
+Synnefo comes with most of the required settings predefined with values that 
+would cover many of the most common installation scenarios. However some basic
+settings must be set be set before running Synnefo for the first time.
 
 Database
 ********
 
-.. todo:: write some documentation here
+See :ref:`database-configuration`
 
 Backend
 *******

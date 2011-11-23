@@ -6,12 +6,18 @@ Node types
 
 Nodes in a Synnefo deployment belong in one of the following types:
 
+
+.. _DB_NODE:
+
 DB
 **
 A node [or more than one nodes, if using an HA configuration], running a DB
 engine supported by the Django ORM layer. The DB is the single source of
 truth for the servicing of API requests by Synnefo.
 Services: PostgreSQL / MySQL
+
+
+.. _APISERVER_NODE:
 
 APISERVER
 *********
@@ -20,12 +26,18 @@ of APISERVERs can be used, in a load-balancing configuration, without any
 special consideration. Access to a common DB ensures consistency.
 Services: Web server, vncauthproxy
 
+
+.. _QUEUE_NODE:
+
 QUEUE
 *****
 A node running the RabbitMQ software, which provides AMQP functionality. More
 than one QUEUE nodes may be deployed, in an HA configuration. Such
 deployments require shared storage, provided e.g., by DRBD.
 Services: RabbitMQ [rabbitmq-server]
+
+
+.. _LOGIC_NODE:
 
 LOGIC
 *****
@@ -34,7 +46,10 @@ messages from QUEUE nodes, and provides the context in which business logic
 functions run. It uses Django ORM to connect to the common DB and update the
 state of the system, based on notifications received from the rest of the
 infrastructure, over AMQP.
-Services: the Synnefo logic dispatcher [/logic/dispatcher.py]
+Services: the Synnefo logic dispatcher [``synnefo-dispatcher``]
+
+
+.. _GANETI_NODES:
 
 GANETI-MASTER and GANETI-NODE
 *****************************
@@ -53,8 +68,15 @@ Services:
    properly configured `NFDHCPD`_
 
 
-UI deployment
--------------
+.. _WEBAPP_NODE:
+
+WEBAPP
+******
+.
+
+
+Web application deployment
+--------------------------
 
 Using Apache
 ************

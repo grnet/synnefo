@@ -1,3 +1,5 @@
+.. _configuration:
+
 Configuration
 =============
 
@@ -6,14 +8,17 @@ Customizing Synnefo settings
 
 Synnefo package bundles a `Django` project with predefined common `settings` 
 and `urls` set. The corresponding `Django` ``manage.py`` for the bundled project is 
-``synnefo-manage`` which after the package installation should be available in
-your system ``PATH``.
+``synnefo-manage`` which after the package installation should be available as a
+command from your system's terminal.
 
 To ease up the configuration of the application Synnefo includes settings
 defined in ``/etc/synnefo/*.conf`` files.
 
-Database
---------
+
+.. _database-configuration:
+
+Database configuration
+----------------------
 
 Add the following to your custom settings.py, depending on your choice
 of DB:
@@ -94,10 +99,11 @@ sample users.json file:
     .. include:: ../../synnefo/db/fixtures/users.json
 
 
+.. _additional-configuration:
+
 Additional configuration
 ************************
 
-Installation of the Synnefo dispatcher, ``synnefo-dispatcher``:
 The logic dispatcher is part of the Synnefo Django project and must run
 on LOGIC nodes.
 

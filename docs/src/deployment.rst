@@ -1,3 +1,5 @@
+.. _deployment:
+
 Deployment
 ==========
 
@@ -72,8 +74,10 @@ Services:
 
 WEBAPP
 ******
-.
+Synnefo WEBAPP node is the server that runs the web application contained within
+the synnefo package. At the current state Synnefo provides two web frontends.
 
+.. webapp-deploy:
 
 Web application deployment
 --------------------------

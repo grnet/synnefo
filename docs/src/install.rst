@@ -15,6 +15,9 @@ additional software required by Synnefo to run properly.
 Prerequisites
 -------------
 
+
+.. _ganeti-setup:
+
 Ganeti installation
 *******************
 Synnefo requires a working Ganeti installation at the backend. Installation
@@ -128,6 +131,9 @@ Install a custom KVM ifup script for use by Ganeti, as
 provided under ``/contrib/ganeti-hooks``. Set ``NFDHCPD_STATE_DIR`` to point
 to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
 
+
+.. _rabbitmq-setup:
+
 RabbitMQ installation
 *********************
 RabbitMQ is used as a generic message broker for the system. It should be
@@ -161,6 +167,9 @@ for the latest packages.
 
 Images should be stored under extdump format in a directory
 of your choice, configurable as ``IMAGE_DIR`` in ``/etc/default/snf-image``.
+
+
+.. _database-setup:
 
 Database installation
 *********************
@@ -273,6 +282,9 @@ or Debian's `apt-get`::
 Required packages
 `````````````````
 
+.. todo::
+    Confirm debian package names
+
 =======================     ===================         ==========
 PyPi package name           Debian package name         version   
 =======================     ===================         ==========
@@ -363,38 +375,13 @@ available from the command line::
 Notice that Synnefo installation does not handle the creation of
 ``/etc/synnefo/`` directory which is the place where custom configuration 
 files are loaded from. You are encouraged to create this directory and place a 
-file named ``settings.conf`` containing the following:
+file named ``settings.conf`` with the following contents:
 
-.. code-block:: python
-    
-    # database configuration
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-            'NAME': '',                      # Or path to database file if using sqlite3.
-            'USER': '',                      # Not used with sqlite3.
-            'PASSWORD': '',                  # Not used with sqlite3.
-            'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-            'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
-        }
-    }
-    
-    # where synnefo static files exist
-    MEDIA_ROOT = '/var/lib/synnefo/static/'
-    
-    # rabitmq configuration
-    RABBIT_HOST = ""
-    RABBIT_USERNAME = ""
-    RABBIT_PASSWORD = ""
-    RABBIT_VHOST = "/"
+.. _sample-settings:
+.. literalinclude:: ../_static/sample_settings.conf
+    :language: python
 
-    GANETI_MASTER_IP = ""
-    GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "<username>", "<password>")
-
-    # This prefix gets used when determining the instance names
-    # of Synnefo VMs at the Ganeti backend.
-    # The dash must always appear in the name!
-    BACKEND_PREFIX_ID = "<prefix>-"
+`download <../_static/sample_settings.conf>`_
 
 this is just to get you started on how to configure your Synnefo installation.
 From this point you can continue your read to the `Initial configuration`_ section 
@@ -402,7 +389,8 @@ in this document which contains quickstart instructions for some of the initial
 configuration required for Synnefo to get up and running.
 
 For additional instructions about Synnefo settings files and what the available 
-options are, you can refer to the :ref:`configuration` guide.
+settings are, you can refer to the :ref:`configuration <configuration>` guide.
+
 
 Initial configuration
 ---------------------
@@ -411,22 +399,36 @@ Synnefo comes with most of the required settings predefined with values that
 would cover many of the most common installation scenarios. However some basic
 settings must be set be set before running Synnefo for the first time.
 
+:ref:`sample settings file <sample-settings>`
+
+
 Database
 ********
 
-See :ref:`database-configuration`
+Changes ``DATABASES`` setting based on your :ref:`database setup <database-setup>` 
+and :ref:`initialize/update your database structure <database-initialization>`
+
+.. seealso::
+    :ref:`database-configuration` /
+    :ref:`database-initialization`
+
+
+Queue
+*****
+
+Change ``RABBIT_*`` settings to match your :ref:`RabbitMQ setup <rabbitmq-setup>`.
+
 
 Backend
 *******
 
-.. todo:: write some documentation here
+Set ``GANETI_NODES``, ``GANETI_MASTER_IP``, ``GANETI_CLUSTER_INFO`` based on your :ref:`Ganeti
+installation <ganeti-setup>` and change BACKEND_PREFIX_ID using an custom `prefix
+id`.
 
-UI
-**
 
-.. todo:: write some documentation here
+Web application
+***************
 
-Additional configuration
-************************
-
-.. todo:: write some documentation here
+See the extended :ref:`deployment guide <webapp-deploy>` for instructions on how to
+setup the Synnefo web application.

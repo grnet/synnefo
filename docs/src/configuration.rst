@@ -74,6 +74,11 @@ print out DDL statements. It should not fail::
 
     $ synnefo-manage sql db
 
+
+.. _database-initialization:
+
+Database initialization
+-----------------------
 You need to initialize the Synnefo DB::
 
     $ synnefo-manage syncdb
@@ -95,9 +100,10 @@ hardware configurations (flavors) and OS images::
 
 sample users.json file:
 
-.. code-block::
-    .. include:: ../../synnefo/db/fixtures/users.json
+.. literalinclude:: ../../synnefo/db/fixtures/users.json
+    :language: json
 
+`download <../_static/users.json>`_
 
 .. _additional-configuration:
 

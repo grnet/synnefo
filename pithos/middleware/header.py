@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from urllib import quote, unquote
+from urllib import unquote
 
 
 class URLEncodedHeadersMiddleware(object):

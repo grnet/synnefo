@@ -12,3 +12,11 @@ UPGRADE
     
     ALTER TABLE im_user ADD COLUMN 'password' VARCHAR(255);
 
+0.7.10 -> 0.7.11
+----------------
+* Install python-django-south
+* Add 'south' in INSTALLED_APPS in settings.py
+* Setup south:
+    python manage.py syncdb
+    python manage.py migrate im 0001 --fake
+    python manage.py migrate im

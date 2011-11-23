@@ -8,7 +8,7 @@ Assuming a clean debian squeeze (stable) installation, use the following steps t
 
 Install packages::
 
-  apt-get install git python-django python-setuptools python-sphinx python-httplib2
+  apt-get install git python-django python-django-south python-setuptools python-sphinx python-httplib2
   apt-get install python-sqlalchemy python-mysqldb python-psycopg2
   apt-get install apache2 libapache2-mod-wsgi
 
@@ -22,6 +22,7 @@ Setup the files (choose where to store data in ``settings.py`` and change ``SECR
   cd /pithos/pithos
   cp settings.py.dist settings.py
   python manage.py syncdb
+  python manage.py schemamigration im --initial
   cd /pithos
   python setup.py build_sphinx
 

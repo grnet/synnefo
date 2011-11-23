@@ -13,7 +13,7 @@ All docs are in the docs/source directory. The .rst files are perfectly readable
 To build the documentation you need to have Sphinx (http://sphinx.pocoo.org/) installed.
 
 On a typical debian-based Linux system run:
-    apt-get install python-django python-setuptools python-sphinx python-httplib2
+    apt-get install python-django python-django-south python-setuptools python-sphinx python-httplib2
     apt-get install python-sqlalchemy python-mysqldb python-psycopg2
 
 Enter the pithos dir, copy settings.py.dist to settings.py.
@@ -39,6 +39,7 @@ Enter the pithos dir, copy settings.py.dist to settings.py.
 
 Then run:
     python manage.py syncdb
+    python manage.py schemamigration im --initial
     python manage.py loaddata admin_user
     python manage.py runserver
 

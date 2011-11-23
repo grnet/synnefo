@@ -43,6 +43,8 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_str
+from django.core.files.uploadhandler import FileUploadHandler
+from django.core.files.uploadedfile import UploadedFile
 
 from pithos.api.compat import parse_http_date_safe, parse_http_date
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
@@ -555,6 +557,40 @@ def socket_read_iterator(request, length=0, blocksize=4096):
                 raise BadRequest()
             length -= len(data)
             yield data
+
+class SaveToBackendHandler(FileUploadHandler):
+    """Handle a file from an HTML form the django way."""
+    
+    def __init__(self, request=None):
+        super(SaveToBackendHandler, self).__init__(request)
+        self.backend = request.backend
+    
+    def put_data(self, length):
+        if len(self.data) >= length:
+            block = self.data[:length]
+            self.file.hashmap.append(self.backend.put_block(block))
+            self.md5.update(block)
+            self.data = self.data[length:]
+    
+    def new_file(self, field_name, file_name, content_type, content_length, charset=None):
+        self.md5 = hashlib.md5()        
+        self.data = ''
+        self.file = UploadedFile(name=file_name, content_type=content_type, charset=charset)
+        self.file.size = 0
+        self.file.hashmap = []
+    
+    def receive_data_chunk(self, raw_data, start):
+        self.data += raw_data
+        self.file.size += len(raw_data)
+        self.put_data(self.request.backend.block_size)
+        return None
+    
+    def file_complete(self, file_size):
+        l = len(self.data)
+        if l > 0:
+            self.put_data(l)
+        self.file.etag = self.md5.hexdigest().lower()
+        return self.file
 
 class ObjectWrapper(object):
     """Return the object's data block-per-block in each iteration.

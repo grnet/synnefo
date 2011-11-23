@@ -48,7 +48,7 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
-    get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
+    get_int_parameter, get_content_length, get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_hash, api_method, json_encode_decimal)
 from pithos.backends.base import NotAllowedError, QuotaError
 
@@ -863,26 +863,18 @@ def object_write_form(request, v_account, v_container, v_object):
     #                       forbidden (403),
     #                       badRequest (400)
     
+    request.upload_handlers = [SaveToBackendHandler(request)]
     if not request.FILES.has_key('X-Object-Data'):
         raise BadRequest('Missing X-Object-Data field')
     file = request.FILES['X-Object-Data']
     
     meta = {}
     meta['Content-Type'] = file.content_type
-    
-    md5 = hashlib.md5()
-    size = 0
-    hashmap = []
-    for data in file.chunks(request.backend.block_size):
-        size += len(data)
-        hashmap.append(request.backend.put_block(data))
-        md5.update(data)
-    
-    meta['ETag'] = md5.hexdigest().lower()
+    meta['ETag'] = file.etag
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                    v_account, v_container, v_object, size, hashmap, meta, True)
+                        v_account, v_container, v_object, file.size, file.hashmap, meta, True)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:

@@ -101,7 +101,6 @@ hardware configurations (flavors) and OS images::
 sample users.json file:
 
 .. literalinclude:: ../../synnefo/db/fixtures/users.json
-    :language: json
 
 `download <../_static/users.json>`_
 
@@ -114,7 +113,7 @@ The logic dispatcher is part of the Synnefo Django project and must run
 on LOGIC nodes.
 
 The dispatcher retrieves messages from the queue and calls the appropriate
-handler function as defined in the queue configuration in `/etc/synnefo/*.conf'
+handler function as defined in the queue configuration in `/etc/synnefo/*.conf`
 files.
 
 The default configuration should work directly without any modifications.

@@ -8,20 +8,20 @@ Jenkins cannot currently work with Git over encrypted HTTP. To solve this
 problem we currently mirror the central Git repository locally on the jenkins
 installation machine. To setup such a mirror do the following:
 
--edit .netrc
+edit .netrc::
 
-machine code.grnet.gr
-login accountname
-password accountpasswd
+    machine code.grnet.gr
+    login accountname
+    password accountpasswd
 
--Create the mirror
+Create the mirror::
 
-git clone --mirror https://code.grnet.gr/git/synnefo synnefo
+    git clone --mirror https://code.grnet.gr/git/synnefo synnefo
 
--Setup cron to pull from the mirror periodically. Ideally, Git mirror updates
-should run just before Jenkins jobs check the mirror for changes.
+Setup cron to pull from the mirror periodically. Ideally, Git mirror updates
+should run just before Jenkins jobs check the mirror for changes::
 
-4,14,24,34,44,54 * * * * cd /path/to/mirror && git fetch && git remote prune origin
+    4,14,24,34,44,54 * * * * cd /path/to/mirror && git fetch && git remote prune origin
 
 Jenkins setup
 -------------
@@ -66,50 +66,49 @@ build script).
 4. Make sure that all system-level dependencies specified in README.develop
    are correctly installed
 
-5. Create a new "free-style software" job and set the following values:
+5. Create a new "free-style software" job and set the following values::
 
--Project name: synnefo
--Source Code Management: Git
--URL of repository: Jenkins Git does not support HTTPS for checking out directly
-                    from the repository. The temporary solution is to checkout
-                    with a cron script in a directory and set the checkout path
-                    in this field
--Branches to build: master and perhaps others
--Git->Advanced->Local subdirectory for repo (optional): synnefo
--Git->Advanced->Prune remote branches before build: check
--Repository browser: redmineweb,
-                     URL: https://code.grnet.gr/projects/synnefo/repository/
--Build Triggers->Poll SCM: check
-                 Schedule: # every five minutes
-			   0,5,10,15,20,25,30,35,40,45,50,55 * * * * 
+    Project name: synnefo
+    Source Code Management: Git
+    URL of repository: Jenkins Git does not support HTTPS for checking out directly
+                        from the repository. The temporary solution is to checkout
+                        with a cron script in a directory and set the checkout path
+                        in this field
+    Branches to build: master and perhaps others
+    Git->Advanced->Local subdirectory for repo (optional): synnefo
+    Git->Advanced->Prune remote branches before build: check
+    Repository browser: redmineweb,
+                         URL: https://code.grnet.gr/projects/synnefo/repository/
+    Build Triggers->Poll SCM: check
+                     Schedule: # every five minutes
+                   0,5,10,15,20,25,30,35,40,45,50,55 * * * * 
 
--Build -> Add build step-> Execute shell
+    Build -> Add build step-> Execute shell
 
-Command:
+    Command::
 
-#!/bin/bash -ex
-cd synnefo
-mkdir -p reports
-/usr/bin/sloccount --duplicates --wide --details api util ui logic auth > reports/sloccount.sc
-cp conf/ci/manage.py .
-if [ ! -e requirements.pip ]; then cp conf/ci/pip-1.2.conf requirements.pip; fi
-cat settings.py.dist conf/ci/settings.py.sqlite > settings.py
-python manage.py update_ve
-python manage.py hudson api db logic 
+        #!/bin/bash -ex
+        cd synnefo
+        mkdir -p reports
+        /usr/bin/sloccount --duplicates --wide --details api util ui logic auth > reports/sloccount.sc
+        cp conf/ci/manage.py .
+        if [ ! -e requirements.pip ]; then cp conf/ci/pip-1.2.conf requirements.pip; fi
+        cat settings.py.dist conf/ci/settings.py.sqlite > settings.py
+        python manage.py update_ve
+        python manage.py hudson api db logic 
 
--Post-build Actions->Publish JUnit test result report: check
-                     Test report XMLs: synnefo/reports/TEST-*.xml
+    Post-build Actions->Publish JUnit test result report: check
+                         Test report XMLs: synnefo/reports/TEST-*.xml
 
--Post-build Actions->Publish Cobertura Coverage Report: check
-                     Cobertura xml report pattern: synnefo/reports/coverage.xml
+    Post-build Actions->Publish Cobertura Coverage Report: check
+                         Cobertura xml report pattern: synnefo/reports/coverage.xml
 
--Post-build Actions->Report Violations: check
-                     pylint[XML filename pattern]: synnefo/reports/pylint.report
+    Post-build Actions->Report Violations: check
+                         pylint[XML filename pattern]: synnefo/reports/pylint.report
 
--Post-build Actions->Publish SLOCCount analysis results
-                     SLOCCount reports: synnefo/reports/sloccount.sc
-                     (also, remember to install sloccount at /usr/bin)
----------------
-See also:
+    Post-build Actions->Publish SLOCCount analysis results
+                         SLOCCount reports: synnefo/reports/sloccount.sc
+                         (also, remember to install sloccount at /usr/bin)
 
-http://sites.google.com/site/kmmbvnr/home/django-hudson-tutorial
+.. seealso::
+    http://sites.google.com/site/kmmbvnr/home/django-hudson-tutorial

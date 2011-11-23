@@ -286,7 +286,8 @@ This section describes the installation process of the various software
 components in a RADOS cluster.
 
 0. Add Ceph Debian repository in /etc/apt/sources.list on every node (mon, osd,
-   clients):
+   clients)::
+
 	 deb http://ceph.newdream.net/debian/ squeeze main
 	 deb-src http://ceph.newdream.net/debian/ squeeze main
 
@@ -362,7 +363,7 @@ This section includes some notes on the RADOS cluster administration.
    After the splitting is complete, the number of PGs in the system must be
    changed. Warning: this is not considered safe on PGs in use (with objects),
    and should be changed only when the PG is created, and before being used:
-   	ceph osd pool set $poolname pgp_num $num
+   ceph osd pool set $poolname pgp_num $num
 
 4. Replacing the journal for osd.$id:
 	Edit the osd.$id journal configration section
@@ -445,6 +446,8 @@ This section includes some notes on the RADOS cluster administration.
 	in-kenrel RBD driver (writeback_window).
 
 	It can be configured via libvirt, and the configuration looks like this:
+
+    .. code-block:: xml
 
 		<disk type='network' device='disk'>
 		  <driver name='qemu' type='raw'/>

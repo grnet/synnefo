@@ -1,3 +1,12 @@
-.. automodule:: synnefo.settings.common.aai
+Available settings
+==================
+
+ADMINS
+------
+.. automodule:: synnefo.settings.common.admins
     :members:
-    :undoc-members:
+    :no-undoc-members:
+
+APPS
+----
+.. literalinclude:: ../../synnefo/settings/common/apps.py

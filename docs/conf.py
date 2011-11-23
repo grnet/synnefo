@@ -242,3 +242,6 @@ texinfo_documents = [
 
 # todo extension configuration
 todo_include_todos = True
+
+# autodoc config
+autodoc_default_flags = ['members']

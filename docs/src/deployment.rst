@@ -67,7 +67,7 @@ Services:
    the Synnefo Ganeti hook [/ganeti/snf-ganeti-hook.py].
  on each GANETI_NODE:
    a deployment-specific KVM ifup script
-   properly configured `NFDHCPD`_
+   properly configured :ref:`NFDHCPD <nfdhcpd-setup>`
 
 
 .. _WEBAPP_NODE:
@@ -77,7 +77,8 @@ WEBAPP
 Synnefo WEBAPP node is the server that runs the web application contained within
 the synnefo package. At the current state Synnefo provides two web frontends.
 
-.. webapp-deploy:
+
+.. _webapp-deploy:
 
 Web application deployment
 --------------------------

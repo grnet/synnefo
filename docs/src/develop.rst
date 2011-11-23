@@ -4,16 +4,17 @@ Developers guide
 Information on how to setup a development environment.
 
 This file documents the installation of a development environment for Synnefo.
-It should be read alongside README.deploy.
+It should be read alongside :ref:`installation guide <installation>`.
 
-It contains development-specific ammendments to the basic deployment steps
-outlined in README.deploy, and development-specific notes.
+It contains development-specific ammendments to the basic installation steps
+outlined in `installation guide <installation>`, and development-specific notes.
 
 Installing the development environment
 --------------------------------------
 
-For a basic development environment you need to follow steps 0-15
-of README.deploy, which should be read in its entirety *before* this document.
+For a basic development environment you need to follow steps
+of `installation guide <installation>`, which should be read in its 
+entirety *before* this document.
 
 Development-specific guidelines on each step:
 
@@ -28,14 +29,14 @@ Development-specific guidelines on each step:
 
 
 1. You do not need to install your own Ganeti installation.
-   Use the RAPI endpoint as contained in settings.py.dist.
+   Use the RAPI endpoint as contained in common settings.
 
 
 2. You do not need to setup your own RabbitMQ nodes, use the AMQP endpoints
    contained in settings.py.dist. 
 
 3. For development purposes, Django's own development
-   `server, ./manage.py runserver' will suffice.
+   server, `./manage.py runserver` will suffice.
 
 
 4. Use a virtual environment to install the Django project, or packages provided
@@ -103,12 +104,12 @@ Development-specific guidelines on each step:
 
 
 17.[OPTIONAL] Create settings.d/99-local.conf and insert local overrides for
-   settings.d/*.  This will allow pulling new files without needing to reapply
+   settings.d/\*.  This will allow pulling new files without needing to reapply
    local any local modifications.
 
 
 South Database Migrations
-------------------------=
+-------------------------
 
 * Initial Migration
 
@@ -159,6 +160,7 @@ Consider this example (adding a field to the SynnefoUser model):
 
     $ ./bin/python manage.py schemamigration db --auto
      + Added field new_south_test_field on db.SynnefoUser
+
      Created 0002_auto__add_field_synnefouser_new_south_test_field.py.
 
   You can now apply this migration with: ./manage.py migrate db
@@ -168,6 +170,7 @@ Consider this example (adding a field to the SynnefoUser model):
      - Migrating forwards to 0002_auto__add_field_synnefouser_new_south_test_field.
      > db:0002_auto__add_field_synnefouser_new_south_test_field
      - Loading initial data for db.
+
     Installing json fixture 'initial_data' from '/home/bkarak/devel/synnefo/../synnefo/db/fixtures'.
     Installed 1 object(s) from 1 fixture(s)
 

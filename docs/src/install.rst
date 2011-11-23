@@ -1,3 +1,5 @@
+.. _installation:
+
 Installation
 ============
 
@@ -59,7 +61,7 @@ on GANETI-MASTER, e.g. ::
 
 .. note::
     The link name may only contain "upper and lower case, digits,
-    underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9_-]+$."
+    underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9\_-]+$."
 
 .. seealso::
     `Ganeti customisation using hooks <http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming>`_
@@ -112,6 +114,9 @@ Then build debian package, and install as root::
         cd $SYNNEFO
         sudo pip install -e git+https://code.grnet.gr/git/vncauthproxy@5a196d8481e171a#egg=vncauthproxy
 
+
+.. _nfdhcpd-setup:
+
 NFDHCPD installation
 ********************
 Setup Synnefo-specific networking on the Ganeti backend.
@@ -148,7 +153,7 @@ After installation, create a user and set its permissions::
     $ rabbitmqctl set_permissions -p / <username>  "^.*" ".*" ".*"
 
 The values set for the user and password must be mirrored in the
-`RABBIT_*` variables in your `settings`_ (see step 6)
+`RABBIT_*` variables in your :ref:`settings <configuration>`.
 
 
 snf-image installation

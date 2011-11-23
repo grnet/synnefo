@@ -11,14 +11,13 @@ then we add on the settings.py the language code e.g.,
 
      LANGUAGES = (
       ('el', u'Ελληνικά'),
-      ('en', 'English'),
-     )
+      ('en', 'English'),)
 
 1) For each language we want to add, we run makemessages, from our project's
    base:
 
      $ ./bin/django-admin.py makemessages -l el -e html,txt,py
-     (./bin/django-admin.py makemessages -l el -e html,txt,py --ignore=lib/*)
+     (./bin/django-admin.py makemessages -l el -e html,txt,py --ignore=lib/\*)
 
    This will add the Greek language, and we specify that html, txt and python
    files contain translatable strings

@@ -39,6 +39,7 @@ Enter the pithos dir, copy settings.py.dist to settings.py.
 
 Then run:
     python manage.py syncdb
+    python manage.py schemamigration im --initial
     python manage.py loaddata admin_user
     python manage.py runserver
 

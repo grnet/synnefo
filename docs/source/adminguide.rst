@@ -22,6 +22,7 @@ Setup the files (choose where to store data in ``settings.py`` and change ``SECR
   cd /pithos/pithos
   cp settings.py.dist settings.py
   python manage.py syncdb
+  python manage.py schemamigration im --initial
   cd /pithos
   python setup.py build_sphinx
 

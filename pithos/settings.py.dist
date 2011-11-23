@@ -154,7 +154,8 @@ INSTALLED_APPS = (
     'pithos.im',
     'pithos.api',
     'pithos.public',
-    'pithos.ui'
+    'pithos.ui',
+    'south'
 )
 
 # Set the expiration time of newly created auth tokens

@@ -130,6 +130,7 @@ MIDDLEWARE_CLASSES = (
 #    'django.middleware.csrf.CsrfViewMiddleware',
 #    'django.contrib.auth.middleware.AuthenticationMiddleware',
 #    'django.contrib.messages.middleware.MessageMiddleware',
+    'pithos.middleware.URLEncodedHeadersMiddleware',
     'pithos.middleware.LoggingConfigMiddleware',
     'pithos.middleware.AuthMiddleware'
 )

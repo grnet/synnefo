@@ -288,7 +288,7 @@ def split_container_object_string(s):
         raise ValueError
     s = s[1:]
     pos = s.find('/')
-    if pos == -1:
+    if pos == -1 or pos == len(s) - 1:
         raise ValueError
     return s[:pos], s[(pos + 1):]
 

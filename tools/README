@@ -16,7 +16,7 @@ All tools use the included lib.
 
 Connection options can be set via environmental variables:
 
-	PITHSO_USER				Login user
+	PITHOS_USER				Login user
 	PITHOS_AUTH				Login token
 	PITHOS_SERVER			Pithos server (default: plus.pithos.grnet.gr)
 	PITHOS_API				Pithos server path (default: v1)

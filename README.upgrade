@@ -14,6 +14,20 @@ UPGRADE
 
 0.7.10 -> 0.7.11
 ----------------
+* Upgrade 'public' table in mysql (backend):
+	* Run: mysqldump pithosdb public > public-table.sql
+	* mysql> drop table public;
+	* Update the codebase and run the server so the new public table is created
+	* From the sql dump above, take the row:
+	    
+		INSERT INTO `public` VALUES (...);
+      
+      Rewrite as:
+	    
+		INSERT INTO `public`(`path`) VALUES (...);
+	  
+	  And execute in the database
+
 * Add 'south', remove 'pithos.public' in INSTALLED_APPS in settings.py
 * Install python-django-south
 * Setup south:

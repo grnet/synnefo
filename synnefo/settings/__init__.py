@@ -37,9 +37,9 @@ import glob
 # import common settings
 from synnefo.settings.common import *
 
-SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', None)
+SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
 
-if SYNNEFO_SETTINGS_DIR:
+if SYNNEFO_SETTINGS_DIR != "":
     # extend common settings with settings set in /etc/synnefo dir
     conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
     conffiles.sort()

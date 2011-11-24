@@ -22,12 +22,11 @@ UPGRADE
 	    
 		INSERT INTO `public` VALUES (...);
       
-      Rewrite as:
+          Rewrite as:
 	    
 		INSERT INTO `public`(`path`) VALUES (...);
 	  
 	  And execute in the database
-
 * Add 'south', remove 'pithos.public' in INSTALLED_APPS in settings.py
 * Install python-django-south
 * Setup south:

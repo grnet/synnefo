@@ -125,10 +125,12 @@ Static files
   server will serve all static files (js/css) required by Synnefo web frontend to 
   run.
 * Change ``MEDIA_ROOT`` value in your settings to point to that directory.
-* Run the following command which will create symlinks of static files in
-  that directory::
-    
+* Run the following command::
+
     $ synnefo-manage link_static
+
+  the command will create symlinks of the appropriate static files inside the choosen 
+  directory.
 
 
 Using Apache
@@ -148,3 +150,22 @@ Using nginx
 run the fcgi server::
 
     $ synnefo-manage runfcgi host=127.0.0.1 port=8015
+
+
+Console scripts
+---------------
+
+synnefo-manage
+**************
+
+synnefo-dispatcher
+******************
+
+synnefo-admin
+*************
+
+synnefo-cloud
+*************
+
+synnefo-burnin
+**************

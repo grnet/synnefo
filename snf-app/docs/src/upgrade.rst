@@ -7,6 +7,25 @@ For more information, please see README.deploy.
 v0.7 -> v0.8
 ------------
 
+Synnefo is now distributed packaged in python/debian packages. You should
+consider the following when migration from a previously `source` deployment
+projects:
+    
+    * To keep consistency with future changes you should change ``python
+      manage.py`` calls with deployed ``synnefo-manage`` console script.
+      This includes automation scripts, service scripts etc.
+
+      Same applies for calls to ``dispatcher.py``, ``snf-tools/admin.py``,
+      ``snf-tools/burnin.py`` and ``snf-tools/cloud.py`` which are replaced
+      respectively by ``synnefo-dispatcher``, ``synnefo-admin``,
+      ``synnefo-burnin`` and ``synnefo-cloud``.
+
+    * Copy custom settings files located in projects ``settings.d`` directory
+      to ``/etc/synnefo/`` directory.
+
+    * Migrate location from which :ref:`static files <static-files>` are served from.
+
+
 NEW APPS
     * The 'synnefo.ui.userdata' application has been added in
       settings.d/00-apps.conf. Application urls appended in ui/urls.py.

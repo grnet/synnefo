@@ -14,14 +14,16 @@ Prerequisites
 -------------
 
 For a basic development environment you need to follow steps
-of `installation guide <installation>`, which should be read in its 
-entirety *before* this document.
+of `installation guide <installation>`, which should be read 
+in its entirety *before* this document.
 
 
 Setting up development environment
 ----------------------------------
 
-Although not necessary it is 
+Although not necessary it is suggested that you use a virtualenv as a base for
+your development environment.
+
 Development-specific guidelines on each step:
 
 
@@ -264,7 +266,8 @@ Building Synnefo package
 ------------------------
 
 To create a python package from the Synnefo source code run::
-
+    
+    $ cd snf-app
     $ python setup.py sdist
 
 this command will create a ``tar.gz`` python source package inside ``dist`` directory.
@@ -276,10 +279,10 @@ Building Synnefo documentation
 Make sure you have ``sphinx`` installed.
 
 .. code-block:: bash
-
-    $ cd docs
+    
+    $ cd snf-app/docs
     $ make html
 
-html files are generated in ``docs/_build/html`` directory
+html files are generated in ``snf-app/docs/_build/html`` directory
 
 .. include:: ci.rst

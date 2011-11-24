@@ -22,98 +22,107 @@ Setting up development environment
 ----------------------------------
 
 Although not necessary it is suggested that you use a virtualenv as a base for
-your development environment.
+your development environment::
 
-Development-specific guidelines on each step:
+    $ virtualenv synnefo-env
+    $ cd synnefo-dev
+    $ source bin/activate
 
+* Clone Synnefo repository::
 
-0. Allocation of physical nodes:
-   Node types DB, APISERVER, LOGIC may all be run on the same physical machine,
-   usually, your development workstation.
+  (synnefo-env)$ git clone https://code.grnet.gr/git/synnefo synnefo
 
-   Nodes of type GANETI-MASTER, GANETI-NODES and QUEUE are already provided
-   by the development Ganeti backend. Access credentials are provided in
-   settings.py.dist.
+* Install synnefo depedencies::
 
+  (synnefo-env)$ pip install -r synnefo/requirements.pip
 
-1. You do not need to install your own Ganeti installation.
-   Use the RAPI endpoint as contained in common settings.
+* Install development helpers::
 
+  (synnefo-env)$ pip install django_extensions
 
-2. You do not need to setup your own RabbitMQ nodes, use the AMQP endpoints
-   contained in settings.py.dist. 
+* Install synnefo package::
 
-3. For development purposes, Django's own development
-   server, `./manage.py runserver` will suffice.
+  (synnefo-env)$ cd synnefo/snf-app
+  (synnefo-env)$ python setup.py develop -N
 
+* Create a custom development settings module and set environment variable to
+  use this module as the entry point of synnefo settings::
 
-4. Use a virtual environment to install the Django project, or packages provided
-   by your distribution.
+  (synnefo-env)$ touch settings_dev.py
+  (synnefo-env)$ export DJANGO_SETTINGS_MODULE=settings_dev
+  (synnefo-env)$ export PYTHONPATH=`pwd`:$PYTHONPATH
+  (synnefo-env)$ vi settings_dev.py
+    
+  paste the following sample development settings:
 
+  .. code-block:: python
+    
+        import os
 
-5. Install a DB of your own, or use the PostgreSQL instance available on the
-   development backend.
+        from synnefo.settings.common import *
+        
+        # uncomment this if have django-extensions installed (pip install django_extensions)
+        #INSTALLED_APPS = list(INSTALLED_APPS) + ['django_extensions']
 
-
-6. As is.
-
-
-7. The following fixtures can be loaded optionally depending on
-   testing/development requirements, and are not needed in a production setup:
-
-	$ ./bin/python manage.py loaddata db/fixtures/vms.json
-	$ ./bin/python manage.py loaddata db/fixtures/disks.json
-
-
-8. MAKE SURE you setup a distinct BACKEND_PREFIX_ID, e.g., use your commit
-   username. 
-
-
-9. The Ganeti monitoring daemon from the latest Synnefo release is already
-   running on the development Ganeti master. You may also run your own, on your
-   own Ganeti backend if you so wish.
+        DEV_PATH = os.path.abspath(os.path.dirname(__file__))
+        DATABASES['default']['NAME'] = os.path.join(DEV_PATH, "synnefo.sqlite")
 
 
-10. As is.
+        # development rabitmq configuration
+        RABBIT_HOST = ""
+        RABBIT_USERNAME = ""
+        RABBIT_PASSWORD = ""
+        RABBIT_VHOST = "/"
 
-11. The Synnefo Ganeti hook is already running on the development backend,
-    sending notifications over AMQP.
+        # development ganeti settings
+        GANETI_MASTER_IP = ""
+        GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "<username>", "<password>")
+        GANETI_CREATEINSTANCE_KWARGS['disk_template'] = 'plain'
+
+        # This prefix gets used when determining the instance names
+        # of Synnefo VMs at the Ganeti backend.
+        # The dash must always appear in the name!
+        BACKEND_PREFIX_ID = "<my commit name>-"
+
+        IGNORE_FLAVOR_DISK_SIZES = True
+
+        # do not actually send emails
+        # save them as files in /tmp/synnefo-mails
+        EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+        EMAIL_FILE_PATH = '/tmp/synnefo-mails'
+
+        # for UI developers
+        UI_HANDLE_WINDOW_EXCEPTIONS = False
+
+        # allow login using /?test url
+        BYPASS_AUTHENTICATION = True 
+
+* Initialize database::
+
+  (synnefo-env)$ synnefo-manage syndb
+  (synnefo-env)$ synnefo-manage migrate
+  (synnefo-env)$ synnefo-manage loaddata users flavors images
 
 
-12. The VNC authentication proxy is already running on the Ganeti development
-    backend. You *cannot* run your own, unless you install your own Ganeti
-    backend, because it needs direct access to the hypervisor's VNC port on
-    GANETI-NODEs.
+Development tips
+****************
 
-    Note: You still need to install the vncauthproxy package to satisfy
-    the dependency of the API on the vncauthproxy client. See Synnefo #807
-    for more details.
+* Running a development web server::
 
+  (synnefo-env)$ synnefo-manage runserver
 
-13. The development Ganeti backend already has a number of OS Images available.
+  or, if you have django_extensions and werkzeug packages installed::
 
-
-14. The development Ganeti backend already has a number of pre-provisioned
-    bridges available, per each BACKEND_PREFIX_ID.
-
-    To setup simple NAT-based networking on a Ganeti backend on your own,
-    please see the provided patches under contrib/patches/.
-    You will need minor patches to the sample KVM ifup hook, kvm-vif-bridge,
-    and a small patch to NFDHCPD to enable it to work with bridged tap+
-    interfaces. To support bridged tap interfaces you also need to patch the
-    python-nfqueue package, patches against python-nfqueue-0.3 [part of Debian
-    Sid] are also provided under contrib/patches/.
+  (synnefo-env)$ synnefo-manage runserver_plus
 
 
-15. As is.
+* Opening a python console with synnefo environment initialized::
 
+  (synnefo-env)$ synnefo-manage shell
 
-16. As is.
+  or, if you have django_extensions package installed::
 
-
-17. [OPTIONAL] Create settings.d/99-local.conf and insert local overrides for
-    settings.d/\*.  This will allow pulling new files without needing to reapply
-    local any local modifications.
+  (synnefo-env)$ synnefo-manage shell_plus
 
 
 South Database Migrations

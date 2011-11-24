@@ -31,18 +31,18 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os.path
+import os
 import glob
 
 # import common settings
 from synnefo.settings.common import *
 
-SYNNEFO_DIST_SETTINGS_DIR = '/etc/synnefo'
+SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', None)
 
-# extend common settings with settings set in /etc/synnefo dir
-conffiles = glob.glob(os.path.join(SYNNEFO_DIST_SETTINGS_DIR, '*.conf'))
-conffiles.sort()
-for f in conffiles:
-    execfile(os.path.abspath(f))
-
+if SYNNEFO_SETTINGS_DIR:
+    # extend common settings with settings set in /etc/synnefo dir
+    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
+    conffiles.sort()
+    for f in conffiles:
+        execfile(os.path.abspath(f))
 

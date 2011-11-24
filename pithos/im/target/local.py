@@ -34,6 +34,8 @@
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.core.urlresolvers import reverse
+from django.utils.http import urlencode
 
 from pithos.im.target.util import prepare_response
 from pithos.im.models import User
@@ -62,6 +64,12 @@ def login(request):
         return HttpResponseBadRequest('Unverified account')
     
     next = request.POST.get('next')
+    if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
+        profile_url = reverse('pithos.im.views.users_profile', args=(user.id,))
+        next = urlencode({'next': next})
+        profile_url = profile_url + '?' + next
+        return prepare_response(request, user, profile_url)
+    
     return prepare_response(request, user, next)
 
 def activate(request):

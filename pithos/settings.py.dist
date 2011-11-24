@@ -204,6 +204,9 @@ PASSWORD_RESET_TARGET = '%s/im/local/reset/' \
                             '?username=%s' \
                             '&next=%s'
 
+# Force user profile verification
+FORCE_PROFILE_UPDATE = False
+
 # The server is behind a proy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False
 

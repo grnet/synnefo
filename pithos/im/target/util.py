@@ -80,7 +80,7 @@ def prepare_response(request, user, next='', renew=False):
         # TODO: Avoid redirect loops.
         parts = list(urlsplit(next))
         # Do not pass on user and token if we are on the same server.
-        if request.get_host() != parts[1]:
+        if parts[1] and request.get_host() != parts[1]:
             parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
             next = urlunsplit(parts)
     

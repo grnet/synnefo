@@ -14,18 +14,16 @@
     <div style="padding: 5px 0px 0px 0px">
       <img src="/im/static/banner.png" width="900" height="200">
     </div>
+    {% block title %}{% endblock %}
+    
+    {% if message %}
+    <br />
+    <div class="alert-message.{{ status }}">
+      <p>{{ message }}</p>
+    </div>
+    {% endif %}
 
-    <ul class="tabs">
-      <li{% ifequal tab "home" %} class="active"{% endifequal %}>
-        <a href="{% url pithos.im.views.admin %}">Home</a>
-      </li>
-      <li{% ifequal tab "users" %} class="active"{% endifequal %}>
-        <a href="{% url pithos.im.views.users_list %}">Users</a>
-      </li>
-      <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
-        <a href="{% url pithos.im.views.invitations_list %}">Invitations</a>
-      </li>
-    </ul>
+    {% block tabs %}{% endblock %}
 
     {% block body %}{% endblock %}
   </div>

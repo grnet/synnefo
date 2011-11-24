@@ -76,6 +76,24 @@ def requires_login(func):
         return func(request, *args)
     return wrapper
 
+def requires_my_login(func):
+    @wraps(func)
+    def wrapper(request, *args):
+        print '>', request.user, args
+        if not settings.BYPASS_ADMIN_AUTH:
+            if not request.user:
+                next = urlencode({'next': request.build_absolute_uri()})
+                login_uri = reverse(index) + '?' + next
+                return HttpResponseRedirect(login_uri)
+            else:
+                user = User.objects.get(uniq=request.user)
+                if user.id != int(args[0]):
+                    next = urlencode({'next': request.build_absolute_uri()})
+                    login_uri = reverse(index) + '?' + next
+                    return HttpResponseRedirect(login_uri)
+        return func(request, *args)
+    return wrapper
+
 
 def requires_admin(func):
     @wraps(func)
@@ -455,3 +473,33 @@ def users_create(request):
         user.renew_token()
         user.save()
         return redirect(users_info, user.id)
+
+@requires_my_login
+def users_profile(request, user_id):
+    next = request.GET.get('next')
+    user = User.objects.get(id=user_id)
+    states = [x[0] for x in User.ACCOUNT_STATE]
+    return render_response('users_profile.html',
+                            user=user,
+                            states=states,
+                            next=next)
+
+@requires_my_login
+def users_edit(request, user_id):
+    user = User.objects.get(id=user_id)
+    user.realname = request.POST.get('realname')
+    user.affiliation = request.POST.get('affiliation')
+    user.is_verified = True
+    user.save()
+    next = request.POST.get('next')
+    if next:
+        return redirect(next)
+    
+    status = 'success'
+    message = _('Profile has been updated')
+    html = render_to_string('users_profile.html', {
+            'user': user,
+            'status': status,
+            'message': message})
+    return HttpResponse(html)
+    

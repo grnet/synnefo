@@ -79,6 +79,8 @@ class User(models.Model):
     created = models.DateTimeField('Creation date')
     updated = models.DateTimeField('Update date')
     
+    is_verified = models.BooleanField('Verified?', default=False)
+    
     @property
     def quota(self):
         return get_quota(self.uniq)

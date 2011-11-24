@@ -50,6 +50,9 @@ urlpatterns = patterns('pithos.im.views',
     
     (r'^admin/invitations/?$', 'invitations_list'),
     (r'^admin/invitations/export/?$', 'invitations_export'),
+    
+    (r'^profile/(\d+)/?$', 'users_profile'),
+    (r'^profile/(\d+)/edit/?$', 'users_edit'),
 )
 
 urlpatterns += patterns('pithos.im.target',

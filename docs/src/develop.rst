@@ -66,73 +66,71 @@ Development-specific guidelines on each step:
    own Ganeti backend if you so wish.
 
 
-10.As is.
+10. As is.
 
-11.The Synnefo Ganeti hook is already running on the development backend,
-   sending notifications over AMQP.
-
-
-12.The VNC authentication proxy is already running on the Ganeti development
-   backend. You *cannot* run your own, unless you install your own Ganeti
-   backend, because it needs direct access to the hypervisor's VNC port on
-   GANETI-NODEs.
-
-   Note: You still need to install the vncauthproxy package to satisfy
-   the dependency of the API on the vncauthproxy client. See Synnefo #807
-   for more details.
+11. The Synnefo Ganeti hook is already running on the development backend,
+    sending notifications over AMQP.
 
 
-13.The development Ganeti backend already has a number of OS Images available.
+12. The VNC authentication proxy is already running on the Ganeti development
+    backend. You *cannot* run your own, unless you install your own Ganeti
+    backend, because it needs direct access to the hypervisor's VNC port on
+    GANETI-NODEs.
+
+    Note: You still need to install the vncauthproxy package to satisfy
+    the dependency of the API on the vncauthproxy client. See Synnefo #807
+    for more details.
 
 
-14.The development Ganeti backend already has a number of pre-provisioned
-   bridges available, per each BACKEND_PREFIX_ID.
-
-   To setup simple NAT-based networking on a Ganeti backend on your own,
-   please see the provided patches under contrib/patches/.
-   You will need minor patches to the sample KVM ifup hook, kvm-vif-bridge,
-   and a small patch to NFDHCPD to enable it to work with bridged tap+
-   interfaces. To support bridged tap interfaces you also need to patch the
-   python-nfqueue package, patches against python-nfqueue-0.3 [part of Debian
-   Sid] are also provided under contrib/patches/.
+13. The development Ganeti backend already has a number of OS Images available.
 
 
-15.As is.
+14. The development Ganeti backend already has a number of pre-provisioned
+    bridges available, per each BACKEND_PREFIX_ID.
+
+    To setup simple NAT-based networking on a Ganeti backend on your own,
+    please see the provided patches under contrib/patches/.
+    You will need minor patches to the sample KVM ifup hook, kvm-vif-bridge,
+    and a small patch to NFDHCPD to enable it to work with bridged tap+
+    interfaces. To support bridged tap interfaces you also need to patch the
+    python-nfqueue package, patches against python-nfqueue-0.3 [part of Debian
+    Sid] are also provided under contrib/patches/.
 
 
-16.As is.
+15. As is.
 
 
-17.[OPTIONAL] Create settings.d/99-local.conf and insert local overrides for
-   settings.d/\*.  This will allow pulling new files without needing to reapply
-   local any local modifications.
+16. As is.
+
+
+17. [OPTIONAL] Create settings.d/99-local.conf and insert local overrides for
+    settings.d/\*.  This will allow pulling new files without needing to reapply
+    local any local modifications.
 
 
 South Database Migrations
 -------------------------
 
-* Initial Migration
-
-First, remember to add the south app to settings.py (it is already included in
-the settings.py.dist).
+Initial Migration
+*****************
 
 To initialise south migrations in your database the following commands must be
-executed:
+executed::
 
-    $ ./bin/python manage.py syncdb       # Create / update the database with the south tables
-    $ ./bin/python manage.py migrate db   # Perform migration in the database
+    $ synnefo-manage syncdb       # Create / update the database with the south tables
+    $ synnefo-manage migrate db   # Perform migration in the database
 
 Note that syncdb will create the latest models that exist in the db app, so some
 migrations may fail.  If you are sure a migration has already taken place you
 must use the "--fake" option, to apply it.
 
-For example:
+For example::
 
-    $ ./bin/python manage.py migrate db 0001 --fake
+    $ synnefo-manage migrate db 0001 --fake
 
-To be sure that all migrations are applied type:
+To be sure that all migrations are applied type::
 
-    $ ./bin/python manage.py migrate db --list
+    $ synnefo-manage migrate db --list
 
 All starred migrations are applied.
 
@@ -140,30 +138,31 @@ Remember, the migration is performed mainly for the data, not for the database
 schema. If you do not want to migrate the data, a syncdb and fake migrations for
 all the migration versions will suffice.
 
-* Schema migrations:
+Schema migrations
+*****************
 
 Do not use the syncdb management command. It can only be used the first time
 and/or if you drop the database and must recreate it from scratch. See
 "Initial Migration" section.
 
 Every time you make changes to the database and data migration is not required
-(WARNING: always perform this with extreme care):
+(WARNING: always perform this with extreme care)::
 
-    $ ./bin/python manage.py schemamigration db --auto
+    $ synnefo-manage schemamigration db --auto
 
 The above will create the migration script. Now this must be applied to the live
-database.
+database::
 
-    $ ./bin/python migrate db
+    $ synnefo-manage migrate db
 
-Consider this example (adding a field to the SynnefoUser model):
+Consider this example (adding a field to the SynnefoUser model)::
 
     $ ./bin/python manage.py schemamigration db --auto
      + Added field new_south_test_field on db.SynnefoUser
 
      Created 0002_auto__add_field_synnefouser_new_south_test_field.py.
 
-  You can now apply this migration with: ./manage.py migrate db
+You can now apply this migration with::
 
     $ ./manage.py migrate db
      Running migrations for db:
@@ -176,7 +175,7 @@ Consider this example (adding a field to the SynnefoUser model):
 
 South needs some extra definitions to the model to preserve and migrate the
 existing data, for example, if we add a field in a model, we should declare its
-default value. If not, South will propably fail, after indicating the error.
+default value. If not, South will propably fail, after indicating the error::
 
     $ ./bin/python manage.py schemamigration db --auto
      ? The field 'SynnefoUser.new_south_field_2' does not have a default specified, yet is NOT NULL.
@@ -186,7 +185,8 @@ default value. If not, South will propably fail, after indicating the error.
      ?  2. Specify a one-off value to use for existing columns now
      ? Please select a choice: 1
 
-* Data migrations:
+Data migrations
+***************
 
 If we need to do data migration as well, for example rename a field, we use the
 'datamigration' management command.
@@ -194,73 +194,65 @@ If we need to do data migration as well, for example rename a field, we use the
 In contrast with schemamigration, to perform complex data migration, we must
 write the script manually. The process is the following:
 
-    1. Introduce the changes in the code and fixtures (initial data).
-    2. Execute:
+1. Introduce the changes in the code and fixtures (initial data).
+2. Execute::
 
     $ ./bin/python manage.py datamigration <migration_name_here>
 
-    For example:
+    For example::
 
-    $ ./bin/python manage.py datamigration db rename_credit_wallet
-    Created 0003_rename_credit_wallet.py.
+        $ ./bin/python manage.py datamigration db rename_credit_wallet
+        Created 0003_rename_credit_wallet.py.
 
-    3. We edit the generated script. It contains two methods: forwards and
-    backwards.
+3. We edit the generated script. It contains two methods: forwards and
+   backwards.
 
-    For database operations (column additions, alter tables etc) we use the
-    South database API (http://south.aeracode.org/docs/databaseapi.html).
+   For database operations (column additions, alter tables etc) we use the
+   South database API (http://south.aeracode.org/docs/databaseapi.html).
 
-    To access the data, we use the database reference (orm) provided as
-    parameter in forwards, backwards method declarations in the migration
-    script. For example:
+   To access the data, we use the database reference (orm) provided as
+   parameter in forwards, backwards method declarations in the migration
+   script. For example::
 
-    class Migration(DataMigration):
+        .. code-block:: python
 
-    def forwards(self, orm):
-        orm.SynnefoUser.objects.all()
+            class Migration(DataMigration):
 
-    4. To migrate the database to the latest version, we execute:
+            def forwards(self, orm):
+                orm.SynnefoUser.objects.all()
 
-    ./manage.py migrate db
+    4. To migrate the database to the latest version, we execute::
 
-To see which migrations are applied:
+        $ synnefo-manage migrate db
 
-    $ ./bin/python manage.py migrate db --list
+    To see which migrations are applied::
 
-      db
-        (*) 0001_initial
-        (*) 0002_auto__add_field_synnefouser_new_south_test_field
-        (*) 0003_rename_credit_wallet
+          $ synnefo-manage migrate db --list
 
-More information and more thorough examples can be found in the South web site.
+          db
+            (*) 0001_initial
+            (*) 0002_auto__add_field_synnefouser_new_south_test_field
+            (*) 0003_rename_credit_wallet
 
-http://south.aeracode.org/
-
-
-UI Testing
-----------
-The functional ui tests require the Selenium server and the synnefo app to
-be running.
-
-    $ wget http://selenium.googlecode.com/files/selenium-server-standalone-2.0b2.jar
-    $ java -jar selenium-server-standalone-2.0b2.jar &
-    $ ./bin/python manage.py runserver &
-    $ ./bin/python manage.py test ui
+.. seealso::
+    More information and more thorough examples can be found in the South web site.
+    http://south.aeracode.org/
 
 
 Test coverage
 -------------
 
-In order to get code coverage reports you need to install django-test-coverage
+In order to get code coverage reports you need to install django-test-coverage::
 
    $ ./bin/pip install django-test-coverage
 
-Then edit your settings.py and configure the test runner:
+Then edit your settings.py and configure the test runner::
 
    TEST_RUNNER = 'django-test-coverage.runner.run_tests'
 
 
 .. include:: i18n.rst
+
 
 Building Synnefo package
 ------------------------
@@ -269,8 +261,8 @@ To create a python package from the Synnefo source code run::
 
     $ python setup.py sdist
 
-this command will create a ``tar.gz`` python source package using
-the version number provided in ``setup.py``.
+this command will create a ``tar.gz`` python source package inside ``dist`` directory.
+
 
 Building Synnefo documentation
 ------------------------------
@@ -283,3 +275,5 @@ Make sure you have ``sphinx`` installed.
     $ make html
 
 html files are generated in ``docs/_build/html`` directory
+
+.. include:: ci.rst

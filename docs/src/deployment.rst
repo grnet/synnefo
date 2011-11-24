@@ -74,14 +74,62 @@ Services:
 
 WEBAPP
 ******
-Synnefo WEBAPP node is the server that runs the web application contained within
-the synnefo package. At the current state Synnefo provides two web frontends.
+Synnefo WEBAPP node is the server that runs the web application bundled within
+the synnefo package. The application provides 2 different interfaces.
+
+
+Web admin
+`````````
+Synnefo web administration interface. Allows administrator users to manage the
+synnefo application via web interface.
+
+Web application
+```````````````
+Web interface which allows users to create/configure/manage their virtual
+machines.
+
+.. _dispatcher-deploy:
+
+Dispatcher
+----------
+
+The logic dispatcher is part of the Synnefo Django project and must run
+on :ref:`LOGIC <LOGIC_NODE>` nodes.
+
+The dispatcher retrieves messages from the queue and calls the appropriate
+handler function as defined in the queue configuration in `/etc/synnefo/*.conf`
+files.
+
+The default configuration should work directly without any modifications.
+
+For the time being The dispatcher must be run by hand::
+
+  $ synnefo-dispatcher
+
+The dispatcher should run in at least 2 instances to ensure high
+(actually, increased) availability.
 
 
 .. _webapp-deploy:
 
 Web application deployment
 --------------------------
+
+
+.. _static-files:
+
+Static files
+************
+
+* Choose an appropriate path (e.g. /var/lib/synnefo/static/) from which your web 
+  server will serve all static files (js/css) required by Synnefo web frontend to 
+  run.
+* Change ``MEDIA_ROOT`` value in your settings to point to that directory.
+* Run the following command which will create symlinks of static files in
+  that directory::
+    
+    $ synnefo-manage link_static
+
 
 Using Apache
 ************
@@ -91,10 +139,12 @@ Using Apache
 Using nginx
 ***********
 
-.. todo:: document nginx configuration
+**Sample nginx configuration using fcgi**
 
-Serving static files
-********************
+.. literalinclude:: ../_static/synnefo.nginx.conf
 
-.. todo:: document serving static files instructions
+`download <../_static/synnefo.nginx.conf>`_
 
+run the fcgi server::
+
+    $ synnefo-manage runfcgi host=127.0.0.1 port=8015

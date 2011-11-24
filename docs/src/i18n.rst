@@ -10,8 +10,8 @@ DJANGO TRANSLATIONS OF STATIC TEXT
 then we add on the settings.py the language code e.g.,
 
      LANGUAGES = (
-      ('el', u'Ελληνικά'),
-      ('en', 'English'),)
+      ('el', u'Greek'),
+      ('en', u'English'),)
 
 1) For each language we want to add, we run makemessages, from our project's
    base:
@@ -52,6 +52,6 @@ then we add on the settings.py the language code e.g.,
    This compiles the po files to mo. Our strings will appear translated once we 
    change the language (eg from a dropdown menu in the page)
 
-More info:
-http://docs.djangoproject.com/en/dev/topics/i18n/internationalization/
+.. seealso::
+    http://docs.djangoproject.com/en/dev/topics/i18n/internationalization/
 

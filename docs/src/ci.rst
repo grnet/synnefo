@@ -1,8 +1,8 @@
 Continuous integration with Jenkins
-===================================
+-----------------------------------
 
 Preparing a GIT mirror
-----------------------
+**********************
 
 Jenkins cannot currently work with Git over encrypted HTTP. To solve this
 problem we currently mirror the central Git repository locally on the jenkins
@@ -24,7 +24,7 @@ should run just before Jenkins jobs check the mirror for changes::
     4,14,24,34,44,54 * * * * cd /path/to/mirror && git fetch && git remote prune origin
 
 Jenkins setup
--------------
+*************
 
 The following instructions will setup Jenkins to run synnefo tests with the
 SQLite database. To run the tests on MySQL and/or Postgres, step 5 must be

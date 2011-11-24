@@ -79,6 +79,7 @@ print out DDL statements. It should not fail::
 
 Database initialization
 -----------------------
+
 You need to initialize the Synnefo DB::
 
     $ synnefo-manage syncdb
@@ -106,22 +107,5 @@ sample users.json file:
 
 .. _additional-configuration:
 
-Additional configuration
-************************
-
-The logic dispatcher is part of the Synnefo Django project and must run
-on LOGIC nodes.
-
-The dispatcher retrieves messages from the queue and calls the appropriate
-handler function as defined in the queue configuration in `/etc/synnefo/*.conf`
-files.
-
-The default configuration should work directly without any modifications.
-
-For the time being The dispatcher must be run by hand::
-
-  $ synnefo-dispatcher
-
-The dispatcher should run in at least 2 instances to ensure high
-(actually, increased) availability.
-
+.. include settings reference
+.. include: settings.rst

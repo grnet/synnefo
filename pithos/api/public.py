@@ -88,6 +88,7 @@ def public_read(request, v_public):
     #                       badRequest (400),
     #                       notModified (304)
     
+    print '***', v_public
     try:
         v_account, v_container, v_object = request.backend.get_public(request.user_uniq,
                                                     decode_url(v_public))

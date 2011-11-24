@@ -14,8 +14,8 @@ UPGRADE
 
 0.7.10 -> 0.7.11
 ----------------
+* Add 'south', remove 'pithos.public' in INSTALLED_APPS in settings.py
 * Install python-django-south
-* Add 'south' in INSTALLED_APPS in settings.py
 * Setup south:
     python manage.py syncdb
     python manage.py migrate im 0001 --fake

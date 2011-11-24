@@ -115,11 +115,6 @@ def authenticated(request):
     uniq = '%s@twitter.com' % access_token['screen_name']
     realname = access_token['user_id']
     
-    user = get_or_create_user(uniq, realname, 'Twitter', 0)
-    next = request_token.get('next')
-    if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
-        params = urlencode({'next': next})
-        next = reverse('pithos.im.views.users_profile', args=(user.id,))
-        next = next + '?' + params
-    
-    return prepare_response(request, user, next)
+    return prepare_response(request,
+                            get_or_create_user(uniq, realname, 'Twitter', 0),
+                            request_token.get('next'))

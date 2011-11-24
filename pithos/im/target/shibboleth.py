@@ -33,8 +33,6 @@
 
 from django.http import HttpResponseBadRequest
 from django.core.urlresolvers import reverse
-from django.utils.http import urlencode
-from django.conf import settings
 
 from pithos.im.target.util import get_or_create_user, prepare_response
 
@@ -69,14 +67,12 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    user = get_or_create_user(eppn, realname, affiliation, 0)
-    next = request.GET.get('next')
     if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
         params = urlencode({'next': next})
         next = reverse('pithos.im.views.users_profile', args=(user.id,))
         next = next + '?' + params
     
     return prepare_response(request,
-                            user,
-                            next,
+                            get_or_create_user(eppn, realname, affiliation, 0),
+                            request.GET.get('next'),
                             'renew' in request.GET)

@@ -40,6 +40,7 @@ from urllib import quote
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils.http import urlencode
+from django.core.urlresolvers import reverse
 
 from pithos.im.models import User
 
@@ -76,6 +77,7 @@ def prepare_response(request, user, next='', renew=False):
     if renew or user.auth_token_expires < datetime.datetime.now():
         user.renew_token()
         user.save()
+        
     if next:
         # TODO: Avoid redirect loops.
         parts = list(urlsplit(next))
@@ -83,6 +85,12 @@ def prepare_response(request, user, next='', renew=False):
         if parts[1] and request.get_host() != parts[1]:
             parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
             next = urlunsplit(parts)
+    
+    if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
+        params = ''
+        if next:
+            params = '?' + urlencode({'next': next})
+        next = reverse('pithos.im.views.users_profile') + params
     
     response = HttpResponse()
     expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')

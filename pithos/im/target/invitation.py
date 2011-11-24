@@ -37,8 +37,6 @@ from datetime import datetime
 
 from django.conf import settings
 from django.http import HttpResponseBadRequest
-from django.core.urlresolvers import reverse
-from django.utils.http import urlencode
 
 from pithos.im.models import Invitation
 from pithos.im.target.util import get_or_create_user, prepare_response
@@ -63,9 +61,5 @@ def login(request):
                                 invitation.inviter.level + 1)
     
     next = request.GET.get('next')
-    if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
-        params = urlencode({'next': next})
-        next = reverse('pithos.im.views.users_profile', args=(user.id,))
-        next = next + '?' + params
     
     return prepare_response(request, user, next, 'renew' in request.GET)

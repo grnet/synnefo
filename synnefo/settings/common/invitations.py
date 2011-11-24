@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# Invitations settings
+##################################
+
 
 # Max number of invitations allowed per level
 INVITATIONS_PER_LEVEL = {

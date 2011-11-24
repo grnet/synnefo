@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+#
+# Userdata settings
+###################
+
 # Genetared SSH key bits length
 USERDATA_SSH_KEY_LENGTH = 2048
 

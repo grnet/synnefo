@@ -3,11 +3,12 @@ distribute_setup.use_setuptools()
 
 import os
 from setuptools import setup, find_packages
+from synnefo import get_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 # Package info
-VERSION = '0.8rc1'
+VERSION = get_version().replace(" ","")
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'

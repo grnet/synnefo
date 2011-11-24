@@ -3,24 +3,45 @@
 Configuration
 =============
 
+
+.. _settings-guide:
+
 Customizing Synnefo settings
 ----------------------------
 
-Synnefo package bundles a `Django` project with predefined common `settings` 
-and `urls` set. The corresponding `Django` ``manage.py`` for the bundled project is 
-``synnefo-manage`` which after the package installation should be available as a
-command from your system's terminal.
-
 To ease up the configuration of the application Synnefo includes settings
-defined in ``/etc/synnefo/*.conf`` files.
+defined in ``/etc/synnefo/*.conf`` files. The location can be altered by 
+setting an enviromental variable named ``SYNNEFO_SETTINGS_DIR`` to the 
+appropriate path, or by using the ``--settings-dir`` option of the
+``synnefo-manage`` tool.
 
+Synnefo package bundles a `Django` project with predefined common `settings` 
+and `urls` set. The corresponding  ``manage.py`` for the bundled project is 
+``synnefo-manage``. After the package installation the tool should be available 
+as a command from your system's terminal. Due to this nature of `synnefo-manage`
+it is possible to alter settings not only using ``.conf`` files but also by
+providing a custom python module by using ``DJANGO_SETTINGS_MODULE``
+evnironmental variable or ``--settings`` option of the tool.
+
+.. seealso::
+    https://docs.djangoproject.com/en/dev/topics/settings/
+
+If you are using a custom settings module, you are strongly encouraged to
+import the synnefo default settings prior to your customized ones e.g. :
+    
+.. code-block:: python
+    
+    from synnefo.settings import *
+
+    CUSTOM_SETTING1 = "...."
+    CUSTOM_SETTING2 = "...."
 
 .. _database-configuration:
 
 Database configuration
 ----------------------
 
-Add the following to your custom settings.py, depending on your choice
+Add the following to your custom :ref:`settings <settings-guide>`, depending on your choice
 of DB:
 
 SQLite

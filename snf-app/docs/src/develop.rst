@@ -9,13 +9,19 @@ It should be read alongside :ref:`installation guide <installation>`.
 It contains development-specific ammendments to the basic installation steps
 outlined in `installation guide <installation>`, and development-specific notes.
 
-Installing the development environment
---------------------------------------
+
+Prerequisites
+-------------
 
 For a basic development environment you need to follow steps
 of `installation guide <installation>`, which should be read in its 
 entirety *before* this document.
 
+
+Setting up development environment
+----------------------------------
+
+Although not necessary it is 
 Development-specific guidelines on each step:
 
 

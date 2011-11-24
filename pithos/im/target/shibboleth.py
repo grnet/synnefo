@@ -72,10 +72,9 @@ def login(request):
     user = get_or_create_user(eppn, realname, affiliation, 0)
     next = request.GET.get('next')
     if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
-        profile_url = reverse('pithos.im.views.users_profile', args=(user.id,))
-        next = urlencode({'next': next})
-        profile_url = profile_url + '?' + next
-        return prepare_response(request, user, profile_url)
+        params = urlencode({'next': next})
+        next = reverse('pithos.im.views.users_profile', args=(user.id,))
+        next = next + '?' + params
     
     return prepare_response(request,
                             user,

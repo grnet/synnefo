@@ -50,6 +50,7 @@ from pithos.api.compat import parse_http_date_safe, parse_http_date
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
                                 RangeNotSatisfiable, ServiceUnavailable)
+from pithos.api.short_url import encode_url
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError
 
@@ -241,7 +242,7 @@ def update_sharing_meta(request, permissions, v_account, v_container, v_object, 
 def update_public_meta(public, meta):
     if not public:
         return
-    meta['X-Object-Public'] = public
+    meta['X-Object-Public'] = '/public/' + encode_url(public)
 
 def validate_modification_preconditions(request, meta):
     """Check that the modified timestamp conforms with the preconditions set."""

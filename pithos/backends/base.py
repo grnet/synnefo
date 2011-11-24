@@ -388,7 +388,7 @@ class BaseBackend(object):
         return
     
     def get_object_public(self, user, account, container, name):
-        """Return the public URL of the object if applicable.
+        """Return the public id of the object if applicable.
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -512,6 +512,16 @@ class BaseBackend(object):
             NotAllowedError: Operation not permitted
         """
         return []
+    
+    def get_public(self, user, public):
+        """Return the (account, container, name) for the public id given.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            NameError: Public id does not exist
+        """
+        return None
     
     def get_block(self, hash):
         """Return a block's data.

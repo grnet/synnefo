@@ -39,29 +39,32 @@ from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
     validate_modification_preconditions, validate_matching_preconditions,
     object_data_response, api_method)
+from pithos.api.short_url import decode_url
 
 
 logger = logging.getLogger(__name__)
 
 
-def object_demux(request, v_account, v_container, v_object):
+def public_demux(request, v_public):
     if request.method == 'HEAD':
-        return object_meta(request, v_account, v_container, v_object)
+        return public_meta(request, v_public)
     elif request.method == 'GET':
-        return object_read(request, v_account, v_container, v_object)
+        return public_read(request, v_public)
     else:
         return method_not_allowed(request)
 
 @api_method('HEAD', user_required=False)
-def object_meta(request, v_account, v_container, v_object):
+def public_meta(request, v_public):
     # Normal Response Codes: 204
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404),
     #                       badRequest (400)
     
     try:
+        v_account, v_container, v_object = request.backend.get_public(request.user_uniq,
+                                                    decode_url(v_public))
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                v_container, v_object)
+                                                    v_container, v_object)
         public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
@@ -76,7 +79,7 @@ def object_meta(request, v_account, v_container, v_object):
     return response
 
 @api_method('GET', user_required=False)
-def object_read(request, v_account, v_container, v_object):
+def public_read(request, v_public):
     # Normal Response Codes: 200, 206
     # Error Response Codes: serviceUnavailable (503),
     #                       rangeNotSatisfiable (416),
@@ -86,8 +89,10 @@ def object_read(request, v_account, v_container, v_object):
     #                       notModified (304)
     
     try:
+        v_account, v_container, v_object = request.backend.get_public(request.user_uniq,
+                                                    decode_url(v_public))
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                v_container, v_object)
+                                                    v_container, v_object)
         public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
@@ -132,6 +137,12 @@ def object_read(request, v_account, v_container, v_object):
             hashmaps.append(h)
         except:
             raise ItemNotFound('Object does not exist')
+    
+    if 'Content-Disposition' not in meta:
+        name = v_object.rstrip('/').split('/')[-1]
+        if not name:
+            name = v_public
+        meta['Content-Disposition'] = 'attachment; filename=%s' % (name,)
     
     return object_data_response(request, sizes, hashmaps, meta, True)
 

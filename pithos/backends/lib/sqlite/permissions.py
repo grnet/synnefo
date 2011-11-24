@@ -76,7 +76,7 @@ class Permissions(XFeatures, Groups, Public):
     def access_check(self, path, access, member):
         """Return true if the member has this access to the path."""
         
-        if access == READ and self.public_check(path):
+        if access == READ and self.public_get(path) is not None:
             return True
         
         r = self.xfeature_inherit(path)

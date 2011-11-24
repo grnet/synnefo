@@ -32,8 +32,10 @@
 # or implied, of GRNET S.A.
 
 from dbworker import DBWorker
-from sqlalchemy import Table, Column, String, MetaData
+from sqlalchemy import Table, Column, String, Integer, MetaData
 from sqlalchemy.sql import select
+from sqlalchemy.schema import Index
+
 
 class Public(DBWorker):
     """Paths can be marked as public."""
@@ -42,10 +44,12 @@ class Public(DBWorker):
         DBWorker.__init__(self, **params)
         metadata = MetaData()
         columns=[]
-        columns.append(Column('path', String(2048), index=True))
-        self.public = Table('public', metadata, *columns, mysql_engine='InnoDB')
+        columns.append(Column('public_id', Integer, primary_key=True))
+        columns.append(Column('path', String(2048)))
+        self.public = Table('public', metadata, *columns, mysql_engine='InnoDB', sqlite_autoincrement=True)
+        # place an index on path
+        Index('idx_public_path', self.public.c.path)
         metadata.create_all(self.engine)
-    
     
     def public_set(self, path):
         s = self.public.select()
@@ -63,9 +67,20 @@ class Public(DBWorker):
         r = self.conn.execute(s)
         r.close()
     
-    def public_check(self, path):
-        s = select([self.public.c.path], self.public.c.path == path)
+    def public_get(self, path):
+        s = select([self.public.c.public_id], self.public.c.path == path)
         r = self.conn.execute(s)
-        l = r.fetchone()
+        row = r.fetchone()
         r.close()
-        return bool(l)
+        if row:
+            return row[0]
+        return None
+    
+    def public_path(self, public):
+        s = select([self.public.c.path], self.public.c.public_id == public)
+        r = self.conn.execute(s)
+        row = r.fetchone()
+        r.close()
+        if row:
+            return row[0]
+        return None

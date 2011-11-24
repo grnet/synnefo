@@ -44,6 +44,8 @@ from base import NotAllowedError, QuotaError, BaseBackend
 
 inf = float('inf')
 
+ULTIMATE_ANSWER = 42
+
 
 logger = logging.getLogger(__name__)
 
@@ -492,14 +494,15 @@ class ModularBackend(BaseBackend):
     
     @backend_method
     def get_object_public(self, user, account, container, name):
-        """Return the public URL of the object if applicable."""
+        """Return the public id of the object if applicable."""
         
         logger.debug("get_object_public: %s %s %s", account, container, name)
         self._can_read(user, account, container, name)
         path = self._lookup_object(account, container, name)[0]
-        if self.permissions.public_check(path):
-            return '/public/' + path
-        return None
+        p = self.permissions.public_get(path)
+        if p is not None:
+            p += ULTIMATE_ANSWER
+        return p
     
     @backend_method
     def update_object_public(self, user, account, container, name, public):
@@ -650,6 +653,17 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         versions = self.node.node_get_versions(node)
         return [[x[self.SERIAL], x[self.MTIME]] for x in versions if x[self.CLUSTER] != CLUSTER_DELETED]
+    
+    @backend_method
+    def get_public(self, user, public):
+        """Return the (account, container, name) for the public id given."""
+        logger.debug("get_public: %s", public)
+        if public is None or public < ULTIMATE_ANSWER:
+            raise NameError
+        path = self.permissions.public_path(public - ULTIMATE_ANSWER)
+        account, container, name = path.split('/', 2)
+        self._can_read(user, account, container, name)
+        return (account, container, name)
     
     @backend_method(autocommit=0)
     def get_block(self, hash):

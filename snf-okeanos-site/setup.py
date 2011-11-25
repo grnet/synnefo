@@ -27,9 +27,16 @@ TESTS_REQUIRES = [
 ]
 
 PACKAGE_DATA = {
-    '': ['templates/*.html', 'fixtures/*.json',
-         'templates/*.xml', 'templates/partials/*.html',
-         'templates/*.txt', 'templates/userdata/*.html'],
+    'okeanos_site': [
+        'templates/okeanos/*.html',
+        'static/okeanos_static/css/*.css',
+        'static/okeanos_static/js/*.js',
+        'static/okeanos_static/images/*.png',
+        'static/okeanos_static/video/*.txt',
+        'static/okeanos_static/video/*.js',
+        'static/okeanos_static/video/*.css',
+        'static/okeanos_static/video/skins/*.css',
+    ]
 }
 
 setup(

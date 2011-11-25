@@ -1,4 +1,5 @@
-from synnefo.settings import *
+# extend static files map
+STATIC_FILES['okeanos_site'] = ''
 
 # append okeanos_site application to django installed apps
 INSTALLED_APPS = list(INSTALLED_APPS) + ['okeanos_site']

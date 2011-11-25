@@ -1,3 +1,7 @@
-recursive-include docs *.rst
-recursive-include synnefo *.html *.js *.txt *.css *.jpg *.png *.gif *.json *.xml *.json *.jar *.vnc
-include distribute_setup.py Changelog README
+recursive-include synnefo *.json *.html *.json *.xml *.txt
+recursive-include synnefo/admin/static *
+recursive-include synnefo/ui/static *
+recursive-include docs/ *.rst
+
+include README Changelog
+include distribute_setup.py

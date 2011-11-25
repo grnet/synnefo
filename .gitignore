@@ -1,4 +1,3 @@
-settings.py
 docs/build
 pithos/data
 *.db

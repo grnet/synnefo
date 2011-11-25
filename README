@@ -16,8 +16,6 @@ On a typical debian-based Linux system run:
     apt-get install python-django python-django-south python-setuptools python-sphinx python-httplib2
     apt-get install python-sqlalchemy python-mysqldb python-psycopg2
 
-Enter the pithos dir, copy settings.py.dist to settings.py.
-
 Then run:
     python setup.py build_sphinx
 
@@ -34,8 +32,6 @@ Running the server
 Make sure you have all required packages installed:
     apt-get install python-django python-setuptools python-sphinx python-httplib2
     apt-get install python-sqlalchemy python-mysqldb python-psycopg2
-
-Enter the pithos dir, copy settings.py.dist to settings.py.
 
 Then run:
     python manage.py syncdb

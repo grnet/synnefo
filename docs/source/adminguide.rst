@@ -17,14 +17,15 @@ Get the source::
   cd /
   git clone https://code.grnet.gr/git/pithos
 
-Setup the files (choose where to store data in ``settings.py`` and change ``SECRET_KEY``)::
+Setup the files::
 
   cd /pithos/pithos
-  cp settings.py.dist settings.py
   python manage.py syncdb
   python manage.py schemamigration im --initial
   cd /pithos
   python setup.py build_sphinx
+
+It is advised that you create a ``settings.local`` file to place any configuration overrides (at least change ``SECRET_KEY``).
 
 Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directive)::
 
@@ -115,7 +116,7 @@ Configure and run apache::
 
 Useful alias to add in ``~/.bashrc``::
 
-  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && /etc/init.d/apache2 restart'
+  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && cd pithos && python manage.py migrate im && /etc/init.d/apache2 restart'
 
 Gunicorn Setup
 --------------
@@ -160,7 +161,7 @@ Replace the ``WSGI*`` directives in ``/etc/apache2/sites-available/pithos`` and 
   ProxyPass        /api http://localhost:8080 retry=0
   ProxyPassReverse /api http://localhost:8080
 
-Make sure that in ``settings.py``::
+Make sure that in ``settings.local``::
 
   USE_X_FORWARDED_HOST = True
 

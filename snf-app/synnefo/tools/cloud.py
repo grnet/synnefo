@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -27,7 +27,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -43,7 +43,6 @@ import json
 
 
 DEFAULT_API_URL = 'http://127.0.0.1:8000/api/v1.1'
-DEFAULT_TOKEN = '46e427d657b20defe352804f0eb6f8a2'
 
 MARGIN = 14
 
@@ -62,7 +61,7 @@ def print_addresses(networks):
         addr = ''
         if 'values' in net:
             addr = '[%s]' % ' '.join(ip['addr'] for ip in net['values'])
-        
+
         val = '%s/%s %s %s' % (net['id'], net['name'], net['mac'], addr)
         if 'firewallProfile' in net:
             val += ' - %s' % net['firewallProfile']
@@ -92,7 +91,6 @@ class Command(object):
         parser.add_option('--token',
                             dest='token',
                             metavar='TOKEN',
-                            default=DEFAULT_TOKEN,
                             help='use user token TOKEN')
         parser.add_option('-v',
                             action='store_true',
@@ -101,22 +99,22 @@ class Command(object):
                             help='use verbose output')
         self.add_options(parser)
         options, args = parser.parse_args(argv)
-        
+
         # Add options to self
         for opt in parser.option_list:
             key = opt.dest
             if key:
                 val = getattr(options, key)
                 setattr(self, key, val)
-        
+
         self.execute(*args)
-    
+
     def add_options(self, parser):
         pass
-    
+
     def execute(self, *args):
         pass
-    
+
     def http_cmd(self, method, path, body=None, expected_status=200):
         p = urlparse(self.apiurl)
         if p.scheme == 'https':
@@ -165,7 +163,7 @@ class Command(object):
 
     def http_get(self, path, expected_status=200):
         return self.http_cmd('GET', path, None, expected_status)
-    
+
     def http_post(self, path, body, expected_status=202):
         return self.http_cmd('POST', path, body, expected_status)
 
@@ -179,13 +177,13 @@ class Command(object):
 @command_name('ls')
 class ListServers(Command):
     description = 'list servers'
-    
+
     def add_options(self, parser):
         parser.add_option('-l', action='store_true', dest='detail', default=False,
                             help='show detailed output')
         parser.add_option('-a', action='store_true', dest='show_empty', default=False,
                             help='include empty values')
-    
+
     def execute(self):
         path = '/servers/detail' if self.detail else '/servers'
         reply = self.http_get(path)
@@ -205,30 +203,30 @@ class ListServers(Command):
 class GetServerDetails(Command):
     description = 'get server details'
     syntax = '<server id>'
-    
+
     def add_options(self, parser):
         parser.add_option('-a', action='store_true', dest='show_empty', default=False,
                             help='include empty values')
-    
+
     def execute(self, server_id):
         path = '/servers/%d' % int(server_id)
         reply = self.http_get(path)
         server = reply['server']
         server.pop('id')
         print_dict(server, self.show_empty)
-        
+
 
 @command_name('create')
 class CreateServer(Command):
     description = 'create server'
     syntax = '<server name>'
-    
+
     def add_options(self, parser):
         parser.add_option('-f', dest='flavor', metavar='FLAVOR_ID', default=1,
                             help='use flavor FLAVOR_ID')
         parser.add_option('-i', dest='image', metavar='IMAGE_ID', default=1,
                             help='use image IMAGE_ID')
-    
+
     def execute(self, name):
         server = {
             'name': name,
@@ -244,7 +242,7 @@ class CreateServer(Command):
 class UpdateServerName(Command):
     description = 'update server name'
     syntax = '<server id> <new name>'
-    
+
     def execute(self, server_id, name):
         path = '/servers/%d' % int(server_id)
         body = json.dumps({'server': {'name': name}})
@@ -255,7 +253,7 @@ class UpdateServerName(Command):
 class DeleteServer(Command):
     description = 'delete server'
     syntax = '<server id>'
-    
+
     def execute(self, server_id):
         path = '/servers/%d' % int(server_id)
         self.http_delete(path)
@@ -265,23 +263,23 @@ class DeleteServer(Command):
 class RebootServer(Command):
     description = 'reboot server'
     syntax = '<server id>'
-    
+
     def add_options(self, parser):
         parser.add_option('-f', action='store_true', dest='hard', default=False,
                             help='perform a hard reboot')
-    
+
     def execute(self, server_id):
         path = '/servers/%d/action' % int(server_id)
         type = 'HARD' if self.hard else 'SOFT'
         body = json.dumps({'reboot': {'type': type}})
         self.http_post(path, body)
-    
+
 
 @command_name('start')
 class StartServer(Command):
     description = 'start server'
     syntax = '<server id>'
-    
+
     def execute(self, server_id):
         path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'start': {}})
@@ -292,7 +290,7 @@ class StartServer(Command):
 class StartServer(Command):
     description = 'shutdown server'
     syntax = '<server id>'
-    
+
     def execute(self, server_id):
         path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'shutdown': {}})
@@ -303,7 +301,7 @@ class StartServer(Command):
 class ServerConsole(Command):
     description = 'get VNC console'
     syntax = '<server id>'
-    
+
     def execute(self, server_id):
         path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'console': {'type': 'vnc'}})
@@ -315,7 +313,7 @@ class ServerConsole(Command):
 class SetFirewallProfile(Command):
     description = 'set the firewall profile'
     syntax = '<server id> <profile>'
-    
+
     def execute(self, server_id, profile):
         path = '/servers/%d/action' % int(server_id)
         body = json.dumps({'firewallProfile': {'profile': profile}})
@@ -326,13 +324,13 @@ class SetFirewallProfile(Command):
 class ListAddresses(Command):
     description = 'list server addresses'
     syntax = '<server id> [network]'
-    
+
     def execute(self, server_id, network=None):
         path = '/servers/%d/ips' % int(server_id)
         if network:
             path += '/%s' % network
         reply = self.http_get(path)
-        
+
         addresses = [reply['network']] if network else reply['addresses']['values']
         print_addresses(addresses)
 
@@ -340,15 +338,15 @@ class ListAddresses(Command):
 @command_name('lsflv')
 class ListFlavors(Command):
     description = 'list flavors'
-    
+
     def add_options(self, parser):
         parser.add_option('-l', action='store_true', dest='detail', default=False,
                             help='show detailed output')
-    
+
     def execute(self):
         path = '/flavors/detail' if self.detail else '/flavors'
         reply = self.http_get(path)
-        
+
         for flavor in reply['flavors']['values']:
             id = flavor.pop('id')
             name = flavor.pop('name')
@@ -360,11 +358,11 @@ class ListFlavors(Command):
 class GetFlavorDetails(Command):
     description = 'get flavor details'
     syntax = '<flavor id>'
-    
+
     def execute(self, flavor_id):
         path = '/flavors/%d' % int(flavor_id)
         reply = self.http_get(path)
-        
+
         flavor = reply['flavor']
         id = flavor.pop('id')
         name = flavor.pop('name')
@@ -375,15 +373,15 @@ class GetFlavorDetails(Command):
 @command_name('lsimg')
 class ListImages(Command):
     description = 'list images'
-    
+
     def add_options(self, parser):
         parser.add_option('-l', action='store_true', dest='detail', default=False,
                             help='show detailed output')
-    
+
     def execute(self):
         path = '/images/detail' if self.detail else '/images'
         reply = self.http_get(path)
-        
+
         for image in reply['images']['values']:
             id = image.pop('id')
             name = image.pop('name')
@@ -399,7 +397,7 @@ class ListImages(Command):
 class GetImageDetails(Command):
     description = 'get image details'
     syntax = '<image id>'
-    
+
     def execute(self, image_id):
         path = '/images/%d' % int(image_id)
         reply = self.http_get(path)
@@ -412,7 +410,7 @@ class GetImageDetails(Command):
 class CreateImage(Command):
     description = 'create image'
     syntax = '<server id> <image name>'
-    
+
     def execute(self, server_id, name):
         image = {'name': name, 'serverRef': int(server_id)}
         body = json.dumps({'image': image})
@@ -423,7 +421,7 @@ class CreateImage(Command):
 class DeleteImage(Command):
     description = 'delete image'
     syntax = '<image id>'
-    
+
     def execute(self, image_id):
         path = '/images/%d' % int(image_id)
         self.http_delete(path)
@@ -638,12 +636,12 @@ def print_usage():
 
 def main():
     try:
-        name = argv[1]    
+        name = argv[1]
         cls = commands[name]
     except (IndexError, KeyError):
         print_usage()
         exit(1)
-    
+
     try:
         cls(argv[2:])
     except TypeError:

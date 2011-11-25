@@ -49,7 +49,7 @@ from synnefo.logic.utils import get_rsapi_state
 
 class AaiClient(Client):
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = '46e427d657b20defe352804f0eb6f8a2'
+        request['HTTP_X_AUTH_TOKEN'] = settings.BYPASS_AUTHENTICATION_TOKEN
         return super(AaiClient, self).request(**request)
 
 
@@ -631,7 +631,7 @@ class UpdateServerMetadata(BaseTestCase):
         metadata[server_id].update(new_metadata)
         self.assertEqual(response_metadata, metadata[server_id])
         self.assertEqual(metadata, self.get_all_server_metadata())
-    
+
     def test_invalid_data(self):
         with AssertInvariant(self.get_all_server_metadata) as metadata:
             server_id = choice(metadata.keys())
@@ -771,7 +771,7 @@ class UpdateImageMetadata(BaseTestCase):
         metadata[image_id].update(new_metadata)
         self.assertEqual(response_metadata, metadata[image_id])
         self.assertEqual(metadata, self.get_all_image_metadata())
-    
+
     def test_invalid_data(self):
         with AssertInvariant(self.get_all_image_metadata) as metadata:
             image_id = choice(metadata.keys())
@@ -860,16 +860,16 @@ class ListNetworks(BaseTestCase):
 
     def setUp(self):
         BaseTestCase.setUp(self)
-        
+
         for i in range(5):
             self.create_network('net%d' % i)
-        
+
         machines = VirtualMachine.objects.all()
         for network in Network.objects.all():
             n = randint(0, self.SERVERS - 1)
             for machine in sample(machines, n):
                 machine.nics.create(network=network)
-    
+
     def test_list_networks(self):
         networks = self.list_networks()
         for net in Network.objects.all():
@@ -909,7 +909,7 @@ class GetNetworkDetails(BaseTestCase):
     def test_get_network_details(self):
         name = 'net'
         self.create_network(name)
-        
+
         servers = VirtualMachine.objects.all()
         network = Network.objects.all()[1]
 
@@ -945,13 +945,13 @@ class DeleteNetwork(BaseTestCase):
     def test_delete_network(self):
         for i in range(5):
             self.create_network('net%d' % i)
-        
+
         networks = self.list_networks()
         priv = [net for net in networks if net['id'] != 'public']
         network = choice(priv)
         network_id = network['id']
         self.delete_network(network_id)
-        
+
         net = self.get_network_details(network_id)
         self.assertEqual(net['status'], 'DELETED')
 
@@ -966,7 +966,7 @@ class NetworkActions(BaseTestCase):
 
     def test_add_remove_server(self):
         self.create_network('net')
-        
+
         server_ids = [vm.id for vm in VirtualMachine.objects.all()]
         network = self.list_networks(detail=True)[1]
         network_id = network['id']
@@ -974,7 +974,7 @@ class NetworkActions(BaseTestCase):
         to_add = set(sample(server_ids, 10))
         for server_id in to_add:
             self.add_to_network(network_id, server_id)
-        
+
         to_remove = set(sample(to_add, 5))
         for server_id in to_remove:
             self.remove_from_network(network_id, server_id)

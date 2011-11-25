@@ -67,8 +67,8 @@ except ImportError:
 
 API = None
 TOKEN = None
-DEFAULT_API = "http://dev67.dev.grnet.gr:8000/api/v1.1"
-DEFAULT_TOKEN = "46e427d657b20defe352804f0eb6f8a2"
+DEFAULT_API = "http://127.0.0.1:8000/api/v1.1"
+
 # A unique id identifying this test run
 TEST_RUN_ID = datetime.datetime.strftime(datetime.datetime.now(),
                                          "%Y%m%d%H%M%S")
@@ -673,8 +673,7 @@ def parse_arguments(args):
                       default=DEFAULT_API)
     parser.add_option("--token",
                       action="store", type="string", dest="token",
-                      help="The token to use for authentication to the API",
-                      default=DEFAULT_TOKEN)
+                      help="The token to use for authentication to the API")
     parser.add_option("--nofailfast",
                       action="store_true", dest="nofailfast",
                       help="Do not fail immediately if one of the tests " \

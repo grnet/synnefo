@@ -49,7 +49,7 @@ class SynnefoAuthMiddleware(object):
         if settings.BYPASS_AUTHENTICATION and \
            request.GET.get('test') is not None:
             u = SynnefoUser.objects.get(
-                auth_token='46e427d657b20defe352804f0eb6f8a2')
+                auth_token=settings.BYPASS_AUTHENTICATION_TOKEN)
             return self._redirect_shib_auth_user(user = u)
 
         token = None

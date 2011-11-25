@@ -38,7 +38,7 @@ from django.conf import settings
 
 class InvitationsTestCase(TestCase):
     fixtures = ['users']
-    token = '46e427d657b20defe352804f0eb6f8a2'
+    token = settings.BYPASS_AUTHENTICATION_TOKEN
 
     def setUp(self):
         self.client = Client()

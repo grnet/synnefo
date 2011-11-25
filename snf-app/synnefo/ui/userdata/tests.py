@@ -47,7 +47,7 @@ from synnefo.db.models import SynnefoUser
 class AaiClient(Client):
 
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = '46e427d657b20defe352804f0eb6f8a2'
+        request['HTTP_X_AUTH_TOKEN'] = settings.BYPASS_AUTHENTICATION_TOKEN
         return super(AaiClient, self).request(**request)
 
 class TestRestViews(TransactionTestCase):

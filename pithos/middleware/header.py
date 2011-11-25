@@ -40,4 +40,4 @@ class URLEncodedHeadersMiddleware(object):
         for k, v in meta.copy().iteritems():
             if k.startswith('HTTP_') and ('%' in k or '%' in v):
                 del(meta[k])
-                meta[unquote(k)] = v
+                meta[unquote(k)] = unquote(v)

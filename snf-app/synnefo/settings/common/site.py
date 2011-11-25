@@ -31,3 +31,10 @@ MEDIA_URL = '/static/'
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
 ADMIN_MEDIA_PREFIX = '/media/'
+
+# app/directory static files map, used by link_static command to create
+# appropriate symlinks for static files
+STATIC_FILES = {
+    'synnefo.ui': '',
+    'synnefo.admin': 'admin',
+}

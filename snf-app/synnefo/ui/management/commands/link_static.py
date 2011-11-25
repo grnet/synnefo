@@ -37,10 +37,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
-STATIC_FILES = {
-    'synnefo.ui': '',
-    'synnefo.admin': 'admin',
-}
+STATIC_FILES = getattr(settings, "STATIC_FILES", {})
 
 class Command(BaseCommand):
 

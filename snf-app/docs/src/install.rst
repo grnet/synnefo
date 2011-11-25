@@ -295,10 +295,10 @@ PyPi package name           Debian package name         version
 =======================     ===================         ==========
 django                      python-django               1.2.4      
 simplejson                  python-simplejson           2.1.3
-pycurl                      python-curl                 7.19.0
+pycurl                      python-pycurl               7.19.0
 python-dateutil             python-dateutil             1.4.1
 IPy                         python-ipy                  0.75
-south                       python-south                0.7.1
+south                       python-django-south         0.7.1
 amqplib                     python-amqplib              0.6.1
 lockfile                    python-lockfile             0.8
 python-daemon               python-daemon               1.5.5
@@ -361,7 +361,7 @@ Installing Synnefo package
 
 Using ``pip``::
 
-    $ pip install https://code.grnet.gr/projects/synnefo/synnefo-<version>.tar.gz
+    $ pip install https://code.grnet.gr/projects/synnefo/synnefo-<version>.tar.gz --no-deps
 
 by checking out git repository::
 
@@ -410,7 +410,7 @@ settings must be set be set before running Synnefo for the first time.
 Database
 ********
 
-Changes ``DATABASES`` setting based on your :ref:`database setup <database-setup>` 
+Change ``DATABASES`` setting based on your :ref:`database setup <database-setup>` 
 and :ref:`initialize/update your database structure <database-initialization>`
 
 .. seealso::

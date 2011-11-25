@@ -1,0 +1,3 @@
+recursive-include docs *.rst
+recursive-include okeanos_site *.html *.js *.txt *.css *.jpg *.png *.gif *.json *.xml *.json *.jar *.vnc
+include distribute_setup.py Changelog README

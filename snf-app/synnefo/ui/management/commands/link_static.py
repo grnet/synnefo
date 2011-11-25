@@ -62,18 +62,23 @@ class Command(BaseCommand):
         for module, ns in STATIC_FILES.iteritems():
             module = import_module(module)
             static_root = os.path.join(os.path.dirname(module.__file__), 'static')
-            for f in os.listdir(static_root):
-                symlinks.append((os.path.join(static_root, f), os.path.join(target, ns, f)))
-                if not os.path.exists(os.path.join(target, ns)):
-                    dirs_to_create.add(os.path.join(target, ns))
 
-        return symlinks, dirs_to_create
+            # no nested dir exists for the app
+            if ns == '':
+                for f in os.listdir(static_root):
+                    symlinks.append((os.path.join(static_root, f), os.path.join(target, ns, f)))
+
+            # symlink whole app directory
+            else:
+                symlinks.append((os.path.join(static_root), os.path.join(target, ns)))
+
+        return symlinks
 
     def handle(self, *args, **options):
 
         print "The following synlinks will get created"
 
-        symlinks, dirs_to_create = self.collect_files(options['static_root'])
+        symlinks = self.collect_files(options['static_root'])
         for linkfrom, linkto in symlinks:
             print "Symlink '%s' to '%s' will get created." % (linkfrom, linkto)
 
@@ -83,10 +88,11 @@ Are you soure you want to continue ?
 Type 'yes' to continue, or 'no' to cancel: """)
 
             if confirm == "yes":
-                for d in dirs_to_create:
-                    os.mkdir(d)
-
                 for linkfrom, linkto in symlinks:
                     print "Creating link from %s to %s" % (linkfrom, linkto)
+                    if os.path.exists(linkto):
+                        print "Skippig %s" % linkto
+                        continue
+
                     os.symlink(linkfrom, linkto)
 

@@ -40,9 +40,13 @@ urlpatterns = patterns('',
     url(r'^machines/console$', 'synnefo.ui.views.machines_console', name='machines-console'),
     url(r'^machines/connect$', 'synnefo.ui.views.machines_connect', name='machines-connect'),
     url(r'^feedback$', 'synnefo.ui.views.feedback_submit', name='feedback'),
+    url(r'userdata/', include('synnefo.ui.userdata.urls'))
+)
+
+# serve static files for convenience
+urlpatterns += patterns('',
     url(r'^static/(.*)$', 'django.views.static.serve',
     {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
-    url(r'userdata/', include('synnefo.ui.userdata.urls'))
 )
 
 if settings.DEBUG or settings.TEST:

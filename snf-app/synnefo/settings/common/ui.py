@@ -7,7 +7,7 @@ from admins import *
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
-#UI_MEDIA_URL = MEDIA_URL + 'snf/'
+UI_MEDIA_URL = MEDIA_URL + 'snf/'
 
 # UI requests to the API layer time out after that many milliseconds
 TIMEOUT = 10 * 1000

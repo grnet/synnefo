@@ -373,9 +373,9 @@ this should be enough for synnefo to get installed in your system-wide or
 ``virtualenv`` python installation and the following commands should be 
 available from the command line::
 
-    $ synnefo-manage
-    $ synnefo-dispatcher
-    $ synnefo-admin
+    $ snf-manage
+    $ snf-dispatcher
+    $ snf-admin
 
 Notice that Synnefo installation does not handle the creation of
 ``/etc/synnefo/`` directory which is the place where custom configuration 

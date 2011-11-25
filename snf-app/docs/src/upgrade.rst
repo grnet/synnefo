@@ -12,13 +12,13 @@ consider the following when migration from a previously `source` deployment
 projects:
     
     * To keep consistency with future changes you should change ``python
-      manage.py`` calls with deployed ``synnefo-manage`` console script.
+      manage.py`` calls with deployed ``snf-manage`` console script.
       This includes automation scripts, service scripts etc.
 
       Same applies for calls to ``dispatcher.py``, ``snf-tools/admin.py``,
       ``snf-tools/burnin.py`` and ``snf-tools/cloud.py`` which are replaced
-      respectively by ``synnefo-dispatcher``, ``synnefo-admin``,
-      ``synnefo-burnin`` and ``synnefo-cloud``.
+      respectively by ``snf-dispatcher``, ``snf-admin``,
+      ``snf-burnin`` and ``snf-cloud``.
 
     * Copy custom settings files located in projects ``settings.d`` directory
       to ``/etc/synnefo/`` directory.

@@ -99,9 +99,9 @@ your development environment::
 
 * Initialize database::
 
-  (synnefo-env)$ synnefo-manage syndb
-  (synnefo-env)$ synnefo-manage migrate
-  (synnefo-env)$ synnefo-manage loaddata users flavors images
+  (synnefo-env)$ snf-manage syndb
+  (synnefo-env)$ snf-manage migrate
+  (synnefo-env)$ snf-manage loaddata users flavors images
 
 
 Development tips
@@ -109,20 +109,20 @@ Development tips
 
 * Running a development web server::
 
-  (synnefo-env)$ synnefo-manage runserver
+  (synnefo-env)$ snf-manage runserver
 
   or, if you have django_extensions and werkzeug packages installed::
 
-  (synnefo-env)$ synnefo-manage runserver_plus
+  (synnefo-env)$ snf-manage runserver_plus
 
 
 * Opening a python console with synnefo environment initialized::
 
-  (synnefo-env)$ synnefo-manage shell
+  (synnefo-env)$ snf-manage shell
 
   or, if you have django_extensions package installed::
 
-  (synnefo-env)$ synnefo-manage shell_plus
+  (synnefo-env)$ snf-manage shell_plus
 
 
 South Database Migrations
@@ -134,8 +134,8 @@ Initial Migration
 To initialise south migrations in your database the following commands must be
 executed::
 
-    $ synnefo-manage syncdb       # Create / update the database with the south tables
-    $ synnefo-manage migrate db   # Perform migration in the database
+    $ snf-manage syncdb       # Create / update the database with the south tables
+    $ snf-manage migrate db   # Perform migration in the database
 
 Note that syncdb will create the latest models that exist in the db app, so some
 migrations may fail.  If you are sure a migration has already taken place you
@@ -143,11 +143,11 @@ must use the "--fake" option, to apply it.
 
 For example::
 
-    $ synnefo-manage migrate db 0001 --fake
+    $ snf-manage migrate db 0001 --fake
 
 To be sure that all migrations are applied type::
 
-    $ synnefo-manage migrate db --list
+    $ snf-manage migrate db --list
 
 All starred migrations are applied.
 
@@ -165,12 +165,12 @@ and/or if you drop the database and must recreate it from scratch. See
 Every time you make changes to the database and data migration is not required
 (WARNING: always perform this with extreme care)::
 
-    $ synnefo-manage schemamigration db --auto
+    $ snf-manage schemamigration db --auto
 
 The above will create the migration script. Now this must be applied to the live
 database::
 
-    $ synnefo-manage migrate db
+    $ snf-manage migrate db
 
 Consider this example (adding a field to the SynnefoUser model)::
 
@@ -240,11 +240,11 @@ write the script manually. The process is the following:
 
     4. To migrate the database to the latest version, we execute::
 
-        $ synnefo-manage migrate db
+        $ snf-manage migrate db
 
     To see which migrations are applied::
 
-          $ synnefo-manage migrate db --list
+          $ snf-manage migrate db --list
 
           db
             (*) 0001_initial

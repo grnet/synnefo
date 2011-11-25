@@ -49,7 +49,7 @@ cd env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py
 echo "running django tests..." >&2
-synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
 
@@ -65,7 +65,7 @@ cd env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py
 echo "running django tests..." >&2
-synnefo-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
 rm -rf env

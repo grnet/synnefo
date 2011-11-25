@@ -13,12 +13,12 @@ To ease up the configuration of the application Synnefo includes settings
 defined in ``/etc/synnefo/*.conf`` files. The location can be altered by 
 setting an enviromental variable named ``SYNNEFO_SETTINGS_DIR`` to the 
 appropriate path, or by using the ``--settings-dir`` option of the
-``synnefo-manage`` tool.
+``snf-manage`` tool.
 
 Synnefo package bundles a `Django` project with predefined common `settings` 
 and `urls` set. The corresponding  ``manage.py`` for the bundled project is 
-``synnefo-manage``. After the package installation the tool should be available 
-as a command from your system's terminal. Due to this nature of `synnefo-manage`
+``snf-manage``. After the package installation the tool should be available 
+as a command from your system's terminal. Due to this nature of `snf-manage`
 it is possible to alter settings not only using ``.conf`` files but also by
 providing a custom python module by using ``DJANGO_SETTINGS_MODULE``
 evnironmental variable or ``--settings`` option of the tool.
@@ -93,7 +93,7 @@ PostgreSQL
 Try it out. The following command will attempt to connect to the DB and
 print out DDL statements. It should not fail::
 
-    $ synnefo-manage sql db
+    $ snf-manage sql db
 
 
 .. _database-initialization:
@@ -103,16 +103,16 @@ Database initialization
 
 You need to initialize the Synnefo DB::
 
-    $ synnefo-manage syncdb
-    $ synnefo-manage migrate
+    $ snf-manage syncdb
+    $ snf-manage migrate
 
 and load fixtures {users,flavors,images}, 
 which make the API usable by end users by defining a sample set of users, 
 hardware configurations (flavors) and OS images::
 
-    $ synnefo-manage loaddata /path/to/users.json
-    $ synnefo-manage loaddata flavors
-    $ synnefo-manage loaddata images
+    $ snf-manage loaddata /path/to/users.json
+    $ snf-manage loaddata flavors
+    $ snf-manage loaddata images
 
 .. warning:: 
     Be sure to load a custom users.json and select a unique token 

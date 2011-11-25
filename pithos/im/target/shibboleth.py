@@ -67,11 +67,6 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
-        params = urlencode({'next': next})
-        next = reverse('pithos.im.views.users_profile', args=(user.id,))
-        next = next + '?' + params
-    
     return prepare_response(request,
                             get_or_create_user(eppn, realname, affiliation, 0),
                             request.GET.get('next'),

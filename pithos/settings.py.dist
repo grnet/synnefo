@@ -74,6 +74,7 @@ BACKEND_DB_CONNECTION = 'sqlite:///' + os.path.join(PROJECT_PATH, 'backend.db')
 BACKEND_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 BACKEND_BLOCK_PATH = os.path.join(PROJECT_PATH, 'data/')
 
+
 # Bypass authentication for user administration.
 BYPASS_ADMIN_AUTH = False
 
@@ -130,7 +131,6 @@ MIDDLEWARE_CLASSES = (
 #    'django.middleware.csrf.CsrfViewMiddleware',
 #    'django.contrib.auth.middleware.AuthenticationMiddleware',
 #    'django.contrib.messages.middleware.MessageMiddleware',
-    'pithos.middleware.URLEncodedHeadersMiddleware',
     'pithos.middleware.LoggingConfigMiddleware',
     'pithos.middleware.AuthMiddleware'
 )
@@ -153,8 +153,8 @@ INSTALLED_APPS = (
 #    'django.contrib.admindocs',
     'pithos.im',
     'pithos.api',
-    'pithos.ui',
-    'south'
+    'pithos.public',
+    'pithos.ui'
 )
 
 # Set the expiration time of newly created auth tokens
@@ -187,35 +187,25 @@ INVITATIONS_PER_LEVEL = {
     4   :   0
 }
 
-SERVICE_NAME = 'Pithos'
+SERVICE_NAME = 'Pithos+'
 
 # Where users should login with their invitation code
-INVITATION_LOGIN_TARGET = '%s/im/login/invitation' \
+INVITATION_LOGIN_TARGET = 'http://%s/im/login/invitation' \
                             '?code=%d' \
                             '&next=%s'
 
 # Where users should activate their local account
-ACTIVATION_LOGIN_TARGET = '%s/im/local/activate/' \
+ACTIVATION_LOGIN_TARGET = 'http://%s/im/local/activate/' \
                             '?auth=%s' \
                             '&next=%s'
 
 # Where users should reset their local password
-PASSWORD_RESET_TARGET = '%s/im/local/reset/' \
+PASSWORD_RESET_TARGET = 'http://%s/im/local/reset/' \
                             '?username=%s' \
                             '&next=%s'
-
-# Force user profile verification
-FORCE_PROFILE_UPDATE = False
 
 # The server is behind a proy (apache and gunicorn setup).
 USE_X_FORWARDED_HOST = False
 
-# Set umask (needed for gunicorn setup).
-#os.umask(0077)
-
 # Use to log to a file.
 LOGFILE = None
-
-# Identity Management enabled modules
-IM_STANDARD_MODULES = ['local', 'invitation']
-IM_OTHER_MODULES = ['twitter', 'shibboleth']

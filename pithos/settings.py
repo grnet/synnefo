@@ -42,3 +42,4 @@ conffiles = glob(join(PROJECT_PATH, 'settings.d', '*.conf'))
 
 for conf in sorted(conffiles):
     execfile(conf)
+execfile(join(PROJECT_PATH, 'settings.local'))

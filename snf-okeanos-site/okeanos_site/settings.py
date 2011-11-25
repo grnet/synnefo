@@ -1,24 +1,26 @@
+from synnefo.settings import *
+
 # append okeanos_site application to django installed apps
-INSTALLED_APPS = list(INSTALLED_APPS) + ['synnefo.okeanos_site']
+INSTALLED_APPS = list(INSTALLED_APPS) + ['okeanos_site']
 
 # for production deployment no DEBUG needed
 DEBUG = True
 
 # invitations only, no login page exists
 # redirect client to the intro page
-LOGIN_URL = "http://host:port/intro"
+LOGIN_URL = "http://okeanos.grnet.gr/intro"
 
 # redirect to login url (intro) on user logout
 LOGOUT_URL = LOGIN_URL
 
-# bypass Shibboleth authentication for /okeanos and /intro pages 
+# bypass Shibboleth authentication for /okeanos and /intro pages
 # (they should be available to the public)
 AAI_SKIP_AUTH_URLS = list(AAI_SKIP_AUTH_URLS) + ['/about', '/intro', '/okeanos_static']
 
 # change django url configuration
 # okeanos_site.urls includes and extends/modifies synnefo.urls
 # based on the needs of okeanos aplha release
-ROOT_URLCONF = 'synnefo.okeanos_site.urls'
+ROOT_URLCONF = 'okeanos_site.urls'
 
 # the url that is linked with okenaos_site.views.index view
 OKEANOS_SITE_URL = "/about"
@@ -27,7 +29,7 @@ OKEANOS_SITE_URL = "/about"
 OKEANOS_APP_URL = "/ui"
 
 # video sources (see okeanos_site/README)
-# mp4 should be absolute url for flash player to work (flash video player 
+# mp4 should be absolute url for flash player to work (flash video player
 # is the fallback video player for IE)
 #
 # VIDEOS ARE NOT CONTAINED IN PROJECT FILES

@@ -11,12 +11,12 @@ urlpatterns = patterns('',
     url(r'^ui$', 'synnefo.ui.views.home', name='index'),
 
     # intro page is now the root
-    url(r'^$', 'synnefo.okeanos_site.views.intro', name='okeanos_intro'),
+    url(r'^$', 'okeanos_site.views.intro', name='okeanos_intro'),
     # intro view also as /intro to avoid appending root (/) to the AAI_SKIP_LIST
-    url(r'^intro$', 'synnefo.okeanos_site.views.intro', name='okeanos_intro'),
+    url(r'^intro$', 'okeanos_site.views.intro', name='okeanos_intro'),
 
     # video/info page
-    url(r'^about$', 'synnefo.okeanos_site.views.index', name='okeanos_index'),
+    url(r'^about$', 'okeanos_site.views.index', name='okeanos_index'),
 
 )
 

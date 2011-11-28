@@ -45,7 +45,7 @@ class DBWrapper(object):
             class ForeignKeysListener(PoolListener):
                 def connect(self, dbapi_con, con_record):
                     db_cursor = dbapi_con.execute('pragma foreign_keys=ON;')
-                    db_cursor = dbapi_con.execute('PRAGMA case_sensitive_like=ON;')
+                    db_cursor = dbapi_con.execute('pragma case_sensitive_like=ON;')
             self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
         elif db.startswith('mysql://'):
             db = '%s?charset=utf8&use_unicode=0' %db

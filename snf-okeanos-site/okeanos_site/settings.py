@@ -1,3 +1,7 @@
+# extend specific synnefo default settings
+from synnefo.settings.common import STATIC_FILES, INSTALLED_APPS, \
+    AAI_SKIP_AUTH_URLS
+
 # extend static files map
 STATIC_FILES['okeanos_site'] = ''
 

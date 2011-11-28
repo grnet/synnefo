@@ -33,7 +33,7 @@
 
 from glob import glob
 from os import umask
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, exists, join
 
 
 PROJECT_PATH = dirname(abspath(__file__))
@@ -43,4 +43,8 @@ conffiles = glob(join(PROJECT_PATH, 'settings.d', '*.conf'))
 
 for conf in sorted(conffiles):
     execfile(conf)
-execfile(join(PROJECT_PATH, 'settings.local'))
+
+conf = join(PROJECT_PATH, 'settings.local')
+
+if exists(conf):
+    execfile(conf)

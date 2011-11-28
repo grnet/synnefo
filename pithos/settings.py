@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from glob import glob
+from os import umask
 from os.path import abspath, dirname, join
 
 

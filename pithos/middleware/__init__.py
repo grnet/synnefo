@@ -1,3 +1,2 @@
 from log import LoggingConfigMiddleware
-from header import URLEncodedHeadersMiddleware
 from auth import AuthMiddleware

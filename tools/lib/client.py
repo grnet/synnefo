@@ -80,7 +80,7 @@ class Client(object):
         slash = '/' if self.api else ''
         full_path = '%s%s%s?format=%s' % (slash, self.api, quote(path), format)
         
-        for k,v in params.items:
+        for k,v in params.items():
             if v:
                 full_path = '%s&%s=%s' %(full_path, quote(k), quote(unicode(v)))
             else:

@@ -35,6 +35,7 @@ from httplib import HTTPConnection, HTTP
 from sys import stdin
 from xml.dom import minidom
 from StringIO import StringIO
+from urllib import quote
 
 import json
 import types
@@ -77,16 +78,14 @@ class Client(object):
     
     def _req(self, method, path, body=None, headers={}, format='text', params={}):
         slash = '/' if self.api else ''
-        full_path = '%s%s%s?format=%s' % (slash, self.api, path, format)
+        full_path = '%s%s%s?format=%s' % (slash, self.api, quote(path), format)
         
-        for k,v in params.items():
+        for k,v in params.items:
             if v:
-                full_path = '%s&%s=%s' %(full_path, k, v)
+                full_path = '%s&%s=%s' %(full_path, quote(k), quote(unicode(v)))
             else:
                 full_path = '%s&%s=' %(full_path, k)
         conn = HTTPConnection(self.host)
-        
-        full_path = urllib.quote(full_path, '?&:=/')
         
         kwargs = {}
         for k,v in headers.items():

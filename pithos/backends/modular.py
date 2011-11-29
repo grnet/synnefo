@@ -108,7 +108,7 @@ class ModularBackend(BaseBackend):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         
-        self.default_policy = {'quota': 0, 'versioning': 'manual'}
+        self.default_policy = {'quota': 0, 'versioning': 'auto'}
         
         __import__(db_module)
         self.db_module = sys.modules[db_module]
@@ -460,7 +460,9 @@ class ModularBackend(BaseBackend):
         logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
         self._can_write(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
-        return self._put_metadata(user, node, meta, replace)
+        src_version_id, dest_version_id = self._put_metadata(user, node, meta, replace)
+        self._apply_versioning(account, container, src_version_id)
+        return dest_version_id
     
     @backend_method
     def get_object_permissions(self, user, account, container, name):
@@ -555,6 +557,7 @@ class ModularBackend(BaseBackend):
         self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
         if permissions is not None:
             self.permissions.access_set(path, permissions)
+        self._apply_versioning(account, container, src_version_id)
         return dest_version_id
     
     @backend_method
@@ -585,14 +588,17 @@ class ModularBackend(BaseBackend):
         hash = props[self.HASH]
         size = props[self.SIZE]
         
-        if replace_meta:
-            meta = dest_meta
+        if (src_account, src_container, src_name) == (dest_account, dest_container, dest_name):
+            dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, dest_meta, replace_meta, permissions)
         else:
-            meta = {}
-        dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, meta, True, permissions)
-        if not replace_meta:
-            self.node.attribute_copy(src_version_id, dest_version_id)
-            self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
+            if replace_meta:
+                meta = dest_meta
+            else:
+                meta = {}
+            dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, meta, True, permissions)
+            if not replace_meta:
+                self.node.attribute_copy(src_version_id, dest_version_id)
+                self.node.attribute_set(dest_version_id, ((k, v) for k, v in dest_meta.iteritems()))
         return dest_version_id
     
     @backend_method
@@ -636,6 +642,7 @@ class ModularBackend(BaseBackend):
         
         path, node = self._lookup_object(account, container, name)
         src_version_id, dest_version_id = self._put_version_duplicate(user, node, 0, None, CLUSTER_DELETED)
+        self._apply_versioning(account, container, src_version_id)
         self.permissions.access_clear(path)
     
     @backend_method
@@ -798,7 +805,7 @@ class ModularBackend(BaseBackend):
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems() if v != ''))
         else:
             self.node.attribute_set(dest_version_id, ((k, v) for k, v in meta.iteritems()))
-        return dest_version_id
+        return src_version_id, dest_version_id
     
     def _list_limits(self, listing, marker, limit):
         start = 0
@@ -838,7 +845,7 @@ class ModularBackend(BaseBackend):
                 if q < 0:
                     raise ValueError
             elif k == 'versioning':
-                if v not in ['auto', 'manual', 'none']:
+                if v not in ['auto', 'none']:
                     raise ValueError
             else:
                 raise ValueError
@@ -854,6 +861,15 @@ class ModularBackend(BaseBackend):
         policy = self.default_policy.copy()
         policy.update(self.node.policy_get(node))
         return policy
+    
+    def _apply_versioning(self, account, container, version_id):
+        if version_id is None:
+            return
+        path, node = self._lookup_container(account, container)
+        versioning = self._get_policy(node)['versioning']
+        if versioning != 'auto':
+            # TODO: Delete version_id (if in history).
+            pass
     
     # Access control functions.
     

@@ -25,6 +25,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.8 (Nov 29, 2011)         Update allowed versioning values.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -484,7 +485,7 @@ No reply content/headers.
 If no policy is defined, the container will be created with the default values.
 Available policy directives:
 
-* ``versioning``: Set to ``auto``, ``manual`` or ``none`` (default is ``manual``)
+* ``versioning``: Set to ``auto`` or ``none`` (default is ``auto``)
 * ``quota``: Size limit in KB (default is ``0`` - unlimited)
 
 If the container already exists, the operation is equal to a ``POST`` with ``update`` defined.

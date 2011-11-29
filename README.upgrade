@@ -4,6 +4,10 @@ README.Upgrade
 This file documents the upgrade to newer versions of the Synnefo software.
 For more information, please see README.deploy.
 
+v0.7.3 -> v0.7.4
+OKEANOS INTRO
+    * News section added. News content can be remotely retrieved using
+      OKEANOS_NEWS_CONTENT_URL settings option.
 
 v0.6.2 -> v0.7
 HTML TEMPLATES

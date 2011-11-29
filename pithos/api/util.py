@@ -793,7 +793,7 @@ def update_response_headers(request, response):
             k.startswith('X-Container-Meta-') or k.startswith('X-Object-Meta-') or
             k in ('X-Container-Object-Meta', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By')):
             del(response[k])
-            response[quote(k)] = quote(v)
+            response[quote(k)] = quote(v, safe='/=,:@')
     
     if settings.TEST:
         response['Date'] = format_date_time(time())

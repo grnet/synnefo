@@ -8,7 +8,6 @@ Google Ganeti for VM management at the backend.
 .. toctree::
    :maxdepth: 2
 
-   src/intro
    src/install
    src/configuration
    src/deployment

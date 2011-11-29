@@ -610,7 +610,8 @@ class ModularBackend(BaseBackend):
         if user != src_account:
             raise NotAllowedError
         dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
-        self._delete_object(user, src_account, src_container, src_name)
+        if (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
+            self._delete_object(user, src_account, src_container, src_name)
         return dest_version_id
     
     def _delete_object(self, user, account, container, name, until=None):

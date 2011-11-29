@@ -35,7 +35,7 @@ from httplib import HTTPConnection, HTTP
 from sys import stdin
 from xml.dom import minidom
 from StringIO import StringIO
-from urllib import quote
+from urllib import quote, unquote
 
 import json
 import types
@@ -82,7 +82,7 @@ class Client(object):
         
         for k,v in params.items():
             if v:
-                full_path = '%s&%s=%s' %(full_path, quote(k), quote(unicode(v)))
+                full_path = '%s&%s=%s' %(full_path, quote(k), quote(str(v)))
             else:
                 full_path = '%s&%s=' %(full_path, k)
         conn = HTTPConnection(self.host)
@@ -91,7 +91,7 @@ class Client(object):
         for k,v in headers.items():
             headers.pop(k)
             k = k.replace('_', '-')
-            headers[k] = v
+            headers[k] = quote(v, safe='/=,:@ *"') if type(v) == types.StringType else v
         
         kwargs['headers'] = headers
         kwargs['headers']['X-Auth-Token'] = self.token
@@ -107,7 +107,8 @@ class Client(object):
         resp = conn.getresponse()
         t2 = datetime.datetime.utcnow()
         #print 'response time:', str(t2-t1)
-        headers = dict(resp.getheaders())
+        headers = resp.getheaders()
+        headers = dict((unquote(h), unquote(v)) for h,v in headers)
         
         if self.verbose:
             print '%d %s' % (resp.status, resp.reason)
@@ -977,12 +978,3 @@ class Pithos_Client(OOS_Client):
         action = 'read' if read else 'write'
         sharing = '%s=%s' % (action, ','.join(l))
         self.update_object(container, object, f=None, x_object_sharing=sharing)
-
-def _encode_headers(headers):
-    h = {}
-    for k, v in headers.items():
-        k = urllib.quote(k)
-        if v and type(v) == types.StringType:
-            v = urllib.quote(v, '/=,-* :"')
-        h[k] = v
-    return h

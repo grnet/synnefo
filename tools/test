@@ -40,6 +40,7 @@ from xml.dom import minidom
 from StringIO import StringIO
 from hashlib import new as newhasher
 from binascii import hexlify
+
 import json
 import unittest
 import time as _time
@@ -1970,8 +1971,7 @@ class TestPublish(BaseTestCase):
         self.client.publish_object('c', 'o')
         meta = self.client.retrieve_object_metadata('c', 'o')
         self.assertTrue('x-object-public' in meta)
-        url = '/public/%s/c/o' % get_user()
-        self.assertEqual(meta['x-object-public'], url)
+        url = meta['x-object-public']
         public_client = Pithos_Client(get_server(), get_auth(), get_user(), api='')
         data = public_client.get(url)[2]
         self.assertEqual(o_data, data)

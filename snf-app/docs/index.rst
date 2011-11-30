@@ -1,6 +1,8 @@
 Synnefo project documentation
 =============================
 
+.. image:: /images/synnefo-logo.png
+
 Synnefo is a software infrastructure for management of IaaS clouds.
 It combines a Django-based implementation of OpenStack Compute API with 
 Google Ganeti for VM management at the backend.

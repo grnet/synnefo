@@ -46,7 +46,7 @@ API
       A database migration is needed.
 
 
-v0.7.3 -> v0.8
+v0.7.4 -> v0.8
 API
     * A new 'disk_template' attribute has been added to Flavors.
       GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
@@ -57,6 +57,10 @@ ADMIN TOOLS
       disk template when creating flavors. Similarly, disk_template support
       in flavors has beed added to the admin web interface.
 
+v0.7.3 -> v0.7.4
+OKEANOS INTRO
+    * News section added. News content can be remotely retrieved using
+      OKEANOS_NEWS_CONTENT_URL settings option.
 
 v0.6.2 -> v0.7
 HTML TEMPLATES

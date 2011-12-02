@@ -43,7 +43,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
-from django.utils.encoding import smart_str
+from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 

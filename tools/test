@@ -1278,7 +1278,7 @@ class ObjectPut(BaseTestCase):
         o = 'object'
         zero = self.client.create_zero_length_object(c, o)
         zero_meta = self.client.retrieve_object_metadata(c, o)
-        zero_hash = self.client.retrieve_object_hashmap(c, o)
+        zero_hash = self.client.retrieve_object_hashmap(c, o)["hashes"]
         zero_data = self.client.retrieve_object(c, o)
         
         self.assertEqual(int(zero_meta['content-length']), 0)
@@ -1558,7 +1558,7 @@ class ObjectPost(BaseTestCase):
         
         source_data = self.client.retrieve_object(c, src)
         source_meta = self.client.retrieve_object_metadata(c, src)
-        source_hash = self.client.retrieve_object_hashmap(c, src)
+        source_hash = self.client.retrieve_object_hashmap(c, src)["hashes"]
         
         #update zero length object
         self.client.create_zero_length_object(c, dest)
@@ -1566,7 +1566,7 @@ class ObjectPost(BaseTestCase):
         self.client.update_from_other_source(c, dest, source_object)
         dest_data = self.client.retrieve_object(c, src)
         dest_meta = self.client.retrieve_object_metadata(c, dest)
-        dest_hash = self.client.retrieve_object_hashmap(c, src)
+        dest_hash = self.client.retrieve_object_hashmap(c, src)["hashes"]
         self.assertEqual(source_data, dest_data)
         self.assertEqual(source_hash, dest_hash)
         
@@ -1630,8 +1630,8 @@ class ObjectPost(BaseTestCase):
         self.assertEqual(self.client.retrieve_object(c, o),
                          self.client.retrieve_object(c, other))
         
-        self.assertEqual(self.client.retrieve_object_hashmap(c, o),
-                         self.client.retrieve_object_hashmap(c, other))
+        self.assertEqual(self.client.retrieve_object_hashmap(c, o)["hashes"],
+                         self.client.retrieve_object_hashmap(c, other)["hashes"])
     
 class ObjectDelete(BaseTestCase):
     def setUp(self):

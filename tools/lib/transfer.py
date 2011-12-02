@@ -82,27 +82,32 @@ def upload(client, path, container, prefix, name=None, mimetype=None):
 
 def download(client, container, object, path):
     
-    meta = client.retrieve_container_metadata(container)
-    blocksize = int(meta['x-container-block-size'])
-    blockhash = meta['x-container-block-hash']
+    res = client.retrieve_object_hashmap(container, object)
+    blocksize = int(res['block_size'])
+    blockhash = res['block_hash']
+    bytes = res['bytes']
+    map = res['hashes']
+    print res
     
     if os.path.exists(path):
-        size = os.path.getsize(path)
-        hashes = HashMap(blocksize, blockhash)
-        hashes.load(open(path))
+        h = HashMap(blocksize, blockhash)
+        h.load(open(path))
+        hashes = [hexlify(x) for x in h]
     else:
         open(path, 'w').close()     # Create an empty file
-        size = 0
         hashes = []
     
-    map = client.retrieve_object_hashmap(container, object)
+    if bytes == 0:
+        return
     
-    with open(path, 'a') as fp:
+    with open(path, 'a+') as fp:
         for i, h in enumerate(map):
             if i < len(hashes) and h == hashes[i]:
                 continue
             start = i * blocksize
-            end = '' if i == len(map) - 1 else (i + 1) * blocksize
+            end = '' if i == len(map) - 1 else ((i + 1) * blocksize) - 1
             data = client.retrieve_object(container, object, range='bytes=%s-%s' % (start, end))
+            if i != len(map) - 1:
+                data += (blocksize - len(data)) * '\x00'
             fp.seek(start)
             fp.write(data)

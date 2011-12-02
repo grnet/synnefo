@@ -97,17 +97,16 @@ def download(client, container, object, path):
         open(path, 'w').close()     # Create an empty file
         hashes = []
     
-    if bytes == 0:
-        return
-    
     with open(path, 'a+') as fp:
-        for i, h in enumerate(map):
-            if i < len(hashes) and h == hashes[i]:
-                continue
-            start = i * blocksize
-            end = '' if i == len(map) - 1 else ((i + 1) * blocksize) - 1
-            data = client.retrieve_object(container, object, range='bytes=%s-%s' % (start, end))
-            if i != len(map) - 1:
-                data += (blocksize - len(data)) * '\x00'
-            fp.seek(start)
-            fp.write(data)
+        if bytes != 0:
+            for i, h in enumerate(map):
+                if i < len(hashes) and h == hashes[i]:
+                    continue
+                start = i * blocksize
+                end = '' if i == len(map) - 1 else ((i + 1) * blocksize) - 1
+                data = client.retrieve_object(container, object, range='bytes=%s-%s' % (start, end))
+                if i != len(map) - 1:
+                    data += (blocksize - len(data)) * '\x00'
+                fp.seek(start)
+                fp.write(data)
+        fp.truncate(bytes)

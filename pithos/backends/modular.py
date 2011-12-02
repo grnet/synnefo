@@ -868,8 +868,7 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_container(account, container)
         versioning = self._get_policy(node)['versioning']
         if versioning != 'auto':
-            # TODO: Delete version_id (if in history).
-            pass
+            self.node.version_remove(version_id)
     
     # Access control functions.
     

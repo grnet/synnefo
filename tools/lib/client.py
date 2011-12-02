@@ -410,8 +410,7 @@ class OOS_Client(Client):
         args = locals().copy()
         for elem in ['self', 'container', 'object']:
             args.pop(elem)
-        data = self.retrieve_object(container, object, format='json', **args)
-        return data['hashes']
+        return self.retrieve_object(container, object, format='json', **args)
     
     def create_directory_marker(self, container, object, account=None):
         """creates a dierectory marker"""

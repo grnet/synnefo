@@ -13,7 +13,7 @@ UPGRADE
     ALTER TABLE im_user ADD COLUMN 'password' VARCHAR(255);
 
 0.7.10 -> 0.8.0
-----------------
+---------------
 * Upgrade 'public' table in mysql (backend):
 	* Run: mysqldump pithosdb public > public-table.sql
 	* mysql> drop table public;
@@ -33,3 +33,9 @@ UPGRADE
     python manage.py syncdb
     python manage.py migrate im 0001 --fake
     python manage.py migrate im
+
+0.8.0 -> 0.8.1
+--------------
+* Reset 'policy' table in mysql (backend):
+    
+    mysql> update policy set `value`='auto' where `key`='versioning';

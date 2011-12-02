@@ -87,7 +87,6 @@ def download(client, container, object, path):
     blockhash = res['block_hash']
     bytes = res['bytes']
     map = res['hashes']
-    print res
     
     if os.path.exists(path):
         h = HashMap(blocksize, blockhash)

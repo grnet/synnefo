@@ -630,10 +630,11 @@ class Node(DBWorker):
     def version_remove(self, serial):
         """Remove the serial specified."""
         
-        props = self.node_get_properties(serial)
+        props = self.version_get_properties(serial)
         if not props:
             return
         node = props[NODE]
+        hash = props[HASH]
         size = props[SIZE]
         cluster = props[CLUSTER]
         
@@ -642,7 +643,7 @@ class Node(DBWorker):
         
         s = self.versions.delete().where(self.versions.c.serial == serial)
         self.conn.execute(s).close()
-        return True
+        return hash
     
     def attribute_get(self, serial, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.

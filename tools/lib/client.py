@@ -91,7 +91,7 @@ class Client(object):
         for k,v in headers.items():
             headers.pop(k)
             k = k.replace('_', '-')
-            headers[k] = quote(v, safe='/=,:@ *"') if type(v) == types.StringType else v
+            headers[quote(k)] = quote(v, safe='/=,:@ *"') if type(v) == types.StringType else v
         
         kwargs['headers'] = headers
         kwargs['headers']['X-Auth-Token'] = self.token

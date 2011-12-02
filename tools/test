@@ -88,8 +88,7 @@ class BaseTestCase(unittest.TestCase):
                 'count',
                 'bytes',
                 'last_modified',
-                'x_container_policy_quota',
-                'x_container_policy_versioning',),
+                'x_container_policy'),
             'object':(
                 'name',
                 'hash',

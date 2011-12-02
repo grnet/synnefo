@@ -762,17 +762,23 @@ def hashmap_hash(request, hashmap):
 
 def update_request_headers(request):
     # Handle URL-encoded keys and values.
-    meta = request.META
-    for k, v in meta.copy().iteritems():
-        if ((k.startswith('HTTP_X_ACCOUNT_META_') or k.startswith('HTTP_X_ACCOUNT_GROUP_') or
-             k.startswith('HTTP_X_CONTAINER_META_') or k.startswith('HTTP_X_OBJECT_META_') or
-             k in ('HTTP_X_OBJECT_MANIFEST', 'HTTP_X_OBJECT_SHARING',
-                   'HTTP_X_COPY_FROM', 'HTTP_X_MOVE_FROM',
-                   'HTTP_X_SOURCE_ACCOUNT', 'HTTP_X_SOURCE_OBJECT',
-                   'HTTP_DESTINATION_ACCOUNT', 'HTTP_DESTINATION')) and
-            ('%' in k or '%' in v)):
-            del(meta[k])
-            meta[unquote(k)] = unquote(v)
+    # Handle URL-encoded keys and values.
+    meta = dict([(k, v) for k, v in request.META.iteritems() if k.startswith('HTTP_')])
+    if len(meta) > 90:
+        raise BadRequest('Too many headers.')
+    for k, v in meta.iteritems():
+        if len(k) > 128:
+            raise BadRequest('Header name too large.')
+        if len(v) > 256:
+            raise BadRequest('Header value too large.')
+        try:
+            k.decode('ascii')
+            v.decode('ascii')
+        except UnicodeDecodeError:
+            raise BadRequest('Bad character in headers.')
+        if '%' in k or '%' in v:
+            del(request.META[k])
+            request.META[unquote(k)] = smart_unicode(unquote(v), strings_only=True)
 
 def update_response_headers(request, response):
     if request.serialization == 'xml':
@@ -790,11 +796,10 @@ def update_response_headers(request, response):
     # URL-encode unicode in headers.
     meta = response.items()
     for k, v in meta:
-        if (k.startswith('X-Account-Meta-') or k.startswith('X-Account-Group-') or
-            k.startswith('X-Container-Meta-') or k.startswith('X-Object-Meta-') or
-            k in ('X-Container-Object-Meta', 'X-Object-Manifest', 'X-Object-Sharing', 'X-Object-Shared-By')):
+        if (k.startswith('X-Account-') or k.startswith('X-Container-') or
+            k.startswith('X-Object-') or k.startswith('Content-')):
             del(response[k])
-            response[quote(k)] = quote(v, safe='/=,:@')
+            response[quote(k)] = quote(v, safe='/=,:@; ')
     
     if settings.TEST:
         response['Date'] = format_date_time(time())
@@ -853,14 +858,6 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 
                 # Format and check headers.
                 update_request_headers(request)
-                meta = dict([(k, v) for k, v in request.META.iteritems() if k.startswith('HTTP_')])
-                if len(meta) > 90:
-                    raise BadRequest('Too many headers.')
-                for k, v in meta.iteritems():
-                    if len(k) > 128:
-                        raise BadRequest('Header name too large.')
-                    if len(v) > 256:
-                        raise BadRequest('Header value too large.')
                 
                 # Fill in custom request variables.
                 request.serialization = request_serialization(request, format_allowed)

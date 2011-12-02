@@ -39,7 +39,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
-from django.utils.encoding import smart_unicode, smart_str
+from django.utils.encoding import smart_str
 from xml.dom import minidom
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
@@ -759,12 +759,12 @@ def object_write(request, v_account, v_container, v_object):
             meta = {}
         validate_matching_preconditions(request, meta)
     
-    copy_from = smart_unicode(request.META.get('HTTP_X_COPY_FROM'), strings_only=True)
-    move_from = smart_unicode(request.META.get('HTTP_X_MOVE_FROM'), strings_only=True)
+    copy_from = request.META.get('HTTP_X_COPY_FROM')
+    move_from = request.META.get('HTTP_X_MOVE_FROM')
     if copy_from or move_from:
         content_length = get_content_length(request) # Required by the API.
         
-        src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
+        src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
         if not src_account:
             src_account = request.user_uniq
         if move_from:
@@ -912,10 +912,10 @@ def object_copy(request, v_account, v_container, v_object):
     #                       forbidden (403),
     #                       badRequest (400)
     
-    dest_account = smart_unicode(request.META.get('HTTP_DESTINATION_ACCOUNT'), strings_only=True)
+    dest_account = request.META.get('HTTP_DESTINATION_ACCOUNT')
     if not dest_account:
         dest_account = request.user_uniq
-    dest_path = smart_unicode(request.META.get('HTTP_DESTINATION'), strings_only=True)
+    dest_path = request.META.get('HTTP_DESTINATION')
     if not dest_path:
         raise BadRequest('Missing Destination header')
     try:
@@ -949,10 +949,10 @@ def object_move(request, v_account, v_container, v_object):
     #                       forbidden (403),
     #                       badRequest (400)
     
-    dest_account = smart_unicode(request.META.get('HTTP_DESTINATION_ACCOUNT'), strings_only=True)
+    dest_account = request.META.get('HTTP_DESTINATION_ACCOUNT')
     if not dest_account:
         dest_account = request.user_uniq
-    dest_path = smart_unicode(request.META.get('HTTP_DESTINATION'), strings_only=True)
+    dest_path = request.META.get('HTTP_DESTINATION')
     if not dest_path:
         raise BadRequest('Missing Destination header')
     try:
@@ -1073,12 +1073,10 @@ def object_update(request, v_account, v_container, v_object):
     elif offset > size:
         raise RangeNotSatisfiable('Supplied offset is beyond object limits')
     if src_object:
-        src_account = smart_unicode(request.META.get('HTTP_X_SOURCE_ACCOUNT'), strings_only=True)
+        src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
         if not src_account:
             src_account = request.user_uniq
         src_container, src_name = split_container_object_string(src_object)
-        src_container = smart_unicode(src_container, strings_only=True)
-        src_name = smart_unicode(src_name, strings_only=True)
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
             src_size, src_hashmap = request.backend.get_object_hashmap(request.user_uniq,

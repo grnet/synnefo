@@ -27,6 +27,7 @@ Revision                   Description
 =========================  ================================
 0.8 (Dec 2, 2011)          Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
+\                          Document that all non-ASCII characters in headers should be URL-encoded.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -1074,6 +1075,7 @@ List of differences from the OOS API:
 
 Clarifications/suggestions:
 
+* All non-ASCII characters in headers should be URL-encoded.
 * Authentication is done by another system. The token is used in the same way, but it is obtained differently. The top level ``GET`` request is kept compatible with the OOS API and allows for guest/testing operations.
 * Some processing is done in the variable part of all ``X-*-Meta-*`` headers. If it includes underscores, they will be converted to dashes and the first letter of all intra-dash strings will be capitalized.
 * A ``GET`` reply for a level will include all headers of the corresponding ``HEAD`` request.

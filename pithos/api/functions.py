@@ -155,6 +155,8 @@ def account_list(request):
     
     account_meta = []
     for x in accounts:
+        if x == request.user_uniq:
+            continue
         try:
             meta = request.backend.get_account_meta(request.user_uniq, x)
             groups = request.backend.get_account_groups(request.user_uniq, x)
@@ -163,8 +165,13 @@ def account_list(request):
         else:
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(meta, 'until_timestamp', 'x_account_until_timestamp')
-            for k, v in groups.iteritems():
-                meta['X-Container-Group-' + k] = ','.join(v)
+            m = dict([(k[15:], v) for k, v in meta.iteritems() if k.startswith('X-Account-Meta-')])
+            for k in m:
+                del(meta['X-Account-Meta-' + k])
+            if m:
+                meta['X-Account-Meta'] = printable_header_dict(m)
+            if groups:
+                meta['X-Account-Group'] = printable_header_dict(dict([(k, ','.join(v)) for k, v in groups.iteritems()]))
             account_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('accounts.xml', {'accounts': account_meta})
@@ -283,8 +290,13 @@ def container_list(request, v_account):
         else:
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(meta, 'until_timestamp', 'x_container_until_timestamp')
-            for k, v in policy.iteritems():
-                meta['X-Container-Policy-' + k] = v
+            m = dict([(k[17:], v) for k, v in meta.iteritems() if k.startswith('X-Container-Meta-')])
+            for k in m:
+                del(meta['X-Container-Meta-' + k])
+            if m:
+                meta['X-Container-Meta'] = printable_header_dict(m)
+            if policy:
+                meta['X-Container-Policy'] = printable_header_dict(dict([(k, v) for k, v in policy.iteritems()]))
             container_meta.append(printable_header_dict(meta))
     if request.serialization == 'xml':
         data = render_to_string('containers.xml', {'account': v_account, 'containers': container_meta})
@@ -538,6 +550,11 @@ def object_list(request, v_account, v_container):
                 rename_meta_key(meta, 'modified_by', 'x_object_modified_by')
                 rename_meta_key(meta, 'version', 'x_object_version')
                 rename_meta_key(meta, 'version_timestamp', 'x_object_version_timestamp')
+                m = dict([(k[14:], v) for k, v in meta.iteritems() if k.startswith('X-Object-Meta-')])
+                for k in m:
+                    del(meta['X-Object-Meta-' + k])
+                if m:
+                    meta['X-Object-Meta'] = printable_header_dict(m)
                 update_sharing_meta(request, permissions, v_account, v_container, x[0], meta)
                 update_public_meta(public, meta)
                 object_meta.append(printable_header_dict(meta))

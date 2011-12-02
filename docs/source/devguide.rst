@@ -25,7 +25,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Nov 29, 2011)         Update allowed versioning values.
+0.8 (Dec 2, 2011)          Update allowed versioning values.
+\                          Change policy/meta formatting in JSON/XML replies.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -163,7 +164,7 @@ Example ``format=json`` reply:
 
 ::
 
-  [{"name": "user", "last_modified": "2011-07-19T10:48:16"}, ...]
+  [{"name": "user", "last_modified": "2011-12-02T08:10:41.565891+00:00"}, ...]
 
 Example ``format=xml`` reply:
 
@@ -173,7 +174,7 @@ Example ``format=xml`` reply:
   <accounts>
     <account>
       <name>user</name>
-      <last_modified>2011-07-19T10:48:16</last_modified>
+      <last_modified>2011-12-02T08:10:41.565891+00:00</last_modified>
     </account>
     <account>...</account>
   </accounts>
@@ -185,7 +186,7 @@ Return Code                  Description
 204 (No Content)             The user has no access to other accounts (only for non-extended replies)
 ===========================  =====================
 
-Will use a ``200`` return code if the reply is of type json/xml.
+Will use a ``200`` return code if the reply is of type JSON/XML.
 
 Account Level
 ^^^^^^^^^^^^^
@@ -281,7 +282,41 @@ x_container_policy_*         Container behavior and limits
 x_container_meta_*           Optional user defined metadata
 ===========================  ============================
 
-For examples of container details returned in JSON/XML formats refer to the OOS API documentation.
+Example ``format=json`` reply:
+
+::
+
+  [{"name": "pithos",
+    "bytes": 62452,
+    "count": 8374,
+    "last_modified": "2011-12-02T08:10:41.565891+00:00",
+    "x_container_policy": {"quota": "53687091200", "versioning": "auto"},
+    "x_container_meta": {"a": "b", "1": "2"}}, ...]
+
+Example ``format=xml`` reply:
+
+::
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <account name="user">
+    <container>
+      <name>pithos</name>
+      <bytes>62452</bytes>
+      <count>8374</count>
+      <last_modified>2011-12-02T08:10:41.565891+00:00</last_modified>
+      <x_container_policy>
+        <key>quota</key><value>53687091200</value>
+        <key>versioning</key><value>auto</value>
+      </x_container_policy>
+      <x_container_meta>
+        <key>a</key><value>b</value>
+        <key>1</key><value>2</value>
+      </x_container_meta>
+    </container>
+    <container>...</container>
+  </account>
+
+For more examples of container details returned in JSON/XML formats refer to the OOS API documentation. In addition to the OOS API, Pithos returns all fields. Policy and metadata values are grouped and returned as key-value pairs.
 
 ===========================  =====================
 Return Code                  Description
@@ -292,7 +327,7 @@ Return Code                  Description
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  =====================
 
-Will use a ``200`` return code if the reply is of type json/xml.
+Will use a ``200`` return code if the reply is of type JSON/XML.
 
 
 POST
@@ -456,7 +491,45 @@ Virtual directory markers are only included when ``delimiter`` is explicitly set
 In JSON results they appear as dictionaries with only a ``"subdir"`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
 In case there is an object with the same name as a virtual directory marker, the object will be returned.
 
-For examples of object details returned in JSON/XML formats refer to the OOS API documentation.
+Example ``format=json`` reply:
+
+::
+
+  [{"name": "object",
+    "bytes": 0,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "content_type": "application/octet-stream",
+    "last_modified": "2011-12-02T08:10:41.565891+00:00",
+    "x_object_meta": {"asdf": "qwerty"},
+    "x_object_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "x_object_version": 98,
+    "x_object_version_timestamp": "1322813441.565891",
+    "x_object_modified_by": "user"}, ...]
+
+Example ``format=xml`` reply:
+
+::
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <container name="pithos">
+    <object>
+      <name>object</name>
+      <bytes>0</bytes>
+      <hash>d41d8cd98f00b204e9800998ecf8427e</hash>
+      <content_type>application/octet-stream</content_type>
+      <last_modified>2011-12-02T08:10:41.565891+00:00</last_modified>
+      <x_object_meta>
+        <key>asdf</key><value>qwerty</value>
+      </x_object_meta>
+      <x_object_hash>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</x_object_hash>
+      <x_object_version>98</x_object_version>
+      <x_object_version_timestamp>1322813441.565891</x_object_version_timestamp>
+      <x_object_modified_by>chazapis</x_object_modified_by>
+    </object>
+    <object>...</object>
+  </container>
+
+For more examples of container details returned in JSON/XML formats refer to the OOS API documentation. In addition to the OOS API, Pithos returns all fields. Metadata values are grouped and returned as key-value pairs.
 
 ===========================  ===============================
 Return Code                  Description
@@ -467,7 +540,7 @@ Return Code                  Description
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  ===============================
 
-Will use a ``200`` return code if the reply is of type json/xml.
+Will use a ``200`` return code if the reply is of type JSON/XML.
 
 
 PUT
@@ -674,7 +747,7 @@ Example ``format=json`` reply:
 
 ::
 
-  {"versions": [[23, 1307700892], [28, 1307700898], ...]}
+  {"versions": [[85, "1322734861.248469"], [86, "1322734905.009272"], ...]}
 
 Example ``format=xml`` reply:
 
@@ -682,8 +755,8 @@ Example ``format=xml`` reply:
 
   <?xml version="1.0" encoding="UTF-8"?>
   <object name="file">
-    <version timestamp="1307700892">23</version>
-    <version timestamp="1307700898">28</version>
+    <version timestamp="1322734861.248469">85</version>
+    <version timestamp="1322734905.009272">86</version>
     <version timestamp="...">...</version>
   </object>
 
@@ -978,7 +1051,7 @@ List of differences from the OOS API:
 * Headers ``X-Container-Block-*`` at the container level, exposing the underlying storage characteristics.
 * All metadata replies, at all levels, include latest modification information.
 * At all levels, a ``HEAD`` or ``GET`` request may use ``If-Modified-Since`` and ``If-Unmodified-Since`` headers.
-* Container/object lists include all associated metadata if the reply is of type json/xml. Some names are kept to their OOS API equivalents for compatibility.
+* Container/object lists include all associated metadata if the reply is of type JSON/XML. Some names are kept to their OOS API equivalents for compatibility.
 * Option to include only shared containers/objects in listings.
 * Object metadata allowed, in addition to ``X-Object-Meta-*``: ``Content-Encoding``, ``Content-Disposition``, ``X-Object-Manifest``. These are all replaced with every update operation, except if using the ``update`` parameter (in which case individual keys can also be deleted). Deleting meta by providing empty values also works when copying/moving an object.
 * Multi-range object ``GET`` support as outlined in RFC2616.
@@ -1006,7 +1079,7 @@ Clarifications/suggestions:
 * A ``GET`` reply for a level will include all headers of the corresponding ``HEAD`` request.
 * To avoid conflicts between objects and virtual directory markers in container listings, it is recommended that object names do not end with the delimiter used.
 * The ``Accept`` header may be used in requests instead of the ``format`` parameter to specify the desired request/reply format. The parameter overrides the header.
-* Container/object lists use a ``200`` return code if the reply is of type json/xml. The reply will include an empty json/xml.
+* Container/object lists use a ``200`` return code if the reply is of type JSON/XML. The reply will include an empty JSON/XML.
 * In headers, dates are formatted according to RFC 1123. In extended information listings, the ``last_modified`` field is formatted according to ISO 8601 (for OOS API compatibility). All other fields (Pithos extensions) use integer tiemstamps.
 * The ``Last-Modified`` header value always reflects the actual latest change timestamp, regardless of time control parameters and version requests. Time precondition checks with ``If-Modified-Since`` and ``If-Unmodified-Since`` headers are applied to this value.
 * A copy/move using ``PUT``/``COPY``/``MOVE`` will always update metadata, keeping all old values except the ones redefined in the request headers.

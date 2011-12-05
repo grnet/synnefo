@@ -1,6 +1,3 @@
-#!/bin/bash
-#
-#
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -34,13 +31,26 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 #
+from django.conf.urls.defaults import *
+from django.conf import settings
+import os
 
-set -e
+urlpatterns = patterns('',
+    url(r'^$', 'synnefo.ui.views.home', name='index'),
+    url(r'^machines/console$', 'synnefo.ui.views.machines_console', name='machines-console'),
+    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect', name='machines-connect'),
+    url(r'^feedback$', 'synnefo.ui.views.feedback_submit', name='feedback'),
+    url(r'userdata/', include('synnefo.ui.userdata.urls'))
+)
 
-echo "Running snf-app tests..." >&2
-export PYTHONPATH=$PYTHONPATH:./snf-app
-python snf-app/synnefo/manage.py test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+# serve static files for convenience
+urlpatterns += patterns('',
+    url(r'^static/(.*)$', 'django.views.static.serve',
+    {'document_root': os.path.join(os.path.dirname(__file__), 'static')}),
+)
 
-echo "Running snf-ganeti-tools tests..." >&2
-PYTHONPATH=snf-ganeti-tools:$PYTHONPATH ./snf-ganeti-tools/test/synnefo.ganeti_unittest.py
+if settings.DEBUG or settings.TEST:
+    urlpatterns += patterns('',
+        url(r'^jstests$', 'synnefo.ui.views.js_tests', name='js_tests'),)
+
 

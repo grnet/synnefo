@@ -76,14 +76,15 @@ def network_demux(request, network_id):
         return method_not_allowed(request)
 
 
-def network_to_dict(network, detail=True):
+def network_to_dict(network, user, detail=True):
     network_id = str(network.id) if not network.public else 'public'
     d = {'id': network_id, 'name': network.name}
     if detail:
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
-        d['servers'] = {'values': [vm.id for vm in network.machines.all()]}
         d['status'] = network.state
+        servers = [vm.id for vm in network.machines.filter(owner=user)]
+        d['servers'] = {'values': servers}
     return d
 
 def render_network(request, networkdict, status=200):
@@ -115,8 +116,9 @@ def list_networks(request, detail=False):
     else:
         user_networks = user_networks.filter(state='ACTIVE')
     
-    networks = [network_to_dict(network, detail) for network in user_networks]
-
+    networks = [network_to_dict(network, owner, detail)
+                for network in user_networks]
+    
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {
             'networks': networks,
@@ -149,7 +151,7 @@ def create_network(request):
     if not network:
         raise OverLimit('Network count limit exceeded for your account.')
     
-    networkdict = network_to_dict(network)
+    networkdict = network_to_dict(network, request.user)
     return render_network(request, networkdict, status=202)
 
 @util.api_method('GET')
@@ -164,7 +166,7 @@ def get_network_details(request, network_id):
     
     log.debug('get_network_details %s', network_id)
     net = util.get_network(network_id, request.user)
-    netdict = network_to_dict(net)
+    netdict = network_to_dict(net, request.user)
     return render_network(request, netdict)
 
 @util.api_method('PUT')

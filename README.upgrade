@@ -58,6 +58,18 @@ ADMIN TOOLS
       in flavors has beed added to the admin web interface.
 
 
+v0.7 -> v0.8
+API
+    * A new 'disk_template' attribute has been added to Flavors.
+      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
+      in 20-api.conf to control its value. A database migration is needed.
+
+ADMIN TOOLS
+    * A new --disk-template flag has been added to snf-admin to choose a
+      disk template when creating flavors. Similarly disk_template support
+      in flavors has beed added to the admin web interface.
+
+
 v0.6.2 -> v0.7
 HTML TEMPLATES
     * Included a generic service unavailable template based on

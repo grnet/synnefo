@@ -197,7 +197,7 @@ def put_object_headers(response, meta, restricted=False):
     else:
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
-                response[k] = meta[k]
+                response[k] = smart_str(meta[k], strings_only=True)
 
 def update_manifest_meta(request, v_account, meta):
     """Update metadata if the object has an X-Object-Manifest."""

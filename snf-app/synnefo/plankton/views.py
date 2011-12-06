@@ -135,16 +135,20 @@ def add_image(request):
     params = _get_image_headers(request)
     log.debug('add_image %s', params)
     
+    assert 'name' in params
     assert set(params.keys()).issubset(set(ADD_FIELDS))
     
     if 'id' in params:
         return HttpResponse(status=409)     # Custom IDs are not supported
     
-    if 'location' in params:
-        image = request.backend.register_image(**params)
+    name = params['name']
+    
+    location = params.pop('location', None)
+    if location:
+        image = request.backend.register(name, location, params)
     else:
-        params['data'] = request.raw_post_data
-        image = request.backend.put_image(**params)
+        #image = request.backend.put(name, request.raw_post_data, params)
+        return HttpResponse(status=501)     # Not Implemented
     
     if not image:
         return HttpResponse(status=500)
@@ -180,17 +184,18 @@ def get_image(request, image_id):
         in memory.
     """
     
-    image = request.backend.get_image(image_id)
-    if not image:
-        return HttpResponseNotFound()
-    
-    response = _create_image_response(image)
-    data = request.backend.get_image_data(image)
-    response.content = data
-    response['Content-Length'] = len(data)
-    response['Content-Type'] = 'application/octet-stream'
-    response['ETag'] = image['checksum']
-    return response
+    #image = request.backend.get_meta(image_id)
+    #if not image:
+    #    return HttpResponseNotFound()
+    #
+    #response = _create_image_response(image)
+    #data = request.backend.get_data(image)
+    #response.content = data
+    #response['Content-Length'] = len(data)
+    #response['Content-Type'] = 'application/octet-stream'
+    #response['ETag'] = image['checksum']
+    #return response
+    return HttpResponse(status=501)     # Not Implemented
 
 
 @plankton_method('HEAD')
@@ -201,7 +206,7 @@ def get_image_meta(request, image_id):
     3.4. Requesting Detailed Metadata on a Specific Image
     """
 
-    image = request.backend.get_image(image_id)
+    image = request.backend.get_meta(image_id)
     if not image:
         return HttpResponseNotFound()
     return _create_image_response(image)
@@ -283,7 +288,7 @@ def list_shared_images(request, member):
         return HttpResponse(status=403)
     
     images = []
-    for image in request.backend.iter_shared_images():
+    for image in request.backend.iter_shared():
         images.append({'image_id': image['id'], 'can_share': False})
     
     data = json.dumps({'shared_images': images}, indent=settings.DEBUG)
@@ -295,7 +300,7 @@ def remove_image_member(request, image_id, member):
     """Remove a member from an image
 
     Described in:
-    33.10. Removing a Member from an Image
+    3.10. Removing a Member from an Image
     """
 
     log.debug('remove_image_member %s %s', image_id, member)
@@ -321,7 +326,7 @@ def update_image(request, image_id):
     
     assert set(meta.keys()).issubset(set(UPDATE_FIELDS))
     
-    image = request.backend.update_image(image_id, meta)
+    image = request.backend.update(image_id, meta)
     return _create_image_response(image)
 
 

@@ -41,7 +41,7 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
         HttpResponseServerError)
 
 from synnefo.db.models import SynnefoUser
-from synnefo.plankton.backend import BackendWrapper, BackendException
+from synnefo.plankton.backend import ImageBackend, BackendException
 
 
 def get_user_from_token(token):
@@ -75,7 +75,7 @@ def plankton_method(method):
             if not user:
                 return HttpResponse(status=401)
             request.user = user
-            request.backend = BackendWrapper(user.uniq)
+            request.backend = ImageBackend(user.uniq)
             try:
                 return func(request, *args, **kwargs)
             except (AssertionError, BackendException) as e:

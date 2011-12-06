@@ -31,6 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+"""
+Plankton attributes are stored as user metadata in Pithos, prefixed with
+PLANKTON_PREFIX.
+Exceptions are the following:
+  - location: generated based on the object's path
+  - updated_at: generated based on the modified attribute
+  - created_at: generated based on the modified attribute of the first version
+  - owner: identical to the object's account
+  - is_public: True if there is a * entry for the read permission
+
+All Plankton properties are JSON serialized and stored as one user meta.
+"""
+
 import json
 
 from binascii import hexlify
@@ -49,26 +62,19 @@ from pithos.backends.base import NotAllowedError
 PLANKTON_PREFIX = 'plankton:'
 
 
-def iterblock(data, block_size):
-    while data:
-        yield data[:block_size]
-        data = data[block_size:]
-
-
-def format_timestamp(t):
-    return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
-
-
 def set_plankton_attr(d, **kwargs):
     for key, val in kwargs.items():
         d[PLANKTON_PREFIX + key] = str(val) if val is not None else ''
+
+def get_image_id(location):
+    return str(UUID(bytes=md5(location).digest()))
 
 
 class BackendException(Exception): pass
 
 
-class BackendWrapper(object):
-    """A proxy object that always passes user as a first argument."""
+class ImageBackend(object):
+    """A wrapper arround the pithos backend to simplify image handling."""
     
     def __init__(self, user):
         self.user = user
@@ -79,13 +85,12 @@ class BackendWrapper(object):
         except NameError:
             pass    # Container already exists
     
-    def close(self):
-        self.backend.close()
+    def _get(self, user, account, container, object):
+        def format_timestamp(t):
+            return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
 
-    def _get_image(self, user, account, container, object):
         meta = self.backend.get_object_meta(user, account, container, object)
         image = {
-            '_user': user,
             '_account': account,
             '_container': container,
             '_object': object}
@@ -95,336 +100,290 @@ class BackendWrapper(object):
             val = meta.get(PLANKTON_PREFIX + key, None)
             if val is not None:
                 image[key] = val
-        
+
         image['location'] = 'pithos://%s/%s/%s' % (account, container, object)
         image['updated_at'] = format_timestamp(meta['modified'])
         image['owner'] = account
-        
+
         # Get the creation date from the date of the first version
         version, created = self.backend.list_versions(user, account, container,
                                                       name=object)[0]
         image['created_at'] = format_timestamp(created)
         
         # Mark as public if there is a * entry for read
-        action, path, perm = self.backend.get_object_permissions(user, account,
-                                                            container, object)
-        image['is_public'] = '*' in perm.get('read', [])
+        permissions = self._get_permissions(image)
+        image['is_public'] = '*' in permissions.get('read', [])
         
         properties = meta.get(PLANKTON_PREFIX + 'properties', None)
         if properties:
             image['properties'] = json.loads(properties)
-        
+
         return image
     
-    def add_user(self, image_id, user):
-        image = self.get_image(image_id)
-        assert image, "Image not found"
-        
-        account = image['_account']
-        container = image['_container']
-        object = image['_object']
-        
+    def _get_permissions(self, image):
         action, path, permissions = self.backend.get_object_permissions(
-                self.user, account, container, object)
-        read_permissions = set(permissions.get('read', []))
-        read_permissions.add(user)
-        permissions['read'] = list(read_permissions)
-        self.backend.update_object_permissions(self.user, account, container,
-                object, permissions)
+                user=self.user,
+                account=image['_account'],
+                container=image['_container'],
+                name=image['_object'])
+        return permissions
     
-    def remove_user(self, image_id, user):
-        image = self.get_image(image_id)
-        assert image, "Image not found"
-        
-        account = image['_account']
-        container = image['_container']
-        object = image['_object']
-        
-        action, path, permissions = self.backend.get_object_permissions(
-                self.user, account, container, object)
-        try:
-            permissions.get('read', []).remove(user)
-        except ValueError:
-            return      # User did not have access anyway
-        self.backend.update_object_permissions(self.user, account, container,
-                object, permissions)
-    
-    def replace_users(self, image_id, users):
-        image = self.get_image(image_id)
-        assert image, "Image not found"
-
-        account = image['_account']
-        container = image['_container']
-        object = image['_object']
-
-        action, path, permissions = self.backend.get_object_permissions(
-                self.user, account, container, object)
-        permissions['read'] = users
-        if image.get('is_public', False):
-            permissions['read'].append('*')
-        self.backend.update_object_permissions(self.user, account, container,
-                object, permissions)
-    
-    def list_users(self, image_id):
-        image = self.get_image(image_id)
-        assert image, "Image not found"
-        
-        account = image['_account']
-        container = image['_container']
-        object = image['_object']
-        
-        action, path, permissions = self.backend.get_object_permissions(
-                self.user, account, container, object)
-        return [user for user in permissions.get('read', []) if user != '*']
-    
-    def get_image(self, image_id):
+    def _iter(self, keys=[], public=False):
         backend = self.backend
-        
-        user = self.user
         container = self.container
-        
-        # Arguments to be passed to list_objects
-        listargs = {
-            'user': user,
-            'container': container,
-            'prefix': '',
-            'delimiter': '/',
-            'keys': [PLANKTON_PREFIX + 'id']}
+        user = None if public else self.user
+        keys = [PLANKTON_PREFIX + key for key in keys]
         
         for account in backend.list_accounts(user):
-            listargs['account'] = account
-            for path, version_id in backend.list_objects(**listargs):
-                try:
-                    image = self._get_image(user, account, container, path)
-                    if image['id'] == image_id:
-                        return image
-                except NotAllowedError:
-                    continue
-        
-        return None
-    
-    def get_image_data(self, image):
-        size, hashmap = self.backend.get_object_hashmap(image['_user'],
-                image['_account'], image['_container'], image['_object'])
-        
-        buf = []
-        for hash in hashmap:
-            buf.append(self.backend.get_block(hash))
-        return ''.join(buf)
-    
-    def register_image(self, name, location, store=None, disk_format=None,
-            container_format=None, size=None, checksum=None, is_public=False,
-            owner=None, properties={}):
-        
-        backend = self.backend
-        
-        assert location.startswith('pithos://')
-        t = location.split('/', 4)
-        assert len(t) == 5
-        account, container, object = t[2:5]
-        user = self.user
-        
-        store = store or settings.DEFAULT_IMAGE_STORE
-        disk_format = disk_format or settings.DEFAULT_DISK_FORMAT
-        container_format = container_format or \
-                                            settings.DEFAULT_CONTAINER_FORMAT
-        
-        assert store in settings.IMAGE_STORES
-        assert disk_format in settings.IMAGE_DISK_FORMATS
-        assert container_format in settings.IMAGE_CONTAINER_FORMATS
-        
-        sz, hashmap = self.backend.get_object_hashmap(user, account,
-                container, object)
-        if size is not None and size != sz:
-            raise BackendException("Invalid size")
-        
-        m = md5()
-        for hash in hashmap:
-            m.update(self.backend.get_block(hash))
-        
-        digest = m.digest()
-        hexdigest = hexlify(digest)
-        if checksum is not None and checksum != hexdigest:
-            raise BackendException("Invalid checksum")
-        
-        permissions = {'read': ['*']} if is_public else None
-        
-        image_meta = {
-            'id': str(UUID(bytes=digest)),
-            'name': name,
-            'status': 'available',
-            'store': store,
-            'disk_format': disk_format,
-            'container_format': container_format,
-            'size': size or sz,
-            'checksum': checksum or hexdigest,
-            'owner': owner,
-            'deleted_at': ''}
-        
-        if properties:
-            image_meta['properties'] = json.dumps(properties)
-        
-        meta = {}
-        for key, val in image_meta.items():
-            meta[PLANKTON_PREFIX + key] = str(val) if val is not None else ''
-        
-        backend.update_object_meta(user, account, container, object, meta)
-        backend.update_object_permissions(user, account, container, object,
-                                          permissions)
-        
-        return self.get_image(image_meta['id'])
-    
-    def put_image(self, name, data, store=None, disk_format=None,
-            container_format=None, size=None, checksum=None, is_public=False,
-            owner=None, properties={}):
-        
-        backend = self.backend
-        
-        store = store or settings.DEFAULT_IMAGE_STORE
-        disk_format = disk_format or settings.DEFAULT_DISK_FORMAT
-        container_format = container_format or \
-                                            settings.DEFAULT_CONTAINER_FORMAT
-        
-        assert store in settings.IMAGE_STORES
-        assert disk_format in settings.IMAGE_DISK_FORMATS
-        assert container_format in settings.IMAGE_CONTAINER_FORMATS
-        
-        if size is not None and size != len(data):
-            raise BackendException("Invalid size")
-        
-        m = md5()
-        hashmap = []
-        for block in iterblock(data, backend.block_size):
-            hash = backend.put_block(block)
-            hashmap.append(hash)
-            m.update(block)
-
-        digest = m.digest()
-        hexdigest = hexlify(digest)
-        image_id = str(UUID(bytes=digest))
-        if checksum is not None and checksum != hexdigest:
-            raise BackendException("Invalid checksum")
-        
-        permissions = {'read': ['*']} if is_public else None
-        
-        meta = {'hash': hexdigest}
-        
-        set_plankton_attr(meta,
-            id=image_id,
-            name=name,
-            status='available',
-            store=store,
-            disk_format=disk_format,
-            container_format=container_format,
-            size=size or len(data),
-            checksum=checksum or hexdigest,
-            owner=owner,
-            deleted_at='')
-        
-        if properties:
-            set_plankton_attr(meta, properties=json.dumps(properties))
-        
-        backend.update_object_hashmap(
-                user=self.user,
-                account=self.user,
-                container=self.container,
-                name=name,
-                size=len(data),
-                hashmap=hashmap,
-                meta=meta,
-                replace_meta=True,
-                permissions=permissions)
-        
-        return self.get_image(image_id)
-    
-    def iter_public_images(self, filters):
-        user = None
-        container = self.container
-        
-        keys = set()
-        for key, val in filters.items():
-            if key in ('size_min', 'size_max'):
-                key = 'size'
-            keys.add(PLANKTON_PREFIX + key)
-        keys = list(keys)
-        
-        for account in self.backend.list_accounts(None):
-            for path, version_id in self.backend.list_objects(user, account,
+            for path, version_id in backend.list_objects(user, account,
                     container, prefix='', delimiter='/', keys=keys):
                 try:
-                    image = self._get_image(user, account, container, path)
-                except NotAllowedError:
-                    continue
-                
-                skip = False
-                for key, val in filters.items():
-                    if key == 'size_min':
-                        if image['size'] < int(val):
-                            skip = True
-                            break
-                    elif key == 'size_max':
-                        if image['size'] > int(val):
-                            skip = True
-                            break
-                    else:
-                        if image[key] != val:
-                            skip = True
-                            break
-                
-                if not skip:
-                    yield image
-    
-    def iter_shared_images(self):
-        user = self.user
-        container = self.container
-        
-        for account in self.backend.list_accounts(user):
-            for path, version_id in self.backend.list_objects(user, account,
-                    container, prefix='', delimiter='/'):
-                try:
-                    image = self._get_image(user, account, container, path)
+                    image = self._get(user, account, container, path)
                     if 'id' in image:
                         yield image
                 except NotAllowedError:
                     continue
     
-    def list_public_images(self, filters, params):
-        images = list(self.iter_public_images(filters))
+    def _store(self, data):
+        """Breaks data into blocks and stores them in the backend.
         
+        Returns a tuple of the hashmap and the MD5 checksum
+        """
+        
+        def iterblock(data, block_size):
+            while data:
+                yield data[:block_size]
+                data = data[block_size:]
+        
+        m = md5()
+        hashmap = []
+        
+        for block in iterblock(data, self.backend.block_size):
+            hash = self.backend.put_block(block)
+            hashmap.append(hash)
+            m.update(block)
+        
+        return hashmap, m.digest()
+    
+    def _update_permissions(self, image, permissions):
+        self.backend.update_object_permissions(self.user, image['_account'],
+                image['_container'], image['_object'], permissions)
+    
+    def add_user(self, image_id, user):
+        image = self.get_meta(image_id)
+        assert image, "Image not found"
+        
+        permissions = self._get_permissions(image)
+        read = set(permissions.get('read', []))
+        read.add(user)
+        permissions['read'] = list(read)
+        self._update_permissions(image, permissions)
+    
+    def close(self):
+        self.backend.close()
+    
+    def get_data(self, image):
+        size, hashmap = self.backend.get_object_hashmap(self.user,
+                image['_account'], image['_container'], image['_object'])
+        data = ''.join(self.backend.get_block(hash) for hash in hashmap)
+        assert len(data) == size
+        return data
+    
+    def get_meta(self, image_id):
+        for image in self._iter(keys=['id']):
+            if image['id'] == image_id:
+                return image
+        return None
+    
+    def iter_public(self, filters):
+        keys = set()
+        for key, val in filters.items():
+            if key in ('size_min', 'size_max'):
+                key = 'size'
+            keys.add(key)
+        
+        for image in self._iter(keys=keys, public=True):
+            for key, val in filters.items():
+                if key == 'size_min':
+                    if image['size'] < int(val):
+                        break
+                elif key == 'size_max':
+                    if image['size'] > int(val):
+                        break
+                else:
+                    if image[key] != val:
+                        break
+            else:
+                yield image
+    
+    def iter_shared(self):
+        for image in self._iter():
+            yield image
+    
+    def list_public_images(self, filters, params):
+        images = list(self.iter_public(filters))
         key = itemgetter(params['sort_key'])
         reverse = params['sort_dir'] == 'desc'
         images.sort(key=key, reverse=reverse)
-        
         return images
     
-    def update_image(self, image_id, meta):
-        image = self.get_image(image_id)
+    def list_users(self, image_id):
+        image = self.get_meta(image_id)
         assert image, "Image not found"
         
+        permissions = self._get_permissions(image)
+        return [user for user in permissions.get('read', []) if user != '*']
+    
+    def put(self, name, data, params):
+        meta = {}
+        
+        location = 'pithos://%s/%s/%s' % (self.user, self.container, name)
+        image_id = get_image_id(location)
+        
+        params.setdefault('store', settings.DEFAULT_IMAGE_STORE)
+        params.setdefault('disk_format', settings.DEFAULT_DISK_FORMAT)
+        params.setdefault('container_format',
+                settings.DEFAULT_CONTAINER_FORMAT)
+        
+        assert params['store'] in settings.IMAGE_STORES
+        assert params['disk_format'] in settings.IMAGE_DISK_FORMATS
+        assert params['container_format'] in settings.IMAGE_CONTAINER_FORMATS
+        
+        is_public = params.pop('is_public', False)
+        permissions = {'read': ['*']} if is_public else None
+        
+        size = params.get('size', len(data))
+        if size != len(data):
+            raise BackendException("Invalid size")
+        
+        hashmap, digest = self._store(data)
+        hexdigest = hexlify(digest)
+        meta['ETag'] = hexdigest
+        
+        checksum = params.pop('checksum', hexdigest)
+        if checksum != hexdigest:
+            raise BackendException("Invalid checksum")
+        
+        set_plankton_attr(meta, id=image_id, name=name, status='available',
+                size=size, checksum=checksum, deleted_at='')
+        
+        properties = params.pop('properties', None)
+        if properties:
+            set_plankton_attr(meta, properties=json.dumps(properties))
+        
+        set_plankton_attr(meta, **params)
+        
+        self.backend.update_object_hashmap(
+                user=self.user,
+                account=self.user,
+                container=self.container,
+                name=name,
+                size=size,
+                hashmap=hashmap,
+                meta=meta,
+                replace_meta=True,
+                permissions=permissions)
+        
+        return self.get_meta(image_id)
+    
+    def register(self, name, location, params):
+        assert location.startswith('pithos://')
+        t = location.split('/', 4)
+        assert len(t) == 5
+        account, container, object = t[2:5]
         user = self.user
-        account = image['_account']
-        container = image['_container']
-        object = image['_object']
+        image_id = get_image_id(location)
+        
+        params.setdefault('store', settings.DEFAULT_IMAGE_STORE)
+        params.setdefault('disk_format', settings.DEFAULT_DISK_FORMAT)
+        params.setdefault('container_format',
+                settings.DEFAULT_CONTAINER_FORMAT)
+        
+        assert params['store'] in settings.IMAGE_STORES
+        assert params['disk_format'] in settings.IMAGE_DISK_FORMATS
+        assert params['container_format'] in settings.IMAGE_CONTAINER_FORMATS
+        
+        sz, hashmap = self.backend.get_object_hashmap(user, account,
+                container, object)
+        
+        size = params.get('size', sz)
+        if size != sz:
+            raise BackendException("Invalid size")
+        
+        m = md5()
+        for hash in hashmap:
+            m.update(self.backend.get_block(hash))
+
+        digest = m.digest()
+        hexdigest = hexlify(digest)
+        
+        checksum = params.pop('checksum', hexdigest)
+        if checksum != hexdigest:
+            raise BackendException("Invalid checksum")
+        
+        is_public = params.pop('is_public', False)
+        permissions = {'read': ['*']} if is_public else None
+        
+        meta = {}
+        set_plankton_attr(meta, id=image_id, name=name, status='available',
+                size=size, checksum=checksum, deleted_at='')
+        
+        properties = params.pop('properties', None)
+        if properties:
+            set_plankton_attr(meta, properties=json.dumps(properties))
+        
+        set_plankton_attr(meta, **params)
+        
+        self.backend.update_object_meta(user, account, container, object, meta)
+        self.backend.update_object_permissions(user, account, container,
+                object, permissions)
+        
+        return self.get_meta(image_id)
+    
+    def remove_user(self, image_id, user):
+        image = self.get_meta(image_id)
+        assert image, "Image not found"
+
+        permissions = self._get_permissions(image)
+        try:
+            permissions.get('read', []).remove(user)
+        except ValueError:
+            return      # User did not have access anyway
+        self._update_permissions(image, permissions)
+    
+    def replace_users(self, image_id, users):
+        image = self.get_meta(image_id)
+        assert image, "Image not found"
+        
+        permissions = self._get_permissions(image)
+        permissions['read'] = users
+        if image.get('is_public', False):
+            permissions['read'].append('*')
+        self._update_permissions(image, permissions)
+    
+    def update(self, image_id, meta):
+        image = self.get_meta(image_id)
+        assert image, "Image not found"
         
         is_public = meta.pop('is_public', None)
         if is_public is not None:
-            action, path, permissions = self.backend.get_object_permissions(
-                    user, account, container, object)
-            read_permissions = set(permissions.get('read', []))
+            permissions = self._get_permissions(image)
+            read = set(permissions.get('read', []))
             if is_public:
-                read_permissions.add('*')
+                read.add('*')
             else:
-                read_permissions.discard('*')
-            permissions['read'] = list(read_permissions)
-            self.backend.update_object_permissions(user, account, container,
-                    object, permissions)
-        
+                read.discard('*')
+            permissions['read'] = list(read)
+            self.backend._update_permissions(image, permissions)
+
         m = {}
-        set_plankton_attr(m, **meta)
-        
-        properties = meta.get('properties', None)
+
+        properties = meta.pop('properties', None)
         if properties:
             set_plankton_attr(m, properties=json.dumps(properties))
         
-        self.backend.update_object_meta(user, account, container, object, m)
-        return self.get_image(image_id)
+        set_plankton_attr(m, **meta)
+        
+        self.backend.update_object_meta(self.user, image['_account'],
+                image['_container'], image['_object'], m)
+        return self.get_meta(image_id)

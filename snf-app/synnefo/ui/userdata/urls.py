@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 #
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
@@ -33,14 +31,16 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-set -e
+from django.conf.urls.defaults import *
+from synnefo.ui.userdata import views
 
-echo "Running snf-app tests..." >&2
-export PYTHONPATH=$PYTHONPATH:./snf-app
-python snf-app/synnefo/manage.py test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
-
-echo "Running snf-ganeti-tools tests..." >&2
-PYTHONPATH=snf-ganeti-tools:$PYTHONPATH ./snf-ganeti-tools/test/synnefo.ganeti_unittest.py
-
+urlpatterns = patterns('',
+    url(r'^keys$', views.PublicKeyPairCollectionView.as_view('keys_resource'),
+        name='keys_collection'),
+    url(r'^keys/(?P<id>\d+)',
+    views.PublicKeyPairResourceView.as_view('keys_resource'),
+        name="keys_resource"),
+    url(r'keys/generate', views.generate_key_pair, name="generate_public_key"),
+    url(r'keys/download', views.download_private_key, name="download_public_key")
+)

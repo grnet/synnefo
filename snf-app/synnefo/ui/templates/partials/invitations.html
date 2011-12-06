@@ -1,0 +1,54 @@
+{% load i18n %}
+<div id="invitations-overlay-content" class="hidden overlay-content invitations-view">
+    <div class="description">
+        <p>You have <span class="left">...</span> invitations left</p>
+    </div>
+    <div class="invitations-wrapper clearfix">
+        <div class="invitations-form clearfix">
+            <div class="invitations-send-header clearfix">
+            <h3>{% trans "Send new intivations" %}</h3>
+            <div class="add-new-invitation" title="{% trans "Add new invitation" %}">add</div>
+            </div>
+            <div class="top-info success"></div>
+            <div class="form-entry-tpl clearfix hidden">
+                <div class="fields clearfix">
+                    <div class="form-field">
+                        <label>Name <span class="desc">e.g. John Smith</span></label>
+                        <input type="text" class="name"/>
+                    </div>
+                    <div class="form-field">
+                        <label>Email</label>
+                        <input type="text" class="email"/>
+                    </div>
+                    <div class="remove-invitation" title="{% trans "Remove invitation" %}">remove</div>
+                </div>
+                <div class="send-error"></div>
+                <div class="sending-msg hidden">{% trans "Sending..." %}</div>
+            </div>
+            <div class="form-entries">
+            </div>
+            <div vlcass="form-actions">
+                <span class="form-action create send-invitations">send invitations</span>
+            </div>
+        </div>
+        <div class="invitations-list clearfix">
+            <h3>{% trans "Intivations sent" %}</h3>
+            <div class="resent-info"></div>
+            <div class="loading-invitations">Loading...</div>
+            <div class="invitation-sent-tpl hidden clearfix">
+                <div class="name"></div>
+                <div class="email"></div>
+                <div class="status resend hidden" title="{% trans "Resend invitation" %}"></div>
+                <div class="status sent hidden" title="{% trans "Invitation accepted" %}"></div>
+                <div class="status sending hidden"></div>
+            </div>
+            <form>
+                <div class="invitations-sent-cont">
+                </div>
+            </form>
+            <div class="invitations-sent-pages"></div>
+            <div class="hidden invitations-sent-error">{% trans "Cannot display invitations history" %}</div>
+        </div>
+    </div>
+</div>
+

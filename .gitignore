@@ -1,4 +1,3 @@
-settings.py
 *.db
 *.pyc
 *~
@@ -17,3 +16,6 @@ selenium-server-standalone-2.0b2.jar
 .pydevproject
 .settings/
 settings.d/*-local.conf
+*.egg-info
+dist
+_build

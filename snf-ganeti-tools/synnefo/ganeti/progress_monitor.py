@@ -210,6 +210,14 @@ def main():
                 if not (os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0):
                     return 1
                 else:
+                    # send a final notification
+                    final_msg = dict(type="ganeti-create-progress",
+                                     instance=opts.instance_name)
+                    if opts.read_bytes:
+                        final_msg['rprogress'] = float(100)
+                    if opts.write_bytes:
+                        final_msg['wprogress'] = float(100)
+                    amqp.send_message(final_msg)
                     return 0
 
         # retrieve the current values of the read/write byte counters

@@ -1,6 +1,3 @@
-#!/bin/bash
-#
-#
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -33,14 +30,19 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-set -e
+import os
+import glob
 
-echo "Running snf-app tests..." >&2
-export PYTHONPATH=$PYTHONPATH:./snf-app
-python snf-app/synnefo/manage.py test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+# import common settings
+from synnefo.settings.common import *
 
-echo "Running snf-ganeti-tools tests..." >&2
-PYTHONPATH=snf-ganeti-tools:$PYTHONPATH ./snf-ganeti-tools/test/synnefo.ganeti_unittest.py
+SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
+
+if SYNNEFO_SETTINGS_DIR != "":
+    # extend common settings with settings set in /etc/synnefo dir
+    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
+    conffiles.sort()
+    for f in conffiles:
+        execfile(os.path.abspath(f))
 

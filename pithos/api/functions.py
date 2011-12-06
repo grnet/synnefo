@@ -126,7 +126,7 @@ def authenticate(request):
         uri = uri[:uri.find('?')]
     
     response['X-Auth-Token'] = x_auth_key
-    response['X-Storage-Url'] = uri + (uri.endswith('/') and '' or '/') + x_auth_user
+    response['X-Storage-Url'] = uri + ('' if uri.endswith('/') else '/') + x_auth_user
     return response
 
 @api_method('GET', format_allowed=True)

@@ -574,7 +574,7 @@ class ContainerGet(BaseTestCase):
             l.sort()
             start = l.index(m) + 1
             end = start + limit
-            end = len(l) >= end and end or len(l)
+            end = end if len(l) >= end else len(l)
             self.assertEqual(objects, l[start:end])
     
     #takes too long
@@ -1176,7 +1176,7 @@ class ObjectGet(BaseTestCase):
             hashes = body['hashes']
             block_size = body['block_size']
             block_hash = body['block_hash']
-            block_num = l/block_size == 0 and l/block_size or l/block_size + 1
+            block_num = l/block_size if l/block_size == 0 else l/block_size + 1
             self.assertTrue(len(hashes), block_num)
             i = 0
             for h in hashes:

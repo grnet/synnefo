@@ -317,7 +317,7 @@ class GetObject(Command):
         else:
             data = self.client.retrieve_object(container, object, **args)    
         
-        f = self.file and open(self.file, 'w') or stdout
+        f = open(self.file, 'w') if self.file else stdout
         if self.detail:
             if self.versionlist:
                 print_versions(data, f=f)
@@ -765,7 +765,7 @@ def main():
         cmd.parser.print_help()
         exit(1)
     except Fault, f:
-        status = f.status and '%s ' % f.status or ''
+        status = '%s ' % f.status if f.status else ''
         print '%s%s' % (status, f.data)
 
 if __name__ == '__main__':

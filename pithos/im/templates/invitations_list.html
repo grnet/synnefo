@@ -23,9 +23,9 @@
       <th>Code</th>
       <th>Inviter Uniq</th>
       <th>Inviter Real Name</th>
-      <th>Is_accepted</th>
+      <th>Is consumed</th>
       <th>Created</th>
-      <th>Accepted</th>
+      <th>Consumed</th>
     </tr>
   </thead>
   <tbody>
@@ -37,9 +37,9 @@
       <td>{{ inv.code }}</td>
       <td>{{ inv.inviter.uniq }}</td>
       <td>{{ inv.inviter.realname }}</td>
-      <td>{{ inv.is_accepted }}</td>
+      <td>{{ inv.is_consumed }}</td>
       <td>{{ inv.created }}</td>
-      <td>{{ inv.accepted }}</td>
+      <td>{{ inv.consumed }}</td>
     </tr>
     {% endfor %}
   </tbody>

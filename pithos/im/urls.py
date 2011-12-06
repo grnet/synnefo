@@ -32,8 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns
-
+from django.conf.urls.defaults import patterns, include
 
 urlpatterns = patterns('pithos.im.views',
     (r'^$', 'index'),
@@ -47,12 +46,23 @@ urlpatterns = patterns('pithos.im.views',
     (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
     (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
     (r'^admin/users/export/?$', 'users_export'),
+    (r'^admin/users/pending/?$', 'pending_users'),
+    (r'^admin/users/activate/(\d+)/?$', 'users_activate'),
     
     (r'^admin/invitations/?$', 'invitations_list'),
     (r'^admin/invitations/export/?$', 'invitations_export'),
     
     (r'^profile/?$', 'users_profile'),
     (r'^profile/edit/?$', 'users_edit'),
+    
+    (r'^signup/?$', 'signup'),
+    (r'^local/create/?$', 'local_create'),
+    (r'^openid/create/?$', 'openid_create'),
+)
+
+
+urlpatterns += patterns('',
+    (r'^account/', include('django_authopenid.urls')),
 )
 
 urlpatterns += patterns('pithos.im.target',
@@ -64,31 +74,32 @@ urlpatterns += patterns('',
                                 {'document_root': settings.PROJECT_PATH + '/im/static'})
 )
 
-if 'local' in settings.IM_STANDARD_MODULES:
+
+if 'local' in settings.IM_MODULES:
     urlpatterns += patterns('pithos.im.views',
-        (r'^local/create/?$', 'local_create'),
+#        (r'^local/create/?$', 'local_create'),
         (r'^local/reclaim/?$', 'reclaim_password')
     )
     urlpatterns += patterns('pithos.im.target',
         (r'^local/?$', 'local.login'),
-        (r'^local/activate/?$', 'local.activate'),
+#        (r'^local/activate/?$', 'local.activate'),
         (r'^local/reset/?$', 'local.reset_password')
     )
 
-if 'invitation' in settings.IM_STANDARD_MODULES:
-    urlpatterns += patterns('pithos.im.views',
-        (r'^invite/?$', 'invite'),
-    )
-    urlpatterns += patterns('pithos.im.target',
-        (r'^login/invitation/?$', 'invitation.login')
-    )
+#if 'invitation' in settings.IM_STANDARD_MODULES:
+#    urlpatterns += patterns('pithos.im.views',
+#        (r'^invite/?$', 'invite'),
+#    )
+#    urlpatterns += patterns('pithos.im.target',
+#        (r'^login/invitation/?$', 'invitation.login')
+#    )
 
-if 'shibboleth' in settings.IM_OTHER_MODULES:
+if 'shibboleth' in settings.IM_MODULES:
     urlpatterns += patterns('pithos.im.target',
         (r'^login/shibboleth/?$', 'shibboleth.login')
     )
 
-if 'twitter' in settings.IM_OTHER_MODULES:
+if 'twitter' in settings.IM_MODULES:
     urlpatterns += patterns('pithos.im.target',
         (r'^login/twitter/?$', 'twitter.login'),
         (r'^login/twitter/authenticated/?$', 'twitter.authenticated')

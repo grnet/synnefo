@@ -8,6 +8,9 @@
   <li{% ifequal tab "users" %} class="active"{% endifequal %}>
     <a href="{% url pithos.im.views.users_list %}">Users</a>
   </li>
+  <li{% ifequal tab "pending" %} class="active"{% endifequal %}>
+    <a href="{% url pithos.im.views.pending_users %}">Pending Users</a>
+  </li>
   <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
     <a href="{% url pithos.im.views.invitations_list %}">Invitations</a>
   </li>

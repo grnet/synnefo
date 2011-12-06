@@ -44,12 +44,15 @@ from smtplib import SMTPException
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
+from django import forms
+
+from django_authopenid.forms import *
 
 from urllib import quote
 
@@ -91,8 +94,8 @@ def requires_admin(func):
 
 
 def index(request):
-    kwargs = {'standard_modules':settings.IM_STANDARD_MODULES,
-              'other_modules':settings.IM_OTHER_MODULES}
+    kwargs = {'im_modules':settings.IM_MODULES,
+              'other_modules':settings.IM_MODULES[1:]}
     return render_response('index.html',
                            next=request.GET.get('next', ''),
                            **kwargs)
@@ -102,10 +105,11 @@ def index(request):
 def admin(request):
     stats = {}
     stats['users'] = User.objects.count()
+    stats['pending'] = User.objects.filter(state = 'PENDING').count()
     
     invitations = Invitation.objects.all()
     stats['invitations'] = invitations.count()
-    stats['invitations_accepted'] = invitations.filter(is_accepted=True).count()
+    stats['invitations_consumed'] = invitations.filter(is_consumed=True).count()
     
     return render_response('admin.html', tab='home', stats=stats)
 
@@ -168,13 +172,84 @@ def users_modify(request, user_id):
     user.save()
     return redirect(users_info, user.id)
 
-
 @requires_admin
 def users_delete(request, user_id):
     user = User.objects.get(id=user_id)
     user.delete()
     return redirect(users_list)
 
+@requires_admin
+def pending_users(request):
+    users = User.objects.order_by('id')
+    
+    users = users.filter(state = 'PENDING')
+    
+    try:
+        page = int(request.GET.get('page', 1))
+    except ValueError:
+        page = 1
+    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
+    limit = offset + settings.ADMIN_PAGE_LIMIT
+    
+    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
+    prev = page - 1 if page > 1 else None
+    next = page + 1 if page < npages else None
+    return render_response('pending_users.html',
+                            users=users[offset:limit],
+                            filter=filter,
+                            pages=range(1, npages + 1),
+                            page=page,
+                            prev=prev,
+                            next=next)
+
+def send_greeting(baseurl, user):
+    url = baseurl
+    subject = _('Welcome to Pithos')
+    message = render_to_string('welcome.txt', {
+                'user': user,
+                'url': url,
+                'baseurl': baseurl,
+                'service': settings.SERVICE_NAME,
+                'support': settings.DEFAULT_CONTACT_EMAIL})
+    sender = settings.DEFAULT_FROM_EMAIL
+    send_mail(subject, message, sender, [user.email])
+    logging.info('Sent greeting %s', user)
+
+@requires_admin
+def users_activate(request, user_id):
+    user = User.objects.get(id=user_id)
+    user.state = 'ACTIVE'
+    status = 'success'
+    try:
+        send_greeting(request.build_absolute_uri('/').rstrip('/'), user)
+        message = _('Greeting sent to %s' % user.email)
+        user.save()
+    except (SMTPException, socket.error) as e:
+        status = 'error'
+        name = 'strerror'
+        message = getattr(e, name) if hasattr(e, name) else e
+    
+    users = User.objects.order_by('id')
+    users = users.filter(state = 'PENDING')
+    
+    try:
+        page = int(request.POST.get('page', 1))
+    except ValueError:
+        page = 1
+    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
+    limit = offset + settings.ADMIN_PAGE_LIMIT
+    
+    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
+    prev = page - 1 if page > 1 else None
+    next = page + 1 if page < npages else None
+    return render_response('pending_users.html',
+                            users=users[offset:limit],
+                            filter=filter,
+                            pages=range(1, npages + 1),
+                            page=page,
+                            prev=prev,
+                            next=next,
+                            message=message)
 
 def generate_invitation_code():
     while True:
@@ -187,7 +262,7 @@ def generate_invitation_code():
 
 
 def send_invitation(baseurl, inv):
-    url = settings.INVITATION_LOGIN_TARGET % (baseurl, inv.code, quote(baseurl))
+    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(baseurl))
     subject = _('Invitation to Pithos')
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
@@ -261,12 +336,24 @@ def send_verification(baseurl, user):
 
 def local_create(request):
     if request.method == 'GET':
-        return render_response('local_create.html')
+        provider = request.GET.get('provider', None)
+        if not provider:
+            return HttpResponseBadRequest('No provider')
+        code = request.GET.get('code', None)
+        kwargs = {'provider':provider}
+        if code:
+            try:
+                invitation = Invitation.objects.get(code = code)
+                kwargs['inv']=invitation
+            except Invitation.DoesNotExist:
+                return HttpResponseBadRequest('Wrong invitation code')
+        return render_response('local_create.html', **kwargs)
     elif request.method == 'POST':
         username = request.POST.get('uniq')
         realname = request.POST.get('realname')
         email = request.POST.get('email')
         password = request.POST.get('password')
+        retype_password = request.POST.get('retype_passwords')
         status = 'success'
         cookie_value = None
         if not username:
@@ -275,12 +362,17 @@ def local_create(request):
         elif not password:
             status = 'error'
             message = 'No password provided'
+        elif not retype_password:
+            status = 'error'
+            message = 'Need to enter password twice'
+        elif password != retype_password:
+            status = 'error'
+            message = 'Passwords do not match'
         elif not email:
             status = 'error'
             message = 'No email provided'
         
         if status == 'success':
-            username = '%s@local' % username
             try:
                 user = User.objects.get(uniq=username)
                 status = 'error'
@@ -293,7 +385,9 @@ def local_create(request):
                 user.password = request.POST.get('password')
                 user.is_admin = False
                 user.quota = 0
-                user.state = 'UNVERIFIED'
+                user.state = 'ACTIVE' if is_preaccepted(user) else 'PENDING'
+                if user.invitation:
+                    user.invitation.is_consumed = True
                 user.level = 1
                 user.renew_token()
                 try:
@@ -301,6 +395,7 @@ def local_create(request):
                     message = _('Verification sent to %s' % user.email)
                     user.save()
                 except (SMTPException, socket.error) as e:
+                    print e
                     status = 'error'
                     name = 'strerror'
                     message = getattr(e, name) if hasattr(e, name) else e
@@ -443,7 +538,7 @@ def users_export(request):
 @requires_admin
 def users_create(request):
     if request.method == 'GET':
-        return render_response('users_create.html')
+        return render_response('users_local_create.html')
     if request.method == 'POST':
         user = User()
         user.uniq = request.POST.get('uniq')
@@ -452,6 +547,7 @@ def users_create(request):
         user.affiliation = request.POST.get('affiliation')
         user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
         user.renew_token()
+        user.provider = 'local'
         user.save()
         return redirect(users_info, user.id)
 
@@ -483,4 +579,44 @@ def users_edit(request):
             'status': status,
             'message': message})
     return HttpResponse(html)
-    
+
+def is_preaccepted(user):
+    return True if settings.INVITATIONS_ENABLED and user.invitation else False
+
+def signup(request):
+    if request.method == 'GET':
+        kwargs = {'im_modules':settings.IM_MODULES}
+        if settings.INVITATIONS_ENABLED:
+            code = request.GET.get('code')
+            if not code:
+                return HttpResponseBadRequest('No code')
+            try:
+                invitation = Invitation.objects.get(code=code)
+                if invitation.is_consumed:
+                    return HttpResponseBadRequest('Invitation has beeen used')
+            except Invitation.DoesNotExist:
+                return HttpResponseBadRequest('Wrong invitation code')
+            kwargs['inv'] = invitation
+        return render_response('signup.html', **kwargs)    
+    elif request.method == 'POST':
+        choice = request.POST.get('choice')
+        if not choice:
+            return HttpResponseBadRequest('No provider selected')
+        
+        provider = choice
+        
+        code = request.POST.get('code')
+        
+        if provider == 'local':
+            url = reverse('pithos.im.views.local.create')
+            if settings.INVITATIONS_ENABLED and code:
+                url = '%s?code=%s&provider=%s' % (url, code, provider)
+            return redirect(url)
+        elif provider == 'twitter':
+            url = reverse('pithos.im.views.openid_create')
+            return redirect(url)
+
+def openid_create(request):
+    form1 = OpenidSigninForm()
+    kwargs = {'form1':form1}  
+    return render_response('openid_create.html') 

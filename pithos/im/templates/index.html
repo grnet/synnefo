@@ -7,7 +7,7 @@
     
 {% block body%}
     <div class="row">
-    {% if "local" in standard_modules %}
+    {% if "local" in im_modules %}
       <div class="span4">
         <h4>Local account</h4>
         <form action="{% url pithos.im.target.local.login %}" method="post" class="form-stacked">
@@ -32,25 +32,6 @@
             <a href="{% url pithos.im.views.reclaim_password %}">Forgot your password?</a>
          </div>
          <br>
-          <div class="">
-            <input type="hidden" name="next" value="{{ next }}">
-            <button type="submit" class="btn primary">Go</button>
-          </div>
-        </form>
-      </div>
-    {% endif %}
-    {% if "invitation" in standard_modules %}
-      <div class="span4">
-        <h4>Invitation</h4>
-        <form action="{% url pithos.im.target.invitation.login %}" class="form-stacked">
-          <fieldset>
-            <div class="clearfix">
-              <label for="code">Code:</label>
-              <div class="input">
-                <input class="span3" id="user-code" name="code" type="text" />
-              </div>
-            </div>
-          </fieldset>
           <div class="">
             <input type="hidden" name="next" value="{{ next }}">
             <button type="submit" class="btn primary">Go</button>

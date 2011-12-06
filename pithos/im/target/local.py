@@ -41,13 +41,13 @@ from pithos.im.models import User
 from urllib import unquote
 
 def login(request):
-    username = '%s@local' % request.POST.get('username')
+    username = request.POST.get('username')
     password = request.POST.get('password')
     
     if not username:
         return HttpResponseBadRequest('No user')
     
-    if not username:
+    if not password:
         return HttpResponseBadRequest('No password')
     
     try:
@@ -65,17 +65,17 @@ def login(request):
     
     return prepare_response(request, user, next)
 
-def activate(request):
-    token = request.GET.get('auth')
-    next = request.GET.get('next')
-    try:
-        user = User.objects.get(auth_token=token)
-    except User.DoesNotExist:
-        return HttpResponseBadRequest('No such user')
-    
-    user.state = 'ACTIVE'
-    user.save()
-    return prepare_response(request, user, next, renew=True)
+#def activate(request):
+#    token = request.GET.get('auth')
+#    next = request.GET.get('next')
+#    try:
+#        user = User.objects.get(auth_token=token)
+#    except User.DoesNotExist:
+#        return HttpResponseBadRequest('No such user')
+#    
+#    user.state = 'ACTIVE'
+#    user.save()
+#    return prepare_response(request, user, next, renew=True)
 
 def reset_password(request):
     if request.method == 'GET':

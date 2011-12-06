@@ -6,10 +6,11 @@
 
 {% block body %}
 <form action="{% url pithos.im.views.local_create %}" method="post">
+{% if provider == 'local'%}
   <div class="clearfix">
     <label for="user-uniq">Username</label>
     <div class="input">
-      <input class="span4" id="user-uniq" name="uniq" type="text" />
+      <input class="span4" id="user-uniq" name="uniq" {%if inv %} value={{ inv.uniq }} {% endif %} type="text" />
     </div>
   </div>
   
@@ -21,9 +22,16 @@
   </div>
   
   <div class="clearfix">
+    <label for="user-password">Confirm Password</label>
+    <div class="input">
+      <input class="span4" id="user-retype-password" name="retype_password" type="password" />
+    </div>
+  </div>
+
+  <div class="clearfix">
     <label for="user-realname">Real Name</label>
     <div class="input">
-      <input class="span4" id="user-realname" name="realname" type="text" />
+      <input class="span4" id="user-realname" name="realname" {%if inv %} value={{ inv.realname }} {% endif %} type="text" />
     </div>
   </div>
   
@@ -33,7 +41,17 @@
       <input class="span4" id="user-email" name="email" type="text" />
     </div>
   </div>
-  
+{% endif %}
+
+{% if provider == 'twitter' %}
+    <div class="clearfix">
+        <label for="user-uniq">Twitter </label>
+        <div class="input">
+            <input class="span4" id="user-uniq" name="uniq" {%if inv %} value={{ inv.uniq }} {% endif %} type="text" />
+        </div>
+    </div>
+{% endif %}
+
   <div class="actions">
     <button type="submit" class="btn primary">Create</button>
     <button type="reset" class="btn">Reset</button>

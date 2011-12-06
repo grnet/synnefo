@@ -49,7 +49,8 @@ class User(models.Model):
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted'),
         ('SUSPENDED', 'Suspended'),
-        ('UNVERIFIED', 'Unverified')
+        ('UNVERIFIED', 'Unverified'),
+        ('PENDING', 'Pending')
     )
     
     uniq = models.CharField('Unique ID', max_length=255, null=True)
@@ -57,8 +58,9 @@ class User(models.Model):
     realname = models.CharField('Real Name', max_length=255, default='')
     email = models.CharField('Email', max_length=255, default='')
     affiliation = models.CharField('Affiliation', max_length=255, default='')
+    provider = models.CharField('Provider', max_length=255, default='')
     state = models.CharField('Account state', choices=ACCOUNT_STATE,
-                                max_length=16, default='ACTIVE')
+                                max_length=16, default='PENDING')
     
     #for invitations
     level = models.IntegerField('Inviter level', default=4)
@@ -89,6 +91,10 @@ class User(models.Model):
     def quota(self, value):
         set_quota(self.uniq, value)
     
+    @property
+    def invitation(self):
+        return Invitation.objects.get(uniq=self.uniq)
+   
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
@@ -110,16 +116,15 @@ class User(models.Model):
     def __unicode__(self):
         return self.uniq
 
-
 class Invitation(models.Model):
     inviter = models.ForeignKey(User, related_name='invitations_sent',
                                 null=True)
     realname = models.CharField('Real name', max_length=255)
-    uniq = models.CharField('Real name', max_length=255)
+    uniq = models.CharField('Unique ID', max_length=255)
     code = models.BigIntegerField('Invitation code', db_index=True)
-    is_accepted = models.BooleanField('Accepted?', default=False)
+    is_consumed = models.BooleanField('Consumed?', default=False)
     created = models.DateTimeField('Creation date', auto_now_add=True)
-    accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
+    consumed = models.DateTimeField('Consumption date', null=True, blank=True)
     
     def __unicode__(self):
         return '%s -> %s [%d]' % (self.inviter, self.uniq, self.code)

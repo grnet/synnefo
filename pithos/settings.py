@@ -48,3 +48,5 @@ conf = join(PROJECT_PATH, 'settings.local')
 
 if exists(conf):
     execfile(conf)
+elif exists('/etc/pithos/settings.local'):
+    execfile('/etc/pithos/settings.local')

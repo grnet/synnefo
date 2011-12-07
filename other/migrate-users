@@ -33,12 +33,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from lib.migrate import Migration
-
 from sqlalchemy import Table
 from sqlalchemy.sql import select
 
 from pithos.im.models import User
+
+from migrate import Migration
 
 import base64
 

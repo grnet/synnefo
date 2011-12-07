@@ -41,8 +41,9 @@ from sqlalchemy.sql import select
 from pithos import settings
 from pithos.backends.modular import ModularBackend
 
-from lib.hashmap import HashMap
-from lib.migrate import Migration, Cache
+from pithos.lib.hashmap import HashMap
+
+from migrate import Migration, Cache
 
 import os
     

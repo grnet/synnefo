@@ -1,6 +1,5 @@
 global-include */templates/* */fixtures/* */static/*
 global-exclude */.DS_Store
-exclude */settings.py
-include */settings.py.dist
+include pithos/settings.d/*
 prune docs
-prune tools
+prune other

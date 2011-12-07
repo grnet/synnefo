@@ -47,7 +47,8 @@ from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
-from pithos.api.compat import parse_http_date_safe, parse_http_date
+from pithos.lib.compat import parse_http_date_safe, parse_http_date
+
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
                                 RangeNotSatisfiable, ServiceUnavailable)

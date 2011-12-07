@@ -38,9 +38,10 @@ from optparse import OptionParser
 from os import environ
 from sys import argv, exit, stdin, stdout
 from datetime import datetime
-from lib.client import Pithos_Client, Fault
-from lib.util import get_user, get_auth, get_server, get_api
-from lib.transfer import upload, download
+
+from pithos.lib.client import Pithos_Client, Fault
+from pithos.lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.transfer import upload, download
 
 import json
 import logging

@@ -1,0 +1,4 @@
+Tools in this dir depend on being able to import pithos.
+You need to adjust PYTHONPATH accordingly for this to work.
+e.g.
+    export PYTHONPATH=$HOME/pithos

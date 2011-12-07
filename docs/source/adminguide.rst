@@ -172,6 +172,12 @@ Configure and run::
   a2enmod proxy_http
   /etc/init.d/apache2 restart
 
+If experiencing timeout problems, try adding to ``/etc/gunicorn.d/pithos``::
+
+        ...
+        '--timeout=43200',
+        ...
+
 Shibboleth Setup
 ----------------
 

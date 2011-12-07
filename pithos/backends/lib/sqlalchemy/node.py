@@ -212,7 +212,7 @@ class Node(DBWorker):
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
         path = path.replace('%', '\%')
         path = path.replace('_', '\_')
-        s = select([self.nodes.c.node], self.nodes.c.path.like(path))
+        s = select([self.nodes.c.node], self.nodes.c.path.like(path, escape='\\'))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()

@@ -10,3 +10,4 @@ DATABASES = {
     }
 }
 
+LOGGING['handlers']['console']['level'] = 'WARNING'

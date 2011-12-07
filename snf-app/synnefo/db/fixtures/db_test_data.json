@@ -136,7 +136,7 @@
             "name": "snf-1001",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",
-            "sourceimage": 30000,
+            "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
             "operstate": "STARTED"
@@ -150,7 +150,7 @@
             "name": "snf-1002",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",
-            "sourceimage": 30000,
+            "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
             "operstate": "STOPPED"
@@ -175,7 +175,7 @@
             "name": "snf-test-building",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",
-            "sourceimage": 30000,
+            "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
             "operstate": "BUILD"

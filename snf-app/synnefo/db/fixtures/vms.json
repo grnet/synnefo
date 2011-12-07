@@ -18,7 +18,7 @@
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "charged": "2011-02-06 00:00:00",
-            "sourceimage": 1,
+            "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
             "operstate": "STOPPED"
@@ -33,7 +33,7 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "charged": "2011-02-10 00:00:00",
-            "sourceimage": 1,
+            "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
             "operstate": "BUILD"
@@ -48,7 +48,7 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "charged": "2011-02-10 00:00:00",
-            "sourceimage": 1,
+            "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
             "operstate": "STARTED"
@@ -64,7 +64,7 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "charged": "2011-02-10 00:00:00",
-            "sourceimage": 1,
+            "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
             "operstate": "STARTED"

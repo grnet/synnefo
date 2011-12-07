@@ -315,7 +315,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     charged = models.DateTimeField(default=datetime.datetime.now())
-    sourceimage = models.ForeignKey("Image", null=False)
+    imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)
     deleted = models.BooleanField('Deleted', default=False)

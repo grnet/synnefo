@@ -100,7 +100,7 @@ class APITestCase(TestCase):
         self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
         self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
         self.assertEqual(vm_from_api['id'], vm_from_db.id)
-        self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
+        self.assertEqual(vm_from_api['imageRef'], vm_from_db.imageid)
         self.assertEqual(vm_from_api['name'], vm_from_db.name)
         self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200, 203])
@@ -125,7 +125,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['imageRef'], vm_from_db.imageid)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
             number += 1
@@ -134,7 +134,7 @@ class APITestCase(TestCase):
             self.assertEqual(vm_from_api['flavorRef'], vm_from_db.flavor.id)
             self.assertEqual(vm_from_api['hostId'], vm_from_db.hostid)
             self.assertEqual(vm_from_api['id'], vm_from_db.id)
-            self.assertEqual(vm_from_api['imageRef'], vm_from_db.flavor.id)
+            self.assertEqual(vm_from_api['imageRef'], vm_from_db.imageid)
             self.assertEqual(vm_from_api['name'], vm_from_db.name)
             self.assertEqual(vm_from_api['status'], get_rsapi_state(vm_from_db))
         self.assertTrue(response.status_code in [200, 203])
@@ -382,7 +382,7 @@ def create_servers(n=1):
         VirtualMachine.objects.create(
             name='Server %d' % (i + 1),
             owner=owner,
-            sourceimage=choice(images),
+            imageid=choice(images).id,
             hostid=str(i),
             flavor=choice(flavors))
 

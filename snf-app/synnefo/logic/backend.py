@@ -218,11 +218,15 @@ def start_action(vm, action):
 
 
 def create_instance(vm, flavor, image, password, personality):
-
+    """`image` is a dictionary which should contain the keys:
+            'backend_id', 'format' and 'metadata'
+        
+        metadata value should be a dictionary.
+    """
     nic = {'ip': 'pool', 'mode': 'routed', 'link': settings.GANETI_PUBLIC_LINK}
 
     if settings.IGNORE_FLAVOR_DISK_SIZES:
-        if image.backend_id.find("windows") >= 0:
+        if image['backend_id'].find("windows") >= 0:
             sz = 14000
         else:
             sz = 4000
@@ -258,14 +262,13 @@ def create_instance(vm, flavor, image, password, personality):
         'memory': flavor.ram}
 
     kw['osparams'] = {
-        'img_id': image.backend_id,
+        'img_id': image['backend_id'],
         'img_passwd': password,
-        'img_format': image.format}
+        'img_format': image['format']}
     if personality:
         kw['osparams']['img_personality'] = json.dumps(personality)
     
-    image_meta = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
-    kw['osparams']['img_properties'] = json.dumps(image_meta)
+    kw['osparams']['img_properties'] = json.dumps(image['metadata'])
     
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)

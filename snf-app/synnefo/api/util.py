@@ -39,7 +39,7 @@ from datetime import timedelta, tzinfo
 from functools import wraps
 from hashlib import sha256
 from random import choice
-from string import ascii_letters, digits
+from string import digits, lowercase, uppercase
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
@@ -54,9 +54,10 @@ from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized)
-from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
+from synnefo.db.models import (Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
+from synnefo.plankton.backend import ImageBackend
 from synnefo.util.log import getLogger
 
 
@@ -100,9 +101,29 @@ def isoparse(s):
 
     return utc_since
 
-def random_password(length=8):
-    pool = ascii_letters + digits
-    return ''.join(choice(pool) for i in range(length))
+
+def random_password():
+    """Generates a random password
+    
+    We try to generate a windows compliant password: it must contain at least
+    one charachter from each of the groups: upper case, lower case, digits.
+    """
+    
+    pool = lowercase + uppercase + digits
+    lowerset = set(lowercase)
+    upperset = set(uppercase)
+    digitset = set(digits)
+    length = 10
+    tries = 10
+    
+    for i in range(tries):
+        password = ''.join(choice(pool) for i in range(length))
+        chars = set(password)
+        if chars & lowerset and chars & upperset and chars & digitset:
+            break
+    
+    return password
+
 
 def zeropad(s):
     """Add zeros at the end of a string in order to make its length
@@ -149,9 +170,19 @@ def get_image(image_id, owner):
             raise ItemNotFound('Image not found.')
         return image
     except ValueError:
-        raise BadRequest('Invalid image ID.')
+        raise ItemNotFound('Image not found.')
     except Image.DoesNotExist:
         raise ItemNotFound('Image not found.')
+
+def get_backend_image(image_id, owner):
+    backend = ImageBackend(owner.uniq)
+    try:
+        image = backend.get_meta(image_id)
+        if not image:
+            raise ItemNotFound('Image not found.')
+        return image
+    finally:
+        backend.close()
 
 def get_image_meta(image, key):
     """Return a ImageMetadata instance or raise ItemNotFound."""

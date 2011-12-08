@@ -230,7 +230,19 @@ def create_server(request):
         except AssertionError:
             raise faults.BadRequest("Malformed personality in request")
     
-    image = util.get_image(image_id, owner)
+    image = {}
+    try:
+        img = util.get_image(image_id, owner)
+        image['backend_id'] = img.backend_id
+        image['format'] = img.format
+        image['metadata'] = dict((m.meta_key, m.meta_value)
+                for m in img.metadata.all())
+    except faults.ItemNotFound:
+        img = util.get_backend_image(image_id, owner)
+        image['backend_id'] = img['location']
+        image['format'] = img['disk_format']
+        image['metadata'] = img.get('properties', {})
+    
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()
     
@@ -242,7 +254,7 @@ def create_server(request):
     vm = VirtualMachine.objects.create(
         name=name,
         owner=owner,
-        imageid=image.id,
+        imageid=image_id,
         flavor=flavor)
     
     try:

@@ -138,12 +138,9 @@ def add_image(request):
     assert 'name' in params
     assert set(params.keys()).issubset(set(ADD_FIELDS))
     
-    if 'id' in params:
-        return HttpResponse(status=409)     # Custom IDs are not supported
-    
-    name = params['name']
-    
+    name = params.pop('name')
     location = params.pop('location', None)
+    
     if location:
         image = request.backend.register(name, location, params)
     else:
@@ -258,7 +255,7 @@ def list_public_images(request, detail=False):
     assert params['sort_key'] in SORT_KEY_OPTIONS
     assert params['sort_dir'] in SORT_DIR_OPTIONS
 
-    images = request.backend.list_public_images(filters, params)
+    images = request.backend.list_public(filters, params)
     
     # Remove keys that should not be returned
     fields = DETAIL_FIELDS if detail else LIST_FIELDS

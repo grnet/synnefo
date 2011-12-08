@@ -17,10 +17,9 @@ DEFAULT_VERSIONING = 'auto'
 
 PITHOS_IMAGE_CONTAINER = 'images'
 
-IMAGE_STORES = ('file', 'pithos')
-IMAGE_DISK_FORMATS = ('aki', 'ari', 'ami', 'raw', 'iso', 'vhd', 'vdi', 'qcow2')
-IMAGE_CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
+ALLOWED_DISK_FORMATS = ('diskdump', 'dump', 'extdump', 'lvm', 'ntfsclone',
+        'ntfsdump')
+ALLOWED_CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
 
-DEFAULT_IMAGE_STORE = 'pithos'
-DEFAULT_DISK_FORMAT = 'iso'
-DEFAULT_CONTAINER_FORMAT = 'ovf'
+DEFAULT_DISK_FORMAT = 'dump'
+DEFAULT_CONTAINER_FORMAT = 'bare'

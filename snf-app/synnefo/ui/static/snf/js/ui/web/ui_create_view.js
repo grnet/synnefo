@@ -160,23 +160,36 @@
             this.image_details_gui = this.$(".images-info-cont .gui p");
             this.image_details_vm = this.$(".images-info-cont .vm-name p");
 
-            this.types = this.$(".type-filter li");
             this.categories_list = this.$(".category-filters");
             
             // params initialization
-            this.type_selections = ["system", "custom", "public"]
-            this.selected_type = undefined;
+            this.type_selections = {"system": "System"};
+            this.type_selections_order = ['system'];
+            
+            this.images_storage = snf.storage.images;
 
+            // apply image service specific image types
+            if (this.images_storage.type_selections) {
+                this.type_selections = _.extend(
+                    this.images_storage.type_selections,
+                    this.type_selections)
+
+                this.type_selections_order = this.images_storage.type_selections_order;
+            }
+
+            this.selected_type = undefined;
             this.selected_categories = [];
+
             this.images = [];
             this.images_ids = [];
             this.custom_images = [];
 
             // handlers initialization
+            this.create_types_selection_options();
             this.init_handlers();
             this.init_position();
         },
-
+        
         init_position: function() {
             //this.el.css({position: "absolute"});
             //this.el.css({top:"10px"})
@@ -187,6 +200,10 @@
             this.types.live("click", function() {
                 self.select_type($(this).attr("id").replace("type-select-",""));
             });
+            
+            this.image_details.find(".hide").click(_.bind(function(){
+                this.hide_image_details();
+            }, this));
 
             this.$(".register-custom-image").live("click", function(){
                 var confirm_close = true;
@@ -197,33 +214,25 @@
             })
         },
 
-        update_images: function() {
-            if (this.selected_type == "system") { 
-                this.update_predefined_images();
-            }
-            if (this.selected_type == "custom") { 
-                this.update_custom_images();
-            }
+        update_images: function(images) {
+            this.images = images;
+            this.images_ids = _.map(this.images, function(img){return img.id});
             return this.images;
         },
 
-        update_predefined_images: function() {
-            this.images = storage.images.predefined();
-            this.images_ids = _.map(this.images, function(img){return img.id});
-        },
-
-        update_custom_images: function() {
-            if (this.selected_image && !storage.glance.images.get(this.selected_image.id)) {
-                this.selected_image = undefined;
-            }
-            this.images = storage.glance.images.personal();
-            this.images_ids = _.map(this.images, function(img){return img.id});
+        create_types_selection_options: function() {
+            var list = this.$("ul.type-filter");
+            _.each(this.type_selections_order, _.bind(function(key) {
+                list.append('<li id="type-select-{0}">{1}</li>'.format(key, this.type_selections[key]));
+            }, this));
+            this.types = this.$(".type-filter li");
         },
 
         update_layout: function() {
-            if (this.selected_type != "system") {
-                this.select_type(this.selected_type);
+            if (!this.selected_type) {
+                this.selected_type = _.keys(this.type_selections)[0];
             }
+            this.select_type(this.selected_type);
         },
         
         get_categories: function(images) {
@@ -250,57 +259,47 @@
             }
         },
         
+        show_loading_view: function() {
+            this.$(".images-list-cont .empty").hide();
+            this.images_list.hide();
+            this.$(".images-list-cont .loading").show();
+            this.$(".images-list-cont .images-list").hide();
+            this.reset_categories();
+            this.update_images([]);
+            this.reset_images();
+            this.hide_list_loading();
+        },
+
+        hide_loading_view: function(images) {
+            this.$(".images-list-cont .loading").hide();
+            this.$(".images-list-cont .images-list").show();
+            this.reset_categories();
+            this.update_images(images);
+            this.reset_images();
+            this.select_image(this.selected_image);
+            this.hide_list_loading();
+        },
+
         select_type: function(type) {
-            this.selected_image = undefined;
             this.selected_type = type;
             this.types.removeClass("selected");
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
             
-            var check_load_date = new Date() - (this.last_custom_load || 0);
-            
-            if (type == "system") {
-                this.storage = storage.images;
-            } else if (type == "custom") {
-                this.storage = storage.glance.images;
-            }
-
-            if (type == "custom" && check_load_date > 30000) {
-                if (snf.storage.glance.images.length == 0) {
-                    this.$(".images-list-cont .empty").hide();
-                    this.$(".images-list-cont .loading").show();
-                    this.$(".images-list-cont .images-list").hide();
-                }
-
-                this.show_list_loading();
-                snf.storage.glance.images.fetch({refresh:true, success: _.bind(function(){
-                    this.last_custom_load = new Date();
-                    this.$(".images-list-cont .loading").hide();
-                    this.reset_categories();
-                    this.update_images();
-                    this.reset_images();
-                    this.$(".images-list-cont .images-list").show();
-                    this.hide_list_loading();
-                    this.selected_image = undefined;
-                    this.select_image();
-                }, this)});
-                this.selected_image = undefined;
-                this.select_image();
-            } else {
-                this.reset_categories();
-                this.update_images();
-                this.reset_images();
-                this.hide_list_loading();
-            }
-
+            var images = this.images_storage.update_images_for_type(
+                this.selected_type, 
+                _.bind(this.show_loading_view, this), 
+                _.bind(this.hide_loading_view, this)
+            );
             this.update_layout_for_type(type);
         },
 
         update_layout_for_type: function(type) {
-            if (type == "custom") {
-                this.$(".custom-action").show();
+            if (type != "system") {
+                this.$(".custom-action").hide();
             } else {
                 this.$(".custom-action").hide();
             }
+
         },
 
         show_list_loading: function() {
@@ -316,10 +315,10 @@
                 if (this.selected_image && this.images_ids.indexOf(this.selected_image.id) > -1) {
                     image = this.selected_image;
                 } else {
-                    image = this.storage.get(this.images_ids[0]);
+                    image = this.images_storage.get(this.images_ids[0]);
                 }
             }
-            
+                
             if (!this.images_ids.length) { image = this.selected_image || undefined };
             
             if ((!this.selected_image && image) || (this.selected_image != image))
@@ -328,47 +327,55 @@
             this.selected_image = image;
                 
             if (image) {
-                this.image_details.show();
                 this.images_list.find(".image-details").removeClass("selected");
                 this.images_list.find(".image-details#create-vm-image-" + this.selected_image.id).addClass("selected");
-
-                this.image_details_desc.hide().parent().hide();
-                if (image.get("description"))
-                    this.image_details_desc.text(image.get("description")).show().parent().show();
-                
-                var img = snf.ui.helpers.os_icon_tag(image.get("OS"))
-
-                this.image_details_title.hide().parent().hide();
-                if (image.get("name"))
-                    this.image_details_title.html(img + image.get("name")).show().parent().show();
-
-                this.image_details_os.hide().parent().hide();
-                if (image.get("OS"))
-                    this.image_details_os.text(_(image.get("OS")).capitalize()).show().parent().show();
-
-                this.image_details_kernel.hide().parent().hide();
-                if (image.get("kernel"))
-                    this.image_details_kernel.text(image.get("kernel")).show().parent().show();
-
-                this.image_details_size.hide().parent().hide();
-                var size = image.get_readable_size();
-                if (size && size != "unknown")
-                    this.image_details_size.text(size).show().parent().show();
-
-                this.image_details_vm.hide().parent().hide();
-                var vm_name = (vm = image.get_vm()) ? vm.get("name") : undefined;
-                if (vm_name)
-                    this.image_details_vm.text(_(vm_name).truncate(4)).show().parent().show();
-
-                this.image_details_gui.hide().parent().hide();
-                if (image.get("GUI"))
-                    this.image_details_gui.text(image.get("GUI")).show().parent().show();
+                this.update_image_details(image);
 
             } else {
-                this.image_details.hide();
             }
 
+            this.image_details.hide();
             this.validate();
+        },
+
+        update_image_details: function(image) {
+            this.image_details_desc.hide().parent().hide();
+            if (image.get("description"))
+                this.image_details_desc.text(image.get("description")).show().parent().show();
+            var img = snf.ui.helpers.os_icon_tag(image.get("OS"))
+            if (image.get("name"))
+                this.image_details_title.html(img + image.get("name")).show().parent().show();
+            
+            var extra_details = this.image_details.find(".extra-details");
+            // clean prevously added extra details
+            extra_details.find(".image-detail").remove();
+
+            var meta_keys = ['owner', 'OS', 'kernel', 'GUI'];
+            var detail_tpl = ('<div class="clearfix image-detail {2}">' +
+                             '<span class="title">{0}</span>' +
+                             '<p class="value">{1}</p>' + 
+                             '</div>');
+            meta_keys = _.union(meta_keys, this.images_storage.display_metadata || []);
+
+            _.each(meta_keys, function(key) {
+                var value;
+                var method = 'get_' + key.toLowerCase();
+                
+                if (image[method]) {
+                    value = image[method]();
+                } else {
+                    value = image.get(key);
+
+                    if (!value) {
+                        value = image.get_meta(key);
+                    }
+                }
+
+                if (!value) { return; }
+                
+                var label = _(key.replace(/_/g," ")).capitalize();
+                extra_details.append(detail_tpl.format(label, value, key.toLowerCase()));
+            })
         },
 
         reset_images: function() {
@@ -379,8 +386,10 @@
             
             if (this.images.length) {
                 this.images_list.parent().find(".empty").hide();
+                this.images_list.show();
             } else {
                 this.images_list.parent().find(".empty").show();
+                this.images_list.hide();
             }
 
             this.select_image();
@@ -394,20 +403,43 @@
 
         show: function() {
             views.CreateImageSelectView.__super__.show.apply(this, arguments);
+            this.image_details.hide();
         },
 
         add_image: function(img) {
             var image = $(('<li id="create-vm-image-{1}"' +
-                           'class="image-details clearfix">{2}{0}' +
-                           '<p>{4}</p><span class="size">{3}' +
-                           '</span></li>').format(img.get("name"), 
+                           'class="image-details clearfix">{2}{0}'+
+                           '<span class="show-details">details</span>'+
+                           '<span class="size"><span class="prepend">by </span>{5}</span>' + 
+                           '<span class="owner">' +
+                           '<span class="prepend"></span>' +
+                           '{3}</span>' + 
+                           '<p>{4}</p>' +
+                           '</li>').format(img.get("name"), 
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.get("OS")),
                                                   img.get_readable_size(),
-                                                  util.truncate(img.get("description"), 35)));
+                                                  util.truncate(img.get("description"), 35),
+                                                  img.get_owner()));
             image.data("image", img);
             image.data("image_id", img.id);
             this.images_list.append(image);
+            image.find(".show-details").click(_.bind(function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                this.show_image_details(img);
+            }, this))
+        },
+            
+        hide_image_details: function() {
+            this.image_details.fadeOut(200);
+            this.parent.$(".create-controls").show();
+        },
+
+        show_image_details: function(img) {
+            this.parent.$(".create-controls").hide();
+            this.update_image_details(img);
+            this.image_details.fadeIn(700);
         },
 
         reset: function() {
@@ -1263,6 +1295,10 @@
         },
 
         show_step: function(step) {
+            // FIXME: this shouldn't be here
+            // but since we are not calling step.hide this should work
+            this.steps[1].image_details.hide();
+
             this.current_view = this.steps[step];
             this.update_controls();
 

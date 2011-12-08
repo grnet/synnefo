@@ -80,7 +80,7 @@
         </div>
     </div>
     <div class="steps-container clearfix">
-        <div class="step-1 select-image create-step-cont clearfix">
+        <div class="step-1 select-image wide create-step-cont clearfix">
             <div class="clearfix step-header">
             </div>
             <div class="step-cont clearfix">
@@ -89,9 +89,6 @@
                         <div class="image-types-cont">
                             <h4>Image type</h4>
                             <ul class="type-filter">
-                                <li id="type-select-system">Predefined</li>
-                                <li id="type-select-custom">Personal</li>
-                                <!--<li id="type-select-public">Public</li>-->
                             </ul>
                         </div>
                         <div class="categories-filters-cont">
@@ -116,30 +113,15 @@
                 </div>
                 <div class="images-info-cont content-cont">
                     <h4>Image title</h4>
-                    <div class="image-detail description">
+                    <span class="hide">close details</span>
+                    <div class="image-detail description clearfix">
                         <span class="title">{% trans "Description" %}</span>
                         <p></p>
                     </div>
-                    <div class="image-detail os">
-                        <span class="title">{% trans "OS" %}</span>
-                        <p></p>
+                    <h3>Image metadata</h3>
+                    <div class="extra-details clearfix">
                     </div>
-                    <div class="image-detail size">
-                        <span class="title">{% trans "Size" %}</span>
-                        <p></p>
-                    </div>
-                    <div class="image-detail gui">
-                        <span class="title">{% trans "GUI" %}</span>
-                        <p></p>
-                    </div>
-                    <div class="image-detail kernel">
-                        <span class="title">{% trans "Kernel" %}</span>
-                        <p></p>
-                    </div>
-                    <div class="image-detail vm-name">
-                        <span class="title">{% trans "Machine" %}</span>
-                        <p></p>
-                    </div>
+
                 </div>
             </div>
         </div>

@@ -40,6 +40,7 @@ from synnefo.settings.common.backend import *
 from synnefo.settings.common.database import *
 from synnefo.settings.common.queues import *
 from synnefo.settings.common.api import *
+from synnefo.settings.common.plankton import *
 from synnefo.settings.common.ui import *
 from synnefo.settings.common.userdata import *
 from synnefo.settings.common.aai import *

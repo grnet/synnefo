@@ -19,5 +19,5 @@ BYPASS_AUTHENTICATION = False
 BYPASS_AUTHENTICATION_TOKEN = '5e41595e9e884543fa048e07c1094d74'
 
 # Urls that bypass Shibboleth authentication
-AAI_SKIP_AUTH_URLS = ['/api', '/invitations/login']
+AAI_SKIP_AUTH_URLS = ['/api', '/plankton', '/invitations/login']
 

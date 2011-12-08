@@ -129,7 +129,7 @@ def vm_to_dict(vm, detail=False):
         d['updated'] = util.isoformat(vm.updated)
         d['created'] = util.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
-        d['imageRef'] = vm.sourceimage.id
+        d['imageRef'] = vm.imageid
         
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
@@ -242,7 +242,7 @@ def create_server(request):
     vm = VirtualMachine.objects.create(
         name=name,
         owner=owner,
-        sourceimage=image,
+        imageid=image.id,
         flavor=flavor)
     
     try:

@@ -22,7 +22,7 @@
       <td><a href="{% url synnefo.admin.views.users_info server.owner.id %}">{{ server.owner.name }}</a></td>
       <td>{{ server.operstate }}</td>
       <td><a href="{% url synnefo.admin.views.flavors_info server.flavor.id %}">{{ server.flavor.name }}</a></td>
-      <td><a href="{% url synnefo.admin.views.images_info server.sourceimage.id %}">{{ server.sourceimage.name }}</a></td>
+      <td><a href="{% url synnefo.admin.views.images_info server.imageid %}">{{ server.imageid }}</a></td>
       <td>{{ server.deleted }}</td>
       <td>{{ server.updated }}</td>
     </tr>

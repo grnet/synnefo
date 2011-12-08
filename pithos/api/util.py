@@ -48,6 +48,7 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from pithos.lib.compat import parse_http_date_safe, parse_http_date
+from pithos.lib.hashmap import HashMap
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
@@ -742,24 +743,9 @@ def put_object_block(request, hashmap, data, offset):
 def hashmap_hash(request, hashmap):
     """Produce the root hash, treating the hashmap as a Merkle-like tree."""
     
-    def subhash(d):
-        h = hashlib.new(request.backend.hash_algorithm)
-        h.update(d)
-        return h.digest()
-    
-    if len(hashmap) == 0:
-        return hexlify(subhash(''))
-    if len(hashmap) == 1:
-        return hashmap[0]
-    
-    s = 2
-    while s < len(hashmap):
-        s = s * 2
-    h = [unhexlify(x) for x in hashmap]
-    h += [('\x00' * len(h[0]))] * (s - len(hashmap))
-    while len(h) > 1:
-        h = [subhash(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
-    return hexlify(h[0])
+    map = HashMap(request.backend.block_size, request.backend.hash_algorithm)
+    map.extend([unhexlify(x) for x in hashmap])
+    return hexlify(map.hash())
 
 def update_request_headers(request):
     # Handle URL-encoded keys and values.

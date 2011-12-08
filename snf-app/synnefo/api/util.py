@@ -54,9 +54,10 @@ from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized)
-from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
+from synnefo.db.models import (Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
+from synnefo.plankton.backend import ImageBackend
 from synnefo.util.log import getLogger
 
 
@@ -149,9 +150,19 @@ def get_image(image_id, owner):
             raise ItemNotFound('Image not found.')
         return image
     except ValueError:
-        raise BadRequest('Invalid image ID.')
+        raise ItemNotFound('Image not found.')
     except Image.DoesNotExist:
         raise ItemNotFound('Image not found.')
+
+def get_backend_image(image_id, owner):
+    backend = ImageBackend(owner.uniq)
+    try:
+        image = backend.get_meta(image_id)
+        if not image:
+            raise ItemNotFound('Image not found.')
+        return image
+    finally:
+        backend.close()
 
 def get_image_meta(image, key):
     """Return a ImageMetadata instance or raise ItemNotFound."""

@@ -180,7 +180,7 @@ def get_object_headers(request):
     return meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
-    response['ETag'] = meta['ETag']
+    response['ETag'] = meta['ETag'] if 'ETag' in meta else meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))

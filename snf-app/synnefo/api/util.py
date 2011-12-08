@@ -39,7 +39,7 @@ from datetime import timedelta, tzinfo
 from functools import wraps
 from hashlib import sha256
 from random import choice
-from string import ascii_letters, digits
+from string import digits, lowercase, uppercase
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
@@ -101,9 +101,29 @@ def isoparse(s):
 
     return utc_since
 
-def random_password(length=8):
-    pool = ascii_letters + digits
-    return ''.join(choice(pool) for i in range(length))
+
+def random_password():
+    """Generates a random password
+    
+    We try to generate a windows compliant password: it must contain at least
+    one charachter from each of the groups: upper case, lower case, digits.
+    """
+    
+    pool = lowercase + uppercase + digits
+    lowerset = set(lowercase)
+    upperset = set(uppercase)
+    digitset = set(digits)
+    length = 10
+    tries = 10
+    
+    for i in range(tries):
+        password = ''.join(choice(pool) for i in range(length))
+        chars = set(password)
+        if chars & lowerset and chars & upperset and chars & digitset:
+            break
+    
+    return password
+
 
 def zeropad(s):
     """Add zeros at the end of a string in order to make its length

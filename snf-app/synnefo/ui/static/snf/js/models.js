@@ -221,6 +221,17 @@
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
 
+        get_meta: function(key) {
+            if (this.get('metadata') && this.get('metadata').values && this.get('metadata').values[key]) {
+                return this.get('metadata').values[key];
+            }
+            return undefined;
+        },
+
+        get_owner: function() {
+            return this.get('owner') || '';
+        },
+
         get_readable_size: function() {
             return this.get_size() > 0 ? util.readablizeBytes(this.get_size() * 1024 * 1024) : "unknown";
         },
@@ -242,6 +253,10 @@
             var vm = undefined;
             vm = storage.vms.get(vm_id);
             return vm;
+        },
+
+        is_public: function() {
+            return this.get('is_public') || true;
         },
         
         ssh_keys_path: function() {
@@ -1579,6 +1594,38 @@
 
         predefined: function() {
             return _.filter(this.active(), function(i) { return !i.get("serverRef")});
+        },
+        
+        fetch_for_type: function(type, complete, error) {
+            this.fetch({update:true, 
+                        success: complete, 
+                        error: error, 
+                        skip_api_error: true });
+        },
+        
+        get_images_for_type: function(type) {
+            if (this['get_{0}_images'.format(type)]) {
+                return this['get_{0}_images'.format(type)]();
+            }
+
+            return this.active();
+        },
+
+        update_images_for_type: function(type, onStart, onComplete, onError, force_load) {
+            var load = false;
+            error = onError || function() {};
+            function complete(collection) { 
+                onComplete(collection.get_images_for_type(type)); 
+            }
+            
+            // do we need to fetch/update current collection entries
+            if (load) {
+                onStart();
+                this.fetch_for_type(type, complete, error);
+            } else {
+                // fallback to complete
+                complete(this);
+            }
         }
     })
 
@@ -1853,7 +1900,6 @@
     snf.storage.networks = new models.Networks();
     snf.storage.vms = new models.VMS();
     snf.storage.keys = new models.PublicKeys();
-    snf.storage.custom_images = new models.PublicKeys();
 
     //snf.storage.vms.fetch({update:true});
     //snf.storage.images.fetch({update:true});

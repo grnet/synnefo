@@ -20,20 +20,53 @@
 
     
     models.Image = snf.models.Image.extend({
-        //api_type: 'glance'
+        api_type: 'glance'
+
     })
 
     models.Images = snf.models.Images.extend({
-        //api_type: 'glance'
+        api_type: 'glance',
+        type_selections: {'personal':'My images', 
+                          'shared': 'Shared with me', 
+                          'public': 'Public'},
+        type_selections_order: ['system', 'personal', 'shared', 'public'],
+        display_metadata: ['created_at', 'updated_at'],
+
+        parse_meta: function(img) {
+            if (img.properties) {
+                img.metadata = {};
+                img.metadata.values = img.properties;
+            }
+            
+            img = models.Images.__super__.parse_meta.call(this, img);
+            return img;
+        },
         
-        personal: function() {
-            return _.filter(this.active(), function(i) { return i.get("serverRef") });
+        get_system_images: function() {
+            return this.filter(function(i){ return i.get_owner() == snf.config.system_images_owner })
+        },
+
+        get_personal_images: function() {
+            return this.filter(function(i) { return i.get_owner() == snf.user.username });
+        },
+
+        get_public_images: function() {
+            return this.filter(function(i){ return i.is_public() })
+        },
+
+        get_shared_images: function() {
+            return this.filter(function(i){ return i.get_owner() != snf.config.system_images_owner && 
+                               i.get_owner() != snf.user.username &&
+                               !i.is_public() })
         }
     })
     
     // storage initialization
     snf.storage.glance = {};
     snf.storage.glance.images = new models.Images();
+
+    // use glance images
+    snf.storage.images = snf.storage.glance.images;
 
 })(this);
 

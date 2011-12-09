@@ -78,6 +78,9 @@ class ModularBackend(BaseBackend):
     """
     
     def __init__(self, db_module, db_connection, block_module, block_path):
+        db_module = db_module or 'pithos.backends.lib.sqlalchemy'
+        block_module = block_module or 'pithos.backends.lib.hashfiler'
+        
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         

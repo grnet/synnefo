@@ -105,7 +105,7 @@ def isoparse(s):
 def random_password():
     """Generates a random password
     
-    We try to generate a windows compliant password: it must contain at least
+    We generate a windows compliant password: it must contain at least
     one charachter from each of the groups: upper case, lower case, digits.
     """
     
@@ -114,13 +114,20 @@ def random_password():
     upperset = set(uppercase)
     digitset = set(digits)
     length = 10
-    tries = 10
     
-    for i in range(tries):
-        password = ''.join(choice(pool) for i in range(length))
-        chars = set(password)
-        if chars & lowerset and chars & upperset and chars & digitset:
-            break
+    password = ''.join(choice(pool) for i in range(length - 2))
+    
+    # Make sure the password is compliant
+    chars = set(password)
+    if not chars & lowerset:
+        password += choice(lowercase)
+    if not chars & upperset:
+        password += choice(uppercase)
+    if not chars & digitset:
+        password += choice(digits)
+    
+    # Pad if necessary to reach required length
+    password += ''.join(choice(pool) for i in range(length - len(password)))
     
     return password
 

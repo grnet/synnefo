@@ -57,6 +57,7 @@ In more detail, Plankton attributes are the following:
 """
 
 import json
+import warnings
 
 from binascii import hexlify
 from functools import partial
@@ -135,7 +136,12 @@ class ImageBackend(object):
     def __init__(self, user):
         self.user = user
         self.container = settings.PITHOS_IMAGE_CONTAINER
+        
+        original_filters = warnings.filters
+        warnings.simplefilter('ignore')         # Suppress SQLAlchemy warnings
         self.backend = connect_backend()
+        warnings.filters = original_filters     # Restore warnings
+        
         try:
             self.backend.put_container(self.user, self.user, self.container)
         except NameError:
@@ -223,7 +229,11 @@ class ImageBackend(object):
         container = self.container
         user = None if public else self.user
         
-        for account in backend.list_accounts(user):
+        accounts = set(backend.list_accounts(user))
+        if user:
+            accounts.add(user)
+        
+        for account in accounts:
             for path, version_id in backend.list_objects(user, account,
                     container, prefix='', delimiter='/',
                     keys=prefix_keys(keys)):
@@ -234,20 +244,26 @@ class ImageBackend(object):
                         yield image
                 except NotAllowedError:
                     continue
-        
-    def _store(self, data):
+    
+    def _store(self, f, size=None):
         """Breaks data into blocks and stores them in the backend"""
         
+        bytes = 0
         hashmap = []
         backend = self.backend
-        block_size = backend.block_size
+        blocksize = backend.block_size
         
+        data = f.read(blocksize)
         while data:
-            hash = backend.put_block(data[:block_size])
+            hash = backend.put_block(data)
             hashmap.append(hash)
-            data = data[block_size:]
+            bytes += len(data)
+            data = f.read(blocksize)
         
-        return hashmap
+        if size and size != bytes:
+            raise BackendException("Invalid size")
+        
+        return hashmap, bytes
     
     def _update(self, location, size, hashmap, meta, permissions):
         account, container, object = split_location(location)
@@ -335,7 +351,7 @@ class ImageBackend(object):
         permissions = self._get_permissions(image['location'])
         return [user for user in permissions.get('read', []) if user != '*']
     
-    def put(self, name, data, params):
+    def put(self, name, f, params):
         assert 'checksum' not in params, "Passing a checksum is not supported"
         assert 'id' not in params, "Passing an ID is not supported"
         assert params.pop('store', 'pithos') == 'pithos', "Invalid store"
@@ -346,16 +362,14 @@ class ImageBackend(object):
                 settings.DEFAULT_CONTAINER_FORMAT) in \
                 settings.ALLOWED_CONTAINER_FORMATS, "Invalid container_format"
         
-        location = 'pithos://%s/%s/%s' % (self.user, self.container, name)
+        filename = params.pop('filename', name)
+        location = 'pithos://%s/%s/%s' % (self.user, self.container, filename)
         image_id = get_image_id(location)
         is_public = params.pop('is_public', False)
         permissions = {'read': ['*']} if is_public else None
+        size = params.pop('size', None)
         
-        size = params.pop('size', len(data))
-        if size != len(data):
-            raise BackendException("Invalid size")
-        
-        hashmap = self._store(data)
+        hashmap, size = self._store(f, size)
         
         meta = {}
         meta['properties'] = params.pop('properties', {})

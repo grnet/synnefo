@@ -34,6 +34,7 @@
 import json
 
 from string import punctuation
+from StringIO import StringIO
 
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseNotFound
@@ -144,7 +145,8 @@ def add_image(request):
     if location:
         image = request.backend.register(name, location, params)
     else:
-        #image = request.backend.put(name, request.raw_post_data, params)
+        #f = StringIO(request.raw_post_data)
+        #image = request.backend.put(name, f, params)
         return HttpResponse(status=501)     # Not Implemented
     
     if not image:

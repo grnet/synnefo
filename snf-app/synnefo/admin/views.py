@@ -91,7 +91,7 @@ def index(request):
 
     images = []
     for image in models.Image.objects.exclude(state='DELETED'):
-        vms = models.VirtualMachine.objects.filter(image_id=image.id)
+        vms = models.VirtualMachine.objects.filter(imageid=image.id)
         count = vms.filter(deleted=False).count()
         images.append((count, image.name))
     images.sort(reverse=True)

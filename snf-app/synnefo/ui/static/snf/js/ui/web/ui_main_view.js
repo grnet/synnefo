@@ -638,7 +638,10 @@
             this.feedback_view = new views.FeedbackView();
             this.invitations_view = new views.InvitationsView();
             this.public_keys_view = new views.PublicKeysOverlay();
-            this.custom_images_view = new views.CustomImagesOverlay();
+            
+            if (snf.glance) {
+                this.custom_images_view = new views.CustomImagesOverlay();
+            }
 
             var self = this;
             // initialize overlay views
@@ -690,10 +693,15 @@
                 e.preventDefault();
                 this.public_keys_view.show();
             }, this));
-            $(".usermenu .custom_images").click(_.bind(function(e){
-                e.preventDefault();
-                this.custom_images_view.show();
-            }, this));
+
+            if (snf.glance) {
+                $(".usermenu .custom_images").click(_.bind(function(e){
+                    e.preventDefault();
+                    this.custom_images_view.show();
+                }, this));
+            } else {
+                $(".usermenu .custom_images").hide();
+            }
         },
         
         // initial view based on user cookie

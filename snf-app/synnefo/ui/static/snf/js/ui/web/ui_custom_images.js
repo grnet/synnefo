@@ -34,6 +34,10 @@
             this.bind("item:add", this.animate_on_add);
         },
 
+        _get_models: function() {
+            return this.collection.get_personal_images();
+        },
+
         animate_on_add: function(list, el, model) {
             el.hide();
             el.fadeIn(400);

@@ -843,10 +843,13 @@
                 }
                 if (progress > 0 && progress < 99) {
                     this.state("BUILD_COPY");
-                    var params = this.get_copy_details(true);
-                    this.set({progress_message: BUILDING_MESSAGES['COPY'].format(params.copy, 
-                                                                                 params.size, 
-                                                                                 params.progress)});
+                    this.get_copy_details(true, undefined, _.bind(function(details){
+                        this.set({
+                            progress_message: BUILDING_MESSAGES['COPY'].format(details.copy, 
+                                                                               details.size, 
+                                                                               details.progress)
+                        });
+                    }, this));
                 }
                 if (progress == 100) {
                     this.state("BUILD_FINAL");
@@ -856,19 +859,20 @@
             }
         },
 
-        get_copy_details: function(human, image) {
+        get_copy_details: function(human, image, callback) {
             var human = human || false;
-            var image = image || this.get_image();
+            var image = image || this.get_image(_.bind(function(image){
+                var progress = this.get('progress');
+                var size = image.get_size();
+                var size_copied = (size * progress / 100).toFixed(2);
+                
+                if (human) {
+                    size = util.readablizeBytes(size*1024*1024);
+                    size_copied = util.readablizeBytes(size_copied*1024*1024);
+                }
 
-            var progress = this.get('progress');
-            var size = image.get_size();
-            var size_copied = (size * progress / 100).toFixed(2);
-            
-            if (human) {
-                size = util.readablizeBytes(size*1024*1024);
-                size_copied = util.readablizeBytes(size_copied*1024*1024);
-            }
-            return {'progress': progress, 'size': size, 'copy': size_copied};
+                callback({'progress': progress, 'size': size, 'copy': size_copied})
+            }, this));
         },
 
         start_stats_update: function(force_if_empty) {
@@ -1178,11 +1182,13 @@
         },
         
         // get image object
-        get_image: function() {
+        get_image: function(callback) {
             var image = storage.images.get(this.get('imageRef'));
             if (!image) {
-                storage.images.update_unknown_id(this.get('imageRef'));
+                storage.images.update_unknown_id(this.get('imageRef'), callback);
+                return;
             }
+            callback(image);
             return image;
         },
         
@@ -1207,7 +1213,7 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta().OS || (this.get_image() ? this.get_image().get_os() || "okeanos" : "okeanos");
+            return this.get_meta().OS || (this.get_image(function(){}) ? this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
         },
 
         // get public ip addresses
@@ -1552,14 +1558,16 @@
         // update collection model with id passed
         // making a direct call to the image
         // api url
-        update_unknown_id: function(id) {
+        update_unknown_id: function(id, callback) {
             var url = getUrl.call(this) + "/" + id;
-            this.api_call(this.path + "/" + id, this.read_method, {_options:{async:false, skip_api_error:true}}, undefined, 
+            this.api_call(this.path + "/" + id, this.read_method, {_options:{async:true, skip_api_error:true}}, undefined, 
             _.bind(function() {
                 this.add({id:id, name:"Unknown image", size:-1, progress:100, status:"DELETED"});
+                callback(this.get(id));
             }, this), _.bind(function(image, msg, xhr) {
                 var img_data = this._read_image_from_request(image, msg, xhr);
                 this.add(img_data);
+                callback(this.get(id));
             }, this));
         },
 
@@ -1642,7 +1650,7 @@
         // update collection model with id passed
         // making a direct call to the flavor
         // api url
-        update_unknown_id: function(id) {
+        update_unknown_id: function(id, callback) {
             var url = getUrl.call(this) + "/" + id;
             this.api_call(this.path + "/" + id, "read", {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {

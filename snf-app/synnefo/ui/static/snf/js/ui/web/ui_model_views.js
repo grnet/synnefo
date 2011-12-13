@@ -116,6 +116,10 @@
             this.items = _.map(models, function(m) { return m.id });
         },
 
+        _get_models: function() {
+            return this.collection.models;
+        },
+
         handle_reset: function(collection, models) {
             this.loading.hide();
             this.content.show();
@@ -124,10 +128,10 @@
                 this.reset_list();
             }
 
-            this.update_list(this.collection.models);
-            this.update_removed(this.items, this.collection.models);
+            this.update_list(this._get_models());
+            this.update_removed(this.items, this._get_models());
 
-            this.set_items(this.collection.models);
+            this.set_items(this._get_models());
         },
 
         show_form: function(model) {

@@ -55,7 +55,8 @@
         'create': 'POST',
         'update': 'PUT',
         'delete': 'DELETE',
-        'read'  : 'GET'
+        'read'  : 'GET',
+        'head'  : 'HEAD'
     };
 
     // custom getUrl function
@@ -146,7 +147,7 @@
             options.contentType = 'application/json';
             options.data = JSON.stringify(options.data);
         }
-        
+        options.data = _.isEmpty(options.data) ? undefined : options.data;
         var api_params = {};
         var api_options = _.extend(api_params, options, {
             success: api.handlerWrapper(api.successHandler, success, "success"),
@@ -305,7 +306,6 @@
     }
 
     api.errorHandler = function(event, xhr, settings, error) {
-        
         // dont trigger api error untill timeouts occured
         // exceed the skips_timeouts limit
         //
@@ -385,6 +385,7 @@
     // in fixed intervals
     api.updateHandler = function(options) {
         this.cb = options.callback;
+        this.handler_id = options.id;
 
         // the interval with which we start
         this.interval = this.normal_interval = options.interval || 4000;
@@ -432,7 +433,7 @@
         }
         
         // callback wrapper
-        function _cb() {
+        this._cb = function() {
             if (!this.running) { this.stop() }
             if (this._called >= this.interval_increase_count) {
                 this._called = 0;
@@ -443,8 +444,6 @@
             this.last_call = new Date;
             this._called++;
         };
-
-        _cb = _.bind(_cb, this);
 
         // start from faster timeout and start increasing
         this.faster = function(do_call) {
@@ -478,7 +477,7 @@
             this._called = 0;
             
             window.clearInterval(this.window_interval);
-            this.window_interval = window.setInterval(_cb, this.interval);
+            this.window_interval = window.setInterval(_.bind(this._cb, this), this.interval);
 
             this.running = true;
             
@@ -496,7 +495,7 @@
             }
             
             if (call) {
-                _cb();
+                this._cb();
             }
 
             return this;

@@ -1067,7 +1067,8 @@
     'create': 'POST',
     'update': 'PUT',
     'delete': 'DELETE',
-    'read'  : 'GET'
+    'read'  : 'GET',
+    'head'  : 'HEAD'
   };
 
   // Backbone.sync

@@ -19,7 +19,7 @@
 
     views.CustomImagesView = views.CollectionView.extend({
 
-        collection: storage.glance.images,
+        collection: storage.images,
 
         confirm_delete_msg: 'Are you sure you want to remove this image ?',
         create_success_msg: 'Custom image created successfully.',

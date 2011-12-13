@@ -14,23 +14,57 @@
     var bb = root.Backbone;
     var slice = Array.prototype.slice
 
-    // logging
-    var logger = new snf.logging.logger("SNF-MODELS");
-    var debug = _.bind(logger.debug, logger);
+    models.GlanceImage = snf.models.Image.extend({
+        api_type: 'glance',
 
-    
-    models.Image = snf.models.Image.extend({
-        api_type: 'glance'
+        get_size: function() {
+            return this.get('size');
+        },
 
+        get_readable_size: function() {
+            return this.get_size() > 0 ? util.readablizeBytes(this.get_size()) : "unknown";
+        },
     })
 
-    models.Images = snf.models.Images.extend({
+    models.GlanceImages = snf.models.Images.extend({
+        model: models.GlanceImage,
         api_type: 'glance',
         type_selections: {'personal':'My images', 
                           'shared': 'Shared with me', 
                           'public': 'Public'},
         type_selections_order: ['system', 'personal', 'shared', 'public'],
         display_metadata: ['created_at', 'updated_at'],
+        read_method: 'head',
+
+        // custom glance api parser
+        parse: function (resp, xhr) {
+            if (_.isArray(resp)) {
+                resp = {'images': {'values': resp }};
+            }
+            return models.GlanceImages.__super__.parse.call(this, resp, xhr);
+        },
+
+        _read_image_from_request: function(image, msg, xhr) {
+            var img = {};
+            img['metadata'] = {values:{}};
+
+            var headers = snf.util.parseHeaders(xhr.getAllResponseHeaders().toLowerCase());
+
+            _.each(headers, function(value, key) {
+                if (key.indexOf("x-image-meta") == -1) {
+                    return
+                }
+
+                if (key.indexOf("x-image-meta-property") == -1) {
+                    img[key.replace("x-image-meta-","").replace(/-/g,"_")] = _.trim(value);
+                } else {
+                    img.metadata.values[key.replace('x-image-meta-property-',"").replace(/-/g,"_")] = _.trim(value);
+                }
+            
+            })
+
+            return img;
+        },
 
         parse_meta: function(img) {
             if (img.properties) {
@@ -38,32 +72,37 @@
                 img.metadata.values = img.properties;
             }
             
-            img = models.Images.__super__.parse_meta.call(this, img);
+            img = models.GlanceImages.__super__.parse_meta.call(this, img);
             return img;
+        },
+
+        get_size: function() {
+            return this.get('size');
         },
         
         get_system_images: function() {
-            return this.filter(function(i){ return i.get_owner() == snf.config.system_images_owner })
+            return _.filter(this.active(), function(i){ return i.get_owner() == snf.config.system_images_owner })
         },
 
         get_personal_images: function() {
-            return this.filter(function(i) { return i.get_owner() == snf.user.username });
+            return _.filter(this.active(), function(i) { return i.get_owner() == snf.user.username });
         },
 
         get_public_images: function() {
-            return this.filter(function(i){ return i.is_public() })
+            return _.filter(this.active(), function(i){ return i.is_public() })
         },
 
         get_shared_images: function() {
-            return this.filter(function(i){ return i.get_owner() != snf.config.system_images_owner && 
+            return _.filter(this.active(), function(i){ return i.get_owner() != snf.config.system_images_owner && 
                                i.get_owner() != snf.user.username &&
                                !i.is_public() })
         }
+
     })
     
     // storage initialization
     snf.storage.glance = {};
-    snf.storage.glance.images = new models.Images();
+    snf.storage.glance.images = new models.GlanceImages();
 
     // use glance images
     snf.storage.images = snf.storage.glance.images;

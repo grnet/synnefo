@@ -73,7 +73,7 @@
                 this.handle_remove();
             }
             
-            this.api.call = _.bind(this.api.call, this);
+            this.api_call = _.bind(this.api.call, this);
             models.Model.__super__.initialize.apply(this, arguments)
         },
 
@@ -115,7 +115,7 @@
         },
 
         remove: function() {
-            this.api.call(this.api_path(), "delete");
+            this.api_call(this.api_path(), "delete");
         },
 
         changedKeys: function() {
@@ -141,7 +141,7 @@
 
         initialize: function() {
             models.Collection.__super__.initialize.apply(this, arguments);
-            this.api.call = _.bind(this.api.call, this);
+            this.api_call = _.bind(this.api.call, this);
         },
 
         url: function(options, method) {
@@ -179,17 +179,18 @@
 
         get_fetcher: function(interval, increase, fast, increase_after_calls, max, initial_call, params) {
             var fetch_params = params || {};
-            fetch_params.skips_timeouts = true;
-            
             var handler_options = {};
+
+            fetch_params.skips_timeouts = true;
             handler_options.interval = interval;
             handler_options.increase = increase;
             handler_options.fast = fast;
             handler_options.increase_after_calls = increase_after_calls;
             handler_options.max= max;
+            handler_options.id = "collection id";
 
             var last_ajax = undefined;
-            var cb = _.bind(function() {
+            var callback = _.bind(function() {
                 // clone to avoid referenced objects
                 var params = _.clone(fetch_params);
                 updater._ajax = last_ajax;
@@ -201,13 +202,12 @@
                         return;
                     }
                 }
-
+                
                 last_ajax = this.fetch(params);
             }, this);
-            handler_options.callback = cb;
+            handler_options.callback = callback;
 
-            var updater = new snf.api.updateHandler(_.extend(handler_options, fetch_params));
-
+            var updater = new snf.api.updateHandler(_.clone(_.extend(handler_options, fetch_params)));
             snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster(true)}, this)), 1000);
             return updater;
         }
@@ -229,7 +229,7 @@
         },
 
         get_owner: function() {
-            return this.get('owner') || '';
+            return this.get('owner') || synnefo.config.system_images_owner;
         },
 
         get_readable_size: function() {
@@ -677,7 +677,7 @@
         add_vm: function (vm, callback, error, options) {
             var payload = {add:{serverRef:"" + vm.id}};
             payload._options = options || {};
-            return this.api.call(this.api_path() + "/action", "create", 
+            return this.api_call(this.api_path() + "/action", "create", 
                                  payload,
                                  _.bind(function(){
                                      this.vms.add_pending(vm.id);
@@ -688,7 +688,7 @@
         remove_vm: function (vm, callback, error, options) {
             var payload = {remove:{serverRef:"" + vm.id}};
             payload._options = options || {};
-            return this.api.call(this.api_path() + "/action", "create", 
+            return this.api_call(this.api_path() + "/action", "create", 
                                  {remove:{serverRef:"" + vm.id}},
                                  _.bind(function(){
                                      this.vms.add_pending_for_remove(vm.id);
@@ -697,7 +697,7 @@
         },
 
         rename: function(name, callback) {
-            return this.api.call(this.api_path(), "update", {
+            return this.api_call(this.api_path(), "update", {
                 network:{name:name}, 
                 _options:{
                     critical: false, 
@@ -910,7 +910,7 @@
             var cb = _.bind(function(data){
                 this.update_stats();
             }, this);
-            var fetcher = new snf.api.updateHandler({'callback': cb, interval:timeout});
+            var fetcher = new snf.api.updateHandler({'callback': cb, interval: timeout, id:'stats'});
             return fetcher;
         },
 
@@ -925,7 +925,7 @@
             // TODO: onError handler ???
             stats_url = this.url() + "/stats";
             this.updating_stats = true;
-            this.sync("GET", this, {
+            this.sync("read", this, {
                 handles_error:true, 
                 url: stats_url, 
                 refresh:true, 
@@ -933,7 +933,6 @@
                 error: _.bind(this.handle_stats_error, this),
                 complete: _.bind(function(){this.updating_stats = false;}, this),
                 critical: false,
-                display: false,
                 log_error: false
             });
         },
@@ -1098,7 +1097,7 @@
             
         remove_meta: function(key, complete, error) {
             var url = this.api_path() + "/meta/" + key;
-            this.api.call(url, "delete", undefined, complete, error);
+            this.api_call(url, "delete", undefined, complete, error);
         },
 
         save_meta: function(meta, complete, error) {
@@ -1112,7 +1111,7 @@
                     extra_details: {"Machine id": this.id}
             }};
 
-            this.api.call(url, "update", payload, complete, error);
+            this.api_call(url, "update", payload, complete, error);
         },
 
         set_firewall: function(net_id, value, callback, error, options) {
@@ -1128,7 +1127,7 @@
                 thi
             }, this);
 
-            this.api.call(this.api_path() + "/action", "create", payload, callback, error);
+            this.api_call(this.api_path() + "/action", "create", payload, callback, error);
             storage.networks.get(net_id).update_state();
         },
 
@@ -1179,12 +1178,10 @@
         },
         
         // get image object
-        // TODO: update images synchronously if image not found
         get_image: function() {
             var image = storage.images.get(this.get('imageRef'));
             if (!image) {
                 storage.images.update_unknown_id(this.get('imageRef'));
-                image = storage.images.get(this.get('imageRef'));
             }
             return image;
         },
@@ -1212,7 +1209,7 @@
         get_os: function() {
             return this.get_meta().OS || (this.get_image() ? this.get_image().get_os() || "okeanos" : "okeanos");
         },
-        
+
         // get public ip addresses
         // TODO: public network is always the 0 index ???
         get_addresses: function(net_id) {
@@ -1539,7 +1536,7 @@
         },
 
         create: function (name, callback) {
-            return this.api.call(this.path, "create", {network:{name:name}}, callback);
+            return this.api_call(this.path, "create", {network:{name:name}}, callback);
         }
     })
 
@@ -1550,18 +1547,24 @@
         noUpdate: true,
         supportIncUpdates: false,
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
+        read_method: 'read',
 
         // update collection model with id passed
         // making a direct call to the image
         // api url
         update_unknown_id: function(id) {
             var url = getUrl.call(this) + "/" + id;
-            this.api.call(this.path + "/" + id, "read", {_options:{async:false}}, undefined, 
+            this.api_call(this.path + "/" + id, this.read_method, {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {
-                this.add({id:id, name:"Unknown image", size:-1, progress:100, status:"DELETED"})
-            }, this), _.bind(function(image) {
-                this.add(image.image);
+                this.add({id:id, name:"Unknown image", size:-1, progress:100, status:"DELETED"});
+            }, this), _.bind(function(image, msg, xhr) {
+                var img_data = this._read_image_from_request(image, msg, xhr);
+                this.add(img_data);
             }, this));
+        },
+
+        _read_image_from_request: function(image, msg, xhr) {
+            return image.image;
         },
 
         parse: function (resp, xhr) {
@@ -1583,6 +1586,7 @@
 
         parse_meta: function(img) {
             _.each(this.meta_keys_as_attrs, _.bind(function(key){
+                if (img[key]) { return };
                 img[key] = this.get_meta_key(img, key) || "";
             }, this));
             return img;
@@ -1640,7 +1644,7 @@
         // api url
         update_unknown_id: function(id) {
             var url = getUrl.call(this) + "/" + id;
-            this.api.call(this.path + "/" + id, "read", {_options:{async:false}}, undefined, 
+            this.api_call(this.path + "/" + id, "read", {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {
                 this.add({id:id, cpu:"", ram:"", disk:"", name: "", status:"DELETED"})
             }, this), _.bind(function(flv) {
@@ -1823,7 +1827,7 @@
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
 
-            this.api.call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: false});
+            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: false});
         }
 
     })

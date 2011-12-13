@@ -5507,6 +5507,9 @@ table.list-machines .wave {
     
 }
 
+.create-vm .images-list li {
+    min-height: 30px;
+}
 .create-vm .images-list .image-details:hover {
     background-color: #eee;
 }

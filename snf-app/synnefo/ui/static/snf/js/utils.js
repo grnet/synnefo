@@ -146,7 +146,20 @@
          + pad(d.getUTCSeconds())+'Z'
     }
 
- 
+    
+    synnefo.util.parseHeaders = function(headers) {
+        var res = {};
+        _.each(headers.split("\n"), function(h) {
+            var tuple = h.split(/:(.+)?/);
+            if (!tuple.length > 1 || !(tuple[0] && tuple[1])) {
+                return;
+            }
+            res[tuple[0]] = tuple[1]
+        })
+
+        return res;
+    }
+
     synnefo.util.parseUri = function(sourceUri) {
         var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"];
         var uriParts = new RegExp("^(?:([^:/?#.]+):)?(?://)?(([^:/?#]*)(?::(\\d*))?)?((/(?:[^?#](?![^?#/]*\\.[^?#/.]+(?:[\\?#]|$)))*/?)?([^?#/]*))?(?:\\?([^#]*))?(?:#(.*))?").exec(sourceUri);

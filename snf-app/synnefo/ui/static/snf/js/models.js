@@ -1213,7 +1213,8 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta().OS || (this.get_image(function(){}) ? this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
+            return this.get_meta().OS || (this.get_image(function(){}) ? 
+                                          this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
         },
 
         // get public ip addresses
@@ -1829,7 +1830,9 @@
 
         create: function (name, image, flavor, meta, extra, callback) {
             if (this.copy_image_meta) {
-                meta['OS'] = image.get("OS");
+                if (image.get("OS")) {
+                    meta['OS'] = image.get("OS");
+                }
            }
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}

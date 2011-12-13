@@ -381,8 +381,10 @@
                 // it doesn't seem to work without this
                 // some serious debugging is needed to 
                 // find out what is going on
-                this.vm = storage.vms.get(this.vm.id);
-                this.init_vm_handlers();
+                if (!this.vm_handlers_initialized) {
+                    this.vm = storage.vms.get(this.vm.id);
+                    this.init_vm_handlers();
+                }
             } catch (err) { console.error(err); return }
 
             if (!this.vm) { return }
@@ -467,6 +469,7 @@
 
             this.vm.bind("action:fail", this.update_layout)
             this.vm.bind("action:fail:reset", this.update_layout)
+            this.vm_handlers_initialized = true;
         },
         
         set_hover_handlers: function() {

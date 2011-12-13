@@ -14,6 +14,7 @@ Google Ganeti for VM management at the backend.
    src/configuration
    src/deployment
    src/admin
+   src/admin_tools
    src/develop
    src/api
    src/plankton

@@ -366,7 +366,7 @@ class ImageBackend(object):
         location = 'pithos://%s/%s/%s' % (self.user, self.container, filename)
         image_id = get_image_id(location)
         is_public = params.pop('is_public', False)
-        permissions = {'read': ['*']} if is_public else None
+        permissions = {'read': ['*']} if is_public else {}
         size = params.pop('size', None)
         
         hashmap, size = self._store(f, size)
@@ -404,7 +404,7 @@ class ImageBackend(object):
             raise BackendException("Invalid checksum")
         
         is_public = params.pop('is_public', False)
-        permissions = {'read': ['*']} if is_public else None
+        permissions = {'read': ['*']} if is_public else {}
         
         meta = {}
         meta['properties'] = params.pop('properties', {})

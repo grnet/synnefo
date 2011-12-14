@@ -56,9 +56,6 @@ from synnefo.plankton.backend import ImageBackend
 from synnefo.util.dictconfig import dictConfig
 
 
-SYSTEM_USER = 'okeanos'
-
-
 def get_user(uid):
     try:
         uid = int(uid)
@@ -299,7 +296,7 @@ class ListImages(Command):
         parser.add_option('-p', action='store_true', dest='pithos',
                 default=False, help='show images stored in Pithos')
         parser.add_option('--user', dest='user',
-                default=SYSTEM_USER,
+                default=settings.SYSTEM_IMAGES_OWNER,
                 metavar='USER',
                 help='list images accessible to USER')
     
@@ -334,19 +331,22 @@ class ListImages(Command):
 class RegisterImage(Command):
     group = 'image'
     name = 'register'
-    syntax = '<name> <backend id> <format>'
+    syntax = '<name> <Backend ID or Pithos URL> <disk format>'
     description = 'register an image'
     
     def add_options(self, parser):
         parser.add_option('--meta', dest='meta', action='append',
-                            metavar='KEY=VAL',
-                            help='add metadata (can be used multiple times)')
+                metavar='KEY=VAL',
+                help='add metadata (can be used multiple times)')
         parser.add_option('--public', action='store_true', dest='public',
-                            default=False, help='make image public')
+                default=False, help='make image public')
         parser.add_option('-u', dest='uid', metavar='UID',
-                            help='assign image to user with id UID')
+                help='assign image to user with id UID')
     
     def main(self, name, backend_id, format):
+        if backend_id.startswith('pithos://'):
+            return self.main_pithos(name, backend_id, format)
+        
         formats = [x[0] for x in models.Image.FORMATS]
         if format not in formats:
             valid = ', '.join(formats)
@@ -377,6 +377,28 @@ class RegisterImage(Command):
                     print 'WARNING: Ignoring meta', m
         
         print_item(image)
+    
+    def main_pithos(self, name, url, disk_format):
+        if disk_format not in settings.ALLOWED_DISK_FORMATS:
+            print 'Invalid disk format'
+            return
+        
+        params = {
+            'disk_format': disk_format,
+            'is_public': self.public,
+            'properties': {}}
+        
+        if self.meta:
+            for m in self.meta:
+                key, sep, val = m.partition('=')
+                if key and val:
+                    params['properties'][key] = val
+                else:
+                    print 'WARNING: Ignoring meta', m
+        
+        backend = ImageBackend(self.uid or settings.SYSTEM_IMAGES_OWNER)
+        backend.register(name, url, params)
+        backend.close()
 
 
 class UploadImage(Command):
@@ -401,7 +423,7 @@ class UploadImage(Command):
                 metavar='KEY=VAL',
                 help='add metadata (can be used multiple times)')
         parser.add_option('--owner', dest='owner',
-                default=SYSTEM_USER,
+                default=settings.SYSTEM_IMAGES_OWNER,
                 metavar='USER',
                 help='set owner to USER')
         parser.add_option('--public', action='store_true', dest='public',
@@ -456,9 +478,9 @@ class UpdateImage(Command):
         parser.add_option('--public', action='store_true', dest='public',
                 help='make image public')
         parser.add_option('--user', dest='user',
-                default=SYSTEM_USER,
+                default=settings.SYSTEM_IMAGES_OWNER,
                 metavar='USER',
-                help='assign image to USER')
+                help='connect as USER')
     
     def main(self, image_id):
         backend = ImageBackend(self.user)
@@ -558,7 +580,16 @@ class ModifyImageMeta(Command):
     syntax = '<image id> [key[=val]]'
     description = 'get and manipulate image metadata'
     
+    def add_options(self, parser):
+        parser.add_option('--user', dest='user',
+                default=settings.SYSTEM_IMAGES_OWNER,
+                metavar='USER',
+                help='connect as USER')
+
     def main(self, image_id, arg=''):
+        if not image_id.isdigit():
+            return self.main_pithos(image_id, arg)
+        
         try:
             image = models.Image.objects.get(id=image_id)
         except:
@@ -595,6 +626,37 @@ class ModifyImageMeta(Command):
             # Delete if val is empty
             if meta:
                 meta.delete()
+    
+    def main_pithos(self, image_id, arg=''):
+        backend = ImageBackend(self.user)
+                
+        try:
+            image = backend.get_meta(image_id)
+            if not image:
+                print 'Image not found'
+                return
+            
+            key, sep, val = arg.partition('=')
+            if not sep:
+                val = None
+            
+            properties = image.get('properties', {})
+            
+            if not key:
+                print_dict(properties)
+                return
+            
+            if val is None:
+                if key in properties:
+                    print_dict({key: properties[key]})
+                return
+            
+            if val:
+                properties[key] = val        
+                params = {'properties': properties}
+                backend.update(image_id, params)
+        finally:
+            backend.close()
 
 
 # Flavor commands

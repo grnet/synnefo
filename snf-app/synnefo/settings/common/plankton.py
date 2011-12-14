@@ -23,3 +23,6 @@ ALLOWED_CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
 
 DEFAULT_DISK_FORMAT = 'dump'
 DEFAULT_CONTAINER_FORMAT = 'bare'
+
+# The owner of the images that will be marked as "system images" by the UI
+SYSTEM_IMAGES_OWNER = 'okeanos'

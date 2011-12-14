@@ -287,7 +287,9 @@ class BaseBackend(object):
                        If set, the result will include all names after 'prefix',
                        up to and including the 'delimiter' if it is found
             
-            'keys': Include objects that have meta with the keys in the list
+            'keys': Include objects that satisfy the key queries in the list.
+                    Use 'key', '!key' for existence queries, 'key op value' for
+                    value queries, where 'op' can be one of ==, != <=, >=, <, >
             
             'shared': Only list objects with permissions set
         

@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import re
+
 from time import time
 
 from dbworker import DBWorker
@@ -77,6 +79,8 @@ def strprevling(prefix):
         s += unichr(c-1) + unichr(0xffff)
     return s
 
+
+_regexfilter = re.compile('(!?)\s*([\w-]+)\s*(==|!=|<=|>=|<|>)?\s*(.*)$', re.UNICODE)
 
 _propnames = {
     'serial'    : 0,
@@ -589,14 +593,58 @@ class Node(DBWorker):
              "where serial = ?")
         self.execute(q, (dest, source))
     
+    def _parse_filters(self, filterq):
+        preterms = filterq.split(',')
+        included = []
+        excluded = []
+        opers = []
+        match = _regexfilter.match
+        for term in preterms:
+            m = match(term)
+            if m is None:
+                continue
+            neg, key, op, value = m.groups()
+            if neg:
+                excluded.append(key)
+            elif not value:
+                included.append(key)
+            elif op:
+                opers.append((key, op, value))
+        
+        return included, excluded, opers
+    
     def _construct_filters(self, filterq):
         if not filterq:
             return None, None
         
-        args = filterq.split(',')
-        subq = " and a.key in ("
-        subq += ','.join(('?' for x in args))
-        subq += ")"
+        subqlist = []
+        append = subqlist.append
+        included, excluded, opers = self._parse_filters(filterq)
+        args = []
+        
+        if included:
+            subq = "a.key in ("
+            subq += ','.join(('?' for x in included)) + ")"
+            args += included
+            append(subq)
+        
+        if excluded:
+            subq = "a.key not in ("
+            subq += ','.join(('?' for x in excluded)) + ")"
+            args += excluded
+            append(subq)
+        
+        if opers:
+            t = (("(key = ? and value %s ?)" % (o,)) for k, o, v in opers)
+            subq = "(" + ' or '.join(t) + ")"
+            for k, o, v in opers:
+                args += (k, v)
+            append(subq)
+        
+        if not subqlist:
+            return None, None
+        
+        subq = ' ' + ' and '.join(subqlist)
         
         return subq, args
     

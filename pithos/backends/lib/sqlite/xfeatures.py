@@ -84,8 +84,8 @@ class XFeatures(DBWorker):
             return [inherited]
         
         q = ("select path, feature_id from xfeatures "
-             "where path like ? and path != ? order by path")
-        self.execute(q, (path + '%', path,))
+             "where path like ? escape '\\' and path != ? order by path")
+        self.execute(q, (self.escape_like(path) + '%', path,))
         return self.fetchall()
     
     def xfeature_create(self, path):

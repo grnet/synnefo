@@ -38,6 +38,7 @@ class DBWrapper(object):
     
     def __init__(self, db):
         self.conn = sqlite3.connect(db, check_same_thread=False)
+        self.conn.execute(""" pragma case_sensitive_like = on """)
     
     def close(self):
         self.conn.close()

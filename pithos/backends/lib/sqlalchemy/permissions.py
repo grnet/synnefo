@@ -132,7 +132,7 @@ class Permissions(XFeatures, Groups, Public):
                     self.xfeaturevals.c.value == u.c.value)
         s = select([self.xfeatures.c.path], from_obj=[inner_join]).distinct()
         if prefix:
-            s = s.where(self.xfeatures.c.path.like(prefix + '%'))
+            s = s.where(self.xfeatures.c.path.like(self.escape_like(prefix) + '%', escape='\\'))
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()
@@ -142,7 +142,7 @@ class Permissions(XFeatures, Groups, Public):
         """Return the list of shared paths."""
         
         s = select([self.xfeatures.c.path],
-            self.xfeatures.c.path.like(prefix + '%')).order_by(self.xfeatures.c.path.asc())
+            self.xfeatures.c.path.like(self.escape_like(prefix) + '%', escape='\\')).order_by(self.xfeatures.c.path.asc())
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()

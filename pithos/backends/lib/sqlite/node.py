@@ -635,7 +635,7 @@ class Node(DBWorker):
             append(subq)
         
         if opers:
-            t = (("(key = ? and value %s ?)" % (o,)) for k, o, v in opers)
+            t = (("(a.key = ? and a.value %s ?)" % (o,)) for k, o, v in opers)
             subq = "(" + ' or '.join(t) + ")"
             for k, o, v in opers:
                 args += (k, v)

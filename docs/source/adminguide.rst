@@ -44,6 +44,9 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
         Allow from all
     </Directory>
 
+    SetEnv no-gzip
+    SetEnv dont-vary
+
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT,NE]
     RewriteRule ^/public(.*) /api/public$1 [PT,NE]
@@ -79,6 +82,9 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
         Order allow,deny
         Allow from all
     </Directory>
+
+    SetEnv no-gzip
+    SetEnv dont-vary
 
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT,NE]

@@ -210,9 +210,7 @@ class Node(DBWorker):
         """
         
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
-        path = path.replace('%', '\%')
-        path = path.replace('_', '\_')
-        s = select([self.nodes.c.node], self.nodes.c.path.like(path, escape='\\'))
+        s = select([self.nodes.c.node], self.nodes.c.path.like(self.escape_like(path), escape='\\'))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -541,7 +539,7 @@ class Node(DBWorker):
             self.versions.c.node == v.c.node)
         if before != inf:
             c1 = c1.where(self.versions.c.mtime < before)
-        c2 = select([self.nodes.c.node], self.nodes.c.path.like(path + '%'))
+        c2 = select([self.nodes.c.node], self.nodes.c.path.like(self.escape_like(path) + '%', escape='\\'))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
@@ -744,7 +742,7 @@ class Node(DBWorker):
         s = s.where(n.c.node == v.c.node)
         conj = []
         for x in pathq:
-            conj.append(n.c.path.like(x + '%'))
+            conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
         if conj:
             s = s.where(or_(*conj))
         rp = self.conn.execute(s)
@@ -823,7 +821,7 @@ class Node(DBWorker):
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
         conj = []
         for x in pathq:
-            conj.append(n.c.path.like(x + '%'))
+            conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
         
         if conj:
             s = s.where(or_(*conj))

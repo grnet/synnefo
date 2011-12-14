@@ -45,3 +45,6 @@ class DBWorker(object):
         self.fetchall = cur.fetchall
         self.cur = cur
         self.conn = conn
+    
+    def escape_like(self, s):
+        return s.replace('\\', '\\\\').replace('%', '\%').replace('_', '\_')

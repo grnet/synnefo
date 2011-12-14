@@ -447,8 +447,8 @@ class Node(DBWorker):
              "and cluster != ? "
              "and node in (select node "
                           "from nodes "
-                          "where path like ?)")
-        execute(q, (before, except_cluster, path + '%'))
+                          "where path like ? escape '\\')")
+        execute(q, (before, except_cluster, self.escape_like(path) + '%'))
         r = fetchone()
         if r is None:
             return None
@@ -605,9 +605,9 @@ class Node(DBWorker):
             return None, None
         
         subq = " and ("
-        subq += ' or '.join(('n.path like ?' for x in pathq))
+        subq += ' or '.join(("n.path like ? escape '\\'" for x in pathq))
         subq += ")"
-        args = tuple([x + '%' for x in pathq])
+        args = tuple([self.escape_like(x) + '%' for x in pathq])
         
         return subq, args
     

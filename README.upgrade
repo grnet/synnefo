@@ -39,3 +39,7 @@ UPGRADE
 * Reset 'policy' table in mysql (backend):
     
     mysql> update policy set `value`='auto' where `key`='versioning';
+
+0.8.1 -> 0.8.2
+--------------
+* Add the 'X-Forwarded-Protocol' header directive in the apache configuration, as described in the admin guide

@@ -51,6 +51,8 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
     RewriteRule ^/im(.*) https://%{HTTP_HOST}%{REQUEST_URI} [NE]
     RewriteRule ^/login(.*) https://%{HTTP_HOST}%{REQUEST_URI} [NE]
 
+    RequestHeader set X-Forwarded-Protocol "http"
+
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
     # WSGIProcessGroup pithos
@@ -84,6 +86,8 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
     RewriteRule ^/tools(.*) /api/ui$1 [PT,NE]
     RewriteRule ^/im(.*) /api/im$1 [PT,NE]
     RewriteRule ^/login(.*) /api/im/login/dummy$1 [PT,NE]
+
+    RequestHeader set X-Forwarded-Protocol "https"
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos

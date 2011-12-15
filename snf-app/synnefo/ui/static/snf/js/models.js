@@ -1563,7 +1563,10 @@
             var url = getUrl.call(this) + "/" + id;
             this.api_call(this.path + "/" + id, this.read_method, {_options:{async:true, skip_api_error:true}}, undefined, 
             _.bind(function() {
-                this.add({id:id, name:"Unknown image", size:-1, progress:100, status:"DELETED"});
+                if (!this.get(id)) {
+                    this.add({id:id, name:"Unknown image", size:-1, 
+                              progress:100, status:"DELETED"});
+                }
                 callback(this.get(id));
             }, this), _.bind(function(image, msg, xhr) {
                 var img_data = this._read_image_from_request(image, msg, xhr);

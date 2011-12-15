@@ -42,6 +42,8 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from xml.dom import minidom
 
+from pithos.lib.filter import parse_filters
+
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (rename_meta_key, format_header_key, printable_header_dict, get_account_headers,
@@ -494,9 +496,12 @@ def object_list(request, v_account, v_container):
     
     keys = request.GET.get('meta')
     if keys:
-        keys = keys.split(',')
-        l = [smart_str(x) for x in keys if x.strip() != '']
-        keys = [format_header_key('X-Object-Meta-' + x.strip()) for x in l]
+        keys = [smart_str(x.strip()) for x in keys.split(',') if x.strip() != '']
+        included, excluded, opers = parse_filters(keys)
+        keys = []
+        keys += [format_header_key('X-Object-Meta-' + x) for x in included]
+        keys += [format_header_key('!X-Object-Meta-' + x) for x in excluded]
+        keys += ['%s%s%s' % (format_header_key('X-Object-Meta-' + k), o, v) for k, o, v in opers]
     else:
         keys = []
     

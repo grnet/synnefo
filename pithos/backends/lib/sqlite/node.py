@@ -31,11 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import re
-
 from time import time
 
 from dbworker import DBWorker
+
+from pithos.lib.filter import parse_filters
 
 
 ROOTNODE  = 0
@@ -79,8 +79,6 @@ def strprevling(prefix):
         s += unichr(c-1) + unichr(0xffff)
     return s
 
-
-_regexfilter = re.compile('(!?)\s*([\w-]+)\s*(==|!=|<=|>=|<|>)?\s*(.*)$', re.UNICODE)
 
 _propnames = {
     'serial'    : 0,
@@ -593,33 +591,13 @@ class Node(DBWorker):
              "where serial = ?")
         self.execute(q, (dest, source))
     
-    def _parse_filters(self, filterq):
-        preterms = filterq.split(',')
-        included = []
-        excluded = []
-        opers = []
-        match = _regexfilter.match
-        for term in preterms:
-            m = match(term)
-            if m is None:
-                continue
-            neg, key, op, value = m.groups()
-            if neg:
-                excluded.append(key)
-            elif not value:
-                included.append(key)
-            elif op:
-                opers.append((key, op, value))
-        
-        return included, excluded, opers
-    
     def _construct_filters(self, filterq):
         if not filterq:
             return None, None
         
         subqlist = []
         append = subqlist.append
-        included, excluded, opers = self._parse_filters(filterq)
+        included, excluded, opers = parse_filters(filterq.split(','))
         args = []
         
         if included:
@@ -721,7 +699,7 @@ class Node(DBWorker):
                    
                    key ?op value
                        the attribute with this key satisfies the value
-                       where ?op is one of ==, != <=, >=, <, >.
+                       where ?op is one of =, != <=, >=, <, >.
            
            The list of common prefixes includes the prefixes
            matching up to the first delimiter after prefix,

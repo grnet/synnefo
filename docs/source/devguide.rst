@@ -25,9 +25,10 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Dec 2, 2011)          Update allowed versioning values.
+0.8 (Dec 15, 2011)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
+\                          Support metadata-based queries when listing objects at the container level.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -441,7 +442,7 @@ prefix                  Return objects starting with prefix
 delimiter               Return objects up to the delimiter (discussion follows)
 path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
-meta                    Return objects having the specified meta keys (can be a comma separated list)
+meta                    Return objects that satisfy the key queries in the specified comma separated list (use ``<key>``, ``!<key>`` for existence queries, ``<key><op><value>`` for value queries, where ``<op>`` can be one of ``=``, ``!=``, ``<=``, ``>=``, ``<``, ``>``)
 shared                  Show only shared objects (no value parameter)
 until                   Optional timestamp
 ======================  ===================================
@@ -489,7 +490,7 @@ x_object_meta_*             Optional user defined metadata
 
 Extended replies may also include virtual directory markers in separate sections of the ``json`` or ``xml`` results.
 Virtual directory markers are only included when ``delimiter`` is explicitly set. They correspond to the substrings up to and including the first occurrence of the delimiter.
-In JSON results they appear as dictionaries with only a ``"subdir"`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
+In JSON results they appear as dictionaries with only a ``subdir`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
 In case there is an object with the same name as a virtual directory marker, the object will be returned.
 
 Example ``format=json`` reply:

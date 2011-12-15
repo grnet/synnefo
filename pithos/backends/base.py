@@ -289,7 +289,7 @@ class BaseBackend(object):
             
             'keys': Include objects that satisfy the key queries in the list.
                     Use 'key', '!key' for existence queries, 'key op value' for
-                    value queries, where 'op' can be one of =, != <=, >=, <, >
+                    value queries, where 'op' can be one of =, !=, <=, >=, <, >
             
             'shared': Only list objects with permissions set
         

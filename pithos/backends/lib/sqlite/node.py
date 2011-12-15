@@ -597,7 +597,7 @@ class Node(DBWorker):
         
         subqlist = []
         append = subqlist.append
-        included, excluded, opers = parse_filters(filterq.split(','))
+        included, excluded, opers = parse_filters(filterq)
         args = []
         
         if included:
@@ -622,8 +622,7 @@ class Node(DBWorker):
         if not subqlist:
             return None, None
         
-        subq = ' ' + ' and '.join(subqlist)
-        
+        subq = ' and ' + ' and '.join(subqlist)
         return subq, args
     
     def _construct_paths(self, pathq):
@@ -665,7 +664,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], filterq=None):
+                            except_cluster=0, pathq=[], filterq=[]):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.

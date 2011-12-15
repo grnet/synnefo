@@ -35,11 +35,13 @@ from time import time
 from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
 from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
-from sqlalchemy.sql import func, and_, or_, null, select, bindparam, text
+from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
 
 from dbworker import DBWorker
+
+from pithos.lib.filter import parse_filters
 
 ROOTNODE  = 0
 
@@ -81,7 +83,6 @@ def strprevling(prefix):
     if c > 0:
         s += unichr(c-1) + unichr(0xffff)
     return s
-
 
 _propnames = {
     'serial'    : 0,
@@ -752,7 +753,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], filterq=None):
+                            except_cluster=0, pathq=[], filterq=[]):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -827,7 +828,14 @@ class Node(DBWorker):
             s = s.where(or_(*conj))
         
         if filterq:
-            s = s.where(a.c.key.in_(filterq.split(',')))
+            included, excluded, opers = parse_filters(filterq)
+            if included:
+                s = s.where(a.c.key.in_(x for x in included))
+            if excluded:
+                s = s.where(not_(a.c.key.in_(x for x in excluded)))
+            if opers:
+                for k, o, v in opers:
+                    s = s.where(or_(a.c.key == k and a.c.value.op(o)(v)))
         
         s = s.order_by(n.c.path)
         

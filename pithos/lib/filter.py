@@ -34,7 +34,7 @@
 import re
 
 
-_regexfilter = re.compile('(!?)\s*([\w-]+)\s*(=|!=|<=|>=|<|>)?\s*(.*)$', re.UNICODE)
+_regexfilter = re.compile('(!?)\s*(.+)\s*(=|!=|<=|>=|<|>)?\s*(.*)$', re.UNICODE)
 
 
 def parse_filters(terms):

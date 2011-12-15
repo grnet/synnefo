@@ -799,9 +799,8 @@ class ModularBackend(BaseBackend):
         prefix = cont_prefix + prefix
         start = cont_prefix + marker if marker else None
         before = until if until is not None else inf
-        filterq = ','.join(keys) if keys else None
         
-        objects, prefixes = self.node.latest_version_list(parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED, allowed, filterq)
+        objects, prefixes = self.node.latest_version_list(parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED, allowed, keys)
         objects.extend([(p, None) for p in prefixes] if virtual else [])
         objects.sort(key=lambda x: x[0])
         objects = [(x[0][len(cont_prefix):], x[1]) for x in objects]

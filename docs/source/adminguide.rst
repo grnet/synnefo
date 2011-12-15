@@ -21,7 +21,7 @@ Setup the files::
 
   cd /pithos/pithos
   python manage.py syncdb
-  python manage.py schemamigration im --initial
+  python manage.py migrate im
   cd /pithos
   python setup.py build_sphinx
 

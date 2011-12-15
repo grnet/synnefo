@@ -35,7 +35,7 @@ Make sure you have all required packages installed:
 
 Then run:
     python manage.py syncdb
-    python manage.py schemamigration im --initial
+    python manage.py migrate im
     python manage.py loaddata admin_user
     python manage.py runserver
 

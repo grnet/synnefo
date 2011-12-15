@@ -5501,10 +5501,10 @@ table.list-machines .wave {
 
 .create-vm .type-filter li {
     font-size: 0.8em;
-    font-weight: bold;
+    /*font-weight: bold;*/
     padding: 4px;
     margin-bottom: 0px;
-    
+    color: #FF7F2A;
 }
 
 .create-vm .images-list li {

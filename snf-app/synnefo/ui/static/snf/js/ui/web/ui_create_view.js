@@ -439,7 +439,7 @@
         show_image_details: function(img) {
             this.parent.$(".create-controls").hide();
             this.update_image_details(img);
-            this.image_details.fadeIn(700);
+            this.image_details.fadeIn(100);
         },
 
         reset: function() {

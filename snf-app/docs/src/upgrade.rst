@@ -2,10 +2,11 @@ Upgrade
 =======
 
 This file documents the upgrade to newer versions of the Synnefo software.
-For more information, please see README.deploy.
+For more information, please see deployment guide.
 
-v0.7 -> v0.8
-------------
+
+v0.7.4 -> v0.8
+--------------
 
 Synnefo is now distributed packaged in python/debian packages. You should
 consider the following when migration from a previously `source` deployment
@@ -64,14 +65,6 @@ UI
 
 API
     * A new 'disk_template' attribute has been added to Flavors.
-      A database migration is needed.
-
-
-v0.7.3 -> v0.8
---------------
-
-API
-    * A new 'disk_template' attribute has been added to Flavors.
       GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
       in 20-api.conf to control its value. A database migration is needed.
 
@@ -81,16 +74,12 @@ ADMIN TOOLS
       in flavors has beed added to the admin web interface.
 
 
-v0.7 -> v0.8
-API
-    * A new 'disk_template' attribute has been added to Flavors.
-      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
-      in 20-api.conf to control its value. A database migration is needed.
 
-ADMIN TOOLS
-    * A new --disk-template flag has been added to snf-admin to choose a
-      disk template when creating flavors. Similarly disk_template support
-      in flavors has beed added to the admin web interface.
+v0.7.3 -> v0.7.4
+----------------
+OKEANOS INTRO
+    * News section added. News content can be remotely retrieved using
+      OKEANOS_NEWS_CONTENT_URL settings option.
 
 
 v0.6.2 -> v0.7

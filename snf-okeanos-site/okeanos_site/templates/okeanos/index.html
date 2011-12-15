@@ -59,8 +59,16 @@
         <div class="testuser"><div class=""><a class="gotoapp" href="{{ OKEANOS_APP_URL }}" title="{% trans "Enter ~okeanos" %}">{% trans "Enter" %}</a></div></div>
     </div>
 </div>
-</div>
 
+{% if news_content %}
+<div class="news-list">
+    {{ news_content|safe }}
+</div>
+{% else %}
+    {% include "okeanos/news_list.html" %}
+{% endif %}
+
+</div>
 <div class="footer">
     {% comment %}
 <ul class="links clearfix">

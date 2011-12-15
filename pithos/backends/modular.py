@@ -119,10 +119,10 @@ class ModularBackend(BaseBackend):
         return allowed[start:start + limit]
     
     @backend_method
-    def get_account_meta(self, user, account, until=None):
-        """Return a dictionary with the account metadata."""
+    def get_account_meta(self, user, account, domain, until=None):
+        """Return a dictionary with the account metadata for the domain."""
         
-        logger.debug("get_account_meta: %s %s", account, until)
+        logger.debug("get_account_meta: %s %s %s", account, domain, until)
         path, node = self._lookup_account(account, user == account)
         if user != account:
             if until or node is None or account not in self._allowed_accounts(user):
@@ -154,10 +154,10 @@ class ModularBackend(BaseBackend):
         return meta
     
     @backend_method
-    def update_account_meta(self, user, account, meta, replace=False):
-        """Update the metadata associated with the account."""
+    def update_account_meta(self, user, account, domain, meta, replace=False):
+        """Update the metadata associated with the account for the domain."""
         
-        logger.debug("update_account_meta: %s %s %s", account, meta, replace)
+        logger.debug("update_account_meta: %s %s %s %s", account, domain, meta, replace)
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_account(account, True)
@@ -264,10 +264,10 @@ class ModularBackend(BaseBackend):
         return [x[0] for x in self._list_objects(node, account, '', '/', marker, limit, False, [], until)]
     
     @backend_method
-    def get_container_meta(self, user, account, container, until=None):
-        """Return a dictionary with the container metadata."""
+    def get_container_meta(self, user, account, container, domain, until=None):
+        """Return a dictionary with the container metadata for the domain."""
         
-        logger.debug("get_container_meta: %s %s %s", account, container, until)
+        logger.debug("get_container_meta: %s %s %s %s", account, container, domain, until)
         if user != account:
             if until or container not in self._allowed_containers(user, account):
                 raise NotAllowedError
@@ -293,10 +293,10 @@ class ModularBackend(BaseBackend):
         return meta
     
     @backend_method
-    def update_container_meta(self, user, account, container, meta, replace=False):
-        """Update the metadata associated with the container."""
+    def update_container_meta(self, user, account, container, domain, meta, replace=False):
+        """Update the metadata associated with the container for the domain."""
         
-        logger.debug("update_container_meta: %s %s %s %s", account, container, meta, replace)
+        logger.debug("update_container_meta: %s %s %s %s %s", account, container, domain, meta, replace)
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_container(account, container)
@@ -369,10 +369,10 @@ class ModularBackend(BaseBackend):
         self.node.node_remove(node)
     
     @backend_method
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None):
         """Return a list of objects existing under a container."""
         
-        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, keys, shared, until)
+        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s", account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until)
         allowed = []
         if user != account:
             if until:
@@ -389,10 +389,10 @@ class ModularBackend(BaseBackend):
         return self._list_objects(node, path, prefix, delimiter, marker, limit, virtual, keys, until, allowed)
     
     @backend_method
-    def list_object_meta(self, user, account, container, until=None):
-        """Return a list with all the container's object meta keys."""
+    def list_object_meta(self, user, account, container, domain, until=None):
+        """Return a list with all the container's object meta keys for the domain."""
         
-        logger.debug("list_object_meta: %s %s %s", account, container, until)
+        logger.debug("list_object_meta: %s %s %s %s", account, container, domain, until)
         allowed = []
         if user != account:
             if until:
@@ -405,10 +405,10 @@ class ModularBackend(BaseBackend):
         return self.node.latest_attribute_keys(node, before, CLUSTER_DELETED, allowed)
     
     @backend_method
-    def get_object_meta(self, user, account, container, name, version=None):
-        """Return a dictionary with the object metadata."""
+    def get_object_meta(self, user, account, container, name, domain, version=None):
+        """Return a dictionary with the object metadata for the domain."""
         
-        logger.debug("get_object_meta: %s %s %s %s", account, container, name, version)
+        logger.debug("get_object_meta: %s %s %s %s %s", account, container, name, domain, version)
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
@@ -430,10 +430,10 @@ class ModularBackend(BaseBackend):
         return meta
     
     @backend_method
-    def update_object_meta(self, user, account, container, name, meta, replace=False):
-        """Update the metadata associated with the object."""
+    def update_object_meta(self, user, account, container, name, domain, meta, replace=False):
+        """Update the metadata associated with the object for the domain and return the new version."""
         
-        logger.debug("update_object_meta: %s %s %s %s %s", account, container, name, meta, replace)
+        logger.debug("update_object_meta: %s %s %s %s %s %s", account, container, name, domain, meta, replace)
         self._can_write(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         src_version_id, dest_version_id = self._put_metadata(user, node, meta, replace)
@@ -537,7 +537,7 @@ class ModularBackend(BaseBackend):
         return dest_version_id
     
     @backend_method
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, domain, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes."""
         
         logger.debug("update_object_hashmap: %s %s %s %s %s", account, container, name, size, hashmap)
@@ -578,20 +578,20 @@ class ModularBackend(BaseBackend):
         return dest_version_id
     
     @backend_method
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata."""
         
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
+        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions, src_version)
         return self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, src_version)
     
     @backend_method
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata."""
         
-        logger.debug("move_object: %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions)
+        logger.debug("move_object: %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions)
         if user != src_account:
             raise NotAllowedError
-        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta, replace_meta, permissions, None)
+        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, meta, replace_meta, permissions, None)
         if (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
             self._delete_object(user, src_account, src_container, src_name)
         return dest_version_id

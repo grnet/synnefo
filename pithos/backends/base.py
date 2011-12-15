@@ -73,8 +73,8 @@ class BaseBackend(object):
         """
         return []
     
-    def get_account_meta(self, user, account, until=None):
-        """Return a dictionary with the account metadata.
+    def get_account_meta(self, user, account, domain, until=None):
+        """Return a dictionary with the account metadata for the domain.
         
         The keys returned are all user-defined, except:
             'name': The account name
@@ -92,10 +92,12 @@ class BaseBackend(object):
         """
         return {}
     
-    def update_account_meta(self, user, account, meta, replace=False):
-        """Update the metadata associated with the account.
+    def update_account_meta(self, user, account, domain, meta, replace=False):
+        """Update the metadata associated with the account for the domain.
         
         Parameters:
+            'domain': Metadata domain
+            
             'meta': Dictionary with metadata to update
             
             'replace': Replace instead of update
@@ -182,8 +184,8 @@ class BaseBackend(object):
         """
         return []
     
-    def get_container_meta(self, user, account, container, until=None):
-        """Return a dictionary with the container metadata.
+    def get_container_meta(self, user, account, container, domain, until=None):
+        """Return a dictionary with the container metadata for the domain.
         
         The keys returned are all user-defined, except:
             'name': The container name
@@ -203,10 +205,12 @@ class BaseBackend(object):
         """
         return {}
     
-    def update_container_meta(self, user, account, container, meta, replace=False):
-        """Update the metadata associated with the container.
+    def update_container_meta(self, user, account, container, domain, meta, replace=False):
+        """Update the metadata associated with the container for the domain.
         
         Parameters:
+            'domain': Metadata domain
+            
             'meta': Dictionary with metadata to update
             
             'replace': Replace instead of update
@@ -269,7 +273,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, keys=[], shared=False, until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None):
         """Return a list of object (name, version_id) tuples existing under a container.
         
         Parameters:
@@ -287,6 +291,8 @@ class BaseBackend(object):
                        If set, the result will include all names after 'prefix',
                        up to and including the 'delimiter' if it is found
             
+            'domain': Metadata domain for keys
+            
             'keys': Include objects that satisfy the key queries in the list.
                     Use 'key', '!key' for existence queries, 'key op value' for
                     value queries, where 'op' can be one of =, !=, <=, >=, <, >
@@ -300,8 +306,8 @@ class BaseBackend(object):
         """
         return []
     
-    def list_object_meta(self, user, account, container, until=None):
-        """Return a list with all the container's object meta keys.
+    def list_object_meta(self, user, account, container, domain, until=None):
+        """Return a list with all the container's object meta keys for the domain.
         
         Raises:
             NotAllowedError: Operation not permitted
@@ -310,8 +316,8 @@ class BaseBackend(object):
         """
         return []
     
-    def get_object_meta(self, user, account, container, name, version=None):
-        """Return a dictionary with the object metadata.
+    def get_object_meta(self, user, account, container, name, domain, version=None):
+        """Return a dictionary with the object metadata for the domain.
         
         The keys returned are all user-defined, except:
             'name': The object name
@@ -337,10 +343,12 @@ class BaseBackend(object):
         """
         return {}
     
-    def update_object_meta(self, user, account, container, name, meta, replace=False):
-        """Update the metadata associated with the object and return the new version.
+    def update_object_meta(self, user, account, container, name, domain, meta, replace=False):
+        """Update the metadata associated with the object for the domain and return the new version.
         
         Parameters:
+            'domain': Metadata domain
+            
             'meta': Dictionary with metadata to update
             
             'replace': Replace instead of update
@@ -424,11 +432,13 @@ class BaseBackend(object):
         """
         return 0, []
     
-    def update_object_hashmap(self, user, account, container, name, size, hashmap, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, hashmap, domain, meta={}, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes and return the new version.
         
         Parameters:
-            'dest_meta': Dictionary with metadata to change
+            'domain': Metadata domain
+            
+            'meta': Dictionary with metadata to change
             
             'replace_meta': Replace metadata instead of update
             
@@ -447,11 +457,13 @@ class BaseBackend(object):
         """
         return ''
     
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None, src_version=None):
         """Copy an object's data and metadata and return the new version.
         
         Parameters:
-            'dest_meta': Dictionary with metadata to change from source to destination
+            'domain': Metadata domain
+            
+            'meta': Dictionary with metadata to change from source to destination
             
             'replace_meta': Replace metadata instead of update
             
@@ -474,11 +486,13 @@ class BaseBackend(object):
         """
         return ''
     
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_meta={}, replace_meta=False, permissions=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None):
         """Move an object's data and metadata and return the new version.
         
         Parameters:
-            'dest_meta': Dictionary with metadata to change from source to destination
+            'domain': Metadata domain
+            
+            'meta': Dictionary with metadata to change from source to destination
             
             'replace_meta': Replace metadata instead of update
             

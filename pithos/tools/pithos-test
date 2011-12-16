@@ -1684,6 +1684,9 @@ class ListSharing(BaseTestCase):
         self.assertTrue('o2' not in my_shared_objects)
     
 class TestGreek(BaseTestCase):
+    def tearDown(self):
+        pass
+    
     def test_create_container(self):
         self.client.create_container('φάκελος')
         self.assert_container_exists('φάκελος')
@@ -1783,9 +1786,31 @@ class TestGreek(BaseTestCase):
         meta = {'ποσότητα':'μεγάλη'}
         self.client.update_object_metadata('φάκελος', 'ο2', **meta)
         objects = self.client.list_objects('φάκελος', meta='ποιότητα, ποσότητα')
-        self.assertTrue('ο1' in objects)
-        self.assertTrue('ο2' in objects)
-        self.assertTrue('ο3' not in objects)
+        self.assertEquals(objects, ['ο1', 'ο2'])
+        
+        objects = self.client.list_objects('φάκελος', meta='!ποιότητα')
+        self.assertEquals(objects, ['ο2', 'ο3'])
+        
+        objects = self.client.list_objects('φάκελος', meta='!ποιότητα, !ποσότητα')
+        self.assertEquals(objects, ['ο3'])
+        
+        meta = {'ποιότητα':'ΑΒ'}
+        self.client.update_object_metadata('φάκελος', 'ο2', **meta)
+        objects = self.client.list_objects('φάκελος', meta='ποιότητα==ΑΑΑ')
+        self.assertEquals(objects, ['ο1'])
+        objects = self.client.list_objects('φάκελος', meta='ποιότητα!=ΑΑΑ')
+        self.assertEquals(objects, ['ο2'])
+        
+        meta = {'έτος':'2011'}
+        self.client.update_object_metadata('φάκελος', 'ο3', **meta)
+        meta = {'έτος':'2012'}
+        self.client.update_object_metadata('φάκελος', 'ο2', **meta)
+        objects = self.client.list_objects('φάκελος', meta='έτος<2012')
+        self.assertEquals(objects, ['ο1'])
+        objects = self.client.list_objects('φάκελος', meta='έτος<=2012')
+        self.assertEquals(objects, ['ο1', 'ο2'])
+        objects = self.client.list_objects('φάκελος', meta='έτος<2012,έτος!=2012')
+        self.assertEquals(objects, ['ο2'])
     
     def test_groups(self):
         #create a group

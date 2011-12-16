@@ -500,7 +500,7 @@ def object_list(request, v_account, v_container):
         included, excluded, opers = parse_filters(keys)
         keys = []
         keys += [format_header_key('X-Object-Meta-' + x) for x in included]
-        keys += [format_header_key('!X-Object-Meta-' + x) for x in excluded]
+        keys += ['!'+format_header_key('X-Object-Meta-' + x) for x in excluded]
         keys += ['%s%s%s' % (format_header_key('X-Object-Meta-' + k), o, v) for k, o, v in opers]
     else:
         keys = []

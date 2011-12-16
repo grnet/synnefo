@@ -194,10 +194,11 @@ class ImageBackend(object):
         else:
             return None
     
-    def _get_meta(self, location, version=None):
+    def _get_meta(self, location, version=None, user=None):
+        user = user or self.user
         account, container, object = split_location(location)
         try:
-            _meta = self.backend.get_object_meta(self.user, account, container,
+            _meta = self.backend.get_object_meta(user, account, container,
                     object, version)
         except NameError:
             return None
@@ -333,9 +334,23 @@ class ImageBackend(object):
             else:
                 yield image
     
-    def iter_shared(self):
-        for image in self._iter():
-            yield image
+    def iter_shared(self, member):
+        """Iterate over image ids shared to this member"""
+        
+        # To get the list we connect as member and get the list shared by us
+        user = member
+        account = self.user
+        container = self.container
+        
+        for path, version_id in self.backend.list_objects(member, account,
+                container, prefix='', delimiter='/'):
+            try:
+                location = get_location(account, container, path)
+                meta = self._get_meta(location, user=user)
+                if 'id' in meta:
+                    yield meta['id']
+            except NotAllowedError:
+                continue
     
     def list_public(self, filters, params):
         images = list(self.iter_public(filters))

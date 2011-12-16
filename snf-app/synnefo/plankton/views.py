@@ -278,17 +278,15 @@ def list_shared_images(request, member):
     3.8. Requesting Shared Images
     
     Implementation notes:
-      * It is not clear what this method should do. We only allow member to
-        be the user making the request.
+      * It is not clear what this method should do. We return the IDs of
+        the users's images that are accessible by `member`.
     """
     
     log.debug('list_shared_images %s', member)
-    if member != request.user.uniq:
-        return HttpResponse(status=403)
     
     images = []
-    for image in request.backend.iter_shared():
-        images.append({'image_id': image['id'], 'can_share': False})
+    for image_id in request.backend.iter_shared(member):
+        images.append({'image_id': image_id, 'can_share': False})
     
     data = json.dumps({'shared_images': images}, indent=settings.DEBUG)
     return HttpResponse(data)

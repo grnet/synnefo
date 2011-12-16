@@ -306,11 +306,11 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         if move:
             version_id = request.backend.move_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
-                                                        meta, False, permissions)
+                                                        'pithos', meta, False, permissions)
         else:
             version_id = request.backend.copy_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
-                                                        meta, False, permissions, src_version)
+                                                        'pithos', meta, False, permissions, src_version)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except (NameError, IndexError):

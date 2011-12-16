@@ -157,9 +157,10 @@ class Node(DBWorker):
         
         execute(""" create table if not exists attributes
                           ( serial integer,
+                            domain text,
                             key    text,
                             value  text,
-                            primary key (serial, key)
+                            primary key (serial, domain, key)
                             foreign key (serial)
                             references versions(serial)
                             on update cascade
@@ -546,7 +547,7 @@ class Node(DBWorker):
         self.execute(q, (serial,))
         return hash
     
-    def attribute_get(self, serial, keys=()):
+    def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.
            If keys is empty, return all attributes.
            Othwerise, return only those specified.
@@ -556,43 +557,43 @@ class Node(DBWorker):
         if keys:
             marks = ','.join('?' for k in keys)
             q = ("select key, value from attributes "
-                 "where key in (%s) and serial = ?" % (marks,))
-            execute(q, keys + (serial,))
+                 "where key in (%s) and serial = ? and domain = ?" % (marks,))
+            execute(q, keys + (serial, domain))
         else:
-            q = "select key, value from attributes where serial = ?"
-            execute(q, (serial,))
+            q = "select key, value from attributes where serial = ? and domain = ?"
+            execute(q, (serial, domain))
         return self.fetchall()
     
-    def attribute_set(self, serial, items):
+    def attribute_set(self, serial, domain, items):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
         
-        q = ("insert or replace into attributes (serial, key, value) "
-             "values (?, ?, ?)")
-        self.executemany(q, ((serial, k, v) for k, v in items))
+        q = ("insert or replace into attributes (serial, domain, key, value) "
+             "values (?, ?, ?, ?)")
+        self.executemany(q, ((serial, domain, k, v) for k, v in items))
     
-    def attribute_del(self, serial, keys=()):
+    def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
            If keys is empty, delete all attributes.
            Otherwise delete those specified.
         """
         
         if keys:
-            q = "delete from attributes where serial = ? and key = ?"
-            self.executemany(q, ((serial, key) for key in keys))
+            q = "delete from attributes where serial = ? and domain = ? and key = ?"
+            self.executemany(q, ((serial, domain, key) for key in keys))
         else:
-            q = "delete from attributes where serial = ?"
-            self.execute(q, (serial,))
+            q = "delete from attributes where serial = ? and domain = ?"
+            self.execute(q, (serial, domain))
     
     def attribute_copy(self, source, dest):
         q = ("insert or replace into attributes "
-             "select ?, key, value from attributes "
+             "select ?, domain, key, value from attributes "
              "where serial = ?")
         self.execute(q, (dest, source))
     
-    def _construct_filters(self, filterq):
-        if not filterq:
+    def _construct_filters(self, domain, filterq):
+        if not domain or not filterq:
             return None, None
         
         subqlist = []
@@ -616,13 +617,15 @@ class Node(DBWorker):
             t = (("(a.key = ? and a.value %s ?)" % (o,)) for k, o, v in opers)
             subq = "(" + ' or '.join(t) + ")"
             for k, o, v in opers:
-                args += (k, v)
+                args += [k, v]
             append(subq)
         
         if not subqlist:
             return None, None
         
-        subq = ' and ' + ' and '.join(subqlist)
+        subq = ' and a.domain = ? and ' + ' and '.join(subqlist)
+        args = [domain] + args
+        
         return subq, args
     
     def _construct_paths(self, pathq):
@@ -636,7 +639,7 @@ class Node(DBWorker):
         
         return subq, args
     
-    def latest_attribute_keys(self, parent, before=inf, except_cluster=0, pathq=[]):
+    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
@@ -653,8 +656,9 @@ class Node(DBWorker):
                            "from nodes "
                            "where parent = ?) "
              "and a.serial = v.serial "
+             "and a.domain = ? "
              "and n.node = v.node")
-        args = (before, except_cluster, parent)
+        args = (before, except_cluster, parent, domain)
         subq, subargs = self._construct_paths(pathq)
         if subq is not None:
             q += subq
@@ -664,7 +668,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], filterq=[]):
+                            except_cluster=0, pathq=[], domain=None, filterq=[]):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -735,7 +739,7 @@ class Node(DBWorker):
         if subq is not None:
             q += subq
             args += subargs
-        subq, subargs = self._construct_filters(filterq)
+        subq, subargs = self._construct_filters(domain, filterq)
         if subq is not None:
             q += subq
             args += subargs

@@ -37,6 +37,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy.interfaces import PoolListener
 
+
 class DBWrapper(object):
     """Database connection wrapper."""
     

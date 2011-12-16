@@ -64,7 +64,7 @@ def public_meta(request, v_public):
         v_account, v_container, v_object = request.backend.get_public(request.user_uniq,
                                                     decode_url(v_public))
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                    v_container, v_object)
+                                                    v_container, v_object, 'pithos')
         public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:
@@ -93,7 +93,7 @@ def public_read(request, v_public):
         v_account, v_container, v_object = request.backend.get_public(request.user_uniq,
                                                     decode_url(v_public))
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                    v_container, v_object)
+                                                    v_container, v_object, 'pithos')
         public = request.backend.get_object_public(request.user_uniq, v_account,
                                                     v_container, v_object)
     except:

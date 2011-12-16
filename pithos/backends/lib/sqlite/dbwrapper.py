@@ -31,7 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import sqlite3
+try:
+    from pysqlite2 import dbapi2 as sqlite3
+except ImportError:
+    import sqlite3
+
 
 class DBWrapper(object):
     """Database connection wrapper."""

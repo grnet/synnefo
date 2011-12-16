@@ -44,7 +44,6 @@ from django.core.urlresolvers import reverse
 
 from pithos.im.models import User
 
-
 def get_or_create_user(uniq, realname, affiliation, level):
     """Find or register a user into the internal database
        and issue a token for subsequent requests.
@@ -55,7 +54,8 @@ def get_or_create_user(uniq, realname, affiliation, level):
             'realname': realname,
             'affiliation': affiliation,
             'level': level,
-            'invitations': settings.INVITATIONS_PER_LEVEL[level]
+            'invitations': settings.INVITATIONS_PER_LEVEL[level],
+            'state':'PENDING',
         })
     if created:
         user.renew_token()

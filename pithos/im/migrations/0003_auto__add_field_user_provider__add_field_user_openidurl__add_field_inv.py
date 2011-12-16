@@ -11,11 +11,8 @@ class Migration(SchemaMigration):
         # Adding field 'User.provider'
         db.add_column('im_user', 'provider', self.gf('django.db.models.fields.CharField')(default='', max_length=255), keep_default=False)
 
-        # Deleting field 'Invitation.is_accepted'
-        db.delete_column('im_invitation', 'is_accepted')
-
-        # Deleting field 'Invitation.accepted'
-        db.delete_column('im_invitation', 'accepted')
+        # Adding field 'User.openidurl'
+        db.add_column('im_user', 'openidurl', self.gf('django.db.models.fields.CharField')(default='', max_length=255), keep_default=False)
 
         # Adding field 'Invitation.is_consumed'
         db.add_column('im_invitation', 'is_consumed', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
@@ -29,11 +26,8 @@ class Migration(SchemaMigration):
         # Deleting field 'User.provider'
         db.delete_column('im_user', 'provider')
 
-        # Adding field 'Invitation.is_accepted'
-        db.add_column('im_invitation', 'is_accepted', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
-
-        # Adding field 'Invitation.accepted'
-        db.add_column('im_invitation', 'accepted', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True), keep_default=False)
+        # Deleting field 'User.openidurl'
+        db.delete_column('im_user', 'openidurl')
 
         # Deleting field 'Invitation.is_consumed'
         db.delete_column('im_invitation', 'is_consumed')
@@ -45,11 +39,13 @@ class Migration(SchemaMigration):
     models = {
         'im.invitation': {
             'Meta': {'object_name': 'Invitation'},
+            'accepted': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'code': ('django.db.models.fields.BigIntegerField', [], {'db_index': 'True'}),
             'consumed': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'inviter': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'invitations_sent'", 'null': 'True', 'to': "orm['im.User']"}),
+            'is_accepted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_consumed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'realname': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'uniq': ('django.db.models.fields.CharField', [], {'max_length': '255'})
@@ -67,6 +63,7 @@ class Migration(SchemaMigration):
             'is_admin': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'level': ('django.db.models.fields.IntegerField', [], {'default': '4'}),
+            'openidurl': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'password': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'provider': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),
             'realname': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255'}),

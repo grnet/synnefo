@@ -35,6 +35,7 @@ import json
 import logging
 import socket
 import csv
+import sys
 
 from datetime import datetime
 from functools import wraps
@@ -47,18 +48,23 @@ from django.core.mail import send_mail
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.shortcuts import render_to_response
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
-from django import forms
+from django.forms import Form
+from django.forms.formsets import formset_factory
+from openid.consumer.consumer import Consumer, \
+    SUCCESS, CANCEL, FAILURE, SETUP_NEEDED
 
-from django_authopenid.forms import *
+from hashlib import new as newhasher
 
 from urllib import quote
 
+from pithos.im.openid_store import PithosOpenIDStore
 from pithos.im.models import User, Invitation
 from pithos.im.util import isoformat
-
+from pithos.im.forms import *
 
 def render_response(template, tab=None, status=200, **kwargs):
     if tab is None:
@@ -334,78 +340,6 @@ def send_verification(baseurl, user):
     send_mail('Pithos account activation', message, sender, [user.email])
     logging.info('Sent activation %s', user)
 
-def local_create(request):
-    if request.method == 'GET':
-        provider = request.GET.get('provider', None)
-        if not provider:
-            return HttpResponseBadRequest('No provider')
-        code = request.GET.get('code', None)
-        kwargs = {'provider':provider}
-        if code:
-            try:
-                invitation = Invitation.objects.get(code = code)
-                kwargs['inv']=invitation
-            except Invitation.DoesNotExist:
-                return HttpResponseBadRequest('Wrong invitation code')
-        return render_response('local_create.html', **kwargs)
-    elif request.method == 'POST':
-        username = request.POST.get('uniq')
-        realname = request.POST.get('realname')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        retype_password = request.POST.get('retype_passwords')
-        status = 'success'
-        cookie_value = None
-        if not username:
-            status = 'error'
-            message = 'No username provided'
-        elif not password:
-            status = 'error'
-            message = 'No password provided'
-        elif not retype_password:
-            status = 'error'
-            message = 'Need to enter password twice'
-        elif password != retype_password:
-            status = 'error'
-            message = 'Passwords do not match'
-        elif not email:
-            status = 'error'
-            message = 'No email provided'
-        
-        if status == 'success':
-            try:
-                user = User.objects.get(uniq=username)
-                status = 'error'
-                message = 'Username is not available'
-            except User.DoesNotExist:
-                user = User()
-                user.uniq = username 
-                user.realname = realname
-                user.email = request.POST.get('email')
-                user.password = request.POST.get('password')
-                user.is_admin = False
-                user.quota = 0
-                user.state = 'ACTIVE' if is_preaccepted(user) else 'PENDING'
-                if user.invitation:
-                    user.invitation.is_consumed = True
-                user.level = 1
-                user.renew_token()
-                try:
-                    send_verification(request.build_absolute_uri('/').rstrip('/'), user)
-                    message = _('Verification sent to %s' % user.email)
-                    user.save()
-                except (SMTPException, socket.error) as e:
-                    print e
-                    status = 'error'
-                    name = 'strerror'
-                    message = getattr(e, name) if hasattr(e, name) else e
-        
-        html = render_to_string('local_create.html', {
-                'status': status,
-                'message': message})
-        response = HttpResponse(html)
-        return response
-
 def send_password(baseurl, user):
     url = settings.PASSWORD_RESET_TARGET % (baseurl,
                                             quote(user.uniq),
@@ -425,7 +359,6 @@ def reclaim_password(request):
         return render_response('reclaim.html')
     elif request.method == 'POST':
         username = request.POST.get('uniq')
-        username = '%s@local' % username
         try:
             user = User.objects.get(uniq=username)
             try:
@@ -554,7 +487,10 @@ def users_create(request):
 @requires_login
 def users_profile(request):
     next = request.GET.get('next')
-    user = User.objects.get(uniq=request.user)
+    try:
+        user = User.objects.get(uniq=request.user)
+    except User.DoesNotExist:
+        user = User.objects.get(auth_token=request.GET.get('auth', None))
     states = [x[0] for x in User.ACCOUNT_STATE]
     return render_response('users_profile.html',
                             user=user,
@@ -563,7 +499,12 @@ def users_profile(request):
 
 @requires_login
 def users_edit(request):
-    user = User.objects.get(uniq=request.user)
+    try:
+        user = User.objects.get(uniq=request.user)
+    except User.DoesNotExist:
+        token = request.POST.get('auth', None)
+        users = User.objects.all()
+        user = User.objects.get(auth_token=token)
     user.realname = request.POST.get('realname')
     user.affiliation = request.POST.get('affiliation')
     user.is_verified = True
@@ -579,44 +520,208 @@ def users_edit(request):
             'status': status,
             'message': message})
     return HttpResponse(html)
-
-def is_preaccepted(user):
-    return True if settings.INVITATIONS_ENABLED and user.invitation else False
-
+    
 def signup(request):
     if request.method == 'GET':
-        kwargs = {'im_modules':settings.IM_MODULES}
-        if settings.INVITATIONS_ENABLED:
-            code = request.GET.get('code')
-            if not code:
-                return HttpResponseBadRequest('No code')
-            try:
-                invitation = Invitation.objects.get(code=code)
-                if invitation.is_consumed:
-                    return HttpResponseBadRequest('Invitation has beeen used')
-            except Invitation.DoesNotExist:
-                return HttpResponseBadRequest('Wrong invitation code')
-            kwargs['inv'] = invitation
-        return render_response('signup.html', **kwargs)    
+        kwargs = {'im_modules':settings.IM_MODULES,
+                  'next':request.GET.get('next', ''),
+                  'code':request.GET.get('code', '')}
+        return render_response('signup.html', **kwargs)
     elif request.method == 'POST':
-        choice = request.POST.get('choice')
-        if not choice:
-            return HttpResponseBadRequest('No provider selected')
+        provider = request.POST.get('choice')
+        if not provider:
+            return on_failure(_('No provider selected'), template='signup.html')
         
-        provider = choice
-        
-        code = request.POST.get('code')
-        
-        if provider == 'local':
-            url = reverse('pithos.im.views.local.create')
-            if settings.INVITATIONS_ENABLED and code:
-                url = '%s?code=%s&provider=%s' % (url, code, provider)
-            return redirect(url)
-        elif provider == 'twitter':
-            url = reverse('pithos.im.views.openid_create')
-            return redirect(url)
+        kwargs = {'code':request.POST.get('code', ''),
+                  'next':request.POST.get('next', '')}
+        url = '%s%s?' %(reverse('pithos.im.views.register'), provider)
+        for k,v in kwargs.items():
+            if v:
+                url = '%s%s=%s&' %(url, k, v)
+        return redirect(url)
 
-def openid_create(request):
-    form1 = OpenidSigninForm()
-    kwargs = {'form1':form1}  
-    return render_response('openid_create.html') 
+def render_registration(provider, code='', next=''):
+    initial_data = {'provider':provider}
+    if settings.INVITATIONS_ENABLED and code:
+        try:
+            print '#', type(code), code
+            invitation = Invitation.objects.get(code=code)
+            if invitation.is_consumed:
+                return HttpResponseBadRequest('Invitation has beeen used')
+            initial_data.update({'uniq':invitation.uniq,
+                                 'email':invitation.uniq,
+                                 'realname':invitation.realname})
+            try:
+                inviter = User.objects.get(uniq=invitation.inviter)
+                initial_data['inviter'] = inviter.realname
+            except User.DoesNotExist:
+                pass
+        except Invitation.DoesNotExist:
+            return on_failure(_('Wrong invitation code'), template='register.html')
+    
+    prefix = 'Invited' if code else ''
+    formclassname = '%s%sRegisterForm' %(prefix, provider.capitalize())
+    formclass_ = getattr(sys.modules['pithos.im.forms'], formclassname)
+    RegisterFormSet = formset_factory(formclass_, extra=0)
+    formset = RegisterFormSet(initial=[initial_data])
+    return render_response('register.html',
+                           formset=formset,
+                           next=next,
+                           filter=filter,
+                           code=code)
+
+def is_preaccepted(user):
+    if user.invitation and not user.invitation.is_consumed:
+        return True
+    
+    return False
+
+def should_send_verification():
+    if not settings.INVITATIONS_ENABLED:
+        return True    
+    return False
+
+def register(request, provider):
+    print '---', request
+    code = request.GET.get('code')
+    next = request.GET.get('next')
+    if request.method == 'GET':
+        code = request.GET.get('code', '')
+        next = request.GET.get('next', '')
+        if provider not in settings.IM_MODULES:
+            return on_failure(_('Invalid provider'))
+        return render_registration(provider, code, next)
+    elif request.method == 'POST':
+        provider = request.POST.get('form-0-provider')
+        inviter = request.POST.get('form-0-inviter')
+        
+        #instantiate the form
+        prefix = 'Invited' if inviter else ''
+        formclassname = '%sRegisterForm' %(provider.capitalize())
+        formclass_ = getattr(sys.modules['pithos.im.forms'], formclassname)
+        RegisterFormSet = formset_factory(formclass_, extra=0)
+        formset = RegisterFormSet(request.POST)
+        if not formset.is_valid():
+            return render_to_response('register.html',
+                                      {'formset':formset,
+                                       'code':code,
+                                       'next':next}) 
+        
+        user = User()
+        for form in formset.forms:
+            for field in form.fields:
+                if hasattr(user, field):
+                    setattr(user, field, form.cleaned_data[field])
+            break
+        
+        if user.openidurl:
+            redirect_url = reverse('pithos.im.views.create')
+            return ask_openid(request, 
+                        user.openidurl,
+                        redirect_url,
+                        'signup')
+        
+        #save hashed password
+        if user.password:
+            hasher = newhasher('sha256')
+            hasher.update(user.password)
+            user.password = hasher.hexdigest() 
+            
+        user.renew_token()
+        
+        if is_preaccepted(user):
+            user.state = 'ACTIVE'
+            user.save()
+            url = reverse('pithos.im.views.index')
+            return redirect(url)
+        
+        status = 'success'
+        if should_send_verification():
+            try:
+                send_verification(request.build_absolute_uri('/').rstrip('/'), user)
+                message = _('Verification sent to %s' % user.email)
+                user.save()
+            except (SMTPException, socket.error) as e:
+                status = 'error'
+                name = 'strerror'
+                message = getattr(e, name) if hasattr(e, name) else e
+        else:
+            user.save()
+            message = _('Registration completed. You will receive an email upon your account\'s activation')
+        
+        return info(status, message)
+
+#def discover_extensions(openid_url):
+#    service = discover(openid_url)
+#    use_ax = False
+#    use_sreg = False
+#    for endpoint in service[1]:
+#        if not use_sreg:
+#            use_sreg = sreg.supportsSReg(endpoint)
+#        if not use_ax:
+#            use_ax = endpoint.usesExtension("http://openid.net/srv/ax/1.0")
+#        if use_ax and use_sreg: break
+#    return use_ax, use_sreg
+#
+#def ask_openid(request, openid_url, redirect_to, on_failure=None):
+#    """ basic function to ask openid and return response """
+#    on_failure = on_failure or signin_failure
+#    sreg_req = None
+#    ax_req = None
+#    
+#    trust_root = getattr(
+#        settings, 'OPENID_TRUST_ROOT', request.build_absolute_uri() + '/'
+#    )
+#    request.session = {}
+#    consumer = Consumer(request.session, PithosOpenIDStore())
+#    try:
+#        auth_request = consumer.begin(openid_url)
+#    except DiscoveryFailure:
+#        msg = _("The OpenID %s was invalid") % openid_url
+#        return on_failure(request, msg)
+#    
+#     get capabilities
+#    use_ax, use_sreg = discover_extensions(openid_url)
+#    if use_sreg:
+#         set sreg extension
+#         we always ask for nickname and email
+#        sreg_attrs = getattr(settings, 'OPENID_SREG', {})
+#        sreg_attrs.update({ "optional": ['nickname', 'email'] })
+#        sreg_req = sreg.SRegRequest(**sreg_attrs)
+#    if use_ax:
+#         set ax extension
+#         we always ask for nickname and email
+#        ax_req = ax.FetchRequest()
+#        ax_req.add(ax.AttrInfo('http://schema.openid.net/contact/email', 
+#                                alias='email', required=True))
+#        ax_req.add(ax.AttrInfo('http://schema.openid.net/namePerson/friendly', 
+#                                alias='nickname', required=True))
+#                      
+#         add custom ax attrs          
+#        ax_attrs = getattr(settings, 'OPENID_AX', [])
+#        for attr in ax_attrs:
+#            if len(attr) == 2:
+#                ax_req.add(ax.AttrInfo(attr[0], required=alias[1]))
+#            else:
+#                ax_req.add(ax.AttrInfo(attr[0]))
+#       
+#    if sreg_req is not None:
+#        auth_request.addExtension(sreg_req)
+#    if ax_req is not None:
+#        auth_request.addExtension(ax_req)
+#    
+#    redirect_url = auth_request.redirectURL(trust_root, redirect_to)
+#    return HttpResponseRedirect(redirect_url)
+
+def info(status, message, template='base.html'):
+    html = render_to_string(template, {
+            'status': status,
+            'message': message})
+    response = HttpResponse(html)
+    return response
+
+def on_success(message, template='base.html'):
+    return info('success', message)
+    
+def on_failure(message, template='base.html'):
+    return info('error', message)

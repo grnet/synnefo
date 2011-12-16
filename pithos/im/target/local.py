@@ -40,6 +40,8 @@ from pithos.im.models import User
 
 from urllib import unquote
 
+from hashlib import new as newhasher
+
 def login(request):
     username = request.POST.get('username')
     password = request.POST.get('password')
@@ -55,6 +57,10 @@ def login(request):
     except User.DoesNotExist:
         return HttpResponseBadRequest('No such user')
     
+    hasher = newhasher('sha256')
+    hasher.update(password)
+    password = hasher.hexdigest()
+    
     if not password or user.password != password:
         return HttpResponseBadRequest('Wrong password')
     
@@ -62,20 +68,19 @@ def login(request):
         return HttpResponseBadRequest('Unverified account')
     
     next = request.POST.get('next')
-    
     return prepare_response(request, user, next)
-
-#def activate(request):
-#    token = request.GET.get('auth')
-#    next = request.GET.get('next')
-#    try:
-#        user = User.objects.get(auth_token=token)
-#    except User.DoesNotExist:
-#        return HttpResponseBadRequest('No such user')
-#    
-#    user.state = 'ACTIVE'
-#    user.save()
-#    return prepare_response(request, user, next, renew=True)
+    
+def activate(request):
+    token = request.GET.get('auth')
+    next = request.GET.get('next')
+    try:
+        user = User.objects.get(auth_token=token)
+    except User.DoesNotExist:
+        return HttpResponseBadRequest('No such user')
+    
+    user.state = 'ACTIVE'
+    user.save()
+    return prepare_response(request, user, next, renew=True)
 
 def reset_password(request):
     if request.method == 'GET':

@@ -56,13 +56,9 @@ urlpatterns = patterns('pithos.im.views',
     (r'^profile/edit/?$', 'users_edit'),
     
     (r'^signup/?$', 'signup'),
-    (r'^local/create/?$', 'local_create'),
-    (r'^openid/create/?$', 'openid_create'),
-)
-
-
-urlpatterns += patterns('',
-    (r'^account/', include('django_authopenid.urls')),
+    (r'^register/(\w+)?$', 'register'),
+    #(r'^signup/complete/?$', 'signup_complete'),
+    #(r'^local/create/?$', 'local_create'),
 )
 
 urlpatterns += patterns('pithos.im.target',
@@ -82,14 +78,14 @@ if 'local' in settings.IM_MODULES:
     )
     urlpatterns += patterns('pithos.im.target',
         (r'^local/?$', 'local.login'),
-#        (r'^local/activate/?$', 'local.activate'),
+        (r'^local/activate/?$', 'local.activate'),
         (r'^local/reset/?$', 'local.reset_password')
     )
 
-#if 'invitation' in settings.IM_STANDARD_MODULES:
-#    urlpatterns += patterns('pithos.im.views',
-#        (r'^invite/?$', 'invite'),
-#    )
+if settings.INVITATIONS_ENABLED:
+    urlpatterns += patterns('pithos.im.views',
+        (r'^invite/?$', 'invite'),
+    )
 #    urlpatterns += patterns('pithos.im.target',
 #        (r'^login/invitation/?$', 'invitation.login')
 #    )

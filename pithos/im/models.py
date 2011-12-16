@@ -43,6 +43,7 @@ from django.db import models
 
 from pithos.im.interface import get_quota, set_quota
 
+from hashlib import new as newhasher
 
 class User(models.Model):
     ACCOUNT_STATE = (
@@ -83,6 +84,8 @@ class User(models.Model):
     
     is_verified = models.BooleanField('Verified?', default=False)
     
+    openidurl = models.CharField('OpenID url', max_length=255, default='')
+    
     @property
     def quota(self):
         return get_quota(self.uniq)
@@ -93,14 +96,22 @@ class User(models.Model):
     
     @property
     def invitation(self):
-        return Invitation.objects.get(uniq=self.uniq)
-   
+        try:
+            return Invitation.objects.get(uniq=self.uniq)
+        except Invitation.DoesNotExist:
+            return None
+    
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
                 self.created = datetime.now()
             self.updated = datetime.now()
+        
         super(User, self).save(**kwargs)
+        
+        #invitation consume
+        if self.invitation and not self.invitation.is_consumed:
+            self.invitation.consume()
     
     def renew_token(self):
         md5 = hashlib.md5()
@@ -122,9 +133,18 @@ class Invitation(models.Model):
     realname = models.CharField('Real name', max_length=255)
     uniq = models.CharField('Unique ID', max_length=255)
     code = models.BigIntegerField('Invitation code', db_index=True)
+    #obsolete: we keep it just for transfering the data
+    is_accepted = models.BooleanField('Accepted?', default=False)
     is_consumed = models.BooleanField('Consumed?', default=False)
     created = models.DateTimeField('Creation date', auto_now_add=True)
+    #obsolete: we keep it just for transfering the data
+    accepted = models.DateTimeField('Acceptance date', null=True, blank=True)
     consumed = models.DateTimeField('Consumption date', null=True, blank=True)
     
+    def consume(self):
+        self.is_consumed = True
+        self.consumed = datetime.now()
+        self.save()
+        
     def __unicode__(self):
         return '%s -> %s [%d]' % (self.inviter, self.uniq, self.code)

@@ -990,6 +990,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    
     meta, permissions, public = get_object_headers(request)
     content_type = meta.get('Content-Type')
     if content_type:

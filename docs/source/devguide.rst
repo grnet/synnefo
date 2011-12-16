@@ -25,10 +25,11 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Dec 15, 2011)         Update allowed versioning values.
+0.8 (Dec 16, 2011)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
+\                          Note Content-Type issue when using the internal django web server.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -866,7 +867,7 @@ If-Match              Proceed if ETags match with object
 If-None-Match         Proceed if ETags don't match with object
 Destination           The destination path in the form ``/<container>/<object>``
 Destination-Account   The destination account to copy to
-Content-Type          The MIME content type of the object (optional)
+Content-Type          The MIME content type of the object (optional :sup:`*`)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Version      The source version to copy from
@@ -875,6 +876,8 @@ X-Object-Sharing      Object permissions (optional)
 X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
+
+:sup:`*` *When using django locally with the supplied web server, do provide a valid Content-Type, as a type of text/plain is applied by default to all requests.*
 
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 

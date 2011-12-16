@@ -560,8 +560,8 @@ class Node(DBWorker):
                  "where key in (%s) and serial = ? and domain = ?" % (marks,))
             execute(q, keys + (serial, domain))
         else:
-            q = "select key, value from attributes where serial = ?"
-            execute(q, (serial,))
+            q = "select key, value from attributes where serial = ? and domain = ?"
+            execute(q, (serial, domain))
         return self.fetchall()
     
     def attribute_set(self, serial, domain, items):
@@ -593,7 +593,6 @@ class Node(DBWorker):
         self.execute(q, (dest, source))
     
     def _construct_filters(self, domain, filterq):
-        print '***', domain, filterq
         if not domain or not filterq:
             return None, None
         

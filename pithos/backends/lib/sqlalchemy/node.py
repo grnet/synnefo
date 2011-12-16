@@ -43,6 +43,7 @@ from dbworker import DBWorker
 
 from pithos.lib.filter import parse_filters
 
+
 ROOTNODE  = 0
 
 ( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
@@ -169,6 +170,7 @@ class Node(DBWorker):
                                          ondelete='CASCADE',
                                          onupdate='CASCADE'),
                               primary_key=True))
+        columns.append(Column('domain', String(255), primary_key=True))
         columns.append(Column('key', String(255), primary_key=True))
         columns.append(Column('value', String(255)))
         self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
@@ -647,7 +649,7 @@ class Node(DBWorker):
         self.conn.execute(s).close()
         return hash
     
-    def attribute_get(self, serial, keys=()):
+    def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.
            If keys is empty, return all attributes.
            Othwerise, return only those specified.
@@ -657,17 +659,19 @@ class Node(DBWorker):
             attrs = self.attributes.alias()
             s = select([attrs.c.key, attrs.c.value])
             s = s.where(and_(attrs.c.key.in_(keys),
-                             attrs.c.serial == serial))
+                             attrs.c.serial == serial,
+                             attrs.c.domain == domain))
         else:
             attrs = self.attributes.alias()
             s = select([attrs.c.key, attrs.c.value])
-            s = s.where(attrs.c.serial == serial)
+            s = s.where(and_(attrs.c.serial == serial,
+                             attrs.c.domain == domain))
         r = self.conn.execute(s)
         l = r.fetchall()
         r.close()
         return l
     
-    def attribute_set(self, serial, items):
+    def attribute_set(self, serial, domain, items):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
@@ -676,16 +680,17 @@ class Node(DBWorker):
         for k, v in items:
             s = self.attributes.update()
             s = s.where(and_(self.attributes.c.serial == serial,
+                             self.attributes.c.domain == domain,
                              self.attributes.c.key == k))
             s = s.values(value = v)
             rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                s = s.values(serial=serial, key=k, value=v)
+                s = s.values(serial=serial, domain=domain, key=k, value=v)
                 self.conn.execute(s).close()
     
-    def attribute_del(self, serial, keys=()):
+    def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
            If keys is empty, delete all attributes.
            Otherwise delete those specified.
@@ -696,32 +701,35 @@ class Node(DBWorker):
             for key in keys:
                 s = self.attributes.delete()
                 s = s.where(and_(self.attributes.c.serial == serial,
+                                 self.attributes.c.domain == domain,
                                  self.attributes.c.key == key))
                 self.conn.execute(s).close()
         else:
             s = self.attributes.delete()
-            s = s.where(self.attributes.c.serial == serial)
+            s = s.where(and_(self.attributes.c.serial == serial,
+                             self.attributes.c.domain == domain))
             self.conn.execute(s).close()
     
     def attribute_copy(self, source, dest):
-        s = select([dest, self.attributes.c.key, self.attributes.c.value],
+        s = select([dest, self.attributes.c.domain, self.attributes.c.key, self.attributes.c.value],
             self.attributes.c.serial == source)
         rp = self.conn.execute(s)
         attributes = rp.fetchall()
         rp.close()
-        for dest, k, v in attributes:
+        for dest, domain, k, v in attributes:
             #insert or replace
             s = self.attributes.update().where(and_(
                 self.attributes.c.serial == dest,
+                self.attributes.c.domain == domain,
                 self.attributes.c.key == k))
             rp = self.conn.execute(s, value=v)
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                values = {'serial':dest, 'key':k, 'value':v}
+                values = {'serial':dest, 'domain':domain, 'key':k, 'value':v}
                 self.conn.execute(s, values).close()
     
-    def latest_attribute_keys(self, parent, before=inf, except_cluster=0, pathq=[]):
+    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
@@ -740,6 +748,7 @@ class Node(DBWorker):
         s = s.where(v.c.node.in_(select([self.nodes.c.node],
             self.nodes.c.parent == parent)))
         s = s.where(a.c.serial == v.c.serial)
+        s = s.where(a.c.domain == domain)
         s = s.where(n.c.node == v.c.node)
         conj = []
         for x in pathq:
@@ -753,7 +762,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], filterq=[]):
+                            except_cluster=0, pathq=[], domain=None, filterq=[]):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -815,8 +824,9 @@ class Node(DBWorker):
         s = s.where(v.c.cluster != except_cluster)
         s = s.where(v.c.node.in_(select([self.nodes.c.node],
             self.nodes.c.parent == parent)))
-        if filterq:
+        if domain and filterq:
             s = s.where(a.c.serial == v.c.serial)
+            s = s.where(a.c.domain == domain)
         
         s = s.where(n.c.node == v.c.node)
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
@@ -827,7 +837,7 @@ class Node(DBWorker):
         if conj:
             s = s.where(or_(*conj))
         
-        if filterq:
+        if domain and filterq:
             included, excluded, opers = parse_filters(filterq)
             if included:
                 s = s.where(a.c.key.in_(x for x in included))

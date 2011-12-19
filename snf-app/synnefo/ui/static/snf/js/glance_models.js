@@ -18,7 +18,7 @@
         api_type: 'glance',
 
         get_size: function() {
-            return this.get('size') / 1024;
+            return this.get('size') / 1024 / 1024;
         },
 
         get_readable_size: function() {

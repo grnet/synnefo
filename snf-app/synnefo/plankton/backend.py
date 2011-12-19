@@ -409,6 +409,7 @@ class ImageBackend(object):
         image_id = get_image_id(location)
         
         meta = self._get_meta(location)
+        assert meta, "File not found"
         
         size = params.pop('size', meta['_bytes'])
         if size != meta['_bytes']:

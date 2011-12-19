@@ -333,6 +333,8 @@ class BaseBackend(object):
             'version': The version identifier
             
             'version_timestamp': The version's modification timestamp
+            
+            'uuid': A unique identifier that persists data or metadata updates and renames
         
         Raises:
             NotAllowedError: Operation not permitted

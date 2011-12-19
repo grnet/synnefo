@@ -34,6 +34,7 @@
 import sys
 import os
 import time
+import uuid
 import logging
 import binascii
 
@@ -426,7 +427,7 @@ class ModularBackend(BaseBackend):
         meta = dict(self.node.attribute_get(props[self.SERIAL], domain))
         meta.update({'name': name, 'bytes': props[self.SIZE], 'hash':props[self.HASH]})
         meta.update({'version': props[self.SERIAL], 'version_timestamp': props[self.MTIME]})
-        meta.update({'modified': modified, 'modified_by': props[self.MUSER]})
+        meta.update({'modified': modified, 'modified_by': props[self.MUSER], 'uuid': props[self.UUID]})
         return meta
     
     @backend_method
@@ -505,7 +506,7 @@ class ModularBackend(BaseBackend):
         hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
-    def _update_object_hash(self, user, account, container, name, size, hash, permissions=None):
+    def _update_object_hash(self, user, account, container, name, size, hash, permissions, is_copy=False):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
@@ -516,7 +517,7 @@ class ModularBackend(BaseBackend):
         account_path, account_node = self._lookup_account(account, True)
         container_path, container_node = self._lookup_container(account, container)
         path, node = self._put_object_node(container_path, container_node, name)
-        src_version_id, dest_version_id = self._put_version_duplicate(user, node, size, hash)
+        src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=size, hash=hash, is_copy=is_copy)
         
         # Check quota.
         size_delta = size # Change with versioning.
@@ -554,7 +555,7 @@ class ModularBackend(BaseBackend):
         self.store.map_put(hash, map)
         return dest_version_id
     
-    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_domain=None, dest_meta={}, replace_meta=False, permissions=None, src_version=None):
+    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_domain=None, dest_meta={}, replace_meta=False, permissions=None, src_version=None, is_move=False):
         self._can_read(user, src_account, src_container, src_name)
         path, node = self._lookup_object(src_account, src_container, src_name)
         props = self._get_version(node, src_version)
@@ -562,7 +563,8 @@ class ModularBackend(BaseBackend):
         hash = props[self.HASH]
         size = props[self.SIZE]
         
-        src_v_id, dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, permissions)
+        is_copy = not is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name) # New uuid.
+        src_v_id, dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, permissions, is_copy=is_copy)
         self._put_metadata_duplicate(src_version_id, dest_version_id, dest_domain, dest_meta, replace_meta)
         return dest_version_id
     
@@ -571,7 +573,7 @@ class ModularBackend(BaseBackend):
         """Copy an object's data and metadata."""
         
         logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions, src_version)
-        return self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions, src_version)
+        return self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions, src_version, False)
     
     @backend_method
     def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta={}, replace_meta=False, permissions=None):
@@ -580,7 +582,7 @@ class ModularBackend(BaseBackend):
         logger.debug("move_object: %s %s %s %s %s %s %s %s %s %s", src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions)
         if user != src_account:
             raise NotAllowedError
-        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions, None)
+        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, domain, meta, replace_meta, permissions, None, True)
         if (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
             self._delete_object(user, src_account, src_container, src_name)
         return dest_version_id
@@ -606,7 +608,7 @@ class ModularBackend(BaseBackend):
             return
         
         path, node = self._lookup_object(account, container, name)
-        src_version_id, dest_version_id = self._put_version_duplicate(user, node, 0, None, CLUSTER_DELETED)
+        src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=0, hash=None, cluster=CLUSTER_DELETED)
         self._apply_versioning(account, container, src_version_id)
         self.permissions.access_clear(path)
     
@@ -667,6 +669,9 @@ class ModularBackend(BaseBackend):
     
     # Path functions.
     
+    def _generate_uuid():
+        return str(uuid.uuid4())
+    
     def _put_object_node(self, path, parent, name):
         path = '/'.join((path, name))
         node = self.node.node_lookup(path)
@@ -676,7 +681,7 @@ class ModularBackend(BaseBackend):
     
     def _put_path(self, user, parent, path):
         node = self.node.node_create(parent, path)
-        self.node.version_create(node, None, 0, None, user, CLUSTER_NORMAL)
+        self.node.version_create(node, None, 0, None, user, self._generate_uuid(), CLUSTER_NORMAL)
         return node
     
     def _lookup_account(self, account, create=True):
@@ -736,7 +741,7 @@ class ModularBackend(BaseBackend):
                 raise IndexError('Version does not exist')
         return props
     
-    def _put_version_duplicate(self, user, node, size=None, hash=None, cluster=CLUSTER_NORMAL):
+    def _put_version_duplicate(self, user, node, size=None, hash=None, cluster=CLUSTER_NORMAL, is_copy=False):
         """Create a new version of the node."""
         
         props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
@@ -751,10 +756,11 @@ class ModularBackend(BaseBackend):
         if size is None:
             hash = src_hash # This way hash can be set to None.
             size = src_size
+        uniq = self._generate_uuid() if is_copy or src_version_id is None else props[self.UUID]
         
         if src_version_id is not None:
             self.node.version_recluster(src_version_id, CLUSTER_HISTORY)
-        dest_version_id, mtime = self.node.version_create(node, hash, size, src_version_id, user, cluster)
+        dest_version_id, mtime = self.node.version_create(node, hash, size, src_version_id, user, uniq, cluster)
         return src_version_id, dest_version_id
     
     def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain, meta, replace=False):

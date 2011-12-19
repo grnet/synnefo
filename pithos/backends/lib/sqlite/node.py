@@ -40,7 +40,7 @@ from pithos.lib.filter import parse_filters
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
+( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(9)
 
 inf = float('inf')
 
@@ -88,7 +88,8 @@ _propnames = {
     'source'    : 4,
     'mtime'     : 5,
     'muser'     : 6,
-    'cluster'   : 7,
+    'uuid'      : 7,
+    'cluster'   : 8
 }
 
 
@@ -147,6 +148,7 @@ class Node(DBWorker):
                             source     integer,
                             mtime      integer,
                             muser      text    not null default '',
+                            uuid       text    not null default '',
                             cluster    integer not null default 0,
                             foreign key (node)
                             references nodes(node)
@@ -154,6 +156,8 @@ class Node(DBWorker):
                             on delete cascade ) """)
         execute(""" create index if not exists idx_versions_node_mtime
                     on versions(node, mtime) """)
+        execute(""" create index if not exists idx_versions_node_uuid
+                    on versions(uuid) """)
         
         execute(""" create table if not exists attributes
                           ( serial integer,
@@ -203,10 +207,10 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
         """
         
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where node = ?")
         self.execute(q, (node,))
@@ -409,7 +413,7 @@ class Node(DBWorker):
         parent, path = props
         
         # The latest version.
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -459,15 +463,15 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, hash, size, source, muser, cluster=0):
+    def version_create(self, node, hash, size, source, muser, uuid, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
-        q = ("insert into versions (node, hash, size, source, mtime, muser, cluster) "
-             "values (?, ?, ?, ?, ?, ?, ?)")
+        q = ("insert into versions (node, hash, size, source, mtime, muser, uuid, cluster) "
+             "values (?, ?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
-        props = (node, hash, size, source, mtime, muser, cluster)
+        props = (node, hash, size, source, mtime, muser, uuid, cluster)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -475,11 +479,11 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, hash, size, source, mtime, muser, cluster)
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster)
            or None if the current version is not found in the given cluster.
         """
         
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "

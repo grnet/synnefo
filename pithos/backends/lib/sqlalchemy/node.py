@@ -46,7 +46,7 @@ from pithos.lib.filter import parse_filters
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
+( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(9)
 
 inf = float('inf')
 
@@ -93,7 +93,8 @@ _propnames = {
     'source'    : 4,
     'mtime'     : 5,
     'muser'     : 6,
-    'cluster'   : 7,
+    'uuid'      : 7,
+    'cluster'   : 8
 }
 
 
@@ -158,10 +159,11 @@ class Node(DBWorker):
         columns.append(Column('source', Integer))
         columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
         columns.append(Column('muser', String(255), nullable=False, default=''))
+        columns.append(Column('uuid', String(64), nullable=False, default=''))
         columns.append(Column('cluster', Integer, nullable=False, default=0))
         self.versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
-        Index('idx_versions_node_mtime', self.versions.c.node,
-              self.versions.c.mtime)
+        Index('idx_versions_node_mtime', self.versions.c.node, self.versions.c.mtime)
+        Index('idx_versions_node_uuid', self.versions.c.uuid)
         
         #create attributes table
         columns = []
@@ -236,7 +238,7 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
         """
         
         s = select([self.versions.c.serial,
@@ -246,6 +248,7 @@ class Node(DBWorker):
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
+                    self.versions.c.uuid,
                     self.versions.c.cluster], self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
@@ -497,6 +500,7 @@ class Node(DBWorker):
                     self.versions.c.source,
                     self.versions.c.mtime,
                     self.versions.c.muser,
+                    self.versions.c.uuid,
                     self.versions.c.cluster])
         filtered = select([func.max(self.versions.c.serial)],
                             self.versions.c.node == node)
@@ -555,14 +559,14 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, hash, size, source, muser, cluster=0):
+    def version_create(self, node, hash, size, source, muser, uuid, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
         mtime = time()
         s = self.versions.insert().values(node=node, hash=hash, size=size, source=source,
-                                          mtime=mtime, muser=muser, cluster=cluster)
+                                          mtime=mtime, muser=muser, uuid=uuid, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -570,13 +574,14 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, hash, size, source, mtime, muser, cluster)
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster)
            or None if the current version is not found in the given cluster.
         """
         
         v = self.versions.alias('v')
-        s = select([v.c.serial, v.c.node, v.c.hash, v.c.size,
-                    v.c.source, v.c.mtime, v.c.muser, v.c.cluster])
+        s = select([v.c.serial, v.c.node, v.c.hash,
+                    v.c.size, v.c.source, v.c.mtime,
+                    v.c.muser, v.c.uuid, v.c.cluster])
         c = select([func.max(self.versions.c.serial)],
             self.versions.c.node == node)
         if before != inf:

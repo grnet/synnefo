@@ -1234,7 +1234,10 @@
                     personality.push(data.image.personality_data_for_keys(data.keys))
                 }
 
-                extra['personality'] = personality;
+                if (personality.length) {
+                    extra['personality'] = personality;
+                }
+
                 storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){
                     this.close_all();
                     this.password_view.show(data.server.adminPass, data.server.id);

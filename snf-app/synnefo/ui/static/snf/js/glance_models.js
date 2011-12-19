@@ -77,7 +77,7 @@
         },
 
         get_size: function() {
-            return this.get('size');
+            return this.get('size') / 1024;
         },
         
         get_system_images: function() {

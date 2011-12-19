@@ -25,11 +25,12 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Dec 16, 2011)         Update allowed versioning values.
+0.8 (Dec 19, 2011)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
 \                          Note Content-Type issue when using the internal django web server.
+\                          Add object UUID field.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -478,6 +479,7 @@ content_encoding            The encoding of the object (optional)
 content-disposition         The presentation style of the object (optional)
 last_modified               The last object modification date (regardless of version)
 x_object_hash               The Merkle hash
+x_object_uuid               The object's UUID
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
 x_object_modified_by        The user that committed the object's version
@@ -505,6 +507,7 @@ Example ``format=json`` reply:
     "last_modified": "2011-12-02T08:10:41.565891+00:00",
     "x_object_meta": {"asdf": "qwerty"},
     "x_object_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "x_object_uuid": "8ed9af1b-c948-4bb6-82b0-48344f5c822c",
     "x_object_version": 98,
     "x_object_version_timestamp": "1322813441.565891",
     "x_object_modified_by": "user"}, ...]
@@ -525,6 +528,7 @@ Example ``format=xml`` reply:
         <key>asdf</key><value>qwerty</value>
       </x_object_meta>
       <x_object_hash>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</x_object_hash>
+      <x_object_uuid>8ed9af1b-c948-4bb6-82b0-48344f5c822c</x_object_uuid>
       <x_object_version>98</x_object_version>
       <x_object_version_timestamp>1322813441.565891</x_object_version_timestamp>
       <x_object_modified_by>chazapis</x_object_modified_by>
@@ -680,6 +684,7 @@ Last-Modified               The last object modification date (regardless of ver
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Hash               The Merkle hash
+X-Object-UUID               The object's UUID
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
@@ -776,6 +781,7 @@ Last-Modified               The last object modification date (regardless of ver
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Hash               The Merkle hash
+X-Object-UUID               The object's UUID
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
@@ -1063,6 +1069,7 @@ List of differences from the OOS API:
 * Object hashmap retrieval through ``GET`` and the ``format`` parameter.
 * Object create via hashmap through ``PUT`` and the ``format`` parameter.
 * The object's Merkle hash is always returned in the ``X-Object-Hash`` header.
+* The object's UUID is always returned in the ``X-Object-UUID`` header. The UUID remains unchanged, even when the object's data or metadata changes, or the object is moved to another path (is renamed). A new UUID is assigned when creating or copying an object.
 * Object create using ``POST`` to support standard HTML forms.
 * Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``. New ETag corresponds to the Merkle hash of the object's hashmap.
 * Include new version identifier in replies for object replace/change requests.

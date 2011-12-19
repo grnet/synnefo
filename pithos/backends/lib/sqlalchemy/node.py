@@ -599,12 +599,13 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
         """
         
         v = self.versions.alias()
-        s = select([v.c.serial, v.c.node, v.c.hash, v.c.size,
-                    v.c.source, v.c.mtime, v.c.muser, v.c.cluster], v.c.serial == serial)
+        s = select([v.c.serial, v.c.node, v.c.hash,
+                    v.c.size, v.c.source, v.c.mtime,
+                    v.c.muser, v.c.uuid, v.c.cluster], v.c.serial == serial)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
@@ -897,3 +898,18 @@ class Node(DBWorker):
         rp.close()
         
         return matches, prefixes
+    
+    def latest_uuid(self, uuid):
+        """Return a (path, serial) tuple, for the latest version of the given uuid."""
+        
+        v = self.versions.alias('v')
+        n = self.nodes.alias('n')
+        s = select([n.c.path, v.c.serial])
+        filtered = select([func.max(self.versions.c.serial)])
+        s = s.where(v.c.serial == filtered.where(self.versions.c.uuid == uuid))
+        s = s.where(n.c.node == v.c.node)
+        
+        r = self.conn.execute(s)
+        l = r.fetchone()
+        r.close()
+        return l

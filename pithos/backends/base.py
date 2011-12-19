@@ -531,6 +531,16 @@ class BaseBackend(object):
         """
         return []
     
+    def get_uuid(self, user, uuid):
+        """Return the (account, container, name) for the UUID given.
+        
+        Raises:
+            NotAllowedError: Operation not permitted
+            
+            NameError: UUID does not exist
+        """
+        return None
+    
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given.
         

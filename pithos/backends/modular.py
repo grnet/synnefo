@@ -34,7 +34,7 @@
 import sys
 import os
 import time
-import uuid
+import uuid as uuidlib
 import logging
 import binascii
 
@@ -96,7 +96,7 @@ class ModularBackend(BaseBackend):
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
-        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'MTIME', 'MUSER', 'CLUSTER']:
+        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'MTIME', 'MUSER', 'UUID', 'CLUSTER']:
             setattr(self, x, getattr(self.db_module, x))
         
         __import__(block_module)
@@ -630,12 +630,26 @@ class ModularBackend(BaseBackend):
         return [[x[self.SERIAL], x[self.MTIME]] for x in versions if x[self.CLUSTER] != CLUSTER_DELETED]
     
     @backend_method
+    def get_uuid(self, user, uuid):
+        """Return the (account, container, name) for the UUID given."""
+        logger.debug("get_uuid: %s", uuid)
+        info = self.node.latest_uuid(uuid)
+        if info is None:
+            raise NameError
+        path, serial = info
+        account, container, name = path.split('/', 2)
+        self._can_read(user, account, container, name)
+        return (account, container, name)
+    
+    @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given."""
         logger.debug("get_public: %s", public)
         if public is None or public < ULTIMATE_ANSWER:
             raise NameError
         path = self.permissions.public_path(public - ULTIMATE_ANSWER)
+        if path is None:
+            raise NameError
         account, container, name = path.split('/', 2)
         self._can_read(user, account, container, name)
         return (account, container, name)
@@ -669,8 +683,8 @@ class ModularBackend(BaseBackend):
     
     # Path functions.
     
-    def _generate_uuid():
-        return str(uuid.uuid4())
+    def _generate_uuid(self):
+        return str(uuidlib.uuid4())
     
     def _put_object_node(self, path, parent, name):
         path = '/'.join((path, name))
@@ -756,11 +770,11 @@ class ModularBackend(BaseBackend):
         if size is None:
             hash = src_hash # This way hash can be set to None.
             size = src_size
-        uniq = self._generate_uuid() if is_copy or src_version_id is None else props[self.UUID]
+        uuid = self._generate_uuid() if is_copy or src_version_id is None else props[self.UUID]
         
         if src_version_id is not None:
             self.node.version_recluster(src_version_id, CLUSTER_HISTORY)
-        dest_version_id, mtime = self.node.version_create(node, hash, size, src_version_id, user, uniq, cluster)
+        dest_version_id, mtime = self.node.version_create(node, hash, size, src_version_id, user, uuid, cluster)
         return src_version_id, dest_version_id
     
     def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain, meta, replace=False):

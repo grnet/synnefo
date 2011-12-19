@@ -499,10 +499,10 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
         """
         
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where serial = ?")
         self.execute(q, (serial,))
@@ -653,12 +653,12 @@ class Node(DBWorker):
         q = ("select distinct a.key "
              "from attributes a, versions v, nodes n "
              "where v.serial = (select max(serial) "
-                              "from versions "
-                              "where node = v.node and mtime < ?) "
+                               "from versions "
+                               "where node = v.node and mtime < ?) "
              "and v.cluster != ? "
              "and v.node in (select node "
-                           "from nodes "
-                           "where parent = ?) "
+                            "from nodes "
+                            "where parent = ?) "
              "and a.serial = v.serial "
              "and a.domain = ? "
              "and n.node = v.node")
@@ -728,12 +728,12 @@ class Node(DBWorker):
         q = ("select distinct n.path, v.serial "
              "from attributes a, versions v, nodes n "
              "where v.serial = (select max(serial) "
-                              "from versions "
-                              "where node = v.node and mtime < ?) "
+                               "from versions "
+                               "where node = v.node and mtime < ?) "
              "and v.cluster != ? "
              "and v.node in (select node "
-                           "from nodes "
-                           "where parent = ?) "
+                            "from nodes "
+                            "where parent = ?) "
              "and a.serial = v.serial "
              "and n.node = v.node "
              "and n.path > ? and n.path < ?")
@@ -795,3 +795,15 @@ class Node(DBWorker):
             execute(q, args)
         
         return matches, prefixes
+    
+    def latest_uuid(self, uuid):
+        """Return a (path, serial) tuple, for the latest version of the given uuid."""
+        
+        q = ("select n.path, v.serial "
+             "from versions v, nodes n "
+             "where v.serial = (select max(serial) "
+                               "from versions "
+                               "where uuid = ?) "
+             "and n.node = v.node")
+        self.execute(q, (uuid,))
+        return self.fetchone()

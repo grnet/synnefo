@@ -18,7 +18,7 @@
         api_type: 'glance',
 
         get_size: function() {
-            return this.get('size');
+            return this.get('size') / 1024;
         },
 
         get_readable_size: function() {
@@ -76,10 +76,6 @@
             return img;
         },
 
-        get_size: function() {
-            return this.get('size') / 1024;
-        },
-        
         get_system_images: function() {
             return _.filter(this.active(), function(i){ return i.get_owner() == snf.config.system_images_owner })
         },

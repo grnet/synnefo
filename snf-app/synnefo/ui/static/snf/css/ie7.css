@@ -7,3 +7,23 @@ div.list table thead tr th {
     border: none;
     border-bottom: 1px solid #aaa;
 }
+
+
+/*vm views fixes*/
+div.vm-details {
+    width: 135px;
+}
+
+div.metadata-keys-container {
+    float: none;
+    width: 110px;
+}
+
+.icon .scrollable .items {
+    height: auto;
+    position: static !important;
+}
+
+div.column2 {
+    padding-bottom: 10px;
+}

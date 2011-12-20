@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import os
+import sys
 import glob
 
 # import common settings
@@ -39,10 +40,13 @@ from synnefo.settings.common import *
 
 SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
 
-if SYNNEFO_SETTINGS_DIR != "":
+if os.path.exists(SYNNEFO_SETTINGS_DIR):
     # extend common settings with settings set in /etc/synnefo dir
     conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
     conffiles.sort()
     for f in conffiles:
-        execfile(os.path.abspath(f))
-
+        try:
+            execfile(os.path.abspath(f))
+        except Exception as e:
+            print >>sys.stderr, "Failed to read settings file: %s" % \
+                                os.path.abspath(f)

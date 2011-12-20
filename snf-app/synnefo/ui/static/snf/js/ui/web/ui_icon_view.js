@@ -582,14 +582,16 @@
         update_layout: function() {
             if (!this.visible() && this.parent.details_hidden) { return };
 
-            var image = this.vm.get_image();
+            var image = this.vm.get_image(_.bind(function(image){
+                this.sel('image_name').text(util.truncate(image.get('name'), 13)).attr("title", image.get('name'));
+                this.sel('image_size').text(image.get_readable_size()).attr('title', image.get_readable_size());
+            }, this));
+
             var flavor = this.vm.get_flavor();
             if (!flavor || !image) {
                 return;
             }
 
-            this.sel('image_name').text(util.truncate(image.get('name'), 13)).attr("title", image.get('name'));
-            this.sel('image_size').text(image.get_readable_size()).attr('title', image.get_readable_size());
 
             this.sel('cpu').text(flavor.get('cpu'));
             this.sel('ram').text(flavor.get('ram'));

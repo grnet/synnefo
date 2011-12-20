@@ -26,7 +26,6 @@ projects:
 
     * Migrate location from which :ref:`static files <static-files>` are served from.
 
-
 NEW APPS
     * The 'synnefo.ui.userdata' application has been added in
       settings.d/00-apps.conf. Application urls appended in ui/urls.py.
@@ -35,6 +34,8 @@ NEW APPS
       Use './manage.py migrate' to migrate *all* apps.
 
 NEW/UPDATED SETTINGS
+    * BYPASS_AUTHENTICATION_TOKEN_SECRET replaces BYPASS_AUTHENTICATION_TOKEN
+      in settings/common/aai.py.
     * New config file 31-userdata.conf, containing userdata app settings
     * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
       Key length in bits for generated ssh keys
@@ -68,15 +69,27 @@ API
       GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
       in 20-api.conf to control its value. A database migration is needed.
 
+PLANKTON
+    Plankton is a new image service that has been added as a separate app. The
+    images are stored in backend of Pithos and thus it must be configured to
+    access the DB and directory that Pithos uses to store its data. These
+    settings are defined in the new plankton.py file in settings.
+    
+    Plankton stores and looks for images in the Pithos container named
+    PITHOS_IMAGE_CONTAINER.
+    
+    There is a Pithos account that is reserved for system images. This account
+    is defined in SYSTEM_IMAGES_OWNER.
+
 ADMIN TOOLS
     * A new --disk-template flag has been added to snf-admin to choose a
       disk template when creating flavors. Similarly, disk_template support
       in flavors has beed added to the admin web interface.
 
 
-
 v0.7.3 -> v0.7.4
 ----------------
+
 OKEANOS INTRO
     * News section added. News content can be remotely retrieved using
       OKEANOS_NEWS_CONTENT_URL settings option.

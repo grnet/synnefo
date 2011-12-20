@@ -18,6 +18,10 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('..'))
 
+from synnefo import settings
+from django.core.management import setup_environ
+setup_environ(settings)
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -41,7 +45,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Synnefo'
-copyright = u'2011, GRNet.gr'
+copyright = u'2011, GRNET'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -48,8 +48,8 @@ setup(
     long_description=README + '\n\n' +  CHANGES,
     classifiers = CLASSIFIERS,
 
-    author = 'GRNet',
-    author_email = 'info@grnet.gr',
+    author = '~okeanos dev team - GRNET',
+    author_email = 'okeanos-dev@lists.grnet.gr',
     maintainer = 'Kostas Papadimitriou',
     maintainer_email = 'kpap@grnet.gr',
 

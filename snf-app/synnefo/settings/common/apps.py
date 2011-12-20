@@ -17,8 +17,8 @@ INSTALLED_APPS = (
     'synnefo.logic',
     'synnefo.invitations',
     'synnefo.helpdesk',
+    'synnefo.plankton',
     'synnefo.ui.userdata',
-
     'south'
 )
 

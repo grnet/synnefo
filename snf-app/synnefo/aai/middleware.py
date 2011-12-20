@@ -48,8 +48,12 @@ class SynnefoAuthMiddleware(object):
         # test user on first access
         if settings.BYPASS_AUTHENTICATION and \
            request.GET.get('test') is not None:
-            u = SynnefoUser.objects.get(
-                auth_token=settings.BYPASS_AUTHENTICATION_TOKEN)
+            try:
+                u = SynnefoUser.objects.get(
+                    auth_token=settings.BYPASS_AUTHENTICATION_SECRET_TOKEN)
+            except SynnefoUser.DoesNotExist:
+                raise Exception("No user found with token matching "
+                                "BYPASS_AUTHENTICATION_SECRET_TOKEN.")
             return self._redirect_shib_auth_user(user = u)
 
         token = None

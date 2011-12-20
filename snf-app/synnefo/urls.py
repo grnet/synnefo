@@ -35,11 +35,11 @@ from django.conf.urls.defaults import *
 
 
 urlpatterns = patterns('',
-    (r'^lang/$', 'synnefo.ui.i18n.set_language'),
-#    (r'^auth/api/', include('synnefo.auth.urls')),
-    (r'^api/', include('synnefo.api.urls')),
     (r'^', include('synnefo.ui.urls')),
     (r'^admin', include('synnefo.admin.urls')),
-    (r'^invitations/?', include('synnefo.invitations.urls')),
+    (r'^api/', include('synnefo.api.urls')),
     (r'^helpdesk/?', include('synnefo.helpdesk.urls')),
+    (r'^plankton/', include('synnefo.plankton.urls')),
+    (r'^invitations/?', include('synnefo.invitations.urls')),
+    (r'^lang/$', 'synnefo.ui.i18n.set_language')
 )

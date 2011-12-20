@@ -5064,8 +5064,25 @@ table.list-machines .wave {
 }
 
 .create-vm .image-details.selected .size {
+
+}
+
+.create-vm .image-details .show-details:hover {
+    color: #aaa !important; 
+}
+.create-vm .image-details.selected .show-details:hover {
+    color: #fff !important; 
+}
+
+.create-vm .image-details.selected .show-details,
+.create-vm .image-details.selected .size {
     color: #eee;
 }
+
+.create-vm .image-details.selected span.owner {
+    color: #fff;
+}
+
 
 .create-vm .image-details p {
     font-size: 0.8em;
@@ -5073,13 +5090,31 @@ table.list-machines .wave {
     display:block;
 }
 
+.create-vm .image-details span.owner {
+    display: block;
+    font-size: 0.9em;
+    float: right;
+    color: #FF7F2A;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.create-vm .select-image .show-details {
+    display: none;
+    font-size: 0.8em;
+    text-decoration: underline;
+    color: #000;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+}
+
 .create-vm .image-details .size {
     margin-top: 2px;
     font-size: 0.8em;
     color: #aaa;
-    position: absolute;
-    right:5px;
-    top: 5px;
+    margin-left: 10px;
 }
 
 .create-vm .step-cont {
@@ -5121,6 +5156,25 @@ table.list-machines .wave {
     background-image:-o-linear-gradient(top, #FF9955, #E88B4D);
     background-image:-moz-linear-gradient(top, #FF9955, #E88B4D);
     color: #fff;
+}
+
+.create-vm .images-list-cont.loading .loading-indicator {
+    display: block !important;
+}
+
+.create-vm .images-list-cont .loading-indicator {
+    display: none;
+    position: absolute;
+    right: -13px;
+    top: 2px;
+    width: 30px;
+    height: 10px;
+    background-repeat: no-repeat;
+    background-image: url("../images/icons/indicators/medium/progress.gif");
+}
+
+.create-vm .images-list-cont h4 {
+    position: relative;
 }
 
 .create-vm .images-list-cont {
@@ -5311,6 +5365,127 @@ table.list-machines .wave {
     border-left: 1px solid #A1C8DB;
 }
 
+.create-vm .select-image.wide .show-details {
+    display: inline;
+}
+
+.create-vm .select-image .images-info-cont .hide {
+    display: none;
+}
+
+.create-vm .select-image.wide .images-info-cont .hide {
+    display: block;
+    float: right;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 0.8em;
+    text-decoration: underline;
+    color: #5CA1C0;
+    cursor: pointer;
+}
+
+.create-vm .select-image.wide .images-list-cont {
+    width: 74%;
+    padding-right: 0;
+}
+
+.create-vm .select-image.wide .images-info-cont .description .title {
+    display: none;
+    float: none;
+}
+
+.create-vm .select-image.wide .images-info-cont .description p {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    float: none;
+}
+
+.create-vm .select-image.wide .selected .size {
+    color: #FFF !important;
+}
+
+.create-vm .select-image.wide .image-details .size {
+    color: #5CA1C0;
+    position: absolute;
+    top: 5px;
+}
+
+.create-vm .select-image.wide .images-info-cont h3 {
+    color: #5CA1C0;
+    margin: 10px 0;
+    margin-top: 5px;
+    text-align: left;
+    font-size: 0.9em;
+}
+
+.create-vm .select-image.wide .images-info-cont .description {
+    width: 100% !important;
+    float: none !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    font-size: 1.1em;
+}
+.create-vm .select-image.wide .images-info-cont .extra-details {
+    height: 190px;
+    overflow-y: scroll;
+    padding-right: 15px;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail {
+    padding: 0px;
+    background-color: transparent;
+    margin-bottom: 4px;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .title {
+    float: left;
+    display: block;
+    width: 39%;
+    padding: 1%;
+    background-color: #5CA1C0;
+    color: #fff;
+    border: 1px solid #4F8DAA;
+    font-size: 0.8em;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .value {
+    float: right;
+    display: block;
+    width: 55%;
+    padding: 1%;
+    border: none;
+    background-color: #FFF;
+    color: #444;
+    border: 1px solid #ddd;
+    margin-bottom: 0px;
+    font-size: 0.8em;
+}
+
+.create-vm .select-image.wide .images-info-cont .image-detail {
+}
+
+.create-vm .select-image.wide ul.images-list {
+    height: 310px;
+    overflow-y: scroll;
+    padding-right: 3%;
+}
+
+.create-vm .select-image.wide .images-info-cont {
+    position: absolute;
+    width: 88%;
+    background-color: #DAE9F0;
+    padding: 2%;
+    border-left: none;
+    height: 320px;
+    box-shadow: 0px 0px 2px #aaa;
+    -moz-box-shadow: 0px 0px 2px #aaa;
+    -webkit-box-shadow: 0px 0px 2px #aaa;
+    display: none;
+}
+
+
 .create-vm .images-info-cont h4, .create-vm .create-step-cont .param h4{
     color: #FF9955;
     margin-bottom: 1em;
@@ -5326,12 +5501,15 @@ table.list-machines .wave {
 
 .create-vm .type-filter li {
     font-size: 0.8em;
-    font-weight: bold;
+    /*font-weight: bold;*/
     padding: 4px;
     margin-bottom: 0px;
-    
+    color: #FF7F2A;
 }
 
+.create-vm .images-list li {
+    min-height: 30px;
+}
 .create-vm .images-list .image-details:hover {
     background-color: #eee;
 }
@@ -5614,6 +5792,11 @@ table.list-machines .wave {
     color: #4085A5;
 }
 
+.create-vm .images-list-cont h4 a {
+    margin-top: 3px;
+    margin-right: -2px !important;
+}
+.create-vm .images-list-cont h4 a,
 .create-vm .list-cont h4 a {
     font-size: 0.8em;
     font-weight: normal;
@@ -6363,6 +6546,25 @@ input.has-errors {
     margin-top: 10px !important;
 }
 
+.models-view .model-form input.long {
+    width: 400px;
+}
+
+.models-view .model-form .inline input {
+    width: auto;
+    margin-top: 10px;
+}
+
+.models-view .model-form .inline select {
+    width: auto;
+    margin-top: 7px;
+}
+
+.models-view .model-form .inline .errors,
+.models-view .model-form .inline .field-desc {
+    clear: both;
+}
+
 #user_public_keys .private-download {
     margin: 5px 0;
     margin-top: 6px;
@@ -6391,6 +6593,7 @@ input.has-errors {
     float: left;
 }
 
+#user_custom_images,
 #user_public_keys {
     font-size: 0.7em;
 }
@@ -6534,6 +6737,12 @@ input.has-errors {
 }
 
 #user_public_keys .private-cont .down-button {
+}
+
+.models-view .form-field .field-desc {
+    font-style: italic;
+    font-size: 1em;
+    color: #888;
 }
 
 .models-view .form-field.error label {

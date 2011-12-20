@@ -39,7 +39,7 @@ from datetime import timedelta, tzinfo
 from functools import wraps
 from hashlib import sha256
 from random import choice
-from string import ascii_letters, digits
+from string import digits, lowercase, uppercase
 from time import time
 from traceback import format_exc
 from wsgiref.handlers import format_date_time
@@ -54,9 +54,10 @@ from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized)
-from synnefo.db.models import (SynnefoUser, Flavor, Image, ImageMetadata,
+from synnefo.db.models import (Flavor, Image, ImageMetadata,
                                 VirtualMachine, VirtualMachineMetadata,
                                 Network, NetworkInterface)
+from synnefo.plankton.backend import ImageBackend
 from synnefo.util.log import getLogger
 
 
@@ -79,6 +80,7 @@ def isoformat(d):
 
     return d.replace(tzinfo=UTC()).isoformat()
 
+
 def isoparse(s):
     """Parse an ISO8601 date string into a datetime object."""
 
@@ -100,9 +102,36 @@ def isoparse(s):
 
     return utc_since
 
-def random_password(length=8):
-    pool = ascii_letters + digits
-    return ''.join(choice(pool) for i in range(length))
+
+def random_password():
+    """Generates a random password
+    
+    We generate a windows compliant password: it must contain at least
+    one charachter from each of the groups: upper case, lower case, digits.
+    """
+    
+    pool = lowercase + uppercase + digits
+    lowerset = set(lowercase)
+    upperset = set(uppercase)
+    digitset = set(digits)
+    length = 10
+    
+    password = ''.join(choice(pool) for i in range(length - 2))
+    
+    # Make sure the password is compliant
+    chars = set(password)
+    if not chars & lowerset:
+        password += choice(lowercase)
+    if not chars & upperset:
+        password += choice(uppercase)
+    if not chars & digitset:
+        password += choice(digits)
+    
+    # Pad if necessary to reach required length
+    password += ''.join(choice(pool) for i in range(length - len(password)))
+    
+    return password
+
 
 def zeropad(s):
     """Add zeros at the end of a string in order to make its length
@@ -110,6 +139,7 @@ def zeropad(s):
 
     npad = 16 - len(s) % 16
     return s + '\x00' * npad
+
 
 def encrypt(plaintext):
     # Make sure key is 32 bytes long
@@ -131,6 +161,7 @@ def get_vm(server_id, owner):
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound('Server not found.')
 
+
 def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""
 
@@ -138,6 +169,7 @@ def get_vm_meta(vm, key):
         return VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
     except VirtualMachineMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
+
 
 def get_image(image_id, owner):
     """Return an Image instance or raise ItemNotFound."""
@@ -149,9 +181,21 @@ def get_image(image_id, owner):
             raise ItemNotFound('Image not found.')
         return image
     except ValueError:
-        raise BadRequest('Invalid image ID.')
+        raise ItemNotFound('Image not found.')
     except Image.DoesNotExist:
         raise ItemNotFound('Image not found.')
+
+
+def get_backend_image(image_id, owner):
+    backend = ImageBackend(owner.uniq)
+    try:
+        image = backend.get_meta(image_id)
+        if not image:
+            raise ItemNotFound('Image not found.')
+        return image
+    finally:
+        backend.close()
+
 
 def get_image_meta(image, key):
     """Return a ImageMetadata instance or raise ItemNotFound."""
@@ -160,6 +204,7 @@ def get_image_meta(image, key):
         return ImageMetadata.objects.get(meta_key=key, image=image)
     except ImageMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
+
 
 def get_flavor(flavor_id):
     """Return a Flavor instance or raise ItemNotFound."""
@@ -171,6 +216,7 @@ def get_flavor(flavor_id):
         raise BadRequest('Invalid flavor ID.')
     except Flavor.DoesNotExist:
         raise ItemNotFound('Flavor not found.')
+
 
 def get_network(network_id, owner):
     """Return a Network instance or raise ItemNotFound."""
@@ -185,6 +231,7 @@ def get_network(network_id, owner):
         raise BadRequest('Invalid network ID.')
     except Network.DoesNotExist:
         raise ItemNotFound('Network not found.')
+
 
 def get_nic(machine, network):
     try:
@@ -204,6 +251,7 @@ def get_request_dict(request):
             raise BadRequest('Invalid JSON data.')
     else:
         raise BadRequest('Unsupported Content-Type.')
+
 
 def update_response_headers(request, response):
     if request.serialization == 'xml':
@@ -230,12 +278,14 @@ def render_metadata(request, metadata, use_values=False, status=200):
         data = json.dumps(d)
     return HttpResponse(data, status=status)
 
+
 def render_meta(request, meta, status=200):
     if request.serialization == 'xml':
         data = render_to_string('meta.xml', {'meta': meta})
     else:
         data = json.dumps({'meta': {meta.meta_key: meta.meta_value}})
     return HttpResponse(data, status=status)
+
 
 def render_fault(request, fault):
     if settings.DEBUG or settings.TEST:
@@ -280,6 +330,7 @@ def request_serialization(request, atom_allowed=False):
             return 'atom'
 
     return 'json'
+
 
 def api_method(http_method=None, atom_allowed=False):
     """Decorator function for views that implement an API method."""

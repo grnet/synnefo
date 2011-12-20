@@ -66,6 +66,18 @@ API
     * A new 'disk_template' attribute has been added to Flavors.
       A database migration is needed.
 
+PLANKTON
+    Plankton is a new image service that has been added as a separate app. The
+    images are stored in backend of Pithos and thus it must be configured to
+    access the DB and directory that Pithos uses to store its data. These
+    settings are defined in the new plankton.py file in settings.
+    
+    Plankton stores and looks for images in the Pithos container named
+    PITHOS_IMAGE_CONTAINER.
+    
+    There is a Pithos account that is reserved for system images. This account
+    is defined in SYSTEM_IMAGES_OWNER.
+
 
 v0.7.3 -> v0.8
 --------------

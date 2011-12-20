@@ -235,13 +235,15 @@ def create_server(request):
         img = util.get_image(image_id, owner)
         image['backend_id'] = img.backend_id
         image['format'] = img.format
-        image['metadata'] = dict((m.meta_key, m.meta_value)
+        image['metadata'] = dict((m.meta_key.upper(), m.meta_value)
                 for m in img.metadata.all())
     except faults.ItemNotFound:
         img = util.get_backend_image(image_id, owner)
+        properties = img.get('properties', {})
         image['backend_id'] = img['location']
         image['format'] = img['disk_format']
-        image['metadata'] = img.get('properties', {})
+        image['metadata'] = dict((key.upper(), val)
+                for key, val in properties.items())
     
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()

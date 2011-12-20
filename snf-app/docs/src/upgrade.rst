@@ -34,6 +34,8 @@ NEW APPS
       Use './manage.py migrate' to migrate *all* apps.
 
 NEW/UPDATED SETTINGS
+    * BYPASS_AUTHENTICATION_TOKEN_SECRET replaces BYPASS_AUTHENTICATION_TOKEN
+      in settings/common/aai.py.
     * New config file 31-userdata.conf, containing userdata app settings
     * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
       Key length in bits for generated ssh keys

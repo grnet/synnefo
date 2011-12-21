@@ -41,8 +41,7 @@ from sqlalchemy.engine.reflection import Inspector
 
 from dbworker import DBWorker
 
-from pithos.lib.filter import parse_filters
-
+from pithos.lib.filter import parse_filters, OPERATORS
 
 ROOTNODE  = 0
 
@@ -830,9 +829,6 @@ class Node(DBWorker):
         s = s.where(v.c.cluster != except_cluster)
         s = s.where(v.c.node.in_(select([self.nodes.c.node],
             self.nodes.c.parent == parent)))
-        if domain and filterq:
-            s = s.where(a.c.serial == v.c.serial)
-            s = s.where(a.c.domain == domain)
         
         s = s.where(n.c.node == v.c.node)
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
@@ -843,22 +839,43 @@ class Node(DBWorker):
         if conj:
             s = s.where(or_(*conj))
         
-        if domain and filterq:
-            included, excluded, opers = parse_filters(filterq)
-            if included:
-                s = s.where(a.c.key.in_(x for x in included))
-            if excluded:
-                s = s.where(not_(a.c.key.in_(x for x in excluded)))
-            if opers:
-                for k, o, v in opers:
-                    s = s.where(or_(a.c.key == k and a.c.value.op(o)(v)))
-        
         s = s.order_by(n.c.path)
         
+        def filterout(r):
+            if not filterq:
+                return False
+            path, serial = r
+            included, excluded, opers = parse_filters(filterq)
+            
+            #retrieve metadata
+            s = select([a.c.key, a.c.value])
+            s = s.where(a.c.domain == domain)
+            s = s.where(a.c.serial == serial)
+            rp = self.conn.execute(s)
+            meta = dict(rp.fetchall())
+            keyset= set([k.encode('utf8') for k in meta.keys()])
+            
+            if included:
+                if not set(included) & keyset:
+                    return True
+            if excluded:
+                if set(excluded) & keyset:
+                    return True
+            for k, op, v in opers:
+                k = k.decode('utf8')
+                v = v.decode('utf8')
+                if k not in meta:
+                    return True
+                operation = OPERATORS[op]
+                if not operation(meta[k], v):
+                    return True
+            return False
+    
         if not delimiter:
             s = s.limit(limit)
             rp = self.conn.execute(s, start=start)
-            r = rp.fetchall()
+            filter_ = lambda r : [t for t in r if not filterout(t)]
+            r = filter_(rp.fetchall())
             rp.close()
             return r, ()
         
@@ -875,6 +892,8 @@ class Node(DBWorker):
             props = rp.fetchone()
             if props is None:
                 break
+            if filterout(props):
+                continue
             path, serial = props
             idx = path.find(delimiter, pfz)
             

@@ -848,11 +848,7 @@ class Node(DBWorker):
             included, excluded, opers = parse_filters(filterq)
             
             #retrieve metadata
-            s = select([a.c.key, a.c.value])
-            s = s.where(a.c.domain == domain)
-            s = s.where(a.c.serial == serial)
-            rp = self.conn.execute(s)
-            meta = dict(rp.fetchall())
+            meta = dict(self.attribute_get(serial, domain))
             keyset= set([k.encode('utf8') for k in meta.keys()])
             
             if included:

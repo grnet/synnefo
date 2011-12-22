@@ -22,8 +22,12 @@
         },
 
         get_readable_size: function() {
-            return this.get_size() > 0 ? util.readablizeBytes(this.get_size()) : "unknown";
+            return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : "unknown";
         },
+
+        display_size: function() {
+            return this.get_readable_size();
+        }
     })
 
     models.GlanceImages = snf.models.Images.extend({
@@ -33,7 +37,8 @@
                           'shared': 'Shared with me', 
                           'public': 'Public'},
         type_selections_order: ['system', 'personal', 'shared', 'public'],
-        display_metadata: ['created_at', 'updated_at'],
+        display_metadata: ['created_at', 'updated_at', 'filename', 'format', 
+                            'size', 'status'],
         read_method: 'head',
 
         // custom glance api parser
@@ -95,13 +100,16 @@
         }
 
     })
-    
-    // storage initialization
-    snf.storage.glance = {};
-    snf.storage.glance.images = new models.GlanceImages();
+        
+    // replace images storage collection
+    snf.glance.register = function() {
+        // storage initialization
+        snf.storage.glance = {};
+        snf.storage.glance.images = new models.GlanceImages();
 
-    // use glance images
-    snf.storage.images = snf.storage.glance.images;
+        // use glance images
+        snf.storage.images = snf.storage.glance.images;
+    }
 
 })(this);
 

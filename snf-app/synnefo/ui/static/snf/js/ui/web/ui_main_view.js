@@ -634,12 +634,15 @@
         },
 
         load: function() {
+            if (synnefo.config.use_glance) {
+                synnefo.glance.register();
+            }
             this.error_view = new views.ErrorView();
             this.feedback_view = new views.FeedbackView();
             this.invitations_view = new views.InvitationsView();
             this.public_keys_view = new views.PublicKeysOverlay();
             
-            if (snf.glance) {
+            if (synnefo.config.use_glance) {
                 this.custom_images_view = new views.CustomImagesOverlay();
             }
 

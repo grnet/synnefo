@@ -360,8 +360,11 @@
             _.each(meta_keys, function(key) {
                 var value;
                 var method = 'get_' + key.toLowerCase();
+                var display_method = 'display_' + key.toLowerCase();
                 
-                if (image[method]) {
+                if (image[display_method]) {
+                    value = image[display_method]();
+                } else if (image[method]) {
                     value = image[method]();
                 } else {
                     value = image.get(key);

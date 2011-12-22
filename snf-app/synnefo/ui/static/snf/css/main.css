@@ -5420,6 +5420,10 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
+.create-vm .select-image.wide .images-info-cont .description p {
+    height: 50px;
+}
+
 .create-vm .select-image.wide .images-info-cont .description {
     width: 100% !important;
     float: none !important;
@@ -5428,7 +5432,7 @@ table.list-machines .wave {
     font-size: 1.1em;
 }
 .create-vm .select-image.wide .images-info-cont .extra-details {
-    height: 190px;
+    height: 160px;
     overflow-y: scroll;
     padding-right: 15px;
 }

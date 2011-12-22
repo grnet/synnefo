@@ -6,6 +6,9 @@
 from admins import *
 from site import *
 
+# API URL
+COMPUTE_API_URL = '/api/v1.1'
+
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
 UI_MEDIA_URL = MEDIA_URL + 'snf/'
@@ -117,3 +120,11 @@ UI_OS_DEFAULT_USER_MAP = {
     'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root',
     'windows': 'Administrator'
 }
+
+
+###############
+# UI EXTENSIONS
+###############
+
+UI_ENABLE_GLANCE = True
+UI_GLANCE_API_URL = '/plankton'

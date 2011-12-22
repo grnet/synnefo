@@ -25,12 +25,13 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Dec 19, 2011)         Update allowed versioning values.
+0.8 (Dec 22, 2011)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
 \                          Note Content-Type issue when using the internal django web server.
 \                          Add object UUID field.
+\                          Always reply with the MD5 in the ETag.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -731,7 +732,7 @@ version                 Optional version identifier or ``list`` (specify a forma
 
 The reply is the object's data (or part of it), except if a hashmap is requested with ``hashmap``, or a version list with ``version=list`` (in both cases an extended reply format must be specified). Object headers (as in a ``HEAD`` request) are always included.
 
-Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block.
+Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block. The ``X-Object-Hash`` header reports the single Merkle hash of the object's hashmap (refer to http://bittorrent.org/beps/bep_0030.html for more information).
 
 Example ``format=json`` reply:
 
@@ -846,7 +847,7 @@ Hashmaps should be formatted as outlined in ``GET``.
 ==========================  ===============================
 Reply Header Name           Value
 ==========================  ===============================
-ETag                        The MD5 hash of the object (on create)
+ETag                        The MD5 hash of the object
 X-Object-Version            The object's new version
 ==========================  ===============================
 
@@ -958,7 +959,7 @@ To update an object's data:
 
 Optionally, truncate the updated object to the desired length with the ``X-Object-Bytes`` header.
 
-A data update will trigger an ETag change. Updated ETags correspond to the single Merkle hash of the object's hashmap (refer to http://bittorrent.org/beps/bep_0030.html for more information).
+A data update will trigger an ETag change. Updated ETags may happen asynchronously and appear at the server with a delay.
 
 No reply content. No reply headers if only metadata is updated.
 
@@ -1071,7 +1072,7 @@ List of differences from the OOS API:
 * The object's Merkle hash is always returned in the ``X-Object-Hash`` header.
 * The object's UUID is always returned in the ``X-Object-UUID`` header. The UUID remains unchanged, even when the object's data or metadata changes, or the object is moved to another path (is renamed). A new UUID is assigned when creating or copying an object.
 * Object create using ``POST`` to support standard HTML forms.
-* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``. New ETag corresponds to the Merkle hash of the object's hashmap.
+* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Include new version identifier in replies for object replace/change requests.
 * Object ``MOVE`` support.
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
@@ -1201,7 +1202,7 @@ Consider the following algorithm for synchronizing a local folder with the serve
 
 Notes:
 
-* States represent file hashes (either MD5 or Merkle). Deleted or non-existing files are assumed to have a magic hash (e.g. empty string).
+* States represent file hashes (it is suggested to use Merkle). Deleted or non-existing files are assumed to have a magic hash (e.g. empty string).
 * Updating a state (either local or remote) implies downloading, uploading or deleting the appropriate file.
 
 Recommended Practices and Examples

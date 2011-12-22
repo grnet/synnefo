@@ -77,23 +77,11 @@ class Client(object):
         self.token = token
     
     def _req(self, method, path, body=None, headers={}, format='text', params={}):
-        slash = '/' if self.api else ''
-        full_path = '%s%s%s?format=%s' % (slash, self.api, quote(path), format)
+        full_path = _prepare_path(path, self.api, format, params)
         
-        for k,v in params.items():
-            if v:
-                full_path = '%s&%s=%s' %(full_path, quote(k), quote(str(v)))
-            else:
-                full_path = '%s&%s=' %(full_path, k)
         conn = HTTPConnection(self.host)
-        
         kwargs = {}
-        for k,v in headers.items():
-            headers.pop(k)
-            k = k.replace('_', '-')
-            headers[quote(k)] = quote(v, safe='/=,:@ *"') if type(v) == types.StringType else v
-        
-        kwargs['headers'] = headers
+        kwargs['headers'] = _prepare_headers(headers)
         kwargs['headers']['X-Auth-Token'] = self.token
         if body:
             kwargs['body'] = body
@@ -101,57 +89,27 @@ class Client(object):
         kwargs['headers'].setdefault('content-length', len(body) if body else 0)
         
         #print '#', method, full_path, kwargs
-        t1 = datetime.datetime.utcnow()
+        #t1 = datetime.datetime.utcnow()
         conn.request(method, full_path, **kwargs)
         
         resp = conn.getresponse()
-        t2 = datetime.datetime.utcnow()
+        #t2 = datetime.datetime.utcnow()
         #print 'response time:', str(t2-t1)
-        headers = resp.getheaders()
-        headers = dict((unquote(h), unquote(v)) for h,v in headers)
-        
-        if self.verbose:
-            print '%d %s' % (resp.status, resp.reason)
-            for key, val in headers.items():
-                print '%s: %s' % (key.capitalize(), val)
-            print
-        
-        length = resp.getheader('content-length', None)
-        data = resp.read(length)
-        if self.debug:
-            print data
-            print
-        
-        if int(resp.status) in ERROR_CODES.keys():
-            raise Fault(data, int(resp.status))
-        
-        #print '**',  resp.status, headers, data, '\n'
-        return resp.status, headers, data
+        return _handle_response(resp, self.verbose, self.debug)
     
     def _chunked_transfer(self, path, method='PUT', f=stdin, headers=None,
                           blocksize=1024, params={}):
         """perfomrs a chunked request"""
-        http = HTTPConnection(self.host)
+        full_path = _prepare_path(path, self.api, params=params)
         
-        # write header
-        full_path = '/%s%s?' % (self.api, path)
-        
-        for k,v in params.items():
-            if v:
-                full_path = '%s&%s=%s' %(full_path, k, v)
-            else:
-                full_path = '%s&%s=' %(full_path, k)
-        
-        full_path = urllib.quote(full_path, '?&:=/')
-        
-        http.putrequest(method, full_path)
-        http.putheader('x-auth-token', self.token)
-        http.putheader('content-type', 'application/octet-stream')
-        http.putheader('transfer-encoding', 'chunked')
-        if headers:
-            for header,value in headers.items():
-                http.putheader(header, value)
-        http.endheaders()
+        conn = HTTPConnection(self.host)
+        conn.putrequest(method, full_path)
+        conn.putheader('x-auth-token', self.token)
+        conn.putheader('content-type', 'application/octet-stream')
+        conn.putheader('transfer-encoding', 'chunked')
+        for k,v in _prepare_headers(headers).items():
+            conn.putheader(k, v)
+        conn.endheaders()
         
         # write body
         data = ''
@@ -163,39 +121,19 @@ class Client(object):
                 break
             data = '%x\r\n%s\r\n' % (len(block), block)
             try:
-                http.send(data)
+                conn.send(data)
             except:
                 #retry
-                http.send(data)
+                conn.send(data)
         data = '0\r\n\r\n'
         try:
-            http.send(data)
+            conn.send(data)
         except:
             #retry
-            http.send(data)
+            conn.send(data)
         
-        # get response
-        resp = http.getresponse()
-        
-        headers = dict(resp.getheaders())
-        
-        if self.verbose:
-            print '%d %s' % (resp.status, resp.reason)
-            for key, val in headers.items():
-                print '%s: %s' % (key.capitalize(), val)
-            print
-        
-        length = resp.getheader('Content-length', None)
-        data = resp.read(length)
-        if self.debug:
-            print data
-            print
-        
-        if int(resp.status) in ERROR_CODES.keys():
-            raise Fault(data, int(resp.status))
-        
-        #print '*',  resp.status, headers, data
-        return resp.status, headers, data
+        resp = conn.getresponse()
+        return _handle_response(resp, self.verbose, self.debug)
     
     def delete(self, path, format='text', params={}):
         return self._req('DELETE', path, format=format, params=params)
@@ -977,3 +915,41 @@ class Pithos_Client(OOS_Client):
         action = 'read' if read else 'write'
         sharing = '%s=%s' % (action, ','.join(l))
         self.update_object(container, object, f=None, x_object_sharing=sharing)
+
+def _prepare_path(path, api, format='text', params={}):
+    slash = '/' if api else ''
+    full_path = '%s%s%s?format=%s' % (slash, api, quote(path), format)
+    
+    for k,v in params.items():
+        value = quote(str(v)) if v else ''
+        full_path = '%s&%s=%s' %(full_path, quote(k), value)
+    return full_path
+
+def _prepare_headers(headers):
+    for k,v in headers.items():
+        headers.pop(k)
+        k = k.replace('_', '-')
+        headers[quote(k)] = quote(v, safe='/=,:@ *"') if type(v) == types.StringType else v
+    return headers
+
+def _handle_response(response, verbose, debug):
+    headers = response.getheaders()
+    headers = dict((unquote(h), unquote(v)) for h,v in headers)
+    
+    if verbose:
+        print '%d %s' % (response.status, response.reason)
+        for key, val in headers.items():
+            print '%s: %s' % (key.capitalize(), val)
+        print
+    
+    length = response.getheader('content-length', None)
+    data = response.read(length)
+    if debug:
+        print data
+        print
+    
+    if int(response.status) in ERROR_CODES.keys():
+        raise Fault(data, int(response.status))
+    
+    #print '**',  response.status, headers, data, '\n'
+    return response.status, headers, data

@@ -80,6 +80,7 @@ def isoformat(d):
 
     return d.replace(tzinfo=UTC()).isoformat()
 
+
 def isoparse(s):
     """Parse an ISO8601 date string into a datetime object."""
 
@@ -139,6 +140,7 @@ def zeropad(s):
     npad = 16 - len(s) % 16
     return s + '\x00' * npad
 
+
 def encrypt(plaintext):
     # Make sure key is 32 bytes long
     key = sha256(settings.SECRET_KEY).digest()
@@ -159,6 +161,7 @@ def get_vm(server_id, owner):
     except VirtualMachine.DoesNotExist:
         raise ItemNotFound('Server not found.')
 
+
 def get_vm_meta(vm, key):
     """Return a VirtualMachineMetadata instance or raise ItemNotFound."""
 
@@ -166,6 +169,7 @@ def get_vm_meta(vm, key):
         return VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
     except VirtualMachineMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
+
 
 def get_image(image_id, owner):
     """Return an Image instance or raise ItemNotFound."""
@@ -181,6 +185,7 @@ def get_image(image_id, owner):
     except Image.DoesNotExist:
         raise ItemNotFound('Image not found.')
 
+
 def get_backend_image(image_id, owner):
     backend = ImageBackend(owner.uniq)
     try:
@@ -191,6 +196,7 @@ def get_backend_image(image_id, owner):
     finally:
         backend.close()
 
+
 def get_image_meta(image, key):
     """Return a ImageMetadata instance or raise ItemNotFound."""
 
@@ -198,6 +204,7 @@ def get_image_meta(image, key):
         return ImageMetadata.objects.get(meta_key=key, image=image)
     except ImageMetadata.DoesNotExist:
         raise ItemNotFound('Metadata key not found.')
+
 
 def get_flavor(flavor_id):
     """Return a Flavor instance or raise ItemNotFound."""
@@ -209,6 +216,7 @@ def get_flavor(flavor_id):
         raise BadRequest('Invalid flavor ID.')
     except Flavor.DoesNotExist:
         raise ItemNotFound('Flavor not found.')
+
 
 def get_network(network_id, owner):
     """Return a Network instance or raise ItemNotFound."""
@@ -223,6 +231,7 @@ def get_network(network_id, owner):
         raise BadRequest('Invalid network ID.')
     except Network.DoesNotExist:
         raise ItemNotFound('Network not found.')
+
 
 def get_nic(machine, network):
     try:
@@ -242,6 +251,7 @@ def get_request_dict(request):
             raise BadRequest('Invalid JSON data.')
     else:
         raise BadRequest('Unsupported Content-Type.')
+
 
 def update_response_headers(request, response):
     if request.serialization == 'xml':
@@ -268,12 +278,14 @@ def render_metadata(request, metadata, use_values=False, status=200):
         data = json.dumps(d)
     return HttpResponse(data, status=status)
 
+
 def render_meta(request, meta, status=200):
     if request.serialization == 'xml':
         data = render_to_string('meta.xml', {'meta': meta})
     else:
         data = json.dumps({'meta': {meta.meta_key: meta.meta_value}})
     return HttpResponse(data, status=status)
+
 
 def render_fault(request, fault):
     if settings.DEBUG or settings.TEST:
@@ -318,6 +330,7 @@ def request_serialization(request, atom_allowed=False):
             return 'atom'
 
     return 'json'
+
 
 def api_method(http_method=None, atom_allowed=False):
     """Decorator function for views that implement an API method."""

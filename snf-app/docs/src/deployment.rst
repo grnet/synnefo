@@ -3,6 +3,10 @@
 Deployment
 ==========
 
+This is a walkthrough for a working Synnefo deployment.
+
+.. todo:: describe setup of nginx, flup, Synnefo packages, etc.
+
 Node types
 ----------
 
@@ -97,7 +101,7 @@ The logic dispatcher is part of the Synnefo Django project and must run
 on :ref:`LOGIC <LOGIC_NODE>` nodes.
 
 The dispatcher retrieves messages from the queue and calls the appropriate
-handler function as defined in the queue configuration in `/etc/synnefo/*.conf`
+handler function as defined in the queue configuration in ``/etc/synnefo/*.conf``
 files.
 
 The default configuration should work directly without any modifications.
@@ -115,23 +119,23 @@ The dispatcher should run in at least 2 instances to ensure high
 Web application deployment
 --------------------------
 
-
 .. _static-files:
 
 Static files
 ************
 
-* Choose an appropriate path (e.g. /var/lib/synnefo/static/) from which your web 
-  server will serve all static files (js/css) required by Synnefo web frontend to 
-  run.
-* Change ``MEDIA_ROOT`` value in your settings to point to that directory.
+* Choose an appropriate path (e.g. ``/var/lib/synnefo/static/``) from which
+  your web server will serve all static files (js/css) required by the Synnefo
+  web frontend to run.
+* Change the ``MEDIA_ROOT`` value in your settings to point to that directory.
 * Run the following command::
 
     $ snf-manage link_static
 
-  the command will create symlinks of the appropriate static files inside the choosen 
-  directory.
+  the command will create symlinks of the appropriate static files inside the
+  chosen directory.
 
+.. todo:: describe an ``snf-manage copy_static`` command.
 
 Using Apache
 ************
@@ -141,14 +145,19 @@ Using Apache
 Using nginx
 ***********
 
-**Sample nginx configuration using fcgi**
+This section describes a sample nginx configuration which uses FastCGI
+to relay requests to Synnefo. Use a distribution-specific mechanism
+(e.g., APT) to install nginx, then activate the following nginx configuration
+file by placing it under ``/etc/nginx/sites-available`` and symlinking
+under ``/etc/nginx/sites-enabled``:
 
 .. literalinclude:: ../_static/synnefo.nginx.conf
 
 `download <../_static/synnefo.nginx.conf>`_
 
-run the fcgi server::
-
+then run the FastCGI server to receive incoming requests from nginx.
+This requires installation of package flup, e.g. with::
+    # apt-get install flup
     $ snf-manage runfcgi host=127.0.0.1 port=8015
 
 

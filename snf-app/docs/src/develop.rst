@@ -4,7 +4,7 @@ Developers guide
 Information on how to setup a development environment.
 
 This file documents the installation of a development environment for Synnefo.
-It should be read alongside :ref:`installation guide <installation>`.
+It should be read alongside the :ref:`installation guide <installation>`.
 
 It contains development-specific ammendments to the basic installation steps
 outlined in `installation guide <installation>`, and development-specific notes.
@@ -69,20 +69,20 @@ your development environment::
 
 
         # development rabitmq configuration
-        RABBIT_HOST = ""
-        RABBIT_USERNAME = ""
-        RABBIT_PASSWORD = ""
+        RABBIT_HOST = "<RabbitMQ_host>"
+        RABBIT_USERNAME = "<RabbitMQ_username>"
+        RABBIT_PASSWORD = "<RabbitMQ_password>"
         RABBIT_VHOST = "/"
 
         # development ganeti settings
-        GANETI_MASTER_IP = ""
+        GANETI_MASTER_IP = "<Ganeti_master_IP>"
         GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "<username>", "<password>")
         GANETI_CREATEINSTANCE_KWARGS['disk_template'] = 'plain'
 
         # This prefix gets used when determining the instance names
         # of Synnefo VMs at the Ganeti backend.
         # The dash must always appear in the name!
-        BACKEND_PREFIX_ID = "<my commit name>-"
+        BACKEND_PREFIX_ID = "<your_commit_name>-"
 
         IGNORE_FLAVOR_DISK_SIZES = True
 
@@ -259,7 +259,9 @@ write the script manually. The process is the following:
 Test coverage
 -------------
 
-In order to get code coverage reports you need to install django-test-coverage::
+In order to get code coverage reports you need to install django-test-coverage
+
+.. code-block:: bash
 
    $ ./bin/pip install django-test-coverage
 
@@ -274,8 +276,10 @@ Then edit your settings.py and configure the test runner::
 Building Synnefo package
 ------------------------
 
-To create a python package from the Synnefo source code run::
-    
+To create a python package from the Synnefo source code run
+
+.. code-block:: bash
+
     $ cd snf-app
     $ python setup.py sdist
 
@@ -292,6 +296,12 @@ Make sure you have ``sphinx`` installed.
     $ cd snf-app/docs
     $ make html
 
-html files are generated in ``snf-app/docs/_build/html`` directory
+.. note::
+
+   The theme define in the Sphinx configuration file ``conf.py`` is ``nature``,
+   not available in the version of Sphinx shipped with Debian Squeeze. Replace
+   it with ``default`` to build with a Squeeze-provided Sphinx.
+
+html files are generated in the ``snf-app/docs/_build/html`` directory.
 
 .. include:: ci.rst

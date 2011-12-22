@@ -2,10 +2,11 @@ Upgrade
 =======
 
 This file documents the upgrade to newer versions of the Synnefo software.
-For more information, please see README.deploy.
+For more information, please see deployment guide.
 
-v0.7 -> v0.8
-------------
+
+v0.7.4 -> v0.8
+--------------
 
 Synnefo is now distributed packaged in python/debian packages. You should
 consider the following when migration from a previously `source` deployment
@@ -25,7 +26,6 @@ projects:
 
     * Migrate location from which :ref:`static files <static-files>` are served from.
 
-
 NEW APPS
     * The 'synnefo.ui.userdata' application has been added in
       settings.d/00-apps.conf. Application urls appended in ui/urls.py.
@@ -34,6 +34,8 @@ NEW APPS
       Use './manage.py migrate' to migrate *all* apps.
 
 NEW/UPDATED SETTINGS
+    * BYPASS_AUTHENTICATION_TOKEN_SECRET replaces BYPASS_AUTHENTICATION_TOKEN
+      in settings/common/aai.py.
     * New config file 31-userdata.conf, containing userdata app settings
     * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
       Key length in bits for generated ssh keys
@@ -64,7 +66,8 @@ UI
 
 API
     * A new 'disk_template' attribute has been added to Flavors.
-      A database migration is needed.
+      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
+      in 20-api.conf to control its value. A database migration is needed.
 
 PLANKTON
     Plankton is a new image service that has been added as a separate app. The
@@ -78,31 +81,18 @@ PLANKTON
     There is a Pithos account that is reserved for system images. This account
     is defined in SYSTEM_IMAGES_OWNER.
 
-
-v0.7.3 -> v0.8
---------------
-
-API
-    * A new 'disk_template' attribute has been added to Flavors.
-      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
-      in 20-api.conf to control its value. A database migration is needed.
-
 ADMIN TOOLS
     * A new --disk-template flag has been added to snf-admin to choose a
       disk template when creating flavors. Similarly, disk_template support
       in flavors has beed added to the admin web interface.
 
 
-v0.7 -> v0.8
-API
-    * A new 'disk_template' attribute has been added to Flavors.
-      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
-      in 20-api.conf to control its value. A database migration is needed.
+v0.7.3 -> v0.7.4
+----------------
 
-ADMIN TOOLS
-    * A new --disk-template flag has been added to snf-admin to choose a
-      disk template when creating flavors. Similarly disk_template support
-      in flavors has beed added to the admin web interface.
+OKEANOS INTRO
+    * News section added. News content can be remotely retrieved using
+      OKEANOS_NEWS_CONTENT_URL settings option.
 
 
 v0.6.2 -> v0.7

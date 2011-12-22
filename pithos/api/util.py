@@ -741,12 +741,26 @@ def put_object_block(request, hashmap, data, offset):
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl # Return ammount of data written.
 
-def hashmap_hash(request, hashmap):
-    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
+#def hashmap_hash(request, hashmap):
+#    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
+#    
+#    map = HashMap(request.backend.block_size, request.backend.hash_algorithm)
+#    map.extend([unhexlify(x) for x in hashmap])
+#    return hexlify(map.hash())
+
+def hashmap_md5(request, hashmap, size):
+    """Produce the MD5 sum from the data in the hashmap."""
     
-    map = HashMap(request.backend.block_size, request.backend.hash_algorithm)
-    map.extend([unhexlify(x) for x in hashmap])
-    return hexlify(map.hash())
+    # TODO: Search backend for the MD5 of another object with the same hashmap and size...
+    md5 = hashlib.md5()
+    bs = request.backend.block_size
+    for bi, hash in enumerate(hashmap):
+        data = request.backend.get_block(hash)
+        if bi == len(hashmap) - 1:
+            bs = size % bs
+        pad = bs - min(len(data), bs)
+        md5.update(data + ('\x00' * pad))
+    return md5.hexdigest().lower()
 
 def update_request_headers(request):
     # Handle URL-encoded keys and values.

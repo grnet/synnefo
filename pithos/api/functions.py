@@ -51,7 +51,7 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, socket_read_iterator, SaveToBackendHandler,
-    object_data_response, put_object_block, hashmap_hash, api_method, json_encode_decimal)
+    object_data_response, put_object_block, hashmap_md5, api_method, json_encode_decimal)
 from pithos.backends.base import NotAllowedError, QuotaError
 
 
@@ -829,8 +829,6 @@ def object_write(request, v_account, v_container, v_object):
                     hashmap.append(hash.firstChild.data)
             except:
                 raise BadRequest('Invalid data formatting')
-        
-        meta.update({'ETag': hashmap_hash(request, hashmap)}) # Update ETag.
     else:
         md5 = hashlib.md5()
         size = 0
@@ -864,6 +862,16 @@ def object_write(request, v_account, v_container, v_object):
         raise Conflict('\n'.join(e.data) + '\n')
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
+    if 'ETag' not in meta:
+        # Update the MD5 after the hashmap, as there may be missing hashes.
+        # TODO: This will create a new version, even if done synchronously...
+        etag = hashmap_md5(request, hashmap, size)
+        meta.update({'ETag': etag}) # Update ETag.
+        try:
+            version_id = request.backend.update_object_meta(request.user_uniq,
+                            v_account, v_container, v_object, 'pithos', {'ETag': etag}, False)
+        except NotAllowedError:
+            raise Forbidden('Not allowed')
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,
@@ -1170,7 +1178,7 @@ def object_update(request, v_account, v_container, v_object):
     if dest_bytes is not None and dest_bytes < size:
         size = dest_bytes
         hashmap = hashmap[:(int((size - 1) / request.backend.block_size) + 1)]
-    meta.update({'ETag': hashmap_hash(request, hashmap)}) # Update ETag.
+    meta.update({'ETag': hashmap_md5(request, hashmap, size)}) # Update ETag.
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, hashmap,

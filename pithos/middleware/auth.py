@@ -33,51 +33,58 @@
 
 from time import time, mktime
 from urllib import quote, unquote
+from django.conf import settings
+from django.utils import simplejson as json
 
 from pithos.im.models import User
-
+from pithos.lib.client import authenticate, Fault
 
 def get_user_from_token(token):
-    try:
-        return User.objects.get(auth_token=token)
-    except User.DoesNotExist:
+    if not token:
         return None
-
+    
+    host = settings.AUTHENTICATION_HOST
+    try:
+        status, headers, user = authenticate(host, token)
+        return json.loads(user)
+    except Fault, f:
+        return None
 
 class AuthMiddleware(object):
     def process_request(self, request):
-        request.user = None
-        request.user_uniq = None
-        
-        # Try to find token in a parameter, in a request header, or in a cookie.
-        user = get_user_from_token(request.GET.get('X-Auth-Token'))
-        if not user:
-            user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
-        if not user:
-            # Back from an im login target.
-            if request.GET.get('user', None):
-                token = request.GET.get('token', None)
-                if token:
-                    request.set_auth_cookie = True
-                user = get_user_from_token(token)
+        try:
+            host, port = settings.AUTHENTICATION_HOST.split(':')
+            if request.META['SERVER_NAME'] and request.META['SERVER_PORT'] == port:
+                #bypass authentication
+                #if it is an authentication request
+                return
+            
+            request.user = None
+            request.user_uniq = None
+            
+            # Try to find token in a parameter, in a request header, or in a cookie.
+            user = get_user_from_token(request.GET.get('X-Auth-Token'))
             if not user:
-                cookie_value = unquote(request.COOKIES.get('_pithos2_a', ''))
-                if cookie_value and '|' in cookie_value:
-                    token = cookie_value.split('|', 1)[1]
+                user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
+            if not user:
+                # Back from an im login target.
+                if request.GET.get('user', None):
+                    token = request.GET.get('token', None)
+                    if token:
+                        request.set_auth_cookie = True
                     user = get_user_from_token(token)
-        if not user:
-            return
-        
-        # Check if the is active.
-        if user.state != 'ACTIVE':
-            return
-        
-        # Check if the token has expired.
-        if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-            return
-        
-        request.user = user
-        request.user_uniq = user.uniq
+                if not user:
+                    cookie_value = unquote(request.COOKIES.get('_pithos2_a', ''))
+                    if cookie_value and '|' in cookie_value:
+                        token = cookie_value.split('|', 1)[1]
+                        user = get_user_from_token(token)
+            if not user:
+                return
+            
+            request.user = user
+            request.user_uniq = user['uniq']
+        except Exception, e:
+            print e
     
     def process_response(self, request, response):
         if getattr(request, 'user', None) and getattr(request, 'set_auth_cookie', False):

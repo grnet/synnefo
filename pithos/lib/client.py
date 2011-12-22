@@ -932,7 +932,7 @@ def _prepare_headers(headers):
         headers[quote(k)] = quote(v, safe='/=,:@ *"') if type(v) == types.StringType else v
     return headers
 
-def _handle_response(response, verbose, debug):
+def _handle_response(response, verbose=False, debug=False):
     headers = response.getheaders()
     headers = dict((unquote(h), unquote(v)) for h,v in headers)
     
@@ -953,3 +953,15 @@ def _handle_response(response, verbose, debug):
     
     #print '**',  response.status, headers, data, '\n'
     return response.status, headers, data
+
+def authenticate(authentication_host, token):
+    con = HTTPConnection(authentication_host)
+    kwargs = {}
+    kwargs['headers'] = {}
+    kwargs['headers']['X-Auth-Token'] = token
+    kwargs['headers']['Content-Length'] = 0
+    
+    path = '/im/authenticate'
+    con.request('GET', path, **kwargs)
+    response = con.getresponse()
+    return _handle_response(response)

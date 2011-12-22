@@ -100,3 +100,8 @@ if 'twitter' in settings.IM_MODULES:
         (r'^login/twitter/?$', 'twitter.login'),
         (r'^login/twitter/authenticated/?$', 'twitter.authenticated')
     )
+
+urlpatterns += patterns('pithos.im.api',
+    (r'^authenticate/?$', 'authenticate')
+)
+    

@@ -214,8 +214,9 @@ def update_manifest_meta(request, v_account, meta):
                                 src_container, prefix=src_name, virtual=False)
             for x in objects:
                 src_meta = request.backend.get_object_meta(request.user_uniq,
-                                        v_account, src_container, x[0], x[1])
-                etag += src_meta['ETag']
+                                        v_account, src_container, x[0], 'pithos', x[1])
+                if 'ETag' in src_meta:
+                    etag += src_meta['ETag']
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.

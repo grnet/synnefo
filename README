@@ -35,7 +35,7 @@ Make sure you have all required packages installed:
 
 Then run:
     python manage.py syncdb
-    python manage.py schemamigration im --initial
+    python manage.py migrate im
     python manage.py loaddata admin_user
     python manage.py runserver
 
@@ -44,3 +44,24 @@ Go to:
 
 This server is useful during development, but should not be used for deployment.
 To deploy Pithos using Apache, take a look at the Administrator Guide in docs.
+
+Using the tools
+---------------
+
+In the pithos/tools directory you will find the following utilities:
+
+    pithos-sh       Pithos shell
+    pithos-sync     Pithos synchronization client
+    pithos-fs       Pithos FUSE implementation
+    pithos-test     Pithos server tests
+
+Also, the pithos/lib directory contains a python library that can be used
+to access Pithos and manage stored objects. All tools use the included lib.
+
+Connection options can be set via environmental variables:
+
+    PITHOS_USER             Login user
+    PITHOS_AUTH             Login token
+    PITHOS_SERVER           Pithos server (default: plus.pithos.grnet.gr)
+    PITHOS_API              Pithos server path (default: v1)
+    PITHOS_SYNC_CONTAINER   Container to sync with (default: pithos)

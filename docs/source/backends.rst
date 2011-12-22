@@ -33,10 +33,10 @@ Permissions
    :members:
    :undoc-members:
 
-Hashfiler
-~~~~~~~~~
+Store
+~~~~~
 
-.. automodule:: pithos.backends.lib.hashfiler
+.. automodule:: pithos.backends.lib.hashfiler.store
    :show-inheritance:
    :members:
    :undoc-members:

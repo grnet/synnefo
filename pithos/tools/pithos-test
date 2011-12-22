@@ -34,8 +34,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from lib.client import Pithos_Client, Fault
-from lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.client import Pithos_Client, Fault
+from pithos.lib.util import get_user, get_auth, get_server, get_api
+
 from xml.dom import minidom
 from StringIO import StringIO
 from hashlib import new as newhasher
@@ -574,7 +575,7 @@ class ContainerGet(BaseTestCase):
             l.sort()
             start = l.index(m) + 1
             end = start + limit
-            end = len(l) >= end and end or len(l)
+            end = end if len(l) >= end else len(l)
             self.assertEqual(objects, l[start:end])
     
     #takes too long
@@ -1176,7 +1177,7 @@ class ObjectGet(BaseTestCase):
             hashes = body['hashes']
             block_size = body['block_size']
             block_hash = body['block_hash']
-            block_num = l/block_size == 0 and l/block_size or l/block_size + 1
+            block_num = l/block_size if l/block_size == 0 else l/block_size + 1
             self.assertTrue(len(hashes), block_num)
             i = 0
             for h in hashes:
@@ -1782,9 +1783,31 @@ class TestGreek(BaseTestCase):
         meta = {'ποσότητα':'μεγάλη'}
         self.client.update_object_metadata('φάκελος', 'ο2', **meta)
         objects = self.client.list_objects('φάκελος', meta='ποιότητα, ποσότητα')
-        self.assertTrue('ο1' in objects)
-        self.assertTrue('ο2' in objects)
-        self.assertTrue('ο3' not in objects)
+        self.assertEquals(objects, ['ο1', 'ο2'])
+        
+        objects = self.client.list_objects('φάκελος', meta='!ποιότητα')
+        self.assertEquals(objects, ['ο2', 'ο3'])
+        
+        objects = self.client.list_objects('φάκελος', meta='!ποιότητα, !ποσότητα')
+        self.assertEquals(objects, ['ο3'])
+        
+        meta = {'ποιότητα':'ΑΒ'}
+        self.client.update_object_metadata('φάκελος', 'ο2', **meta)
+        objects = self.client.list_objects('φάκελος', meta='ποιότητα=ΑΑΑ')
+        self.assertEquals(objects, ['ο1'])
+        objects = self.client.list_objects('φάκελος', meta='ποιότητα!=ΑΑΑ')
+        self.assertEquals(objects, ['ο2'])
+        
+        meta = {'έτος':'2011'}
+        self.client.update_object_metadata('φάκελος', 'ο3', **meta)
+        meta = {'έτος':'2012'}
+        self.client.update_object_metadata('φάκελος', 'ο2', **meta)
+        objects = self.client.list_objects('φάκελος', meta='έτος<2012')
+        self.assertEquals(objects, ['ο3'])
+        objects = self.client.list_objects('φάκελος', meta='έτος<=2012')
+        self.assertEquals(objects, ['ο2', 'ο3'])
+        objects = self.client.list_objects('φάκελος', meta='έτος<2012,έτος!=2011')
+        self.assertEquals(objects, '')
     
     def test_groups(self):
         #create a group

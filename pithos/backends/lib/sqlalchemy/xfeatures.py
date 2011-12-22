@@ -92,7 +92,7 @@ class XFeatures(DBWorker):
             return [inherited]
         
         s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
-        s = s.where(and_(self.xfeatures.c.path.like(path + '%'),
+        s = s.where(and_(self.xfeatures.c.path.like(self.escape_like(path) + '%', escape='\\'),
                      self.xfeatures.c.path != path))
         s = s.order_by(self.xfeatures.c.path)
         r = self.conn.execute(s)

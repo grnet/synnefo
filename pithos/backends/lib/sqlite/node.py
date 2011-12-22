@@ -35,10 +35,12 @@ from time import time
 
 from dbworker import DBWorker
 
+from pithos.lib.filter import parse_filters, OPERATORS
+
 
 ROOTNODE  = 0
 
-( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, CLUSTER ) = range(8)
+( SERIAL, NODE, HASH, SIZE, SOURCE, MTIME, MUSER, UUID, CLUSTER ) = range(9)
 
 inf = float('inf')
 
@@ -86,7 +88,8 @@ _propnames = {
     'source'    : 4,
     'mtime'     : 5,
     'muser'     : 6,
-    'cluster'   : 7,
+    'uuid'      : 7,
+    'cluster'   : 8
 }
 
 
@@ -145,6 +148,7 @@ class Node(DBWorker):
                             source     integer,
                             mtime      integer,
                             muser      text    not null default '',
+                            uuid       text    not null default '',
                             cluster    integer not null default 0,
                             foreign key (node)
                             references nodes(node)
@@ -152,12 +156,15 @@ class Node(DBWorker):
                             on delete cascade ) """)
         execute(""" create index if not exists idx_versions_node_mtime
                     on versions(node, mtime) """)
+        execute(""" create index if not exists idx_versions_node_uuid
+                    on versions(uuid) """)
         
         execute(""" create table if not exists attributes
                           ( serial integer,
+                            domain text,
                             key    text,
                             value  text,
-                            primary key (serial, key)
+                            primary key (serial, domain, key)
                             foreign key (serial)
                             references versions(serial)
                             on update cascade
@@ -200,10 +207,10 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
         """
         
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where node = ?")
         self.execute(q, (node,))
@@ -406,7 +413,7 @@ class Node(DBWorker):
         parent, path = props
         
         # The latest version.
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -447,8 +454,8 @@ class Node(DBWorker):
              "and cluster != ? "
              "and node in (select node "
                           "from nodes "
-                          "where path like ?)")
-        execute(q, (before, except_cluster, path + '%'))
+                          "where path like ? escape '\\')")
+        execute(q, (before, except_cluster, self.escape_like(path) + '%'))
         r = fetchone()
         if r is None:
             return None
@@ -456,15 +463,15 @@ class Node(DBWorker):
         mtime = max(mtime, r[2])
         return (count, size, mtime)
     
-    def version_create(self, node, hash, size, source, muser, cluster=0):
+    def version_create(self, node, hash, size, source, muser, uuid, cluster=0):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
         
-        q = ("insert into versions (node, hash, size, source, mtime, muser, cluster) "
-             "values (?, ?, ?, ?, ?, ?, ?)")
+        q = ("insert into versions (node, hash, size, source, mtime, muser, uuid, cluster) "
+             "values (?, ?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
-        props = (node, hash, size, source, mtime, muser, cluster)
+        props = (node, hash, size, source, mtime, muser, uuid, cluster)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster)
         return serial, mtime
@@ -472,11 +479,11 @@ class Node(DBWorker):
     def version_lookup(self, node, before=inf, cluster=0):
         """Lookup the current version of the given node.
            Return a list with its properties:
-           (serial, node, hash, size, source, mtime, muser, cluster)
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster)
            or None if the current version is not found in the given cluster.
         """
         
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where serial = (select max(serial) "
                              "from versions "
@@ -492,10 +499,10 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, source, mtime, muser, cluster).
+           (serial, node, hash, size, source, mtime, muser, uuid, cluster).
         """
         
-        q = ("select serial, node, hash, size, source, mtime, muser, cluster "
+        q = ("select serial, node, hash, size, source, mtime, muser, uuid, cluster "
              "from versions "
              "where serial = ?")
         self.execute(q, (serial,))
@@ -544,7 +551,7 @@ class Node(DBWorker):
         self.execute(q, (serial,))
         return hash
     
-    def attribute_get(self, serial, keys=()):
+    def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the version specified by serial.
            If keys is empty, return all attributes.
            Othwerise, return only those specified.
@@ -554,64 +561,53 @@ class Node(DBWorker):
         if keys:
             marks = ','.join('?' for k in keys)
             q = ("select key, value from attributes "
-                 "where key in (%s) and serial = ?" % (marks,))
-            execute(q, keys + (serial,))
+                 "where key in (%s) and serial = ? and domain = ?" % (marks,))
+            execute(q, keys + (serial, domain))
         else:
-            q = "select key, value from attributes where serial = ?"
-            execute(q, (serial,))
+            q = "select key, value from attributes where serial = ? and domain = ?"
+            execute(q, (serial, domain))
         return self.fetchall()
     
-    def attribute_set(self, serial, items):
+    def attribute_set(self, serial, domain, items):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
         
-        q = ("insert or replace into attributes (serial, key, value) "
-             "values (?, ?, ?)")
-        self.executemany(q, ((serial, k, v) for k, v in items))
+        q = ("insert or replace into attributes (serial, domain, key, value) "
+             "values (?, ?, ?, ?)")
+        self.executemany(q, ((serial, domain, k, v) for k, v in items))
     
-    def attribute_del(self, serial, keys=()):
+    def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
            If keys is empty, delete all attributes.
            Otherwise delete those specified.
         """
         
         if keys:
-            q = "delete from attributes where serial = ? and key = ?"
-            self.executemany(q, ((serial, key) for key in keys))
+            q = "delete from attributes where serial = ? and domain = ? and key = ?"
+            self.executemany(q, ((serial, domain, key) for key in keys))
         else:
-            q = "delete from attributes where serial = ?"
-            self.execute(q, (serial,))
+            q = "delete from attributes where serial = ? and domain = ?"
+            self.execute(q, (serial, domain))
     
     def attribute_copy(self, source, dest):
         q = ("insert or replace into attributes "
-             "select ?, key, value from attributes "
+             "select ?, domain, key, value from attributes "
              "where serial = ?")
         self.execute(q, (dest, source))
-    
-    def _construct_filters(self, filterq):
-        if not filterq:
-            return None, None
-        
-        args = filterq.split(',')
-        subq = " and a.key in ("
-        subq += ','.join(('?' for x in args))
-        subq += ")"
-        
-        return subq, args
     
     def _construct_paths(self, pathq):
         if not pathq:
             return None, None
         
         subq = " and ("
-        subq += ' or '.join(('n.path like ?' for x in pathq))
+        subq += ' or '.join(("n.path like ? escape '\\'" for x in pathq))
         subq += ")"
-        args = tuple([x + '%' for x in pathq])
+        args = tuple([self.escape_like(x) + '%' for x in pathq])
         
         return subq, args
     
-    def latest_attribute_keys(self, parent, before=inf, except_cluster=0, pathq=[]):
+    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
@@ -621,15 +617,16 @@ class Node(DBWorker):
         q = ("select distinct a.key "
              "from attributes a, versions v, nodes n "
              "where v.serial = (select max(serial) "
-                              "from versions "
-                              "where node = v.node and mtime < ?) "
+                               "from versions "
+                               "where node = v.node and mtime < ?) "
              "and v.cluster != ? "
              "and v.node in (select node "
-                           "from nodes "
-                           "where parent = ?) "
+                            "from nodes "
+                            "where parent = ?) "
              "and a.serial = v.serial "
+             "and a.domain = ? "
              "and n.node = v.node")
-        args = (before, except_cluster, parent)
+        args = (before, except_cluster, parent, domain)
         subq, subargs = self._construct_paths(pathq)
         if subq is not None:
             q += subq
@@ -639,7 +636,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], filterq=None):
+                            except_cluster=0, pathq=[], domain=None, filterq=[]):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -673,7 +670,7 @@ class Node(DBWorker):
                    
                    key ?op value
                        the attribute with this key satisfies the value
-                       where ?op is one of ==, != <=, >=, <, >.
+                       where ?op is one of =, != <=, >=, <, >.
            
            The list of common prefixes includes the prefixes
            matching up to the first delimiter after prefix,
@@ -685,7 +682,6 @@ class Node(DBWorker):
            
            Limit applies to the first list of tuples returned.
         """
-        
         execute = self.execute
         
         if not start or start < prefix:
@@ -693,15 +689,14 @@ class Node(DBWorker):
         nextling = strnextling(prefix)
         
         q = ("select distinct n.path, v.serial "
-             "from attributes a, versions v, nodes n "
+             "from versions v, nodes n "
              "where v.serial = (select max(serial) "
-                              "from versions "
-                              "where node = v.node and mtime < ?) "
+                               "from versions "
+                               "where node = v.node and mtime < ?) "
              "and v.cluster != ? "
              "and v.node in (select node "
-                           "from nodes "
-                           "where parent = ?) "
-             "and a.serial = v.serial "
+                            "from nodes "
+                            "where parent = ?) "
              "and n.node = v.node "
              "and n.path > ? and n.path < ?")
         args = [before, except_cluster, parent, start, nextling]
@@ -710,35 +705,60 @@ class Node(DBWorker):
         if subq is not None:
             q += subq
             args += subargs
-        subq, subargs = self._construct_filters(filterq)
-        if subq is not None:
-            q += subq
-            args += subargs
-        else:
-            q = q.replace("attributes a, ", "")
-            q = q.replace("and a.serial = v.serial ", "")
         q += " order by n.path"
+        
+        def filterout(r):
+            if not filterq:
+                return False
+            path, serial = r
+            included, excluded, opers = parse_filters(filterq)
+            
+            #retrieve metadata
+            meta = dict(self.attribute_get(serial, domain))
+            keyset= set([k.encode('utf8') for k in meta.keys()])
+            
+            if included:
+                if not set(included) & keyset:
+                    return True
+            if excluded:
+                if set(excluded) & keyset:
+                    return True
+            for k, op, v in opers:
+                k = k.decode('utf8')
+                v = v.decode('utf8')
+                if k not in meta:
+                    return True
+                operation = OPERATORS[op]
+                if not operation(meta[k], v):
+                    return True
+            return False
         
         if not delimiter:
             q += " limit ?"
             args.append(limit)
             execute(q, args)
-            return self.fetchall(), ()
+            filter_ = lambda r : [t for t in r if not filterout(t)]
+            r = filter_(self.fetchall())
+            return r, ()
         
         pfz = len(prefix)
         dz = len(delimiter)
         count = 0
-        fetchone = self.fetchone
         prefixes = []
         pappend = prefixes.append
         matches = []
         mappend = matches.append
         
         execute(q, args)
-        while True:
-            props = fetchone()
+        r = self.fetchall()
+        i = 0
+        while i < len(r):
+            props = r[i]
             if props is None:
                 break
+            if filterout(props):
+                i+=1
+                continue
             path, serial = props
             idx = path.find(delimiter, pfz)
             
@@ -747,11 +767,13 @@ class Node(DBWorker):
                 count += 1
                 if count >= limit:
                     break
+                i+=1
                 continue
             
             if idx + dz == len(path):
                 mappend(props)
                 count += 1
+                i+=1
                 continue # Get one more, in case there is a path.
             pf = path[:idx + dz]
             pappend(pf)
@@ -760,5 +782,19 @@ class Node(DBWorker):
             
             args[3] = strnextling(pf) # New start.
             execute(q, args)
+            r = self.fetchall()
+            i = 0
         
         return matches, prefixes
+    
+    def latest_uuid(self, uuid):
+        """Return a (path, serial) tuple, for the latest version of the given uuid."""
+        
+        q = ("select n.path, v.serial "
+             "from versions v, nodes n "
+             "where v.serial = (select max(serial) "
+                               "from versions "
+                               "where uuid = ?) "
+             "and n.node = v.node")
+        self.execute(q, (uuid,))
+        return self.fetchone()

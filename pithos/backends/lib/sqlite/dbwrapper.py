@@ -31,13 +31,18 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import sqlite3
+try:
+    from pysqlite2 import dbapi2 as sqlite3
+except ImportError:
+    import sqlite3
+
 
 class DBWrapper(object):
     """Database connection wrapper."""
     
     def __init__(self, db):
         self.conn = sqlite3.connect(db, check_same_thread=False)
+        self.conn.execute(""" pragma case_sensitive_like = on """)
     
     def close(self):
         self.conn.close()

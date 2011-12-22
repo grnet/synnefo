@@ -47,7 +47,9 @@ from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
-from pithos.api.compat import parse_http_date_safe, parse_http_date
+from pithos.lib.compat import parse_http_date_safe, parse_http_date
+from pithos.lib.hashmap import HashMap
+
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
                                 RangeNotSatisfiable, ServiceUnavailable)
@@ -178,12 +180,13 @@ def get_object_headers(request):
     return meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
-    response['ETag'] = meta['ETag']
+    response['ETag'] = meta['ETag'] if 'ETag' in meta else meta['hash']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
+        response['X-Object-UUID'] = meta['uuid']
         response['X-Object-Modified-By'] = smart_str(meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(int(meta['version_timestamp']))
@@ -211,8 +214,9 @@ def update_manifest_meta(request, v_account, meta):
                                 src_container, prefix=src_name, virtual=False)
             for x in objects:
                 src_meta = request.backend.get_object_meta(request.user_uniq,
-                                        v_account, src_container, x[0], x[1])
-                etag += src_meta['ETag']
+                                        v_account, src_container, x[0], 'pithos', x[1])
+                if 'ETag' in src_meta:
+                    etag += src_meta['ETag']
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.
@@ -304,11 +308,11 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         if move:
             version_id = request.backend.move_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
-                                                        meta, False, permissions)
+                                                        'pithos', meta, False, permissions)
         else:
             version_id = request.backend.copy_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
-                                                        meta, False, permissions, src_version)
+                                                        'pithos', meta, False, permissions, src_version)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except (NameError, IndexError):
@@ -738,27 +742,26 @@ def put_object_block(request, hashmap, data, offset):
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl # Return ammount of data written.
 
-def hashmap_hash(request, hashmap):
-    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
+#def hashmap_hash(request, hashmap):
+#    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
+#    
+#    map = HashMap(request.backend.block_size, request.backend.hash_algorithm)
+#    map.extend([unhexlify(x) for x in hashmap])
+#    return hexlify(map.hash())
+
+def hashmap_md5(request, hashmap, size):
+    """Produce the MD5 sum from the data in the hashmap."""
     
-    def subhash(d):
-        h = hashlib.new(request.backend.hash_algorithm)
-        h.update(d)
-        return h.digest()
-    
-    if len(hashmap) == 0:
-        return hexlify(subhash(''))
-    if len(hashmap) == 1:
-        return hashmap[0]
-    
-    s = 2
-    while s < len(hashmap):
-        s = s * 2
-    h = [unhexlify(x) for x in hashmap]
-    h += [('\x00' * len(h[0]))] * (s - len(hashmap))
-    while len(h) > 1:
-        h = [subhash(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
-    return hexlify(h[0])
+    # TODO: Search backend for the MD5 of another object with the same hashmap and size...
+    md5 = hashlib.md5()
+    bs = request.backend.block_size
+    for bi, hash in enumerate(hashmap):
+        data = request.backend.get_block(hash)
+        if bi == len(hashmap) - 1:
+            bs = size % bs
+        pad = bs - min(len(data), bs)
+        md5.update(data + ('\x00' * pad))
+    return md5.hexdigest().lower()
 
 def update_request_headers(request):
     # Handle URL-encoded keys and values.

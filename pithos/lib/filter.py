@@ -31,42 +31,34 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from sqlalchemy import create_engine
-#from sqlalchemy.event import listen
-from sqlalchemy.engine import Engine
-from sqlalchemy.pool import NullPool
-from sqlalchemy.interfaces import PoolListener
+import re
+import operator
 
+_regexfilter = re.compile('(!?)\s*(\S+?)\s*(?:(=|!=|<=|>=|<|>)\s*(\S*?)\s*)?$', re.UNICODE)
 
-class DBWrapper(object):
-    """Database connection wrapper."""
+OPERATORS = {'=':operator.eq,
+             '!=':operator.ne,
+             '<=':operator.le,
+             '>=':operator.ge,
+             '<':operator.lt,
+             '>':operator.gt
+}
+
+def parse_filters(terms):
+    included = []
+    excluded = []
+    opers = []
+    match = _regexfilter.match
+    for term in terms:
+        m = match(term)
+        if m is None:
+            continue
+        neg, key, op, value = m.groups()
+        if neg:
+            excluded.append(key)
+        elif op:
+            opers.append((key, op, value))
+        elif not value:
+            included.append(key)
     
-    def __init__(self, db):
-        if db.startswith('sqlite://'):
-            class ForeignKeysListener(PoolListener):
-                def connect(self, dbapi_con, con_record):
-                    db_cursor = dbapi_con.execute('pragma foreign_keys=ON;')
-                    db_cursor = dbapi_con.execute('pragma case_sensitive_like=ON;')
-            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
-        elif db.startswith('mysql://'):
-            db = '%s?charset=utf8&use_unicode=0' %db
-            self.engine = create_engine(db, convert_unicode=True)
-        else:
-            self.engine = create_engine(db)
-        #self.engine.echo = True
-        self.conn = self.engine.connect()
-        self.trans = None
-    
-    def close(self):
-        self.conn.close()
-    
-    def execute(self):
-        self.trans = self.conn.begin()
-    
-    def commit(self):
-        self.trans.commit()
-        self.trans = None
-    
-    def rollback(self):
-        self.trans.rollback()
-        self.trans = None
+    return included, excluded, opers

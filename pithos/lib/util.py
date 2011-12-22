@@ -31,42 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from sqlalchemy import create_engine
-#from sqlalchemy.event import listen
-from sqlalchemy.engine import Engine
-from sqlalchemy.pool import NullPool
-from sqlalchemy.interfaces import PoolListener
+import os
 
+DEFAULT_SERVER = 'plus.pithos.grnet.gr'
+DEFAULT_API = 'v1'
+DEFAULT_USER = 'test'
+DEFAULT_AUTH = '0000'
 
-class DBWrapper(object):
-    """Database connection wrapper."""
-    
-    def __init__(self, db):
-        if db.startswith('sqlite://'):
-            class ForeignKeysListener(PoolListener):
-                def connect(self, dbapi_con, con_record):
-                    db_cursor = dbapi_con.execute('pragma foreign_keys=ON;')
-                    db_cursor = dbapi_con.execute('pragma case_sensitive_like=ON;')
-            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
-        elif db.startswith('mysql://'):
-            db = '%s?charset=utf8&use_unicode=0' %db
-            self.engine = create_engine(db, convert_unicode=True)
-        else:
-            self.engine = create_engine(db)
-        #self.engine.echo = True
-        self.conn = self.engine.connect()
-        self.trans = None
-    
-    def close(self):
-        self.conn.close()
-    
-    def execute(self):
-        self.trans = self.conn.begin()
-    
-    def commit(self):
-        self.trans.commit()
-        self.trans = None
-    
-    def rollback(self):
-        self.trans.rollback()
-        self.trans = None
+def get_user():
+    try:
+        return os.environ['PITHOS_USER']
+    except KeyError:
+        return DEFAULT_USER
+
+def get_auth():
+    try:
+        return os.environ['PITHOS_AUTH']
+    except KeyError:
+        return DEFAULT_AUTH
+
+def get_server():
+    try:
+        return os.environ['PITHOS_SERVER']
+    except KeyError:
+        return DEFAULT_SERVER
+
+def get_api():
+    try:
+        return os.environ['PITHOS_API']
+    except KeyError:
+        return DEFAULT_API

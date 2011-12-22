@@ -42,6 +42,8 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from xml.dom import minidom
 
+from pithos.lib.filter import parse_filters
+
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
 from pithos.api.util import (rename_meta_key, format_header_key, printable_header_dict, get_account_headers,
@@ -49,7 +51,7 @@ from pithos.api.util import (rename_meta_key, format_header_key, printable_heade
     update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
     validate_matching_preconditions, split_container_object_string, copy_or_move_object,
     get_int_parameter, get_content_length, get_content_range, socket_read_iterator, SaveToBackendHandler,
-    object_data_response, put_object_block, hashmap_hash, api_method, json_encode_decimal)
+    object_data_response, put_object_block, hashmap_md5, api_method, json_encode_decimal)
 from pithos.backends.base import NotAllowedError, QuotaError
 
 
@@ -126,7 +128,7 @@ def authenticate(request):
         uri = uri[:uri.find('?')]
     
     response['X-Auth-Token'] = x_auth_key
-    response['X-Storage-Url'] = uri + (uri.endswith('/') and '' or '/') + x_auth_user
+    response['X-Storage-Url'] = uri + ('' if uri.endswith('/') else '/') + x_auth_user
     return response
 
 @api_method('GET', format_allowed=True)
@@ -158,7 +160,7 @@ def account_list(request):
         if x == request.user_uniq:
             continue
         try:
-            meta = request.backend.get_account_meta(request.user_uniq, x)
+            meta = request.backend.get_account_meta(request.user_uniq, x, 'pithos')
             groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
             raise Forbidden('Not allowed')
@@ -190,7 +192,7 @@ def account_meta(request, v_account):
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        meta = request.backend.get_account_meta(request.user_uniq, v_account, until)
+        meta = request.backend.get_account_meta(request.user_uniq, v_account, 'pithos', until)
         groups = request.backend.get_account_groups(request.user_uniq, v_account)
         policy = request.backend.get_account_policy(request.user_uniq, v_account)
     except NotAllowedError:
@@ -223,8 +225,8 @@ def account_update(request, v_account):
             raise BadRequest('Invalid groups header')
     if meta or replace:
         try:
-            request.backend.update_account_meta(request.user_uniq, v_account, meta,
-                                                replace)
+            request.backend.update_account_meta(request.user_uniq, v_account,
+                                                'pithos', meta, replace)
         except NotAllowedError:
             raise Forbidden('Not allowed')
     return HttpResponse(status=202)
@@ -239,7 +241,7 @@ def container_list(request, v_account):
     
     until = get_int_parameter(request.GET.get('until'))
     try:
-        meta = request.backend.get_account_meta(request.user_uniq, v_account, until)
+        meta = request.backend.get_account_meta(request.user_uniq, v_account, 'pithos', until)
         groups = request.backend.get_account_groups(request.user_uniq, v_account)
         policy = request.backend.get_account_policy(request.user_uniq, v_account)
     except NotAllowedError:
@@ -280,7 +282,7 @@ def container_list(request, v_account):
     for x in containers:
         try:
             meta = request.backend.get_container_meta(request.user_uniq, v_account,
-                                                        x, until)
+                                                        x, 'pithos', until)
             policy = request.backend.get_container_policy(request.user_uniq,
                                                             v_account, x)
         except NotAllowedError:
@@ -317,9 +319,9 @@ def container_meta(request, v_account, v_container):
     until = get_int_parameter(request.GET.get('until'))
     try:
         meta = request.backend.get_container_meta(request.user_uniq, v_account,
-                                                    v_container, until)
+                                                    v_container, 'pithos', until)
         meta['object_meta'] = request.backend.list_object_meta(request.user_uniq,
-                                                v_account, v_container, until)
+                                                v_account, v_container, 'pithos', until)
         policy = request.backend.get_container_policy(request.user_uniq, v_account,
                                                         v_container)
     except NotAllowedError:
@@ -366,7 +368,7 @@ def container_create(request, v_account, v_container):
     if meta:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
-                                            v_container, meta, replace=False)
+                                            v_container, 'pithos', meta, replace=False)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:
@@ -399,7 +401,7 @@ def container_update(request, v_account, v_container):
     if meta or replace:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
-                                                    v_container, meta, replace)
+                                                    v_container, 'pithos', meta, replace)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:
@@ -454,9 +456,9 @@ def object_list(request, v_account, v_container):
     until = get_int_parameter(request.GET.get('until'))
     try:
         meta = request.backend.get_container_meta(request.user_uniq, v_account,
-                                                    v_container, until)
+                                                    v_container, 'pithos', until)
         meta['object_meta'] = request.backend.list_object_meta(request.user_uniq,
-                                                v_account, v_container, until)
+                                                v_account, v_container, 'pithos', until)
         policy = request.backend.get_container_policy(request.user_uniq, v_account,
                                                         v_container)
     except NotAllowedError:
@@ -494,9 +496,12 @@ def object_list(request, v_account, v_container):
     
     keys = request.GET.get('meta')
     if keys:
-        keys = keys.split(',')
-        l = [smart_str(x) for x in keys if x.strip() != '']
-        keys = [format_header_key('X-Object-Meta-' + x.strip()) for x in l]
+        keys = [smart_str(x.strip()) for x in keys.split(',') if x.strip() != '']
+        included, excluded, opers = parse_filters(keys)
+        keys = []
+        keys += [format_header_key('X-Object-Meta-' + x) for x in included]
+        keys += ['!'+format_header_key('X-Object-Meta-' + x) for x in excluded]
+        keys += ['%s%s%s' % (format_header_key('X-Object-Meta-' + k), o, v) for k, o, v in opers]
     else:
         keys = []
     
@@ -507,7 +512,7 @@ def object_list(request, v_account, v_container):
     try:
         objects = request.backend.list_objects(request.user_uniq, v_account,
                                     v_container, prefix, delimiter, marker,
-                                    limit, virtual, keys, shared, until)
+                                    limit, virtual, 'pithos', keys, shared, until)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -530,7 +535,7 @@ def object_list(request, v_account, v_container):
         else:
             try:
                 meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                        v_container, x[0], x[1])
+                                                        v_container, x[0], 'pithos', x[1])
                 if until is None:
                     permissions = request.backend.get_object_permissions(
                                     request.user_uniq, v_account, v_container, x[0])
@@ -546,6 +551,7 @@ def object_list(request, v_account, v_container):
             else:
                 rename_meta_key(meta, 'hash', 'x_object_hash') # Will be replaced by ETag.
                 rename_meta_key(meta, 'ETag', 'hash')
+                rename_meta_key(meta, 'uuid', 'x_object_uuid')
                 rename_meta_key(meta, 'modified', 'last_modified')
                 rename_meta_key(meta, 'modified_by', 'x_object_modified_by')
                 rename_meta_key(meta, 'version', 'x_object_version')
@@ -577,7 +583,7 @@ def object_meta(request, v_account, v_container, v_object):
     version = request.GET.get('version')
     try:
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                v_container, v_object, version)
+                                                v_container, v_object, 'pithos', version)
         if version is None:
             permissions = request.backend.get_object_permissions(request.user_uniq,
                                             v_account, v_container, v_object)
@@ -646,7 +652,7 @@ def object_read(request, v_account, v_container, v_object):
     
     try:
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                v_container, v_object, version)
+                                                v_container, v_object, 'pithos', version)
         if version is None:
             permissions = request.backend.get_object_permissions(request.user_uniq,
                                             v_account, v_container, v_object)
@@ -752,7 +758,7 @@ def object_write(request, v_account, v_container, v_object):
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         try:
             meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                        v_container, v_object)
+                                                        v_container, v_object, 'pithos')
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:
@@ -823,8 +829,6 @@ def object_write(request, v_account, v_container, v_object):
                     hashmap.append(hash.firstChild.data)
             except:
                 raise BadRequest('Invalid data formatting')
-        
-        meta.update({'ETag': hashmap_hash(request, hashmap)}) # Update ETag.
     else:
         md5 = hashlib.md5()
         size = 0
@@ -844,8 +848,8 @@ def object_write(request, v_account, v_container, v_object):
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, size, hashmap, meta,
-                        True, permissions)
+                        v_account, v_container, v_object, size, hashmap,
+                        'pithos', meta, True, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except IndexError, e:
@@ -858,6 +862,16 @@ def object_write(request, v_account, v_container, v_object):
         raise Conflict('\n'.join(e.data) + '\n')
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
+    if 'ETag' not in meta:
+        # Update the MD5 after the hashmap, as there may be missing hashes.
+        # TODO: This will create a new version, even if done synchronously...
+        etag = hashmap_md5(request, hashmap, size)
+        meta.update({'ETag': etag}) # Update ETag.
+        try:
+            version_id = request.backend.update_object_meta(request.user_uniq,
+                            v_account, v_container, v_object, 'pithos', {'ETag': etag}, False)
+        except NotAllowedError:
+            raise Forbidden('Not allowed')
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,
@@ -891,7 +905,8 @@ def object_write_form(request, v_account, v_container, v_object):
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, file.size, file.hashmap, meta, True)
+                        v_account, v_container, v_object, file.size, file.hashmap,
+                        'pithos', meta, True)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -928,7 +943,7 @@ def object_copy(request, v_account, v_container, v_object):
         src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
             meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                            v_container, v_object, src_version)
+                                            v_container, v_object, 'pithos', src_version)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except (NameError, IndexError):
@@ -964,7 +979,7 @@ def object_move(request, v_account, v_container, v_object):
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         try:
             meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                    v_container, v_object)
+                                                    v_container, v_object, 'pithos')
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except NameError:
@@ -985,6 +1000,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
+    
     meta, permissions, public = get_object_headers(request)
     content_type = meta.get('Content-Type')
     if content_type:
@@ -992,7 +1008,7 @@ def object_update(request, v_account, v_container, v_object):
     
     try:
         prev_meta = request.backend.get_object_meta(request.user_uniq, v_account,
-                                                    v_container, v_object)
+                                                    v_container, v_object, 'pithos')
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -1040,7 +1056,7 @@ def object_update(request, v_account, v_container, v_object):
         if meta or replace:
             try:
                 version_id = request.backend.update_object_meta(request.user_uniq,
-                                v_account, v_container, v_object, meta, replace)
+                                v_account, v_container, v_object, 'pithos', meta, replace)
             except NotAllowedError:
                 raise Forbidden('Not allowed')
             except NameError:
@@ -1162,11 +1178,11 @@ def object_update(request, v_account, v_container, v_object):
     if dest_bytes is not None and dest_bytes < size:
         size = dest_bytes
         hashmap = hashmap[:(int((size - 1) / request.backend.block_size) + 1)]
-    meta.update({'ETag': hashmap_hash(request, hashmap)}) # Update ETag.
+    meta.update({'ETag': hashmap_md5(request, hashmap, size)}) # Update ETag.
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
-                        v_account, v_container, v_object, size, hashmap, meta,
-                        replace, permissions)
+                        v_account, v_container, v_object, size, hashmap,
+                        'pithos', meta, replace, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:

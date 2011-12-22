@@ -25,9 +25,13 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Dec 2, 2011)          Update allowed versioning values.
+0.8 (Dec 22, 2011)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
+\                          Support metadata-based queries when listing objects at the container level.
+\                          Note Content-Type issue when using the internal django web server.
+\                          Add object UUID field.
+\                          Always reply with the MD5 in the ETag.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -441,7 +445,7 @@ prefix                  Return objects starting with prefix
 delimiter               Return objects up to the delimiter (discussion follows)
 path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
-meta                    Return objects having the specified meta keys (can be a comma separated list)
+meta                    Return objects that satisfy the key queries in the specified comma separated list (use ``<key>``, ``!<key>`` for existence queries, ``<key><op><value>`` for value queries, where ``<op>`` can be one of ``=``, ``!=``, ``<=``, ``>=``, ``<``, ``>``)
 shared                  Show only shared objects (no value parameter)
 until                   Optional timestamp
 ======================  ===================================
@@ -476,6 +480,7 @@ content_encoding            The encoding of the object (optional)
 content-disposition         The presentation style of the object (optional)
 last_modified               The last object modification date (regardless of version)
 x_object_hash               The Merkle hash
+x_object_uuid               The object's UUID
 x_object_version            The object's version identifier
 x_object_version_timestamp  The object's version timestamp
 x_object_modified_by        The user that committed the object's version
@@ -489,7 +494,7 @@ x_object_meta_*             Optional user defined metadata
 
 Extended replies may also include virtual directory markers in separate sections of the ``json`` or ``xml`` results.
 Virtual directory markers are only included when ``delimiter`` is explicitly set. They correspond to the substrings up to and including the first occurrence of the delimiter.
-In JSON results they appear as dictionaries with only a ``"subdir"`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
+In JSON results they appear as dictionaries with only a ``subdir`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
 In case there is an object with the same name as a virtual directory marker, the object will be returned.
 
 Example ``format=json`` reply:
@@ -503,6 +508,7 @@ Example ``format=json`` reply:
     "last_modified": "2011-12-02T08:10:41.565891+00:00",
     "x_object_meta": {"asdf": "qwerty"},
     "x_object_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "x_object_uuid": "8ed9af1b-c948-4bb6-82b0-48344f5c822c",
     "x_object_version": 98,
     "x_object_version_timestamp": "1322813441.565891",
     "x_object_modified_by": "user"}, ...]
@@ -523,6 +529,7 @@ Example ``format=xml`` reply:
         <key>asdf</key><value>qwerty</value>
       </x_object_meta>
       <x_object_hash>e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</x_object_hash>
+      <x_object_uuid>8ed9af1b-c948-4bb6-82b0-48344f5c822c</x_object_uuid>
       <x_object_version>98</x_object_version>
       <x_object_version_timestamp>1322813441.565891</x_object_version_timestamp>
       <x_object_modified_by>chazapis</x_object_modified_by>
@@ -678,6 +685,7 @@ Last-Modified               The last object modification date (regardless of ver
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Hash               The Merkle hash
+X-Object-UUID               The object's UUID
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
@@ -724,7 +732,7 @@ version                 Optional version identifier or ``list`` (specify a forma
 
 The reply is the object's data (or part of it), except if a hashmap is requested with ``hashmap``, or a version list with ``version=list`` (in both cases an extended reply format must be specified). Object headers (as in a ``HEAD`` request) are always included.
 
-Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block.
+Hashmaps expose the underlying storage format of the object. Note that each hash is computed after trimming trailing null bytes of the corresponding block. The ``X-Object-Hash`` header reports the single Merkle hash of the object's hashmap (refer to http://bittorrent.org/beps/bep_0030.html for more information).
 
 Example ``format=json`` reply:
 
@@ -774,6 +782,7 @@ Last-Modified               The last object modification date (regardless of ver
 Content-Encoding            The encoding of the object (optional)
 Content-Disposition         The presentation style of the object (optional)
 X-Object-Hash               The Merkle hash
+X-Object-UUID               The object's UUID
 X-Object-Version            The object's version identifier
 X-Object-Version-Timestamp  The object's version timestamp
 X-Object-Modified-By        The user that comitted the object's version
@@ -838,7 +847,7 @@ Hashmaps should be formatted as outlined in ``GET``.
 ==========================  ===============================
 Reply Header Name           Value
 ==========================  ===============================
-ETag                        The MD5 hash of the object (on create)
+ETag                        The MD5 hash of the object
 X-Object-Version            The object's new version
 ==========================  ===============================
 
@@ -865,7 +874,7 @@ If-Match              Proceed if ETags match with object
 If-None-Match         Proceed if ETags don't match with object
 Destination           The destination path in the form ``/<container>/<object>``
 Destination-Account   The destination account to copy to
-Content-Type          The MIME content type of the object (optional)
+Content-Type          The MIME content type of the object (optional :sup:`*`)
 Content-Encoding      The encoding of the object (optional)
 Content-Disposition   The presentation style of the object (optional)
 X-Source-Version      The source version to copy from
@@ -874,6 +883,8 @@ X-Object-Sharing      Object permissions (optional)
 X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
+
+:sup:`*` *When using django locally with the supplied web server, do provide a valid Content-Type, as a type of text/plain is applied by default to all requests.*
 
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 
@@ -948,7 +959,7 @@ To update an object's data:
 
 Optionally, truncate the updated object to the desired length with the ``X-Object-Bytes`` header.
 
-A data update will trigger an ETag change. Updated ETags correspond to the single Merkle hash of the object's hashmap (refer to http://bittorrent.org/beps/bep_0030.html for more information).
+A data update will trigger an ETag change. Updated ETags may happen asynchronously and appear at the server with a delay.
 
 No reply content. No reply headers if only metadata is updated.
 
@@ -1059,8 +1070,9 @@ List of differences from the OOS API:
 * Object hashmap retrieval through ``GET`` and the ``format`` parameter.
 * Object create via hashmap through ``PUT`` and the ``format`` parameter.
 * The object's Merkle hash is always returned in the ``X-Object-Hash`` header.
+* The object's UUID is always returned in the ``X-Object-UUID`` header. The UUID remains unchanged, even when the object's data or metadata changes, or the object is moved to another path (is renamed). A new UUID is assigned when creating or copying an object.
 * Object create using ``POST`` to support standard HTML forms.
-* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``. New ETag corresponds to the Merkle hash of the object's hashmap.
+* Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Include new version identifier in replies for object replace/change requests.
 * Object ``MOVE`` support.
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
@@ -1190,7 +1202,7 @@ Consider the following algorithm for synchronizing a local folder with the serve
 
 Notes:
 
-* States represent file hashes (either MD5 or Merkle). Deleted or non-existing files are assumed to have a magic hash (e.g. empty string).
+* States represent file hashes (it is suggested to use Merkle). Deleted or non-existing files are assumed to have a magic hash (e.g. empty string).
 * Updating a state (either local or remote) implies downloading, uploading or deleting the appropriate file.
 
 Recommended Practices and Examples

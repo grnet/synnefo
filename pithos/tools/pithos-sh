@@ -38,9 +38,10 @@ from optparse import OptionParser
 from os import environ
 from sys import argv, exit, stdin, stdout
 from datetime import datetime
-from lib.client import Pithos_Client, Fault
-from lib.util import get_user, get_auth, get_server, get_api
-from lib.transfer import upload, download
+
+from pithos.lib.client import Pithos_Client, Fault
+from pithos.lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.transfer import upload, download
 
 import json
 import logging
@@ -317,7 +318,7 @@ class GetObject(Command):
         else:
             data = self.client.retrieve_object(container, object, **args)    
         
-        f = self.file and open(self.file, 'w') or stdout
+        f = open(self.file, 'w') if self.file else stdout
         if self.detail:
             if self.versionlist:
                 print_versions(data, f=f)
@@ -765,7 +766,7 @@ def main():
         cmd.parser.print_help()
         exit(1)
     except Fault, f:
-        status = f.status and '%s ' % f.status or ''
+        status = '%s ' % f.status if f.status else ''
         print '%s%s' % (status, f.data)
 
 if __name__ == '__main__':

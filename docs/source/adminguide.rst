@@ -21,7 +21,7 @@ Setup the files::
 
   cd /pithos/pithos
   python manage.py syncdb
-  python manage.py schemamigration im --initial
+  python manage.py migrate im
   cd /pithos
   python setup.py build_sphinx
 
@@ -44,12 +44,17 @@ Edit ``/etc/apache2/sites-available/pithos`` (change the ``ServerName`` directiv
         Allow from all
     </Directory>
 
+    SetEnv no-gzip
+    SetEnv dont-vary
+
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT,NE]
     RewriteRule ^/public(.*) /api/public$1 [PT,NE]
     RewriteRule ^/tools(.*) /api/ui$1 [PT,NE]
     RewriteRule ^/im(.*) https://%{HTTP_HOST}%{REQUEST_URI} [NE]
     RewriteRule ^/login(.*) https://%{HTTP_HOST}%{REQUEST_URI} [NE]
+
+    RequestHeader set X-Forwarded-Protocol "http"
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
@@ -78,12 +83,17 @@ Edit ``/etc/apache2/sites-available/pithos-ssl`` (assuming files in ``/etc/ssl/p
         Allow from all
     </Directory>
 
+    SetEnv no-gzip
+    SetEnv dont-vary
+
     RewriteEngine On
     RewriteRule ^/v(.*) /api/v$1 [PT,NE]
     RewriteRule ^/public(.*) /api/public$1 [PT,NE]
     RewriteRule ^/tools(.*) /api/ui$1 [PT,NE]
     RewriteRule ^/im(.*) /api/im$1 [PT,NE]
     RewriteRule ^/login(.*) /api/im/login/dummy$1 [PT,NE]
+
+    RequestHeader set X-Forwarded-Protocol "https"
 
     WSGIScriptAlias /api /pithos/pithos/wsgi/pithos.wsgi
     # WSGIDaemonProcess pithos
@@ -171,6 +181,12 @@ Configure and run::
   a2enmod proxy
   a2enmod proxy_http
   /etc/init.d/apache2 restart
+
+If experiencing timeout problems, try adding to ``/etc/gunicorn.d/pithos``::
+
+        ...
+        '--timeout=43200',
+        ...
 
 Shibboleth Setup
 ----------------

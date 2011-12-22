@@ -1,7 +1,7 @@
 Client Library
 ==============
 
-.. automodule:: tools.lib.client
+.. automodule:: pithos.lib.client
    :show-inheritance:
    :members:
    :undoc-members:

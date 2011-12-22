@@ -39,3 +39,27 @@ UPGRADE
 * Reset 'policy' table in mysql (backend):
     
     mysql> update policy set `value`='auto' where `key`='versioning';
+
+0.8.1 -> 0.8.2
+--------------
+* Add the 'X-Forwarded-Protocol' header directive in the apache configuration, as described in the admin guide
+* Update 'attributes' table in mysql (backend):
+    
+    mysql> CREATE TABLE `attributes_new` (
+               `serial` int(11) NOT NULL,
+               `domain` varchar(255) COLLATE utf8_bin NOT NULL,
+               `key` varchar(255) COLLATE utf8_bin NOT NULL,
+               `value` varchar(255) COLLATE utf8_bin DEFAULT NULL,
+               PRIMARY KEY (`serial`,`domain`,`key`),
+               CONSTRAINT FOREIGN KEY (`serial`) REFERENCES `versions` (`serial`) ON DELETE CASCADE ON UPDATE CASCADE
+           ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+    mysql> insert into attributes_new select `serial`, 'pithos', `key`, `value` from attributes;
+    mysql> drop table attributes;
+    mysql> alter table attributes_new rename to attributes;
+
+* Update 'versions' table in mysql (backend):
+    
+    mysql> create temporary table tmp_uuids as select distinct node, uuid() as `uuid` from versions;
+    mysql> alter table versions add column `uuid` varchar(64) DEFAULT '' NOT NULL after `muser`;
+    mysql> update versions v, tmp_uuids u set v.`uuid` = u.`uuid` where v.`node` = u.`node`;
+    mysql> create index idx_versions_node_uuid on versions(uuid);

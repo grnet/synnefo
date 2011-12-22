@@ -126,5 +126,10 @@ UI_OS_DEFAULT_USER_MAP = {
 # UI EXTENSIONS
 ###############
 
-UI_ENABLE_GLANCE = True
+# Glance images API endpoint
 UI_GLANCE_API_URL = '/plankton'
+
+# Whether or not UI should display images from the Glance API
+# set in UI_GLANCE_API_URL, if setting is set to False, ui will
+# request images from Compute API
+UI_ENABLE_GLANCE = True

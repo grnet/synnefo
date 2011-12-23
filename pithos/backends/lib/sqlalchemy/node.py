@@ -844,24 +844,21 @@ class Node(DBWorker):
             included, excluded, opers = parse_filters(filterq)
             if included:
                 subs = select([1])
-                subs = subs.where(a.c.serial == v.c.serial)
+                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
                 subs = subs.where(a.c.domain == domain)
                 subs = subs.where(or_(*[a.c.key.op('=')(x) for x in included]))
-                print '---', str(subs)
                 s = s.where(exists(subs))
             if excluded:
                 subs = select([1])
-                subs = subs.where(a.c.serial == v.c.serial)
+                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
                 subs = subs.where(a.c.domain == domain)
                 subs = subs.where(or_(*[a.c.key.op('=')(x) for x in excluded]))
-                print '---', str(subs)
                 s = s.where(not_(exists(subs)))
             if opers:
                 subs = select([1])
-                subs = subs.where(a.c.serial == v.c.serial)
+                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
                 subs = subs.where(a.c.domain == domain)
-                subs = subs.where(and_(*[a.c.key == k and a.c.value.op(o)(v) for k, o, v in opers]))
-                print '---', str(subs)
+                subs = subs.where(and_(*[and_(a.c.key.op('=')(k), a.c.value.op(o)(v)) for k, o, v in opers]))
                 s = s.where(exists(subs))
         
         s = s.order_by(n.c.path)

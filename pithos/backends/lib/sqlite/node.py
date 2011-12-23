@@ -606,20 +606,27 @@ class Node(DBWorker):
         args = []
         
         if included:
-            subq = "a.key in ("
-            subq += ','.join(('?' for x in included)) + ")"
+            subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            subq += "(" + ' or '.join(('key = ?' for x in included)) + ")"
+            subq += ")"
+            args += [domain]
             args += included
             append(subq)
         
         if excluded:
-            subq = "a.key not in ("
-            subq += ','.join(('?' for x in excluded)) + ")"
+            subq = "not exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            subq += "(" + ' or '.join(('key = ?' for x in excluded)) + ")"
+            subq += ")"
+            args += [domain]
             args += excluded
             append(subq)
         
         if opers:
-            t = (("(a.key = ? and a.value %s ?)" % (o,)) for k, o, v in opers)
-            subq = "(" + ' or '.join(t) + ")"
+            subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            t = (("(key = ? and value %s ?)" % (o,)) for k, o, v in opers)
+            subq += "(" + ' and '.join(t) + ")"
+            subq += ")"
+            args += [domain]
             for k, o, v in opers:
                 args += [k, v]
             append(subq)
@@ -627,8 +634,7 @@ class Node(DBWorker):
         if not subqlist:
             return None, None
         
-        subq = ' and a.domain = ? and ' + ' and '.join(subqlist)
-        args = [domain] + args
+        subq = ' and ' + ' and '.join(subqlist)
         
         return subq, args
     
@@ -726,7 +732,7 @@ class Node(DBWorker):
         nextling = strnextling(prefix)
         
         q = ("select distinct n.path, v.serial "
-             "from attributes a, versions v, nodes n "
+             "from versions v, nodes n "
              "where v.serial = (select max(serial) "
                                "from versions "
                                "where node = v.node and mtime < ?) "
@@ -734,7 +740,6 @@ class Node(DBWorker):
              "and v.node in (select node "
                             "from nodes "
                             "where parent = ?) "
-             "and a.serial = v.serial "
              "and n.node = v.node "
              "and n.path > ? and n.path < ?")
         args = [before, except_cluster, parent, start, nextling]

@@ -506,7 +506,7 @@ class ModularBackend(BaseBackend):
         hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
     
-    def _update_object_hash(self, user, account, container, name, size, hash, permissions, is_copy=False):
+    def _update_object_hash(self, user, account, container, name, size, hash, permissions, src_node=None, is_copy=False):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
@@ -517,10 +517,14 @@ class ModularBackend(BaseBackend):
         account_path, account_node = self._lookup_account(account, True)
         container_path, container_node = self._lookup_container(account, container)
         path, node = self._put_object_node(container_path, container_node, name)
-        src_version_id, dest_version_id = self._put_version_duplicate(user, node, size=size, hash=hash, is_copy=is_copy)
+        pre_version_id, dest_version_id = self._put_version_duplicate(user, node, src_node=src_node, size=size, hash=hash, is_copy=is_copy)
         
         # Check quota.
-        size_delta = size # Change with versioning.
+        versioning = self._get_policy(container_node)['versioning']
+        if versioning != 'auto':
+            size_delta = size - 0 # TODO: Get previous size.
+        else:
+            size_delta = size
         if size_delta > 0:
             account_quota = long(self._get_policy(account_node)['quota'])
             container_quota = long(self._get_policy(container_node)['quota'])
@@ -531,8 +535,8 @@ class ModularBackend(BaseBackend):
         
         if permissions is not None:
             self.permissions.access_set(path, permissions)
-        self._apply_versioning(account, container, src_version_id)
-        return src_version_id, dest_version_id
+        self._apply_versioning(account, container, pre_version_id)
+        return pre_version_id, dest_version_id
     
     @backend_method
     def update_object_hashmap(self, user, account, container, name, size, hashmap, domain, meta={}, replace_meta=False, permissions=None):
@@ -550,21 +554,22 @@ class ModularBackend(BaseBackend):
             raise ie
         
         hash = map.hash()
-        src_version_id, dest_version_id = self._update_object_hash(user, account, container, name, size, binascii.hexlify(hash), permissions)
-        self._put_metadata_duplicate(src_version_id, dest_version_id, domain, meta, replace_meta)
+        pre_version_id, dest_version_id = self._update_object_hash(user, account, container, name, size, binascii.hexlify(hash), permissions)
+        self._put_metadata_duplicate(pre_version_id, dest_version_id, domain, meta, replace_meta)
         self.store.map_put(hash, map)
         return dest_version_id
     
     def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, dest_domain=None, dest_meta={}, replace_meta=False, permissions=None, src_version=None, is_move=False):
         self._can_read(user, src_account, src_container, src_name)
         path, node = self._lookup_object(src_account, src_container, src_name)
-        props = self._get_version(node, src_version)
+        # TODO: Will do another fetch of the properties in duplicate version...
+        props = self._get_version(node, src_version) # Check to see if source exists.
         src_version_id = props[self.SERIAL]
         hash = props[self.HASH]
         size = props[self.SIZE]
         
         is_copy = not is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name) # New uuid.
-        src_v_id, dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, permissions, is_copy=is_copy)
+        pre_version_id, dest_version_id = self._update_object_hash(user, dest_account, dest_container, dest_name, size, hash, permissions, src_node=node, is_copy=is_copy)
         self._put_metadata_duplicate(src_version_id, dest_version_id, dest_domain, dest_meta, replace_meta)
         return dest_version_id
     
@@ -755,10 +760,10 @@ class ModularBackend(BaseBackend):
                 raise IndexError('Version does not exist')
         return props
     
-    def _put_version_duplicate(self, user, node, size=None, hash=None, cluster=CLUSTER_NORMAL, is_copy=False):
+    def _put_version_duplicate(self, user, node, src_node=None, size=None, hash=None, cluster=CLUSTER_NORMAL, is_copy=False):
         """Create a new version of the node."""
         
-        props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
+        props = self.node.version_lookup(node if src_node is None else src_node, inf, CLUSTER_NORMAL)
         if props is not None:
             src_version_id = props[self.SERIAL]
             src_hash = props[self.HASH]
@@ -770,12 +775,20 @@ class ModularBackend(BaseBackend):
         if size is None:
             hash = src_hash # This way hash can be set to None.
             size = src_size
-        uuid = self._generate_uuid() if is_copy or src_version_id is None else props[self.UUID]
+        uuid = self._generate_uuid() if (is_copy or src_version_id is None) else props[self.UUID]
         
-        if src_version_id is not None:
-            self.node.version_recluster(src_version_id, CLUSTER_HISTORY)
+        if src_node is None:
+            pre_version_id = src_version_id
+        else:
+            pre_version_id = None
+            props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
+            if props is not None:
+                pre_version_id = props[self.SERIAL]
+        if pre_version_id is not None:
+            self.node.version_recluster(pre_version_id, CLUSTER_HISTORY)
+        
         dest_version_id, mtime = self.node.version_create(node, hash, size, src_version_id, user, uuid, cluster)
-        return src_version_id, dest_version_id
+        return pre_version_id, dest_version_id
     
     def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain, meta, replace=False):
         if src_version_id is not None:

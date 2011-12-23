@@ -35,13 +35,14 @@ from time import time
 from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
 from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
-from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text
+from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text, exists
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
 
 from dbworker import DBWorker
 
-from pithos.lib.filter import parse_filters, OPERATORS
+from pithos.lib.filter import parse_filters
+
 
 ROOTNODE  = 0
 
@@ -818,7 +819,6 @@ class Node(DBWorker):
             start = strprevling(prefix)
         nextling = strnextling(prefix)
         
-        a = self.attributes.alias('a')
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         s = select([n.c.path, v.c.serial]).distinct()
@@ -839,39 +839,34 @@ class Node(DBWorker):
         if conj:
             s = s.where(or_(*conj))
         
+        if domain and filterq:
+            a = self.attributes.alias('a')
+            included, excluded, opers = parse_filters(filterq)
+            if included:
+                subs = select([1])
+                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
+                subs = subs.where(a.c.domain == domain)
+                subs = subs.where(or_(*[a.c.key.op('=')(x) for x in included]))
+                s = s.where(exists(subs))
+            if excluded:
+                subs = select([1])
+                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
+                subs = subs.where(a.c.domain == domain)
+                subs = subs.where(or_(*[a.c.key.op('=')(x) for x in excluded]))
+                s = s.where(not_(exists(subs)))
+            if opers:
+                subs = select([1])
+                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
+                subs = subs.where(a.c.domain == domain)
+                subs = subs.where(and_(*[and_(a.c.key.op('=')(k), a.c.value.op(o)(v)) for k, o, v in opers]))
+                s = s.where(exists(subs))
+        
         s = s.order_by(n.c.path)
         
-        def filterout(r):
-            if not filterq:
-                return False
-            path, serial = r
-            included, excluded, opers = parse_filters(filterq)
-            
-            #retrieve metadata
-            meta = dict(self.attribute_get(serial, domain))
-            keyset= set([k.encode('utf8') for k in meta.keys()])
-            
-            if included:
-                if not set(included) & keyset:
-                    return True
-            if excluded:
-                if set(excluded) & keyset:
-                    return True
-            for k, op, v in opers:
-                k = k.decode('utf8')
-                v = v.decode('utf8')
-                if k not in meta:
-                    return True
-                operation = OPERATORS[op]
-                if not operation(meta[k], v):
-                    return True
-            return False
-    
         if not delimiter:
             s = s.limit(limit)
             rp = self.conn.execute(s, start=start)
-            filter_ = lambda r : [t for t in r if not filterout(t)]
-            r = filter_(rp.fetchall())
+            r = rp.fetchall()
             rp.close()
             return r, ()
         
@@ -888,8 +883,6 @@ class Node(DBWorker):
             props = rp.fetchone()
             if props is None:
                 break
-            if filterout(props):
-                continue
             path, serial = props
             idx = path.find(delimiter, pfz)
             

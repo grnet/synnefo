@@ -32,17 +32,10 @@
 # or implied, of GRNET S.A.
 
 import re
-import operator
+
 
 _regexfilter = re.compile('(!?)\s*(\S+?)\s*(?:(=|!=|<=|>=|<|>)\s*(\S*?)\s*)?$', re.UNICODE)
 
-OPERATORS = {'=':operator.eq,
-             '!=':operator.ne,
-             '<=':operator.le,
-             '>=':operator.ge,
-             '<':operator.lt,
-             '>':operator.gt
-}
 
 def parse_filters(terms):
     included = []

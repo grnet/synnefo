@@ -35,7 +35,7 @@ from time import time
 from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
 from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
-from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text
+from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text, exists
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
 
@@ -819,7 +819,6 @@ class Node(DBWorker):
             start = strprevling(prefix)
         nextling = strnextling(prefix)
         
-        a = self.attributes.alias('a')
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         s = select([n.c.path, v.c.serial]).distinct()
@@ -830,9 +829,6 @@ class Node(DBWorker):
         s = s.where(v.c.cluster != except_cluster)
         s = s.where(v.c.node.in_(select([self.nodes.c.node],
             self.nodes.c.parent == parent)))
-        if domain and filterq:
-            s = s.where(a.c.serial == v.c.serial)
-            s = s.where(a.c.domain == domain)
         
         s = s.where(n.c.node == v.c.node)
         s = s.where(and_(n.c.path > bindparam('start'), n.c.path < nextling))
@@ -844,14 +840,29 @@ class Node(DBWorker):
             s = s.where(or_(*conj))
         
         if domain and filterq:
+            a = self.attributes.alias('a')
             included, excluded, opers = parse_filters(filterq)
             if included:
-                s = s.where(a.c.key.in_(x for x in included))
+                subs = select([1])
+                subs = subs.where(a.c.serial == v.c.serial)
+                subs = subs.where(a.c.domain == domain)
+                subs = subs.where(or_(*[a.c.key.op('=')(x) for x in included]))
+                print '---', str(subs)
+                s = s.where(exists(subs))
             if excluded:
-                s = s.where(not_(a.c.key.in_(x for x in excluded)))
+                subs = select([1])
+                subs = subs.where(a.c.serial == v.c.serial)
+                subs = subs.where(a.c.domain == domain)
+                subs = subs.where(or_(*[a.c.key.op('=')(x) for x in excluded]))
+                print '---', str(subs)
+                s = s.where(not_(exists(subs)))
             if opers:
-                for k, o, v in opers:
-                    s = s.where(or_(a.c.key == k and a.c.value.op(o)(v)))
+                subs = select([1])
+                subs = subs.where(a.c.serial == v.c.serial)
+                subs = subs.where(a.c.domain == domain)
+                subs = subs.where(and_(*[a.c.key == k and a.c.value.op(o)(v) for k, o, v in opers]))
+                print '---', str(subs)
+                s = s.where(exists(subs))
         
         s = s.order_by(n.c.path)
         

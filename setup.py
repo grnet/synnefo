@@ -183,4 +183,3 @@ setup(
         'pithos/tools/pithos-test'
     ]
 )
-

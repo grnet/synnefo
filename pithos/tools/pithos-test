@@ -1374,6 +1374,11 @@ class ObjectMove(BaseTestCase):
         self.obj = self.upload_random_data(self.containers[0], o_names[0])
     
     def test_move(self):
+        meta = self.client.retrieve_object_metadata(self.containers[0],
+                                                    self.obj['name'])
+        self.assertTrue('x-object-uuid' in meta)
+        uuid = meta['x-object-uuid']
+        
         #perform move
         meta = {'test':'testcopy'}
         src_path = '/'.join(('/', self.containers[0], self.obj['name']))
@@ -1386,10 +1391,12 @@ class ObjectMove(BaseTestCase):
         
         #assert updated metadata
         meta = self.client.retrieve_object_metadata(self.containers[0],
-                                                    'testcopy',
-                                                    restricted=True)
-        self.assertTrue('test' in meta.keys())
-        self.assertTrue(meta['test'], 'testcopy')
+                                                    'testcopy')
+        self.assertTrue('x-object-meta-test' in meta.keys())
+        self.assertTrue(meta['x-object-meta-test'], 'testcopy')
+        
+        #assert same uuid
+        self.assertTrue(meta['x-object-uuid'], uuid)
         
         #assert src object no more exists
         self.assert_object_not_exists(self.containers[0], self.obj['name'])
@@ -1405,53 +1412,59 @@ class ObjectPost(BaseTestCase):
             self.obj.append(self.upload_random_data(self.containers[0], o_names[i]))
     
     def test_update_meta(self):
-        #perform update metadata
-        more = {'foo':'foo', 'bar':'bar'}
-        status = self.client.update_object_metadata(self.containers[0],
-                                                    self.obj[0]['name'],
-                                                    **more)[0]
-        #assert request accepted
-        self.assertEqual(status, 202)
-        
-        #assert old metadata are still there
-        headers = self.client.retrieve_object_metadata(self.containers[0],
-                                                       self.obj[0]['name'],
-                                                       restricted=True)
-        #assert new metadata have been updated
-        for k,v in more.items():
-            self.assertTrue(k in headers.keys())
-            self.assertTrue(headers[k], v)
+        with AssertUUidInvariant(self.client.retrieve_object_metadata,
+                                 self.containers[0],
+                                 self.obj[0]['name']):
+            #perform update metadata
+            more = {'foo':'foo', 'bar':'bar'}
+            status = self.client.update_object_metadata(self.containers[0],
+                                                        self.obj[0]['name'],
+                                                        **more)[0]
+            #assert request accepted
+            self.assertEqual(status, 202)
+            
+            #assert old metadata are still there
+            headers = self.client.retrieve_object_metadata(self.containers[0],
+                                                           self.obj[0]['name'],
+                                                           restricted=True)
+            #assert new metadata have been updated
+            for k,v in more.items():
+                self.assertTrue(k in headers.keys())
+                self.assertTrue(headers[k], v)
     
     def test_update_object(self,
                            first_byte_pos=0,
                            last_byte_pos=499,
                            instance_length = True,
                            content_length = 500):
-        l = len(self.obj[0]['data'])
-        range = 'bytes %d-%d/%s' %(first_byte_pos,
-                                       last_byte_pos,
-                                        l if instance_length else '*')
-        partial = last_byte_pos - first_byte_pos + 1
-        length = first_byte_pos + partial
-        data = get_random_data(partial)
-        args = {'content_type':'application/octet-stream',
-                'content_range':'%s' %range}
-        if content_length:
-            args['content_length'] = content_length
-        
-        status = self.client.update_object(self.containers[0], self.obj[0]['name'],
-                                  StringIO(data), **args)[0]
-        
-        if partial < 0 or (instance_length and l <= last_byte_pos):
-            self.assertEqual(status, 202)    
-        else:
-            self.assertEqual(status, 204)           
-            #check modified object
-            content = self.client.retrieve_object(self.containers[0],
-                                              self.obj[0]['name'])
-            self.assertEqual(content[:first_byte_pos], self.obj[0]['data'][:first_byte_pos])
-            self.assertEqual(content[first_byte_pos:last_byte_pos+1], data)
-            self.assertEqual(content[last_byte_pos+1:], self.obj[0]['data'][last_byte_pos+1:])
+        with AssertUUidInvariant(self.client.retrieve_object_metadata,
+                                 self.containers[0],
+                                 self.obj[0]['name']):
+            l = len(self.obj[0]['data'])
+            range = 'bytes %d-%d/%s' %(first_byte_pos,
+                                           last_byte_pos,
+                                            l if instance_length else '*')
+            partial = last_byte_pos - first_byte_pos + 1
+            length = first_byte_pos + partial
+            data = get_random_data(partial)
+            args = {'content_type':'application/octet-stream',
+                    'content_range':'%s' %range}
+            if content_length:
+                args['content_length'] = content_length
+            
+            status = self.client.update_object(self.containers[0], self.obj[0]['name'],
+                                      StringIO(data), **args)[0]
+            
+            if partial < 0 or (instance_length and l <= last_byte_pos):
+                self.assertEqual(status, 202)    
+            else:
+                self.assertEqual(status, 204)           
+                #check modified object
+                content = self.client.retrieve_object(self.containers[0],
+                                                  self.obj[0]['name'])
+                self.assertEqual(content[:first_byte_pos], self.obj[0]['data'][:first_byte_pos])
+                self.assertEqual(content[first_byte_pos:last_byte_pos+1], data)
+                self.assertEqual(content[last_byte_pos+1:], self.obj[0]['data'][last_byte_pos+1:])
     
     def test_update_object_lt_blocksize(self):
         self.test_update_object(10, 20, content_length=None)
@@ -1998,6 +2011,24 @@ class TestPublish(BaseTestCase):
         data = public_client.get(url)[2]
         self.assertEqual(o_data, data)
 
+class AssertUUidInvariant(object):
+    def __init__(self, callable, *args, **kwargs):
+        self.callable = callable
+        self.args = args
+        self.kwargs = kwargs
+    
+    def __enter__(self):
+        self.map = self.callable(*self.args, **self.kwargs)
+        assert('x-object-uuid' in self.map)
+        self.uuid = self.map['x-object-uuid']
+        return self.map
+    
+    def __exit__(self, type, value, tb):
+        map = self.callable(*self.args, **self.kwargs)
+        assert('x-object-uuid' in self.map)
+        uuid = map['x-object-uuid']
+        assert(uuid == self.uuid)
+
 class AssertMappingInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable
@@ -2010,11 +2041,13 @@ class AssertMappingInvariant(object):
     
     def __exit__(self, type, value, tb):
         map = self.callable(*self.args, **self.kwargs)
-        for k in self.map.keys():
-            if is_date(self.map[k]):
+        for k, v in self.map.items():
+            if is_date(v):
                 continue
-            assert map[k] == self.map[k]
-
+            print '#', k, v, map[k]
+            assert(k in map)
+            assert v == map[k]
+    
 class AssertContentInvariant(object):
     def __init__(self, callable, *args, **kwargs):
         self.callable = callable

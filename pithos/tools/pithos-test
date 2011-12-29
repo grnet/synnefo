@@ -2044,7 +2044,7 @@ class AssertMappingInvariant(object):
         for k, v in self.map.items():
             if is_date(v):
                 continue
-            print '#', k, v, map[k]
+            #print '#', k, v, map[k]
             assert(k in map)
             assert v == map[k]
     

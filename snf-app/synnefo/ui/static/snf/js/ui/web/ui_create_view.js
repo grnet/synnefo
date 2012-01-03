@@ -340,11 +340,13 @@
 
         update_image_details: function(image) {
             this.image_details_desc.hide().parent().hide();
-            if (image.get("description"))
+            if (image.escape("description")) {
                 this.image_details_desc.text(image.get("description")).show().parent().show();
-            var img = snf.ui.helpers.os_icon_tag(image.get("OS"))
-            if (image.get("name"))
-                this.image_details_title.html(img + image.get("name")).show().parent().show();
+            }
+            var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
+            if (image.get("name")) {
+                this.image_details_title.html(img + image.escape("name")).show().parent().show();
+            }
             
             var extra_details = this.image_details.find(".extra-details");
             // clean prevously added extra details
@@ -377,7 +379,7 @@
                 if (!value) { return; }
                 
                 var label = _(key.replace(/_/g," ")).capitalize();
-                extra_details.append(detail_tpl.format(label, value, key.toLowerCase()));
+                extra_details.append(detail_tpl.format(_.escape(label), _.escape(value), key.toLowerCase()));
             })
         },
 
@@ -418,12 +420,12 @@
                            '<span class="prepend"></span>' +
                            '{3}</span>' + 
                            '<p>{4}</p>' +
-                           '</li>').format(img.get("name"), 
+                           '</li>').format(img.escape("name"), 
                                                   img.id, 
-                                                  snf.ui.helpers.os_icon_tag(img.get("OS")),
-                                                  img.get_readable_size(),
-                                                  util.truncate(img.get("description"), 35),
-                                                  img.get_owner()));
+                                                  snf.ui.helpers.os_icon_tag(img.escape("OS")),
+                                                  _.escape(img.get_readable_size()),
+                                                  util.truncate(img.escape("description"), 35),
+                                                  _.escape(img.get_owner())));
             image.data("image", img);
             image.data("image_id", img.id);
             this.images_list.append(image);
@@ -508,7 +510,7 @@
             _.each(this.predefined_flavors_keys, _.bind(function(key) {
                 var val = this.predefined_flavors[key];
                 var el = $(('<li class="predefined-selection" id="predefined-flavor-{0}">' +
-                           '{1}</li>').format(key, _(key).capitalize()));
+                           '{1}</li>').format(key, _.escape(_(key).capitalize())));
 
                 this.predefined.append(el);
                 el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, val.disk_template, this.flavors)});
@@ -769,7 +771,8 @@
             if (this.__added_flavors.cpu.indexOf(values.cpu) == -1) {
                 var cpu = $(('<li class="option cpu value-{0} {1}">' + 
                              '<span class="value">{0}</span>' + 
-                             '<span class="metric">x</span></li>').format(values.cpu, disabled)).data('value', values.cpu);
+                             '<span class="metric">x</span></li>').format(
+                            _.escape(values.cpu), disabled)).data('value', values.cpu);
                 this.cpus.append(cpu);
                 this.__added_flavors.cpu.push(values.cpu);
             }
@@ -777,7 +780,8 @@
             if (this.__added_flavors.ram.indexOf(values.mem) == -1) {
                 var mem = $(('<li class="option mem value-{0}">' + 
                              '<span class="value">{0}</span>' + 
-                             '<span class="metric">MB</span></li>').format(values.mem)).data('value', values.mem);
+                             '<span class="metric">MB</span></li>').format(
+                            _.escape(values.mem))).data('value', values.mem);
                 this.mems.append(mem);
                 this.__added_flavors.ram.push(values.mem);
             }
@@ -785,7 +789,8 @@
             if (this.__added_flavors.disk.indexOf(values.disk) == -1) {
                 var disk = $(('<li class="option disk value-{0}">' + 
                               '<span class="value">{0}</span>' + 
-                              '<span class="metric">GB</span></li>').format(values.disk)).data('value', values.disk);
+                              '<span class="metric">GB</span></li>').format(
+                            _.escape(values.disk))).data('value', values.disk);
                 this.disks.append(disk);
                 this.__added_flavors.disk.push(values.disk)
             }
@@ -795,7 +800,7 @@
                 var disk_template = $(('<li title="{2}" class="option disk_template value-{0}">' + 
                                        '<span class="value name">{1}</span>' +
                                        '</li>').format(values.disk_template, 
-                                            template_info.name, 
+                                            _.escape(template_info.name), 
                                             template_info.description)).data('value', 
                                                                 values.disk_template);
 
@@ -870,7 +875,7 @@
             
             // TODO: get suggested from snf.api.conf
             _.each(window.SUGGESTED_ROLES, function(r){
-                var el = $('<span class="val">{0}</span>'.format(r));
+                var el = $('<span class="val">{0}</span>'.format(_.escape(r)));
                 el.data("value", r);
                 cont.append(el);
                 el.click(function() {
@@ -915,7 +920,7 @@
                 this.$(".ssh .empty").hide();
             }
             _.each(keys, _.bind(function(key){
-                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(key.get("name"), key.id));
+                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(_.escape(key.get("name")), key.id));
                 var check = $('<input class="check" type="checkbox"></input>')
                 el.append(check);
                 el.data("model", key);
@@ -948,7 +953,7 @@
 
             if (!params.image) { return }
             var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
-            var vm_name = vm_name_tpl.format(params.image.get("name"));
+            var vm_name = vm_name_tpl.format(_.escape(params.image.get("name")));
             var orig_name = vm_name;
             
             var existing = true;
@@ -1075,9 +1080,9 @@
             
             set_detail("description");
             set_detail("name");
-            set_detail("os", _(image.get("OS")).capitalize());
+            set_detail("os", _(image.escape("OS")).capitalize());
             set_detail("gui", image.get("GUI"));
-            set_detail("size", image.get_readable_size());
+            set_detail("size", _.escape(image.get_readable_size()));
             set_detail("kernel");
         },
 

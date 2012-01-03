@@ -76,7 +76,12 @@
                 img.metadata = {};
                 img.metadata.values = img.properties;
             }
-            
+
+            // fixes plankton regression (returns lowercase meta keys)
+            if (img.metadata.values.os && !img.metadata.values.OS) {
+                img.metadata.values.OS = img.metadata.values.os;
+            }
+
             img = models.GlanceImages.__super__.parse_meta.call(this, img);
             return img;
         },

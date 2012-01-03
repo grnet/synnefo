@@ -27,3 +27,26 @@ div.metadata-keys-container {
 div.column2 {
     padding-bottom: 10px;
 }
+
+.images-list-cont .images-list {
+    position: relative;
+}
+
+.step-cont .images-info-cont {
+    left: 10px !important;
+    width: 540px !important;
+    position: absolute;
+}
+
+.flavor-options .flavor-opts-list {
+    margin-bottom: 10px;
+}
+
+.flavor-options span.title {
+    float: left;
+}
+
+.create-vm .list-cont h4 a {
+    margin-left: 14px;
+    float: none;
+}

@@ -19,8 +19,6 @@
 
     views.CustomImagesView = views.CollectionView.extend({
 
-        collection: storage.images,
-
         confirm_delete_msg: 'Are you sure you want to remove this image ?',
         create_success_msg: 'Custom image created successfully.',
         update_success_msg: 'Custom image updated successfully.',
@@ -28,6 +26,7 @@
 
 
         initialize: function(options) {
+            this.collection = storage.images;
             views.CustomImagesView.__super__.initialize.apply(this, arguments);
             _.bindAll(this);
             this.keys_limit = snf.config.userdata_keys_limit || 10000;

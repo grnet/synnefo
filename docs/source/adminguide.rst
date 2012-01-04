@@ -8,7 +8,7 @@ Assuming a clean debian squeeze (stable) installation, use the following steps t
 
 Install packages::
 
-  apt-get install git python-django python-django-south python-setuptools python-sphinx python-httplib2
+  apt-get install git python-django python-setuptools python-sphinx
   apt-get install python-sqlalchemy python-mysqldb python-psycopg2
   apt-get install apache2 libapache2-mod-wsgi
 
@@ -21,7 +21,6 @@ Setup the files::
 
   cd /pithos/pithos
   python manage.py syncdb
-  python manage.py migrate im
   cd /pithos
   python setup.py build_sphinx
 
@@ -126,7 +125,7 @@ Configure and run apache::
 
 Useful alias to add in ``~/.bashrc``::
 
-  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && cd pithos && python manage.py migrate im && /etc/init.d/apache2 restart'
+  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && /etc/init.d/apache2 restart'
 
 Gunicorn Setup
 --------------

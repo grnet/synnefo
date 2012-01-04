@@ -38,6 +38,5 @@ urlpatterns = patterns('',
     (r'^v1(?:$|/)', include('pithos.api.urls')),
     (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
     (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
-    (r'^im/', include('pithos.im.urls')),
     (r'^ui', include('pithos.ui.urls'))
 )

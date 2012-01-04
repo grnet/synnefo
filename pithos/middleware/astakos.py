@@ -31,21 +31,35 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-def camelCase(s):
-    return s[0].lower() + s[1:]
+from time import time, mktime
+from urllib import quote, unquote
+from django.conf import settings
+from django.utils import simplejson as json
 
-class Fault(Exception):
-    def __init__(self, message='', details='', name=''):
-        Exception.__init__(self, message, details, name)
-        self.message = message
-        self.details = details
-        self.name = name or camelCase(self.__class__.__name__)
+from pithos.lib.client import authenticate, Fault
 
-class BadRequest(Fault):
-    code = 400
+def get_user_from_token(token):
+    if not token:
+        return None
+    
+    host = settings.AUTHENTICATION_HOST
+    try:
+        status, headers, user = authenticate(host, token)
+        return json.loads(user)
+    except Fault, f:
+        return None
 
-class Unauthorized(Fault):
-    code = 401
-
-class ServiceUnavailable(Fault):
-    code = 503
+class AuthMiddleware(object):
+    def process_request(self, request):
+        request.user = None
+        request.user_uniq = None
+        
+        # Try to find token in a parameter, in a request header, or in a cookie.
+        user = get_user_from_token(request.GET.get('X-Auth-Token'))
+        if not user:
+            user = get_user_from_token(request.META.get('HTTP_X_AUTH_TOKEN'))
+        if not user:
+            return
+        
+        request.user = user
+        request.user_uniq = user['uniq']

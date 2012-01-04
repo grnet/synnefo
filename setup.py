@@ -47,8 +47,6 @@ VERSION = get_version().replace(' ', '')
 
 INSTALL_REQUIRES = [
     'Django==1.2.3',
-    'South==0.7',
-    'httplib2==0.6.0',
     'SQLAlchemy==0.6.3',
     'MySQL-python==1.2.2',
     'psycopg2==2.2.1'

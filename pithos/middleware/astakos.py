@@ -46,10 +46,10 @@ def get_user_from_token(token):
     try:
         status, headers, user = authenticate(host, token)
         return json.loads(user)
-    except Fault, f:
+    except:
         return None
 
-class AuthMiddleware(object):
+class AstakosMiddleware(object):
     def process_request(self, request):
         request.user = None
         request.user_uniq = None

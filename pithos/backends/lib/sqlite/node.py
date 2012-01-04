@@ -35,7 +35,7 @@ from time import time
 
 from dbworker import DBWorker
 
-from pithos.lib.filter import parse_filters, OPERATORS
+from pithos.lib.filter import parse_filters
 
 
 ROOTNODE  = 0
@@ -596,6 +596,48 @@ class Node(DBWorker):
              "where serial = ?")
         self.execute(q, (dest, source))
     
+    def _construct_filters(self, domain, filterq):
+        if not domain or not filterq:
+            return None, None
+        
+        subqlist = []
+        append = subqlist.append
+        included, excluded, opers = parse_filters(filterq)
+        args = []
+        
+        if included:
+            subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            subq += "(" + ' or '.join(('key = ?' for x in included)) + ")"
+            subq += ")"
+            args += [domain]
+            args += included
+            append(subq)
+        
+        if excluded:
+            subq = "not exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            subq += "(" + ' or '.join(('key = ?' for x in excluded)) + ")"
+            subq += ")"
+            args += [domain]
+            args += excluded
+            append(subq)
+        
+        if opers:
+            subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            t = (("(key = ? and value %s ?)" % (o,)) for k, o, v in opers)
+            subq += "(" + ' and '.join(t) + ")"
+            subq += ")"
+            args += [domain]
+            for k, o, v in opers:
+                args += [k, v]
+            append(subq)
+        
+        if not subqlist:
+            return None, None
+        
+        subq = ' and ' + ' and '.join(subqlist)
+        
+        return subq, args
+    
     def _construct_paths(self, pathq):
         if not pathq:
             return None, None
@@ -682,6 +724,7 @@ class Node(DBWorker):
            
            Limit applies to the first list of tuples returned.
         """
+        
         execute = self.execute
         
         if not start or start < prefix:
@@ -705,60 +748,35 @@ class Node(DBWorker):
         if subq is not None:
             q += subq
             args += subargs
+        subq, subargs = self._construct_filters(domain, filterq)
+        if subq is not None:
+            q += subq
+            args += subargs
+        else:
+            q = q.replace("attributes a, ", "")
+            q = q.replace("and a.serial = v.serial ", "")
         q += " order by n.path"
-        
-        def filterout(r):
-            if not filterq:
-                return False
-            path, serial = r
-            included, excluded, opers = parse_filters(filterq)
-            
-            #retrieve metadata
-            meta = dict(self.attribute_get(serial, domain))
-            keyset= set([k.encode('utf8') for k in meta.keys()])
-            
-            if included:
-                if not set(included) & keyset:
-                    return True
-            if excluded:
-                if set(excluded) & keyset:
-                    return True
-            for k, op, v in opers:
-                k = k.decode('utf8')
-                v = v.decode('utf8')
-                if k not in meta:
-                    return True
-                operation = OPERATORS[op]
-                if not operation(meta[k], v):
-                    return True
-            return False
         
         if not delimiter:
             q += " limit ?"
             args.append(limit)
             execute(q, args)
-            filter_ = lambda r : [t for t in r if not filterout(t)]
-            r = filter_(self.fetchall())
-            return r, ()
+            return self.fetchall(), ()
         
         pfz = len(prefix)
         dz = len(delimiter)
         count = 0
+        fetchone = self.fetchone
         prefixes = []
         pappend = prefixes.append
         matches = []
         mappend = matches.append
         
         execute(q, args)
-        r = self.fetchall()
-        i = 0
-        while i < len(r):
-            props = r[i]
+        while True:
+            props = fetchone()
             if props is None:
                 break
-            if filterout(props):
-                i+=1
-                continue
             path, serial = props
             idx = path.find(delimiter, pfz)
             
@@ -767,13 +785,11 @@ class Node(DBWorker):
                 count += 1
                 if count >= limit:
                     break
-                i+=1
                 continue
             
             if idx + dz == len(path):
                 mappend(props)
                 count += 1
-                i+=1
                 continue # Get one more, in case there is a path.
             pf = path[:idx + dz]
             pappend(pf)
@@ -782,8 +798,6 @@ class Node(DBWorker):
             
             args[3] = strnextling(pf) # New start.
             execute(q, args)
-            r = self.fetchall()
-            i = 0
         
         return matches, prefixes
     

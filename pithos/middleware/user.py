@@ -32,24 +32,53 @@
 # or implied, of GRNET S.A.
 
 from time import time, mktime
+from httplib import HTTPConnection
 from urllib import quote, unquote
+
 from django.conf import settings
 from django.utils import simplejson as json
 
-from pithos.lib.client import authenticate, Fault
+
+def authenticate(authentication_host, token):
+    con = HTTPConnection(authentication_host)
+    kwargs = {}
+    kwargs['headers'] = {}
+    kwargs['headers']['X-Auth-Token'] = token
+    kwargs['headers']['Content-Length'] = 0
+    
+    path = '/im/authenticate'
+    con.request('GET', path, **kwargs)
+    response = con.getresponse()
+    
+    headers = response.getheaders()
+    headers = dict((unquote(h), unquote(v)) for h,v in headers)
+    length = response.getheader('content-length', None)
+    data = response.read(length)
+    status = int(response.status)
+    
+    if status < 200 or status >= 300:
+        raise Exception(data, int(response.status))
+    
+    return json.loads(data)
 
 def get_user_from_token(token):
     if not token:
         return None
     
+    users = settings.AUTHENTICATION_USERS
+    if users is not None:
+        try:
+            return {'id': 0, 'uniq': users[token]}
+        except:
+            return None
+    
     host = settings.AUTHENTICATION_HOST
     try:
-        status, headers, user = authenticate(host, token)
-        return json.loads(user)
+        return authenticate(host, token)
     except:
         return None
 
-class AstakosMiddleware(object):
+class UserMiddleware(object):
     def process_request(self, request):
         request.user = None
         request.user_uniq = None

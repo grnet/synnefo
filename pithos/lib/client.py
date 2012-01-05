@@ -953,15 +953,3 @@ def _handle_response(response, verbose=False, debug=False):
     
     #print '**',  response.status, headers, data, '\n'
     return response.status, headers, data
-
-def authenticate(authentication_host, token):
-    con = HTTPConnection(authentication_host)
-    kwargs = {}
-    kwargs['headers'] = {}
-    kwargs['headers']['X-Auth-Token'] = token
-    kwargs['headers']['Content-Length'] = 0
-    
-    path = '/im/authenticate'
-    con.request('GET', path, **kwargs)
-    response = con.getresponse()
-    return _handle_response(response)

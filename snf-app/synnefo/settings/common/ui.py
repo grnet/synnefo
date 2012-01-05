@@ -93,6 +93,7 @@ UI_FLAVORS_DISK_TEMPLATES_INFO = {
              'description': 'DRBD storage.'},
 }
 
+
 #######################
 # UI BEHAVIOUR SETTINGS
 #######################
@@ -133,3 +134,11 @@ UI_GLANCE_API_URL = '/plankton'
 # set in UI_GLANCE_API_URL, if setting is set to False, ui will
 # request images from Compute API
 UI_ENABLE_GLANCE = True
+
+# a dict of image owner ids and their associate name
+# to be displayed on images list
+UI_SYSTEM_IMAGES_OWNERS = {
+    'admin@synnefo.gr': 'system',
+    'images@synnefo.gr': 'system'
+}
+

@@ -88,7 +88,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
-SYSTEM_IMAGES_OWNER = getattr(settings, "UI_SYSTEM_IMAGES_OWNER", 'synnefo')
+SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
 
 # MEDIA PATHS
 UI_MEDIA_URL = getattr(settings, "UI_MEDIA_URL",
@@ -158,9 +158,9 @@ def home(request):
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
-               'system_images_owner': json.dumps(SYSTEM_IMAGES_OWNER),
                'use_glance': json.dumps(ENABLE_GLANCE),
-               'glance_api_url': json.dumps(GLANCE_API_URL)
+               'glance_api_url': json.dumps(GLANCE_API_URL),
+               'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS)
                }
     return template('home', context)
 

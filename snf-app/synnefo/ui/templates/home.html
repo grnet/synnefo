@@ -587,7 +587,7 @@ We welcome any suggestions, questions and bug reports you may have.{% endblocktr
             synnefo.user.username = '{{ request.user.uniq }}';
             synnefo.user.token = $.cookie("X-Auth-Token");
             // images config
-            synnefo.config.system_images_owner = {{ system_images_owner|safe }};
+            synnefo.config.system_images_owners = {{ system_images_owners|safe }};
             synnefo.ui.init();
             synnefo.ui.main.bind("initial", function(){
             });

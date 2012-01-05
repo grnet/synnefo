@@ -229,7 +229,7 @@
         },
 
         get_owner: function() {
-            return this.get('owner') || synnefo.config.system_images_owner;
+            return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
         get_readable_size: function() {

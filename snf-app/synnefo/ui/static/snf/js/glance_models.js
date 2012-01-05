@@ -27,7 +27,17 @@
 
         display_size: function() {
             return this.get_readable_size();
+        },
+        
+        display_owner: function() {
+            var owner = this.get_owner();
+            if (_.include(_.keys(synnefo.config.system_images_owners)), owner) {
+                return synnefo.config.system_images_owners[owner];
+            } else {
+                return owner;
+            }
         }
+
     })
 
     models.GlanceImages = snf.models.Images.extend({
@@ -87,11 +97,16 @@
         },
 
         get_system_images: function() {
-            return _.filter(this.active(), function(i){ return i.get_owner() == snf.config.system_images_owner })
+            return _.filter(this.active(), function(i) { 
+                return _.include(_.keys(snf.config.system_images_owners), 
+                                 i.get_owner());
+            })
         },
 
         get_personal_images: function() {
-            return _.filter(this.active(), function(i) { return i.get_owner() == snf.user.username });
+            return _.filter(this.active(), function(i) { 
+                return i.get_owner() == snf.user.username 
+            });
         },
 
         get_public_images: function() {
@@ -99,9 +114,12 @@
         },
 
         get_shared_images: function() {
-            return _.filter(this.active(), function(i){ return i.get_owner() != snf.config.system_images_owner && 
+            return _.filter(this.active(), function(i){ 
+                return !_.include(_.keys(snf.config.system_images_owners), 
+                                  i.get_owner()) && 
                                i.get_owner() != snf.user.username &&
-                               !i.is_public() })
+                               !i.is_public();
+            });
         }
 
     })

@@ -363,7 +363,7 @@
                 var value;
                 var method = 'get_' + key.toLowerCase();
                 var display_method = 'display_' + key.toLowerCase();
-                
+                 
                 if (image[display_method]) {
                     value = image[display_method]();
                 } else if (image[method]) {
@@ -425,7 +425,7 @@
                                                   snf.ui.helpers.os_icon_tag(img.escape("OS")),
                                                   _.escape(img.get_readable_size()),
                                                   util.truncate(img.escape("description"), 35),
-                                                  _.escape(img.get_owner())));
+                                                  _.escape(img.display_owner())));
             image.data("image", img);
             image.data("image_id", img.id);
             this.images_list.append(image);

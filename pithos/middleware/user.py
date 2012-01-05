@@ -68,7 +68,7 @@ def get_user_from_token(token):
     users = settings.AUTHENTICATION_USERS
     if users is not None:
         try:
-            return {'id': 0, 'uniq': users[token]}
+            return {'id': 0, 'uniq': users[token].decode('utf8')}
         except:
             return None
     

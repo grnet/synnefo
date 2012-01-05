@@ -26,6 +26,10 @@ a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
     outline: none;
 }
 
+pre {
+    font-family: monospace;
+}
+
 #okeanos-image {
     position: absolute;
     bottom: -0px;

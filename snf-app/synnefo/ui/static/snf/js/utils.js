@@ -496,7 +496,9 @@
         if (xhr.responseText) {
             try {
                 json_data = JSON.parse(xhr.responseText)
-            } catch (err) {}
+            } catch (err) {
+                json_data = 'Raw error response contnent (could not parse as JSON):\n\n' + xhr.responseText;
+            }
         }
         
         module = "API"
@@ -535,11 +537,15 @@
         }
         
         if (json_data) {
-            $.each(json_data, function(key, obj) {
-                code = obj.code;
-                details = obj.details.replace("\n","<br>");
-                error_message = obj.message;
-            })
+            if (_.isObject(json_data)) {
+                $.each(json_data, function(key, obj) {
+                    code = obj.code;
+                    details = obj.details;
+                    error_message = obj.message;
+                })
+            } else {
+                details = json_data;
+            }
         }
 
         extra = {'URL': ajax_settings.url};

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title%}
+        <h2>Reset password</h2>
+{% endblock title%}
+
+{% block body %}
+<form action="{% url astakos.im.target.local.reset_password %}" method="post">
+  <div class="clearfix">
+    <label for="user-uniq">password</label>
+    <div class="input">
+      <input class="span4" id="user-password" name="password" type="password" />
+    </div>
+  </div>
+  
+  <div class="actions">
+    <input type="hidden" name="auth" value="{{ auth }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="hidden" name="username" value="{{ username }}">
+    <button type="submit" class="btn primary">Reset</button>
+  </div>
+</form>
+{% endblock body %}

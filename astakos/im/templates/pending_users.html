@@ -1,0 +1,71 @@
+{% extends "admin_base.html" %}
+
+{% load formatters %}
+
+{% block body %}
+
+<div class="row">
+  <div class="offset10 span3">
+    <form method="get">
+      <div class="input">
+        <input class="span3" name="filter" type="search" placeholder="search" value="{{ filter }}">
+      </div>
+    </form>
+  </div>
+</div>
+
+<table class="zebra-striped id-sorted">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Uniq</th>
+      <th>Real Name</th>
+      <th>Affiliation</th>
+      <th>Email</th>
+      <th>Inviter</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.id }}</td>
+      <td>{{ user.uniq }}</td>
+      <td>{{ user.realname }}</td>
+      <td>{{ user.affiliation }}</td>
+      <td>{{ user.email }}</td>
+      <td>{{ user.inviter.realname }}</td>
+      <td>
+        <form action="{% url astakos.im.views.users_activate user.id %}" method="post">
+        <input type="hidden" name="page" value="{{ page }}">
+        <button type="submit" class="btn primary">Activate</button>
+        </form>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if pages|length > 1 %}
+<div class="pagination">
+  <ul>
+    {% if prev %}
+      <li class="prev"><a href="?page={{ prev }}{% if filter %}&filter={{ filter }}{% endif %}">&larr; Previous</a></li>
+    {% else %}
+      <li class="prev disabled"><a href="#">&larr; Previous</a></li>
+    {% endif %}
+
+    {% for p in pages %}
+      <li{% if page == p %} class="active"{% endif %}><a href="?page={{ p }}{% if filter %}&filter={{ filter }}{% endif %}">{{ p }}</a></li>
+    {% endfor %}
+
+    {% if next %}
+      <li class="next"><a href="?page={{ next }}{% if filter %}&filter={{ filter }}{% endif %}">&rarr; Next</a></li>
+    {% else %}
+      <li class="next disabled"><a href="#">&rarr; Next</a></li>
+    {% endif %}
+  </ul>
+</div>
+{% endif %}
+
+<br /><br />
+{% endblock body %}

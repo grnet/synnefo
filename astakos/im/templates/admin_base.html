@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+    
+{% block tabs %}
+<ul class="tabs">
+  <li{% ifequal tab "home" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.admin %}">Home</a>
+  </li>
+  <li{% ifequal tab "users" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.users_list %}">Users</a>
+  </li>
+  <li{% ifequal tab "pending" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.pending_users %}">Pending Users</a>
+  </li>
+  <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.invitations_list %}">Invitations</a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block body %}{% endblock %}

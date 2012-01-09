@@ -1,0 +1,153 @@
+[
+    {
+        "model": "im.User",
+        "pk": 1,
+        "fields": {
+            "uniq": "test",
+            "level": 0,
+            "state": "ACTIVE",
+            "invitations": 10000,
+            "auth_token": "0000",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 2,
+        "fields": {
+            "uniq": "verigak",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "is_admin": 1,
+            "auth_token": "0001",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 3,
+        "fields": {
+            "uniq": "chazapis",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0002",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 4,
+        "fields": {
+            "uniq": "gtsouk",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0003",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 5,
+        "fields": {
+            "uniq": "papagian",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0004",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 6,
+        "fields": {
+            "uniq": "louridas",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0005",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 7,
+        "fields": {
+            "uniq": "chstath",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0006",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 8,
+        "fields": {
+            "uniq": "pkanavos",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0007",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 9,
+        "fields": {
+            "uniq": "mvasilak",
+            "level": 1,
+            "state": "ACTIVE",
+            "invitations": 3,
+            "auth_token": "0008",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    },
+    {
+        "model": "im.User",
+        "pk": 10,
+        "fields": {
+            "uniq": "διογένης",
+            "level": 2,
+            "state": "ACTIVE",
+            "invitations": 2,
+            "auth_token": "0009",
+            "auth_token_created": "2011-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "created": "2011-02-06",
+            "updated": "2011-02-06"
+   	    }
+    }
+]

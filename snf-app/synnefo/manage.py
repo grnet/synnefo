@@ -4,7 +4,7 @@ from django.core.management import ManagementUtility, setup_environ, \
 BaseCommand, LaxOptionParser, handle_default_options
 
 from optparse import Option, make_option
-from synnefo.version import get_component_version
+from synnefo.version import get_dist_version
 
 import sys
 import os
@@ -36,7 +36,7 @@ class SynnefoManagementUtility(ManagementUtility):
         # These options could affect the commands that are available, so they
         # must be processed early.
         parser = LaxOptionParser(usage="%prog subcommand [options] [args]",
-                                 version=get_component_version('synnefo.manage'),
+                                 version=get_dist_version('snf-app'),
                                  option_list=option_list)
         self.autocomplete()
         try:

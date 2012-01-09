@@ -46,9 +46,9 @@ from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
 
-from synnefo.version import get_version
+from synnefo.version import get_dist_version
 
-SYNNEFO_JS_LIB_VERSION = get_version()
+SYNNEFO_JS_LIB_VERSION = get_dist_version('snf-app')
 IMAGE_ICONS = settings.IMAGE_ICONS
 LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
 INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)

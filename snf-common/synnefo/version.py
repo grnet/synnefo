@@ -7,7 +7,7 @@ def get_dist_from_module(modname):
 
 
 def get_dist(dist_name):
-    return pkg_resouces.get_distribution(dist_name)
+    return pkg_resources.get_distribution(dist_name)
 
 
 def get_dist_version(dist_name):

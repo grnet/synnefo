@@ -27,10 +27,9 @@ def extend_settings(ns, module_name):
     for e in app_entry_points:
         try:
             NEW_INSTALLED_APPS = list(e.load()())
-        except Exception, e:
-            for e in app_entry_points:
-                NEW_INSTALLED_APPS = NEW_INSTALLED_APPS + \
-                        e.module_name.split(",")
+        except Exception, ex:
+            NEW_INSTALLED_APPS = NEW_INSTALLED_APPS + \
+                    e.module_name.split(",")
 
     # extend additional settings
     # TODO: existing settings logic ??

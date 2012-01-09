@@ -1,3 +1,4 @@
 README
 =======
-Synnefo top level package
+snf-common provides a base layer of all synnefo related software.
+

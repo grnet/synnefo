@@ -1,0 +1,25 @@
+Source: snf-app
+Section: python
+Priority: optional
+Maintainer: Vangelis Koukis <vkoukis@grnet.gr>
+Build-Depends: debhelper (>= 8), python-all (>= 2.5)
+Standards-Version: 3.9.2
+XS-Python-Version: >= 2.6
+Homepage: http://docs.dev.grnet.gr/synnefo
+Vcs-Browser: https://code.grnet.gr/git/synnefo
+
+Package: snf-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, nfdhcpd, arptables, ganeti2
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo cloud management software
+ FIXME: This package contains the supplementary tools for Ganeti provided
+ used the Synnefo project.
+ .
+ Included are:
+  * snf-ganeti-hook, a Ganeti hook that message the Synnefo queue
+  * snf-ganeti-eventd, a daemon watching the Ganeti job queue
+  * snf-progress-monitor, a utility to monitor image deployment and
+    produce notifications to the Synnefo queue
+  * kvm-vif-bridge, a shell ifup script for KVM instances brought up by Ganeti

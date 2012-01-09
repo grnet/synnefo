@@ -1,0 +1,5 @@
+snf-app (0.8) UNRELEASED; urgency=low
+
+  * Initial debian packaging for upstream v0.8
+
+ -- Constantinos Venetsanopoulos <cven@grnet.gr>  Mon, 9 Jan 2012 16:44:01 +0300

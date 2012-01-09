@@ -1,15 +1,11 @@
 # extend specific synnefo default settings
-from synnefo.settings.common import STATIC_FILES, INSTALLED_APPS, \
-    AAI_SKIP_AUTH_URLS
+from synnefo.app_settings import *
 
 # extend static files map
 STATIC_FILES['okeanos_site'] = ''
 
 # append okeanos_site application to django installed apps
 INSTALLED_APPS = list(INSTALLED_APPS) + ['okeanos_site']
-
-# for production deployment no DEBUG needed
-DEBUG = True
 
 # invitations only, no login page exists
 # redirect client to the intro page

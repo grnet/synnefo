@@ -31,39 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
+import os
+import sys
+import glob
+import pkg_resources
 
-from django.conf import settings
+from synnefo.util.entry_points import extend_settings
 
-from synnefo.util.dictconfig import dictConfig
+# import default settings
+from synnefo.settings.default import *
 
+# autodetect default settings provided by synnefo applications
+extend_settings('synnefo', __name__)
 
-class NullHandler(logging.Handler):
-    def emit(self, record):
-        pass
-
-logging.NullHandler = NullHandler
-
-
-def disable_unused_loggers():
-    """Disable handlers that are not used by any logger"""
-    
-    logging = settings.LOGGING
-    
-    active_handlers = set()
-    loggers = logging.get('loggers', {})
-    for logger in loggers.values():
-        active_handlers.update(logger.get('handlers', []))
-    
-    handlers = logging.get('handlers', {})
-    for handler in handlers:
-        if handler not in active_handlers:
-            handlers[handler] = {'class': 'logging.NullHandler'}
+# extend default settings with settings provided within *.conf user files
+# located in directory specified in the SYNNEFO_SETTINGS_DIR
+# environmental variable
+SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
+if os.path.exists(SYNNEFO_SETTINGS_DIR):
+    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
+    conffiles.sort()
+    for f in conffiles:
+        try:
+            execfile(os.path.abspath(f))
+        except Exception as e:
+            print >>sys.stderr, "Failed to read settings file: %s" % \
+                                os.path.abspath(f)
 
 
-disable_unused_loggers()
-dictConfig(settings.LOGGING)
-
-
-def getLogger(name):
-    return logging.getLogger(name)

@@ -46,7 +46,7 @@ from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
 
-from synnefo import get_version
+from synnefo.version import get_version
 
 SYNNEFO_JS_LIB_VERSION = get_version()
 IMAGE_ICONS = settings.IMAGE_ICONS

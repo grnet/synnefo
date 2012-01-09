@@ -40,12 +40,12 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo.version import get_version
+from synnefo.version import vcs_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 # Package info
-VERSION = get_version().replace(" ","")
+VERSION = vcs_version()
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'
@@ -171,7 +171,7 @@ def find_package_data(
     return out
 
 setup(
-    name = 'synnefo',
+    name = 'snf-app',
     version = VERSION,
     license = 'BSD',
     url = 'http://code.grnet.gr/',
@@ -202,6 +202,10 @@ setup(
          'snf-admin = synnefo.tools.admin:main',
          'snf-cloud = synnefo.tools.cloud:main',
          ],
+     'synnefo': [
+         'settings = synnefo.app_settings',
+         'apps = synnefo.app_settings:getapps',
+         ]
       },
     )
 

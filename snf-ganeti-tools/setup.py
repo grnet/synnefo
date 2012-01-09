@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 from setuptools import setup
+from synnefo.version import vcs_version
 
 setup(
     name="snf-ganeti-tools",
-    version="0.7.1",
+    version=vcs_version(),
     description="Synnefo Ganeti supplementary tools",
     author="Synnefo Development Team",
     author_email="synnefo@lists.grnet.gr",
@@ -17,7 +18,6 @@ setup(
         'pyinotify',
         'amqplib',
         'prctl',
-        'ganeti',
     ],
     scripts=['snf-ganeti-eventd.py', 'snf-ganeti-hook.py',
              'snf-progress-monitor.py'],

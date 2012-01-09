@@ -11,3 +11,4 @@ DATABASES = {
 }
 
 LOGGING['handlers']['console']['level'] = 'WARNING'
+LOGIN_URL = 'http://host:port/'

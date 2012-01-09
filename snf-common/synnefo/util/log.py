@@ -1,6 +1,3 @@
-#!/bin/bash
-#
-#
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -33,13 +30,40 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-set -e
+import logging
 
-echo "Running snf-app tests..." >&2
-python snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+from synnefo import settings
 
-echo "Running snf-ganeti-tools tests..." >&2
-./snf-ganeti-tools/test/synnefo.ganeti_unittest.py
+from synnefo.util.dictconfig import dictConfig
 
+
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+logging.NullHandler = NullHandler
+
+
+def disable_unused_loggers():
+    """Disable handlers that are not used by any logger"""
+
+    logging = settings.LOGGING
+
+    active_handlers = set()
+    loggers = logging.get('loggers', {})
+    for logger in loggers.values():
+        active_handlers.update(logger.get('handlers', []))
+
+    handlers = logging.get('handlers', {})
+    for handler in handlers:
+        if handler not in active_handlers:
+            handlers[handler] = {'class': 'logging.NullHandler'}
+
+
+disable_unused_loggers()
+dictConfig(settings.LOGGING)
+
+
+def getLogger(name):
+    return logging.getLogger(name)

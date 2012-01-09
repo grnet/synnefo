@@ -31,21 +31,21 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.settings.common.admins import *
-from synnefo.settings.common.apps import *
-from synnefo.settings.common.deploy import *
-from synnefo.settings.common.logging import *
-from synnefo.settings.common.site import *
-from synnefo.settings.common.backend import *
-from synnefo.settings.common.database import *
-from synnefo.settings.common.queues import *
-from synnefo.settings.common.api import *
-from synnefo.settings.common.plankton import *
-from synnefo.settings.common.ui import *
-from synnefo.settings.common.userdata import *
-from synnefo.settings.common.aai import *
-from synnefo.settings.common.invitations import *
-from synnefo.settings.common.reconciliation import *
-from synnefo.settings.common.helpdesk import *
-from synnefo.settings.common.tests import *
+from synnefo.app_settings.default.admins import *
+from synnefo.app_settings.default.apps import *
+from synnefo.app_settings.default.deploy import *
+from synnefo.app_settings.default.logging import *
+from synnefo.app_settings.default.site import *
+from synnefo.app_settings.default.backend import *
+from synnefo.app_settings.default.database import *
+from synnefo.app_settings.default.queues import *
+from synnefo.app_settings.default.api import *
+from synnefo.app_settings.default.plankton import *
+from synnefo.app_settings.default.ui import *
+from synnefo.app_settings.default.userdata import *
+from synnefo.app_settings.default.aai import *
+from synnefo.app_settings.default.invitations import *
+from synnefo.app_settings.default.reconciliation import *
+from synnefo.app_settings.default.helpdesk import *
+from synnefo.app_settings.default.tests import *
 

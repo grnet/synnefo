@@ -30,23 +30,63 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+#
+
+import distribute_setup
+distribute_setup.use_setuptools()
 
 import os
-import sys
-import glob
 
-# import common settings
-from synnefo.settings.common import *
+from distutils.util import convert_path
+from fnmatch import fnmatchcase
+from setuptools import setup, find_packages
+from synnefo.version import vcs_version
 
-SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-if os.path.exists(SYNNEFO_SETTINGS_DIR):
-    # extend common settings with settings set in /etc/synnefo dir
-    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
-    conffiles.sort()
-    for f in conffiles:
-        try:
-            execfile(os.path.abspath(f))
-        except Exception as e:
-            print >>sys.stderr, "Failed to read settings file: %s" % \
-                                os.path.abspath(f)
+# Package info
+VERSION = vcs_version()
+README = open(os.path.join(HERE, 'README')).read()
+CHANGES = open(os.path.join(HERE, 'Changelog')).read()
+SHORT_DESCRIPTION = 'Package short description'
+
+PACKAGES_ROOT = '.'
+PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
+
+# Package meta
+CLASSIFIERS = []
+
+# Package requirements
+INSTALL_REQUIRES = [
+]
+
+EXTRAS_REQUIRES = {
+}
+
+TESTS_REQUIRES = [
+]
+
+setup(
+    name = 'snf-common',
+    version = VERSION,
+    license = 'BSD',
+    url = 'http://code.grnet.gr/',
+    description = SHORT_DESCRIPTION,
+    long_description=README + '\n\n' +  CHANGES,
+    classifiers = CLASSIFIERS,
+
+    author = 'Package author',
+    author_email = 'author@grnet.gr',
+    maintainer = 'Package maintainer',
+    maintainer_email = 'maintainer@grnet.gr',
+
+    packages = PACKAGES,
+    package_dir= {'': PACKAGES_ROOT},
+    include_package_data = True,
+    zip_safe = False,
+
+    install_requires = INSTALL_REQUIRES,
+    extras_require = EXTRAS_REQUIRES,
+    tests_require = TESTS_REQUIRES,
+)
+

@@ -42,6 +42,10 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
 
 from synnefo.db.models import SynnefoUser
 from synnefo.plankton.backend import ImageBackend, BackendException
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.plankton')
 
 
 def get_user_from_token(token):
@@ -87,6 +91,7 @@ def plankton_method(method):
                     message = format_exc(e)
                 else:
                     message = ''
+                log.exception(e)
                 return HttpResponseServerError(message)
             finally:
                 if hasattr(request, 'backend'):

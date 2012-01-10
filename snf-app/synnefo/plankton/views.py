@@ -150,7 +150,7 @@ def add_image(request):
         return HttpResponse(status=501)     # Not Implemented
     
     if not image:
-        return HttpResponse(status=500)
+        return HttpResponse('Registration failed', status=500)
     
     return _create_image_response(image)
 

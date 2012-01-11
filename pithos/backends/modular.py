@@ -8,8 +8,7 @@
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
 # 
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
+#   2. Redistributions in binary form must reproduce the above #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
 # 
@@ -38,9 +37,15 @@ import uuid as uuidlib
 import logging
 import binascii
 
-from base import NotAllowedError, QuotaError, BaseBackend
+from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend
 
 from pithos.lib.hashmap import HashMap
+
+# Default modules and settings.
+DEFAULT_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
+DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
+DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
+DEFAULT_BLOCK_PATH = 'data/'
 
 ( CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED ) = range(3)
 
@@ -78,14 +83,16 @@ class ModularBackend(BaseBackend):
     Uses modules for SQL functions and storage.
     """
     
-    def __init__(self, db_module, db_connection, block_module, block_path):
-        db_module = db_module or 'pithos.backends.lib.sqlalchemy'
-        block_module = block_module or 'pithos.backends.lib.hashfiler'
+    def __init__(self, db_module=None, db_connection=None, block_module=None, block_path=None):
+        db_module = db_module or DEFAULT_DB_MODULE
+        db_connection = db_connection or DEFAULT_DB_CONNECTION
+        block_module = block_module or DEFAULT_BLOCK_MODULE
+        block_path = block_path or DEFAULT_BLOCK_PATH
         
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024 # 4MB
         
-        self.default_policy = {'quota': 0, 'versioning': 'auto'}
+        self.default_policy = {'quota': DEFAULT_QUOTA, 'versioning': DEFAULT_VERSIONING}
         
         __import__(db_module)
         self.db_module = sys.modules[db_module]

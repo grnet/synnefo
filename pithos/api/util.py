@@ -763,6 +763,15 @@ def hashmap_md5(request, hashmap, size):
         md5.update(data + ('\x00' * pad))
     return md5.hexdigest().lower()
 
+def get_backend():
+    backend = connect_backend(db_module=settings.BACKEND_DB_MODULE,
+                              db_connection=settings.BACKEND_DB_CONNECTION,
+                              block_module=settings.BACKEND_BLOCK_MODULE,
+                              block_path=settings.BACKEND_BLOCK_PATH)
+    backend.default_policy['quota'] = settings.BACKEND_QUOTA
+    backend.default_policy['versioning'] = settings.BACKEND_VERSIONING
+    return backend
+
 def update_request_headers(request):
     # Handle URL-encoded keys and values.
     # Handle URL-encoded keys and values.
@@ -864,7 +873,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 
                 # Fill in custom request variables.
                 request.serialization = request_serialization(request, format_allowed)
-                request.backend = connect_backend()
+                request.backend = get_backend()
                 
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)

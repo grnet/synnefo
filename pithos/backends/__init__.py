@@ -33,26 +33,17 @@
 
 import warnings
 
-from django.conf import settings
-
 from modular import ModularBackend
 
 
-def connect_backend():
+def connect_backend(**kwargs):
     # Suppress mysql warnings.
     original_filters = warnings.filters[:]
     warnings.simplefilter('ignore')
     try:
-        backend = ModularBackend(settings.BACKEND_DB_MODULE,
-                                 settings.BACKEND_DB_CONNECTION,
-                                 settings.BACKEND_BLOCK_MODULE,
-                                 settings.BACKEND_BLOCK_PATH)
+        backend = ModularBackend(**kwargs)
     finally:
         # Restore warnings.
         warnings.filters = original_filters
-    
-    # Set defaults.
-    backend.default_policy['quota'] = settings.DEFAULT_QUOTA
-    backend.default_policy['versioning'] = settings.DEFAULT_VERSIONING
     
     return backend

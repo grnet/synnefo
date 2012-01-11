@@ -1,2 +1,0 @@
-BACKEND_DB_CONNECTION = 'sqlite:///' + join(PROJECT_PATH, '../../pithos/pithos/backend.db')
-BACKEND_BLOCK_PATH = join(PROJECT_PATH, '../../pithos/pithos/data/')

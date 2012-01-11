@@ -1,5 +1,5 @@
-Pithos Documentation
-====================
+Astakos Documentation
+=====================
 
 Contents:
 

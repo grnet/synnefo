@@ -561,14 +561,13 @@ def render_registration(provider, code='', next=''):
     
     prefix = 'Invited' if code else ''
     formclassname = '%s%sRegisterForm' %(prefix, provider.capitalize())
-    formclass_ = getattr(sys.modules['astakos.im.forms'], formclassname)
-    RegisterFormSet = formset_factory(formclass_, extra=0)
-    formset = RegisterFormSet(initial=[initial_data])
+    form = globals()[formclassname]()
     return render_response('register.html',
-                           formset=formset,
+                           form=form,
                            next=next,
                            filter=filter,
-                           code=code)
+                           code=code,
+                           provider=provider)
 
 def is_preaccepted(user):
     if user.invitation and not user.invitation.is_consumed:
@@ -592,27 +591,23 @@ def register(request, provider):
             return on_failure(_('Invalid provider'))
         return render_registration(provider, code, next)
     elif request.method == 'POST':
-        provider = request.POST.get('form-0-provider')
-        inviter = request.POST.get('form-0-inviter')
+        provider = request.POST.get('provider')
+        code = request.POST.get('code')
         
         #instantiate the form
-        prefix = 'Invited' if inviter else ''
-        formclassname = '%sRegisterForm' %(provider.capitalize())
-        formclass_ = getattr(sys.modules['astakos.im.forms'], formclassname)
-        RegisterFormSet = formset_factory(formclass_, extra=0)
-        formset = RegisterFormSet(request.POST)
-        if not formset.is_valid():
+        prefix = 'Invited' if code else ''
+        formclassname = '%s%sRegisterForm' %(prefix, provider.capitalize())
+        form = globals()[formclassname](request.POST)
+        if not form.is_valid():
             return render_to_response('register.html',
-                                      {'formset':formset,
+                                      {'form':form,
                                        'code':code,
                                        'next':next}) 
         
         user = User()
-        for form in formset.forms:
-            for field in form.fields:
-                if hasattr(user, field):
-                    setattr(user, field, form.cleaned_data[field])
-            break
+        for field in form.fields:
+            if hasattr(user, field):
+                setattr(user, field, form.cleaned_data[field])
         
         if user.openidurl:
             redirect_url = reverse('astakos.im.views.create')

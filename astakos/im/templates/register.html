@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block title%}
-        <h1>Welcome</h1>{{provider}}
+        <h1>Welcome</h1>
 {% endblock title%}
 
 {% block body %}
 <form action={%url astakos.im.views.register provider%} method="post">
-    {{ formset.as_p }}
+    {{ form.as_p }}
 <div>
     <button type="submit" class="btn primary">Register</button>
 </div>

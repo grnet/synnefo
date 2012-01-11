@@ -125,7 +125,7 @@ Configure and run apache::
 
 Useful alias to add in ``~/.bashrc``::
 
-  alias pithos-sync='cd /pithos && git pull && python setup.py build_sphinx && /etc/init.d/apache2 restart'
+  alias sync-pithos='cd /pithos && git pull && python setup.py build_sphinx && /etc/init.d/apache2 restart'
 
 Gunicorn Setup
 --------------

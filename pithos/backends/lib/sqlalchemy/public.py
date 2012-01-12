@@ -48,7 +48,7 @@ class Public(DBWorker):
         columns.append(Column('path', String(2048)))
         self.public = Table('public', metadata, *columns, mysql_engine='InnoDB', sqlite_autoincrement=True)
         # place an index on path
-        Index('idx_public_path', self.public.c.path)
+        Index('idx_public_path', self.public.c.path, unique=True)
         metadata.create_all(self.engine)
     
     def public_set(self, path):

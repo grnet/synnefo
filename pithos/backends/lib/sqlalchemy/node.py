@@ -186,7 +186,7 @@ class Node(DBWorker):
         indexes = [elem['name'] for elem in insp.get_indexes('nodes')]
         if 'idx_nodes_path' not in indexes:
             explicit_length = '(%s)' %path_length if self.engine.name == 'mysql' else ''
-            s = text('CREATE INDEX idx_nodes_path ON nodes (path%s)' %explicit_length)
+            s = text('CREATE UNIQUE INDEX idx_nodes_path ON nodes (path%s)' %explicit_length)
             self.conn.execute(s).close()
         
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,

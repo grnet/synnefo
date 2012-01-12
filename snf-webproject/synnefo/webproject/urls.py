@@ -31,31 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
-import sys
-import glob
-import pkg_resources
+from django.conf.urls.defaults import *
+from synnefo.util.entry_points import extend_urls
 
-from synnefo.util.entry_points import extend_settings
+urlpatterns = patterns('',
+    (r'^lang/$', 'synnefo.ui.i18n.set_language')
+)
 
-# import default settings
-from synnefo.settings.default import *
-
-# autodetect default settings provided by synnefo applications
-extend_settings(__name__, 'synnefo')
-
-# extend default settings with settings provided within *.conf user files
-# located in directory specified in the SYNNEFO_SETTINGS_DIR
-# environmental variable
-SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
-if os.path.exists(SYNNEFO_SETTINGS_DIR):
-    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
-    conffiles.sort()
-    for f in conffiles:
-        try:
-            execfile(os.path.abspath(f))
-        except Exception as e:
-            print >>sys.stderr, "Failed to read settings file: %s [%s]" % \
-                                (os.path.abspath(f), e)
-
-
+urlpatterns = extend_urls(urlpatterns, 'synnefo')

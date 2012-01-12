@@ -62,8 +62,10 @@ setup(
 
     entry_points = {
         'synnefo': [
-            'settings = okeanos_site.settings',
-            'apps = okeanos_site'
+            'default_settings = okeanos_site.settings',
+            'web_apps = okeanos_site:synnefo_web_apps',
+            'web_static = okeanos_site:synnefo_static_files',
+            'urls = okeanos_site.urls:urlpatterns'
         ]
     },
 

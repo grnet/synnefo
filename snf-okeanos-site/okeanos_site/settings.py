@@ -1,28 +1,3 @@
-# extend specific synnefo default settings
-from synnefo.app_settings import *
-
-# extend static files map
-STATIC_FILES['okeanos_site'] = ''
-
-# append okeanos_site application to django installed apps
-INSTALLED_APPS = list(INSTALLED_APPS) + ['okeanos_site']
-
-# invitations only, no login page exists
-# redirect client to the intro page
-LOGIN_URL = "http://okeanos.grnet.gr/intro"
-
-# redirect to login url (intro) on user logout
-LOGOUT_URL = LOGIN_URL
-
-# bypass Shibboleth authentication for /okeanos and /intro pages
-# (they should be available to the public)
-AAI_SKIP_AUTH_URLS = list(AAI_SKIP_AUTH_URLS) + ['/about', '/intro', '/okeanos_static']
-
-# change django url configuration
-# okeanos_site.urls includes and extends/modifies synnefo.urls
-# based on the needs of okeanos aplha release
-ROOT_URLCONF = 'okeanos_site.urls'
-
 # the url that is linked with okenaos_site.views.index view
 OKEANOS_SITE_URL = "/about"
 
@@ -50,3 +25,4 @@ OKEANOS_VIDEO_POSTER_IMAGE_URL = "/intro_video/intro_video.png"
 #
 # flowplayer.controls swf should be placed on the same url as flowplayer swf
 OKEANOS_VIDEO_FLOWPLAYER_URL = "http://okeanos.grnet.gr/intro_video/flowplayer-3.2.1.swf"
+

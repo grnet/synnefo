@@ -203,8 +203,10 @@ setup(
          'snf-cloud = synnefo.tools.cloud:main',
          ],
      'synnefo': [
-         'settings = synnefo.app_settings',
-         'apps = synnefo.app_settings:getapps',
+         'default_settings = synnefo.app_settings.default',
+         'web_apps = synnefo.app_settings:synnefo_web_apps',
+         'web_middleware = synnefo.app_settings:synnefo_web_middleware',
+         'urls = synnefo.app_settings.urls:urlpatterns',
          ]
       },
     )

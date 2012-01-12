@@ -3,12 +3,12 @@
 # UI settings
 ###################
 
-from admins import *
-from site import *
+from synnefo.webproject.settings.default.site import *
+from synnefo.settings.default.admins import *
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
-UI_MEDIA_URL = MEDIA_URL + 'snf/'
+UI_MEDIA_URL = '/ui/static/' + 'snf/'
 
 # UI requests to the API layer time out after that many milliseconds
 TIMEOUT = 10 * 1000

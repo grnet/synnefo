@@ -30,32 +30,72 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+#
+
+import distribute_setup
+distribute_setup.use_setuptools()
 
 import os
-import sys
-import glob
-import pkg_resources
 
-from synnefo.util.entry_points import extend_settings
+from distutils.util import convert_path
+from fnmatch import fnmatchcase
+from setuptools import setup, find_packages
+from synnefo.version import vcs_version
 
-# import default settings
-from synnefo.settings.default import *
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-# autodetect default settings provided by synnefo applications
-extend_settings(__name__, 'synnefo')
+# Package info
+VERSION = vcs_version()
+README = open(os.path.join(HERE, 'README')).read()
+CHANGES = open(os.path.join(HERE, 'Changelog')).read()
+SHORT_DESCRIPTION = 'Package short description'
 
-# extend default settings with settings provided within *.conf user files
-# located in directory specified in the SYNNEFO_SETTINGS_DIR
-# environmental variable
-SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
-if os.path.exists(SYNNEFO_SETTINGS_DIR):
-    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
-    conffiles.sort()
-    for f in conffiles:
-        try:
-            execfile(os.path.abspath(f))
-        except Exception as e:
-            print >>sys.stderr, "Failed to read settings file: %s [%s]" % \
-                                (os.path.abspath(f), e)
+PACKAGES_ROOT = '.'
+PACKAGES = find_packages(PACKAGES_ROOT)
 
+# Package meta
+CLASSIFIERS = []
+
+# Package requirements
+INSTALL_REQUIRES = [
+]
+
+EXTRAS_REQUIRES = {
+}
+
+TESTS_REQUIRES = [
+]
+
+setup(
+    name = 'snf-webproject',
+    version = VERSION,
+    license = 'BSD',
+    url = 'http://code.grnet.gr/',
+    description = SHORT_DESCRIPTION,
+    long_description=README + '\n\n' +  CHANGES,
+    classifiers = CLASSIFIERS,
+
+    author = 'Package author',
+    author_email = 'author@grnet.gr',
+    maintainer = 'Package maintainer',
+    maintainer_email = 'maintainer@grnet.gr',
+
+    packages = PACKAGES,
+    package_dir= {'': PACKAGES_ROOT},
+    include_package_data = True,
+    zip_safe = False,
+
+    install_requires = INSTALL_REQUIRES,
+    extras_require = EXTRAS_REQUIRES,
+    tests_require = TESTS_REQUIRES,
+
+    entry_points = {
+     'console_scripts': [
+         'snf-manage = synnefo.webproject.manage:main',
+         ],
+     'synnefo': [
+         'default_settings = synnefo.webproject.settings'
+         ]
+      },
+)
 

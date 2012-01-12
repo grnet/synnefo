@@ -855,11 +855,12 @@ class Node(DBWorker):
                 subs = subs.where(or_(*[a.c.key.op('=')(x) for x in excluded]))
                 s = s.where(not_(exists(subs)))
             if opers:
-                subs = select([1])
-                subs = subs.where(a.c.serial == v.c.serial).correlate(v)
-                subs = subs.where(a.c.domain == domain)
-                subs = subs.where(and_(*[and_(a.c.key.op('=')(k), a.c.value.op(o)(v)) for k, o, v in opers]))
-                s = s.where(exists(subs))
+                for k, o, val in opers:
+                    subs = select([1])
+                    subs = subs.where(a.c.serial == v.c.serial).correlate(v)
+                    subs = subs.where(a.c.domain == domain)
+                    subs = subs.where(and_(a.c.key.op('=')(k), a.c.value.op(o)(val)))
+                    s = s.where(exists(subs))
         
         s = s.order_by(n.c.path)
         

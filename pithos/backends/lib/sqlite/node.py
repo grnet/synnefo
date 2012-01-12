@@ -622,14 +622,12 @@ class Node(DBWorker):
             append(subq)
         
         if opers:
-            subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
-            t = (("(key = ? and value %s ?)" % (o,)) for k, o, v in opers)
-            subq += "(" + ' and '.join(t) + ")"
-            subq += ")"
-            args += [domain]
             for k, o, v in opers:
-                args += [k, v]
-            append(subq)
+                subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+                subq += "key = ? and value %s ?" % (o,)
+                subq += ")"
+                args += [domain, k, v]
+                append(subq)
         
         if not subqlist:
             return None, None

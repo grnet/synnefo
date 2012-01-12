@@ -112,6 +112,15 @@ Add in ``/etc/apache2/mods-available/wsgi.conf``::
 
   WSGIChunkedRequest On
 
+Make sure the data folder is writable by the web server user::
+
+  chown -R www-data:www-data /pithos/pithos/data
+
+If using an SQLite database, the same goes for the database file and the containing folder::
+
+  chown www-data:www-data /pithos/pithos/
+  chown www-data:www-data /pithos/pithos/backend.db
+
 Configure and run apache::
 
   a2enmod ssl

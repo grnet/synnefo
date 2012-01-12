@@ -32,13 +32,7 @@
 # or implied, of GRNET S.A.
 
 """
-Plankton attributes are divided in 3 categories:
-  - generated: They are dynamically generated and not stored anywhere.
-  - user: Stored as user accessible metadata and can be modified from within
-            Pithos apps. They are visible as prefixed with PLANKTON_PREFIX.
-  - system: Stored as metadata that can not be modified through Pithos.
-
-In more detail, Plankton attributes are the following:
+The Plankton attributes are the following:
   - checksum: the 'hash' meta
   - container_format: stored as a user meta
   - created_at: the 'modified' meta of the first version
@@ -59,12 +53,8 @@ In more detail, Plankton attributes are the following:
 import json
 import warnings
 
-from binascii import hexlify
-from functools import partial
-from hashlib import md5
 from operator import itemgetter
 from time import gmtime, strftime, time
-from uuid import UUID
 
 from django.conf import settings
 
@@ -72,14 +62,12 @@ from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError
 
 
-PITHOS_DOMAIN = 'pithos'
 PLANKTON_DOMAIN = 'plankton'
-
-PLANKTON_PREFIX = 'X-Object-Meta-plankton:'
+PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
-SYSTEM_META = set(['status'])
-USER_META = set(['name', 'container_format', 'disk_format'])
+PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
+                 'status')
 
 
 def get_location(account, container, object):
@@ -103,17 +91,14 @@ class ImageBackend(object):
     
     def __init__(self, user):
         self.user = user
-        self.container = settings.PITHOS_IMAGE_CONTAINER
         
         original_filters = warnings.filters
         warnings.simplefilter('ignore')         # Suppress SQLAlchemy warnings
-        self.backend = connect_backend()
+        db_connection = settings.BACKEND_DB_CONNECTION
+        block_path = settings.BACKEND_BLOCK_PATH
+        self.backend = connect_backend(db_connection=db_connection,
+                                       block_path=block_path)
         warnings.filters = original_filters     # Restore warnings
-        
-        try:
-            self.backend.put_container(self.user, self.user, self.container)
-        except NameError:
-            pass    # Container already exists
     
     def _get_image(self, location):
         def format_timestamp(t):
@@ -155,29 +140,23 @@ class ImageBackend(object):
         image['properties'] = {}
         
         for key, val in meta.items():
-            if key.startswith(PLANKTON_PREFIX):
-                key = key[len(PLANKTON_PREFIX):]
-            
-            if key in SYSTEM_META | USER_META:
+            if not key.startswith(PLANKTON_PREFIX):
+                continue
+            key = key[len(PLANKTON_PREFIX):]
+            if key == 'properties':
+                val = json.loads(val)
+            if key in PLANKTON_META:
                 image[key] = val
-            elif key.startswith(PROPERTY_PREFIX):
-                key = key[len(PROPERTY_PREFIX):]
-                image['properties'][key] = val
         
         return image
     
-    def _get_meta(self, location, version=None, user=None):
-        user = user or self.user
+    def _get_meta(self, location, version=None):
         account, container, object = split_location(location)
         try:
-            meta = self.backend.get_object_meta(user, account, container,
-                    object, PITHOS_DOMAIN, version)
-            meta.update(self.backend.get_object_meta(user, account, container,
-                    object, PLANKTON_DOMAIN, version))
+            return self.backend.get_object_meta(self.user, account, container,
+                    object, PLANKTON_DOMAIN, version)
         except NameError:
             return None
-        
-        return meta
     
     def _get_permissions(self, location):
         account, container, object = split_location(location)
@@ -213,28 +192,17 @@ class ImageBackend(object):
         self._update_meta(location, meta, replace=True)
     
     def _update_meta(self, location, meta, replace=False):
-        user = self.user
         account, container, object = split_location(location)
-
-        user_meta = {}
-        system_meta = {}
+        
+        prefixed = {}
         for key, val in meta.items():
-            if key in SYSTEM_META:
-                system_meta[key] = val
-            elif key in USER_META:
-                user_meta[PLANKTON_PREFIX + key] = val
-            elif key == 'properties':
-                for k, v in val.items():
-                    user_meta[PLANKTON_PREFIX + PROPERTY_PREFIX + k] = v
+            if key == 'properties':
+                val = json.dumps(val)
+            if key in PLANKTON_META:
+                prefixed[PLANKTON_PREFIX + key] = val
         
-        if user_meta:
-            self.backend.update_object_meta(user, account, container, object,
-                    PITHOS_DOMAIN, user_meta, replace)
-            replace = False
-        
-        if system_meta:
-            self.backend.update_object_meta(user, account, container, object,
-                    PLANKTON_DOMAIN, system_meta, replace)
+        self.backend.update_object_meta(self.user, account, container, object,
+                PLANKTON_DOMAIN, prefixed, replace)
     
     def _update_permissions(self, location, permissions):
         account, container, object = split_location(location)
@@ -242,7 +210,7 @@ class ImageBackend(object):
                 object, permissions)
     
     def add_user(self, image_id, user):
-        image = self.get_meta(image_id)
+        image = self.get_image(image_id)
         assert image, "Image not found"
         
         location = image['location']
@@ -263,7 +231,7 @@ class ImageBackend(object):
         assert len(data) == size
         return data
     
-    def get_meta(self, image_id):
+    def get_image(self, image_id):
         try:
             account, container, object = self.backend.get_uuid(self.user,
                     image_id)
@@ -276,25 +244,22 @@ class ImageBackend(object):
     def iter_public(self, filters):
         backend = self.backend
         
-        keys = set()
+        keys = [PLANKTON_PREFIX + 'name']
         for key, val in filters.items():
             if key == 'size_min':
-                filter = 'bytes >= %d' % size_min
+                filter = 'bytes >= %d' % int(val)
             elif key == 'size_max':
-                filter = 'bytes <= %d' % size_max
+                filter = 'bytes <= %d' % int(val)
             else:
-                # XXX Only filters for user meta supported
                 filter = '%s = %s' % (PLANKTON_PREFIX + key, val)
-            keys.add(filter)
-        
-        container = self.container
+            keys.append(filter)
         
         for account in backend.list_accounts(None):
             for container in backend.list_containers(None, account,
                                                      shared=True):
                 for path, version_id in backend.list_objects(None, account,
                         container, prefix='', delimiter='/',
-                        domain=PITHOS_DOMAIN,
+                        domain=PLANKTON_DOMAIN,
                         keys=keys, shared=True):
                     location = get_location(account, container, path)
                     image = self._get_image(location)
@@ -308,11 +273,13 @@ class ImageBackend(object):
         
         # To get the list we connect as member and get the list shared by us
         for container in  backend.list_containers(member, self.user):
-            for path, version_id in backend.list_objects(member, self.user,
-                    container, prefix='', delimiter='/', domain=PITHOS_DOMAIN):
+            for object, version_id in backend.list_objects(member, self.user,
+                    container, prefix='', delimiter='/',
+                    domain=PLANKTON_DOMAIN):
                 try:
-                    location = get_location(self.user, container, path)
-                    meta = self._get_meta(location, user=member)
+                    location = get_location(self.user, container, object)
+                    meta = backend.get_object_meta(member, self.user,
+                            container, object, PLANKTON_DOMAIN)
                     if PLANKTON_PREFIX + 'name' in meta:
                         yield meta['uuid']
                 except NotAllowedError:
@@ -326,7 +293,7 @@ class ImageBackend(object):
         return images
     
     def list_users(self, image_id):
-        image = self.get_meta(image_id)
+        image = self.get_image(image_id)
         assert image, "Image not found"
         
         permissions = self._get_permissions(image['location'])
@@ -343,8 +310,9 @@ class ImageBackend(object):
                 settings.DEFAULT_CONTAINER_FORMAT) in \
                 settings.ALLOWED_CONTAINER_FORMATS, "Invalid container_format"
         
+        container = settings.DEFAULT_PLANKTON_CONTAINER
         filename = params.pop('filename', name)
-        location = 'pithos://%s/%s/%s' % (self.user, self.container, filename)
+        location = 'pithos://%s/%s/%s' % (self.user, container, filename)
         is_public = params.pop('is_public', False)
         permissions = {'read': ['*']} if is_public else {}
         size = params.pop('size', None)
@@ -375,8 +343,10 @@ class ImageBackend(object):
         meta = self._get_meta(location)
         assert meta, "File not found"
         
-        size = params.pop('size', meta['bytes'])
+        size = int(params.pop('size', meta['bytes']))
         if size != meta['bytes']:
+            print repr(size)
+            print repr(meta['bytes'])
             raise BackendException("Invalid size")
         
         checksum = params.pop('checksum', meta['hash'])
@@ -395,7 +365,7 @@ class ImageBackend(object):
         return self._get_image(location)
     
     def remove_user(self, image_id, user):
-        image = self.get_meta(image_id)
+        image = self.get_image(image_id)
         assert image, "Image not found"
         
         location = image['location']
@@ -407,7 +377,7 @@ class ImageBackend(object):
         self._update_permissions(location, permissions)
     
     def replace_users(self, image_id, users):
-        image = self.get_meta(image_id)
+        image = self.get_image(image_id)
         assert image, "Image not found"
         
         location = image['location']
@@ -418,7 +388,7 @@ class ImageBackend(object):
         self._update_permissions(location, permissions)
     
     def update(self, image_id, params):
-        image = self.get_meta(image_id)
+        image = self.get_image(image_id)
         assert image, "Image not found"
         
         location = image['location']
@@ -438,4 +408,4 @@ class ImageBackend(object):
         meta.update(**params)
         
         self._update_meta(location, meta)
-        return self.get_meta(image_id)
+        return self.get_image(image_id)

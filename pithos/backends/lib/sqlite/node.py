@@ -647,6 +647,21 @@ class Node(DBWorker):
         
         return subq, args
     
+    def _construct_size(self, sizeq):
+        if not sizeq or len(sizeq) != 2:
+            return None, None
+        
+        subq = ''
+        args = []
+        if sizeq[0]:
+            subq += " and v.size >= ?"
+            args += [sizeq[0]]
+        if sizeq[1]:
+            subq += " and v.size < ?"
+            args += [sizeq[1]]
+        
+        return subq, args
+    
     def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
@@ -676,7 +691,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], domain=None, filterq=[]):
+                            except_cluster=0, pathq=[], domain=None, filterq=[], sizeq=None):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -711,6 +726,8 @@ class Node(DBWorker):
                    key ?op value
                        the attribute with this key satisfies the value
                        where ?op is one of =, != <=, >=, <, >.
+                
+                h. the size is in the range set by sizeq
            
            The list of common prefixes includes the prefixes
            matching up to the first delimiter after prefix,
@@ -743,6 +760,10 @@ class Node(DBWorker):
         args = [before, except_cluster, parent, start, nextling]
         
         subq, subargs = self._construct_paths(pathq)
+        if subq is not None:
+            q += subq
+            args += subargs
+        subq, subargs = self._construct_size(sizeq)
         if subq is not None:
             q += subq
             args += subargs

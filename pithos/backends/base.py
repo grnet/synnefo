@@ -274,7 +274,7 @@ class BaseBackend(object):
         """
         return
     
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
         """Return a list of object (name, version_id) tuples existing under a container.
         
         Parameters:
@@ -299,6 +299,9 @@ class BaseBackend(object):
                     value queries, where 'op' can be one of =, !=, <=, >=, <, >
             
             'shared': Only list objects with permissions set
+             
+            'size_range': Include objects with byte size in (from, to).
+                          Use None to specify unlimited
         
         Raises:
             NotAllowedError: Operation not permitted

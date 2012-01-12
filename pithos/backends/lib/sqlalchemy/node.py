@@ -768,7 +768,7 @@ class Node(DBWorker):
     
     def latest_version_list(self, parent, prefix='', delimiter=None,
                             start='', limit=10000, before=inf,
-                            except_cluster=0, pathq=[], domain=None, filterq=[]):
+                            except_cluster=0, pathq=[], domain=None, filterq=[], sizeq=None):
         """Return a (list of (path, serial) tuples, list of common prefixes)
            for the current versions of the paths with the given parent,
            matching the following criteria.
@@ -803,6 +803,8 @@ class Node(DBWorker):
                    key ?op value
                        the attribute with this key satisfies the value
                        where ?op is one of ==, != <=, >=, <, >.
+                
+                h. the size is in the range set by sizeq
            
            The list of common prefixes includes the prefixes
            matching up to the first delimiter after prefix,
@@ -835,9 +837,14 @@ class Node(DBWorker):
         conj = []
         for x in pathq:
             conj.append(n.c.path.like(self.escape_like(x) + '%', escape='\\'))
-        
         if conj:
             s = s.where(or_(*conj))
+        
+        if sizeq and len(sizeq) == 2:
+            if sizeq[0]:
+                s = s.where(v.c.size >= sizeq[0])
+            if sizeq[1]:
+                s = s.where(v.c.size < sizeq[1])
         
         if domain and filterq:
             a = self.attributes.alias('a')

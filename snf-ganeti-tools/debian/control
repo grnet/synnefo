@@ -2,19 +2,20 @@ Source: snf-ganeti-tools
 Section: python
 Priority: optional
 Maintainer: Vangelis Koukis <vkoukis@grnet.gr>
-Build-Depends: debhelper (>= 8), python-all (>= 2.5)
+Build-Depends: debhelper (>= 8), python-all (>= 2.5), snf-common
 Standards-Version: 3.9.2
 XS-Python-Version: >= 2.6
 Homepage: https://code.grnet.gr/projects/synnefo
 
 Package: snf-ganeti-tools
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, nfdhcpd, arptables, ganeti2
+Depends: ${misc:Depends}, ${python:Depends}, nfdhcpd, arptables, ganeti2,
+ snf-common
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Ganeti supplementary tools
- This package contains the supplementary tools for Ganeti provided
- used the Synnefo project.
+ This package contains the supplementary tools for Ganeti needed
+ by the synnefo software.
  .
  Included are:
   * snf-ganeti-hook, a Ganeti hook that message the Synnefo queue

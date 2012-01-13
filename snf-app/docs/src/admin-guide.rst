@@ -1,17 +1,39 @@
 .. _deployment:
 
-Deployment
-==========
+Administrator Guide
+===================
 
-This is a walkthrough for a working Synnefo deployment.
+This is the snf-compute administrator's guide.
 
-.. todo:: describe setup of nginx, flup, Synnefo packages, etc.
+It contains instructions on how to download, install and configure
+synnefo components. It also covers maintenance issues, e.g.,
+upgrades of existing synnefo deployments.
 
-Node types
-----------
+The guide assumes you are familiar with all aspects of downloading, installing
+and configuring packages for the Linux distribution of your choice.
 
-Nodes in a Synnefo deployment belong in one of the following types:
+Overview
+--------
 
+This guide covers the following:
+synnefo architecture
+    The node types needed for a complete synnefo deployment, and their roles.
+    Throughout this guide, `node` refers to a physical machine in the
+    deployment.
+synnefo packages
+installation
+configuration
+upgrades
+changelogs
+
+.. todo:: describe prerequisites -- e.g., Debian
+.. todo:: describe setup of nginx, flup, synnefo packages, etc.
+
+synnefo architecture
+--------------------
+
+Nodes in a synnefo deployment belong in one of the following types.
+For every type, we list the services that execute on corresponding nodes.
 
 .. _DB_NODE:
 
@@ -19,9 +41,9 @@ DB
 **
 A node [or more than one nodes, if using an HA configuration], running a DB
 engine supported by the Django ORM layer. The DB is the single source of
-truth for the servicing of API requests by Synnefo.
-Services: PostgreSQL / MySQL
+truth for the servicing of API requests by synnefo.
 
+_Services:_ PostgreSQL / MySQL
 
 .. _APISERVER_NODE:
 
@@ -30,7 +52,7 @@ APISERVER
 A node running the implementation of the OpenStack API, in Django. Any number
 of APISERVERs can be used, in a load-balancing configuration, without any
 special consideration. Access to a common DB ensures consistency.
-Services: Web server, vncauthproxy
+_Services:_ Web server, vncauthproxy
 
 
 .. _QUEUE_NODE:
@@ -40,51 +62,82 @@ QUEUE
 A node running the RabbitMQ software, which provides AMQP functionality. More
 than one QUEUE nodes may be deployed, in an HA configuration. Such
 deployments require shared storage, provided e.g., by DRBD.
-Services: RabbitMQ [rabbitmq-server]
+_Services:_ RabbitMQ [rabbitmq-server]
 
 
 .. _LOGIC_NODE:
 
 LOGIC
 *****
-A node running the business logic of Synnefo, in Django. It dequeues
+
+A node running the business logic of synnefo, in Django. It dequeues
 messages from QUEUE nodes, and provides the context in which business logic
 functions run. It uses Django ORM to connect to the common DB and update the
 state of the system, based on notifications received from the rest of the
 infrastructure, over AMQP.
-Services: the Synnefo logic dispatcher [``snf-dispatcher``]
+_Services:_ the synnefo logic dispatcher, ``snf-dispatcher``
 
 
 .. _GANETI_NODES:
-
+.. _GANETI_MASTER:
+.. _GANETI_NODE:
+  
 GANETI-MASTER and GANETI-NODE
 *****************************
 A single GANETI-MASTER and a large number of GANETI-NODEs constitute the
-Ganeti backend for Synnefo, which undertakes all VM management functions.
+Ganeti backend for synnefo, which undertakes all VM management functions.
 Any APISERVER can issue commands to the GANETI-MASTER, over RAPI, to effect
 changes in the state of the VMs. The GANETI-MASTER runs the Ganeti request
 queue.
 
-Services:
- only on GANETI-MASTER:
-   the Synnefo Ganeti monitoring daemon [/ganeti/snf-ganeti-eventd]
-   the Synnefo Ganeti hook [/ganeti/snf-ganeti-hook.py].
- on each GANETI_NODE:
-   a deployment-specific KVM ifup script
-   properly configured :ref:`NFDHCPD <nfdhcpd-setup>`
-
+_Services:_
+    * only on :ref:`GANETI-MASTER <GANETI_MASTER>`:
+        * the synnefo Ganeti monitoring daemon, ``snf-ganeti-eventd``
+        * the synnefo Ganeti hook, ``ganeti/snf-ganeti-hook.py``.
+    * on every :ref:`GANETI-NODE <GANETI_NODE>`:
+        * a deployment-specific KVM ifup script
+        * properly configured :ref:`NFDHCPD <nfdhcpd-setup>`
 
 .. _WEBAPP_NODE:
 
 WEBAPP
 ******
-Synnefo WEBAPP node is the server that runs the web application bundled within
-the synnefo package. The application provides 2 different interfaces.
+A WEBAPP node runs the :ref:`snf-app <snf-app>` web application bundled within
+the synnefo package.
+
+
+Installation
+------------
+
+Depending on the type of the node, you need to install the following synnefo
+components:
+
+Nodes of type :ref:`APISERVER <APISERVER_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-app <snf-app>`
+Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-ganeti-tools <snf-ganeti-tools>`
+Nodes of type :ref:`LOGIC <LOGIC>`
+    Components
+    :ref:`snf-common <snf-common>`,
+    :ref:`snf-webproject <snf-webproject>`,
+    :ref:`snf-app <snf-app>`.
+
+.. todo:: describe prerequisites -- e.g., Debian
+
+Configuration
+-------------
+
+The Compute Service uses :ref:`snf-common <snf-common>` for settings.
 
 
 Web admin
 `````````
-Synnefo web administration interface. Allows administrator users to manage the
+synnefo web administration interface. Allows administrator users to manage the
 synnefo application via web interface.
 
 Web application
@@ -97,7 +150,7 @@ machines.
 Dispatcher
 ----------
 
-The logic dispatcher is part of the Synnefo Django project and must run
+The logic dispatcher is part of the synnefo Django project and must run
 on :ref:`LOGIC <LOGIC_NODE>` nodes.
 
 The dispatcher retrieves messages from the queue and calls the appropriate
@@ -125,7 +178,7 @@ Static files
 ************
 
 * Choose an appropriate path (e.g. ``/var/lib/synnefo/static/``) from which
-  your web server will serve all static files (js/css) required by the Synnefo
+  your web server will serve all static files (js/css) required by the synnefo
   web frontend to run.
 * Change the ``MEDIA_ROOT`` value in your settings to point to that directory.
 * Run the following command::
@@ -146,7 +199,7 @@ Using nginx
 ***********
 
 This section describes a sample nginx configuration which uses FastCGI
-to relay requests to Synnefo. Use a distribution-specific mechanism
+to relay requests to synnefo. Use a distribution-specific mechanism
 (e.g., APT) to install nginx, then activate the following nginx configuration
 file by placing it under ``/etc/nginx/sites-available`` and symlinking
 under ``/etc/nginx/sites-enabled``:

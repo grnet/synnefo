@@ -1,10 +1,4 @@
-.. _settings:
-
-Available settings reference
-----------------------------
-
-
-.. _admins-settings: 
+.. _settings-app: 
 
 Admins
 ******

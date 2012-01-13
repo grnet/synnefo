@@ -29,50 +29,6 @@ gory details. A successful Ganeti installation concludes with a working
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs <GANETI_NODES>`.
 
 
-Ganeti monitoring daemon
-````````````````````````
-The Ganeti monitoring daemon must run on GANETI-MASTER.
-The monitoring daemon is configured through ``/etc/synnefo/ganeti.conf``.
-An example is provided under ``snf-ganeti-tools/``.
-
-If run from the repository directory, make sure to have snf-ganeti-tools/
-in the ``PYTHONPATH``.
-You may also build Debian packages directly from the repository::
-
-    $ cd snf-ganeti-tools
-    $ dpkg-buildpackage -b -uc -us
-    $ dpkg -i ../snf-ganeti-tools-*deb
-
-.. todo::
-    how to handle master migration.
-
-
-Synnefo Ganeti hook
-```````````````````
-The generic Synnefo Ganeti hook wrapper resides in the snf-ganeti-tools/
-directory of the Synnefo repository.
-
-The hook needs to be enabled for phases `post-{add,modify,reboot,start,stop}`
-by *symlinking* in ``/etc/ganeti/hooks/instance-{add,modify,reboot,start,stop}-post.d`` 
-on GANETI-MASTER, e.g. ::
-
-    root@ganeti-master:/etc/ganeti/hooks/instance-start-post.d# ls -l
-    lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/snf-ganeti-hook/snf-ganeti-hook.py
-
-.. note::
-    The link name may only contain "upper and lower case, digits,
-    underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9\_-]+$."
-
-.. seealso::
-    `Ganeti customisation using hooks <http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming>`_
-
-If run from the repository directory, make sure to have `snf-ganeti-tools/`
-in the ``PYTHONPATH``.
-
-Alternative, build Debian packages which take care of building, installing
-and activating the Ganeti hook automatically, see step. 9.
-
-
 vncauthproxy
 ************
 To support OOB console access to the VMs over VNC, the vncauthproxy
@@ -128,7 +84,7 @@ NFDHCPD and pre-provisioned Linux bridges to support public and private
 network functionality. For this:
 
 Grab NFDHCPD from its own repository (https://code.grnet.gr/git/nfdhcpd),
-install it, modify /etc/nfdhcpd/nfdhcpd.conf to reflect your network
+install it, modify ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network
 configuration.
 
 Install a custom KVM ifup script for use by Ganeti, as

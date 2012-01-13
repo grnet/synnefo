@@ -41,7 +41,8 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
-env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
+env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject',
+                'snf-okeanos-site']
 env.capture = False
 env.colors = True
 
@@ -88,11 +89,20 @@ def install_pkg(p):
             local("python setup.py install")
 
 
+def install(*packages):
+    for p in packages:
+        install_pkg("snf-%s" % p)
+
+
 def buildall():
     for p in env.packages:
         build_pkg(p)
     collectdists()
 
+
+def installall():
+    for p in env.packages:
+        install_pkg(p)
 
 def collectdists():
     if os.path.exists("./packages"):
@@ -114,7 +124,4 @@ def remove(*packages):
         remove_pkg("snf-%s" % p)
 
 
-def install(*packages):
-    for p in packages:
-        install_pkg("snf-%s" % p)
 

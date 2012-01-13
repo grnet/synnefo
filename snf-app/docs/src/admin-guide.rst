@@ -1,13 +1,13 @@
-.. _deployment:
+.. _snf-compute-admin-guide:
 
 Administrator Guide
 ===================
 
-This is the snf-compute administrator's guide.
+This is the snf-compute administrator guide.
 
 It contains instructions on how to download, install and configure
-synnefo components. It also covers maintenance issues, e.g.,
-upgrades of existing synnefo deployments.
+the synnefo components necessary to deploy the Compute Service. It also covers
+maintenance issues, e.g., upgrades of existing deployments.
 
 The guide assumes you are familiar with all aspects of downloading, installing
 and configuring packages for the Linux distribution of your choice.
@@ -16,21 +16,25 @@ Overview
 --------
 
 This guide covers the following:
-synnefo architecture
-    The node types needed for a complete synnefo deployment, and their roles.
-    Throughout this guide, `node` refers to a physical machine in the
+Compute architecture
+    Node types needed for a complete deployment of snf-compute,
+    and their roles. Throughout this guide, `node` refers to a physical machine
+    in the deployment.
+Installation
+    The installation of services and synnefo software components for a working
+    deployment of snf-compute, either from source packages or the provided
+    packages for Debian Squeeze.
+Configuration
+    Configuration of the various software components comprising an snf-compute
     deployment.
-synnefo packages
-installation
-configuration
-upgrades
-changelogs
+Upgrades
+Changelogs
 
 .. todo:: describe prerequisites -- e.g., Debian
 .. todo:: describe setup of nginx, flup, synnefo packages, etc.
 
-synnefo architecture
---------------------
+Architecture
+------------
 
 Nodes in a synnefo deployment belong in one of the following types.
 For every type, we list the services that execute on corresponding nodes.
@@ -39,9 +43,10 @@ For every type, we list the services that execute on corresponding nodes.
 
 DB
 **
+
 A node [or more than one nodes, if using an HA configuration], running a DB
 engine supported by the Django ORM layer. The DB is the single source of
-truth for the servicing of API requests by synnefo.
+truth for the servicing of API requests by snf-compute.
 
 _Services:_ PostgreSQL / MySQL
 
@@ -102,9 +107,8 @@ _Services:_
 
 WEBAPP
 ******
-A WEBAPP node runs the :ref:`snf-app <snf-app>` web application bundled within
-the synnefo package.
-
+A WEBAPP node runs the web application provided by the synnefo component
+:ref:`snf-app <snf-app>`.
 
 Installation
 ------------

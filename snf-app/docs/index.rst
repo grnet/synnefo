@@ -11,12 +11,13 @@ This is the main synnefo documentation page.
 
 synnefo comprises the following major components:
 
-.. todo:: turn all of the following to links to the documentation
+.. todo:: turn all of the following to links to the documentation, with
+   with intersphinx links.
 
 .. toctree::
    :maxdepth: 1
 
-   compute (name TBD): Compute Service <src/snf-compute.rst>
+   compute (name TBD): Compute Service <src/compute.rst>
    pithos+: File storage service <http://docs.dev.grnet.gr/pithos>
    plankton: Image registry <src/snf-plankton.rst>
    archipelagos: Volume storage service <http://docs.dev.grnet.gr/archipelagos>

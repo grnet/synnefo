@@ -11,6 +11,7 @@ The Compute Service implements the OpenStack Compute API v1.1.
    :maxdepth: 2
 
    admin-guide
+   api
 ..   src/design
 ..   src/dev
 ..   src/user

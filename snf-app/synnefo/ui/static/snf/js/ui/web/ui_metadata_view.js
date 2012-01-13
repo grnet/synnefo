@@ -88,7 +88,7 @@
         },
 
         get_meta: function() {
-            return this.current_vm.get_meta();
+            return this.current_vm.get('metadata').values;
         },
         
         get_meta_el: function(key, value) {
@@ -167,7 +167,7 @@
 
         update_vm_details: function() {
             // show proper title
-            this.set_subtitle(this.current_vm.get("name") + snf.ui.helpers.vm_icon_tag(this.current_vm, "small"));
+            this.set_subtitle(this.current_vm.escape("name") + snf.ui.helpers.vm_icon_tag(this.current_vm, "small"));
         },
 
         validate: function(meta) {

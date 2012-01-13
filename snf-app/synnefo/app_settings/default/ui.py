@@ -6,6 +6,9 @@
 from synnefo.webproject.settings.default.site import *
 from synnefo.settings.default.admins import *
 
+# API URL
+COMPUTE_API_URL = '/api/v1.1'
+
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
 UI_MEDIA_URL = '/ui/static/' + 'snf/'
@@ -90,6 +93,7 @@ UI_FLAVORS_DISK_TEMPLATES_INFO = {
              'description': 'DRBD storage.'},
 }
 
+
 #######################
 # UI BEHAVIOUR SETTINGS
 #######################
@@ -117,3 +121,24 @@ UI_OS_DEFAULT_USER_MAP = {
     'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root',
     'windows': 'Administrator'
 }
+
+
+###############
+# UI EXTENSIONS
+###############
+
+# Glance images API endpoint
+UI_GLANCE_API_URL = '/plankton'
+
+# Whether or not UI should display images from the Glance API
+# set in UI_GLANCE_API_URL, if setting is set to False, ui will
+# request images from Compute API
+UI_ENABLE_GLANCE = True
+
+# a dict of image owner ids and their associate name
+# to be displayed on images list
+UI_SYSTEM_IMAGES_OWNERS = {
+    'admin@synnefo.gr': 'system',
+    'images@synnefo.gr': 'system'
+}
+

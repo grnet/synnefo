@@ -59,7 +59,12 @@ NEW/UPDATED SETTINGS
       The list of disk templates supported by the Ganeti backend.
       The default template to be used when migrating Flavors with no value for
       disk_template (i.e., 'drbd').
-
+    * UI_COMPUTE_URL, UI_GLANCE_URL in ui app:
+      Configurable API endpoints
+    * UI_ENABLE_GLANCE in ui app:
+      Whether or not UI should retrieve images from the Glance API endpoint
+      set in UI_GLANCE_API_URL. If setting is set to False, ui will request 
+      images from Compute API
 UI
     * synnefo.ui.userdata application has been added in INSTALLED_APPS.
       Database migration is needed for the creation of application db tables.

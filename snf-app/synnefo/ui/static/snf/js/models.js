@@ -74,7 +74,7 @@
             }
             
             this.api_call = _.bind(this.api.call, this);
-            models.Model.__super__.initialize.apply(this, arguments)
+            models.Model.__super__.initialize.apply(this, arguments);
         },
 
         handle_remove: function() {
@@ -223,13 +223,13 @@
 
         get_meta: function(key) {
             if (this.get('metadata') && this.get('metadata').values && this.get('metadata').values[key]) {
-                return this.get('metadata').values[key];
+                return _.escape(this.get('metadata').values[key]);
             }
             return undefined;
         },
 
         get_owner: function() {
-            return this.get('owner') || synnefo.config.system_images_owner;
+            return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
         get_readable_size: function() {
@@ -1203,9 +1203,9 @@
         },
 
         // retrieve the metadata object
-        get_meta: function() {
+        get_meta: function(key) {
             try {
-                return this.get('metadata').values
+                return _.escape(this.get('metadata').values[key]);
             } catch (err) {
                 return {};
             }
@@ -1213,7 +1213,7 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta().OS || (this.get_image(function(){}) ? 
+            return this.get_meta('OS') || (this.get_image(function(){}) ? 
                                           this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
         },
 
@@ -1587,7 +1587,7 @@
 
         get_meta_key: function(img, key) {
             if (img.metadata && img.metadata.values && img.metadata.values[key]) {
-                return img.metadata.values[key];
+                return _.escape(img.metadata.values[key]);
             }
             return undefined;
         },

@@ -471,10 +471,6 @@
             storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             
-            // api calls handlers
-            synnefo.api.bind("error", _.bind(this.handle_api_error, this));
-            synnefo.api.bind("change:error_state", _.bind(this.handle_api_error_state, this));
-            synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
         },
         
         handle_api_error_state: function(state) {
@@ -634,12 +630,20 @@
         },
 
         load: function() {
+            if (synnefo.config.use_glance) {
+                synnefo.glance.register();
+            }
             this.error_view = new views.ErrorView();
+            // api request error handling
+            synnefo.api.bind("error", _.bind(this.handle_api_error, this));
+            synnefo.api.bind("change:error_state", _.bind(this.handle_api_error_state, this));
+            synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
+
             this.feedback_view = new views.FeedbackView();
             this.invitations_view = new views.InvitationsView();
             this.public_keys_view = new views.PublicKeysOverlay();
             
-            if (snf.glance) {
+            if (synnefo.config.use_glance) {
                 this.custom_images_view = new views.CustomImagesOverlay();
             }
 

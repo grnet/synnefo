@@ -109,9 +109,9 @@
                            '<span class="value">{3}</span></div>' + 
                            '</li>';
                 var el = $(html.format(vm.id, 
-                                       util.truncate(vm.get("name"), 23), 
+                                       util.truncate(_.escape(vm.get("name")), 23), 
                                        snf.ui.helpers.vm_icon_tag(vm, "small", {'class':'os'}),
-                                       vm.get_os()
+                                       _.escape(vm.get_os())
                                       ))
                 el.data({vm:vm,vm_id:vm.id})
                 this.list.append(el);
@@ -133,7 +133,7 @@
         show_vms: function(network, vms, selected, callback) {
             this.network = network;
             this.reset();
-            this.set_subtitle(network.get("name"));
+            this.set_subtitle(network.escape("name"));
             this.vms = vms;
             this.selected = selected;
             this.cb = callback;

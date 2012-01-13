@@ -2,7 +2,7 @@ snf-ganeti-tools (0.8) UNRELEASED; urgency=low
 
   * New upstream version.
 
- -- Constantinos Venetsanopoulos <cven@grnet.gr> Fri, 13 Jan 2012 16:44:01 +0300
+ -- Constantinos Venetsanopoulos <cven@grnet.gr>  Fri, 13 Jan 2012 16:44:01 +0300
 
 snf-ganeti-tools (0.7.1) UNRELEASED; urgency=low
 

@@ -40,7 +40,7 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo import get_version
+from synnefo.version import get_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 

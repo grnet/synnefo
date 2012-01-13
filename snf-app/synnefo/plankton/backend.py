@@ -282,7 +282,7 @@ class ImageBackend(object):
                             container, object, PLANKTON_DOMAIN)
                     if PLANKTON_PREFIX + 'name' in meta:
                         yield meta['uuid']
-                except NotAllowedError:
+                except (NameError, NotAllowedError):
                     continue
     
     def list_public(self, filters, params):

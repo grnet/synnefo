@@ -21,5 +21,5 @@ override_dh_auto_install:
 	rmdir debian/$(package)/usr/bin
 	# this package provides the synnefo namespace __init__.py
 	for py in $(shell pyversions -vr debian/control); do \
-		cp synnefo/__init__.py debian/$(package)/usr/lib/python$$py/*-packages/synnefo/; \
+		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
 	done

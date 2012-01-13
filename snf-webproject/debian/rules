@@ -3,18 +3,11 @@
 %:
 	dh $@ --with python2
 
-package=snf-app
-static_dir=debian/$(package)/usr/share/synnefo/webstatic/
-ui_static_dir=synnefo/ui/static/
+package=snf-webproject
 
 override_dh_auto_install:
 	dh_auto_install
 	
-	mkdir -p $(static_dir)ui;
-	-mv $(ui_static_dir) $(static_dir)ui;
-	
-	rm -r debian/$(package)/usr/bin;
-
 	for py in $(shell pyversions -vr debian/control); do \
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
 	done

@@ -12,13 +12,5 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
-Description: Synnefo Common Settings
- This package contains the supplementary tools for Ganeti needed
- by the synnefo software.
- .
- Included are:
-  * snf-ganeti-hook, a Ganeti hook that message the Synnefo queue
-  * snf-ganeti-eventd, a daemon watching the Ganeti job queue
-  * snf-progress-monitor, a utility to monitor image deployment and
-    produce notifications to the Synnefo queue
-  * kvm-vif-bridge, a shell ifup script for KVM instances brought up by Ganeti
+Description: Synnefo common package
+

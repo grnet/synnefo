@@ -12,3 +12,7 @@ override_dh_auto_install:
 	for py in $(shell pyversions -vr debian/control); do \
 		cp synnefo/__init__.py debian/$(package)/usr/lib/python$$py/*-packages/synnefo/; \
 	done
+
+	for py in $(shell pyversions -vr debian/control); do \
+		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
+	done

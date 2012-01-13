@@ -3,12 +3,15 @@ distribute_setup.use_setuptools()
 
 import os
 from setuptools import setup, find_packages
-from synnefo.version import vcs_version
+from synnefo.util.version import update_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+update_version('okeanos_site', 'version', HERE)
+from okeanos_site.version import __version__
+
 
 # Package info
-VERSION = vcs_version()
+VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'

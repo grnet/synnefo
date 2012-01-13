@@ -3,7 +3,8 @@
 # API configuration
 #####################
 
-from deploy import *
+# Top-level URL for deployment. Numerous other URLs depend on this.
+APP_INSTALL_URL = "https://host:port"
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.

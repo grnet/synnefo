@@ -40,18 +40,20 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo.version import vcs_version
+from synnefo.util.version import update_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+update_version('synnefo.versions', 'app', HERE)
+from synnefo.versions.app import __version__
 
 # Package info
-VERSION = vcs_version()
+VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'
 
 PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
+PACKAGES = find_packages(PACKAGES_ROOT)
 
 # Package meta
 CLASSIFIERS = []
@@ -184,6 +186,7 @@ setup(
     maintainer = 'Package maintainer',
     maintainer_email = 'maintainer@grnet.gr',
 
+    namespace_packages = ['synnefo', 'synnefo.versions'],
     packages = PACKAGES,
     package_dir= {'': PACKAGES_ROOT},
     include_package_data = True,
@@ -209,5 +212,5 @@ setup(
          'urls = synnefo.app_settings.urls:urlpatterns',
          ]
       },
-    )
+)
 

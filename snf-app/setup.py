@@ -40,18 +40,20 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo.version import get_version
+from synnefo.util.version import update_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+update_version('synnefo.versions', 'app', HERE)
+from synnefo.versions.app import __version__
 
 # Package info
-VERSION = get_version().replace(" ","")
+VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'
 
 PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
+PACKAGES = find_packages(PACKAGES_ROOT)
 
 # Package meta
 CLASSIFIERS = []
@@ -171,7 +173,7 @@ def find_package_data(
     return out
 
 setup(
-    name = 'synnefo',
+    name = 'snf-app',
     version = VERSION,
     license = 'BSD',
     url = 'http://code.grnet.gr/',
@@ -184,6 +186,7 @@ setup(
     maintainer = 'Package maintainer',
     maintainer_email = 'maintainer@grnet.gr',
 
+    namespace_packages = ['synnefo', 'synnefo.versions'],
     packages = PACKAGES,
     package_dir= {'': PACKAGES_ROOT},
     include_package_data = True,
@@ -202,6 +205,12 @@ setup(
          'snf-admin = synnefo.tools.admin:main',
          'snf-cloud = synnefo.tools.cloud:main',
          ],
+     'synnefo': [
+         'default_settings = synnefo.app_settings.default',
+         'web_apps = synnefo.app_settings:synnefo_web_apps',
+         'web_middleware = synnefo.app_settings:synnefo_web_middleware',
+         'urls = synnefo.app_settings.urls:urlpatterns',
+         ]
       },
-    )
+)
 

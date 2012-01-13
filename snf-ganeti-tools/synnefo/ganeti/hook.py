@@ -52,18 +52,14 @@ import logging
 
 from amqplib import client_0_8 as amqp
 
-try:
-    conf_dir = os.environ["SYNNEFO_CONFIG_DIR"]
-    import config
-    settings = config.load(conf_dir)
-except KeyError:
-    import synnefo.settings as settings
+from synnefo import settings
 
 
 def mac2eui64(mac, prefixstr):
     process = subprocess.Popen(["mac2eui64", mac, prefixstr],
                                 stdout=subprocess.PIPE)
     return process.stdout.read().rstrip()
+
 
 def ganeti_net_status(logger, environ):
     """Produce notifications of type 'Ganeti-net-status'

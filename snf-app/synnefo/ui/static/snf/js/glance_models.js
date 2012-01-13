@@ -22,8 +22,22 @@
         },
 
         get_readable_size: function() {
-            return this.get_size() > 0 ? util.readablizeBytes(this.get_size()) : "unknown";
+            return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : "unknown";
         },
+
+        display_size: function() {
+            return this.get_readable_size();
+        },
+        
+        display_owner: function() {
+            var owner = this.get_owner();
+            if (_.include(_.keys(synnefo.config.system_images_owners)), owner) {
+                return synnefo.config.system_images_owners[owner];
+            } else {
+                return owner;
+            }
+        }
+
     })
 
     models.GlanceImages = snf.models.Images.extend({
@@ -33,7 +47,8 @@
                           'shared': 'Shared with me', 
                           'public': 'Public'},
         type_selections_order: ['system', 'personal', 'shared', 'public'],
-        display_metadata: ['created_at', 'updated_at'],
+        display_metadata: ['created_at', 'updated_at', 'filename', 'format', 
+                            'size', 'status'],
         read_method: 'head',
 
         // custom glance api parser
@@ -71,17 +86,27 @@
                 img.metadata = {};
                 img.metadata.values = img.properties;
             }
-            
+
+            // fixes plankton regression (returns lowercase meta keys)
+            if (img.metadata.values.os && !img.metadata.values.OS) {
+                img.metadata.values.OS = img.metadata.values.os;
+            }
+
             img = models.GlanceImages.__super__.parse_meta.call(this, img);
             return img;
         },
 
         get_system_images: function() {
-            return _.filter(this.active(), function(i){ return i.get_owner() == snf.config.system_images_owner })
+            return _.filter(this.active(), function(i) { 
+                return _.include(_.keys(snf.config.system_images_owners), 
+                                 i.get_owner());
+            })
         },
 
         get_personal_images: function() {
-            return _.filter(this.active(), function(i) { return i.get_owner() == snf.user.username });
+            return _.filter(this.active(), function(i) { 
+                return i.get_owner() == snf.user.username 
+            });
         },
 
         get_public_images: function() {
@@ -89,19 +114,25 @@
         },
 
         get_shared_images: function() {
-            return _.filter(this.active(), function(i){ return i.get_owner() != snf.config.system_images_owner && 
+            return _.filter(this.active(), function(i){ 
+                return !_.include(_.keys(snf.config.system_images_owners), 
+                                  i.get_owner()) && 
                                i.get_owner() != snf.user.username &&
-                               !i.is_public() })
+                               !i.is_public();
+            });
         }
 
     })
-    
-    // storage initialization
-    snf.storage.glance = {};
-    snf.storage.glance.images = new models.GlanceImages();
+        
+    // replace images storage collection
+    snf.glance.register = function() {
+        // storage initialization
+        snf.storage.glance = {};
+        snf.storage.glance.images = new models.GlanceImages();
 
-    // use glance images
-    snf.storage.images = snf.storage.glance.images;
+        // use glance images
+        snf.storage.images = snf.storage.glance.images;
+    }
 
 })(this);
 

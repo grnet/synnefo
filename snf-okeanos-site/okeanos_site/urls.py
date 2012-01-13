@@ -3,8 +3,6 @@ import os
 from django.conf.urls.defaults import *
 from django.conf import settings
 
-from synnefo.urls import urlpatterns as synnefo_urls
-
 urlpatterns = patterns('',
 
     # change app url from root (/) to (/ui)
@@ -17,11 +15,7 @@ urlpatterns = patterns('',
 
     # video/info page
     url(r'^about$', 'okeanos_site.views.index', name='okeanos_index'),
-
 )
-
-
-urlpatterns += synnefo_urls
 
 urlpatterns += patterns('',
     url(r'^okeanos_static/(.*)$', 'django.views.static.serve',

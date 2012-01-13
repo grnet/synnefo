@@ -46,12 +46,13 @@ from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
 
-from synnefo import get_version
+from synnefo.util.version import get_component_version
 
-SYNNEFO_JS_LIB_VERSION = get_version()
-IMAGE_ICONS = settings.IMAGE_ICONS
-LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
-INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
+SYNNEFO_JS_LIB_VERSION = get_component_version('app')
+
+# api configuration
+COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')
+
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
@@ -61,6 +62,7 @@ UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
                                 3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
+
 # predefined values settings
 VM_IMAGE_COMMON_METADATA = getattr(settings, "VM_IMAGE_COMMON_METADATA", ["OS"])
 SUGGESTED_FLAVORS_DEFAULT = {}
@@ -70,19 +72,24 @@ SUGGESTED_ROLES_DEFAULT = ["Database server", "File server", "Mail server",
                            "Web server", "Proxy"]
 SUGGESTED_ROLES = getattr(settings, "VM_CREATE_SUGGESTED_ROLES",
                           SUGGESTED_ROLES_DEFAULT)
+IMAGE_ICONS = settings.IMAGE_ICONS
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
+LOGOUT_URL = getattr(settings, "LOGOUT_URL", settings.LOGIN_URL)
+
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
 UPDATE_HIDDEN_VIEWS = getattr(settings, "UI_UPDATE_HIDDEN_VIEWS", False)
 HANDLE_WINDOW_EXCEPTIONS = getattr(settings, "UI_HANDLE_WINDOW_EXCEPTIONS", True)
 SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
+
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
-SYSTEM_IMAGES_OWNER = getattr(settings, "UI_SYSTEM_IMAGES_OWNER", 'synnefo')
+SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
+
 # MEDIA PATHS
 UI_MEDIA_URL = getattr(settings, "UI_MEDIA_URL",
                     "%ssnf-%s/" % (settings.MEDIA_URL, SYNNEFO_JS_LIB_VERSION))
@@ -98,6 +105,12 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
                     "UI_SYNNEFO_JS_WEB_URL",
                     UI_SYNNEFO_JS_URL + "ui/web/")
 
+# extensions
+ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
+GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
+INVITATIONS_PER_PAGE = getattr(settings, "INVITATIONS_PER_PAGE", 10)
+FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
+FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
 def template(name, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -121,6 +134,7 @@ def home(request):
                'project': '+nefo',
                'request': request,
                'current_lang': get_language() or 'en',
+               'compute_api_url': json.dumps(COMPUTE_API_URL),
                 # update interval settings
                'update_interval': UPDATE_INTERVAL,
                'update_interval_increase': UPDATE_INTERVAL_INCREASE,
@@ -144,7 +158,9 @@ def home(request):
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
-               'system_images_owner': json.dumps(SYSTEM_IMAGES_OWNER)
+               'use_glance': json.dumps(ENABLE_GLANCE),
+               'glance_api_url': json.dumps(GLANCE_API_URL),
+               'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS)
                }
     return template('home', context)
 
@@ -286,9 +302,6 @@ def machines_connect(request):
                                 mimetype='application/json')  #no windows, no rdp
 
     return response
-
-FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
-FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 
 def feedback_submit(request):
     if not request.method == "POST":

@@ -266,7 +266,7 @@
 
             _.each(storage.vms.models, function(vm, index) {
                 this.menu.append('<div class="server-name" id="'+this.link_id_tpl + index +'">' + 
-                               util.truncate(vm.get("name"),16)+'</div>');
+                               util.truncate(vm.escape("name"),16)+'</div>');
                 if (this.current_vm_instance && vm.id == this.current_vm_instance.id) {
                     this.current_vm = index;
                 }

@@ -35,6 +35,7 @@
 import os
 import sys
 
+from contextlib import contextmanager
 from fabric.api import *
 from fabric.colors import *
 
@@ -43,6 +44,7 @@ env.develop = False
 env.autoremove = True
 env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject',
                 'snf-okeanos-site']
+env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
 env.capture = False
 env.colors = True
 
@@ -57,8 +59,12 @@ def dev():
 
 # wrap local to respect global capturing setting from env.capture
 oldlocal = local
-def local(cmd, capture=False):
-    return oldlocal(cmd, capture=env.capture)
+def local(cmd, capture="default"):
+    if capture != "default":
+        capture = capture
+    else:
+        capture = env.capture
+    return oldlocal(cmd, capture=capture)
 
 
 def package_root(p):
@@ -113,7 +119,6 @@ def collectdists():
     for p in env.packages:
         local("cp %s/dist/*.tar.gz ./packages/" % package_root(p));
 
-
 def removeall():
     for p in env.packages:
         remove_pkg(p)
@@ -124,4 +129,52 @@ def remove(*packages):
         remove_pkg("snf-%s" % p)
 
 
+#
+# GIT helpers
+#
+
+
+def git(params, locl=True):
+    cmd = local if locl else run
+    return cmd("git %s" % params, capture=True)
+
+
+def branch():
+    return git("symbolic-ref HEAD").split("/")[-1]
+
+
+@contextmanager
+def co(c):
+    current_branch = branch();
+    git("checkout %s" % c)
+    yield
+    git("checkout %s" % current_branch)
+
+
+#
+# Debian packaging helpers
+#
+
+
+def builddeb(p, master="master", branch="debian-0.8"):
+    with lcd(package_root(p)):
+        with settings(warn_only=True):
+            local("mkdir .git")
+            local("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s \
+--git-export=INDEX --git-ignore-new" % (master, branch))
+            local("rm -rf .git")
+            local("git co .")
+
+
+def builddeball(b="debian-0.8"):
+    with co(b):
+        for p in env.deb_packages:
+            builddeb(p, b)
+    collectdebs()
+
+
+def collectdebs():
+    build_area = env.get('build_area', '../build-area')
+    for p in env.deb_packages:
+        local("cp %s/%s*.deb ./packages/" % (build_area, p))
 

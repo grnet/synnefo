@@ -53,12 +53,7 @@ import socket
 
 from amqplib import client_0_8 as amqp
 
-try:
-    conf_dir = os.environ["SYNNEFO_CONFIG_DIR"]
-    import config
-    settings = config.load(conf_dir)
-except KeyError:
-    import synnefo.settings as settings
+from synnefo import settings
 
 
 class AMQPClient(object):

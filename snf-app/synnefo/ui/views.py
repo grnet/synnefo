@@ -46,9 +46,9 @@ from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
 
-from synnefo import get_version
+from synnefo.util.version import get_component_version
 
-SYNNEFO_JS_LIB_VERSION = get_version()
+SYNNEFO_JS_LIB_VERSION = get_component_version('app')
 
 # api configuration
 COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')

@@ -17,7 +17,7 @@ synnefo comprises the following major components:
 .. toctree::
    :maxdepth: 1
 
-   compute (name TBD): Compute Service <src/compute.rst>
+   asterias (name TBD): Compute Service <src/asterias.rst>
    pithos+: File storage service <http://docs.dev.grnet.gr/pithos>
    plankton: Image registry <src/snf-plankton.rst>
    archipelagos: Volume storage service <http://docs.dev.grnet.gr/archipelagos>

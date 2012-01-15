@@ -1,4 +1,4 @@
-.. _snf-compute:
+. _snf-plankton:
 
 Plankton Service
 ----------------

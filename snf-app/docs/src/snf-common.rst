@@ -32,9 +32,9 @@ an unecessary dependendy on Django.
 To use synnefo settings with Django, have ``$DJANGO_SETTINGS_MODULE`` point
 to the ``synnefo.settings`` module
 
-.. code-block:: bash
+.. code-block:: console
 
-    export DJANGO_SETTINGS_MODULE=synnefo.settings
+    $ export DJANGO_SETTINGS_MODULE=synnefo.settings
 
 then import Django settings as usual:
 

@@ -1,9 +1,9 @@
-.. _snf-compute:
+.. _snf-asterias:
 
-Compute Service
+Asterias Service
 ----------------
 
-The Compute Service implements the OpenStack Compute API v1.1.
+Asterias is the the synnefo Compute Service and implements OpenStack Compute API v1.1.
 
 .. todo:: document the Compute Service.
 

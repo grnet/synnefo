@@ -19,3 +19,8 @@ synnefo_web_middleware = [
         ]
     }
 ]
+
+synnefo_static_files = {
+    'synnefo.ui': '',
+    'synnefo.admin': 'admin',
+}

@@ -210,6 +210,7 @@ setup(
          'web_apps = synnefo.app_settings:synnefo_web_apps',
          'web_middleware = synnefo.app_settings:synnefo_web_middleware',
          'urls = synnefo.app_settings.urls:urlpatterns',
+         'web_static = synnefo.app_settings:synnefo_static_files',
          ]
       },
 )

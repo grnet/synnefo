@@ -245,22 +245,23 @@ class ImageBackend(object):
         backend = self.backend
         
         keys = [PLANKTON_PREFIX + 'name']
+        size_range = (None, None)
+        
         for key, val in filters.items():
             if key == 'size_min':
-                filter = 'bytes >= %d' % int(val)
+                size_range = (int(val), size_range[1])
             elif key == 'size_max':
-                filter = 'bytes <= %d' % int(val)
+                size_range = (size_range[0], int(val))
             else:
-                filter = '%s = %s' % (PLANKTON_PREFIX + key, val)
-            keys.append(filter)
+                keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
         
         for account in backend.list_accounts(None):
             for container in backend.list_containers(None, account,
                                                      shared=True):
                 for path, version_id in backend.list_objects(None, account,
                         container, prefix='', delimiter='/',
-                        domain=PLANKTON_DOMAIN,
-                        keys=keys, shared=True):
+                        domain=PLANKTON_DOMAIN, keys=keys, shared=True,
+                        size_range=size_range):
                     location = get_location(account, container, path)
                     image = self._get_image(location)
                     if image:

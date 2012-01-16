@@ -1,9 +1,9 @@
-.. _snf-ganeti-tools:
+.. _snf-asterias-ganeti-tools:
 
-Component snf-ganeti-tools
-==========================
+Component snf-asterias-ganeti-tools
+===================================
 
-synnefo component :ref:`snf-ganeti-tools <snf-ganeti-tools>` is a set of
+synnefo component :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>` is a set of
 tools that need to be installed on all Ganeti nodes:
 
     * :ref:`event daemon <eventd>`
@@ -15,7 +15,7 @@ tools that need to be installed on all Ganeti nodes:
 Event daemon
 ------------
 
-synnefo component :ref:`snf-ganeti-tools <snf-ganeti-tools>` includes
+synnefo component :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>` includes
 ``snf-ganeti-eventd``, the synnefo-specific Ganeti event daemon.
 It monitors the Ganeti job queue and produces notifications to the rest of
 the synnefo infrastructure over AMQP whenever a Ganeti job makes progress.
@@ -27,7 +27,7 @@ the synnefo infrastructure over AMQP whenever a Ganeti job makes progress.
 Hook
 ----
 
-synnefo component :ref:`snf-ganeti-tools <snf-ganeti-tools>` defines
+synnefo component :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>` defines
 a synnefo-specific hook, running inside Ganeti.
 
 .. _progress_monitor:
@@ -42,10 +42,10 @@ A small Python tool to monitor the progress of image deployment.
 Package source
 --------------
 
-The source for component :ref:`snf-ganeti-tools <snf-ganeti-tools>`
-lives under ``snf-ganeti-tools/`` at ``git://code.grnet.gr/git/synnefo``,
+The source for component :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>`
+lives under ``snf-asterias-ganeti-tools/`` at ``git://code.grnet.gr/git/synnefo``,
 also accessible at
-`code.grnet.gr <https://code.grnet.gr/projects/synnefo/repository/revisions/master/show/snf-ganeti-tools>`_.
+`code.grnet.gr <https://code.grnet.gr/projects/synnefo/repository/revisions/master/show/snf-asterias-ganeti-tools>`_.
 
 Package installation
 --------------------
@@ -53,13 +53,13 @@ Package installation
 .. todo:: kpap: verify instructions for installation from source.
 
 Use ``pip`` to install the latest version of the package from source,
-or request a specific version as ``snf-ganeti-tools==x.y.z``.
+or request a specific version as ``snf-asterias-ganeti-tools==x.y.z``.
 
 .. code-block:: console
 
-   pip install snf-ganeti-tools -f https://code.grnet.gr/projects/synnefo/files
+   pip install snf-asterias-ganeti-tools -f https://code.grnet.gr/projects/synnefo/files
 
-On Debian Squeeze, install the ``snf-ganeti-tools`` Debian package.
+On Debian Squeeze, install the ``snf-asterias-ganeti-tools`` Debian package.
 
 Package configuration
 ---------------------
@@ -97,9 +97,9 @@ on :ref:`GANETI-MASTER <GANETI_MASTER>`, e.g.:
 Package settings
 ----------------
 
-Component :ref:`snf-ganeti-tools <snf-ganeti-tools>` requires the following
+Component :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>` requires the following
 settings, as managed by :ref:`snf-common <snf-common>`:
 
-.. literalinclude:: ../../../snf-ganeti-tools/synnefo/settings.py
+.. literalinclude:: ../../../snf-asterias-ganeti-tools/synnefo/settings.py
 
 .. todo:: make sure the settings are included properly.

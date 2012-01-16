@@ -199,7 +199,7 @@ setup(
 
     entry_points = {
      'console_scripts': [
-         'snf-dispatcher = synnefo.logic.dispatcher:scriptmain',
+         'snf-dispatcher = synnefo.logic.dispatcher:main',
          'snf-burnin = synnefo.tools.burnin:main',
          'snf-admin = synnefo.tools.admin:main',
          'snf-cloud = synnefo.tools.cloud:main',

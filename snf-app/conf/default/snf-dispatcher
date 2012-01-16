@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# This file is a shell script to be sourced by the appropriate 
+# init.d script
+#
+
+# Run as a daemon? true/false
+SNF_DSPTCH_ENABLE=false
+
+# User to run the dispatcher as
+SNF_USER="www-data"
+
+# Daemon needs to be run from a specific directory atm (FIX)
+SNF_DAEMON_DIR="/srv/okeanos"
+
+# How many workers, default 2
+WORKERS=2
+
+SNF_DPTCH_OPTS="--workers=2"

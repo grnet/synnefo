@@ -42,8 +42,8 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-import synnefo.settings as settings
 
+from synnefo import settings
 setup_environ(settings)
 
 from amqplib import client_0_8 as amqp

@@ -17,8 +17,6 @@ override_dh_auto_install:
 	mkdir -p $(static_dir)admin;
 	-mv $(admin_static_dir) $(static_dir)admin;
 
-	rm -r debian/$(package)/usr/bin;
-
 	for py in $(shell pyversions -vr debian/control); do \
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
 	done

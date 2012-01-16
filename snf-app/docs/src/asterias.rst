@@ -10,8 +10,9 @@ Asterias is the the synnefo Compute Service and implements OpenStack Compute API
 .. toctree::
    :maxdepth: 2
 
-   admin-guide
-   api
+   asterias-admin-guide
+   asterias-api-guide
+   asterias-dev-guide
 ..   src/design
 ..   src/dev
 ..   src/user

@@ -1,4 +1,4 @@
-. _snf-plankton:
+.. _plankton:
 
 Plankton Service
 ----------------
@@ -10,8 +10,8 @@ Plankton is the synnefo Image Registry Service and implements the Glance API.
 .. toctree::
    :maxdepth: 2
 
+   plankton-designimpl-guide
 ..   plankton-admin-guide
-..   plankton-api-guide
 ..   plankton-dev-guide
 
 Indices and tables

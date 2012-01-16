@@ -11,10 +11,6 @@ inside :ref:`asterias <asterias>`.
 
 It assumes thorough familiarity with the :ref:`asterias-admin-guide`.
 
-It contains development-specific ammendments to the basic installation steps
-outlined in `installation guide <installation>`, and development-specific
-notes.
-
 Building a dev environment
 --------------------------
 
@@ -296,6 +292,7 @@ must write the script manually. The process is the following:
 
 Test coverage
 -------------
+.. warning: This section may be out of date.
 
 In order to get code coverage reports you need to install django-test-coverage
 
@@ -314,6 +311,7 @@ Then configure the test runner inside Django settings:
 
 Building Synnefo package
 ------------------------
+.. warning: This section may be out of date.
 
 To create a python package from the Synnefo source code run
 
@@ -343,4 +341,5 @@ Make sure you have ``sphinx`` installed.
 
 html files are generated in the ``snf-app/docs/_build/html`` directory.
 
+.. warning: This section may be out of date.
 .. include:: ci.rst

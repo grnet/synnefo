@@ -1,5 +1,7 @@
-Plaknkton API Implementation
-============================
+.. _plankton-designimpl-guide:
+
+Design and Implementation Guide
+===============================
 
 .. automodule:: synnefo.plankton.views
     :members:

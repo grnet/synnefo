@@ -60,12 +60,12 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django==1.2.4',
-    'simplejson==2.1.3',
+    'Django>=1.2.4',
+    'simplejson>=2.1.2',
     'pycurl==7.19.0',
     'python-dateutil==1.4.1',
-    'IPy==0.75',
-    'south==0.7.1',
+    'IPy>=0.70',
+    'South>=0.7',
     'pycrypto==2.1.0',
     'amqplib==0.6.1',
     'python-daemon==1.5.5'
@@ -210,6 +210,7 @@ setup(
          'web_apps = synnefo.app_settings:synnefo_web_apps',
          'web_middleware = synnefo.app_settings:synnefo_web_middleware',
          'urls = synnefo.app_settings.urls:urlpatterns',
+         'web_static = synnefo.app_settings:synnefo_static_files',
          ]
       },
 )

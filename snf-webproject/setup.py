@@ -60,6 +60,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
+        'Django>=1.2.4'
 ]
 
 EXTRAS_REQUIRES = {

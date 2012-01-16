@@ -1,11 +1,22 @@
-OpenStack API Implementation
-****************************
+API Guide
+*********
+
+.. todo:: Document the relation of the API to the OpenStack API v1.1.
+
+This is the guide to the REST API of the synnefo Compute Service.
+It is meant for users wishing to make calls to the REST API directly.
+
+The :ref:`kamaki <http://docs.dev.grnet.gr/kamaki>` command-line client
+and associated python library can be used instead of making direct calls to
+:ref:`asterias <snf-asterias>`.
 
 Overview
 ========
 
-* It is not defined if requests for invalid URLs should return 404 or a Fault. We return a BadRequest Fault.
-* It is not defined if requests with a wrong HTTP method should return 405 or a Fault. We return a BadRequest Fault.
+* It is not defined if requests for invalid URLs should return 404 or a Fault.
+  We return a BadRequest Fault.
+* It is not defined if requests with a wrong HTTP method should return 405 or a
+  Fault. We return a BadRequest Fault.
 
 
 General API Information
@@ -20,7 +31,8 @@ Authentication
 Request/Response Types
 ----------------------
 
-* We only support JSON Requests and JSON/XML Responses. XML Requests are not supported for now.
+* We only support JSON Requests and JSON/XML Responses. XML Requests are not
+  supported for now.
 
 
 Content Compression
@@ -32,7 +44,8 @@ Content Compression
 Persistent Connections
 ----------------------
 
-* Deployment note: "To prevent abuse, HTTP sessions have a timeout of 20 seconds before being closed."
+* Deployment note: "To prevent abuse, HTTP sessions have a timeout of 20
+  seconds before being closed."
 
 
 Links and References
@@ -63,8 +76,11 @@ Limits
 Efficient Polling with the Changes-Since Parameter
 --------------------------------------------------
 
-* We only support the changes-since parameter in **List Servers** and **List Images**.
-* We assume that garbage collection of deleted servers will only affect servers deleted **POLL_TIME** seconds in the past or earlier. Else we lose the information of a server getting deleted.
+* We only support the changes-since parameter in **List Servers** and **List
+  Images**.
+* We assume that garbage collection of deleted servers will only affect servers
+  deleted ``POLL_TIME`` seconds in the past or earlier. Else we lose the
+  information of a server getting deleted.
 * Images do not support a deleted state, so we can not track deletions.
 
 
@@ -73,7 +89,7 @@ Versions
 
 * Version MIME type support is missing.
 * Versionless requests are not supported.
-* We hardcode the *updated* field in versions list
+* We hardcode the ``updated`` field in versions list
 * Deployment note: The Atom metadata need to be fixed
 
 
@@ -93,12 +109,12 @@ API Operations
 Servers
 -------
 
-* *hostId* is always empty.
-* *affinityId* is not returned.
-* *progress* is always returned.
-* *self* and *bookmark* atom links are not returned.
+* ``hostId`` is always empty.
+* ``affinityId`` is not returned.
+* ``progress`` is always returned.
+* ``self`` and ``bookmark`` atom links are not returned.
 * **Get Server Details** will also return servers with a DELETED state.
-* **Create Server** ignores *personality* of requests.
+* **Create Server** ignores ``personality`` of requests.
 * **Create Server** ignores the disk size of the flavor.
 * **Create Server** hardcodes the OS.
 * **Create Server** does not support setting the password in the request.
@@ -106,10 +122,14 @@ Servers
 List Servers
 ............
 
-* **List Servers** returns just *id* and *name* if details is not requested.
-* **List Servers** can return 304 (even though not explicitly stated) when *changes-since* is given.
+* **List Servers** returns just ``id`` and ``name`` if details are not
+  requested.
+* **List Servers** can return 304 (even though not explicitly stated) when
+  ``changes-since`` is given.
 
-**Example List Servers: JSON**::
+**Example List Servers: JSON**
+
+.. code-block:: javascript
 
   {
       'servers':
@@ -169,13 +189,18 @@ Get Server Stats
 
 **Normal Response Code**: 200
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), itemNotFound (404), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), itemNotFound (404), overLimit (413)
 
-This operation returns URLs to graphs showing CPU and Network statistics. A *refresh* attribute is returned as well that is the recommended refresh rate of the stats for the clients.
+This operation returns URLs to graphs showing CPU and Network statistics. A
+``refresh`` attribute is returned as well that is the recommended refresh rate
+of the stats for the clients.
 
 This operation does not require a request body.
 
-**Example Get Server Stats Response: JSON**::
+**Example Get Server Stats Response: JSON**:
+
+.. code-block:: javascript
 
   {
       "stats": {
@@ -188,7 +213,9 @@ This operation does not require a request body.
       }
   }
 
-**Example Get Network Details Response: XML**::
+**Example Get Network Details Response: XML**:
+
+.. code-block:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
   <stats xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
@@ -225,7 +252,9 @@ Start Server
 
 The start function transitions a server from an ACTIVE to a STOPPED state.
 
-**Example Action Start: JSON**::
+**Example Action Start: JSON**:
+
+.. code-block:: javascript
 
   {
       "start": {}
@@ -243,7 +272,9 @@ Shutdown Server
 
 The start function transitions a server from a STOPPED to an ACTIVE state.
 
-**Example Action Shutdown: JSON**::
+**Example Action Shutdown: JSON**:
+
+.. code-block:: javascript
 
   {
       "shutdown": {}
@@ -262,7 +293,9 @@ The console function arranges for an OOB console of the specified type. Only con
     
 It uses a running instance of vncauthproxy to setup proper VNC forwarding with a random password, then returns the necessary VNC connection info to the caller.
 
-**Example Action Console: JSON**::
+**Example Action Console: JSON**:
+
+.. code-block:: javascript
 
   {
       "console": {
@@ -270,7 +303,9 @@ It uses a running instance of vncauthproxy to setup proper VNC forwarding with a
       }
   }
 
-**Example Action Console Response: JSON**::
+**Example Action Console Response: JSON**:
+
+.. code-block:: javascript
 
   {
       "console": {
@@ -281,7 +316,9 @@ It uses a running instance of vncauthproxy to setup proper VNC forwarding with a
       }
   }
 
-**Example Action Console Response: XML**::
+**Example Action Console Response: XML**:
+
+.. code-block:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
   <console xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
@@ -297,13 +334,18 @@ Set Firewall Profile
 
 **Normal Response Code**: 202
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404), buildInProgress (409), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
+buildInProgress (409), overLimit (413)
 
-The firewallProfile function sets a firewall profile for the public interface of a server.
+The firewallProfile function sets a firewall profile for the public interface
+of a server.
 
 The allowed profiles are: **ENABLED**, **DISABLED** and **PROTECTED**.
 
-**Example Action firewallProfile: JSON**::
+**Example Action firewallProfile: JSON**:
+
+.. code-block:: javascript
 
   {
       "firewallProfile": {
@@ -317,24 +359,26 @@ This operation does not return a response body.
 Flavors
 -------
 
-* *self* and *bookmark* atom links are not returned.
-* **List Flavors** returns just *id* and *name* if details is not requested.
+* ``self`` and ``bookmark`` atom links are not returned.
+* **List Flavors** returns just ``id`` and ``name`` if details is not requested.
 
 
 Images
 ------
 
-* *progress* is always returned.
-* *self* and *bookmark* atom links are not returned.
-* **List Images** returns just *id* and *name* if details is not requested.
-* **List Images** can return 304 (even though not explicitly stated) when *changes-since* is given. 
-* **List Images** does not return deleted images when *changes-since* is given.
+* ``progress`` is always returned.
+* ``self`` and ``bookmark`` atom links are not returned.
+* **List Images** returns just ``id`` and ``name`` if details are not requested.
+* **List Images** can return 304 (even though not explicitly stated) when
+  ``changes-since`` is given. 
+* **List Images** does not return deleted images when ``changes-since`` is given.
 
 
 Metadata
 --------
 
-* **Update Server Metadata** and **Update Image Metadata** will only return the metadata that were updated (some could have been skipped).
+* **Update Server Metadata** and **Update Image Metadata** will only return the
+  metadata that were updated (some could have been skipped).
 
 
 Networks
@@ -342,9 +386,14 @@ Networks
 
 This is an extension to the OpenStack API.
 
-A Server can connect to one or more networks identified by a numeric id. Each user has access only to networks created by himself. When a network is deleted, all connections to it are deleted. Likewise, when a server is deleted, all connections of that server are deleted.
+A Server can connect to one or more networks identified by a numeric id. Each
+user has access only to networks created by himself. When a network is deleted,
+all connections to it are deleted. Likewise, when a server is deleted, all
+connections of that server are deleted.
 
-There is a special **public** network with the id *public* that can be accessed at */networks/public*. All servers are connected to **public** by default and this network can not be deleted or modified in any way.
+There is a special **public** network with the id *public* that can be accessed
+at */networks/public*. All servers are connected to **public** by default and
+this network can not be deleted or modified in any way.
 
 
 List Networks
@@ -356,13 +405,16 @@ List Networks
 
 **Normal Response Codes**: 200, 203
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), overLimit (413)
 
 This operation provides a list of private networks associated with your account.
 
 This operation does not require a request body.
 
-**Example Networks List Response: JSON (detail)**::
+**Example Networks List Response: JSON (detail)**:
+
+.. code-block:: javascript
 
   {
       "networks": {
@@ -389,7 +441,9 @@ This operation does not require a request body.
       }
   }
 
-**Example Networks List Response: XML (detail)**::
+**Example Networks List Response: XML (detail)**:
+
+.. code-block:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
   <networks xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -415,11 +469,14 @@ Create Network
 
 **Normal Response Code**: 202
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badMediaType(415), badRequest (400), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badMediaType(415), badRequest (400), overLimit (413)
 
 This operation asynchronously provisions a new private network.
 
-**Example Create Network Request: JSON**::
+**Example Create Network Request: JSON**:
+
+.. code-block:: javascript
 
   {
       "network": {
@@ -427,7 +484,9 @@ This operation asynchronously provisions a new private network.
       }
   }
 
-**Example Create Network Response: JSON**::
+**Example Create Network Response: JSON**:
+
+.. code-block:: javascript
 
   {
       "network": {
@@ -440,7 +499,9 @@ This operation asynchronously provisions a new private network.
       }
   }
 
-**Example Create Network Response: XML**::
+**Example Create Network Response: XML**:
+
+.. code-block:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
   <network xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
@@ -457,13 +518,16 @@ Get Network Details
 
 **Normal Response Codes**: 200, 203
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), itemNotFound (404), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), itemNotFound (404), overLimit (413)
 
 This operation returns the details of a specific network by its id.
 
 This operation does not require a request body.
 
-**Example Get Network Details Response: JSON**::
+**Example Get Network Details Response: JSON**:
+
+.. code-block:: javascript
 
   {
       "network": {
@@ -494,11 +558,15 @@ Update Network Name
 
 **Normal Response Code**: 204
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404), overLimit (413) 
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
+overLimit (413) 
 
 This operation changes the name of the network in the Compute system.
 
 **Example Update Network Name Request: JSON**::
+
+.. code-block:: javascript
 
   {
       "network": {
@@ -516,7 +584,8 @@ Delete Network
 
 **Normal Response Code**: 204
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), itemNotFound (404), unauthorized (401), overLimit (413) 
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), itemNotFound (404), unauthorized (401), overLimit (413) 
 
 This operation deletes a network from the system.
 
@@ -533,11 +602,15 @@ Add Server
 
 **Normal Response Code**: 202
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
+overLimit (413)
 
 This operation adds a server to the specified network.
 
-**Example Action Add: JSON**::
+**Example Action Add: JSON**:
+
+.. code-block:: javascript
 
   {
       "add" : {
@@ -555,11 +628,15 @@ Remove Server
 
 **Normal Response Code**: 202
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404), overLimit (413)
+**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
+unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
+overLimit (413)
 
 This operation removes a server from the specified network.
 
-**Example Action Remove: JSON**::
+**Example Action Remove: JSON**:
+
+.. code-block:: javascript
 
   {
       "remove" : {

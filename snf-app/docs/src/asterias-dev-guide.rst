@@ -292,7 +292,8 @@ must write the script manually. The process is the following:
 
 Test coverage
 -------------
-.. warning: This section may be out of date.
+
+.. warning:: This section may be out of date.
 
 In order to get code coverage reports you need to install django-test-coverage
 
@@ -306,12 +307,85 @@ Then configure the test runner inside Django settings:
 
    TEST_RUNNER = 'django-test-coverage.runner.run_tests'
 
-.. include:: i18n.rst
+
+Internationalization
+--------------------
+
+This section describes how to translate static strings in Django projects:
+
+0. From our project's base, we add directory locale
+
+   .. code-block:: console
+   
+      $ mkdir locale
+   
+then we add on the settings.py the language code e.g.,
+
+   .. code-block:: python
+   
+      LANGUAGES = (
+          ('el', u'Greek'),
+          ('en', u'English'),)
+   
+1. For each language we want to add, we run ``makemessages`` from the project's
+   base:
+
+   .. code-block:: python
+
+      $ ./bin/django-admin.py makemessages -l el -e html,txt,py
+      (./bin/django-admin.py makemessages -l el -e html,txt,py --ignore=lib/\*)
+
+   This will add the Greek language, and we specify that :file:`*.html`,
+   :file:`*.txt` and :file:`*.py` files contain translatable strings
+
+2. We translate our strings:
+
+   On :file:`.py` files, e.g., :file:`views.py`, first import ``gettext``:
+   
+   .. code-block:: python
+
+      from django.utils.translation import gettext_lazy as _
+
+   Then every ``string`` to be translated becomes:  ``_('string')``
+   e.g.:
+
+   .. code-block:: python
+
+      help_text=_("letters and numbers only"))
+      'title': _('Ubuntu 10.10 server 64bit'),
+
+   On django templates (``html`` files), on the beggining of the file we add
+   ``{% load i18n %}`` then rewrite every string that needs to be translated,
+   as ``{% trans "string" %}``. For example: ``{% trans "Home" %}``
+
+3. When all strings have been translated, run:
+
+   .. code-block:: console
+
+      $ django-admin.py makemessages -l el -e html,txt,py
+
+   processing language ``el``. This creates (or updates) the :file:`po` file
+   for the Greek language. We run this command each time we add new strings to
+   be translated.  After that, we can translate our strings in the :file:`po`
+   file (:file:`locale/el/LC_MESSAGES/django.po`)
+
+4. When the :file:`po` file is ready, run
+    
+   .. code-block:: console
+
+      $ ./bin/django-admin.py compilemessages
+
+   This compiles the ``po`` files to ``mo``. Our strings will appear translated
+   once we change the language (e.g., from a dropdown menu in the page)
+
+.. seealso::
+    http://docs.djangoproject.com/en/dev/topics/i18n/internationalization/
 
 
-Building Synnefo package
+Building source packages
 ------------------------
-.. warning: This section may be out of date.
+
+.. warning:: This section may be out of date.
 
 To create a python package from the Synnefo source code run
 
@@ -323,8 +397,8 @@ To create a python package from the Synnefo source code run
 this command will create a ``tar.gz`` python source package inside ``dist`` directory.
 
 
-Building Synnefo documentation
-------------------------------
+Building documentation
+----------------------
 
 Make sure you have ``sphinx`` installed.
 
@@ -341,5 +415,119 @@ Make sure you have ``sphinx`` installed.
 
 html files are generated in the ``snf-app/docs/_build/html`` directory.
 
-.. warning: This section may be out of date.
-.. include:: ci.rst
+
+Continuous integration with Jenkins
+-----------------------------------
+.. warning:: This section may be out of date.
+
+Preparing a GIT mirror
+**********************
+
+Jenkins cannot currently work with Git over encrypted HTTP. To solve this
+problem we currently mirror the central Git repository locally on the jenkins
+installation machine. To setup such a mirror do the following:
+
+edit .netrc::
+
+    machine code.grnet.gr
+    login accountname
+    password accountpasswd
+
+Create the mirror::
+
+    git clone --mirror https://code.grnet.gr/git/synnefo synnefo
+
+Setup cron to pull from the mirror periodically. Ideally, Git mirror updates
+should run just before Jenkins jobs check the mirror for changes::
+
+    4,14,24,34,44,54 * * * * cd /path/to/mirror && git fetch && git remote prune origin
+
+Jenkins setup
+*************
+
+The following instructions will setup Jenkins to run synnefo tests with the
+SQLite database. To run the tests on MySQL and/or Postgres, step 5 must be
+replicated. Also, the correct configuration file must be copied (line 6 of the
+build script).
+
+1. Install and start Jenkins. On Debian Squeeze:
+
+   wget -q -O - http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key | apt-key add -
+   echo "deb http://pkg.jenkins-ci.org/debian binary/" >>/etc/apt/sources.list
+   echo "deb http://ppa.launchpad.net/chris-lea/zeromq/ubuntu lucid main" >> /etc/apt/sources.list
+   sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C7917B12  
+   sudo apt-get update
+   sudo apt-get install jenkins
+
+   Also install the following packages:
+
+   apt-get install python-virtualenv libcurl3-gnutls libcurl3-gnutls-dev
+                   uuid-dev libmysqlclient-dev libpq-dev libsqlite-dev
+                   python-dev libzmq-dev
+
+2. After Jenkins starts, go to
+
+   http://$HOST:8080/pluginManager/
+
+   and install the following plug-ins at
+
+   -Jenkins Cobertura Plugin
+   -Jenkins Email Extension Plugin
+   -Jenkins GIT plugin
+   -Jenkins SLOCCount Plug-in
+   -Hudson/Jenkins Violations plugin
+
+3. Configure the Jenkins user's Git details:
+   su jenkins
+   git config --global user.email "buildbot@lists.grnet.gr"
+   git config --global user.name "Buildbot"
+
+4. Make sure that all system-level dependencies specified in README.develop
+   are correctly installed
+
+5. Create a new "free-style software" job and set the following values::
+
+    Project name: synnefo
+    Source Code Management: Git
+    URL of repository: Jenkins Git does not support HTTPS for checking out directly
+                        from the repository. The temporary solution is to checkout
+                        with a cron script in a directory and set the checkout path
+                        in this field
+    Branches to build: master and perhaps others
+    Git->Advanced->Local subdirectory for repo (optional): synnefo
+    Git->Advanced->Prune remote branches before build: check
+    Repository browser: redmineweb,
+                         URL: https://code.grnet.gr/projects/synnefo/repository/
+    Build Triggers->Poll SCM: check
+                     Schedule: # every five minutes
+                   0,5,10,15,20,25,30,35,40,45,50,55 * * * * 
+
+    Build -> Add build step-> Execute shell
+
+    Command::
+
+        #!/bin/bash -ex
+        cd synnefo
+        mkdir -p reports
+        /usr/bin/sloccount --duplicates --wide --details api util ui logic auth > reports/sloccount.sc
+        cp conf/ci/manage.py .
+        if [ ! -e requirements.pip ]; then cp conf/ci/pip-1.2.conf requirements.pip; fi
+        cat settings.py.dist conf/ci/settings.py.sqlite > settings.py
+        python manage.py update_ve
+        python manage.py hudson api db logic 
+
+    Post-build Actions->Publish JUnit test result report: check
+                         Test report XMLs: synnefo/reports/TEST-*.xml
+
+    Post-build Actions->Publish Cobertura Coverage Report: check
+                         Cobertura xml report pattern: synnefo/reports/coverage.xml
+
+    Post-build Actions->Report Violations: check
+                         pylint[XML filename pattern]: synnefo/reports/pylint.report
+
+    Post-build Actions->Publish SLOCCount analysis results
+                         SLOCCount reports: synnefo/reports/sloccount.sc
+                         (also, remember to install sloccount at /usr/bin)
+
+.. seealso::
+    http://sites.google.com/site/kmmbvnr/home/django-hudson-tutorial

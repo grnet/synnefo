@@ -1,4 +1,4 @@
-.. _snf-asterias:
+.. _asterias:
 
 Asterias Service
 ----------------

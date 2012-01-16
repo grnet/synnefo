@@ -1,4 +1,4 @@
-.. _snf-asterias-developer-guide:
+.. _asterias-developer-guide:
 
 ===============
 Developer Guide
@@ -7,9 +7,9 @@ Developer Guide
 This is the asterias developer guide.
 
 It is intended for developers, wishing to implement new functionality
-inside :ref:`asterias <snf-asterias>`.
+inside :ref:`asterias <asterias>`.
 
-It assumes thorough familiarity with the :ref:`snf-asterias-admin-guide`.
+It assumes thorough familiarity with the :ref:`asterias-admin-guide`.
 
 It contains development-specific ammendments to the basic installation steps
 outlined in `installation guide <installation>`, and development-specific
@@ -92,24 +92,26 @@ synnefo source
 * Clone the repository of the synnefo software components you wish
   to work on, e.g.:
 
-.. code-block:: console
-
-  (synnefo-env)$ git clone https://code.grnet.gr/git/synnefo synnefo
-
+   .. code-block:: console
+   
+     (synnefo-env)$ git clone https://code.grnet.gr/git/synnefo synnefo
+   
 * Install the software components you wish to work on inside the
   virtualenv, in development mode:
 
-.. code-block:: console
+   .. code-block:: console
+   
+      (synnefo-env)$ cd snf-asterias-app
+      (synnefo-env)$ python setup.py develop -N
+   
+* Initialize database:
 
-  (synnefo-env)$ cd snf-asterias-app
-  (synnefo-env)$ python setup.py develop -N
-
-* Initialize database::
-
-  (synnefo-env)$ snf-manage syndb
-  (synnefo-env)$ snf-manage migrate
-  (synnefo-env)$ snf-manage loaddata users flavors images
-
+   .. code-block:: console
+     
+      (synnefo-env)$ snf-manage syndb
+      (synnefo-env)$ snf-manage migrate
+      (synnefo-env)$ snf-manage loaddata users flavors images
+  
 Development tips
 ****************
 
@@ -141,7 +143,7 @@ Development tips
 South Database Migrations
 -------------------------
 
-.. _snf-asterias-dev-initialmigration:
+.. _asterias-dev-initialmigration:
 
 Initial Migration
 *****************
@@ -178,7 +180,7 @@ Schema migrations
 
 Do not use the syncdb management command. It can only be used the first time
 and/or if you drop the database and must recreate it from scratch. See
-:ref:`snf-asterias-dev-initialmigration`.
+:ref:`asterias-dev-initialmigration`.
 
 
 Every time you make changes to the database and data migration is not required
@@ -289,7 +291,7 @@ must write the script manually. The process is the following:
         (*) 0003_rename_credit_wallet
 
 .. seealso::
-    More information and more thorough examples can be found in the South web site.
+    More information and more thorough examples can be found in the South web site,
     http://south.aeracode.org/
 
 Test coverage

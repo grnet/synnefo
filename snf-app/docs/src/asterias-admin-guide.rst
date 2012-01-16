@@ -1,4 +1,4 @@
-.. _snf-asterias-admin-guide:
+.. _asterias-admin-guide:
 
 ===================
 Administrator Guide
@@ -35,7 +35,7 @@ Changelogs
 .. todo:: describe prerequisites -- e.g., Debian
 .. todo:: describe setup of nginx, flup, synnefo packages, etc.
 
-.. _snf-asterias-architecture:
+.. _asterias-architecture:
 
 Architecture
 ------------
@@ -338,7 +338,7 @@ to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
 Install the :ref:`snf-image <snf-image>` Ganeti OS provider for image
 deployment.
 
-For :ref:`asterias <snf-asterias>` to be able to launch VMs from specified
+For :ref:`asterias <asterias>` to be able to launch VMs from specified
 Images, you need the snf-image OS Provider installed on *all* Ganeti nodes.
 
 Please see `https://code.grnet.gr/projects/snf-image/wiki`_
@@ -356,7 +356,7 @@ synnefo components
 ******************
 
 You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <snf-asterias-architecture>`.
+depending on its type, see :ref:`Architecture <asterias-architecture>`.
 
 Most synnefo components have dependencies on additional Python packages.
 The dependencies are described inside each package, and are setup

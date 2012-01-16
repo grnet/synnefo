@@ -3,6 +3,9 @@
 # API configuration
 #####################
 
+
+DEBUG = False
+
 # Top-level URL for deployment. Numerous other URLs depend on this.
 APP_INSTALL_URL = "https://host:port"
 

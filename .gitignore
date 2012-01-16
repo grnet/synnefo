@@ -19,3 +19,7 @@ settings.d/*-local.conf
 *.egg-info
 dist
 _build
+
+# version modules created automatically from setup.py
+*/synnefo/versions/*.py
+!*/synnefo/versions/__init__.py

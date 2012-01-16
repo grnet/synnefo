@@ -1,4 +1,4 @@
-.. _snf-asterias-admin-guide:
+.. _asterias-admin-guide:
 
 ===================
 Administrator Guide
@@ -29,13 +29,11 @@ Installation
 Configuration
     Configuration of the various software components comprising an asterias
     deployment.
-Upgrades
-Changelogs
+Upgrades/Changelogs
+    Upgrades of existing deployments of asterias to newer versions, associated
+    Changelogs.
 
-.. todo:: describe prerequisites -- e.g., Debian
-.. todo:: describe setup of nginx, flup, synnefo packages, etc.
-
-.. _snf-asterias-architecture:
+.. _asterias-architecture:
 
 Architecture
 ------------
@@ -110,7 +108,7 @@ queue.
         * the synnefo Ganeti hook, ``ganeti/snf-ganeti-hook.py``.
     * on every :ref:`GANETI-NODE <GANETI_NODE>`:
         * a deployment-specific KVM ifup script
-        * properly configured :ref:`NFDHCPD <nfdhcpd-setup>`
+        * properly configured :ref:`NFDHCPD <asterias-nfdhcpd-setup>`
 
 .. _WEBAPP_NODE:
 
@@ -124,122 +122,28 @@ Installation of asterias is a two step process:
 
 Prerequisites
 *************
-.. _ganeti-setup:
+.. _asterias-install-ganeti:
 
-1. Ganeti installation
-``````````````````````
+Ganeti installation
+```````````````````
 Synnefo requires a working Ganeti installation at the backend. Installation
 of Ganeti is not covered by this document, please refer to
 `ganeti documentation <http://docs.ganeti.org/ganeti/current/html>`_ for all the 
 gory details. A successful Ganeti installation concludes with a working 
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs <GANETI_NODES>`.
 
-2. Database
-```````````
+.. _asterias-install-db:
 
-SQLite
-~~~~~~
-Most self-respecting systems have ``sqlite`` installed by default.
+Database
+````````
 
-MySQL
-~~~~~
-MySQL must be installed first:
+Database installation is done as part of the
+:ref:`snf-webproject <snf-webproject>` component.
 
-.. code-block:: console
+.. _asterias-install-rabbitmq:
 
-    # apt-get install libmysqlclient-dev
-
-if you are using MacPorts:
-
-.. code-block:: console
-
-    $ sudo port install mysql5
-
-.. note::
-
-    On MacOSX with Mysql install from MacPorts the above command will
-    fail complaining that it cannot find the mysql_config command. Do
-    the following and restart the installation:
-
-    .. code-block:: console
-
-       $ echo "mysql_config = /opt/local/bin/mysql_config5" >> ./build/MySQL-python/site.cfg
-
-Configure a MySQL db/account for the Django project:
-
-.. code-block:: console
-
-    $ mysql -u root -p;
-
-.. code-block:: mysql
-
-    CREATE DATABASE <database name>;
-    SHOW DATABASES;
-    GRANT ALL ON <database name>.* TO <db username> IDENTIFIED BY '<db password>';
-
-.. warning::
-        MySQL *must* be set in ``READ-COMMITED`` mode, e.g. by setting:
-
-   .. code-block:: ini
-   
-      transaction-isolation = READ-COMMITTED
-               
-   in the ``[mysqld]`` section of :file:`/etc/mysql/my.cnf`.
-
-   Alternatively, make sure the following code fragment stays enabled
-   in :file:`/etc/synnefo/10-database.conf` file:
-       
-   .. code-block:: python
-   
-       if DATABASES['default']['ENGINE'].endswith('mysql'):
-           DATABASES['default']['OPTIONS'] = {
-                   'init_command': 'SET storage_engine=INNODB; ' +
-                       'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED',
-           }
-   
-PostgreSQL
-~~~~~~~~~~
-
-You need to install the PostgreSQL binaries, e.g., for Debian:
-
-.. code-block:: console
-	     
-    # apt-get install postgresql-8.4 libpq-dev
-
-or ir you are using MacPorts:
-
-.. code-block:: console
-
-    $ sudo port install postgresql84
-
-To configure a postgres db/account for synnefo,
-
-*  Become the postgres user, connect to PostgreSQL:
-
-.. code-block:: console
-
-       $ sudo su - postgres
-       $ psql
-	
-* Run the following commands:
-
-.. code-block:: sql
-
-	   DROP DATABASE <database name>;
-	   DROP USER <db username>;
-	   CREATE USER <db username> WITH PASSWORD '<db password>';
-	   CREATE DATABASE <database name>;
-	   GRANT ALL PRIVILEGES ON DATABASE <database name> TO <db username>;
-	   ALTER DATABASE <database name> OWNER TO <db username>;
-	   ALTER USER <db username> CREATEDB;
-       
-.. note:: 
-   The last line enables the newly created user to create own databases. This
-   is needed for Django to create and drop the ``test_synnefo`` database for
-   unit testing.
-
-3. RabbitMQ 
-```````````
+RabbitMQ 
+````````
 
 RabbitMQ is used as a generic message broker for asterias. It should be
 installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high availability
@@ -261,8 +165,10 @@ The values set for the user and password must be mirrored in the
 .. todo:: Document an active-active configuration based on the latest version
    of RabbitMQ.
 
-4. vncauthproxy
-```````````````
+.. _asterias-install-vncauthproxy:
+
+vncauthproxy
+````````````
 
 To support OOB console access to the VMs over VNC, the vncauthproxy
 daemon must be running on every :ref:`APISERVER <APISERVER_NODE>` node.
@@ -306,10 +212,10 @@ Alternatively, build and install Debian packages.
 .. todo:: Mention vncauthproxy bug, snf-vncauthproxy, inability to install using pip
 .. todo:: kpap: fix installation commands
 
-.. _nfdhcpd-setup:
+.. _asterias-install-nfdhcpd:
 
-5. NFDHCPD
-``````````
+NFDHCPD
+```````
 
 Setup Synnefo-specific networking on the Ganeti backend.
 This part is deployment-specific and must be customized based on the
@@ -330,15 +236,15 @@ to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
 
 .. todo:: soc: document NFDHCPD installation, settle on KVM ifup script
 
-.. _rabbitmq-setup:
+.. _asterias-install-snfimage:
 
-6. snf-image
-````````````
+snf-image
+`````````
 
 Install the :ref:`snf-image <snf-image>` Ganeti OS provider for image
 deployment.
 
-For :ref:`asterias <snf-asterias>` to be able to launch VMs from specified
+For :ref:`asterias <asterias>` to be able to launch VMs from specified
 Images, you need the snf-image OS Provider installed on *all* Ganeti nodes.
 
 Please see `https://code.grnet.gr/projects/snf-image/wiki`_
@@ -356,7 +262,7 @@ synnefo components
 ******************
 
 You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <snf-asterias-architecture>`.
+depending on its type, see :ref:`Architecture <asterias-architecture>`.
 
 Most synnefo components have dependencies on additional Python packages.
 The dependencies are described inside each package, and are setup
@@ -386,9 +292,63 @@ Nodes of type :ref:`LOGIC <LOGIC_NODE>`
 Configuration
 -------------
 
+This section targets the configuration of the prerequisites for asterias,
+and the configuration of the associated synnefo software components.
+
+synnefo components
+******************
+
 asterias uses :ref:`snf-common <snf-common>` for settings.
 Please refer to the configuration sections of
 :ref:`snf-webproject <snf-webproject>`,
 :ref:`snf-asterias-app <snf-asterias-app>`,
 :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>` for more
 information on their configuration.
+
+Ganeti
+``````
+
+Set ``GANETI_NODES``, ``GANETI_MASTER_IP``, ``GANETI_CLUSTER_INFO`` based on
+your :ref:`Ganeti installation <asterias-install-ganeti>` and change the
+`BACKEND_PREFIX_ID`` setting, using an custom ``PREFIX_ID``.
+
+Database
+````````
+
+Once all components are installed and configured,
+initialize the Django DB:
+
+.. code-block:: console
+
+   $ snf-manage syncdb
+   $ snf-manage migrate
+
+and load fixtures ``{users, flavors, images}``, 
+which make the API usable by end users by defining a sample set of users, 
+hardware configurations (flavors) and OS images:
+
+.. code-block:: console
+
+   $ snf-manage loaddata /path/to/users.json
+   $ snf-manage loaddata flavors
+   $ snf-manage loaddata images
+
+.. warning:: 
+    Be sure to load a custom users.json and select a unique token 
+    for each of the initial and any other users defined in this file. 
+    **DO NOT LEAVE THE SAMPLE AUTHENTICATION TOKENS** enabled in deployed
+    configurations.
+
+sample users.json file:
+
+.. literalinclude:: ../../synnefo/db/fixtures/users.json
+
+`download <../_static/users.json>`_
+
+RabbitMQ
+````````
+
+Change ``RABBIT_*`` settings to match your :ref:`RabbitMQ setup
+<asterias-install-rabbitmq>`.
+
+.. include:: ../../Changelog

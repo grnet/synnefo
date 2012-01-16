@@ -1,7 +1,7 @@
 .. _snf-webproject:
 
 Component snf-webproject
-------------------------
+========================
 
 synnefo component :ref:`snf-webproject <snf-webproject>` defines
 a Django project in which the various other synnefo components
@@ -32,8 +32,199 @@ On Debian Squeeze, install the ``snf-webproject`` Debian package.
 Package configuration
 ---------------------
 
-Web server configuration
-************************
+Database
+********
+
+You need to create a database for use by the Django project,
+then configure your custom :ref:`snf-common <snf-common>` settings,
+according to your choice of DB.
+
+DB creation
+```````````
+
+SQLite
+~~~~~~
+Most self-respecting systems have ``sqlite`` installed by default.
+
+
+MySQL
+~~~~~
+MySQL must be installed first:
+
+.. code-block:: console
+
+    # apt-get install libmysqlclient-dev
+
+if you are using MacPorts:
+
+.. code-block:: console
+
+    $ sudo port install mysql5
+
+.. note::
+
+    On MacOSX with Mysql install from MacPorts the above command will
+    fail complaining that it cannot find the mysql_config command. Do
+    the following and restart the installation:
+
+    .. code-block:: console
+
+       $ echo "mysql_config = /opt/local/bin/mysql_config5" >> ./build/MySQL-python/site.cfg
+
+Configure a MySQL db/account for the Django project:
+
+.. code-block:: console
+
+    $ mysql -u root -p;
+
+.. code-block:: mysql
+
+    CREATE DATABASE <database name>;
+    SHOW DATABASES;
+    GRANT ALL ON <database name>.* TO <db username> IDENTIFIED BY '<db password>';
+
+.. warning::
+        MySQL *must* be set in ``READ-COMMITED`` mode, e.g. by setting:
+
+   .. code-block:: ini
+   
+      transaction-isolation = READ-COMMITTED
+               
+   in the ``[mysqld]`` section of :file:`/etc/mysql/my.cnf`.
+
+   Alternatively, make sure the following code fragment stays enabled
+   in your custom settings, e.g., in :file:`/etc/synnefo/10-database.conf`:
+       
+   .. code-block:: python
+   
+       if DATABASES['default']['ENGINE'].endswith('mysql'):
+           DATABASES['default']['OPTIONS'] = {
+                   'init_command': 'SET storage_engine=INNODB; ' +
+                       'SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED',
+           }
+   
+PostgreSQL
+~~~~~~~~~~
+
+You need to install the PostgreSQL binaries, e.g., for Debian:
+
+.. code-block:: console
+	     
+    # apt-get install postgresql-8.4 libpq-dev
+
+or ir you are using MacPorts:
+
+.. code-block:: console
+
+    $ sudo port install postgresql84
+
+To configure a postgres db/account for synnefo,
+
+*  Become the postgres user, connect to PostgreSQL:
+
+.. code-block:: console
+
+       $ sudo su - postgres
+       $ psql
+	
+* Run the following commands:
+
+.. code-block:: sql
+
+	   DROP DATABASE <database name>;
+	   DROP USER <db username>;
+	   CREATE USER <db username> WITH PASSWORD '<db password>';
+	   CREATE DATABASE <database name>;
+	   GRANT ALL PRIVILEGES ON DATABASE <database name> TO <db username>;
+	   ALTER DATABASE <database name> OWNER TO <db username>;
+	   ALTER USER <db username> CREATEDB;
+       
+.. note:: 
+   The last line enables the newly created user to create own databases. This
+   is needed for Django to create and drop the ``test_synnefo`` database for
+   unit testing.
+
+DB driver
+`````````
+
+Depending on your DB of choice, install one of the following:
+
+=========     =======================     ===================         ==========
+Database      PyPi package name           Debian package name         version   
+=========     =======================     ===================         ==========
+mysql         MySQL-python                python-mysql                1.2.3
+postgres      psycopg2                    python-psycopg2             2.4  
+=========     =======================     ===================         ==========
+
+.. note::
+    The python sqlite driver is available by default with Python so no
+    additional configuration is required. Also, most self-respecting systems
+    have the sqlite library installed by default.
+
+DB settings
+```````````
+
+Add the following to your custom :ref:`snf-common <snf-common>`, depending on
+your choice of DB:
+
+SQLite
+~~~~~~
+.. code-block:: python
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/path/to/synnefo.db'
+        }
+    }
+
+.. warning:: ``NAME`` must be an absolute path to the sqlite3 database file
+
+
+MySQL
+~~~~~
+
+.. code-block:: python
+
+    DATABASES = {
+         'default': {
+             'ENGINE': 'django.db.backends.mysql',
+             'NAME': 'synnefo',
+             'USER': 'USERNAME',
+             'PASSWORD': 'PASSWORD',
+             'HOST': 'HOST',
+             'PORT': 'PORT',
+             'OPTIONS': {
+                 'init_command': 'SET storage_engine=INNODB',
+             }
+        }
+    }
+
+PostgreSQL
+~~~~~~~~~~
+
+.. code-block:: python
+
+    DATABASES = {
+         'default': {
+             'ENGINE': 'django.db.backends.postgresql_psycopg2',
+             'NAME': 'DATABASE',
+             'USER': 'USERNAME',
+             'PASSWORD': 'PASSWORD',
+             'HOST': 'HOST',
+             'PORT': 'PORT',
+         }
+    }
+
+Try it out. The following command will attempt to connect to the DB and
+print out DDL statements. It should not fail.
+
+.. code-block:: console
+
+    $ snf-manage sql db
+
+Web server
+**********
 
 You need to configure your webserver to serve static files and relay
 requests to :ref:`snf-webproject <snf-webproject>`.

@@ -160,10 +160,12 @@ def builddeb(p, master="master", branch="debian-0.8"):
     with lcd(package_root(p)):
         with settings(warn_only=True):
             local("mkdir .git")
+            local("python setup.py clean")
+            local("git add synnefo/versions/*.py -f")
             local("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s \
 --git-export=INDEX --git-ignore-new" % (master, branch))
             local("rm -rf .git")
-            local("git co .")
+            local("git reset synnefo/versions/*.py")
 
 
 def builddeball(b="debian-0.8"):

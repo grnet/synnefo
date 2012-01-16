@@ -3,7 +3,6 @@
 # UI settings
 ###################
 
-from synnefo.webproject.settings.default.site import *
 from synnefo.settings.default.admins import *
 
 # API URL

@@ -3,8 +3,36 @@
 Component snf-asterias-app
 ==========================
 
-synnefo component :ref:`snf-asterias-app <snf-asterias-app>` defines the main
-web application for asterias, as a set of Django applications.
+synnefo component :ref:`snf-asterias-app <snf-asterias-app>` defines
+the web application for asterias. It includes the following:
+
+    * A set of Django applications that define among others:
+        * web UI
+        * API implementation
+        * business logic layer
+        * admin web UI
+    * :ref:`snf-dispatcher <snf-dispatcher>`, the logic dispatcher
+
+.. todo:: make this section more complete.
+
+.. _snf-dispatcher:
+
+snf-dispatcher
+--------------
+
+The logic dispatcher provides the context to run the business logic layer of
+:ref:`asterias <snf-asterias>`. It must run on :ref:`LOGIC <LOGIC_NODE>` nodes.
+
+The dispatcher retrieves messages from the queue, over AMQP, and calls the
+appropriate handler function, based on the type of the message.
+
+.. _snf-admin:
+
+snf-admin
+---------
+
+command :command:`snf-admin` provides the command-line admin interface
+for :ref:`asterias <snf-asterias>`.
 
 Package installation
 --------------------
@@ -23,35 +51,33 @@ On Debian Squeeze, install the ``snf-asterias-app`` Debian package.
 Package configuration
 ---------------------
 
-.. todo:: The Debian package does the following configuration steps
-   automatically, see ``/etc/default/snf-ganeti-eventd``.
+Web application
+***************
 
-Event daemon
-************
+Please see the configuration section of :ref:`snf-webproject <snf-webproject>`
+on how to serve :ref:`snf-asterias-app <snf-asterias-app>` as part of a
+Django project.
 
-Make sure the event daemon starts automatically on system boot.
-Initscript ``conf/init.d/snf-ganeti-eventd`` is provided for your convenience.
+snf-dispatcher
+**************
 
-Hook
-****
-The hook needs to be enabled for phases ``post-{add,modify,reboot,start,stop}``
-by *symlinking* in
-``/etc/ganeti/hooks/instance-{add,modify,reboot,start,stop}-post.d`` 
-on :ref:`GANETI-MASTER <GANETI_MASTER>`, e.g.:
+.. note:: The Debian package configures the init script for
+   :command:`snf-dispatcher` automatically, see ``/etc/default/snf-dispatcher``.
+
+.. todo:: package an initscript for :command:`snf-dispatcher`
+
+Make sure the logic dispatcher starts automatically on system boot of
+:ref:`LOGIC <LOGIC_NODE>` nodes. Initscript ``conf/init.d/snf-dispatcher``
+is provided for your convenience.
+
+You may also start the dispatcher by hand:
 
 .. code-block:: console
 
-    root@ganeti-master:/etc/ganeti/hooks/instance-start-post.d# ls -l
-    lrwxrwxrwx 1 root root 45 May   3 13:45 00-snf-ganeti-hook -> /home/devel/synnefo/snf-ganeti-hook/snf-ganeti-hook.py
+  $ snf-dispatcher
 
-.. todo:: fix the actual location of the link target above.
-
-.. note::
-    The link name may only contain "upper and lower case, digits,
-    underscores and hyphens. In other words, the regexp ^[a-zA-Z0-9\_-]+$."
-
-.. seealso::
-   `Ganeti customisation using hooks <http://docs.ganeti.org/ganeti/master/html/hooks.html?highlight=hooks#naming>`_
+The dispatcher should run in at least 2 instances to ensure high
+(actually, increased) availability.
 
 Package settings
 ----------------

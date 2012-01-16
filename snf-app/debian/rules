@@ -4,8 +4,9 @@
 	dh $@ --with python2
 
 package=snf-app
-static_dir=debian/$(package)/usr/share/synnefo/webstatic/
+static_dir=debian/$(package)/usr/share/synnefo/static/
 ui_static_dir=synnefo/ui/static/
+admin_static_dir=synnefo/admin/static/
 
 override_dh_auto_install:
 	dh_auto_install
@@ -13,6 +14,9 @@ override_dh_auto_install:
 	mkdir -p $(static_dir)ui;
 	-mv $(ui_static_dir) $(static_dir)ui;
 	
+	mkdir -p $(static_dir)admin;
+	-mv $(admin_static_dir) $(static_dir)admin;
+
 	rm -r debian/$(package)/usr/bin;
 
 	for py in $(shell pyversions -vr debian/control); do \

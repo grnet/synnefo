@@ -20,7 +20,10 @@ set -e
 
 
 case "$1" in
-    purge|remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+
+    purge)
         echo "Removing rc.d links..."
         update-rc.d snf-ganeti-eventd remove
     ;;

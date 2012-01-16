@@ -4,14 +4,13 @@
 # init.d script
 #
 
+VERBOSE=yes
+
 # Run as a daemon? true/false
-SNF_DSPTCH_ENABLE=false
+SNF_DSPTCH_ENABLE=true
 
 # User to run the dispatcher as
 SNF_USER="www-data"
-
-# Daemon needs to be run from a specific directory atm (FIX)
-SNF_DAEMON_DIR="/srv/okeanos"
 
 # How many workers, default 2
 WORKERS=2

@@ -44,7 +44,7 @@ from synnefo.util import version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 version.update_version('pithos.backends', 'version', HERE)
-from pithos.api.version import __version__
+from pithos.backends.version import __version__
 
 # Package info
 VERSION = __version__

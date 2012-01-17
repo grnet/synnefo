@@ -1,0 +1,5 @@
+recursive-include pithos *.json *.html *.json *.xml *.txt
+recursive-include pithos/ui/static *
+
+include README Changelog
+include distribute_setup.py

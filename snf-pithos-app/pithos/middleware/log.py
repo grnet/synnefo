@@ -31,22 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from glob import glob
-from os import umask
-from os.path import abspath, dirname, exists, join
+from django.conf import settings
+from django.core.exceptions import MiddlewareNotUsed
+
+import logging
 
 
-PROJECT_PATH = dirname(abspath(__file__))
-
-
-conffiles = glob(join(PROJECT_PATH, 'settings.d', '*.conf'))
-
-for conf in sorted(conffiles):
-    execfile(conf)
-
-conf = join(PROJECT_PATH, 'settings.local')
-
-if exists(conf):
-    execfile(conf)
-elif exists('/etc/pithos/settings.local'):
-    execfile('/etc/pithos/settings.local')
+class LoggingConfigMiddleware:
+    def __init__(self):
+        '''Initialise the logging setup from settings, called on first request.'''
+        args = {}
+        args['level'] = logging.DEBUG if getattr(settings, 'DEBUG', False) else logging.INFO
+        if getattr(settings, 'LOGFILE', None):
+            args['filename'] = settings.LOGFILE
+        args['format'] = '%(asctime)s [%(levelname)s] %(name)s %(message)s'
+        args['datefmt'] = '%Y-%m-%d %H:%M:%S'
+        logging.basicConfig(**args)
+        raise MiddlewareNotUsed('Logging setup only.')

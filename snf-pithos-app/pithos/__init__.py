@@ -31,30 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
-
-from django.conf import settings
-from django.core.mail import send_mail
-from django.http import Http404, HttpResponse
-from django.template.loader import render_to_string
-from django.utils.translation import ugettext as _
-
-
-def send_feedback(request):
-    if request.method != 'POST':
-        raise Http404
-    if not request.user:
-        return HttpResponse('Unauthorized', status=401)
-    
-    subject = _("Feedback from Pithos")
-    from_email = settings.FEEDBACK_FROM_EMAIL
-    recipient_list = [settings.FEEDBACK_CONTACT_EMAIL]
-    content = render_to_string('feedback_mail.txt', {
-                'message': request.POST.get('feedback-msg'),
-                'data': request.POST.get('feedback-data'),
-                'request': request})
-    
-    send_mail(subject, content, from_email, recipient_list)
-    
-    resp = json.dumps({'status': 'send'})
-    return HttpResponse(resp)
+# this is a namespace package
+try:
+    import pkg_resources
+    pkg_resources.declare_namespace(__name__)
+except ImportError:
+    import pkgutil
+    __path__ = pkgutil.extend_path(__path__, __name__)

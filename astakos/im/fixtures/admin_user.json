@@ -1,18 +1,13 @@
 [
     {
-        "model": "im.User",
+        "model": "im.AstakosUser",
         "pk": 1,
         "fields": {
-            "uniq": "admin",
-            "password": "admin",
             "level": 0,
-            "state": ACTIVE,
             "invitations": 10000,
-			"is_admin": true,
             "auth_token": "0000",
             "auth_token_created": "2011-09-11 09:17:14",
             "auth_token_expires": "2012-09-11 09:17:14",
-            "created": "2011-09-11",
             "updated": "2011-09-11"
    	    }
     }

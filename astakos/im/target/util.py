@@ -31,38 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
 import datetime
 
 from urlparse import urlsplit, urlunsplit
 from urllib import quote
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
-
-from astakos.im.models import User
-
-def get_or_create_user(uniq, realname, affiliation, level):
-    """Find or register a user into the internal database
-       and issue a token for subsequent requests.
-    """
-    
-    user, created = User.objects.get_or_create(uniq=uniq,
-        defaults={
-            'realname': realname,
-            'affiliation': affiliation,
-            'level': level,
-            'invitations': settings.INVITATIONS_PER_LEVEL[level],
-            'state':'PENDING',
-        })
-    if created:
-        user.renew_token()
-        user.save()
-        logging.info('Created user %s', user)
-    
-    return user
+from django.conf import settings
 
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
@@ -74,7 +51,9 @@ def prepare_response(request, user, next='', renew=False):
        expired, if the 'renew' parameter is present.
     """
     
-    if renew or user.auth_token_expires < datetime.datetime.now():
+    auth_token = user.auth_token
+    auth_token_expires = user.auth_token_expires
+    if renew or auth_token_expires < datetime.datetime.now():
         user.renew_token()
         user.save()
         
@@ -83,7 +62,7 @@ def prepare_response(request, user, next='', renew=False):
         parts = list(urlsplit(next))
         # Do not pass on user and token if we are on the same server.
         if parts[1] and request.get_host() != parts[1]:
-            parts[3] = urlencode({'user': user.uniq, 'token': user.auth_token})
+            parts[3] = urlencode({'user': user.username, 'token': auth_token})
             next = urlunsplit(parts)
     
     if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
@@ -93,14 +72,14 @@ def prepare_response(request, user, next='', renew=False):
         next = reverse('astakos.im.views.users_profile') + params
     
     response = HttpResponse()
-    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    cookie_value = quote(user.uniq + '|' + user.auth_token)
+    expire_fmt = auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    cookie_value = quote(user.username + '|' + auth_token)
     response.set_cookie('_pithos2_a', value=cookie_value, expires=expire_fmt, path='/')
 
     if not next:
-        response['X-Auth-User'] = user.uniq
-        response['X-Auth-Token'] = user.auth_token
-        response.content = user.uniq + '\n' + user.auth_token + '\n'
+        response['X-Auth-User'] = user.username
+        response['X-Auth-Token'] = auth_token
+        response.content = user.username + '\n' + auth_token + '\n'
         response.status_code = 200
     else:
         response['Location'] = next

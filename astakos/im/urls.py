@@ -38,25 +38,13 @@ urlpatterns = patterns('astakos.im.views',
     (r'^$', 'index'),
     (r'^login/?$', 'index'),
     
-    (r'^admin/?$', 'admin'),
-    
-    (r'^admin/users/?$', 'users_list'),
-    (r'^admin/users/(\d+)/?$', 'users_info'),
-    (r'^admin/users/create$', 'users_create'),
-    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
-    (r'^admin/users/export/?$', 'users_export'),
-    (r'^admin/users/pending/?$', 'pending_users'),
-    (r'^admin/users/activate/(\d+)/?$', 'users_activate'),
-    
-    (r'^admin/invitations/?$', 'invitations_list'),
-    (r'^admin/invitations/export/?$', 'invitations_export'),
+    (r'^admin/', include('astakos.im.admin.urls')),
     
     (r'^profile/?$', 'users_profile'),
     (r'^profile/edit/?$', 'users_edit'),
     
     (r'^signup/?$', 'signup'),
-    (r'^register/(\w+)?$', 'register'),
+    #(r'^register/(\w+)?$', 'register'),
     #(r'^signup/complete/?$', 'signup_complete'),
     #(r'^local/create/?$', 'local_create'),
 )
@@ -69,7 +57,6 @@ urlpatterns += patterns('',
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
                                 {'document_root': settings.PROJECT_PATH + '/im/static'})
 )
-
 
 if 'local' in settings.IM_MODULES:
     urlpatterns += patterns('astakos.im.views',

@@ -34,38 +34,44 @@
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from django.contrib.auth import authenticate
+from django.utils.translation import ugettext as _
 
 from astakos.im.target.util import prepare_response
-from astakos.im.models import User
+from astakos.im.models import AstakosUser
+from astakos.im.forms import LoginForm
 
 from urllib import unquote
 
 from hashlib import new as newhasher
 
-def login(request):
-    username = request.POST.get('username')
-    password = request.POST.get('password')
+def login(request, on_failure='index.html'):
+    """
+    on_failure: whatever redirect accepts as to
+    """
+    form = LoginForm(request.POST)
     
-    if not username:
-        return HttpResponseBadRequest('No user')
+    if not form.is_valid():
+        return render_to_response(on_failure,
+                                  {'form':form},
+                                  context_instance=RequestContext(request))
     
-    if not password:
-        return HttpResponseBadRequest('No password')
+    user = authenticate(**form.cleaned_data)
+    status = 'success'
+    if not user:
+        status = 'error'
+        message = _('Cannot authenticate account')
+    elif not user.is_active:
+        status = 'error'
+        message = _('Inactive account')
     
-    try:
-        user = User.objects.get(uniq=username)
-    except User.DoesNotExist:
-        return HttpResponseBadRequest('No such user')
-    
-    hasher = newhasher('sha256')
-    hasher.update(password)
-    password = hasher.hexdigest()
-    
-    if not password or user.password != password:
-        return HttpResponseBadRequest('Wrong password')
-    
-    if user.state == 'UNVERIFIED':
-        return HttpResponseBadRequest('Unverified account')
+    if status == 'error':
+        return render_to_response(on_failure,
+                                  {'form':form,
+                                   'message': _('Unverified account')},
+                                  context_instance=RequestContext(request))
     
     next = request.POST.get('next')
     return prepare_response(request, user, next)
@@ -74,11 +80,11 @@ def activate(request):
     token = request.GET.get('auth')
     next = request.GET.get('next')
     try:
-        user = User.objects.get(auth_token=token)
-    except User.DoesNotExist:
+        user = AstakosUser.objects.get(auth_token=token)
+    except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest('No such user')
     
-    user.state = 'ACTIVE'
+    user.is_active = True
     user.save()
     return prepare_response(request, user, next, renew=True)
 
@@ -108,8 +114,8 @@ def reset_password(request):
             status = 'error'
             message = 'Bad Request: missing token'
         try:
-            user = User.objects.get(auth_token=token)
-            if username != user.uniq:
+            user = AstakosUser.objects.get(auth_token=token)
+            if username != user.username:
                 status = 'error'
                 message = 'Bad Request: username mismatch'
             else:
@@ -117,7 +123,7 @@ def reset_password(request):
                 user.status = 'NORMAL'
                 user.save()
                 return prepare_response(request, user, next, renew=True)
-        except User.DoesNotExist:
+        except AstakosUser.DoesNotExist:
             status = 'error'
             message = 'Bad Request: invalid token'
             

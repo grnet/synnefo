@@ -18,11 +18,11 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Uniq</th>
+      <th>Username</th>
       <th>Real Name</th>
       <th>Admin</th>
       <th>Affiliation</th>
-      <th>State</th>
+      <th>Is active?</th>
       <th>Quota</th>
       <th>Updated</th>
     </tr>
@@ -30,12 +30,12 @@
   <tbody>
     {% for user in users %}
     <tr>
-      <td><a href="{% url astakos.im.views.users_info user.id %}">{{ user.id }}</a></td>
-      <td><a href="{% url astakos.im.views.users_info user.id %}">{{ user.uniq }}</a></td>
+      <td><a href="{% url astakos.im.admin.views.users_info user.id %}">{{ user.id }}</a></td>
+      <td><a href="{% url astakos.im.admin.views.users_info user.id %}">{{ user.username }}</a></td>
       <td>{{ user.realname }}</td>
-      <td>{{ user.is_admin }}</td>
+      <td>{{ user.is_superuser }}</td>
       <td>{{ user.affiliation }}</td>
-      <td>{{ user.state }}</td>
+      <td>{{ user.is_active }}</td>
       <td>{{ user.quota|GiB }} GiB</td>
       <td>{{ user.updated }}</td>
     </tr>
@@ -65,8 +65,8 @@
 </div>
 {% endif %}
 
-<a class="btn success" href="{% url astakos.im.views.users_create %}">Create a user</a>
-<a class="btn success" href="{% url astakos.im.views.users_export %}">Export</a>
+<a class="btn success" href="{% url astakos.im.admin.views.users_create %}">Create a user</a>
+<a class="btn success" href="{% url astakos.im.admin.views.users_export %}">Export</a>
 
 <br /><br />
 {% endblock body %}

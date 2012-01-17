@@ -2,27 +2,31 @@
 
 {% block title%}
         <h1>Welcome</h1>
+        <p>Choose how to signup.</p>
 {% endblock title%}
 
-{% block body %}
-<form action={%url astakos.im.views.signup %} method="post">
-    <p>Select an Identity Provider:</p>
-    {% for choice in im_modules%}
+{% block body%}
     <div class="row">
-        <div class="span8">
-            <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice }}" />
-            <label for="choice{{ forloop.counter }}"><img src="/im/static/{{ choice }}.png" width="80"></label>
-        </div>
-    </div>
-    {% endfor %}
-<div>
-    {% if inv %}
-    <input type=hidden  name="code" value={{ inv.code }} />
+    {% if "local" in im_modules %}
+      <div class="span4">
+        <h4>Local account</h4>
+        <form action="" method="post" class="form-stacked">
+          {{ form.as_p }}
+         <br>
+          <div class="">
+            <input type="hidden" name="next" value="{{ next }}">
+            <input type="hidden" name="code" value="{{ code }}">
+            <button type="submit" class="btn primary">Go</button>
+          </div>
+        </form>
+      </div>
     {% endif %}
-    <button type="submit" class="btn primary">Signup</button>
-</div>
-<input type="hidden" name="provider" value="{{ provider }}">
-<input type="hidden" name="code" value="{{ code }}">
-<input type="hidden" name="next" value="{{ next }}">
-</form>
-{% endblock body %}
+    <div class="span8">
+        {% for o in im_modules %}
+            {% if o != 'local' %}
+                <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="{{ o|title }}"><img src="/im/static/{{ o }}.png" width="120" height="120"></a>
+            {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+{% endblock body%}

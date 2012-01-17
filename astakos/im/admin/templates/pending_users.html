@@ -18,28 +18,28 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Uniq</th>
+      <th>Username</th>
       <th>Real Name</th>
-      <th>Code</th>
-      <th>Inviter Uniq</th>
-      <th>Inviter Real Name</th>
-      <th>Is consumed</th>
-      <th>Created</th>
-      <th>Consumed</th>
+      <th>Affiliation</th>
+      <th>Email</th>
+      <th>Inviter</th>
+      <th>Action</th>
     </tr>
   </thead>
   <tbody>
-    {% for inv in invitations %}
+    {% for user in users %}
     <tr>
-      <td>{{ inv.id }}</td>
-      <td>{{ inv.uniq }}</td>
-      <td>{{ inv.realname }}</td>
-      <td>{{ inv.code }}</td>
-      <td>{{ inv.inviter.uniq }}</td>
-      <td>{{ inv.inviter.realname }}</td>
-      <td>{{ inv.is_consumed }}</td>
-      <td>{{ inv.created }}</td>
-      <td>{{ inv.consumed }}</td>
+      <td>{{ user.id }}</td>
+      <td>{{ user.username }}</td>
+      <td>{{ user.realname }}</td>
+      <td>{{ user.affiliation }}</td>
+      <td>{{ user.email }}</td>
+      <td>{{ user.inviter.realname }}</td>
+      <td>
+        <form action="{% url astakos.im.admin.views.users_activate user.id %}" method="post">
+        <input type="hidden" name="page" value="{{ page }}">
+        <button type="submit" class="btn primary">Activate</button>
+        </form>
     </tr>
     {% endfor %}
   </tbody>
@@ -66,8 +66,6 @@
   </ul>
 </div>
 {% endif %}
-
-<a class="btn success" href="{% url astakos.im.views.invitations_export %}">Export</a>
 
 <br /><br />
 {% endblock body %}

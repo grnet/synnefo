@@ -31,56 +31,14 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
-from datetime import tzinfo, timedelta
 from django.conf import settings
-from django.template import RequestContext
 
-from astakos.im.models import AstakosUser
+def im_modules(request):
+    return {'im_modules': settings.IM_MODULES}
 
-class UTC(tzinfo):
-   def utcoffset(self, dt):
-       return timedelta(0)
+def next(request):
+    return {'next' : request.GET.get('next', '')}
 
-   def tzname(self, dt):
-       return 'UTC'
-
-   def dst(self, dt):
-       return timedelta(0)
-
-def isoformat(d):
-   """Return an ISO8601 date string that includes a timezone."""
-
-   return d.replace(tzinfo=UTC()).isoformat()
-
-def get_or_create_user(username, realname=None, first_name=None, last_name=None, affiliation=None, level=0, provider='local', password=None, email=None):
-    """Find or register a user into the internal database
-       and issue a token for subsequent requests.
-    """
+def code(request):
+    return {'code' : request.GET.get('code', '')}
     
-    user, created = AstakosUser.objects.get_or_create(username=username,
-        defaults={
-            'is_active': False,
-            'password':password,
-            'email':email,
-            'affiliation':affiliation,
-            'level':level,
-            'invitations':settings.INVITATIONS_PER_LEVEL[level],
-            'provider':provider,
-            'realname':realname,
-            'first_name':first_name,
-            'last_name':last_name
-        })
-    if created:
-        user.renew_token()
-        user.save()
-        logging.info('Created user %s', user)
-    
-    return user
-
-def get_context(request, extra_context={}, **kwargs):
-    if not extra_context:
-        extra_context = {}
-    extra_context.update(kwargs)
-    return RequestContext(request, extra_context)

@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,62 +25,30 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
-from datetime import tzinfo, timedelta
 from django.conf import settings
-from django.template import RequestContext
+from django.utils.importlib import import_module
 
-from astakos.im.models import AstakosUser
-
-class UTC(tzinfo):
-   def utcoffset(self, dt):
-       return timedelta(0)
-
-   def tzname(self, dt):
-       return 'UTC'
-
-   def dst(self, dt):
-       return timedelta(0)
-
-def isoformat(d):
-   """Return an ISO8601 date string that includes a timezone."""
-
-   return d.replace(tzinfo=UTC()).isoformat()
-
-def get_or_create_user(username, realname=None, first_name=None, last_name=None, affiliation=None, level=0, provider='local', password=None, email=None):
-    """Find or register a user into the internal database
-       and issue a token for subsequent requests.
+def get_backend():
     """
-    
-    user, created = AstakosUser.objects.get_or_create(username=username,
-        defaults={
-            'is_active': False,
-            'password':password,
-            'email':email,
-            'affiliation':affiliation,
-            'level':level,
-            'invitations':settings.INVITATIONS_PER_LEVEL[level],
-            'provider':provider,
-            'realname':realname,
-            'first_name':first_name,
-            'last_name':last_name
-        })
-    if created:
-        user.renew_token()
-        user.save()
-        logging.info('Created user %s', user)
-    
-    return user
+    Return an instance of a registration backend,
+    according to the INVITATIONS_ENABLED setting.
 
-def get_context(request, extra_context={}, **kwargs):
-    if not extra_context:
-        extra_context = {}
-    extra_context.update(kwargs)
-    return RequestContext(request, extra_context)
+    """
+    module = 'invitations' if settings.INVITATIONS_ENABLED else 'simple'
+    module = 'astakos.im.backends.%s' %module
+    backend_class_name = 'Backend'
+    try:
+        mod = import_module(module)
+    except ImportError, e:
+        raise ImproperlyConfigured('Error loading registration backend %s: "%s"' % (module, e))
+    try:
+        backend_class = getattr(mod, backend_class_name)
+    except AttributeError:
+        raise ImproperlyConfigured('Module "%s" does not define a registration backend named "%s"' % (module, attr))
+    return backend_class()

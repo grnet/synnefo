@@ -34,7 +34,8 @@
 from django.http import HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 
-from astakos.im.target.util import get_or_create_user, prepare_response
+from astakos.im.target.util import prepare_response
+from astakos.im.util import get_or_create_user
 
 
 class Tokens:

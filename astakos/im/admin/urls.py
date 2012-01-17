@@ -31,56 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
+from django.conf.urls.defaults import patterns
 
-from datetime import tzinfo, timedelta
-from django.conf import settings
-from django.template import RequestContext
-
-from astakos.im.models import AstakosUser
-
-class UTC(tzinfo):
-   def utcoffset(self, dt):
-       return timedelta(0)
-
-   def tzname(self, dt):
-       return 'UTC'
-
-   def dst(self, dt):
-       return timedelta(0)
-
-def isoformat(d):
-   """Return an ISO8601 date string that includes a timezone."""
-
-   return d.replace(tzinfo=UTC()).isoformat()
-
-def get_or_create_user(username, realname=None, first_name=None, last_name=None, affiliation=None, level=0, provider='local', password=None, email=None):
-    """Find or register a user into the internal database
-       and issue a token for subsequent requests.
-    """
+urlpatterns = patterns('astakos.im.admin.views',
+    (r'^$', 'admin'),
     
-    user, created = AstakosUser.objects.get_or_create(username=username,
-        defaults={
-            'is_active': False,
-            'password':password,
-            'email':email,
-            'affiliation':affiliation,
-            'level':level,
-            'invitations':settings.INVITATIONS_PER_LEVEL[level],
-            'provider':provider,
-            'realname':realname,
-            'first_name':first_name,
-            'last_name':last_name
-        })
-    if created:
-        user.renew_token()
-        user.save()
-        logging.info('Created user %s', user)
+    (r'^users/?$', 'users_list'),
+    (r'^users/(\d+)/?$', 'users_info'),
+    (r'^users/create$', 'users_create'),
+    (r'^users/(\d+)/modify/?$', 'users_modify'),
+    (r'^users/(\d+)/delete/?$', 'users_delete'),
+    (r'^users/export/?$', 'users_export'),
+    (r'^users/pending/?$', 'pending_users'),
+    (r'^users/activate/(\d+)/?$', 'users_activate'),
     
-    return user
-
-def get_context(request, extra_context={}, **kwargs):
-    if not extra_context:
-        extra_context = {}
-    extra_context.update(kwargs)
-    return RequestContext(request, extra_context)
+    (r'^invitations/?$', 'invitations_list'),
+    (r'^invitations/export/?$', 'invitations_export'),
+)

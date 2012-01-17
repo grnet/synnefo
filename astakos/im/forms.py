@@ -34,61 +34,33 @@
 from django import forms
 from django.utils.translation import ugettext as _
 from django.conf import settings
+from hashlib import new as newhasher
 
-from astakos.im.models import User
-
-openid_providers = (
-('Google','https://www.google.com/accounts/o8/id'),
-('Yahoo', 'http://yahoo.com/'),
-('AOL','http://openid.aol.com/%s/'),
-('OpenID', None),
-('MyOpenID','http://%s.myopenid.com/'),
-('LiveJournal', 'http://%s.livejournal.com/'),
-('Flickr', 'http://flickr.com/%s/'),
-('Technorati', 'http://technorati.com/people/technorati/%s/'),
-('Wordpress', 'http://%s.wordpress.com/'),
-('Blogger', 'http://%s.blogspot.com/'),
-('Verisign', 'http://%s.pip.verisignlabs.com/'),
-('Vidoop', 'http://%s.myvidoop.com/'),
-('ClaimID','http://claimid.com/%s')    
-)
+from astakos.im.models import AstakosUser
 
 class RegisterForm(forms.Form):
-    uniq = forms.CharField(widget=forms.widgets.TextInput())
-    provider = forms.CharField(widget=forms.TextInput(),
-                                label=u'Identity Provider')
+    username = forms.CharField(widget=forms.widgets.TextInput())
     email = forms.EmailField(widget=forms.TextInput(),
                              label=_('Email address'))
-    realname = forms.CharField(widget=forms.TextInput(),
-                                label=u'Real Name')
+    first_name = forms.CharField(widget=forms.TextInput(),
+                                label=u'First Name', required=False)
+    last_name = forms.CharField(widget=forms.TextInput(),
+                                label=u'Last Name', required=False)
     
     def __init__(self, *args, **kwargs):
         super(forms.Form, self).__init__(*args, **kwargs)
-        
-        #set readonly form fields
-        self.fields['provider'].widget.attrs['readonly'] = True
     
-    def clean_uniq(self):
+    def clean_username(self):
         """
-        Validate that the uniq is alphanumeric and is not already
+        Validate that the username is alphanumeric and is not already
         in use.
         
         """
         try:
-            user = User.objects.get(uniq__iexact=self.cleaned_data['uniq'])
-        except User.DoesNotExist:
-            return self.cleaned_data['uniq']
-        raise forms.ValidationError(_("A user with that uniq already exists."))
-
-class ShibbolethRegisterForm(RegisterForm):
-    pass
-
-class TwitterRegisterForm(RegisterForm):
-    pass
-
-class OpenidRegisterForm(RegisterForm):
-    openidurl = forms.ChoiceField(widget=forms.Select,
-                                  choices=((url, l) for l, url in openid_providers))
+            user = AstakosUser.objects.get(username__iexact=self.cleaned_data['username'])
+        except AstakosUser.DoesNotExist:
+            return self.cleaned_data['username']
+        raise forms.ValidationError(_("A user with that username already exists."))
 
 class LocalRegisterForm(RegisterForm):
     """ local signup form"""
@@ -100,17 +72,17 @@ class LocalRegisterForm(RegisterForm):
     def __init__(self, *args, **kwargs):
         super(LocalRegisterForm, self).__init__(*args, **kwargs)
     
-    def clean_uniq(self):
+    def clean_username(self):
         """
-        Validate that the uniq is alphanumeric and is not already
+        Validate that the username is alphanumeric and is not already
         in use.
         
         """
         try:
-            user = User.objects.get(uniq__iexact=self.cleaned_data['uniq'])
-        except User.DoesNotExist:
-            return self.cleaned_data['uniq']
-        raise forms.ValidationError(_("A user with that uniq already exists."))
+            user = AstakosUser.objects.get(username__iexact=self.cleaned_data['username'])
+        except AstakosUser.DoesNotExist:
+            return self.cleaned_data['username']
+        raise forms.ValidationError(_("A user with that username already exists."))
     
     def clean(self):
         """
@@ -133,18 +105,13 @@ class InvitedRegisterForm(RegisterForm):
         super(RegisterForm, self).__init__(*args, **kwargs)
         
         #set readonly form fields
-        self.fields['uniq'].widget.attrs['readonly'] = True
+        self.fields['username'].widget.attrs['readonly'] = True
         self.fields['inviter'].widget.attrs['readonly'] = True
-        self.fields['provider'].widget.attrs['provider'] = True
 
 class InvitedLocalRegisterForm(LocalRegisterForm, InvitedRegisterForm):
     pass
 
-class InvitedOpenidRegisterForm(OpenidRegisterForm, InvitedRegisterForm):
-    pass
-
-class InvitedTwitterRegisterForm(TwitterRegisterForm, InvitedRegisterForm):
-    pass
-
-class InvitedShibbolethRegisterForm(ShibbolethRegisterForm, InvitedRegisterForm):
-    pass
+class LoginForm(forms.Form):
+    username = forms.CharField(widget=forms.widgets.TextInput())
+    password = forms.CharField(widget=forms.PasswordInput(render_value=False),
+                                label=_('Password'))

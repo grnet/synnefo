@@ -40,7 +40,8 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-from astakos.im.target.util import get_or_create_user, prepare_response
+from astakos.im.target.util import prepare_response
+from astakos.im.util import get_or_create_user
 
 # It's probably a good idea to put your consumer's OAuth token and
 # OAuth secret into your project's settings. 
@@ -112,9 +113,9 @@ def authenticated(request):
     # These two things will likely never be used. Alternatively, you 
     # can prompt them for their email here. Either way, the password 
     # should never be used.
-    uniq = '%s@twitter.com' % access_token['screen_name']
+    username = '%s@twitter.com' % access_token['screen_name']
     realname = access_token['user_id']
     
     return prepare_response(request,
-                            get_or_create_user(uniq, realname, 'Twitter', 0),
+                            get_or_create_user(username, realname, 'Twitter', 0),
                             request_token.get('next'))

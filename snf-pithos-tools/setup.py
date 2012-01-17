@@ -60,10 +60,6 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.2.3',
-    'SQLAlchemy>=0.6.3',
-    'MySQL-python>=1.2.2',
-    'psycopg2>=2.2.1'
 ]
 
 EXTRAS_REQUIRES = {
@@ -193,6 +189,11 @@ setup(
 
     entry_points = {
      'console_scripts': [
+         'snf-pithos-sh = pithos.tools.sh:main',
+         'snf-pithos-sync = pithos.tools.sync:main',
+         'snf-pithos-test = pithos.tools.test:main',
+         'snf-pithos-fs = pithos.tools.fs:main',
+         'snf-pithos-dispatcher = pithos.tools.dispatcher:main',
          ],
       },
 )

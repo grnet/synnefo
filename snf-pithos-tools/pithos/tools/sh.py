@@ -750,6 +750,7 @@ def print_versions(data, f=stdout):
     for id, t in data['versions']:
         f.write('%s @ %s\n' % (str(id).rjust(30), datetime.fromtimestamp(float(t))))
 
+
 def main():
     try:
         name = argv[1]
@@ -768,6 +769,7 @@ def main():
     except Fault, f:
         status = '%s ' % f.status if f.status else ''
         print '%s%s' % (status, f.data)
+
 
 if __name__ == '__main__':
     main()

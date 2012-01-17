@@ -323,7 +323,7 @@ class StoreFS(Operations):
         return len(data)
 
 
-if __name__ == '__main__':
+def main():
     if len(argv) != 2:
         print 'usage: %s <mountpoint>' % argv[0]
         exit(1)
@@ -331,3 +331,8 @@ if __name__ == '__main__':
     user = getuser()
     fs = StoreFS(verbose=True)
     fuse = FUSE(fs, argv[1], foreground=True)
+
+
+if __name__ == '__main__':
+    main()
+

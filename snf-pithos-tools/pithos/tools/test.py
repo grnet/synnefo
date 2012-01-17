@@ -2114,8 +2114,14 @@ o_names = ['kate.jpg',
            'photos/plants/rose.jpg',
            'photos/me.jpg']
 
-if __name__ == "__main__":
+
+def main():
     if get_user() == 'test':
         unittest.main()
     else:
         print 'Will not run tests as any other user except \'test\' (current user: %s).' % get_user()
+
+
+if __name__ == "__main__":
+    main()
+

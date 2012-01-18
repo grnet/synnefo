@@ -40,10 +40,16 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo.util.version import update_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-update_version('synnefo.versions', 'app', HERE)
+
+try:
+    # try to update the version file
+    from synnefo.util.version import update_version
+    update_version('synnefo.versions', 'app', HERE)
+except ImportError:
+    pass
+
 from synnefo.versions.app import __version__
 
 # Package info
@@ -68,7 +74,9 @@ INSTALL_REQUIRES = [
     'South>=0.7',
     'pycrypto==2.1.0',
     'amqplib==0.6.1',
-    'python-daemon==1.5.5'
+    'python-daemon==1.5.5',
+    'snf-common>=0.7.3',
+    'vncauthproxy>=1.1'
 ]
 
 EXTRAS_REQUIRES = {
@@ -196,6 +204,8 @@ setup(
     install_requires = INSTALL_REQUIRES,
     extras_require = EXTRAS_REQUIRES,
     tests_require = TESTS_REQUIRES,
+
+    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
 
     entry_points = {
      'console_scripts': [

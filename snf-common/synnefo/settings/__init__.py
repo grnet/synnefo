@@ -38,6 +38,10 @@ import pkg_resources
 
 from synnefo.util.entry_points import extend_settings
 
+# set synnefo package __file__ to fix django related bug
+import synnefo
+synnefo.__file__ = os.path.join(synnefo.__path__[0], '__init__.py')
+
 # import default settings
 from synnefo.settings.default import *
 

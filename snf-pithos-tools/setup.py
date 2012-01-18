@@ -40,10 +40,15 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo.util import version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-version.update_version('pithos.tools', 'version', HERE)
+try:
+    # try to update the version file
+    from synnefo.util import version
+    version.update_version('pithos.tools', 'version', HERE)
+except ImportError:
+    pass
+
 from pithos.tools.version import __version__
 
 # Package info

@@ -47,6 +47,11 @@ env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject',
 env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
 env.capture = False
 env.colors = True
+env.pypi_root = 'pypi'
+env.roledefs = {
+    'docs': ['docs.dev.grnet.gr'],
+    'pypi': ['docs.dev.grnet.gr']
+}
 
 # coloured logging
 notice = lambda x: sys.stdout.write(yellow(x) + "\n")
@@ -83,7 +88,7 @@ def build_pkg(p):
     with lcd(package_root(p)):
         with settings(warn_only=True):
             local("rm -r dist build")
-        local("python setup.py sdist")
+        local("python setup.py egg_info -d sdist")
 
 
 def install_pkg(p):
@@ -179,4 +184,8 @@ def collectdebs():
     build_area = env.get('build_area', '../build-area')
     for p in env.deb_packages:
         local("cp %s/%s*.deb ./packages/" % (build_area, p))
+
+@roles('pypi')
+def uploadtars():
+    put("packages/*.tar.gz", 'www/pypi/')
 

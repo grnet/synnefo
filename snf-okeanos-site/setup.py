@@ -65,8 +65,6 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
         'snf-common>=0.7.3',
-        'snf-webproject>=0.7.3',
-        'snf-app>=0.7.3'
 ]
 
 TESTS_REQUIRES = [

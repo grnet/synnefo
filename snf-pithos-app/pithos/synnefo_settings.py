@@ -13,3 +13,6 @@ synnefo_middlewares = [
     'pithos.middleware.SecureMiddleware',
     'pithos.middleware.UserMiddleware'
 ]
+
+from pithos.api.settings import *
+from pithos.ui.settings import *

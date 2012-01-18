@@ -195,6 +195,7 @@ setup(
      'console_scripts': [
          ],
      'synnefo': [
+         'default_settings = pithos.synnefo_settings',
          'web_apps = pithos.synnefo_settings:synnefo_installed_apps',
          'web_middleware = pithos.synnefo_settings:synnefo_middlewares',
          'urls = pithos.synnefo_settings:synnefo_urls'

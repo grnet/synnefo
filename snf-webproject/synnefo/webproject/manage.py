@@ -36,6 +36,7 @@ def find_modules(name, path=None):
     Unlike find_module in the imp package this returns a list of all
     matched modules.
     """
+
     results = []
     if path is None: path = sys.path
     for p in path:
@@ -50,9 +51,19 @@ def find_modules(name, path=None):
             if result is not None:
                 results.append(result)
         except ImportError:
+            if sys.modules.get(name, None):
+                modpath = sys.modules[name].__path__
+                if isinstance(modpath, basestring) and not ('', modpath) in results:
+                    results.append(('', sys.modules[name].__path__))
+                else:
+                    for mp in modpath:
+                        if not ('', mp) in results:
+                            results.append(('', mp))
             pass
+
     if not results:
         raise ImportError("No module named %.200s" % name)
+
     return results
 
 def find_management_module(app_name):

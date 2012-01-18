@@ -57,7 +57,7 @@ def vcs_version():
     Package version based on `git describe`, compatible with setuptools
     version format
     """
-    return vcs_info()[3].lstrip('v')
+    return "-".join(vcs_info()[3].lstrip('v').split("-")[:-1])
 
 
 def update_version(module, name='version', root="."):

@@ -36,6 +36,8 @@ import pkg_resources
 import inspect
 import types
 
+from collections import defaultdict
+import inspect
 
 def get_entry_points(ns, name):
     for entry_point in pkg_resources.iter_entry_points(group=ns):
@@ -116,8 +118,18 @@ def extend_list_from_entry_point(settings_object, ns, entry_point_name,
 
     return settings_object
 
+
+def collect_defaults(ns):
+    settings = defaultdict(lambda: [])
+    for e in get_entry_points('synnefo', 'default_settings'):
+        attrs = dir(e.load())
+        settings[e.dist.key] = settings[e.dist.key] + attrs
+
+    return settings
+
 def extend_settings(mname, ns):
     extend_module_from_entry_point(mname, ns)
+
 
 def extend_urls(patterns, ns):
     for e in get_entry_points(ns, 'urls'):

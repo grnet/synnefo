@@ -259,9 +259,8 @@ class ImageBackend(object):
             for container in backend.list_containers(None, account,
                                                      shared=True):
                 for path, version_id in backend.list_objects(None, account,
-                        container, prefix='', delimiter='/',
-                        domain=PLANKTON_DOMAIN, keys=keys, shared=True,
-                        size_range=size_range):
+                        container, domain=PLANKTON_DOMAIN, keys=keys,
+                        shared=True, size_range=size_range):
                     location = get_location(account, container, path)
                     image = self._get_image(location)
                     if image:
@@ -275,8 +274,7 @@ class ImageBackend(object):
         # To get the list we connect as member and get the list shared by us
         for container in  backend.list_containers(member, self.user):
             for object, version_id in backend.list_objects(member, self.user,
-                    container, prefix='', delimiter='/',
-                    domain=PLANKTON_DOMAIN):
+                    container, domain=PLANKTON_DOMAIN):
                 try:
                     location = get_location(self.user, container, object)
                     meta = backend.get_object_meta(member, self.user,

@@ -146,7 +146,20 @@
          + pad(d.getUTCSeconds())+'Z'
     }
 
- 
+    
+    synnefo.util.parseHeaders = function(headers) {
+        var res = {};
+        _.each(headers.split("\n"), function(h) {
+            var tuple = h.split(/:(.+)?/);
+            if (!tuple.length > 1 || !(tuple[0] && tuple[1])) {
+                return;
+            }
+            res[tuple[0]] = tuple[1]
+        })
+
+        return res;
+    }
+
     synnefo.util.parseUri = function(sourceUri) {
         var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"];
         var uriParts = new RegExp("^(?:([^:/?#.]+):)?(?://)?(([^:/?#]*)(?::(\\d*))?)?((/(?:[^?#](?![^?#/]*\\.[^?#/.]+(?:[\\?#]|$)))*/?)?([^?#/]*))?(?:\\?([^#]*))?(?:#(.*))?").exec(sourceUri);
@@ -483,7 +496,9 @@
         if (xhr.responseText) {
             try {
                 json_data = JSON.parse(xhr.responseText)
-            } catch (err) {}
+            } catch (err) {
+                json_data = 'Raw error response contnent (could not parse as JSON):\n\n' + xhr.responseText;
+            }
         }
         
         module = "API"
@@ -522,11 +537,15 @@
         }
         
         if (json_data) {
-            $.each(json_data, function(key, obj) {
-                code = obj.code;
-                details = obj.details.replace("\n","<br>");
-                error_message = obj.message;
-            })
+            if (_.isObject(json_data)) {
+                $.each(json_data, function(key, obj) {
+                    code = obj.code;
+                    details = obj.details;
+                    error_message = obj.message;
+                })
+            } else {
+                details = json_data;
+            }
         }
 
         extra = {'URL': ajax_settings.url};

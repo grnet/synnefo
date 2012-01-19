@@ -70,7 +70,7 @@
             this.content = this.$(".content");
             this.list = this.$(".model-list .items-list");
             this.list_cont = this.$(".model-list");
-            this.form = this.$(".model-form");
+            this.form = this.$(".model-form-cont");
             this.empty_msg = this.$(".items-empty-msg");
             
             this.init_collection_handlers();
@@ -90,7 +90,7 @@
         
         init_handlers: function() {
             this.$(".add-new").click(_.bind(this.show_form, this, undefined));
-
+            
             this.form.find(".form-action.cancel").click(this.close_form);
             this.form.find(".form-action.submit").click(this.submit_form);
             
@@ -116,6 +116,10 @@
             this.items = _.map(models, function(m) { return m.id });
         },
 
+        _get_models: function() {
+            return this.collection.models;
+        },
+
         handle_reset: function(collection, models) {
             this.loading.hide();
             this.content.show();
@@ -124,10 +128,10 @@
                 this.reset_list();
             }
 
-            this.update_list(this.collection.models);
-            this.update_removed(this.items, this.collection.models);
+            this.update_list(this._get_models());
+            this.update_removed(this.items, this._get_models());
 
-            this.set_items(this.collection.models);
+            this.set_items(this._get_models());
         },
 
         show_form: function(model) {
@@ -160,8 +164,11 @@
         },
 
         reset_form: function(model) {
-            if (!model) {
+            if (!model.id) {
                 this.form.find("input, textarea").val("");
+                this.form.find("select").each(function() {
+                    $(this).get(0).selectedIndex = 0;
+                });
                 return;
             }
 
@@ -210,6 +217,10 @@
 
         clean_form_errors: function() {
 
+        },
+
+        get_save_params: function(data, options) {
+            return options;
         },
         
         submit_form: function() {
@@ -263,9 +274,6 @@
             el.find(".item-actions .confirm-remove .do-confirm").click(_.bind(this.delete_model, this, model)).hide();
             el.find(".item-actions .confirm-remove .cancel-remove").click(_.bind(this.cancel_confirm_remove, 
                                                                         this, el, model)).hide();
-            
-            // initialize download link
-            snf.util.promptSaveFile(el.find(".item-actions .download"), model.get_filename(), model.get("content"))
         },
 
         show_confirm_remove: function(el, model) {
@@ -343,9 +351,9 @@
 
             if (this.editing_id && this.collection.get(this.editing_id)) {
                 var model = this.collection.get(this.editing_id);
-                model.save(data, options);
+                model.save(data, this.get_save_params(data, options));
             } else {
-                this.collection.create(data, options);
+                this.collection.create(data, this.get_save_params(data, options));
             }
         },
 

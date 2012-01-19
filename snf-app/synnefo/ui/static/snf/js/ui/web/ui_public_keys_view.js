@@ -83,6 +83,12 @@
                             '</div>');
             el.append(actions);
         },
+
+        bind_list_item_actions: function(el, model) {
+            views.PublicKeysView.__super__.bind_list_item_actions.apply(this, arguments);
+            // initialize download link
+            //snf.util.promptSaveFile(el.find(".item-actions .download"), model.get_filename(), model.get("content"))
+        },
         
         close_private: function() {
             this.$(".private-cont").hide();

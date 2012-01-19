@@ -158,24 +158,38 @@
             this.image_details_os = this.$(".images-info-cont .os p");
             this.image_details_kernel = this.$(".images-info-cont .kernel p");
             this.image_details_gui = this.$(".images-info-cont .gui p");
+            this.image_details_vm = this.$(".images-info-cont .vm-name p");
 
-            this.types = this.$(".type-filter li");
             this.categories_list = this.$(".category-filters");
-
+            
             // params initialization
-            this.type_selections = ["system", "custom"]
-            this.selected_type = "system";
-            this.selected_categories = [];
-            this.images = [];
+            this.type_selections = {"system": "System"};
+            this.type_selections_order = ['system'];
+            
+            this.images_storage = snf.storage.images;
 
-            // update
-            this.update_images();
+            // apply image service specific image types
+            if (this.images_storage.type_selections) {
+                this.type_selections = _.extend(
+                    this.images_storage.type_selections,
+                    this.type_selections)
+
+                this.type_selections_order = this.images_storage.type_selections_order;
+            }
+
+            this.selected_type = undefined;
+            this.selected_categories = [];
+
+            this.images = [];
+            this.images_ids = [];
+            this.custom_images = [];
 
             // handlers initialization
+            this.create_types_selection_options();
             this.init_handlers();
             this.init_position();
         },
-
+        
         init_position: function() {
             //this.el.css({position: "absolute"});
             //this.el.css({top:"10px"})
@@ -185,18 +199,39 @@
             var self = this;
             this.types.live("click", function() {
                 self.select_type($(this).attr("id").replace("type-select-",""));
+            });
+            
+            this.image_details.find(".hide").click(_.bind(function(){
+                this.hide_image_details();
+            }, this));
+
+            this.$(".register-custom-image").live("click", function(){
+                var confirm_close = true;
+                if (confirm_close) {
+                    snf.ui.main.custom_images_view.show(self.parent);
+                } else {
+                }
             })
         },
 
-        update_images: function() {
-            this.images = storage.images.active();
+        update_images: function(images) {
+            this.images = images;
             this.images_ids = _.map(this.images, function(img){return img.id});
-            if (this.selected_type == "custom") { this.images = []; this.images_ids = []; }
-
             return this.images;
         },
 
+        create_types_selection_options: function() {
+            var list = this.$("ul.type-filter");
+            _.each(this.type_selections_order, _.bind(function(key) {
+                list.append('<li id="type-select-{0}">{1}</li>'.format(key, this.type_selections[key]));
+            }, this));
+            this.types = this.$(".type-filter li");
+        },
+
         update_layout: function() {
+            if (!this.selected_type) {
+                this.selected_type = _.keys(this.type_selections)[0];
+            }
             this.select_type(this.selected_type);
         },
         
@@ -224,15 +259,55 @@
             }
         },
         
+        show_loading_view: function() {
+            this.$(".images-list-cont .empty").hide();
+            this.images_list.hide();
+            this.$(".images-list-cont .loading").show();
+            this.$(".images-list-cont .images-list").hide();
+            this.reset_categories();
+            this.update_images([]);
+            this.reset_images();
+            this.hide_list_loading();
+        },
+
+        hide_loading_view: function(images) {
+            this.$(".images-list-cont .loading").hide();
+            this.$(".images-list-cont .images-list").show();
+            this.reset_categories();
+            this.update_images(images);
+            this.reset_images();
+            this.select_image(this.selected_image);
+            this.hide_list_loading();
+        },
+
         select_type: function(type) {
             this.selected_type = type;
             this.types.removeClass("selected");
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
+            
+            var images = this.images_storage.update_images_for_type(
+                this.selected_type, 
+                _.bind(this.show_loading_view, this), 
+                _.bind(this.hide_loading_view, this)
+            );
+            this.update_layout_for_type(type);
+        },
 
-            this.reset_categories();
-            this.update_images();
-            this.reset_images();
-            this.select_image();
+        update_layout_for_type: function(type) {
+            if (type != "system") {
+                this.$(".custom-action").hide();
+            } else {
+                this.$(".custom-action").hide();
+            }
+
+        },
+
+        show_list_loading: function() {
+            this.$(".images-list-cont").addClass("loading");
+        },
+
+        hide_list_loading: function() {
+            this.$(".images-list-cont").removeClass("loading");
         },
 
         select_image: function(image) {
@@ -240,37 +315,72 @@
                 if (this.selected_image && this.images_ids.indexOf(this.selected_image.id) > -1) {
                     image = this.selected_image;
                 } else {
-                    image = storage.images.get(this.images_ids[0]);
+                    image = this.images_storage.get(this.images_ids[0]);
                 }
             }
-
+                
             if (!this.images_ids.length) { image = this.selected_image || undefined };
             
+            if ((!this.selected_image && image) || (this.selected_image != image))
+                this.trigger("change", image);
+
             this.selected_image = image;
-            this.trigger("change", image);
-            
+                
             if (image) {
-                this.image_details.show();
                 this.images_list.find(".image-details").removeClass("selected");
                 this.images_list.find(".image-details#create-vm-image-" + this.selected_image.id).addClass("selected");
-                
-                this.image_details_desc.text(image.get("description"));
-                
-                var img = snf.ui.helpers.os_icon_tag(image.get("OS"))
-                this.image_details_title.html(img + image.get("name"));
-                this.image_details_os.text(_(image.get("OS")).capitalize());
-                this.image_details_kernel.text(image.get("kernel"));
-
-                var size = image.get_readable_size();
-
-                this.image_details_size.text(size);
-                this.image_details_gui.text(image.get("GUI"));
+                this.update_image_details(image);
 
             } else {
-                this.image_details.hide();
             }
 
+            this.image_details.hide();
             this.validate();
+        },
+
+        update_image_details: function(image) {
+            this.image_details_desc.hide().parent().hide();
+            if (image.escape("description")) {
+                this.image_details_desc.text(image.get("description")).show().parent().show();
+            }
+            var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
+            if (image.get("name")) {
+                this.image_details_title.html(img + image.escape("name")).show().parent().show();
+            }
+            
+            var extra_details = this.image_details.find(".extra-details");
+            // clean prevously added extra details
+            extra_details.find(".image-detail").remove();
+
+            var meta_keys = ['owner', 'OS', 'kernel', 'GUI'];
+            var detail_tpl = ('<div class="clearfix image-detail {2}">' +
+                             '<span class="title">{0}</span>' +
+                             '<p class="value">{1}</p>' + 
+                             '</div>');
+            meta_keys = _.union(meta_keys, this.images_storage.display_metadata || []);
+
+            _.each(meta_keys, function(key) {
+                var value;
+                var method = 'get_' + key.toLowerCase();
+                var display_method = 'display_' + key.toLowerCase();
+                 
+                if (image[display_method]) {
+                    value = image[display_method]();
+                } else if (image[method]) {
+                    value = image[method]();
+                } else {
+                    value = image.get(key);
+
+                    if (!value) {
+                        value = image.get_meta(key);
+                    }
+                }
+
+                if (!value) { return; }
+                
+                var label = _(key.replace(/_/g," ")).capitalize();
+                extra_details.append(detail_tpl.format(_.escape(label), _.escape(value), key.toLowerCase()));
+            })
         },
 
         reset_images: function() {
@@ -281,8 +391,10 @@
             
             if (this.images.length) {
                 this.images_list.parent().find(".empty").hide();
+                this.images_list.show();
             } else {
                 this.images_list.parent().find(".empty").show();
+                this.images_list.hide();
             }
 
             this.select_image();
@@ -296,25 +408,47 @@
 
         show: function() {
             views.CreateImageSelectView.__super__.show.apply(this, arguments);
+            this.image_details.hide();
         },
 
         add_image: function(img) {
             var image = $(('<li id="create-vm-image-{1}"' +
-                           'class="image-details clearfix">{2}{0}' +
-                           '<p>{4}</p><span class="size">{3}' +
-                           '</span></li>').format(img.get("name"), 
+                           'class="image-details clearfix">{2}{0}'+
+                           '<span class="show-details">details</span>'+
+                           '<span class="size"><span class="prepend">by </span>{5}</span>' + 
+                           '<span class="owner">' +
+                           '<span class="prepend"></span>' +
+                           '{3}</span>' + 
+                           '<p>{4}</p>' +
+                           '</li>').format(img.escape("name"), 
                                                   img.id, 
-                                                  snf.ui.helpers.os_icon_tag(img.get("OS")),
-                                                  img.get_readable_size(),
-                                                  util.truncate(img.get("description"), 35)));
+                                                  snf.ui.helpers.os_icon_tag(img.escape("OS")),
+                                                  _.escape(img.get_readable_size()),
+                                                  util.truncate(img.escape("description"), 35),
+                                                  _.escape(img.display_owner())));
             image.data("image", img);
             image.data("image_id", img.id);
             this.images_list.append(image);
+            image.find(".show-details").click(_.bind(function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                this.show_image_details(img);
+            }, this))
+        },
+            
+        hide_image_details: function() {
+            this.image_details.fadeOut(200);
+            this.parent.$(".create-controls").show();
+        },
+
+        show_image_details: function(img) {
+            this.parent.$(".create-controls").hide();
+            this.update_image_details(img);
+            this.image_details.fadeIn(100);
         },
 
         reset: function() {
-            this.selected_image = undefined;
-            this.reset_images();
+            this.select_type("system");
         },
 
         get: function() {
@@ -376,7 +510,7 @@
             _.each(this.predefined_flavors_keys, _.bind(function(key) {
                 var val = this.predefined_flavors[key];
                 var el = $(('<li class="predefined-selection" id="predefined-flavor-{0}">' +
-                           '{1}</li>').format(key, _(key).capitalize()));
+                           '{1}</li>').format(key, _.escape(_(key).capitalize())));
 
                 this.predefined.append(el);
                 el.data({flavor: storage.flavors.get_flavor(val.cpu, val.ram, val.disk, val.disk_template, this.flavors)});
@@ -637,7 +771,8 @@
             if (this.__added_flavors.cpu.indexOf(values.cpu) == -1) {
                 var cpu = $(('<li class="option cpu value-{0} {1}">' + 
                              '<span class="value">{0}</span>' + 
-                             '<span class="metric">x</span></li>').format(values.cpu, disabled)).data('value', values.cpu);
+                             '<span class="metric">x</span></li>').format(
+                            _.escape(values.cpu), disabled)).data('value', values.cpu);
                 this.cpus.append(cpu);
                 this.__added_flavors.cpu.push(values.cpu);
             }
@@ -645,7 +780,8 @@
             if (this.__added_flavors.ram.indexOf(values.mem) == -1) {
                 var mem = $(('<li class="option mem value-{0}">' + 
                              '<span class="value">{0}</span>' + 
-                             '<span class="metric">MB</span></li>').format(values.mem)).data('value', values.mem);
+                             '<span class="metric">MB</span></li>').format(
+                            _.escape(values.mem))).data('value', values.mem);
                 this.mems.append(mem);
                 this.__added_flavors.ram.push(values.mem);
             }
@@ -653,7 +789,8 @@
             if (this.__added_flavors.disk.indexOf(values.disk) == -1) {
                 var disk = $(('<li class="option disk value-{0}">' + 
                               '<span class="value">{0}</span>' + 
-                              '<span class="metric">GB</span></li>').format(values.disk)).data('value', values.disk);
+                              '<span class="metric">GB</span></li>').format(
+                            _.escape(values.disk))).data('value', values.disk);
                 this.disks.append(disk);
                 this.__added_flavors.disk.push(values.disk)
             }
@@ -663,7 +800,7 @@
                 var disk_template = $(('<li title="{2}" class="option disk_template value-{0}">' + 
                                        '<span class="value name">{1}</span>' +
                                        '</li>').format(values.disk_template, 
-                                            template_info.name, 
+                                            _.escape(template_info.name), 
                                             template_info.description)).data('value', 
                                                                 values.disk_template);
 
@@ -724,8 +861,7 @@
 
             var self = this;
             this.$(".create-ssh-key").click(function() {
-                var confirm_close = true || confirm("This action will close the virtual machine creation wizard." +
-                                            " Are you sure you want to continue ?")
+                var confirm_close = true;
                 if (confirm_close) {
                     snf.ui.main.public_keys_view.show(self.parent);
                 } else {
@@ -739,7 +875,7 @@
             
             // TODO: get suggested from snf.api.conf
             _.each(window.SUGGESTED_ROLES, function(r){
-                var el = $('<span class="val">{0}</span>'.format(r));
+                var el = $('<span class="val">{0}</span>'.format(_.escape(r)));
                 el.data("value", r);
                 cont.append(el);
                 el.click(function() {
@@ -784,7 +920,7 @@
                 this.$(".ssh .empty").hide();
             }
             _.each(keys, _.bind(function(key){
-                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(key.get("name"), key.id));
+                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(_.escape(key.get("name")), key.id));
                 var check = $('<input class="check" type="checkbox"></input>')
                 el.append(check);
                 el.data("model", key);
@@ -817,7 +953,7 @@
 
             if (!params.image) { return }
             var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
-            var vm_name = vm_name_tpl.format(params.image.get("name"));
+            var vm_name = vm_name_tpl.format(_.escape(params.image.get("name")));
             var orig_name = vm_name;
             
             var existing = true;
@@ -944,9 +1080,9 @@
             
             set_detail("description");
             set_detail("name");
-            set_detail("os", _(image.get("OS")).capitalize());
+            set_detail("os", _(image.escape("OS")).capitalize());
             set_detail("gui", image.get("GUI"));
-            set_detail("size", image.get_readable_size());
+            set_detail("size", _.escape(image.get_readable_size()));
             set_detail("kernel");
         },
 
@@ -1106,7 +1242,10 @@
                     personality.push(data.image.personality_data_for_keys(data.keys))
                 }
 
-                extra['personality'] = personality;
+                if (personality.length) {
+                    extra['personality'] = personality;
+                }
+
                 storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){
                     this.close_all();
                     this.password_view.show(data.server.adminPass, data.server.id);
@@ -1136,8 +1275,6 @@
         },
 
         onShow: function() {
-            this.reset()
-            this.update_layout();
         },
 
         update_layout: function() {
@@ -1169,6 +1306,10 @@
         },
 
         show_step: function(step) {
+            // FIXME: this shouldn't be here
+            // but since we are not calling step.hide this should work
+            this.steps[1].image_details.hide();
+
             this.current_view = this.steps[step];
             this.update_controls();
 

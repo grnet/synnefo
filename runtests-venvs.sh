@@ -42,30 +42,48 @@ virtualenv --no-site-packages -ppython2.6 env
 source env/bin/activate
 export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
 pip install -r requirements.pip
+
+cd snf-common
 rm -rf build dist
-python setup.py sdist
-pip install dist/synnefo-*.tar.gz
-cd env
+python setup.py install
+cd ../snf-app
+rm -rf build dist
+python setup.py install
+cd ../snf-ganeti-tools
+rm -rf build dist
+python setup.py install
+
+
+cd ../env
 # avoid vncauthproxy errors
 rm bin/vncauthproxy.py
 echo "running django tests..." >&2
+export SYNNEFO_SETTINGS_DIR=/etc/lala
 snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
 
-rm -rf env
-virtualenv --no-site-packages -ppython2.7 env
-source env/bin/activate
-export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
-pip install -r requirements.pip
-rm -rf build dist
-python setup.py sdist
-pip install dist/synnefo-*.tar.gz
-cd env
-# avoid vncauthproxy errors
-rm bin/vncauthproxy.py
-echo "running django tests..." >&2
-snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
-cd ..
-deactivate
-rm -rf env
+#rm -rf env
+#virtualenv --no-site-packages -ppython2.7 env
+#source env/bin/activate
+#export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
+#pip install -r requirements.pip
+
+#cd snf-common
+#rm -rf build dist
+#python setup.py install
+#cd ../snf-app
+#rm -rf build dist
+#python setup.py install
+#cd ../snf-ganeti-tools
+#rm -rf build dist
+#python setup.py install
+
+#cd env
+## avoid vncauthproxy errors
+#rm bin/vncauthproxy.py
+#echo "running django tests..." >&2
+#snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+#cd ..
+#deactivate
+#rm -rf env

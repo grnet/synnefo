@@ -437,7 +437,7 @@
         update_layout: function() {
 
             // api metadata object
-            var meta =  this.vm.get_meta();
+            var meta =  this.vm.get('metadata').values;
 
             var i = 0;
             var cont = $(this.el).find(".items");
@@ -454,12 +454,12 @@
                 
                 // create element
                 var new_el = $(this.tag_tpl.format(util.truncate(key, this.tag_key_truncate), 
-                                                 util.truncate(": " + value, this.tag_value_truncate)));
+                                                 util.truncate(": " + _.escape(value), this.tag_value_truncate)));
 
                 // add title attributes, improve accesibility
                 // truncated values
                 new_el.find("span.key").attr("title", key);
-                new_el.find("span.value").attr("title", value);
+                new_el.find("span.value").attr("title", _.escape(value));
 
                 cont.append(new_el);
             }, this);
@@ -582,14 +582,16 @@
         update_layout: function() {
             if (!this.visible() && this.parent.details_hidden) { return };
 
-            var image = this.vm.get_image();
+            var image = this.vm.get_image(_.bind(function(image){
+                this.sel('image_name').text(util.truncate(image.escape('name'), 13)).attr("title", image.escape('name'));
+                this.sel('image_size').text(image.get_readable_size()).attr('title', image.get_readable_size());
+            }, this));
+
             var flavor = this.vm.get_flavor();
             if (!flavor || !image) {
                 return;
             }
 
-            this.sel('image_name').text(util.truncate(image.get('name'), 13)).attr("title", image.get('name'));
-            this.sel('image_size').text(image.get_readable_size()).attr('title', image.get_readable_size());
 
             this.sel('cpu').text(flavor.get('cpu'));
             this.sel('ram').text(flavor.get('ram'));

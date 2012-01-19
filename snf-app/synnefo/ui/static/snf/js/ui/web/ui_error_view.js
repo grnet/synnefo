@@ -245,7 +245,7 @@
             this.$(".error-type").text(this.type || "");
             this.$(".error-module").text(this.ns || "");
             this.$(".message p").text(this.message || "");
-            this.$(".error-more-details p").html(this.details || "no info");
+            this.$(".error-more-details p").html($("<pre />", {text:this.details}) || "no info");
 
             this.$(".extra-details").remove();
             _.each(this.error_options.extra_details, function(value, key){

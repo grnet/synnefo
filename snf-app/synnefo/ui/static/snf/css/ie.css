@@ -44,3 +44,7 @@ div.confirm_single button {
     float: none;
 }
 
+.create-vm .wide.select-image .images-info-cont {
+    width: 91%;
+    border: 1px solid #aaa;
+}

@@ -49,7 +49,8 @@ from synnefo.logic.utils import get_rsapi_state
 
 class AaiClient(Client):
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = settings.BYPASS_AUTHENTICATION_TOKEN
+        request['HTTP_X_AUTH_TOKEN'] = \
+            settings.BYPASS_AUTHENTICATION_SECRET_TOKEN
         return super(AaiClient, self).request(**request)
 
 

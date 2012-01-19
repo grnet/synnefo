@@ -1,3 +1,37 @@
+# Copyright 2011 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+#
+
 import distribute_setup
 distribute_setup.use_setuptools()
 
@@ -6,33 +40,44 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from synnefo import get_version
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
+try:
+    # try to update the version file
+    from synnefo.util.version import update_version
+    update_version('synnefo.versions', 'app', HERE)
+except ImportError:
+    pass
+
+from synnefo.versions.app import __version__
+
 # Package info
-VERSION = get_version().replace(" ","")
+VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'
 
 PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT, exclude=['okeanos_site'])
+PACKAGES = find_packages(PACKAGES_ROOT)
 
 # Package meta
 CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django==1.2.4',
-    'simplejson==2.1.3',
+    'Django >=1.2, <1.3',
+    'simplejson>=2.1.2',
     'pycurl==7.19.0',
     'python-dateutil==1.4.1',
-    'IPy==0.75',
-    'south==0.7.1',
+    'IPy>=0.70',
+    'South>=0.7',
     'pycrypto==2.1.0',
     'amqplib==0.6.1',
-    'python-daemon==1.5.5'
+    'python-daemon==1.5.5',
+    'snf-common>=0.7.3',
+    'vncauthproxy>=1.1',
+    'south>=0.7.3'
 ]
 
 EXTRAS_REQUIRES = {
@@ -137,7 +182,7 @@ def find_package_data(
     return out
 
 setup(
-    name = 'synnefo',
+    name = 'snf-app',
     version = VERSION,
     license = 'BSD',
     url = 'http://code.grnet.gr/',
@@ -150,6 +195,7 @@ setup(
     maintainer = 'Package maintainer',
     maintainer_email = 'maintainer@grnet.gr',
 
+    namespace_packages = ['synnefo', 'synnefo.versions'],
     packages = PACKAGES,
     package_dir= {'': PACKAGES_ROOT},
     include_package_data = True,
@@ -160,14 +206,22 @@ setup(
     extras_require = EXTRAS_REQUIRES,
     tests_require = TESTS_REQUIRES,
 
+    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+
     entry_points = {
      'console_scripts': [
-         'snf-manage = synnefo.manage:main',
-         'snf-dispatcher = synnefo.logic.dispatcher:scriptmain',
+         'snf-dispatcher = synnefo.logic.dispatcher:main',
          'snf-burnin = synnefo.tools.burnin:main',
          'snf-admin = synnefo.tools.admin:main',
          'snf-cloud = synnefo.tools.cloud:main',
          ],
+     'synnefo': [
+         'default_settings = synnefo.app_settings.default',
+         'web_apps = synnefo.app_settings:synnefo_web_apps',
+         'web_middleware = synnefo.app_settings:synnefo_web_middleware',
+         'urls = synnefo.app_settings.urls:urlpatterns',
+         'web_static = synnefo.app_settings:synnefo_static_files',
+         ]
       },
-    )
+)
 

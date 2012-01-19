@@ -34,6 +34,17 @@ fi
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
 
+check_ganeti_master() {
+    MASTER=`/usr/sbin/gnt-cluster getmaster`
+    HOST=`/bin/hostname -f`
+
+    if [ "x$MASTER" != x$HOST ]; then
+        log_warning_msg "snf-ganeti-eventd should run on the ganeti master only, aborting start"
+        log_end_msg 0
+        exit 0
+    fi
+}
+
 eventd_start() {
     if start-stop-daemon --start --chuid $SNF_USER --pidfile $SNF_EVENTD_PID_FILE \
 		--exec $DAEMON -- $SNF_EVENTD_OPTS
@@ -55,16 +66,10 @@ eventd_start() {
     fi
 } # eventd_start
 
-MASTER=`/usr/sbin/gnt-cluster getmaster`
-HOST=`/bin/hostname -f`
-
 case "$1" in
   start)
-        if [ "x$MASTER" != x$HOST ]; then
-            log_warning_msg "snf-ganeti-eventd should run on the ganeti master only, aborting"
-      	    log_end_msg 0
-    	    exit 0
-     	fi
+        # Check if we are on the Ganeti master node
+        check_ganeti_master
 
         if "$SNF_EVENTD_ENABLE"; then
             log_daemon_msg "Starting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
@@ -97,6 +102,8 @@ case "$1" in
                 log_warning_msg "snf-ganeti-eventd daemon not running, attempting to start."
                 rm -f $SNF_EVENTD_PID_FILE
             fi
+            # Check if we are on the Ganeti master node, before starting
+            check_ganeti_master
             eventd_start
         else
             if [ -s "$SNF_EVENTD_DEFAULTS" ]; then

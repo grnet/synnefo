@@ -42,8 +42,8 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-import synnefo.settings as settings
 
+from synnefo import settings
 setup_environ(settings)
 
 from amqplib import client_0_8 as amqp
@@ -229,15 +229,15 @@ def child(cmdline):
 def parse_arguments(args):
     from optparse import OptionParser
 
+    default_pid_file = os.path.join("var","run","synnefo","dispatcher.pid")
     parser = OptionParser()
     parser.add_option("-d", "--debug", action="store_true", default=False,
                       dest="debug", help="Enable debug mode")
     parser.add_option("-w", "--workers", default=2, dest="workers",
                       help="Number of workers to spawn", type="int")
-    parser.add_option("-p", '--pid-file', dest="pid_file",
-                      default=os.path.join(os.getcwd(), "dispatcher.pid"),
-                      help="Save PID to file (default:%s)" %
-                           os.path.join(os.getcwd(), "dispatcher.pid"))
+    parser.add_option("-p", "--pid-file", dest="pid_file",
+                      default=default_pid_file,
+                      help="Save PID to file (default: %s)" % default_pid_file)
     parser.add_option("--purge-queues", action="store_true",
                       default=False, dest="purge_queues",
                       help="Remove all declared queues (DANGEROUS!)")
@@ -416,7 +416,10 @@ def daemon_mode(opts):
 
 
 def main():
+    dictConfig(settings.DISPATCHER_LOGGING)
+
     global log
+
     (opts, args) = parse_arguments(sys.argv[1:])
 
     # Init the global variables containing the queues
@@ -461,11 +464,7 @@ def main():
         raise
 
 
-def scriptmain():
-    dictConfig(settings.DISPATCHER_LOGGING)
-    sys.exit(main())
-
 if __name__ == "__main__":
-    scriptmain()
+    sys.exit(main())
 
 # vim: set sta sts=4 shiftwidth=4 sw=4 et ai :

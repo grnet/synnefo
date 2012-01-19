@@ -312,7 +312,7 @@
         
         _update_vm_details: function() { 
             if (!this.vm) { console.error("invalid view state"); return }
-            this.set_subtitle(this.vm.get("name") + snf.ui.helpers.vm_icon_tag(this.vm, "small"));
+            this.set_subtitle(this.vm.escape("name") + snf.ui.helpers.vm_icon_tag(this.vm, "small"));
             this.update_vm_details() 
         },
 

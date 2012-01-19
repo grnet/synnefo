@@ -53,7 +53,7 @@
     
     // get url helper
     var getUrl = function(baseurl) {
-        var baseurl = baseurl || snf.config.api_url;
+        var baseurl = baseurl || snf.config.api_urls[this.api_type];
         return baseurl + "/" + this.path;
     }
     
@@ -64,6 +64,7 @@
     models.Model = bb.Model.extend({
         sync: snf.api.sync,
         api: snf.api,
+        api_type: 'compute',
         has_status: false,
 
         initialize: function() {
@@ -71,7 +72,9 @@
                 this.bind("change:status", this.handle_remove);
                 this.handle_remove();
             }
-            models.Model.__super__.initialize.apply(this, arguments)
+            
+            this.api_call = _.bind(this.api.call, this);
+            models.Model.__super__.initialize.apply(this, arguments);
         },
 
         handle_remove: function() {
@@ -112,7 +115,7 @@
         },
 
         remove: function() {
-            this.api.call(this.api_path(), "delete");
+            this.api_call(this.api_path(), "delete");
         },
 
         changedKeys: function() {
@@ -133,9 +136,17 @@
     models.Collection = bb.Collection.extend({
         sync: snf.api.sync,
         api: snf.api,
+        api_type: 'compute',
         supportIncUpdates: true,
-        url: function(options) {
-            return getUrl.call(this, this.base_url) + (options.details || this.details ? '/detail' : '');
+
+        initialize: function() {
+            models.Collection.__super__.initialize.apply(this, arguments);
+            this.api_call = _.bind(this.api.call, this);
+        },
+
+        url: function(options, method) {
+            return getUrl.call(this, this.base_url) + (
+                    options.details || this.details && method != 'create' ? '/detail' : '');
         },
 
         fetch: function(options) {
@@ -168,17 +179,18 @@
 
         get_fetcher: function(interval, increase, fast, increase_after_calls, max, initial_call, params) {
             var fetch_params = params || {};
-            fetch_params.skips_timeouts = true;
-            
             var handler_options = {};
+
+            fetch_params.skips_timeouts = true;
             handler_options.interval = interval;
             handler_options.increase = increase;
             handler_options.fast = fast;
             handler_options.increase_after_calls = increase_after_calls;
             handler_options.max= max;
+            handler_options.id = "collection id";
 
             var last_ajax = undefined;
-            var cb = _.bind(function() {
+            var callback = _.bind(function() {
                 // clone to avoid referenced objects
                 var params = _.clone(fetch_params);
                 updater._ajax = last_ajax;
@@ -190,13 +202,12 @@
                         return;
                     }
                 }
-
+                
                 last_ajax = this.fetch(params);
             }, this);
-            handler_options.callback = cb;
+            handler_options.callback = callback;
 
-            var updater = new snf.api.updateHandler(_.extend(handler_options, fetch_params));
-
+            var updater = new snf.api.updateHandler(_.clone(_.extend(handler_options, fetch_params)));
             snf.api.bind("call", _.throttle(_.bind(function(){ updater.faster(true)}, this)), 1000);
             return updater;
         }
@@ -208,6 +219,17 @@
 
         get_size: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
+        },
+
+        get_meta: function(key) {
+            if (this.get('metadata') && this.get('metadata').values && this.get('metadata').values[key]) {
+                return _.escape(this.get('metadata').values[key]);
+            }
+            return undefined;
+        },
+
+        get_owner: function() {
+            return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
         get_readable_size: function() {
@@ -224,6 +246,17 @@
 
         get_sort_order: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
+        },
+
+        get_vm: function() {
+            var vm_id = this.get("serverRef");
+            var vm = undefined;
+            vm = storage.vms.get(vm_id);
+            return vm;
+        },
+
+        is_public: function() {
+            return this.get('is_public') || true;
         },
         
         ssh_keys_path: function() {
@@ -644,7 +677,7 @@
         add_vm: function (vm, callback, error, options) {
             var payload = {add:{serverRef:"" + vm.id}};
             payload._options = options || {};
-            return this.api.call(this.api_path() + "/action", "create", 
+            return this.api_call(this.api_path() + "/action", "create", 
                                  payload,
                                  _.bind(function(){
                                      this.vms.add_pending(vm.id);
@@ -655,7 +688,7 @@
         remove_vm: function (vm, callback, error, options) {
             var payload = {remove:{serverRef:"" + vm.id}};
             payload._options = options || {};
-            return this.api.call(this.api_path() + "/action", "create", 
+            return this.api_call(this.api_path() + "/action", "create", 
                                  {remove:{serverRef:"" + vm.id}},
                                  _.bind(function(){
                                      this.vms.add_pending_for_remove(vm.id);
@@ -664,7 +697,7 @@
         },
 
         rename: function(name, callback) {
-            return this.api.call(this.api_path(), "update", {
+            return this.api_call(this.api_path(), "update", {
                 network:{name:name}, 
                 _options:{
                     critical: false, 
@@ -810,10 +843,13 @@
                 }
                 if (progress > 0 && progress < 99) {
                     this.state("BUILD_COPY");
-                    var params = this.get_copy_details(true);
-                    this.set({progress_message: BUILDING_MESSAGES['COPY'].format(params.copy, 
-                                                                                 params.size, 
-                                                                                 params.progress)});
+                    this.get_copy_details(true, undefined, _.bind(function(details){
+                        this.set({
+                            progress_message: BUILDING_MESSAGES['COPY'].format(details.copy, 
+                                                                               details.size, 
+                                                                               details.progress)
+                        });
+                    }, this));
                 }
                 if (progress == 100) {
                     this.state("BUILD_FINAL");
@@ -823,19 +859,20 @@
             }
         },
 
-        get_copy_details: function(human, image) {
+        get_copy_details: function(human, image, callback) {
             var human = human || false;
-            var image = image || this.get_image();
+            var image = image || this.get_image(_.bind(function(image){
+                var progress = this.get('progress');
+                var size = image.get_size();
+                var size_copied = (size * progress / 100).toFixed(2);
+                
+                if (human) {
+                    size = util.readablizeBytes(size*1024*1024);
+                    size_copied = util.readablizeBytes(size_copied*1024*1024);
+                }
 
-            var progress = this.get('progress');
-            var size = image.get_size();
-            var size_copied = (size * progress / 100).toFixed(2);
-            
-            if (human) {
-                size = util.readablizeBytes(size*1024*1024);
-                size_copied = util.readablizeBytes(size_copied*1024*1024);
-            }
-            return {'progress': progress, 'size': size, 'copy': size_copied};
+                callback({'progress': progress, 'size': size, 'copy': size_copied})
+            }, this));
         },
 
         start_stats_update: function(force_if_empty) {
@@ -877,7 +914,7 @@
             var cb = _.bind(function(data){
                 this.update_stats();
             }, this);
-            var fetcher = new snf.api.updateHandler({'callback': cb, interval:timeout});
+            var fetcher = new snf.api.updateHandler({'callback': cb, interval: timeout, id:'stats'});
             return fetcher;
         },
 
@@ -892,7 +929,7 @@
             // TODO: onError handler ???
             stats_url = this.url() + "/stats";
             this.updating_stats = true;
-            this.sync("GET", this, {
+            this.sync("read", this, {
                 handles_error:true, 
                 url: stats_url, 
                 refresh:true, 
@@ -900,7 +937,6 @@
                 error: _.bind(this.handle_stats_error, this),
                 complete: _.bind(function(){this.updating_stats = false;}, this),
                 critical: false,
-                display: false,
                 log_error: false
             });
         },
@@ -1065,7 +1101,7 @@
             
         remove_meta: function(key, complete, error) {
             var url = this.api_path() + "/meta/" + key;
-            this.api.call(url, "delete", undefined, complete, error);
+            this.api_call(url, "delete", undefined, complete, error);
         },
 
         save_meta: function(meta, complete, error) {
@@ -1079,7 +1115,7 @@
                     extra_details: {"Machine id": this.id}
             }};
 
-            this.api.call(url, "update", payload, complete, error);
+            this.api_call(url, "update", payload, complete, error);
         },
 
         set_firewall: function(net_id, value, callback, error, options) {
@@ -1095,7 +1131,7 @@
                 thi
             }, this);
 
-            this.api.call(this.api_path() + "/action", "create", payload, callback, error);
+            this.api_call(this.api_path() + "/action", "create", payload, callback, error);
             storage.networks.get(net_id).update_state();
         },
 
@@ -1146,13 +1182,13 @@
         },
         
         // get image object
-        // TODO: update images synchronously if image not found
-        get_image: function() {
+        get_image: function(callback) {
             var image = storage.images.get(this.get('imageRef'));
             if (!image) {
-                storage.images.update_unknown_id(this.get('imageRef'));
-                image = storage.images.get(this.get('imageRef'));
+                storage.images.update_unknown_id(this.get('imageRef'), callback);
+                return;
             }
+            callback(image);
             return image;
         },
         
@@ -1167,9 +1203,9 @@
         },
 
         // retrieve the metadata object
-        get_meta: function() {
+        get_meta: function(key) {
             try {
-                return this.get('metadata').values
+                return _.escape(this.get('metadata').values[key]);
             } catch (err) {
                 return {};
             }
@@ -1177,9 +1213,10 @@
         
         // get metadata OS value
         get_os: function() {
-            return this.get_meta().OS || (this.get_image() ? this.get_image().get_os() || "okeanos" : "okeanos");
+            return this.get_meta('OS') || (this.get_image(function(){}) ? 
+                                          this.get_image(function(){}).get_os() || "okeanos" : "okeanos");
         },
-        
+
         // get public ip addresses
         // TODO: public network is always the 0 index ???
         get_addresses: function(net_id) {
@@ -1506,7 +1543,7 @@
         },
 
         create: function (name, callback) {
-            return this.api.call(this.path, "create", {network:{name:name}}, callback);
+            return this.api_call(this.path, "create", {network:{name:name}}, callback);
         }
     })
 
@@ -1517,18 +1554,29 @@
         noUpdate: true,
         supportIncUpdates: false,
         meta_keys_as_attrs: ["OS", "description", "kernel", "size", "GUI"],
+        read_method: 'read',
 
         // update collection model with id passed
         // making a direct call to the image
         // api url
-        update_unknown_id: function(id) {
+        update_unknown_id: function(id, callback) {
             var url = getUrl.call(this) + "/" + id;
-            this.api.call(this.path + "/" + id, "read", {_options:{async:false}}, undefined, 
+            this.api_call(this.path + "/" + id, this.read_method, {_options:{async:true, skip_api_error:true}}, undefined, 
             _.bind(function() {
-                this.add({id:id, name:"Unknown image", size:-1, progress:100, status:"DELETED"})
-            }, this), _.bind(function(image) {
-                this.add(image.image);
+                if (!this.get(id)) {
+                    this.add({id:id, name:"Unknown image", size:-1, 
+                              progress:100, status:"DELETED"});
+                }
+                callback(this.get(id));
+            }, this), _.bind(function(image, msg, xhr) {
+                var img_data = this._read_image_from_request(image, msg, xhr);
+                this.add(img_data);
+                callback(this.get(id));
             }, this));
+        },
+
+        _read_image_from_request: function(image, msg, xhr) {
+            return image.image;
         },
 
         parse: function (resp, xhr) {
@@ -1539,7 +1587,7 @@
 
         get_meta_key: function(img, key) {
             if (img.metadata && img.metadata.values && img.metadata.values[key]) {
-                return img.metadata.values[key];
+                return _.escape(img.metadata.values[key]);
             }
             return undefined;
         },
@@ -1550,6 +1598,7 @@
 
         parse_meta: function(img) {
             _.each(this.meta_keys_as_attrs, _.bind(function(key){
+                if (img[key]) { return };
                 img[key] = this.get_meta_key(img, key) || "";
             }, this));
             return img;
@@ -1557,6 +1606,42 @@
 
         active: function() {
             return this.filter(function(img){return img.get('status') != "DELETED"});
+        },
+
+        predefined: function() {
+            return _.filter(this.active(), function(i) { return !i.get("serverRef")});
+        },
+        
+        fetch_for_type: function(type, complete, error) {
+            this.fetch({update:true, 
+                        success: complete, 
+                        error: error, 
+                        skip_api_error: true });
+        },
+        
+        get_images_for_type: function(type) {
+            if (this['get_{0}_images'.format(type)]) {
+                return this['get_{0}_images'.format(type)]();
+            }
+
+            return this.active();
+        },
+
+        update_images_for_type: function(type, onStart, onComplete, onError, force_load) {
+            var load = false;
+            error = onError || function() {};
+            function complete(collection) { 
+                onComplete(collection.get_images_for_type(type)); 
+            }
+            
+            // do we need to fetch/update current collection entries
+            if (load) {
+                onStart();
+                this.fetch_for_type(type, complete, error);
+            } else {
+                // fallback to complete
+                complete(this);
+            }
         }
     })
 
@@ -1569,9 +1654,9 @@
         // update collection model with id passed
         // making a direct call to the flavor
         // api url
-        update_unknown_id: function(id) {
+        update_unknown_id: function(id, callback) {
             var url = getUrl.call(this) + "/" + id;
-            this.api.call(this.path + "/" + id, "read", {_options:{async:false}}, undefined, 
+            this.api_call(this.path + "/" + id, "read", {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {
                 this.add({id:id, cpu:"", ram:"", disk:"", name: "", status:"DELETED"})
             }, this), _.bind(function(flv) {
@@ -1717,7 +1802,6 @@
             // do not add non existing DELETED entries
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
-                    console.error("non exising deleted vm", data)
                     return false;
                 }
             }
@@ -1749,13 +1833,15 @@
 
         create: function (name, image, flavor, meta, extra, callback) {
             if (this.copy_image_meta) {
-                meta['OS'] = image.get("OS");
+                if (image.get("OS")) {
+                    meta['OS'] = image.get("OS");
+                }
            }
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
 
-            this.api.call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: false});
+            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: false});
         }
 
     })

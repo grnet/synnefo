@@ -42,8 +42,8 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
-env.packages = ['snf-pithos-lib', 'snf-pithos-app',
-                        'snf-pithos-tools', 'snf-pithos-backend', ]
+env.packages = ['snf-pithos-lib', 'snf-pithos-backend', 'snf-pithos-app',
+                'snf-pithos-tools']
 env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend']
 env.capture = False
 env.colors = True

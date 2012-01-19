@@ -65,6 +65,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
+    'snf-pithos-lib'
 ]
 
 EXTRAS_REQUIRES = {
@@ -186,7 +187,7 @@ setup(
     zip_safe = False,
 
     dependency_links = [
-        'http://docs.dev.grnet.gr/pypi/index.html'],
+        'http://docs.dev.grnet.gr/pypi/'],
 
     install_requires = INSTALL_REQUIRES,
     extras_require = EXTRAS_REQUIRES,
@@ -194,11 +195,11 @@ setup(
 
     entry_points = {
      'console_scripts': [
-         'snf-pithos-sh = pithos.tools.sh:main',
-         'snf-pithos-sync = pithos.tools.sync:main',
-         'snf-pithos-test = pithos.tools.test:main',
-         'snf-pithos-fs = pithos.tools.fs:main',
-         'snf-pithos-dispatcher = pithos.tools.dispatcher:main',
+         'pithos-sh = pithos.tools.sh:main',
+         'pithos-sync = pithos.tools.sync:main',
+         'pithos-test = pithos.tools.test:main',
+         'pithos-fs = pithos.tools.fs:main',
+         'pithos-dispatcher = pithos.tools.dispatcher:main',
          ],
       },
 )

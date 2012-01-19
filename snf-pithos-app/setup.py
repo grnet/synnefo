@@ -65,10 +65,10 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.2.3',
-    'SQLAlchemy>=0.6.3',
-    'MySQL-python>=1.2.2',
-    'psycopg2>=2.2.1'
+    'snf-common',
+    'snf-webproject',
+    'snf-pithos-backend',
+    'Django>=1.2, <1.3',
 ]
 
 EXTRAS_REQUIRES = {
@@ -190,7 +190,7 @@ setup(
     zip_safe = False,
 
     dependency_links = [
-        'http://docs.dev.grnet.gr/pypi/index.html'],
+        'http://docs.dev.grnet.gr/pypi/'],
 
     install_requires = INSTALL_REQUIRES,
     extras_require = EXTRAS_REQUIRES,

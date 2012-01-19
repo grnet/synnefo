@@ -186,7 +186,7 @@ setup(
     zip_safe = False,
 
     dependency_links = [
-        'http://docs.dev.grnet.gr/pypi/index.html'],
+        'http://docs.dev.grnet.gr/pypi/'],
 
     install_requires = INSTALL_REQUIRES,
     extras_require = EXTRAS_REQUIRES,

@@ -43,20 +43,23 @@ class Public(DBWorker):
         
         execute(""" create table if not exists public
                           ( public_id integer primary key autoincrement,
-                            path      text ) """)
+                            path      text not null,
+                            active    boolean not null default 1 ) """)
         execute(""" create unique index if not exists idx_public_path
                     on public(path) """)
     
     def public_set(self, path):
         q = "insert or ignore into public (path) values (?)"
         self.execute(q, (path,))
+        q = "update public set active = 1 where path = ?"
+        self.execute(q, (path,))
     
     def public_unset(self, path):
-        q = "delete from public where path = ?"
+        q = "update public set active = 0 where path = ?"
         self.execute(q, (path,))
     
     def public_get(self, path):
-        q = "select public_id from public where path = ?"
+        q = "select public_id from public where path = ? and active = 1"
         self.execute(q, (path,))
         row = self.fetchone()
         if row:
@@ -64,7 +67,7 @@ class Public(DBWorker):
         return None
     
     def public_path(self, public):
-        q = "select path from public where public_id = ?"
+        q = "select path from public where public_id = ? and active = 1"
         self.execute(q, (public,))
         row = self.fetchone()
         if row:

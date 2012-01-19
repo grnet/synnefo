@@ -645,6 +645,7 @@ class ModularBackend(BaseBackend):
     @backend_method
     def get_uuid(self, user, uuid):
         """Return the (account, container, name) for the UUID given."""
+        
         logger.debug("get_uuid: %s", uuid)
         info = self.node.latest_uuid(uuid)
         if info is None:
@@ -657,6 +658,7 @@ class ModularBackend(BaseBackend):
     @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given."""
+        
         logger.debug("get_public: %s", public)
         if public is None or public < ULTIMATE_ANSWER:
             raise NameError

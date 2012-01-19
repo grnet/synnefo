@@ -4,6 +4,8 @@
 	dh $@ --with python2
 
 package=snf-webproject
+default_settings_dir=synnefo/webproject/settings/default/
+config_lvl=10
 
 override_dh_auto_install:
 	dh_auto_install
@@ -12,3 +14,8 @@ override_dh_auto_install:
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
 	done
 
+	mkdir -p debian/$(package)/etc/synnefo
+	for f in apps deploy site; do \
+		cp $(default_settings_dir)$$f.py \
+			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
+	done;

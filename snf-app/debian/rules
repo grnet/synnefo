@@ -7,6 +7,8 @@ package=snf-app
 static_dir=debian/$(package)/usr/share/synnefo/static/
 ui_static_dir=synnefo/ui/static/
 admin_static_dir=synnefo/admin/static/
+default_settings_dir=synnefo/app_settings/default/
+config_lvl=20
 
 override_dh_auto_install:
 	dh_auto_install
@@ -16,6 +18,12 @@ override_dh_auto_install:
 	
 	mkdir -p $(static_dir)admin;
 	-mv $(admin_static_dir) $(static_dir)admin;
+
+	mkdir -p debian/$(package)/etc/synnefo
+	for f in api aai backend queues helpdesk invitations plankton ui userdata; do \
+		cp $(default_settings_dir)$$f.py \
+			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
+	done;
 
 	for py in $(shell pyversions -vr debian/control); do \
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \

@@ -6,7 +6,7 @@
 from os.path import join
 
 # Backend settings
-PITHOS_ROOT = '/usr/share/pithos'
+PITHOS_ROOT = '/srv/pithos'
 BACKEND_DB_CONNECTION = 'sqlite:///' + join(PITHOS_ROOT, 'backend.db')
 BACKEND_BLOCK_PATH = join(PITHOS_ROOT, 'data/')
 

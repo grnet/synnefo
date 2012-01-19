@@ -31,13 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import include, patterns
+import logging
+
+from django.http import HttpResponseNotFound, HttpResponseRedirect
+from django.conf import settings
 
 
-urlpatterns = patterns('',
-    (r'^v1(?:$|/)', include('pithos.api.urls')),
-    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
-    (r'^login/?$', 'pithos.api.login.redirect_to_login_service'),
-    (r'^ui', include('pithos.ui.urls'))
-)
+logger = logging.getLogger(__name__)
+
+
+def redirect_to_login_service(request):
+    users = settings.AUTHENTICATION_USERS
+    host = settings.AUTHENTICATION_HOST
+    if users is not None or host is None:
+    	return HttpResponseNotFound()
+    
+    if request.is_secure():
+    	uri = 'https://'
+    else:
+    	uri = 'http://'
+    uri = uri + host + '/login'
+    return HttpResponseRedirect(uri)

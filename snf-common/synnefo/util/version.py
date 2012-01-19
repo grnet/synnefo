@@ -47,7 +47,7 @@ def vcs_info():
     branch = callgit('git branch | grep -Ei "\* (.*)" | cut -f2 -d" "')
     revid = callgit("git --no-pager log --max-count=1 | cut -f2 -d' ' | head -1")
     revno = callgit('git --no-pager log --oneline | wc -l')
-    desc = callgit('git describe')
+    desc = callgit('git describe --tags')
 
     return branch, revid, revno, desc
 

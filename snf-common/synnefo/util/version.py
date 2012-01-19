@@ -26,11 +26,11 @@ def get_component_version(modname):
     corresponding distributed package version
     """
     try:
-        version = vcs_version()
-        if not version:
-            version = __import__('synnefo.versions.%s' % modname,
+        try:
+            return __import__('synnefo.versions.%s' % modname,
                     fromlist=['synnefo.versions']).__version__
-        return version
+        except ImportError:
+            return  vcs_version()
     except Exception, e:
         return 'unknown'
 
@@ -42,12 +42,13 @@ def vcs_info():
     import subprocess
     callgit = lambda(cmd): subprocess.Popen(
             ['/bin/sh', '-c', cmd],
-            stdout=subprocess.PIPE).communicate()[0].strip()
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE).communicate()[0].strip()
 
     branch = callgit('git branch | grep -Ei "\* (.*)" | cut -f2 -d" "')
     revid = callgit("git --no-pager log --max-count=1 | cut -f2 -d' ' | head -1")
     revno = callgit('git --no-pager log --oneline | wc -l')
-    desc = callgit('git describe')
+    desc = callgit('git describe --tags')
 
     return branch, revid, revno, desc
 

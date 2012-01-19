@@ -66,7 +66,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.2.4',
+    'Django >=1.2, <1.3',
     'simplejson>=2.1.2',
     'pycurl==7.19.0',
     'python-dateutil==1.4.1',
@@ -76,7 +76,8 @@ INSTALL_REQUIRES = [
     'amqplib==0.6.1',
     'python-daemon==1.5.5',
     'snf-common>=0.7.3',
-    'vncauthproxy>=1.1'
+    'vncauthproxy>=1.1',
+    'south>=0.7.3'
 ]
 
 EXTRAS_REQUIRES = {

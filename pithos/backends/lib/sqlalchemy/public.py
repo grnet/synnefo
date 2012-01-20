@@ -77,7 +77,7 @@ class Public(DBWorker):
     def public_get(self, path):
         s = select([self.public.c.public_id])
         s = s.where(and_(self.public.c.path == path,
-        				 self.public.c.active == True))
+                         self.public.c.active == True))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -88,7 +88,7 @@ class Public(DBWorker):
     def public_path(self, public):
         s = select([self.public.c.path])
         s = s.where(and_(self.public.c.public_id == public,
-        				 self.public.c.active == True))
+                         self.public.c.active == True))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()

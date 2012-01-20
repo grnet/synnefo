@@ -48,7 +48,6 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from pithos.lib.compat import parse_http_date_safe, parse_http_date
-from pithos.lib.hashmap import HashMap
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
@@ -180,7 +179,8 @@ def get_object_headers(request):
     return meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
-    response['ETag'] = meta['ETag'] if 'ETag' in meta else meta['hash']
+    if 'ETag' in meta:
+        response['ETag'] = meta['ETag']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
@@ -741,13 +741,6 @@ def put_object_block(request, hashmap, data, offset):
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl # Return ammount of data written.
-
-#def hashmap_hash(request, hashmap):
-#    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
-#    
-#    map = HashMap(request.backend.block_size, request.backend.hash_algorithm)
-#    map.extend([unhexlify(x) for x in hashmap])
-#    return hexlify(map.hash())
 
 def hashmap_md5(request, hashmap, size):
     """Produce the MD5 sum from the data in the hashmap."""

@@ -53,11 +53,11 @@ env.roledefs = {
     'pypi': ['docs.dev.grnet.gr']
 }
 
+
 # coloured logging
 notice = lambda x: sys.stdout.write(yellow(x) + "\n")
 info = lambda x: sys.stdout.write(green(x) + "\n")
 error = lambda x: sys.stdout.write(red(x) + "\n")
-
 
 def dev():
     env.develop = True
@@ -160,11 +160,40 @@ def co(c):
 # Debian packaging helpers
 #
 
+env.debian_branch = 'debian-0.8'
+
+def _last_commit(f):
+    return local("git rev-list --all --date-order --max-count=1 %s" % f,
+            capture=True).strip()
+
+def _diff_from_master(c,f):
+    return local("git log --oneline %s..master %s" \
+                 " | wc -l" % (c, f), capture=True)
+
+def dch(p):
+    with co(env.debian_branch):
+        local("git merge master")
+        with lcd(package_root(p)):
+            local("ls .git || mkdir .git")
+
+            # check for new changes in package dir
+            diff = _diff_from_master(_last_commit("debian/changelog"), ".")
+            vercmd  = "git describe --tags --abbrev=0 "\
+                      " | sed -rn '\''s/^v(.*)/\\1/p'\''"
+            version = local(vercmd, capture=True)
+            if int(diff) > 0:
+                local("git-dch --debian-branch=%s --auto " \
+                      "--spawn-editor=always -N%s" % (env.debian_branch, version))
+                local("git commit debian/changelog " \
+                      "-m 'Updated %s changelog'" % p)
+
+            local("rm -r .git")
 
 def builddeb(p, master="master", branch="debian-0.8"):
     with lcd(package_root(p)):
+        local("git merge master")
         with settings(warn_only=True):
-            local("mkdir .git")
+            local("ls .git || mkdir .git")
             local("python setup.py clean")
             local("git add synnefo/versions/*.py -f")
             local("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s \

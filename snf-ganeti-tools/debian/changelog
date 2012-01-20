@@ -1,3 +1,9 @@
+snf-ganeti-tools (0.7.4-1) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Fri, 19 Jan 2012 16:44:01 +0300
+
 snf-ganeti-tools (0.8) UNRELEASED; urgency=low
 
   * New upstream version.

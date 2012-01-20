@@ -1,41 +1,48 @@
 Administration Tools User's Guide
 =================================
 
-Registering an Image
---------------------
+Configure kamaki
+----------------
 
-To upload an image to Pithos and register it for use by Plankton, use the **image upload** command::
+To upload, register or modify an image you will need the **kamaki** tool.
+Before proceeding make sure that it is configured properly. Verify that
+*image_url*, *storage_url*, *storage_account*, *storage_container* and
+*token* are set as needed::
 
-    snf-admin image upload Ubuntu /tmp/ubuntu.iso --public
+  kamaki config list
 
-You can additionally pass *disk_format*, *container_format* and other custom metadata::
+To chage a setting use ``kamaki config set``::
 
-    snf-admin image upload Ubuntu /tmp/ubuntu.iso --public --disk-format diskdump --meta kernel=2.6.42
-
-The images are uploaded to the *images* container of the *SYSTEM_IMAGES_OWNER* user (defined in settings).
-
-To register an image that is already stored in Pithos, use the **image register** command::
-
-    snf-admin image register Debian pithos://okeanos/images/debian.iso dump --public
-
-As with upload you can additionally pass custom metadata with ``--meta``.
-
-To verify the image use **image list**:
-
-    snf-admin image list -l a58a3cce-c938-6ef4-6b1a-529bda1e9e03
+  kamaki config set storage_account okeanos
+  kamaki config set storage_container images
+  kamaki config set token ...
 
 
-Modifying an Image
+Upload an image
+---------------
+
+You are now ready to upload an image. You can upload it with a Pithos client
+or use kamaki directly::
+
+  kamaki store upload ubuntu.iso
+
+You can use any Pithos client to verify that the image was uploaded correctly.
+
+
+Register the image
 ------------------
 
-You can modify an already registered image use **image update**::
+To register an image you will need to use the full Pithos URL. To register as
+a public image the one from the previous example use::
 
-    snf-admin image update a58a3cce-c938-6ef4-6b1a-529bda1e9e03 --disk-format diskdump --name Xubuntu
+  kamaki glance register Ubuntu pithos://okeanos/images/ubuntu.iso --public
 
-To modify just the custom metadata use **image meta**::
+Use ``kamaki glance register`` with no arguments to see a list of available
+options. A more complete example would be the following::
 
-    snf-admin image meta a58a3cce-c938-6ef4-6b1a-529bda1e9e03 OS=Linux
+  kamaki glance register Ubuntu pithos://okeanos/images/ubuntu.iso --public \
+      --disk-format diskdump --property kernel=3.1.2
 
-To verify all the metadata, use **image meta** with no arguments::
+To verify that the image was registered successfully use::
 
-    snf-admin image meta a58a3cce-c938-6ef4-6b1a-529bda1e9e03
+  kamaki glance list -l

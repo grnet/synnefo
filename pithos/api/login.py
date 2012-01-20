@@ -34,6 +34,7 @@
 import logging
 
 from django.http import HttpResponseNotFound, HttpResponseRedirect
+from django.utils.http import urlencode
 from django.conf import settings
 
 
@@ -47,8 +48,13 @@ def redirect_to_login_service(request):
     	return HttpResponseNotFound()
     
     if request.is_secure():
-    	uri = 'https://'
+    	proto = 'https://'
     else:
-    	uri = 'http://'
-    uri = uri + host + '/login'
+    	proto = 'http://'
+	next = request.GET.get('next', '')
+	params = {'next': next}
+	renew = 'renew' in request.GET
+	if renew:
+		params['renew'] = True
+    uri = proto + host + '/login?' + urlencode(params)
     return HttpResponseRedirect(uri)

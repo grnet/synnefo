@@ -33,71 +33,83 @@
 
 from django import forms
 from django.utils.translation import ugettext as _
+from django.contrib.auth.forms import UserCreationForm
 from django.conf import settings
 from hashlib import new as newhasher
 
 from astakos.im.models import AstakosUser
+from astakos.im.util import get_or_create_user
 
-class RegisterForm(forms.Form):
-    username = forms.CharField(widget=forms.widgets.TextInput())
-    email = forms.EmailField(widget=forms.TextInput(),
-                             label=_('Email address'))
-    first_name = forms.CharField(widget=forms.TextInput(),
-                                label=u'First Name', required=False)
-    last_name = forms.CharField(widget=forms.TextInput(),
-                                label=u'Last Name', required=False)
+class UniqueUserEmailField(forms.EmailField):
+    """
+    An EmailField which only is valid if no User has that email.
+    """
+    def validate(self, value):
+        super(forms.EmailField, self).validate(value)
+        try:
+            AstakosUser.objects.get(email = value)
+            raise forms.ValidationError("Email already exists")
+        except AstakosUser.MultipleObjectsReturned:
+            raise forms.ValidationError("Email already exists")
+        except AstakosUser.DoesNotExist:
+            pass
+
+class ExtendedUserCreationForm(UserCreationForm):
+    """
+    Extends the built in UserCreationForm in several ways:
+    
+    * Adds an email field, which uses the custom UniqueUserEmailField,
+      that is, the form does not validate if the email address already exists
+      in the User table.
+    * The username field is generated based on the email, and isn't visible.
+    * first_name and last_name fields are added.
+    * Data not saved by the default behavior of UserCreationForm is saved.
+    """
+    
+    username = forms.CharField(required = False, max_length = 30)
+    email = UniqueUserEmailField(required = True, label = 'Email address')
+    first_name = forms.CharField(required = False, max_length = 30)
+    last_name = forms.CharField(required = False, max_length = 30)
     
     def __init__(self, *args, **kwargs):
-        super(forms.Form, self).__init__(*args, **kwargs)
+        """
+        Changes the order of fields, and removes the username field.
+        """
+        super(UserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email', 'first_name', 'last_name',
+                                'password1', 'password2']
     
-    def clean_username(self):
+    def clean(self, *args, **kwargs):
         """
-        Validate that the username is alphanumeric and is not already
-        in use.
+        Normal cleanup + username generation.
+        """
+        cleaned_data = super(UserCreationForm, self).clean(*args, **kwargs)
+        if cleaned_data.has_key('email'):
+            #cleaned_data['username'] = self.__generate_username(
+            #                                            cleaned_data['email'])
+            cleaned_data['username'] = cleaned_data['email']
+        return cleaned_data
         
+    def save(self, commit=True):
         """
-        try:
-            user = AstakosUser.objects.get(username__iexact=self.cleaned_data['username'])
-        except AstakosUser.DoesNotExist:
-            return self.cleaned_data['username']
-        raise forms.ValidationError(_("A user with that username already exists."))
+        Saves the email, first_name and last_name properties, after the normal
+        save behavior is complete.
+        """
+        user = super(UserCreationForm, self).save(commit)
+        if user:
+            kwargs = {}
+            for field in self.fields:
+                if hasattr(AstakosUser(), field):
+                    kwargs[field] = self.cleaned_data[field]
+            user = get_or_create_user(username=self.cleaned_data['email'], **kwargs)
+        return user
 
-class LocalRegisterForm(RegisterForm):
-    """ local signup form"""
-    password = forms.CharField(widget=forms.PasswordInput(render_value=False),
-                                label=_('Password'))
-    password2 = forms.CharField(widget=forms.PasswordInput(render_value=False),
-                                label=_('Confirm Password'))
-    
-    def __init__(self, *args, **kwargs):
-        super(LocalRegisterForm, self).__init__(*args, **kwargs)
-    
-    def clean_username(self):
-        """
-        Validate that the username is alphanumeric and is not already
-        in use.
-        
-        """
-        try:
-            user = AstakosUser.objects.get(username__iexact=self.cleaned_data['username'])
-        except AstakosUser.DoesNotExist:
-            return self.cleaned_data['username']
-        raise forms.ValidationError(_("A user with that username already exists."))
-    
-    def clean(self):
-        """
-        Verifiy that the values entered into the two password fields
-        match. Note that an error here will end up in
-        ``non_field_errors()`` because it doesn't apply to a single
-        field.
-        
-        """
-        if 'password' in self.cleaned_data and 'password2' in self.cleaned_data:
-            if self.cleaned_data['password'] != self.cleaned_data['password2']:
-                raise forms.ValidationError(_("The two password fields didn't match."))
-        return self.cleaned_data
-
-class InvitedRegisterForm(RegisterForm):
+class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
+    """
+    Subclass of ``RegistrationForm`` for registring a invited user. Adds a
+    readonly field for inviter's name. The email is also readonly since
+    it will be the invitation username.
+    """
     inviter = forms.CharField(widget=forms.TextInput(),
                                 label=_('Inviter Real Name'))
     
@@ -105,13 +117,47 @@ class InvitedRegisterForm(RegisterForm):
         super(RegisterForm, self).__init__(*args, **kwargs)
         
         #set readonly form fields
-        self.fields['username'].widget.attrs['readonly'] = True
         self.fields['inviter'].widget.attrs['readonly'] = True
 
-class InvitedLocalRegisterForm(LocalRegisterForm, InvitedRegisterForm):
-    pass
+class ProfileForm(forms.ModelForm):
+    """
+    Subclass of ``ModelForm`` for permiting user to edit his/her profile.
+    Most of the fields are readonly since the user is not allowed to change them.
+    
+    The class defines a save method which sets ``is_verified`` to True so as the user
+    during the next login will not to be redirected to profile page.
+    """
+    class Meta:
+        model = AstakosUser
+        exclude = ('groups', 'user_permissions')
+    
+    def __init__(self, *args, **kwargs):
+        super(ProfileForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        ro_fields = ('username','date_joined', 'updated', 'auth_token',
+                     'auth_token_created', 'auth_token_expires', 'invitations',
+                     'level', 'last_login', 'email', 'is_active', 'is_superuser',
+                     'is_staff')
+        if instance and instance.id:
+            for field in ro_fields:
+                if isinstance(self.fields[field].widget, forms.CheckboxInput):
+                    self.fields[field].widget.attrs['disabled'] = True
+                self.fields[field].widget.attrs['readonly'] = True
+    
+    def save(self, commit=True):
+        user = super(ProfileForm, self).save(commit=False)
+        user.is_verified = True
+        if commit:
+            user.save()
+        return user
 
-class LoginForm(forms.Form):
-    username = forms.CharField(widget=forms.widgets.TextInput())
-    password = forms.CharField(widget=forms.PasswordInput(render_value=False),
-                                label=_('Password'))
+
+class FeedbackForm(forms.Form):
+    """
+    Form for writing feedback.
+    """
+    feedback_msg = forms.CharField(widget=forms.Textarea(),
+                                label=u'Message', required=False)
+    feedback_data = forms.CharField(widget=forms.Textarea(),
+                                label=u'Data', required=False)
+    

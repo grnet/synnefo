@@ -8,6 +8,10 @@ Contents:
    
    devguide
    adminguide
+   views
+   models
+   forms
+   backends
 
 Indices and tables
 ==================

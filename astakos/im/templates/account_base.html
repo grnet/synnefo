@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+    
+{% block tabs %}
+<ul class="tabs">
+  <li{% ifequal tab "profile" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.edit_profile %}">Profile</a>
+  </li>
+  <li{% ifequal tab "passwordchange" %} class="active"{% endifequal %}>
+    <a href="{% url django.contrib.auth.views.password_change %}">Password Change</a>
+  </li>
+  {% if invitations_enabled %}
+  <li{% ifequal tab "invite" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.invite %}">Invite</a>
+  </li>
+  {% endif %}
+  <li{% ifequal tab "feedback" %} class="active"{% endifequal %}>
+    <a href="{% url astakos.im.views.send_feedback %}">Send Feedback</a>
+  </li>
+  <li{% ifequal tab "logout" %} class="active"{% endifequal %}>
+    <a href="{% url django.contrib.auth.views.logout %}">Logout</a>
+  </li>
+</ul>
+{% endblock %}
+
+{% block body %}{% endblock %}

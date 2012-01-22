@@ -41,4 +41,7 @@ def next(request):
 
 def code(request):
     return {'code' : request.GET.get('code', '')}
+
+def invitations(request):
+    return {'invitations_enabled' :settings.INVITATIONS_ENABLED}
     

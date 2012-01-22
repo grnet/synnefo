@@ -1,0 +1,17 @@
+{% extends "account_base.html" %}
+
+{% load formatters %}
+
+{% block body %}
+
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+
+  <div class="actions">
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="hidden" name="auth" value="{{ user.auth_token }}">
+    <button type="submit" class="btn primary">Update</button>
+  </div>
+
+</form>
+{% endblock body %}

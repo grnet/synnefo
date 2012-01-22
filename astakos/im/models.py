@@ -45,6 +45,9 @@ from django.contrib.auth.models import User, UserManager
 from astakos.im.interface import get_quota, set_quota
 
 class AstakosUser(User):
+    """
+    Extends ``django.contrib.auth.models.User`` by defining additional fields.
+    """
     # Use UserManager to get the create_user method, etc.
     objects = UserManager()
     
@@ -61,6 +64,7 @@ class AstakosUser(User):
     auth_token_expires = models.DateTimeField('Token expiration date', null=True)
     
     updated = models.DateTimeField('Update date')
+    is_verified = models.BooleanField('Is verified?', default=False)
     
     @property
     def realname(self):
@@ -117,6 +121,9 @@ class AstakosUser(User):
         return self.username
 
 class Invitation(models.Model):
+    """
+    Model for registring invitations
+    """
     inviter = models.ForeignKey(AstakosUser, related_name='invitations_sent',
                                 null=True)
     realname = models.CharField('Real name', max_length=255)

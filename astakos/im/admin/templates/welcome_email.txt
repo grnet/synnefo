@@ -2,7 +2,7 @@
 
 Αγαπητέ/η {{ user.realname }},
 
-Ο λογαρισμός σας για την υπηρεσία {{ service }} της ΕΔΕΤκατά την Alpha (πιλοτική)
+Ο λογαρισμός σας για την υπηρεσία {{ site_name }} της ΕΔΕΤκατά την Alpha (πιλοτική)
 φάση λειτουργίας της έχει ενεργοποιηθεί.
 
 Για να συνδεθείτε, χρησιμοποιήστε τον παρακάτω σύνδεσμο:
@@ -16,7 +16,7 @@
 υπηρεσίας, δεν αποκλείεται να εμφανιστούν προβλήματα στο λογισμικό
 διαχείρισης ή η υπηρεσία να μην είναι διαθέσιμη κατά διαστήματα. Για
 αυτό το λόγο, σας παρακαλούμε να μη μεταφέρετε ακόμη σημαντικά κομμάτια
-της δουλειάς σας στην υπηρεσία {{ service }}. Επίσης, παρακαλούμε να έχετε
+της δουλειάς σας στην υπηρεσία {{ site_name }}. Επίσης, παρακαλούμε να έχετε
 υπόψη σας ότι όλα τα δεδομένα, θα διαγραφούν κατά τη μετάβαση από την
 έκδοση Alpha στην έκδοση Beta. Θα υπάρξει έγκαιρη ειδοποίησή σας πριν
 από τη μετάβαση αυτή.
@@ -30,7 +30,7 @@
 Για όποιες παρατηρήσεις ή προβλήματα στη λειτουργεία της υπηρεσίας μπορείτε να
 απευθυνθείτε στο {{ support }}.
 
-Σας ευχαριστούμε πολύ για τη συμμετοχή στην Alpha λειτουργία του {{ service }}.
+Σας ευχαριστούμε πολύ για τη συμμετοχή στην Alpha λειτουργία του {{ site_name }}.
 
 Με εκτίμηση,
 
@@ -40,7 +40,7 @@
 
 Dear {{ user.realname }},
 
-Your account for GRNET's {{ service }} service for its Alpha test phase has been
+Your account for GRNET's {{ site_name }} service for its Alpha test phase has been
 activated.
 
 To login, please use the following link:
@@ -53,7 +53,7 @@ This service is, for a few weeks, in Alpha. Although every care has been
 taken to ensure high quality, it is possible there may still be software
 bugs, or periods of limited service availability. For this reason, we
 kindly request you do not transfer important parts of your work to
-{{ service }}, yet. Also, please bear in mind that all data, will be deleted
+{{ site_name }}, yet. Also, please bear in mind that all data, will be deleted
 when the service moves to Beta test. Before the transition, you will be
 notified in time.
 
@@ -65,6 +65,6 @@ reliability of this innovative service.
 
 For any remarks or problems you can contact {{ support }}.
 
-Thank you for participating in the Alpha test of {{ service }}.
+Thank you for participating in the Alpha test of {{ site_name }}.
 
 Greek Research and Technonogy Network - GRNET

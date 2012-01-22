@@ -1,18 +1,18 @@
 # Copyright 2011 GRNET S.A. All rights reserved.
-#
+# 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-#
+# 
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-#
+# 
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-#
+# 
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,44 +25,38 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
+# 
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
-from datetime import datetime
-
+from django import forms
+from django.utils.translation import ugettext as _
+from django.contrib.auth.forms import UserCreationForm
 from django.conf import settings
-from django.http import HttpResponseBadRequest
-from django.contrib.auth import authenticate
+from hashlib import new as newhasher
 
-from astakos.im.models import Invitation
-from astakos.im.target.util import prepare_response
+from astakos.im.models import AstakosUser
 from astakos.im.util import get_or_create_user
 
-def login(request):
-    code = request.GET.get('code')
-    try:
-        invitation = Invitation.objects.get(code=code)
-    except Invitation.DoesNotExist:
-        return HttpResponseBadRequest('Wrong invitation code')
+class AdminProfileForm(forms.ModelForm):
+    """
+    Subclass of ``ModelForm`` for permiting user to edit his/her profile.
+    Most of the fields are readonly since the user is not allowed to change them.
     
-    if not invitation.is_accepted:
-        invitation.is_accepted = True
-        invitation.accepted = datetime.now()
-        invitation.save()
-        logging.info('Accepted invitation %s', invitation)
+    The class defines a save method which sets ``is_verified`` to True so as the user
+    during the next login will not to be redirected to profile page.
+    """
+    class Meta:
+        model = AstakosUser
     
-    user = get_or_create_user(invitation.uniq,
-                              invitation.realname,
-                              'Invitation',
-                              invitation.inviter.level + 1)
-    
-    # in order to login the user we must call authenticate first 
-    authenticate(username=user.username, auth_token=user.auth_token)
-    next = request.GET.get('next')
-    
-    return prepare_response(request, user, next, 'renew' in request.GET)
+    def __init__(self, *args, **kwargs):
+        super(AdminProfileForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        ro_fields = ('username','date_joined', 'auth_token', 'last_login', 'email')
+        if instance and instance.id:
+            for field in ro_fields:
+                if isinstance(self.fields[field].widget, forms.CheckboxInput):
+                    self.fields[field].widget.attrs['disabled'] = True
+                self.fields[field].widget.attrs['readonly'] = True

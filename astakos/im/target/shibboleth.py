@@ -33,6 +33,7 @@
 
 from django.http import HttpResponseBadRequest
 from django.core.urlresolvers import reverse
+from django.contrib.auth import authenticate
 
 from astakos.im.target.util import prepare_response
 from astakos.im.util import get_or_create_user
@@ -68,7 +69,10 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
+    user = get_or_create_user(username, realname=realname, affiliation=affiliation, level=0, email=eppn)
+    # in order to login the user we must call authenticate first
+    user = authenticate(username=user.username, auth_token=user.auth_token)
     return prepare_response(request,
-                            get_or_create_user(eppn, realname, affiliation, 0),
+                            user,
                             request.GET.get('next'),
                             'renew' in request.GET)

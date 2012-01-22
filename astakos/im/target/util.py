@@ -40,6 +40,7 @@ from django.http import HttpResponse
 from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
 from django.conf import settings
+from django.contrib.auth import login
 
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
@@ -69,13 +70,12 @@ def prepare_response(request, user, next='', renew=False):
         params = ''
         if next:
             params = '?' + urlencode({'next': next})
-        next = reverse('astakos.im.views.users_profile') + params
+        next = reverse('astakos.im.views.edit_profile') + params
+    
+    # user login
+    login(request, user)
     
     response = HttpResponse()
-    expire_fmt = auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-    cookie_value = quote(user.username + '|' + auth_token)
-    response.set_cookie('_pithos2_a', value=cookie_value, expires=expire_fmt, path='/')
-
     if not next:
         response['X-Auth-User'] = user.username
         response['X-Auth-Token'] = auth_token

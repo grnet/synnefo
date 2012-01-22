@@ -5,7 +5,7 @@ from django.contrib.auth.backends import ModelBackend
 
 from astakos.im.models import AstakosUser
 
-class AstakosUserModelBackend(ModelBackend):
+class AstakosUserModelCredentialsBackend(ModelBackend):
     def authenticate(self, username=None, password=None):
         try:
             user = AstakosUser.objects.get(username=username)
@@ -19,7 +19,7 @@ class AstakosUserModelBackend(ModelBackend):
             return AstakosUser.objects.get(pk=user_id)
         except AstakosUser.DoesNotExist:
             return None
-
+    
     #@property
     #def user_class(self):
     #    if not hasattr(self, '_user_class'):
@@ -29,3 +29,18 @@ class AstakosUserModelBackend(ModelBackend):
     #        if not self._user_class:
     #            raise ImproperlyConfigured('Could not get custom user model')
     #    return self._user_class
+
+class AstakosUserModelTokenBackend(ModelBackend):
+    def authenticate(self, username=None, auth_token=None):
+        try:
+            user = AstakosUser.objects.get(username=username)
+            if user.auth_token == auth_token:
+                return user
+        except AstakosUser.DoesNotExist:
+            return None
+
+    def get_user(self, user_id):
+        try:
+            return AstakosUser.objects.get(pk=user_id)
+        except AstakosUser.DoesNotExist:
+            return None

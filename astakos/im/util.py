@@ -54,11 +54,10 @@ def isoformat(d):
 
    return d.replace(tzinfo=UTC()).isoformat()
 
-def get_or_create_user(username, realname=None, first_name=None, last_name=None, affiliation=None, level=0, provider='local', password=None, email=None):
+def get_or_create_user(username, realname='', first_name='', last_name='', affiliation='', level=0, provider='local', password='', email=''):
     """Find or register a user into the internal database
        and issue a token for subsequent requests.
     """
-    
     user, created = AstakosUser.objects.get_or_create(username=username,
         defaults={
             'is_active': False,

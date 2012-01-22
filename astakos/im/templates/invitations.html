@@ -1,25 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Invitations</title>
-  <link rel="stylesheet" href="/im/static/bootstrap.css">
-</head>
-<body>
+{% extends "account_base.html" %}
+
+{% load formatters %}
+
+{% block body %}
 <div class="container">
   <h3>You have {{ user.invitations }} invitation{{ user.invitations|pluralize }} left.</h3>
 
-  {% if message %}
+  <!--{% if message %}
   <br />
   <div class="alert-message {{ status }}">
     <p>{{ message }}</p>
   </div>
-  {% endif %}
+  {% endif %}-->
 
   {% if user.invitations %}
   <br />
   <h4>Invite someone else:</h4>
-  <form method="post">
+  <form method="post">{% csrf_token %}
     <div class="clearfix">
       <label for="user-realname">Name</label>
       <div class="input">
@@ -40,6 +37,4 @@
     </div>
   </form>
   {% endif %}
-</div>
-</body>
-</html>
+{% endblock body %}

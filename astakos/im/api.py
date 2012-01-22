@@ -82,11 +82,10 @@ def authenticate(request):
         
         response = HttpResponse()
         response.status=204
-        user_info = user.__dict__
-        for k,v in user_info.items():
-            if isinstance(v,  datetime.datetime):
-                user_info[k] = v.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-        user_info.pop('_state')
+        user_info = {'uniq':user.username,
+                     'auth_token':user.auth_token,
+                     'auth_token_created':user.auth_token_created,
+                     'auth_token_expires':user.auth_token_expires}
         response.content = json.dumps(user_info)
         update_response_headers(response)
         return response

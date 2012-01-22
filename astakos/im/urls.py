@@ -33,20 +33,20 @@
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include
+from django.core.urlresolvers import reverse
 
 urlpatterns = patterns('astakos.im.views',
     (r'^$', 'index'),
     (r'^login/?$', 'index'),
-    
-    (r'^admin/', include('astakos.im.admin.urls')),
-    
-    (r'^profile/?$', 'users_profile'),
-    (r'^profile/edit/?$', 'users_edit'),
-    
+    (r'^profile/?$', 'edit_profile'),
+    (r'^feedback/?$', 'send_feedback'),
     (r'^signup/?$', 'signup'),
-    #(r'^register/(\w+)?$', 'register'),
-    #(r'^signup/complete/?$', 'signup_complete'),
-    #(r'^local/create/?$', 'local_create'),
+    (r'^admin/', include('astakos.im.admin.urls')),
+)
+
+urlpatterns += patterns('django.contrib.auth.views',
+    (r'^logout/?$', 'logout'),
+    (r'^password/?$', 'password_change', {'post_change_redirect':'admin'}),
 )
 
 urlpatterns += patterns('astakos.im.target',
@@ -59,14 +59,17 @@ urlpatterns += patterns('',
 )
 
 if 'local' in settings.IM_MODULES:
-    urlpatterns += patterns('astakos.im.views',
-#        (r'^local/create/?$', 'local_create'),
-        (r'^local/reclaim/?$', 'reclaim_password')
-    )
     urlpatterns += patterns('astakos.im.target',
         (r'^local/?$', 'local.login'),
         (r'^local/activate/?$', 'local.activate'),
-        (r'^local/reset/?$', 'local.reset_password')
+    )
+    urlpatterns += patterns('django.contrib.auth.views',
+        (r'^local/password_reset/?$', 'password_reset',
+         {'email_template_name':'registration/password_email.txt'}),
+        (r'^local/password_reset_done/?$', 'password_reset_done'),
+        (r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
+         'password_reset_confirm'),
+        (r'^local/password/reset/complete/$', 'password_reset_complete')
     )
 
 if settings.INVITATIONS_ENABLED:

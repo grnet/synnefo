@@ -2,7 +2,7 @@
 
 {% block body %}
 
-<form action="{% url astakos.im.admin.views.users_create %}" method="post">
+<form action="{% url astakos.im.admin.views.users_create %}" method="post">{% csrf_token %}
   <div class="clearfix">
     <label for="user-username">Username</label>
     <div class="input">

@@ -84,8 +84,8 @@ def authenticate(request):
         response.status=204
         user_info = {'uniq':user.username,
                      'auth_token':user.auth_token,
-                     'auth_token_created':user.auth_token_created,
-                     'auth_token_expires':user.auth_token_expires}
+                     'auth_token_created':user.auth_token_created.isoformat(),
+                     'auth_token_expires':user.auth_token_expires.isoformat()}
         response.content = json.dumps(user_info)
         update_response_headers(response)
         return response

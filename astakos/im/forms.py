@@ -40,6 +40,8 @@ from hashlib import new as newhasher
 from astakos.im.models import AstakosUser
 from astakos.im.util import get_or_create_user
 
+import logging
+
 class UniqueUserEmailField(forms.EmailField):
     """
     An EmailField which only is valid if no User has that email.
@@ -84,6 +86,57 @@ class ExtendedUserCreationForm(UserCreationForm):
         """
         Normal cleanup + username generation.
         """
+        cleaned_data = super(ExtendedUserCreationForm, self).clean(*args, **kwargs)
+        if cleaned_data.has_key('email'):
+            cleaned_data['username'] = cleaned_data['email']
+        return cleaned_data
+        
+    def save(self, commit=True):
+        """
+        Saves the email, first_name and last_name properties, after the normal
+        save behavior is complete.
+        """
+        user = super(ExtendedUserCreationForm, self).save(commit=False)
+        user.renew_token()
+        user.save()
+        logging.info('Created user %s', user)
+        return user
+
+class InvitedExtendedUserCreationForm(UserCreationForm):
+    """
+    Extends the built in UserCreationForm in several ways:
+    
+    * Adds an email field, which uses the custom UniqueUserEmailField.
+    * The username field isn't visible and it is assigned the email value.
+    * first_name and last_name fields are added.
+    """
+    
+    username = forms.CharField(required = False, max_length = 30)
+    email = UniqueUserEmailField(required = True, label = 'Email address')
+    first_name = forms.CharField(required = False, max_length = 30)
+    last_name = forms.CharField(required = False, max_length = 30)
+    inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
+    
+    class Meta:
+        model = AstakosUser
+        fields = ("username",)
+    
+    def __init__(self, *args, **kwargs):
+        """
+        Changes the order of fields, and removes the username field.
+        """
+        super(InvitedExtendedUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email', 'inviter', 'first_name', 'last_name',
+                                'password1', 'password2']
+        #set readonly form fields
+        self.fields['inviter'].widget.attrs['readonly'] = True
+        self.fields['email'].widget.attrs['readonly'] = True
+        self.fields['username'].widget.attrs['readonly'] = True
+    
+    def clean(self, *args, **kwargs):
+        """
+        Normal cleanup + username generation.
+        """
         cleaned_data = super(UserCreationForm, self).clean(*args, **kwargs)
         if cleaned_data.has_key('email'):
             cleaned_data['username'] = cleaned_data['email']
@@ -94,28 +147,11 @@ class ExtendedUserCreationForm(UserCreationForm):
         Saves the email, first_name and last_name properties, after the normal
         save behavior is complete.
         """
-        user = super(UserCreationForm, self).save(commit)
+        user = super(InvitedExtendedUserCreationForm, self).save(commit=False)
+        user.renew_token()
+        user.save()
+        logging.info('Created user %s', user)
         return user
-
-class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
-    """
-    Subclass of ``RegistrationForm`` for registring a invited user. Adds a
-    readonly field for inviter's name. The email is also readonly since
-    it will be the invitation username.
-    """
-    inviter = forms.CharField(widget=forms.TextInput(),
-                                label=_('Inviter Real Name'))
-    class Meta:
-        model = AstakosUser
-        fields = ("username",)
-    
-    def __init__(self, *args, **kwargs):
-        super(InvitedExtendedUserCreationForm, self).__init__(*args, **kwargs)
-        
-        #set readonly form fields
-        self.fields['inviter'].widget.attrs['readonly'] = True
-        self.fields['email'].widget.attrs['readonly'] = True
-        self.fields['username'].widget.attrs['readonly'] = True
 
 class ProfileForm(forms.ModelForm):
     """

@@ -3,7 +3,7 @@
         "model": "sites.site",
         "pk": 1,
         "fields": {
-            "domain": "localhost:8000/im",
+            "domain": "http://localhost:8000/im",
             "name": "Astakos"
    	    }
     }

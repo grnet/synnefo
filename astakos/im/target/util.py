@@ -66,7 +66,7 @@ def prepare_response(request, user, next='', renew=False):
             parts[3] = urlencode({'user': user.username, 'token': auth_token})
             next = urlunsplit(parts)
     
-    if settings.FORCE_PROFILE_UPDATE and not user.is_verified:
+    if settings.FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''
         if next:
             params = '?' + urlencode({'next': next})

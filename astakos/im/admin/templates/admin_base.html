@@ -14,6 +14,9 @@
   <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
     <a href="{% url astakos.im.admin.views.invitations_list %}">Invitations</a>
   </li>
+  <li{% ifequal tab "logout" %} class="active"{% endifequal %}>
+    <a href="{% url django.contrib.auth.views.logout %}">Logout</a>
+  </li>
 </ul>
 {% endblock %}
 

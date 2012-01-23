@@ -31,20 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns('astakos.im.admin.views',
-    (r'^$', 'admin'),
+    url(r'^$', 'admin'),
     
-    (r'^users/?$', 'users_list'),
-    (r'^users/(\d+)/?$', 'users_info'),
-    (r'^users/create$', 'users_create'),
-    (r'^users/(\d+)/modify/?$', 'users_modify'),
-    (r'^users/(\d+)/delete/?$', 'users_delete'),
-    (r'^users/export/?$', 'users_export'),
-    (r'^users/pending/?$', 'pending_users'),
-    (r'^users/activate/(\d+)/?$', 'users_activate'),
+    url(r'^users/?$', 'users_list'),
+    url(r'^users/(\d+)/?$', 'users_info'),
+    url(r'^users/create$', 'users_create'),
+    url(r'^users/(\d+)/modify/?$', 'users_modify'),
+    url(r'^users/(\d+)/delete/?$', 'users_delete'),
+    url(r'^users/export/?$', 'users_export'),
+    url(r'^users/pending/?$', 'pending_users'),
+    url(r'^users/activate/(\d+)/?$', 'users_activate'),
     
-    (r'^invitations/?$', 'invitations_list'),
-    (r'^invitations/export/?$', 'invitations_export'),
+    url(r'^invitations/?$', 'invitations_list'),
+    url(r'^invitations/export/?$', 'invitations_export'),
 )

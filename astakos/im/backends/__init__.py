@@ -86,22 +86,21 @@ class InvitationsBackend(object):
         """
         code = request.GET.get('code', '')
         formclass = 'ExtendedUserCreationForm'
+        initial_data = None
         if request.method == 'GET':
-            initial_data = None
             if code:
                 formclass = 'Invited%s' %formclass
                 self.invitation = Invitation.objects.get(code=code)
                 if self.invitation.is_consumed:
-                    return HttpResponseBadRequest('Invitation has beeen used')
-                initial_data.update({'username':self.invitation.username,
-                                       'email':self.invitation.username,
-                                       'realname':self.invitation.realname})
+                    raise Exception('Invitation has beeen used')
+                initial_data = {'username':self.invitation.username,
+                                'email':self.invitation.username,
+                                'realname':self.invitation.realname}
                 inviter = AstakosUser.objects.get(username=self.invitation.inviter)
                 initial_data['inviter'] = inviter.realname
         else:
             initial_data = request.POST
-        self.form = globals()[formclass](initial_data)
-        return self.form
+        return globals()[formclass](initial_data)
     
     def _is_preaccepted(self, user):
         """
@@ -125,12 +124,13 @@ class InvitationsBackend(object):
         In any other case the method returns the action status and a message.
         """
         kwargs = {}
-        form = self.form
-        user = form.save(commit=False)
+        form = self.get_signup_form(request)
+        user = form.save()
         
         try:
             if self._is_preaccepted(user):
                 user.is_active = True
+                user.save()
                 message = _('Registration completed. You can now login.')
                 next = request.POST.get('next')
                 if next:
@@ -177,8 +177,9 @@ class SimpleBackend(object):
         * DEFAULT_FROM_EMAIL: from email
         """
         kwargs = {}
-        form = self.form
-        user = form.save(commit=False)
+        form = self.get_signup_form(request)
+        user = form.save()
+        
         status = messages.SUCCESS
         try:
             _send_verification(request, user, email_template_name)

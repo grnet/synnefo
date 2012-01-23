@@ -111,15 +111,15 @@ def _generate_invitation_code():
         except Invitation.DoesNotExist:
             return code
 
-def _send_invitation(baseurl, inv):
-    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(baseurl))
-    subject = _('Invitation to Pithos')
+def _send_invitation(request, baseurl, inv):
+    subject = _('Invitation to Astakos')
     site = get_current_site(request)
+    url = settings.SIGNUP_TARGET % (baseurl, inv.code, site.domain)
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
                 'baseurl': baseurl,
-                'service': site_name,
+                'service': site.name,
                 'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
     send_mail(subject, message, sender, [inv.username])
@@ -178,7 +178,8 @@ def invite(request, template_name='invitations.html', extra_context={}):
                 defaults={'code': code, 'realname': realname})
             
             try:
-                _send_invitation(request.build_absolute_uri('/').rstrip('/'), invitation)
+                baseurl = request.build_absolute_uri('/').rstrip('/')
+                _send_invitation(request, baseurl, invitation)
                 if created:
                     inviter.invitations = max(0, inviter.invitations - 1)
                     inviter.save()
@@ -301,7 +302,7 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
                 if next:
                     return redirect(next)
                 messages.add_message(request, status, message)
-    except (Invitation.DoesNotExist), e:
+    except (Invitation.DoesNotExist, Exception), e:
         messages.add_message(request, messages.ERROR, e)
     return render_response(template_name,
                            form = form if 'form' in locals() else UserCreationForm(),

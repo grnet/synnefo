@@ -6,6 +6,9 @@ from django.contrib.auth.backends import ModelBackend
 from astakos.im.models import AstakosUser
 
 class AstakosUserModelCredentialsBackend(ModelBackend):
+    """
+    AuthenticationBackend used to authenticate user creadentials
+    """
     def authenticate(self, username=None, password=None):
         try:
             user = AstakosUser.objects.get(username=username)
@@ -31,6 +34,9 @@ class AstakosUserModelCredentialsBackend(ModelBackend):
     #    return self._user_class
 
 class AstakosUserModelTokenBackend(ModelBackend):
+    """
+    AuthenticationBackend used to authenticate using token instead
+    """
     def authenticate(self, username=None, auth_token=None):
         try:
             user = AstakosUser.objects.get(username=username)

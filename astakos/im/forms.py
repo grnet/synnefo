@@ -58,12 +58,9 @@ class ExtendedUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
     
-    * Adds an email field, which uses the custom UniqueUserEmailField,
-      that is, the form does not validate if the email address already exists
-      in the User table.
-    * The username field is generated based on the email, and isn't visible.
+    * Adds an email field, which uses the custom UniqueUserEmailField.
+    * The username field isn't visible and it is assigned the email value.
     * first_name and last_name fields are added.
-    * Data not saved by the default behavior of UserCreationForm is saved.
     """
     
     username = forms.CharField(required = False, max_length = 30)
@@ -71,11 +68,15 @@ class ExtendedUserCreationForm(UserCreationForm):
     first_name = forms.CharField(required = False, max_length = 30)
     last_name = forms.CharField(required = False, max_length = 30)
     
+    class Meta:
+        model = AstakosUser
+        fields = ("username",)
+    
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
         """
-        super(UserCreationForm, self).__init__(*args, **kwargs)
+        super(ExtendedUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
     
@@ -85,8 +86,6 @@ class ExtendedUserCreationForm(UserCreationForm):
         """
         cleaned_data = super(UserCreationForm, self).clean(*args, **kwargs)
         if cleaned_data.has_key('email'):
-            #cleaned_data['username'] = self.__generate_username(
-            #                                            cleaned_data['email'])
             cleaned_data['username'] = cleaned_data['email']
         return cleaned_data
         
@@ -96,12 +95,6 @@ class ExtendedUserCreationForm(UserCreationForm):
         save behavior is complete.
         """
         user = super(UserCreationForm, self).save(commit)
-        if user:
-            kwargs = {}
-            for field in self.fields:
-                if hasattr(AstakosUser(), field):
-                    kwargs[field] = self.cleaned_data[field]
-            user = get_or_create_user(username=self.cleaned_data['email'], **kwargs)
         return user
 
 class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
@@ -112,12 +105,17 @@ class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
     """
     inviter = forms.CharField(widget=forms.TextInput(),
                                 label=_('Inviter Real Name'))
+    class Meta:
+        model = AstakosUser
+        fields = ("username",)
     
     def __init__(self, *args, **kwargs):
-        super(RegisterForm, self).__init__(*args, **kwargs)
+        super(InvitedExtendedUserCreationForm, self).__init__(*args, **kwargs)
         
         #set readonly form fields
         self.fields['inviter'].widget.attrs['readonly'] = True
+        self.fields['email'].widget.attrs['readonly'] = True
+        self.fields['username'].widget.attrs['readonly'] = True
 
 class ProfileForm(forms.ModelForm):
     """

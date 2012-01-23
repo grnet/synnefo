@@ -32,15 +32,19 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponseBadRequest
+from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
+from urllib import quote
 
 from astakos.im.target.util import prepare_response
-
 
 def login(request):
     next = request.GET.get('next')
     if not next:
         return HttpResponseBadRequest('No next step provided')
-    if not request.user:
-        return HttpResponseBadRequest('User not found')
-    
-    return prepare_response(request, request.user, next)
+    if request.user.is_authenticated():
+        return prepare_response(request, request.user, next, skip_login=True)
+    else:
+        url = reverse('astakos.im.views.index')
+        url = '%s?next=%s' % (url, quote(request.build_absolute_uri()))
+        return redirect(url)

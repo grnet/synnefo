@@ -42,7 +42,7 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 from django.contrib.auth import login
 
-def prepare_response(request, user, next='', renew=False):
+def prepare_response(request, user, next='', renew=False, skip_login=False):
     """Return the unique username and the token
        as 'X-Auth-User' and 'X-Auth-Token' headers,
        or redirect to the URL provided in 'next'
@@ -61,8 +61,7 @@ def prepare_response(request, user, next='', renew=False):
     if next:
         # TODO: Avoid redirect loops.
         parts = list(urlsplit(next))
-        # Do not pass on user and token if we are on the same server.
-        if parts[1] and request.get_host() != parts[1]:
+        if not parts[1] or (parts[1] and request.get_host() != parts[1]):
             parts[3] = urlencode({'user': user.username, 'token': auth_token})
             next = urlunsplit(parts)
     
@@ -73,7 +72,8 @@ def prepare_response(request, user, next='', renew=False):
         next = reverse('astakos.im.views.edit_profile') + params
     
     # user login
-    login(request, user)
+    if not skip_login:
+        login(request, user)
     
     response = HttpResponse()
     if not next:

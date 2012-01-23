@@ -114,7 +114,7 @@ def _generate_invitation_code():
 def _send_invitation(request, baseurl, inv):
     subject = _('Invitation to Astakos')
     site = get_current_site(request)
-    url = settings.SIGNUP_TARGET % (baseurl, inv.code, site.domain)
+    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(site.domain))
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,

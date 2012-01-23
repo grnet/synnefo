@@ -6,7 +6,6 @@
             "name": "testdbuser",
             "realname" :"test db user",
             "uniq" :"test@synnefo.gr",
-            "credit": 10,
             "auth_token": "46e427d657b20defe352804f0eb6f8a2",
             "auth_token_created": "2011-04-07 09:17:14",
             "auth_token_expires": "2015-04-07 09:17:14",

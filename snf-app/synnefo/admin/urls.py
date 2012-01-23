@@ -52,13 +52,9 @@ urlpatterns = patterns('synnefo.admin.views',
     (r'^/servers/?$', 'servers_list'),
 
     (r'^/users/?$', 'users_list'),
-    (r'^/users/invite/?$', 'users_invite'),
     (r'^/users/(\d+)/?$', 'users_info'),
     (r'^/users/(\d+)/modify/?$', 'users_modify'),
     (r'^/users/(\d+)/delete/?$', 'users_delete'),
-
-    (r'^/invitations/?$', 'invitations_list'),
-    (r'^/invitations/(\d+)/resend/?$', 'invitations_resend'),
 )
 
 urlpatterns += patterns('synnefo.admin.api',

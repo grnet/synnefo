@@ -31,9 +31,6 @@
       <li{% ifequal tab "users" %} class="active"{% endifequal %}>
         <a href="{% url synnefo.admin.views.users_list %}">Users</a>
       </li>
-      <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
-        <a href="{% url synnefo.admin.views.invitations_list %}">Invitations</a>
-      </li>
     </ul>
 
     {% if all_states %}

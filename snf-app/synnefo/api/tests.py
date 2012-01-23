@@ -344,9 +344,7 @@ class APITestCase(TestCase):
 
 def create_users(n=1):
     for i in range(n):
-        SynnefoUser.objects.create(
-            name='User %d' % i,
-            credit=0)
+        SynnefoUser.objects.create(name='User %d' % i)
 
 
 def create_flavors(n=1):

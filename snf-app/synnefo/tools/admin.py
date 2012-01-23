@@ -50,7 +50,6 @@ from optparse import OptionParser
 from os.path import basename
 
 from synnefo.db import models
-from synnefo.invitations.invitations import add_invitation, send_invitation
 from synnefo.logic import backend, users
 from synnefo.plankton.backend import ImageBackend
 from synnefo.util.dictconfig import dictConfig
@@ -188,19 +187,6 @@ class CreateUser(Command):
         print_item(user)
 
 
-class InviteUser(Command):
-    group = 'user'
-    name = 'invite'
-    syntax = '<inviter id> <invitee name> <invitee email>'
-    description = 'invite a user'
-    
-    def main(self, inviter_id, name, email):
-        name = name.decode('utf8')
-        inviter = get_user(inviter_id)
-        inv = add_invitation(inviter, name, email)
-        send_invitation(inv)
-
-
 class ListUsers(Command):
     group = 'user'
     name = 'list'
@@ -233,10 +219,6 @@ class ModifyUser(Command):
         types = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_TYPE)
         states = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_STATE)
         
-        parser.add_option('--credit', dest='credit', metavar='VALUE',
-                            help='set user credits')
-        parser.add_option('--invitations', dest='invitations',
-                            metavar='VALUE', help='set max invitations')
         parser.add_option('--realname', dest='realname', metavar='NAME',
                             help='set real name of user')
         parser.add_option('--type', dest='type', metavar='TYPE',
@@ -251,10 +233,6 @@ class ModifyUser(Command):
     def main(self, user_id):
         user = get_user(user_id)
         
-        if self.credit:
-            user.credit = self.credit
-        if self.invitations:
-            user.max_invitations = self.invitations
         if self.realname:
             user.realname = self.realname
         if self.type:
@@ -750,38 +728,12 @@ class ShowStats(Command):
         stats['Flavors'] = models.Flavor.objects.count()
         stats['VMs'] = models.VirtualMachine.objects.filter(deleted=False).count()
         stats['Networks'] = models.Network.objects.exclude(state='DELETED').count()
-        stats['Invitations'] = models.Invitations.objects.count()
         
         stats['Ganeti Instances'] = len(backend.get_ganeti_instances())
         stats['Ganeti Nodes'] = len(backend.get_ganeti_nodes())
         stats['Ganeti Jobs'] = len(backend.get_ganeti_jobs())
         
         print_dict(stats)
-
-
-class ListInvitations(Command):
-    group = 'invitation'
-    name = 'list'
-    syntax = '[invitation id]'
-    description = 'list invitations'
-    
-    def main(self, invitation_id=None):
-        if invitation_id:
-            invitations = [models.Invitations.objects.get(id=invitation_id)]
-        else:
-            invitations = models.Invitations.objects.order_by('id')
-        print_items(invitations, detail=True, keys=('id',))
-
-
-class ResendInviation(Command):
-    group = 'invitation'
-    name = 'resend'
-    syntax = '<invitation id>'
-    description = 'resend an invitation'
-
-    def main(self, invitation_id):
-        invitation = models.Invitations.objects.get(id=invitation_id)
-        send_invitation(invitation)
 
 
 def print_usage(exe, groups, group=None, shortcut=False):

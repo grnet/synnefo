@@ -5,7 +5,6 @@ synnefo_web_apps = [
     'synnefo.ui',
     'synnefo.db',
     'synnefo.logic',
-    'synnefo.invitations',
     'synnefo.helpdesk',
     'synnefo.plankton',
     'synnefo.ui.userdata',

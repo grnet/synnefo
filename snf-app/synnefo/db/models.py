@@ -52,7 +52,6 @@ class SynnefoUser(models.Model):
     name = models.CharField('Synnefo Username', max_length=255, default='')
     realname = models.CharField('Real Name', max_length=255, default='')
     uniq = models.CharField('External Unique ID', max_length=255,null=True)
-    credit = models.IntegerField('Credit Balance')
     auth_token = models.CharField('Authentication Token', max_length=32,
             null=True)
     auth_token_created = models.DateTimeField('Time of auth token creation',
@@ -69,33 +68,9 @@ class SynnefoUser(models.Model):
             max_length=30, default='ACTIVE')
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
-    max_invitations = models.IntegerField('Max number of invitations',
-            null=True)
     
     def __unicode__(self):
         return self.name
-
-    def get_limit(self, limit_name):
-        """Returns the limit value for the specified limit"""
-        limit_objs = Limit.objects.filter(name=limit_name, user=self)
-        if len(limit_objs) == 1:
-            return limit_objs[0].value
-        return 0
-    
-    @property
-    def credit_quota(self):
-        """Internal getter function for credit quota"""
-        return self.get_limit('QUOTA_CREDIT')
-    
-    @property
-    def monthly_rate(self):
-        """Internal getter function for monthly credit issue rate"""
-        return self.get_limit('MONTHLY_RATE')
-    
-    @property
-    def min_credits(self):
-        """Internal getter function for maximum number of violations"""
-        return self.get_limit('MIN_CREDITS')
 
 
 class Image(models.Model):
@@ -143,25 +118,6 @@ class ImageMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
-class Limit(models.Model):
-    LIMITS = (
-        ('QUOTA_CREDIT', 'Maximum amount of credits per user'),
-        ('MIN_CREDITS', 'Minimum amount of credits per user'),
-        ('MONTHLY_RATE', 'Monthly credit issue rate')
-    )
-    user = models.ForeignKey(SynnefoUser)
-    name = models.CharField('Limit key name', choices=LIMITS, max_length=30,
-            null=False)
-    value = models.IntegerField('Limit current value')
-    
-    class Meta:
-        verbose_name = u'Enforced limit for user'
-    
-    def __unicode__(self):
-        return u'Limit %s for user %s: %d' % (self.value, self.user,
-                self.value)
-
-
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('RAM size in MiB', default=0)
@@ -178,50 +134,9 @@ class Flavor(models.Model):
     def name(self):
         """Returns flavor name (generated)"""
         return u'C%dR%dD%d' % (self.cpu, self.ram, self.disk)
-
-    def _current_cost(self, active):
-        """Returns active/inactive cost value
-
-        set active = True to get active cost and False for the inactive.
-        """
-        
-        costs = FlavorCost.objects.filter(flavor=self)
-        fch_list = costs.order_by('-effective_from')
-        if len(fch_list) > 0:
-            if active:
-                return fch_list[0].cost_active
-            else:
-                return fch_list[0].cost_inactive
-
-        return 0
-    
-    @property
-    def current_cost_active(self):
-        """Returns current active cost (property method)"""
-        return self._current_cost(True)
-    
-    @property
-    def current_cost_inactive(self):
-        """Returns current inactive cost (property method)"""
-        return self._current_cost(False)
     
     def __unicode__(self):
         return self.name
-
-
-class FlavorCost(models.Model):
-    cost_active = models.PositiveIntegerField('Active Cost')
-    cost_inactive = models.PositiveIntegerField('Inactive Cost')
-    effective_from = models.DateTimeField()
-    flavor = models.ForeignKey(Flavor)
-    
-    class Meta:
-        verbose_name = u'Pricing history for flavors'
-    
-    def __unicode__(self):
-        return u'Costs (up, down)=(%d, %d) for %s since %s' % (
-                int(self.cost_active), int(self.cost_inactive),
-                self.flavor.name, self.effective_from)
 
 
 class VirtualMachine(models.Model):
@@ -396,23 +311,6 @@ class VirtualMachine(models.Model):
         return self.name
 
 
-class VirtualMachineGroup(models.Model):
-    """Groups of VMs for SynnefoUsers"""
-    name = models.CharField(max_length=255)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    owner = models.ForeignKey(SynnefoUser)
-    machines = models.ManyToManyField(VirtualMachine)
-
-    class Meta:
-        verbose_name = u'Virtual Machine Group'
-        verbose_name_plural = 'Virtual Machine Groups'
-        ordering = ['name']
-    
-    def __unicode__(self):
-        return self.name
-
-
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
@@ -424,20 +322,6 @@ class VirtualMachineMetadata(models.Model):
     
     def __unicode__(self):
         return u'%s: %s' % (self.meta_key, self.meta_value)
-
-
-class Debit(models.Model):
-    when = models.DateTimeField()
-    user = models.ForeignKey(SynnefoUser)
-    vm = models.ForeignKey(VirtualMachine)
-    description = models.TextField()
-    
-    class Meta:
-        verbose_name = u'Accounting log'
-
-    def __unicode__(self):
-        return u'%s - %s - %s - %s' % (self.user.id, self.vm.name,
-                self.when, self.description)
 
 
 class Disk(models.Model):
@@ -473,19 +357,6 @@ class Network(models.Model):
     
     def __unicode__(self):
         return self.name
-
-
-class Invitations(models.Model):
-    source = models.ForeignKey(SynnefoUser, related_name="source")
-    target = models.ForeignKey(SynnefoUser, related_name="target")
-    accepted = models.BooleanField('Is the invitation accepted?',
-            default=False)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    level = models.IntegerField('Invitation depth level', null=True)
-    
-    def __unicode__(self):
-        return "From: %s, To: %s" % (self.source, self.target)
 
 
 class NetworkInterface(models.Model):

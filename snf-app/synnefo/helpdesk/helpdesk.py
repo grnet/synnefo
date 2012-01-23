@@ -34,7 +34,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.template.loader import render_to_string
 from django.template.context import RequestContext
 from django.http import HttpResponse, HttpResponseBadRequest
-from synnefo.db.models import SynnefoUser, Invitations
+from synnefo.db.models import SynnefoUser
 from synnefo.api.common import method_not_allowed
 from synnefo.logic import users
 
@@ -50,22 +50,11 @@ def index(request):
         method_not_allowed(request)
 
 def get_users(request):
-    #XXX: The following filter should change when the invitations app is removed
-    invitations = Invitations.objects.filter(accepted = False)
-    ids = map(lambda x: x.target.id, invitations)
-    users = SynnefoUser.objects.exclude(id__in = ids)\
-                               .exclude(type__exact = "HELPDESK")\
-                               .order_by('realname')
+    users = SynnefoUser.objects.exclude(type__exact='HELPDESK')
     result = []
-
-    for user in users:
-        resultentry = {}
-
-        resultentry['id'] = user.id
-        resultentry['name'] = user.realname
-
+    for user in users.order_by('realname'):
+        resultentry = dict(id=user.id, name=user.realname)
         result.append(resultentry)
-
     return result
 
 def get_tmp_token(request):

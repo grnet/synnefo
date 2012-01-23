@@ -8,7 +8,6 @@
       <th>Name</th>
       <th>Real Name</th>
       <th>Uniq</th>
-      <th>Credit</th>
       <th>Type</th>
       <th>State</th>
       <th>Updated</th>
@@ -21,7 +20,6 @@
       <td><a href="{% url synnefo.admin.views.users_info user.id %}">{{ user.name }}</a></td>
       <td>{{ user.realname }}</td>
       <td>{{ user.uniq }}</td>
-      <td>{{ user.credit }}</td>
       <td>{{ user.type }}</td>
       <td>{{ user.state }}</td>
       <td>{{ user.updated }}</td>
@@ -29,7 +27,4 @@
     {% endfor %}
   </tbody>
 </table>
-
-<a class="btn primary" href="{% url synnefo.admin.views.users_invite %}">Invite a user</a>
-<br /><br />
 {% endblock body %}

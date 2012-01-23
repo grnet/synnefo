@@ -39,7 +39,6 @@ from django.shortcuts import redirect
 from django.template.loader import render_to_string
 
 from synnefo.db import models
-from synnefo.invitations.invitations import add_invitation, send_invitation
 from synnefo.logic import backend, users
 from synnefo.util.log import getLogger
 
@@ -83,7 +82,6 @@ def index(request):
     stats['flavors'] = models.Flavor.objects.count()
     stats['vms'] = models.VirtualMachine.objects.filter(deleted=False).count()
     stats['networks'] = models.Network.objects.exclude(state='DELETED').count()
-    stats['invitations'] = models.Invitations.objects.count()
 
     stats['ganeti_instances'] = len(backend.get_ganeti_instances())
     stats['ganeti_nodes'] = len(backend.get_ganeti_nodes())
@@ -280,23 +278,6 @@ def users_list(request):
 
 
 @requires_admin
-def users_invite(request):
-    if request.method == 'GET':
-        html = render('users_invite.html', 'users')
-        return HttpResponse(html)
-    elif request.method == 'POST':
-        inviter_id = request.POST.get('inviter')
-        realname = request.POST.get('realname')
-        uniq = request.POST.get('uniq')
-        inviter = models.SynnefoUser.objects.get(id=inviter_id)
-        inv = add_invitation(inviter, realname, uniq)
-        send_invitation(inv)
-        log.info('User %s sent Invitation to %s as %s', request.user.name,
-                    uniq, inviter.name)
-        return redirect(users_list)
-
-
-@requires_admin
 def users_info(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
     types = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
@@ -314,11 +295,8 @@ def users_modify(request, user_id):
     user.name = request.POST.get('name')
     user.realname = request.POST.get('realname')
     user.uniq = request.POST.get('uniq')
-    user.credit = int(request.POST.get('credit'))
     user.type = request.POST.get('type')
     user.state = request.POST.get('state')
-    invitations = request.POST.get('invitations')
-    user.max_invitations = int(invitations) if invitations else None
     user.save()
     log.info('User %s modified User %s', request.user.name, user.name)
     return redirect(users_info, user.id)
@@ -327,23 +305,6 @@ def users_modify(request, user_id):
 @requires_admin
 def users_delete(request, user_id):
     user = models.SynnefoUser.objects.get(id=user_id)
-    users.delete_user(user)
+    user.delete()
     log.info('User %s deleted User %s', request.user.name, user.name)
     return redirect(users_list)
-
-
-@requires_admin
-def invitations_list(request):
-    invitations = models.Invitations.objects.order_by('id')
-    html = render('invitations_list.html', 'invitations',
-                     invitations=invitations)
-    return HttpResponse(html)
-
-
-@requires_admin
-def invitations_resend(request, invitation_id):
-    invitation = models.Invitations.objects.get(id=invitation_id)
-    send_invitation(invitation)
-    log.info('User %s resent Invitations from %s to %s', request.user.name,
-                invitation.source.name, invitation.target.name)
-    return redirect(invitations_list)

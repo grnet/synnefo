@@ -39,6 +39,5 @@ urlpatterns = patterns('',
     (r'^api/', include('synnefo.api.urls')),
     (r'^helpdesk/?', include('synnefo.helpdesk.urls')),
     (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^invitations/?', include('synnefo.invitations.urls')),
 )
 

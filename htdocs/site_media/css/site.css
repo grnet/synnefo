@@ -290,10 +290,11 @@ body.alt {
   display: block;
   padding: 0.7em 5em;
   color: #fff;
-  font-size: 1.2em;
+  font-size: 1.1em;
   background-color: #FF7F2A;
   cursor: pointer;
   margin-right: -20px;
+  text-decoration: none;
 }
 .gotoapp:hover {
   background-color: #FF9955;
@@ -304,10 +305,6 @@ body.alt {
 }
 .inner-bottom.in-page .testuser {
   margin-right: 60px;
-}
-.gotoapp {
-  color: #fff;
-  text-decoration: none;
 }
 .banner-coming {
   position: absolute;
@@ -2838,7 +2835,6 @@ body, html {
   margin-top: -40px;
 }
 .inner-bottom .gotoapp {
-  font-size: 0.9em;
   position: absolute;
   right: 20px;
   top: 25px;

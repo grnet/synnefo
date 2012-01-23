@@ -1,18 +1,18 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
-#
+# Copyright 2011 GRNET S.A. All rights reserved.
+# 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-#
+# 
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-#
+# 
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-#
+# 
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,44 +25,26 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
+# 
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
+from django.conf.urls.defaults import patterns, url
 
-from datetime import datetime
-
-from django.conf import settings
-from django.http import HttpResponseBadRequest
-from django.contrib.auth import authenticate
-
-from astakos.im.models import Invitation
-from astakos.im.target.util import prepare_response
-from astakos.im.util import get_or_create_user
-
-def login(request):
-    code = request.GET.get('code')
-    try:
-        invitation = Invitation.objects.get(code=code)
-    except Invitation.DoesNotExist:
-        return HttpResponseBadRequest('Wrong invitation code')
+urlpatterns = patterns('astakos.im.admin.views',
+    url(r'^$', 'admin'),
     
-    if not invitation.is_accepted:
-        invitation.is_accepted = True
-        invitation.accepted = datetime.now()
-        invitation.save()
-        logging.info('Accepted invitation %s', invitation)
+    url(r'^users/?$', 'users_list'),
+    url(r'^users/(\d+)/?$', 'users_info'),
+    url(r'^users/create$', 'users_create'),
+    url(r'^users/(\d+)/modify/?$', 'users_modify'),
+    url(r'^users/(\d+)/delete/?$', 'users_delete'),
+    url(r'^users/export/?$', 'users_export'),
+    url(r'^users/pending/?$', 'pending_users'),
+    url(r'^users/activate/(\d+)/?$', 'users_activate'),
     
-    user = get_or_create_user(invitation.uniq,
-                              invitation.realname,
-                              'Invitation',
-                              invitation.inviter.level + 1)
-    
-    # in order to login the user we must call authenticate first 
-    authenticate(username=user.username, auth_token=user.auth_token)
-    next = request.GET.get('next')
-    
-    return prepare_response(request, user, next, 'renew' in request.GET)
+    url(r'^invitations/?$', 'invitations_list'),
+    url(r'^invitations/export/?$', 'invitations_export'),
+)

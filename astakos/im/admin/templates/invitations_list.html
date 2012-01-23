@@ -18,10 +18,10 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Uniq</th>
+      <th>Username</th>
       <th>Real Name</th>
       <th>Code</th>
-      <th>Inviter Uniq</th>
+      <th>Inviter username</th>
       <th>Inviter Real Name</th>
       <th>Is consumed</th>
       <th>Created</th>
@@ -32,10 +32,10 @@
     {% for inv in invitations %}
     <tr>
       <td>{{ inv.id }}</td>
-      <td>{{ inv.uniq }}</td>
+      <td>{{ inv.username }}</td>
       <td>{{ inv.realname }}</td>
       <td>{{ inv.code }}</td>
-      <td>{{ inv.inviter.uniq }}</td>
+      <td>{{ inv.inviter.username }}</td>
       <td>{{ inv.inviter.realname }}</td>
       <td>{{ inv.is_consumed }}</td>
       <td>{{ inv.created }}</td>
@@ -67,7 +67,7 @@
 </div>
 {% endif %}
 
-<a class="btn success" href="{% url astakos.im.views.invitations_export %}">Export</a>
+<a class="btn success" href="{% url astakos.im.admin.views.invitations_export %}">Export</a>
 
 <br /><br />
 {% endblock body %}

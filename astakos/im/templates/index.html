@@ -3,6 +3,7 @@
 {% block title%}
         <h2>Welcome</h2>
         <p>Choose how to login. Or move on to <a href="admin">admin</a>.</p>
+        <p>Don't have an account? <a href="{% url astakos.im.views.signup %}">Sign up</a>.</p>
 {% endblock title%}
     
 {% block body%}
@@ -10,26 +11,25 @@
     {% if "local" in im_modules %}
       <div class="span4">
         <h4>Local account</h4>
-        <form action="{% url astakos.im.target.local.login %}" method="post" class="form-stacked">
-          <fieldset>
-            <div class="clearfix">
-              <label for="username">Username:</label>
-              <div class="input">
-                <input class="span3" id="user-username" name="username" type="text" />
+        <form action="{% url astakos.im.target.local.login %}" method="post" class="form-stacked">{% csrf_token %}
+          {{ form.non_field_errors }}
+          {% for field in form %}
+            <div class="field-wrapper">
+              <div class="label-wrapper">
+                {% if field.name == "username" %}
+                  Email address or Username
+                {% else %}
+                  {{ field.label_tag }}
+                {% endif %}
+              </div>
+              <div class="value-wrapper">
+                {{ field }}
+                {{ field.errors }}
               </div>
             </div>
-            <div class="clearfix">
-              <label for="password">Password:</label>
-              <div class="input">
-                <input class="span3" id="user-password" name="password" type="password" />
-              </div>
-            </div>
-          </fieldset>
+          {% endfor %}
          <div>
-            <a href="{% url astakos.im.views.register 'local' %}">Sign up</a>
-         </div>
-         <div>
-            <a href="{% url astakos.im.views.reclaim_password %}">Forgot your password?</a>
+            <a href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
          </div>
          <br>
           <div class="">
@@ -39,13 +39,12 @@
         </form>
       </div>
     {% endif %}
-    {% if other_modules %}
       <div class="span8">
-        <h4>Other provider</h4>
-        {% for o in other_modules %}
-            <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="{{ o|title }}"><img src="/im/static/{{ o }}.png" width="120" height="120"></a>
+        {% for o in im_modules %}
+            {% if o != 'local' %}
+                <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="{{ o|title }}"><img src="/im/static/{{ o }}.png" width="120" height="120"></a>
+            {% endif %}
         {% endfor %}
       </div>
-    {% endif %}
     </div>
 {% endblock body%}

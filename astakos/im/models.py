@@ -40,74 +40,67 @@ from base64 import b64encode
 
 from django.conf import settings
 from django.db import models
+from django.contrib.auth.models import User, UserManager
 
 from astakos.im.interface import get_quota, set_quota
 
-from hashlib import new as newhasher
-
-class User(models.Model):
-    ACCOUNT_STATE = (
-        ('ACTIVE', 'Active'),
-        ('DELETED', 'Deleted'),
-        ('SUSPENDED', 'Suspended'),
-        ('UNVERIFIED', 'Unverified'),
-        ('PENDING', 'Pending')
-    )
+class AstakosUser(User):
+    """
+    Extends ``django.contrib.auth.models.User`` by defining additional fields.
+    """
+    # Use UserManager to get the create_user method, etc.
+    objects = UserManager()
     
-    uniq = models.CharField('Unique ID', max_length=255, null=True)
-    
-    realname = models.CharField('Real Name', max_length=255, default='')
-    email = models.CharField('Email', max_length=255, default='')
     affiliation = models.CharField('Affiliation', max_length=255, default='')
     provider = models.CharField('Provider', max_length=255, default='')
-    state = models.CharField('Account state', choices=ACCOUNT_STATE,
-                                max_length=16, default='PENDING')
     
     #for invitations
     level = models.IntegerField('Inviter level', default=4)
     invitations = models.IntegerField('Invitations left', default=0)
     
-    #for local
-    password = models.CharField('Password', max_length=255, default='')
-    
-    is_admin = models.BooleanField('Admin?', default=False)
-    
     auth_token = models.CharField('Authentication Token', max_length=32,
-                                    null=True, blank=True)
-    auth_token_created = models.DateTimeField('Token creation date',
-                                                null=True)
-    auth_token_expires = models.DateTimeField('Token expiration date',
-                                                null=True)
+                                  null=True, blank=True)
+    auth_token_created = models.DateTimeField('Token creation date', null=True)
+    auth_token_expires = models.DateTimeField('Token expiration date', null=True)
     
-    created = models.DateTimeField('Creation date')
     updated = models.DateTimeField('Update date')
+    is_verified = models.BooleanField('Is verified?', default=False)
     
-    is_verified = models.BooleanField('Verified?', default=False)
+    @property
+    def realname(self):
+        return '%s %s' %(self.first_name, self.last_name)
     
-    openidurl = models.CharField('OpenID url', max_length=255, default='')
+    @realname.setter
+    def realname(self, value):
+        parts = value.split(' ')
+        if len(parts) == 2:
+            self.first_name = parts[0]
+            self.last_name = parts[1]
+        else:
+            self.last_name = parts[0]
     
     @property
     def quota(self):
-        return get_quota(self.uniq)
+        return get_quota(self.username)
 
     @quota.setter
     def quota(self, value):
-        set_quota(self.uniq, value)
+        set_quota(self.username, value)
     
     @property
     def invitation(self):
         try:
-            return Invitation.objects.get(uniq=self.uniq)
+            return Invitation.objects.get(username=self.username)
         except Invitation.DoesNotExist:
             return None
     
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
-                self.created = datetime.now()
+                self.date_joined = datetime.now()
             self.updated = datetime.now()
         
-        super(User, self).save(**kwargs)
+        super(AstakosUser, self).save(**kwargs)
         
         #invitation consume
         if self.invitation and not self.invitation.is_consumed:
@@ -115,7 +108,7 @@ class User(models.Model):
     
     def renew_token(self):
         md5 = hashlib.md5()
-        md5.update(self.uniq)
+        md5.update(self.username)
         md5.update(self.realname.encode('ascii', 'ignore'))
         md5.update(asctime())
         
@@ -125,13 +118,16 @@ class User(models.Model):
                                   timedelta(hours=settings.AUTH_TOKEN_DURATION)
     
     def __unicode__(self):
-        return self.uniq
+        return self.username
 
 class Invitation(models.Model):
-    inviter = models.ForeignKey(User, related_name='invitations_sent',
+    """
+    Model for registring invitations
+    """
+    inviter = models.ForeignKey(AstakosUser, related_name='invitations_sent',
                                 null=True)
     realname = models.CharField('Real name', max_length=255)
-    uniq = models.CharField('Unique ID', max_length=255)
+    username = models.CharField('Unique ID', max_length=255)
     code = models.BigIntegerField('Invitation code', db_index=True)
     #obsolete: we keep it just for transfering the data
     is_accepted = models.BooleanField('Accepted?', default=False)
@@ -147,4 +143,4 @@ class Invitation(models.Model):
         self.save()
         
     def __unicode__(self):
-        return '%s -> %s [%d]' % (self.inviter, self.uniq, self.code)
+        return '%s -> %s [%d]' % (self.inviter, self.username, self.code)

@@ -29,7 +29,7 @@ Running the server
 ------------------
 
 Make sure you have all required packages installed:
-    apt-get install python-django python-setuptools python-sphinx python-httplib2
+    apt-get install python-django python-django-south python-setuptools python-sphinx python-httplib2
 
 Then run:
     python manage.py syncdb

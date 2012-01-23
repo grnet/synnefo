@@ -38,7 +38,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 
 from astakos.im.faults import BadRequest, Unauthorized, ServiceUnavailable
-from astakos.im.models import User
+from astakos.im.models import AstakosUser
 
 import datetime
 
@@ -68,12 +68,12 @@ def authenticate(request):
             return render_fault(request, BadRequest('Missing X-Auth-Token'))
         
         try:
-            user = User.objects.get(auth_token=x_auth_token)
-        except User.DoesNotExist, e:
+            user = AstakosUser.objects.get(auth_token=x_auth_token)
+        except AstakosUser.DoesNotExist, e:
             return render_fault(request, Unauthorized('Invalid X-Auth-Token')) 
         
         # Check if the is active.
-        if user.state != 'ACTIVE':
+        if not user.is_active:
             return render_fault(request, Unauthorized('User inactive'))
         
         # Check if the token has expired.
@@ -82,11 +82,10 @@ def authenticate(request):
         
         response = HttpResponse()
         response.status=204
-        user_info = user.__dict__
-        for k,v in user_info.items():
-            if isinstance(v,  datetime.datetime):
-                user_info[k] = v.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-        user_info.pop('_state')
+        user_info = {'uniq':user.username,
+                     'auth_token':user.auth_token,
+                     'auth_token_created':user.auth_token_created,
+                     'auth_token_expires':user.auth_token_expires}
         response.content = json.dumps(user_info)
         update_response_headers(response)
         return response

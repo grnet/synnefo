@@ -42,6 +42,8 @@ from functools import wraps
 from math import ceil
 from random import randint
 from smtplib import SMTPException
+from hashlib import new as newhasher
+from urllib import quote
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -52,212 +54,55 @@ from django.shortcuts import render_to_response
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
-from django.forms import Form
-from django.forms.formsets import formset_factory
-#from openid.consumer.consumer import Consumer, \
-#    SUCCESS, CANCEL, FAILURE, SETUP_NEEDED
-
-from hashlib import new as newhasher
-
-from urllib import quote
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.decorators import login_required
+from django.contrib.sites.models import get_current_site
+from django.contrib import messages
+from django.db import transaction
+from django.contrib.auth.forms import UserCreationForm
 
 #from astakos.im.openid_store import PithosOpenIDStore
-from astakos.im.models import User, Invitation
-from astakos.im.util import isoformat
-from astakos.im.forms import *
+from astakos.im.models import AstakosUser, Invitation
+from astakos.im.util import isoformat, get_or_create_user, get_context
+from astakos.im.backends import get_backend
+from astakos.im.forms import ProfileForm, FeedbackForm
 
-def render_response(template, tab=None, status=200, **kwargs):
+def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
+    """
+    Calls ``django.template.loader.render_to_string`` with an additional ``tab``
+    keyword argument and returns an ``django.http.HttpResponse`` with the
+    specified ``status``.
+    """
     if tab is None:
         tab = template.partition('_')[0]
     kwargs.setdefault('tab', tab)
-    html = render_to_string(template, kwargs)
+    html = render_to_string(template, kwargs, context_instance=context_instance)
     return HttpResponse(html, status=status)
 
-
-def requires_login(func):
-    @wraps(func)
-    def wrapper(request, *args):
-        if not settings.BYPASS_ADMIN_AUTH:
-            if not request.user:
-                next = urlencode({'next': request.build_absolute_uri()})
-                login_uri = reverse(index) + '?' + next
-                return HttpResponseRedirect(login_uri)
-        return func(request, *args)
-    return wrapper
-
-def requires_admin(func):
-    @wraps(func)
-    def wrapper(request, *args):
-        if not settings.BYPASS_ADMIN_AUTH:
-            if not request.user:
-                next = urlencode({'next': request.build_absolute_uri()})
-                login_uri = reverse(index) + '?' + next
-                return HttpResponseRedirect(login_uri)
-            if not request.user.is_admin:
-                return HttpResponse('Forbidden', status=403)
-        return func(request, *args)
-    return wrapper
-
-
-def index(request):
-    kwargs = {'im_modules':settings.IM_MODULES,
-              'other_modules':settings.IM_MODULES[1:]}
-    return render_response('index.html',
-                           next=request.GET.get('next', ''),
-                           **kwargs)
-
-
-@requires_admin
-def admin(request):
-    stats = {}
-    stats['users'] = User.objects.count()
-    stats['pending'] = User.objects.filter(state = 'PENDING').count()
+def index(request, template_name='index.html', extra_context={}):
+    """
+    Renders the index (login) page
     
-    invitations = Invitation.objects.all()
-    stats['invitations'] = invitations.count()
-    stats['invitations_consumed'] = invitations.filter(is_consumed=True).count()
+    **Arguments**
     
-    return render_response('admin.html', tab='home', stats=stats)
-
-
-@requires_admin
-def users_list(request):
-    users = User.objects.order_by('id')
+    ``template_name``
+        A custom template to use. This is optional; if not specified,
+        this will default to ``index.html``.
     
-    filter = request.GET.get('filter', '')
-    if filter:
-        if filter.startswith('-'):
-            users = users.exclude(uniq__icontains=filter[1:])
-        else:
-            users = users.filter(uniq__icontains=filter)
+    ``extra_context``
+        An dictionary of variables to add to the template context.
     
-    try:
-        page = int(request.GET.get('page', 1))
-    except ValueError:
-        page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
+    **Template:**
     
-    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
-    prev = page - 1 if page > 1 else None
-    next = page + 1 if page < npages else None
-    return render_response('users_list.html',
-                            users=users[offset:limit],
-                            filter=filter,
-                            pages=range(1, npages + 1),
-                            page=page,
-                            prev=prev,
-                            next=next)
-
-@requires_admin
-def users_info(request, user_id):
-    user = User.objects.get(id=user_id)
-    states = [x[0] for x in User.ACCOUNT_STATE]
-    return render_response('users_info.html',
-                            user=user,
-                            states=states)
-
-
-@requires_admin
-def users_modify(request, user_id):
-    user = User.objects.get(id=user_id)
-    user.uniq = request.POST.get('uniq')
-    user.realname = request.POST.get('realname')
-    user.is_admin = True if request.POST.get('admin') else False
-    user.affiliation = request.POST.get('affiliation')
-    user.state = request.POST.get('state')
-    user.invitations = int(request.POST.get('invitations') or 0)
-    user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
-    user.auth_token = request.POST.get('auth_token')
-    try:
-        auth_token_expires = request.POST.get('auth_token_expires')
-        d = datetime.strptime(auth_token_expires, '%Y-%m-%dT%H:%MZ')
-        user.auth_token_expires = d
-    except ValueError:
-        pass
-    user.save()
-    return redirect(users_info, user.id)
-
-@requires_admin
-def users_delete(request, user_id):
-    user = User.objects.get(id=user_id)
-    user.delete()
-    return redirect(users_list)
-
-@requires_admin
-def pending_users(request):
-    users = User.objects.order_by('id')
+    index.html or ``template_name`` keyword argument.
     
-    users = users.filter(state = 'PENDING')
-    
-    try:
-        page = int(request.GET.get('page', 1))
-    except ValueError:
-        page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
-    
-    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
-    prev = page - 1 if page > 1 else None
-    next = page + 1 if page < npages else None
-    return render_response('pending_users.html',
-                            users=users[offset:limit],
-                            filter=filter,
-                            pages=range(1, npages + 1),
-                            page=page,
-                            prev=prev,
-                            next=next)
+    """
+    return render_response(template_name,
+                           form = AuthenticationForm(),
+                           context_instance = get_context(request, extra_context))
 
-def send_greeting(baseurl, user):
-    url = baseurl
-    subject = _('Welcome to Pithos')
-    message = render_to_string('welcome.txt', {
-                'user': user,
-                'url': url,
-                'baseurl': baseurl,
-                'service': settings.SERVICE_NAME,
-                'support': settings.DEFAULT_CONTACT_EMAIL})
-    sender = settings.DEFAULT_FROM_EMAIL
-    send_mail(subject, message, sender, [user.email])
-    logging.info('Sent greeting %s', user)
-
-@requires_admin
-def users_activate(request, user_id):
-    user = User.objects.get(id=user_id)
-    user.state = 'ACTIVE'
-    status = 'success'
-    try:
-        send_greeting(request.build_absolute_uri('/').rstrip('/'), user)
-        message = _('Greeting sent to %s' % user.email)
-        user.save()
-    except (SMTPException, socket.error) as e:
-        status = 'error'
-        name = 'strerror'
-        message = getattr(e, name) if hasattr(e, name) else e
-    
-    users = User.objects.order_by('id')
-    users = users.filter(state = 'PENDING')
-    
-    try:
-        page = int(request.POST.get('page', 1))
-    except ValueError:
-        page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
-    
-    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
-    prev = page - 1 if page > 1 else None
-    next = page + 1 if page < npages else None
-    return render_response('pending_users.html',
-                            users=users[offset:limit],
-                            filter=filter,
-                            pages=range(1, npages + 1),
-                            page=page,
-                            prev=prev,
-                            next=next,
-                            message=message)
-
-def generate_invitation_code():
+def _generate_invitation_code():
     while True:
         code = randint(1, 2L**63 - 1)
         try:
@@ -266,457 +111,250 @@ def generate_invitation_code():
         except Invitation.DoesNotExist:
             return code
 
-
-def send_invitation(baseurl, inv):
-    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(baseurl))
-    subject = _('Invitation to Pithos')
+def _send_invitation(request, baseurl, inv):
+    subject = _('Invitation to Astakos')
+    site = get_current_site(request)
+    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(site.domain))
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
                 'baseurl': baseurl,
-                'service': settings.SERVICE_NAME,
+                'service': site.name,
                 'support': settings.DEFAULT_CONTACT_EMAIL})
     sender = settings.DEFAULT_FROM_EMAIL
-    send_mail(subject, message, sender, [inv.uniq])
+    send_mail(subject, message, sender, [inv.username])
     logging.info('Sent invitation %s', inv)
 
-
-@requires_login
-def invite(request):
+@login_required
+@transaction.commit_manually
+def invite(request, template_name='invitations.html', extra_context={}):
+    """
+    Allows a user to invite somebody else.
+    
+    In case of GET request renders a form for providing the invitee information.
+    In case of POST checks whether the user has not run out of invitations and then
+    sends an invitation email to singup to the service.
+    
+    The view uses commit_manually decorator in order to ensure the number of the
+    user invitations is going to be updated only if the email has been successfully sent.
+    
+    If the user isn't logged in, redirects to settings.LOGIN_URL.
+    
+    **Arguments**
+    
+    ``template_name``
+        A custom template to use. This is optional; if not specified,
+        this will default to ``invitations.html``.
+    
+    ``extra_context``
+        An dictionary of variables to add to the template context.
+    
+    **Template:**
+    
+    invitations.html or ``template_name`` keyword argument.
+    
+    **Settings:**
+    
+    The view expectes the following settings are defined:
+    
+    * LOGIN_URL: login uri
+    * SIGNUP_TARGET: Where users should signup with their invitation code
+    * DEFAULT_CONTACT_EMAIL: service support email
+    * DEFAULT_FROM_EMAIL: from email
+    """
     status = None
     message = None
     inviter = request.user
 
     if request.method == 'POST':
-        uniq = request.POST.get('uniq')
+        username = request.POST.get('uniq')
         realname = request.POST.get('realname')
         
         if inviter.invitations > 0:
-            code = generate_invitation_code()
+            code = _generate_invitation_code()
             invitation, created = Invitation.objects.get_or_create(
                 inviter=inviter,
-                uniq=uniq,
+                username=username,
                 defaults={'code': code, 'realname': realname})
             
             try:
-                send_invitation(request.build_absolute_uri('/').rstrip('/'), invitation)
+                baseurl = request.build_absolute_uri('/').rstrip('/')
+                _send_invitation(request, baseurl, invitation)
                 if created:
                     inviter.invitations = max(0, inviter.invitations - 1)
                     inviter.save()
-                status = 'success'
-                message = _('Invitation sent to %s' % uniq)
+                status = messages.SUCCESS
+                message = _('Invitation sent to %s' % username)
+                transaction.commit()
             except (SMTPException, socket.error) as e:
-                status = 'error'
+                status = messages.ERROR
                 message = getattr(e, 'strerror', '')
+                transaction.rollback()
         else:
-            status = 'error'
+            status = messages.ERROR
             message = _('No invitations left')
-
+    messages.add_message(request, status, message)
+    
     if request.GET.get('format') == 'json':
-        sent = [{'email': inv.uniq,
+        sent = [{'email': inv.username,
                  'realname': inv.realname,
                  'is_accepted': inv.is_accepted}
                     for inv in inviter.invitations_sent.all()]
         rep = {'invitations': inviter.invitations, 'sent': sent}
         return HttpResponse(json.dumps(rep))
     
-    html = render_to_string('invitations.html', {
-            'user': inviter,
-            'status': status,
-            'message': message})
-    return HttpResponse(html)
+    kwargs = {'user': inviter}
+    context = get_context(request, extra_context, **kwargs)
+    return render_response(template_name,
+                           context_instance = context)
 
-def send_verification(baseurl, user):
-    url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
-                                              quote(user.auth_token),
-                                              quote(baseurl))
-    message = render_to_string('activation.txt', {
-            'user': user,
-            'url': url,
-            'baseurl': baseurl,
-            'service': settings.SERVICE_NAME,
-            'support': settings.DEFAULT_CONTACT_EMAIL})
-    sender = settings.DEFAULT_FROM_EMAIL
-    send_mail('Pithos account activation', message, sender, [user.email])
-    logging.info('Sent activation %s', user)
-
-def send_password(baseurl, user):
-    url = settings.PASSWORD_RESET_TARGET % (baseurl,
-                                            quote(user.uniq),
-                                            quote(baseurl))
-    message = render_to_string('password.txt', {
-            'user': user,
-            'url': url,
-            'baseurl': baseurl,
-            'service': settings.SERVICE_NAME,
-            'support': settings.DEFAULT_CONTACT_EMAIL})
-    sender = settings.DEFAULT_FROM_EMAIL
-    send_mail('Pithos password recovering', message, sender, [user.email])
-    logging.info('Sent password %s', user)
-
-def reclaim_password(request):
-    if request.method == 'GET':
-        return render_response('reclaim.html')
-    elif request.method == 'POST':
-        username = request.POST.get('uniq')
-        try:
-            user = User.objects.get(uniq=username)
-            try:
-                send_password(request.build_absolute_uri('/').rstrip('/'), user)
-                status = 'success'
-                message = _('Password reset sent to %s' % user.email)
-                user.status = 'UNVERIFIED'
-                user.save()
-            except (SMTPException, socket.error) as e:
-                status = 'error'
-                name = 'strerror'
-                message = getattr(e, name) if hasattr(e, name) else e
-        except User.DoesNotExist:
-            status = 'error'
-            message = 'Username does not exist'
-        
-        html = render_to_string('reclaim.html', {
-                'status': status,
-                'message': message})
-        return HttpResponse(html)
-
-@requires_admin
-def invitations_list(request):
-    invitations = Invitation.objects.order_by('id')
+@login_required
+def edit_profile(request, template_name='profile.html', extra_context={}):
+    """
+    Allows a user to edit his/her profile.
     
-    filter = request.GET.get('filter', '')
-    if filter:
-        if filter.startswith('-'):
-            invitations = invitations.exclude(uniq__icontains=filter[1:])
-        else:
-            invitations = invitations.filter(uniq__icontains=filter)
+    In case of GET request renders a form for displaying the user information.
+    In case of POST updates the user informantion.
     
+    If the user isn't logged in, redirects to settings.LOGIN_URL.  
+    
+    **Arguments**
+    
+    ``template_name``
+        A custom template to use. This is optional; if not specified,
+        this will default to ``profile.html``.
+    
+    ``extra_context``
+        An dictionary of variables to add to the template context.
+    
+    **Template:**
+    
+    profile.html or ``template_name`` keyword argument.
+    """
     try:
-        page = int(request.GET.get('page', 1))
-    except ValueError:
-        page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
-    
-    npages = int(ceil(1.0 * invitations.count() / settings.ADMIN_PAGE_LIMIT))
-    prev = page - 1 if page > 1 else None
-    next = page + 1 if page < npages else None
-    return render_response('invitations_list.html',
-                            invitations=invitations[offset:limit],
-                            filter=filter,
-                            pages=range(1, npages + 1),
-                            page=page,
-                            prev=prev,
-                            next=next)
-
-@requires_admin
-def invitations_export(request):
-    # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(mimetype='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=invitations.csv'
-
-    writer = csv.writer(response)
-    writer.writerow(['ID',
-                     'Uniq',
-                     'Real Name',
-                     'Code',
-                     'Inviter Uniq',
-                     'Inviter Real Name',
-                     'Is_accepted',
-                     'Created',
-                     'Accepted',])
-    invitations = Invitation.objects.order_by('id')
-    for inv in invitations:
-        writer.writerow([inv.id,
-                         inv.uniq.encode("utf-8"),
-                         inv.realname.encode("utf-8"),
-                         inv.code,
-                         inv.inviter.uniq.encode("utf-8"),
-                         inv.inviter.realname.encode("utf-8"),
-                         inv.is_accepted,
-                         inv.created,
-                         inv.accepted])
-
-    return response
-
-
-@requires_admin
-def users_export(request):
-    # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(mimetype='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=users.csv'
-
-    writer = csv.writer(response)
-    writer.writerow(['ID',
-                     'Uniq',
-                     'Real Name',
-                     'Admin',
-                     'Affiliation',
-                     'State',
-                     'Quota (GiB)',
-                     'Updated',])
-    users = User.objects.order_by('id')
-    for u in users:
-        writer.writerow([u.id,
-                         u.uniq.encode("utf-8"),
-                         u.realname.encode("utf-8"),
-                         u.is_admin,
-                         u.affiliation.encode("utf-8"),
-                         u.state.encode("utf-8"),
-                         u.quota,
-                         u.updated])
-
-    return response
-
-@requires_admin
-def users_create(request):
-    if request.method == 'GET':
-        return render_response('users_local_create.html')
+        user = AstakosUser.objects.get(username=request.user)
+        form = ProfileForm(instance=user)
+    except AstakosUser.DoesNotExist:
+        token = request.GET.get('auth', None)
+        user = AstakosUser.objects.get(auth_token=token)
     if request.method == 'POST':
-        user = User()
-        user.uniq = request.POST.get('uniq')
-        user.realname = request.POST.get('realname')
-        user.is_admin = True if request.POST.get('admin') else False
-        user.affiliation = request.POST.get('affiliation')
-        user.quota = int(request.POST.get('quota') or 0) * (1024 ** 3)  # In GiB
-        user.renew_token()
-        user.provider = 'local'
-        user.save()
-        return redirect(users_info, user.id)
-
-@requires_login
-def users_profile(request):
-    next = request.GET.get('next')
-    try:
-        user = User.objects.get(uniq=request.user)
-    except User.DoesNotExist:
-        user = User.objects.get(auth_token=request.GET.get('auth', None))
-    states = [x[0] for x in User.ACCOUNT_STATE]
-    return render_response('users_profile.html',
-                            user=user,
-                            states=states,
-                            next=next)
-
-@requires_login
-def users_edit(request):
-    try:
-        user = User.objects.get(uniq=request.user)
-    except User.DoesNotExist:
-        token = request.POST.get('auth', None)
-        users = User.objects.all()
-        user = User.objects.get(auth_token=token)
-    user.realname = request.POST.get('realname')
-    user.affiliation = request.POST.get('affiliation')
-    user.is_verified = True
-    user.save()
-    next = request.POST.get('next')
-    if next:
-        return redirect(next)
-    
-    status = 'success'
-    message = _('Profile has been updated')
-    html = render_to_string('users_profile.html', {
-            'user': user,
-            'status': status,
-            'message': message})
-    return HttpResponse(html)
-    
-def signup(request):
-    if request.method == 'GET':
-        kwargs = {'im_modules':settings.IM_MODULES,
-                  'next':request.GET.get('next', ''),
-                  'code':request.GET.get('code', '')}
-        return render_response('signup.html', **kwargs)
-    elif request.method == 'POST':
-        provider = request.POST.get('choice')
-        if not provider:
-            return on_failure(_('No provider selected'), template='signup.html')
-        
-        kwargs = {'code':request.POST.get('code', ''),
-                  'next':request.POST.get('next', '')}
-        url = '%s%s?' %(reverse('astakos.im.views.register'), provider)
-        for k,v in kwargs.items():
-            if v:
-                url = '%s%s=%s&' %(url, k, v)
-        return redirect(url)
-
-def render_registration(provider, code='', next=''):
-    initial_data = {'provider':provider}
-    if settings.INVITATIONS_ENABLED and code:
-        try:
-            print '#', type(code), code
-            invitation = Invitation.objects.get(code=code)
-            if invitation.is_consumed:
-                return HttpResponseBadRequest('Invitation has beeen used')
-            initial_data.update({'uniq':invitation.uniq,
-                                 'email':invitation.uniq,
-                                 'realname':invitation.realname})
+        form = ProfileForm(request.POST, instance=user)
+        if form.is_valid():
             try:
-                inviter = User.objects.get(uniq=invitation.inviter)
-                initial_data['inviter'] = inviter.realname
-            except User.DoesNotExist:
-                pass
-        except Invitation.DoesNotExist:
-            return on_failure(_('Wrong invitation code'), template='register.html')
+                form.save()
+                msg = _('Profile has been updated successfully')
+                messages.add_message(request, messages.SUCCESS, msg)
+            except ValueError, ve:
+                messages.add_message(request, messages.ERROR, ve)
+    return render_response(template_name,
+                           form = form,
+                           context_instance = get_context(request,
+                                                          extra_context,
+                                                          user=user))
+
+@transaction.commit_manually
+def signup(request, template_name='signup.html', extra_context={}, backend=None):
+    """
+    Allows a user to create a local account.
     
-    prefix = 'Invited' if code else ''
-    formclassname = '%s%sRegisterForm' %(prefix, provider.capitalize())
-    form = globals()[formclassname]()
-    return render_response('register.html',
-                           form=form,
-                           next=next,
-                           filter=filter,
-                           code=code,
-                           provider=provider)
-
-def is_preaccepted(user):
-    if user.invitation and not user.invitation.is_consumed:
-        return True
+    In case of GET request renders a form for providing the user information.
+    In case of POST handles the signup.
     
-    return False
+    The user activation will be delegated to the backend specified by the ``backend`` keyword argument
+    if present, otherwise to the ``astakos.im.backends.InvitationBackend``
+    if settings.INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
+    (see backends);
+    
+    Upon successful user creation if ``next`` url parameter is present the user is redirected there
+    otherwise renders the same page with a success message.
+    
+    On unsuccessful creation, renders the same page with an error message.
+    
+    The view uses commit_manually decorator in order to ensure the user will be created
+    only if the procedure has been completed successfully.
+    
+    **Arguments**
+    
+    ``template_name``
+        A custom template to use. This is optional; if not specified,
+        this will default to ``signup.html``.
+    
+    ``extra_context``
+        An dictionary of variables to add to the template context.
+    
+    **Template:**
+    
+    signup.html or ``template_name`` keyword argument.
+    """
+    if not backend:
+            backend = get_backend()
+    try:
+        form = backend.get_signup_form(request)
+        if request.method == 'POST':
+            if form.is_valid():
+                status, message = backend.signup(request)
+                # rollback incase of error
+                if status == messages.ERROR:
+                    transaction.rollback()
+                else:
+                    transaction.commit()
+                next = request.POST.get('next')
+                if next:
+                    return redirect(next)
+                messages.add_message(request, status, message)
+    except (Invitation.DoesNotExist, Exception), e:
+        messages.add_message(request, messages.ERROR, e)
+    return render_response(template_name,
+                           form = form if 'form' in locals() else UserCreationForm(),
+                           context_instance=get_context(request, extra_context))
 
-def should_send_verification():
-    if not settings.INVITATIONS_ENABLED:
-        return True    
-    return False
-
-def register(request, provider):
-    print '---', request
-    code = request.GET.get('code')
-    next = request.GET.get('next')
+@login_required
+def send_feedback(request, template_name='feedback.html', email_template_name='feedback_mail.txt', extra_context={}):
+    """
+    Allows a user to send feedback.
+    
+    In case of GET request renders a form for providing the feedback information.
+    In case of POST sends an email to support team.
+    
+    If the user isn't logged in, redirects to settings.LOGIN_URL.  
+    
+    **Arguments**
+    
+    ``template_name``
+        A custom template to use. This is optional; if not specified,
+        this will default to ``feedback.html``.
+    
+    ``extra_context``
+        An dictionary of variables to add to the template context.
+    
+    **Template:**
+    
+    signup.html or ``template_name`` keyword argument.
+    
+    **Settings:**
+    
+    * FEEDBACK_CONTACT_EMAIL: List of feedback recipients
+    """
     if request.method == 'GET':
-        code = request.GET.get('code', '')
-        next = request.GET.get('next', '')
-        if provider not in settings.IM_MODULES:
-            return on_failure(_('Invalid provider'))
-        return render_registration(provider, code, next)
-    elif request.method == 'POST':
-        provider = request.POST.get('provider')
-        code = request.POST.get('code')
+        form = FeedbackForm()
+    if request.method == 'POST':
+        if not request.user:
+            return HttpResponse('Unauthorized', status=401)
         
-        #instantiate the form
-        prefix = 'Invited' if code else ''
-        formclassname = '%s%sRegisterForm' %(prefix, provider.capitalize())
-        form = globals()[formclassname](request.POST)
-        if not form.is_valid():
-            return render_to_response('register.html',
-                                      {'form':form,
-                                       'code':code,
-                                       'next':next}) 
-        
-        user = User()
-        for field in form.fields:
-            if hasattr(user, field):
-                setattr(user, field, form.cleaned_data[field])
-        
-        if user.openidurl:
-            redirect_url = reverse('astakos.im.views.create')
-            return ask_openid(request, 
-                        user.openidurl,
-                        redirect_url,
-                        'signup')
-        
-        #save hashed password
-        if user.password:
-            hasher = newhasher('sha256')
-            hasher.update(user.password)
-            user.password = hasher.hexdigest() 
+        form = FeedbackForm(request.POST)
+        if form.is_valid():
+            subject = _("Feedback from Okeanos")
+            from_email = request.user.email
+            recipient_list = [settings.FEEDBACK_CONTACT_EMAIL]
+            content = render_to_string(email_template_name, {
+                        'message': form.cleaned_data('feedback_msg'),
+                        'data': form.cleaned_data('feedback_data'),
+                        'request': request})
             
-        user.renew_token()
-        
-        if is_preaccepted(user):
-            user.state = 'ACTIVE'
-            user.save()
-            url = reverse('astakos.im.views.index')
-            return redirect(url)
-        
-        status = 'success'
-        if should_send_verification():
-            try:
-                send_verification(request.build_absolute_uri('/').rstrip('/'), user)
-                message = _('Verification sent to %s' % user.email)
-                user.save()
-            except (SMTPException, socket.error) as e:
-                status = 'error'
-                name = 'strerror'
-                message = getattr(e, name) if hasattr(e, name) else e
-        else:
-            user.save()
-            message = _('Registration completed. You will receive an email upon your account\'s activation')
-        
-        return info(status, message)
-
-#def discover_extensions(openid_url):
-#    service = discover(openid_url)
-#    use_ax = False
-#    use_sreg = False
-#    for endpoint in service[1]:
-#        if not use_sreg:
-#            use_sreg = sreg.supportsSReg(endpoint)
-#        if not use_ax:
-#            use_ax = endpoint.usesExtension("http://openid.net/srv/ax/1.0")
-#        if use_ax and use_sreg: break
-#    return use_ax, use_sreg
-#
-#def ask_openid(request, openid_url, redirect_to, on_failure=None):
-#    """ basic function to ask openid and return response """
-#    on_failure = on_failure or signin_failure
-#    sreg_req = None
-#    ax_req = None
-#    
-#    trust_root = getattr(
-#        settings, 'OPENID_TRUST_ROOT', request.build_absolute_uri() + '/'
-#    )
-#    request.session = {}
-#    consumer = Consumer(request.session, PithosOpenIDStore())
-#    try:
-#        auth_request = consumer.begin(openid_url)
-#    except DiscoveryFailure:
-#        msg = _("The OpenID %s was invalid") % openid_url
-#        return on_failure(request, msg)
-#    
-#     get capabilities
-#    use_ax, use_sreg = discover_extensions(openid_url)
-#    if use_sreg:
-#         set sreg extension
-#         we always ask for nickname and email
-#        sreg_attrs = getattr(settings, 'OPENID_SREG', {})
-#        sreg_attrs.update({ "optional": ['nickname', 'email'] })
-#        sreg_req = sreg.SRegRequest(**sreg_attrs)
-#    if use_ax:
-#         set ax extension
-#         we always ask for nickname and email
-#        ax_req = ax.FetchRequest()
-#        ax_req.add(ax.AttrInfo('http://schema.openid.net/contact/email', 
-#                                alias='email', required=True))
-#        ax_req.add(ax.AttrInfo('http://schema.openid.net/namePerson/friendly', 
-#                                alias='nickname', required=True))
-#                      
-#         add custom ax attrs          
-#        ax_attrs = getattr(settings, 'OPENID_AX', [])
-#        for attr in ax_attrs:
-#            if len(attr) == 2:
-#                ax_req.add(ax.AttrInfo(attr[0], required=alias[1]))
-#            else:
-#                ax_req.add(ax.AttrInfo(attr[0]))
-#       
-#    if sreg_req is not None:
-#        auth_request.addExtension(sreg_req)
-#    if ax_req is not None:
-#        auth_request.addExtension(ax_req)
-#    
-#    redirect_url = auth_request.redirectURL(trust_root, redirect_to)
-#    return HttpResponseRedirect(redirect_url)
-
-def info(status, message, template='base.html'):
-    html = render_to_string(template, {
-            'status': status,
-            'message': message})
-    response = HttpResponse(html)
-    return response
-
-def on_success(message, template='base.html'):
-    return info('success', message)
-    
-def on_failure(message, template='base.html'):
-    return info('error', message)
+            send_mail(subject, content, from_email, recipient_list)
+            
+            resp = json.dumps({'status': 'send'})
+            return HttpResponse(resp)
+    return render_response(template_name,
+                           form = form,
+                           context_instance = get_context(request, extra_context))

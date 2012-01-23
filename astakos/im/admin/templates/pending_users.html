@@ -18,7 +18,7 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Uniq</th>
+      <th>Username</th>
       <th>Real Name</th>
       <th>Affiliation</th>
       <th>Email</th>
@@ -30,13 +30,13 @@
     {% for user in users %}
     <tr>
       <td>{{ user.id }}</td>
-      <td>{{ user.uniq }}</td>
+      <td>{{ user.username }}</td>
       <td>{{ user.realname }}</td>
       <td>{{ user.affiliation }}</td>
       <td>{{ user.email }}</td>
       <td>{{ user.inviter.realname }}</td>
       <td>
-        <form action="{% url astakos.im.views.users_activate user.id %}" method="post">
+        <form action="{% url astakos.im.admin.views.users_activate user.id %}" method="post">{% csrf_token %}
         <input type="hidden" name="page" value="{{ page }}">
         <button type="submit" class="btn primary">Activate</button>
         </form>

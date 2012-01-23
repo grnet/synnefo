@@ -34,38 +34,42 @@
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.conf import settings
 from django.template.loader import render_to_string
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from django.contrib.auth import authenticate
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.utils.translation import ugettext as _
 
 from astakos.im.target.util import prepare_response
-from astakos.im.models import User
+from astakos.im.models import AstakosUser
 
 from urllib import unquote
 
 from hashlib import new as newhasher
 
-def login(request):
-    username = request.POST.get('username')
-    password = request.POST.get('password')
+def login(request, on_failure='index.html'):
+    """
+    on_failure: whatever redirect accepts as to
+    """
+    form = AuthenticationForm(data=request.POST)
+    if not form.is_valid():
+        return render_to_response(on_failure,
+                                  {'form':form},
+                                  context_instance=RequestContext(request))
+    # get the user from the cash
+    user = form.user_cache
     
-    if not username:
-        return HttpResponseBadRequest('No user')
-    
-    if not password:
-        return HttpResponseBadRequest('No password')
-    
-    try:
-        user = User.objects.get(uniq=username)
-    except User.DoesNotExist:
-        return HttpResponseBadRequest('No such user')
-    
-    hasher = newhasher('sha256')
-    hasher.update(password)
-    password = hasher.hexdigest()
-    
-    if not password or user.password != password:
-        return HttpResponseBadRequest('Wrong password')
-    
-    if user.state == 'UNVERIFIED':
-        return HttpResponseBadRequest('Unverified account')
+    message = None
+    if not user:
+        message = _('Cannot authenticate account')
+    elif not user.is_active:
+        message = _('Inactive account')
+    if message:
+        messages.add_message(request, message.ERROR, message)
+        return render_to_response(on_failure,
+                                  {'form':form},
+                                  context_instance=RequestContext(request))
     
     next = request.POST.get('next')
     return prepare_response(request, user, next)
@@ -74,54 +78,10 @@ def activate(request):
     token = request.GET.get('auth')
     next = request.GET.get('next')
     try:
-        user = User.objects.get(auth_token=token)
-    except User.DoesNotExist:
+        user = AstakosUser.objects.get(auth_token=token)
+    except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest('No such user')
     
-    user.state = 'ACTIVE'
+    user.is_active = True
     user.save()
     return prepare_response(request, user, next, renew=True)
-
-def reset_password(request):
-    if request.method == 'GET':
-        cookie_value = unquote(request.COOKIES.get('_pithos2_a', ''))
-        if cookie_value and '|' in cookie_value:
-            token = cookie_value.split('|', 1)[1]
-        else:
-            token = request.GET.get('auth')
-        next = request.GET.get('next')
-        username = request.GET.get('username')
-        kwargs = {'auth': token,
-                  'next': next,
-                  'username' : username}
-        if not token:
-            kwargs.update({'status': 'error',
-                           'message': 'Missing token'})
-        html = render_to_string('reset.html', kwargs)
-        return HttpResponse(html)
-    elif request.method == 'POST':
-        token = request.POST.get('auth')
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        next = request.POST.get('next')
-        if not token:
-            status = 'error'
-            message = 'Bad Request: missing token'
-        try:
-            user = User.objects.get(auth_token=token)
-            if username != user.uniq:
-                status = 'error'
-                message = 'Bad Request: username mismatch'
-            else:
-                user.password = password
-                user.status = 'NORMAL'
-                user.save()
-                return prepare_response(request, user, next, renew=True)
-        except User.DoesNotExist:
-            status = 'error'
-            message = 'Bad Request: invalid token'
-            
-        html = render_to_string('reset.html', {
-                'status': status,
-                'message': message})
-        return HttpResponse(html)

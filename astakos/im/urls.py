@@ -32,76 +32,66 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns, include
+from django.conf.urls.defaults import patterns, include, url
+from django.core.urlresolvers import reverse
 
 urlpatterns = patterns('astakos.im.views',
-    (r'^$', 'index'),
-    (r'^login/?$', 'index'),
-    
-    (r'^admin/?$', 'admin'),
-    
-    (r'^admin/users/?$', 'users_list'),
-    (r'^admin/users/(\d+)/?$', 'users_info'),
-    (r'^admin/users/create$', 'users_create'),
-    (r'^admin/users/(\d+)/modify/?$', 'users_modify'),
-    (r'^admin/users/(\d+)/delete/?$', 'users_delete'),
-    (r'^admin/users/export/?$', 'users_export'),
-    (r'^admin/users/pending/?$', 'pending_users'),
-    (r'^admin/users/activate/(\d+)/?$', 'users_activate'),
-    
-    (r'^admin/invitations/?$', 'invitations_list'),
-    (r'^admin/invitations/export/?$', 'invitations_export'),
-    
-    (r'^profile/?$', 'users_profile'),
-    (r'^profile/edit/?$', 'users_edit'),
-    
-    (r'^signup/?$', 'signup'),
-    (r'^register/(\w+)?$', 'register'),
-    #(r'^signup/complete/?$', 'signup_complete'),
-    #(r'^local/create/?$', 'local_create'),
+    url(r'^$', 'index'),
+    url(r'^login/?$', 'index'),
+    url(r'^profile/?$', 'edit_profile'),
+    url(r'^feedback/?$', 'send_feedback'),
+    url(r'^signup/?$', 'signup'),
+    url(r'^admin/', include('astakos.im.admin.urls')),
+)
+
+urlpatterns += patterns('django.contrib.auth.views',
+    url(r'^logout/?$', 'logout'),
+    url(r'^password/?$', 'password_change', {'post_change_redirect':'admin'}),
 )
 
 urlpatterns += patterns('astakos.im.target',
-    (r'^login/dummy/?$', 'dummy.login')
+    url(r'^login/dummy/?$', 'dummy.login')
 )
 
 urlpatterns += patterns('',
-    (r'^static/(?P<path>.*)$', 'django.views.static.serve',
+    url(r'^static/(?P<path>.*)$', 'django.views.static.serve',
                                 {'document_root': settings.PROJECT_PATH + '/im/static'})
 )
 
-
 if 'local' in settings.IM_MODULES:
-    urlpatterns += patterns('astakos.im.views',
-#        (r'^local/create/?$', 'local_create'),
-        (r'^local/reclaim/?$', 'reclaim_password')
-    )
     urlpatterns += patterns('astakos.im.target',
-        (r'^local/?$', 'local.login'),
-        (r'^local/activate/?$', 'local.activate'),
-        (r'^local/reset/?$', 'local.reset_password')
+        url(r'^local/?$', 'local.login'),
+        url(r'^local/activate/?$', 'local.activate'),
+    )
+    urlpatterns += patterns('django.contrib.auth.views',
+        url(r'^local/password_reset/?$', 'password_reset',
+         {'email_template_name':'registration/password_email.txt'}),
+        url(r'^local/password_reset_done/?$', 'password_reset_done'),
+        url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
+         'password_reset_confirm'),
+        url(r'^local/password/reset/complete/$', 'password_reset_complete')
     )
 
 if settings.INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
-        (r'^invite/?$', 'invite'),
+        url(r'^invite/?$', 'invite'),
     )
     urlpatterns += patterns('astakos.im.target',
-        (r'^login/invitation/?$', 'invitation.login')
+        url(r'^login/invitation/?$', 'invitation.login')
     )
 
 if 'shibboleth' in settings.IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-        (r'^login/shibboleth/?$', 'shibboleth.login')
+        url(r'^login/shibboleth/?$', 'shibboleth.login')
     )
 
 if 'twitter' in settings.IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-        (r'^login/twitter/?$', 'twitter.login'),
-        (r'^login/twitter/authenticated/?$', 'twitter.authenticated')
+        url(r'^login/twitter/?$', 'twitter.login'),
+        url(r'^login/twitter/authenticated/?$', 'twitter.authenticated')
     )
 
 urlpatterns += patterns('astakos.im.api',
-    (r'^authenticate/?$', 'authenticate')
+    url(r'^authenticate/?$', 'authenticate')
 )
     

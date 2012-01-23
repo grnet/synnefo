@@ -33,118 +33,165 @@
 
 from django import forms
 from django.utils.translation import ugettext as _
+from django.contrib.auth.forms import UserCreationForm
 from django.conf import settings
+from hashlib import new as newhasher
 
-from astakos.im.models import User
+from astakos.im.models import AstakosUser
+from astakos.im.util import get_or_create_user
 
-openid_providers = (
-('Google','https://www.google.com/accounts/o8/id'),
-('Yahoo', 'http://yahoo.com/'),
-('AOL','http://openid.aol.com/%s/'),
-('OpenID', None),
-('MyOpenID','http://%s.myopenid.com/'),
-('LiveJournal', 'http://%s.livejournal.com/'),
-('Flickr', 'http://flickr.com/%s/'),
-('Technorati', 'http://technorati.com/people/technorati/%s/'),
-('Wordpress', 'http://%s.wordpress.com/'),
-('Blogger', 'http://%s.blogspot.com/'),
-('Verisign', 'http://%s.pip.verisignlabs.com/'),
-('Vidoop', 'http://%s.myvidoop.com/'),
-('ClaimID','http://claimid.com/%s')    
-)
+import logging
 
-class RegisterForm(forms.Form):
-    uniq = forms.CharField(widget=forms.widgets.TextInput())
-    provider = forms.CharField(widget=forms.TextInput(),
-                                label=u'Identity Provider')
-    email = forms.EmailField(widget=forms.TextInput(),
-                             label=_('Email address'))
-    realname = forms.CharField(widget=forms.TextInput(),
-                                label=u'Real Name')
-    
-    def __init__(self, *args, **kwargs):
-        super(forms.Form, self).__init__(*args, **kwargs)
-        
-        #set readonly form fields
-        self.fields['provider'].widget.attrs['readonly'] = True
-    
-    def clean_uniq(self):
-        """
-        Validate that the uniq is alphanumeric and is not already
-        in use.
-        
-        """
+class UniqueUserEmailField(forms.EmailField):
+    """
+    An EmailField which only is valid if no User has that email.
+    """
+    def validate(self, value):
+        super(forms.EmailField, self).validate(value)
         try:
-            user = User.objects.get(uniq__iexact=self.cleaned_data['uniq'])
-        except User.DoesNotExist:
-            return self.cleaned_data['uniq']
-        raise forms.ValidationError(_("A user with that uniq already exists."))
+            AstakosUser.objects.get(email = value)
+            raise forms.ValidationError("Email already exists")
+        except AstakosUser.MultipleObjectsReturned:
+            raise forms.ValidationError("Email already exists")
+        except AstakosUser.DoesNotExist:
+            pass
 
-class ShibbolethRegisterForm(RegisterForm):
-    pass
-
-class TwitterRegisterForm(RegisterForm):
-    pass
-
-class OpenidRegisterForm(RegisterForm):
-    openidurl = forms.ChoiceField(widget=forms.Select,
-                                  choices=((url, l) for l, url in openid_providers))
-
-class LocalRegisterForm(RegisterForm):
-    """ local signup form"""
-    password = forms.CharField(widget=forms.PasswordInput(render_value=False),
-                                label=_('Password'))
-    password2 = forms.CharField(widget=forms.PasswordInput(render_value=False),
-                                label=_('Confirm Password'))
+class ExtendedUserCreationForm(UserCreationForm):
+    """
+    Extends the built in UserCreationForm in several ways:
+    
+    * Adds an email field, which uses the custom UniqueUserEmailField.
+    * The username field isn't visible and it is assigned the email value.
+    * first_name and last_name fields are added.
+    """
+    
+    username = forms.CharField(required = False, max_length = 30)
+    email = UniqueUserEmailField(required = True, label = 'Email address')
+    first_name = forms.CharField(required = False, max_length = 30)
+    last_name = forms.CharField(required = False, max_length = 30)
+    
+    class Meta:
+        model = AstakosUser
+        fields = ("username",)
     
     def __init__(self, *args, **kwargs):
-        super(LocalRegisterForm, self).__init__(*args, **kwargs)
+        """
+        Changes the order of fields, and removes the username field.
+        """
+        super(ExtendedUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email', 'first_name', 'last_name',
+                                'password1', 'password2']
     
-    def clean_uniq(self):
+    def clean(self, *args, **kwargs):
         """
-        Validate that the uniq is alphanumeric and is not already
-        in use.
+        Normal cleanup + username generation.
+        """
+        cleaned_data = super(ExtendedUserCreationForm, self).clean(*args, **kwargs)
+        if cleaned_data.has_key('email'):
+            cleaned_data['username'] = cleaned_data['email']
+        return cleaned_data
         
+    def save(self, commit=True):
         """
-        try:
-            user = User.objects.get(uniq__iexact=self.cleaned_data['uniq'])
-        except User.DoesNotExist:
-            return self.cleaned_data['uniq']
-        raise forms.ValidationError(_("A user with that uniq already exists."))
-    
-    def clean(self):
+        Saves the email, first_name and last_name properties, after the normal
+        save behavior is complete.
         """
-        Verifiy that the values entered into the two password fields
-        match. Note that an error here will end up in
-        ``non_field_errors()`` because it doesn't apply to a single
-        field.
-        
-        """
-        if 'password' in self.cleaned_data and 'password2' in self.cleaned_data:
-            if self.cleaned_data['password'] != self.cleaned_data['password2']:
-                raise forms.ValidationError(_("The two password fields didn't match."))
-        return self.cleaned_data
+        user = super(ExtendedUserCreationForm, self).save(commit=False)
+        user.renew_token()
+        user.save()
+        logging.info('Created user %s', user)
+        return user
 
-class InvitedRegisterForm(RegisterForm):
-    inviter = forms.CharField(widget=forms.TextInput(),
-                                label=_('Inviter Real Name'))
+class InvitedExtendedUserCreationForm(UserCreationForm):
+    """
+    Extends the built in UserCreationForm in several ways:
+    
+    * Adds an email field, which uses the custom UniqueUserEmailField.
+    * The username field isn't visible and it is assigned the email value.
+    * first_name and last_name fields are added.
+    """
+    
+    username = forms.CharField(required = False, max_length = 30)
+    email = UniqueUserEmailField(required = True, label = 'Email address')
+    first_name = forms.CharField(required = False, max_length = 30)
+    last_name = forms.CharField(required = False, max_length = 30)
+    inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
+    
+    class Meta:
+        model = AstakosUser
+        fields = ("username",)
     
     def __init__(self, *args, **kwargs):
-        super(RegisterForm, self).__init__(*args, **kwargs)
-        
+        """
+        Changes the order of fields, and removes the username field.
+        """
+        super(InvitedExtendedUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email', 'inviter', 'first_name', 'last_name',
+                                'password1', 'password2']
         #set readonly form fields
-        self.fields['uniq'].widget.attrs['readonly'] = True
         self.fields['inviter'].widget.attrs['readonly'] = True
-        self.fields['provider'].widget.attrs['provider'] = True
+        self.fields['email'].widget.attrs['readonly'] = True
+        self.fields['username'].widget.attrs['readonly'] = True
+    
+    def clean(self, *args, **kwargs):
+        """
+        Normal cleanup + username generation.
+        """
+        cleaned_data = super(UserCreationForm, self).clean(*args, **kwargs)
+        if cleaned_data.has_key('email'):
+            cleaned_data['username'] = cleaned_data['email']
+        return cleaned_data
+        
+    def save(self, commit=True):
+        """
+        Saves the email, first_name and last_name properties, after the normal
+        save behavior is complete.
+        """
+        user = super(InvitedExtendedUserCreationForm, self).save(commit=False)
+        user.renew_token()
+        user.save()
+        logging.info('Created user %s', user)
+        return user
 
-class InvitedLocalRegisterForm(LocalRegisterForm, InvitedRegisterForm):
-    pass
+class ProfileForm(forms.ModelForm):
+    """
+    Subclass of ``ModelForm`` for permiting user to edit his/her profile.
+    Most of the fields are readonly since the user is not allowed to change them.
+    
+    The class defines a save method which sets ``is_verified`` to True so as the user
+    during the next login will not to be redirected to profile page.
+    """
+    class Meta:
+        model = AstakosUser
+        exclude = ('groups', 'user_permissions')
+    
+    def __init__(self, *args, **kwargs):
+        super(ProfileForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        ro_fields = ('username','date_joined', 'updated', 'auth_token',
+                     'auth_token_created', 'auth_token_expires', 'invitations',
+                     'level', 'last_login', 'email', 'is_active', 'is_superuser',
+                     'is_staff')
+        if instance and instance.id:
+            for field in ro_fields:
+                if isinstance(self.fields[field].widget, forms.CheckboxInput):
+                    self.fields[field].widget.attrs['disabled'] = True
+                self.fields[field].widget.attrs['readonly'] = True
+    
+    def save(self, commit=True):
+        user = super(ProfileForm, self).save(commit=False)
+        user.is_verified = True
+        if commit:
+            user.save()
+        return user
 
-class InvitedOpenidRegisterForm(OpenidRegisterForm, InvitedRegisterForm):
-    pass
 
-class InvitedTwitterRegisterForm(TwitterRegisterForm, InvitedRegisterForm):
-    pass
-
-class InvitedShibbolethRegisterForm(ShibbolethRegisterForm, InvitedRegisterForm):
-    pass
+class FeedbackForm(forms.Form):
+    """
+    Form for writing feedback.
+    """
+    feedback_msg = forms.CharField(widget=forms.Textarea(),
+                                label=u'Message', required=False)
+    feedback_data = forms.CharField(widget=forms.Textarea(),
+                                label=u'Data', required=False)
+    

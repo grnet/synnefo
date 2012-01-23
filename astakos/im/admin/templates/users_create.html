@@ -2,18 +2,32 @@
 
 {% block body %}
 
-<form action="{% url astakos.im.views.users_create %}" method="post">
+<form action="{% url astakos.im.admin.views.users_create %}" method="post">{% csrf_token %}
   <div class="clearfix">
-    <label for="user-uniq">Uniq</label>
+    <label for="user-username">Username</label>
     <div class="input">
-      <input class="span4" id="user-uniq" name="uniq" type="text" />
+      <input class="span4" id="user-username" name="username" type="text" />
+    </div>
+  </div>
+  
+  <div class="clearfix">
+    <label for="user-email">Email</label>
+    <div class="input">
+      <input class="span4" id="user-email" name="email" type="text" />
     </div>
   </div>
 
   <div class="clearfix">
-    <label for="user-realname">Real Name</label>
+    <label for="user-first-name">First Name</label>
     <div class="input">
-      <input class="span4" id="user-realname" name="realname" type="text" />
+      <input class="span4" id="user-first-name" name="first_name" type="text" />
+    </div>
+  </div>
+  
+  <div class="clearfix">
+    <label for="user-last-name">Last Name</label>
+    <div class="input">
+      <input class="span4" id="user-last-name" name="last_name" type="text" />
     </div>
   </div>
 

@@ -19,14 +19,15 @@ override_dh_auto_install:
 	mkdir -p $(static_dir)admin;
 	-mv $(admin_static_dir) $(static_dir)admin;
 
-    mkdir -p debian/$(package)/var/log/synnefo
-    touch debian/$(package)/var/log/synnefo/dispatcher.log
+	mkdir -p debian/$(package)/var/log/synnefo
+	touch debian/$(package)/var/log/synnefo/dispatcher.log
 
 	mkdir -p debian/$(package)/etc/synnefo
 	for f in api aai backend queues helpdesk invitations plankton ui userdata; do \
 		cp $(default_settings_dir)$$f.py \
 			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
 	done;
+	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;
 
 	for py in $(shell pyversions -vr debian/control); do \
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \

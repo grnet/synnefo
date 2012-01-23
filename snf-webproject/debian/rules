@@ -19,3 +19,4 @@ override_dh_auto_install:
 		cp $(default_settings_dir)$$f.py \
 			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
 	done;
+	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;

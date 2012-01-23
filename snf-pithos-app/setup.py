@@ -66,10 +66,9 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     'snf-common',
-    'snf-webproject',
     'snf-pithos-backend',
     'Django>=1.2, <1.3',
-    'south>=0.7.3'
+    'south>=0.7, <=0.7.3'
 ]
 
 EXTRAS_REQUIRES = {

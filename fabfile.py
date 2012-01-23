@@ -44,7 +44,8 @@ env.develop = False
 env.autoremove = True
 env.packages = ['snf-pithos-lib', 'snf-pithos-backend', 'snf-pithos-app',
                 'snf-pithos-tools']
-env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend']
+env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
+'snf-pithos-tools', 'snf-pithos-app']
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'

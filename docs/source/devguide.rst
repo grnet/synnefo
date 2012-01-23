@@ -19,19 +19,22 @@ The present document is meant to be read alongside the OOS API documentation. Th
 
 Whatever marked as to be determined (**TBD**), should not be considered by implementors.
 
+More info about Pithos can be found here: https://code.grnet.gr/projects/pithos
+
 Document Revisions
 ^^^^^^^^^^^^^^^^^^
 
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Dec 22, 2011)         Update allowed versioning values.
+0.8 (Jan 19, 2012)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
 \                          Note Content-Type issue when using the internal django web server.
 \                          Add object UUID field.
 \                          Always reply with the MD5 in the ETag.
+\                          Note that ``/login`` will only work if an external authentication system is defined.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -77,13 +80,11 @@ Revision                   Description
 Pithos Users and Authentication
 -------------------------------
 
-Pithos keeps separate databases for users and objects.
+In Pithos, each user is uniquely identified by a token. All API requests require a token and each token is internally resolved to an account string. The API uses the account string to identify the user's own files, thus whether a request is local or cross-account.
 
-Each user is uniquely identified by the ``Uniq`` field. This should be used as the user's account in the API. The API uses the ``Token`` field to authenticate a user, thus allowing cross-account requests. All API requests require a token.
+Pithos does not keep a user database. For development and testing purposes, user identifiers and their corresponding tokens can be defined in the settings file. However, Pithos is designed with an external authentication service in mind. This service must handle the details of validating user credentials and communicate with Pithos via a middleware software component that, given a token, fills in the internal request account variable.
 
-User entries can be modified/added via the management interface available at ``https://hostname/admin``.
-
-Pithos is also compatible with Shibboleth (http://shibboleth.internet2.edu/). The connection between Shibboleth and Pithos is done by ``https://hostname/login``. An application that wishes to connect to Pithos, but does not have a token, should redirect the user to the login URI.
+Client software using Pithos, if not already knowing a user's identifier and token, should forward to the ``/login`` URI. The Pithos server, depending on its configuration will redirect to the appropriate login page.
 
 The login URI accepts the following parameters:
 
@@ -94,9 +95,9 @@ next                    The URI to redirect to when the process is finished
 renew                   Force token renewal (no value parameter)
 ======================  =========================
 
-The login process starts by redirecting the user to an external URI (controlled by Shibboleth), where the actual authentication credentials are entered. Then, the user is redirected back to the login URI from Shibboleth, with various identification information in the request headers.
+When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding ``user`` and ``token`` parameters, which contain the account and token fields respectively.
 
-If the user does not exist in the database, Pithos adds the user and creates a random token. If the user exists, the token has not expired and ``renew`` is not set, the existing token is reused. Finally, the login URI redirects to the URI provided with ``next``, adding the ``user`` and ``token`` parameters, which contain the ``Uniq`` and ``Token`` fields respectively. 
+A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
 
 The Pithos API
 --------------

@@ -31,7 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-class SecureMiddleware(object):
-    def process_request(self, request):
-        if 'HTTP_X_FORWARDED_PROTOCOL' in request.META:
-            request.is_secure = lambda: request.META['HTTP_X_FORWARDED_PROTOCOL'] == 'https'
+import logging
+
+from django.http import HttpResponseNotFound, HttpResponseRedirect
+from django.utils.http import urlencode
+from django.conf import settings
+
+
+logger = logging.getLogger(__name__)
+
+
+def redirect_to_login_service(request):
+    users = settings.AUTHENTICATION_USERS
+    host = settings.AUTHENTICATION_HOST
+    if users is not None or host is None:
+    	return HttpResponseNotFound()
+    
+    if request.is_secure():
+    	proto = 'https://'
+    else:
+    	proto = 'http://'
+	next = request.GET.get('next', '')
+	params = {'next': next}
+	renew = 'renew' in request.GET
+	if renew:
+		params['renew'] = True
+    uri = proto + host + '/login?' + urlencode(params)
+    return HttpResponseRedirect(uri)

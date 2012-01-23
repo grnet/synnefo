@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,8 +32,8 @@
 # or implied, of GRNET S.A.
 
 from dbworker import DBWorker
-from sqlalchemy import Table, Column, String, Integer, MetaData
-from sqlalchemy.sql import select
+from sqlalchemy import Table, Column, String, Integer, Boolean, MetaData
+from sqlalchemy.sql import and_, select
 from sqlalchemy.schema import Index
 
 
@@ -45,30 +45,39 @@ class Public(DBWorker):
         metadata = MetaData()
         columns=[]
         columns.append(Column('public_id', Integer, primary_key=True))
-        columns.append(Column('path', String(2048)))
+        columns.append(Column('path', String(2048), nullable=False))
+        columns.append(Column('active', Boolean, nullable=False, default=True))
         self.public = Table('public', metadata, *columns, mysql_engine='InnoDB', sqlite_autoincrement=True)
         # place an index on path
         Index('idx_public_path', self.public.c.path, unique=True)
         metadata.create_all(self.engine)
     
     def public_set(self, path):
-        s = self.public.select()
+        s = select([self.public.c.public_id])
         s = s.where(self.public.c.path == path)
         r = self.conn.execute(s)
-        public = r.fetchall()
+        row = r.fetchone()
         r.close()
-        if len(public) == 0:
+        if row:
+            s = self.public.update().where(self.public.c.public_id == row[0])
+            s = s.values(active=True)
+        else:
             s = self.public.insert()
-            r = self.conn.execute(s, path = path)
-            r.close()
+            s = s.values(path=path, active=True)
+        r = self.conn.execute(s)
+        r.close()
     
     def public_unset(self, path):
-        s = self.public.delete().where(self.public.c.path == path)
+        s = self.public.update()
+        s = s.where(self.public.c.path == path)
+        s = s.values(active=False)
         r = self.conn.execute(s)
         r.close()
     
     def public_get(self, path):
-        s = select([self.public.c.public_id], self.public.c.path == path)
+        s = select([self.public.c.public_id])
+        s = s.where(and_(self.public.c.path == path,
+        				 self.public.c.active == True))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -77,7 +86,9 @@ class Public(DBWorker):
         return None
     
     def public_path(self, public):
-        s = select([self.public.c.path], self.public.c.public_id == public)
+        s = select([self.public.c.path])
+        s = s.where(and_(self.public.c.public_id == public,
+        				 self.public.c.active == True))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()

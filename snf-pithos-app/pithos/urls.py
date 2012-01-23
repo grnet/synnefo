@@ -1,5 +1,5 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
-#
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
@@ -35,8 +35,9 @@ from django.conf.urls.defaults import include, patterns
 
 
 urlpatterns = patterns('',
-    (r'v1(?:$|/)', include('pithos.api.urls')),
-    (r'v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
-    (r'ui', include('pithos.ui.urls'))
+    (r'^v1(?:$|/)', include('pithos.api.urls')),
+    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
+    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
+    (r'^login/?$', 'pithos.api.login.redirect_to_login_service'),
+    (r'^ui', include('pithos.ui.urls'))
 )

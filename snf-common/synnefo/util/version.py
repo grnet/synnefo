@@ -1,5 +1,6 @@
 import pkg_resources
 import os
+import pprint
 
 def get_dist_from_module(modname):
     pkgroot = pkg_resources.get_provider(modname).egg_root
@@ -76,7 +77,9 @@ def update_version(module, name='version', root="."):
     content = """
 __version__ = "%(version)s"
 __version_info__ = __version__.split(".")
-    """ % dict(version=vcs_version())
+__version_vcs_info__ = %(vcs_info)s
+    """ % dict(version=vcs_version(),
+            vcs_info=pprint.PrettyPrinter().pformat(vcs_info()))
 
     module_file = file(module_filename, "w+")
     module_file.write(content)

@@ -57,7 +57,7 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.decorators import login_required
-from django.contrib.sites.models import get_current_site
+from django.contrib.sites.models import Site
 from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth.forms import UserCreationForm
@@ -113,7 +113,7 @@ def _generate_invitation_code():
 
 def _send_invitation(request, baseurl, inv):
     subject = _('Invitation to Astakos')
-    site = get_current_site(request)
+    site = Site.objects.get_current()
     url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(site.domain))
     message = render_to_string('invitation.txt', {
                 'invitation': inv,

@@ -9,7 +9,7 @@ Homepage: https://code.grnet.gr/projects/synnefo
 
 Package: snf-webproject
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django (>= 1.2.4), python-django-south (>= 0.7)
+Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package

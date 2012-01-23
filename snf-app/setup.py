@@ -77,7 +77,7 @@ INSTALL_REQUIRES = [
     'python-daemon==1.5.5',
     'snf-common>=0.7.3',
     'vncauthproxy>=1.1',
-    'south>=0.7.3'
+    'south>=0.7, <=0.7.3'
 ]
 
 EXTRAS_REQUIRES = {

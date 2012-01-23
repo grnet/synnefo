@@ -121,6 +121,7 @@ class Node(DBWorker):
         path_length = 2048
         columns.append(Column('path', String(path_length), default='', nullable=False))
         self.nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
+        Index('idx_nodes_path', self.nodes.c.path, unique=True)
         
         #create policy table
         columns=[]
@@ -178,16 +179,6 @@ class Node(DBWorker):
         self.attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
         
         metadata.create_all(self.engine)
-        
-        # the following code creates an index of specific length
-        # this can be accompliced in sqlalchemy >= 0.7.3
-        # providing mysql_length option during index creation
-        insp = Inspector.from_engine(self.engine)
-        indexes = [elem['name'] for elem in insp.get_indexes('nodes')]
-        if 'idx_nodes_path' not in indexes:
-            explicit_length = '(%s)' %path_length if self.engine.name == 'mysql' else ''
-            s = text('CREATE UNIQUE INDEX idx_nodes_path ON nodes (path%s)' %explicit_length)
-            self.conn.execute(s).close()
         
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))

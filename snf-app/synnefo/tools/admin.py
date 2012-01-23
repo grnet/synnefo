@@ -55,15 +55,6 @@ from synnefo.plankton.backend import ImageBackend
 from synnefo.util.dictconfig import dictConfig
 
 
-def get_user(uid):
-    try:
-        uid = int(uid)
-        return models.SynnefoUser.objects.get(id=uid)
-    except ValueError:
-        return None
-    except models.SynnefoUser.DoesNotExist:
-        return None
-
 def print_dict(d, exclude=()):
     if not d:
         return
@@ -149,113 +140,9 @@ class ListServers(Command):
             if not self.show_deleted:
                 servers = servers.exclude(deleted=True)
             if self.uid:
-                user = get_user(self.uid)
-                if user:
-                    servers = servers.filter(owner=user)
-                else:
-                    print 'Unknown user id'
-                    return
+                servers = servers.filter(userid=self.uid)
         
         print_items(servers, self.detail)
-
-
-# User commands
-
-class CreateUser(Command):
-    group = 'user'
-    name = 'create'
-    syntax = '<username> <email>'
-    description = 'create a user'
-    
-    def add_options(self, parser):
-        parser.add_option('--realname', dest='realname', metavar='NAME',
-                            help='set real name of user')
-        parser.add_option('--type', dest='type', metavar='TYPE',
-                            help='set user type')
-    
-    def main(self, username, email):
-        username = username.decode('utf8')
-        realname = self.realname or username
-        type = self.type or 'USER'
-        types = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
-        if type not in types:
-            valid = ', '.join(types)
-            print 'Invalid type. Must be one of:', valid
-            return
-        
-        user = users._register_user(realname, username, email, type)
-        print_item(user)
-
-
-class ListUsers(Command):
-    group = 'user'
-    name = 'list'
-    syntax = '[user id]'
-    description = 'list users'
-    
-    def add_options(self, parser):
-        parser.add_option('-a', action='store_true', dest='show_deleted',
-                        default=False, help='also list deleted users')
-        parser.add_option('-l', action='store_true', dest='detail',
-                        default=False, help='show detailed output')
-    
-    def main(self, user_id=None):
-        if user_id:
-            users = [models.SynnefoUser.objects.get(id=user_id)]
-        else:
-            users = models.SynnefoUser.objects.order_by('id')
-            if not self.show_deleted:
-                users = users.exclude(state='DELETED')
-        print_items(users, self.detail, keys=('id', 'name', 'uniq'))
-
-
-class ModifyUser(Command):
-    group = 'user'
-    name = 'modify'
-    syntax = '<user id>'
-    description = 'modify a user'
-    
-    def add_options(self, parser):
-        types = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_TYPE)
-        states = ', '.join(x[0] for x in models.SynnefoUser.ACCOUNT_STATE)
-        
-        parser.add_option('--realname', dest='realname', metavar='NAME',
-                            help='set real name of user')
-        parser.add_option('--type', dest='type', metavar='TYPE',
-                            help='set user type (%s)' % types)
-        parser.add_option('--state', dest='state', metavar='STATE',
-                            help='set user state (%s)' % states)
-        parser.add_option('--uniq', dest='uniq', metavar='ID',
-                            help='set external unique ID')
-        parser.add_option('--username', dest='username', metavar='NAME',
-                            help='set username')
-    
-    def main(self, user_id):
-        user = get_user(user_id)
-        
-        if self.realname:
-            user.realname = self.realname
-        if self.type:
-            allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
-            if self.type not in allowed:
-                valid = ', '.join(allowed)
-                print 'Invalid type. Must be one of:', valid
-                return
-            user.type = self.type
-        if self.state:
-            allowed = [x[0] for x in models.SynnefoUser.ACCOUNT_STATE]
-            if self.state not in allowed:
-                valid = ', '.join(allowed)
-                print 'Invalid state. Must be one of:', valid
-                return
-            user.state = self.state
-        if self.uniq:
-            user.uniq = self.uniq
-        if self.username:
-            user.name = self.username
-        
-        user.save()
-        print_item(user)
 
 
 # Image commands
@@ -331,17 +218,10 @@ class RegisterImage(Command):
             print 'Invalid format. Must be one of:', valid
             return
         
-        user = None
-        if self.uid:
-            user = get_user(self.uid)
-            if not user:
-                print 'Unknown user id'
-                return
-        
         image = models.Image.objects.create(
             name=name,
             state='ACTIVE',
-            owner=user,
+            owner=self.uid,
             backend_id=backend_id,
             format=format,
             public=self.public)
@@ -545,8 +425,8 @@ class ModifyImage(Command):
                 print 'Invalid state. Must be one of:', valid
                 return
             image.state = self.state
-        if self.uid:
-            image.owner = get_user(self.uid)
+        
+        image.userid = self.uid
         
         image.save()
         print_item(image)
@@ -723,7 +603,6 @@ class ShowStats(Command):
 
     def main(self):
         stats = {}
-        stats['Users'] = models.SynnefoUser.objects.count()
         stats['Images'] = models.Image.objects.exclude(state='DELETED').count()
         stats['Flavors'] = models.Flavor.objects.count()
         stats['VMs'] = models.VirtualMachine.objects.filter(deleted=False).count()

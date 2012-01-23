@@ -40,7 +40,6 @@ from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
         HttpResponseServerError)
 
-from synnefo.db.models import SynnefoUser
 from synnefo.plankton.backend import ImageBackend, BackendException
 from synnefo.util.log import getLogger
 
@@ -49,16 +48,7 @@ log = getLogger('synnefo.plankton')
 
 
 def get_user_from_token(token):
-    try:
-        user = SynnefoUser.objects.get(auth_token=token)
-    except SynnefoUser.DoesNotExist:
-        return None
-    
-    expires = user.auth_token_expires
-    if not expires or expires < datetime.datetime.now():
-        return None
-    
-    return user
+    return None
 
 
 def get_request_user(request):

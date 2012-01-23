@@ -177,7 +177,7 @@ def get_image(image_id, owner):
     try:
         image_id = int(image_id)
         image = Image.objects.get(id=image_id)
-        if not image.public and image.owner != owner:
+        if not image.public and image.userid != owner:
             raise ItemNotFound('Image not found.')
         return image
     except ValueError:

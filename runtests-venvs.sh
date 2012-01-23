@@ -59,7 +59,7 @@ cd ../env
 rm bin/vncauthproxy.py
 echo "running django tests..." >&2
 export SYNNEFO_SETTINGS_DIR=/etc/lala
-snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
+snf-manage test admin api db logic userdata --settings=synnefo.settings.test
 cd ..
 deactivate
 

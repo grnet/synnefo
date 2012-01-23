@@ -77,7 +77,6 @@ def get_filters(request, session_key, all_filters, default=None):
 @requires_admin
 def index(request):
     stats = {}
-    stats['users'] = models.SynnefoUser.objects.count()
     stats['images'] = models.Image.objects.exclude(state='DELETED').count()
     stats['flavors'] = models.Flavor.objects.count()
     stats['vms'] = models.VirtualMachine.objects.filter(deleted=False).count()
@@ -187,8 +186,7 @@ def images_register(request):
         image = models.Image()
         image.state = 'ACTIVE'
         image.name = request.POST.get('name')
-        owner_id = request.POST.get('owner') or None
-        image.owner = owner_id and models.SynnefoUser.objects.get(id=owner_id)
+        image.userid = request.POST.get('owner')
         image.backend_id = request.POST.get('backend')
         image.format = request.POST.get('format')
         image.public = True if request.POST.get('public') else False
@@ -221,9 +219,8 @@ def images_modify(request, image_id):
     image = models.Image.objects.get(id=image_id)
     image.name = request.POST.get('name')
     image.state = request.POST.get('state')
-    owner_id = request.POST.get('owner') or None
-    image.owner = owner_id and models.SynnefoUser.objects.get(id=owner_id)
-    vm_id = request.POST.get('sourcevm') or None
+    image.userid = request.POST.get('owner')
+    vm_id = request.POST.get('sourcevm')
     image.sourcevm = vm_id and models.VirtualMachine.objects.get(id=vm_id)
     image.backend_id = request.POST.get('backend')
     image.format = request.POST.get('format')
@@ -258,53 +255,3 @@ def servers_list(request):
                     all_states=sorted(all_states),
                     filters=filters)
     return HttpResponse(html)
-
-
-@requires_admin
-def users_list(request):
-    all_states = set(x[0] for x in models.SynnefoUser.ACCOUNT_STATE)
-    default = all_states - set(['DELETED'])
-    filters = get_filters(request, 'users_filters', all_states, default)
-    
-    users = models.SynnefoUser.objects.all()
-    for state in all_states - filters:
-        users = users.exclude(state=state)
-    
-    html = render('users_list.html', 'users',
-                    users=users.order_by('id'),
-                    all_states=sorted(all_states),
-                    filters=filters)
-    return HttpResponse(html)
-
-
-@requires_admin
-def users_info(request, user_id):
-    user = models.SynnefoUser.objects.get(id=user_id)
-    types = [x[0] for x in models.SynnefoUser.ACCOUNT_TYPE]
-    if not user.type:
-        types = [''] + types
-    states = [x[0] for x in models.SynnefoUser.ACCOUNT_STATE]
-    html = render('users_info.html', 'users',
-                    user=user, types=types, states=states)
-    return HttpResponse(html)
-
-
-@requires_admin
-def users_modify(request, user_id):
-    user = models.SynnefoUser.objects.get(id=user_id)
-    user.name = request.POST.get('name')
-    user.realname = request.POST.get('realname')
-    user.uniq = request.POST.get('uniq')
-    user.type = request.POST.get('type')
-    user.state = request.POST.get('state')
-    user.save()
-    log.info('User %s modified User %s', request.user.name, user.name)
-    return redirect(users_info, user.id)
-
-
-@requires_admin
-def users_delete(request, user_id):
-    user = models.SynnefoUser.objects.get(id=user_id)
-    user.delete()
-    log.info('User %s deleted User %s', request.user.name, user.name)
-    return redirect(users_list)

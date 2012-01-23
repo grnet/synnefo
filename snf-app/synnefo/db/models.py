@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -33,46 +33,6 @@ from django.conf import settings
 from django.db import models
 
 
-class SynnefoUser(models.Model):
-    #TODO: Amend this when we have groups
-    ACCOUNT_TYPE = (
-        ('STUDENT', 'Student'),
-        ('PROFESSOR', 'Professor'),
-        ('USER', 'Generic User'),
-        ('HELPDESK', 'Helpdesk User'),
-        ('ADMIN', 'Admin User')
-    )
-    
-    ACCOUNT_STATE = (
-        ('ACTIVE', 'Active'),
-        ('DELETED', 'Deleted'),
-        ('SUSPENDED', 'Suspended')
-    )
-    
-    name = models.CharField('Synnefo Username', max_length=255, default='')
-    realname = models.CharField('Real Name', max_length=255, default='')
-    uniq = models.CharField('External Unique ID', max_length=255,null=True)
-    auth_token = models.CharField('Authentication Token', max_length=32,
-            null=True)
-    auth_token_created = models.DateTimeField('Time of auth token creation',
-            auto_now_add=True, null=True)
-    auth_token_expires = models.DateTimeField('Time of auth token expiration',
-            auto_now_add=True, null=True)
-    tmp_auth_token = models.CharField('Temporary authentication token',
-            max_length=32, null=True)
-    tmp_auth_token_expires = models.DateTimeField('Time of temporary auth '
-            'token expiration', auto_now_add=True, null=True)
-    type = models.CharField('Account type', choices=ACCOUNT_TYPE,
-            max_length=30)
-    state = models.CharField('Account state', choices=ACCOUNT_STATE,
-            max_length=30, default='ACTIVE')
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    
-    def __unicode__(self):
-        return self.name
-
-
 class Image(models.Model):
     IMAGE_STATES = (
         ('ACTIVE', 'Active'),
@@ -92,8 +52,9 @@ class Image(models.Model):
 
     name = models.CharField('Image name', max_length=255)
     state = models.CharField('Current Image State', choices=IMAGE_STATES,
-            max_length=30)
-    owner = models.ForeignKey(SynnefoUser, blank=True, null=True)
+                             max_length=30)
+    userid = models.CharField('User ID of the owner', max_length=100, 
+                              null=True)
     created = models.DateTimeField('Time of creation', auto_now_add=True)
     updated = models.DateTimeField('Time of last update', auto_now=True)
     sourcevm = models.ForeignKey('VirtualMachine', null=True)
@@ -226,7 +187,7 @@ class VirtualMachine(models.Model):
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
-    owner = models.ForeignKey(SynnefoUser)
+    userid = models.CharField('User ID of the owner', max_length=100)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     charged = models.DateTimeField(default=datetime.datetime.now())
@@ -235,7 +196,7 @@ class VirtualMachine(models.Model):
     flavor = models.ForeignKey(Flavor)
     deleted = models.BooleanField('Deleted', default=False)
     suspended = models.BooleanField('Administratively Suspended',
-            default=False)
+                                    default=False)
 
     # VM State 
     # The following fields are volatile data, in the sense
@@ -324,21 +285,6 @@ class VirtualMachineMetadata(models.Model):
         return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
-class Disk(models.Model):
-    name = models.CharField(max_length=255)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    size = models.PositiveIntegerField('Disk size in GBs')
-    vm = models.ForeignKey(VirtualMachine, blank=True, null=True)
-    owner = models.ForeignKey(SynnefoUser, blank=True, null=True)  
-
-    class Meta:
-        verbose_name = u'Disk instance'
-
-    def __unicode__(self):
-        return self.name
-
-
 class Network(models.Model):
     NETWORK_STATES = (
         ('ACTIVE', 'Active'),
@@ -348,12 +294,13 @@ class Network(models.Model):
     name = models.CharField(max_length=255)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(SynnefoUser, null=True)
+    userid = models.CharField('User ID of the owner', max_length=100,
+                              null=True)
     state = models.CharField(choices=NETWORK_STATES, max_length=30)
     public = models.BooleanField(default=False)
     link = models.ForeignKey('NetworkLink', related_name='+')
     machines = models.ManyToManyField(VirtualMachine,
-            through='NetworkInterface')
+                                      through='NetworkInterface')
     
     def __unicode__(self):
         return self.name
@@ -375,7 +322,7 @@ class NetworkInterface(models.Model):
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
-            max_length=30, null=True)
+                                        max_length=30, null=True)
     
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)

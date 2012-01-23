@@ -247,7 +247,7 @@
         "pk": 1,
         "fields": {
             "name": "Debian Squeeze",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
             "state": "ACTIVE"
@@ -257,7 +257,7 @@
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
-            "owner": 1,
+            "userid": "test",
             "name": "snf-1001",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
@@ -272,7 +272,7 @@
         "model": "db.VirtualMachine",
         "pk": 1002,
         "fields": {
-            "owner": 1,
+            "userid": "test",
             "name": "snf-1002",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -287,7 +287,7 @@
         "model": "db.VirtualMachine",
         "pk": 1003,
         "fields": {
-            "owner": 1,
+            "userid": "test",
             "name": "snf-1003",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -302,7 +302,7 @@
         "model": "db.VirtualMachine",
         "pk": 1004,
         "fields": {
-            "owner": 1,
+            "userid": "test",
             "name": "snf-1004",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -321,7 +321,7 @@
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
             "state": "ACTIVE",
-            "owner" : 1,
+            "userid" : "test",
             "sourcevm": 1001
         }
     }

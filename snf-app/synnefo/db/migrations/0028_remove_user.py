@@ -1,117 +1,28 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     def forwards(self, orm):
+        for image in orm.Image.objects.all():
+            image.userid = str(image.owner.id) if image.owner else ''
+            image.save()
         
-        # Deleting model 'FlavorCost'
-        db.delete_table('db_flavorcost')
-
-        # Deleting model 'Invitations'
-        db.delete_table('db_invitations')
-
-        # Deleting model 'VirtualMachineGroup'
-        db.delete_table('db_virtualmachinegroup')
-
-        # Removing M2M table for field machines on 'VirtualMachineGroup'
-        db.delete_table('db_virtualmachinegroup_machines')
-
-        # Deleting model 'Limit'
-        db.delete_table('db_limit')
-
-        # Deleting model 'Debit'
-        db.delete_table('db_debit')
-
-        # Deleting field 'SynnefoUser.credit'
-        db.delete_column('db_synnefouser', 'credit')
-
-        # Deleting field 'SynnefoUser.max_invitations'
-        db.delete_column('db_synnefouser', 'max_invitations')
-
-
+        for vm in orm.VirtualMachine.objects.all():
+            vm.userid = str(vm.owner.id) if vm.owner else ''
+            vm.save()
+        
+        for network in orm.Network.objects.all():
+            network.userid = str(network.owner.id) if network.owner else ''
+            network.save()
+    
     def backwards(self, orm):
-        
-        # Adding model 'FlavorCost'
-        db.create_table('db_flavorcost', (
-            ('cost_active', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('effective_from', self.gf('django.db.models.fields.DateTimeField')()),
-            ('flavor', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.Flavor'])),
-            ('cost_inactive', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-        ))
-        db.send_create_signal('db', ['FlavorCost'])
-
-        # Adding model 'Invitations'
-        db.create_table('db_invitations', (
-            ('source', self.gf('django.db.models.fields.related.ForeignKey')(related_name='source', to=orm['db.SynnefoUser'])),
-            ('level', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('target', self.gf('django.db.models.fields.related.ForeignKey')(related_name='target', to=orm['db.SynnefoUser'])),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('accepted', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-        ))
-        db.send_create_signal('db', ['Invitations'])
-
-        # Adding model 'VirtualMachineGroup'
-        db.create_table('db_virtualmachinegroup', (
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-        ))
-        db.send_create_signal('db', ['VirtualMachineGroup'])
-
-        # Adding M2M table for field machines on 'VirtualMachineGroup'
-        db.create_table('db_virtualmachinegroup_machines', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('virtualmachinegroup', models.ForeignKey(orm['db.virtualmachinegroup'], null=False)),
-            ('virtualmachine', models.ForeignKey(orm['db.virtualmachine'], null=False))
-        ))
-        db.create_unique('db_virtualmachinegroup_machines', ['virtualmachinegroup_id', 'virtualmachine_id'])
-
-        # Adding model 'Limit'
-        db.create_table('db_limit', (
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('value', self.gf('django.db.models.fields.IntegerField')()),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=30)),
-        ))
-        db.send_create_signal('db', ['Limit'])
-
-        # Adding model 'Debit'
-        db.create_table('db_debit', (
-            ('description', self.gf('django.db.models.fields.TextField')()),
-            ('when', self.gf('django.db.models.fields.DateTimeField')()),
-            ('vm', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.VirtualMachine'])),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-        ))
-        db.send_create_signal('db', ['Debit'])
-
-        # Adding field 'SynnefoUser.credit'
-        db.add_column('db_synnefouser', 'credit', self.gf('django.db.models.fields.IntegerField')(default=0), keep_default=False)
-
-        # Adding field 'SynnefoUser.max_invitations'
-        db.add_column('db_synnefouser', 'max_invitations', self.gf('django.db.models.fields.IntegerField')(null=True), keep_default=False)
-
+        raise RuntimeError("Cannot reverse this migration.")
 
     models = {
-        'db.disk': {
-            'Meta': {'object_name': 'Disk'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']", 'null': 'True', 'blank': 'True'}),
-            'size': ('django.db.models.fields.PositiveIntegerField', [], {}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'vm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']", 'null': 'True', 'blank': 'True'})
-        },
         'db.flavor': {
             'Meta': {'unique_together': "(('cpu', 'ram', 'disk'),)", 'object_name': 'Flavor'},
             'cpu': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
@@ -132,7 +43,8 @@ class Migration(SchemaMigration):
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'sourcevm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']", 'null': 'True'}),
             'state': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'userid': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100'})
         },
         'db.imagemetadata': {
             'Meta': {'unique_together': "(('meta_key', 'image'),)", 'object_name': 'ImageMetadata'},
@@ -151,7 +63,8 @@ class Migration(SchemaMigration):
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']", 'null': 'True'}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'state': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'userid': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100'})
         },
         'db.networkinterface': {
             'Meta': {'object_name': 'NetworkInterface'},
@@ -198,7 +111,7 @@ class Migration(SchemaMigration):
             'backendlogmsg': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'backendopcode': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
             'buildpercentage': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'charged': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 1, 23, 14, 29, 44, 160884)'}),
+            'charged': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 1, 23, 14, 49, 47, 844276)'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'flavor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Flavor']"}),
@@ -209,7 +122,8 @@ class Migration(SchemaMigration):
             'operstate': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']"}),
             'suspended': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'userid': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '100'})
         },
         'db.virtualmachinemetadata': {
             'Meta': {'unique_together': "(('meta_key', 'vm'),)", 'object_name': 'VirtualMachineMetadata'},

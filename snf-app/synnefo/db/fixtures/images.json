@@ -4,7 +4,7 @@
         "pk": 1,
         "fields": {
             "name": "Debian Base",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-06-29 13:14:00",
             "state": "ACTIVE",
@@ -63,7 +63,7 @@
         "pk": 2,
         "fields": {
             "name": "Debian Desktop",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-06-29 19:33:00",
             "updated": "2011-02-06 19:33:00",
             "state": "ACTIVE",
@@ -122,7 +122,7 @@
         "pk": 3,
         "fields": {
             "name": "Ubuntu",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-06-30 16:45:00",
             "updated": "2011-06-30 16:45:00",
             "state": "ACTIVE",
@@ -181,7 +181,7 @@
         "pk": 4,
         "fields": {
             "name": "Kubuntu",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-06-30 16:45:00",
             "updated": "2011-06-30 16:45:00",
             "state": "ACTIVE",
@@ -240,7 +240,7 @@
         "pk": 5,
         "fields": {
             "name": "Fedora Desktop",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-06-30 18:54:00",
             "updated": "2011-06-30 18:54:00",
             "state": "ACTIVE",
@@ -299,7 +299,7 @@
         "pk": 6,
         "fields": {
             "name": "CentOS",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-06-09 00:00:00",
             "updated": "2011-06-09 00:00:00",
             "state": "ACTIVE",
@@ -358,7 +358,7 @@
         "pk": 7,
         "fields": {
             "name": "Windows",
-            "owner": 1,
+            "userid": "test",
             "created": "2011-06-09 00:00:00",
             "updated": "2011-06-09 00:00:00",
             "state": "ACTIVE",

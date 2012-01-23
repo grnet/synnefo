@@ -1,68 +1,41 @@
-from django.http import HttpResponse
-from synnefo.db.models import SynnefoUser
+# Copyright 2012 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 from django.utils.cache import patch_vary_headers
-import time
+
 
 class ApiAuthMiddleware(object):
-
-    auth_token = "X-Auth-Token"
-    auth_user  = "X-Auth-User"
-    auth_key   = "X-Auth-Key"
-
     def process_request(self, request):
-        if not request.path.startswith('/api/') :
-            return
-
-        token = None
-
-        # Try to find token in a cookie
-        token = request.COOKIES.get('X-Auth-Token', None)
-
-        # Try to find token in request header
-        if not token:
-            token = request.META.get('HTTP_X_AUTH_TOKEN', None)
-
-        if token:
-            user = None
-            # Retrieve user from DB or other caching mechanism
-            try:
-                user = SynnefoUser.objects.get(auth_token=token)
-            except SynnefoUser.DoesNotExist:
-                user = None
-
-            # Check user's auth token
-            if user and (time.time() -
-                time.mktime(user.auth_token_expires.timetuple())) > 0:
-                # The user's token has expired, re-login
-                user = None
-
-            request.user = user
-            return
-
-        # A Rackspace API authentication request
-        if self.auth_user in request.META and \
-           self.auth_key in request.META and \
-           'GET' == request.method:
-            # This is here merely for compatibility with the Openstack API.
-            # All normal users should authenticate through Shibboleth. Admin
-            # users or other selected users could use this as a bypass
-            # mechanism
-            user = SynnefoUser.objects\
-                    .filter(name = request.META[self.auth_user]) \
-                    .filter(uniq = request.META[self.auth_key])
-
-            response = HttpResponse()
-            if user.count() <= 0:
-                response.status_code = 401
-            else:
-                response.status_code = 204
-                response['X-Auth-Token'] = user[0].auth_token
-                # TODO: set the following fields when we do have this info
-                response['X-Server-Management-Url'] = ""
-                response['X-Storage-Url'] = ""
-                response['X-CDN-Management-Url'] = ""
-            return response
-
         request.user = None
 
     def process_response(self, request, response):
@@ -70,4 +43,3 @@ class ApiAuthMiddleware(object):
         # based on X-Auth-Token, to avoid caching of results
         patch_vary_headers(response, ('X-Auth-Token',))
         return response
-

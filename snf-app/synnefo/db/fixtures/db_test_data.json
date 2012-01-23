@@ -1,19 +1,5 @@
 [
     {
-        "model": "db.SynnefoUser",
-        "pk": 30000,
-        "fields": {
-            "name": "testdbuser",
-            "realname" :"test db user",
-            "uniq" :"test@synnefo.gr",
-            "auth_token": "5e41595e9e884543fa048e07c1094d74",
-            "auth_token_created": "2009-04-07 09:17:14",
-            "auth_token_expires": "2015-04-07 09:17:14",
-            "type": "STUDENT",
-            "created": "2011-02-06"
-   	    }
-    },
-    {
         "model": "db.Flavor",
         "pk": 30000,
         "fields": {
@@ -39,7 +25,7 @@
             "updated": "2011-02-06 00:00:00",
             "created": "2011-02-06 00:00:00",
             "state": "ACTIVE",
-            "owner" : 30000
+            "userid" : "test"
         }
     },
     {
@@ -64,7 +50,7 @@
         "model": "db.VirtualMachine",
         "pk": 30000,
         "fields": {
-            "owner": 30000,
+            "userid": "test",
             "name": "snf-1001",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",
@@ -78,7 +64,7 @@
         "model": "db.VirtualMachine",
         "pk": 30001,
         "fields": {
-            "owner": 30000,
+            "userid": "test",
             "name": "snf-1002",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",
@@ -89,21 +75,10 @@
         }
     },
     {
-        "model": "db.Disk",
-        "pk": 30000,
-        "fields": {
-            "name": "My_Music",
-            "created": "2011-02-10 00:00:00",
-            "size" : 20,
-            "vm" : 30000,
-            "owner" : 30000
-        }
-    },
-    {
         "model": "db.VirtualMachine",
         "pk": 30002,
         "fields": {
-            "owner": 30000,
+            "userid": "test",
             "name": "snf-test-building",
             "created": "2009-02-06 00:00:00",
             "charged": "2010-02-06 00:00:00",

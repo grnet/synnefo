@@ -21,21 +21,11 @@ function append_server() {
 	append_item('append-server', '/admin/api/servers/');
 }
 
-function append_user() {
-	append_item('append-user', '/admin/api/users/');
-}
-
-
 $(function() {
 	$('table.id-sorted').tablesorter({ sortList: [[0, 0]] });
 
 	$('tr.row-template').hide();
 	$('div.alert-message').hide();
-
-	append_user();
-	$('.append-user').change(function() {
-		append_user();
-	});
 
 	append_server();
 	$('.append-server').change(function() {

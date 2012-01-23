@@ -69,7 +69,7 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    user = get_or_create_user(username, realname=realname, affiliation=affiliation, level=0, email=eppn)
+    user = get_or_create_user(eppn, realname=realname, affiliation=affiliation, level=0, email=eppn)
     # in order to login the user we must call authenticate first
     user = authenticate(username=user.username, auth_token=user.auth_token)
     return prepare_response(request,

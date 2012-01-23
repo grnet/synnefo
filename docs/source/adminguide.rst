@@ -1,13 +1,5 @@
 Administrator Guide
 ===================
-manage syncdb
-change django_site record
-SITE_ID setting
-migrate
-create twitter application
-
-Administrator Guide
-===================
 
 Simple Setup
 ------------

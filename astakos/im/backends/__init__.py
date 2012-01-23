@@ -38,6 +38,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.sites.models import Site
 from django.contrib import messages
 
 from smtplib import SMTPException
@@ -191,7 +192,7 @@ class SimpleBackend(object):
         return status, message
 
     def _send_verification(request, user, template_name):
-        site = get_current_site(request)
+        site = Site.objects.get_current()
         baseurl = request.build_absolute_uri('/').rstrip('/')
         url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
                                                   quote(user.auth_token),

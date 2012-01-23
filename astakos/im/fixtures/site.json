@@ -3,8 +3,8 @@
         "model": "sites.site",
         "pk": 1,
         "fields": {
-            "domain": "http://localhost:8000/im",
-            "name": "Astakos"
+            "domain": "https://pithos.dev.grnet.gr/im",
+            "name": "Pithos"
    	    }
     }
 ]

@@ -56,7 +56,7 @@ from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.sites.models import get_current_site
+from django.contrib.sites.models import Site
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.util import isoformat, get_or_create_user, get_context
@@ -309,7 +309,7 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
 def _send_greeting(request, user, template_name):
     url = reverse('astakos.im.views.index')
     subject = _('Welcome to %s' %settings.SERVICE_NAME)
-    site = get_current_site(request)
+    site = Site.objects.get_current()
     baseurl = request.build_absolute_uri('/').rstrip('/')
     message = render_to_string(template_name, {
                 'user': user,

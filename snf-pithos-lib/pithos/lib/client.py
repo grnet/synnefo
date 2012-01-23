@@ -54,8 +54,8 @@ ERROR_CODES = {304:'Not Modified',
                413:'Request Entity Too Large',
                416:'Range Not Satisfiable',
                422:'Unprocessable Entity',
-               503:'Service Unavailable',
-               }
+               500:'Internal Server Error',
+               501:'Not Implemented'}
 
 class Fault(Exception):
     def __init__(self, data='', status=None):

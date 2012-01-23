@@ -56,7 +56,7 @@ def public_demux(request, v_public):
 @api_method('HEAD', user_required=False)
 def public_meta(request, v_public):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       badRequest (400)
     
@@ -81,7 +81,7 @@ def public_meta(request, v_public):
 @api_method('GET', user_required=False)
 def public_read(request, v_public):
     # Normal Response Codes: 200, 206
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       rangeNotSatisfiable (416),
     #                       preconditionFailed (412),
     #                       itemNotFound (404),

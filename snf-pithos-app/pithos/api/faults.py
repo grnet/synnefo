@@ -75,5 +75,8 @@ class RangeNotSatisfiable(Fault):
 class UnprocessableEntity(Fault):
     code = 422
 
-class ServiceUnavailable(Fault):
-    code = 503
+class InternalServerError(Fault):
+    code = 500
+
+class NotImplemented(Fault):
+    code = 501

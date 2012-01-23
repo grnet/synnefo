@@ -48,11 +48,10 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from pithos.lib.compat import parse_http_date_safe, parse_http_date
-from pithos.lib.hashmap import HashMap
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
-                                RangeNotSatisfiable, ServiceUnavailable)
+                                RangeNotSatisfiable, InternalServerError, NotImplemented)
 from pithos.api.short_url import encode_url
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError
@@ -180,7 +179,8 @@ def get_object_headers(request):
     return meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
-    response['ETag'] = meta['ETag'] if 'ETag' in meta else meta['hash']
+    if 'ETag' in meta:
+        response['ETag'] = meta['ETag']
     response['Content-Length'] = meta['bytes']
     response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
@@ -497,7 +497,7 @@ def raw_input_socket(request):
         return request._req
     if 'wsgi.input' in request.environ:
         return request.environ['wsgi.input']
-    raise ServiceUnavailable('Unknown server software')
+    raise NotImplemented('Unknown server software')
 
 MAX_UPLOAD_SIZE = 5 * (1024 * 1024 * 1024) # 5GB
 
@@ -742,13 +742,6 @@ def put_object_block(request, hashmap, data, offset):
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl # Return ammount of data written.
 
-#def hashmap_hash(request, hashmap):
-#    """Produce the root hash, treating the hashmap as a Merkle-like tree."""
-#    
-#    map = HashMap(request.backend.block_size, request.backend.hash_algorithm)
-#    map.extend([unhexlify(x) for x in hashmap])
-#    return hexlify(map.hash())
-
 def hashmap_md5(request, hashmap, size):
     """Produce the MD5 sum from the data in the hashmap."""
     
@@ -817,11 +810,13 @@ def update_response_headers(request, response):
         response['Date'] = format_date_time(time())
 
 def render_fault(request, fault):
-    if settings.DEBUG or settings.TEST:
+    if isinstance(fault, InternalServerError) and (settings.DEBUG or settings.TEST):
         fault.details = format_exc(fault)
     
     request.serialization = 'text'
-    data = '\n'.join((fault.message, fault.details)) + '\n'
+    data = fault.message + '\n'
+    if fault.details:
+        data += '\n' + fault.details
     response = HttpResponse(data, status=fault.code)
     update_response_headers(request, response)
     return response
@@ -882,7 +877,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True):
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = ServiceUnavailable('Unexpected error')
+                fault = InternalServerError('Unexpected error')
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:

@@ -45,16 +45,16 @@ def redirect_to_login_service(request):
     users = settings.AUTHENTICATION_USERS
     host = settings.AUTHENTICATION_HOST
     if users is not None or host is None:
-    	return HttpResponseNotFound()
+        return HttpResponseNotFound()
     
     if request.is_secure():
-    	proto = 'https://'
+        proto = 'https://'
     else:
-    	proto = 'http://'
-	next = request.GET.get('next', '')
-	params = {'next': next}
-	renew = 'renew' in request.GET
-	if renew:
-		params['renew'] = True
+        proto = 'http://'
+    next = request.GET.get('next', '')
+    params = {'next': next}
+    renew = 'renew' in request.GET
+    if renew:
+        params['renew'] = True
     uri = proto + host + '/login?' + urlencode(params)
     return HttpResponseRedirect(uri)

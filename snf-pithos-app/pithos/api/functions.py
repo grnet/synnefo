@@ -113,7 +113,7 @@ def object_demux(request, v_account, v_container, v_object):
 @api_method('GET', user_required=False)
 def authenticate(request):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       forbidden (403),
     #                       badRequest (400)
     
@@ -134,7 +134,7 @@ def authenticate(request):
 @api_method('GET', format_allowed=True)
 def account_list(request):
     # Normal Response Codes: 200, 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       badRequest (400)
     
     response = HttpResponse()
@@ -186,7 +186,7 @@ def account_list(request):
 @api_method('HEAD')
 def account_meta(request, v_account):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       forbidden (403),
     #                       badRequest (400)
     
@@ -207,7 +207,7 @@ def account_meta(request, v_account):
 @api_method('POST')
 def account_update(request, v_account):
     # Normal Response Codes: 202
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       forbidden (403),
     #                       badRequest (400)
     
@@ -234,7 +234,7 @@ def account_update(request, v_account):
 @api_method('GET', format_allowed=True)
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -311,7 +311,7 @@ def container_list(request, v_account):
 @api_method('HEAD')
 def container_meta(request, v_account, v_container):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -338,7 +338,7 @@ def container_meta(request, v_account, v_container):
 @api_method('PUT')
 def container_create(request, v_account, v_container):
     # Normal Response Codes: 201, 202
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -379,7 +379,7 @@ def container_create(request, v_account, v_container):
 @api_method('POST')
 def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -427,7 +427,7 @@ def container_update(request, v_account, v_container):
 @api_method('DELETE')
 def container_delete(request, v_account, v_container):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       conflict (409),
     #                       itemNotFound (404),
     #                       forbidden (403),
@@ -448,7 +448,7 @@ def container_delete(request, v_account, v_container):
 @api_method('GET', format_allowed=True)
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -575,7 +575,7 @@ def object_list(request, v_account, v_container):
 @api_method('HEAD')
 def object_meta(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -619,7 +619,7 @@ def object_meta(request, v_account, v_container, v_object):
 @api_method('GET', format_allowed=True)
 def object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       rangeNotSatisfiable (416),
     #                       preconditionFailed (412),
     #                       itemNotFound (404),
@@ -746,7 +746,7 @@ def object_read(request, v_account, v_container, v_object):
 @api_method('PUT', format_allowed=True)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       unprocessableEntity (422),
     #                       lengthRequired (411),
     #                       conflict (409),
@@ -889,7 +889,7 @@ def object_write(request, v_account, v_container, v_object):
 @api_method('POST')
 def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -922,7 +922,7 @@ def object_write_form(request, v_account, v_container, v_object):
 @api_method('COPY')
 def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -959,7 +959,7 @@ def object_copy(request, v_account, v_container, v_object):
 @api_method('MOVE')
 def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)
@@ -995,7 +995,7 @@ def object_move(request, v_account, v_container, v_object):
 @api_method('POST')
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       conflict (409),
     #                       itemNotFound (404),
     #                       forbidden (403),
@@ -1210,7 +1210,7 @@ def object_update(request, v_account, v_container, v_object):
 @api_method('DELETE')
 def object_delete(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503),
+    # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       forbidden (403),
     #                       badRequest (400)

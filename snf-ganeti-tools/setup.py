@@ -60,10 +60,10 @@ setup(
     packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
     dependency_links = ['http://docs.dev.grnet.gr/pypi'],
     install_requires=[
-        'daemon',
+        'python-daemon',
         'pyinotify',
         'amqplib',
-        'prctl',
+        'python-prctl',
     ],
     entry_points = {
      'console_scripts': [

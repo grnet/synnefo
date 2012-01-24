@@ -46,28 +46,13 @@ from astakos.im.util import get_or_create_user
 import logging
 import uuid
 
-class UniqueUserEmailField(forms.EmailField):
-    """
-    An EmailField which only is valid if no User has that email.
-    """
-    def validate(self, value):
-        super(forms.EmailField, self).validate(value)
-        try:
-            AstakosUser.objects.get(email = value)
-            raise forms.ValidationError("Email already exists")
-        except AstakosUser.MultipleObjectsReturned:
-            raise forms.ValidationError("Email already exists")
-        except AstakosUser.DoesNotExist:
-            pass
-
 class ExtendedUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
     
-    * Adds an email field, which uses the custom UniqueUserEmailField.
+    * Adds email, first_name and last_name field.
     * The username field isn't visible and it is assigned a generated id.
-    * first_name and last_name fields are added.
-    * User is created not active. 
+    * User created is not active. 
     """
     
     class Meta:
@@ -81,6 +66,14 @@ class ExtendedUserCreationForm(UserCreationForm):
         super(ExtendedUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
+    
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        try:
+            AstakosUser.objects.get(email = email)
+            raise forms.ValidationError(_("Email is reserved"))
+        except AstakosUser.DoesNotExist:
+            return email
     
     def save(self, commit=True):
         """

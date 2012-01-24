@@ -41,6 +41,7 @@ from base64 import b64encode
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User, UserManager
+from django.utils.translation import ugettext_lazy as _
 
 from astakos.im.interface import get_quota, set_quota
 
@@ -51,8 +52,8 @@ class AstakosUser(User):
     # Use UserManager to get the create_user method, etc.
     objects = UserManager()
     
-    affiliation = models.CharField('Affiliation', max_length=255, default='')
-    provider = models.CharField('Provider', max_length=255, default='')
+    affiliation = models.CharField('Affiliation', max_length=255, blank=True)
+    provider = models.CharField('Provider', max_length=255, blank=True)
     
     #for invitations
     level = models.IntegerField('Inviter level', default=4)

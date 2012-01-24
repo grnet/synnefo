@@ -40,6 +40,7 @@ from django.utils.translation import ugettext as _
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.sites.models import Site
 from django.contrib import messages
+from django.shortcuts import redirect
 
 from smtplib import SMTPException
 from urllib import quote
@@ -48,7 +49,10 @@ from astakos.im.util import get_or_create_user
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import ExtendedUserCreationForm, InvitedExtendedUserCreationForm
 
-def get_backend():
+import socket
+import logging
+
+def get_backend(request):
     """
     Return an instance of a registration backend,
     according to the INVITATIONS_ENABLED setting
@@ -69,7 +73,7 @@ def get_backend():
         backend_class = getattr(mod, backend_class_name)
     except AttributeError:
         raise ImproperlyConfigured('Module "%s" does not define a registration backend named "%s"' % (module, attr))
-    return backend_class()
+    return backend_class(request)
 
 class InvitationsBackend(object):
     """
@@ -79,26 +83,38 @@ class InvitationsBackend(object):
     account is created and the user is going to receive an email as soon as an
     administrator activates his/her account.
     """
-    def get_signup_form(self, request):
+    def __init__(self, request):
+        self.request = request
+        self.invitation = None
+        self.set_invitation()
+    
+    def set_invitation(self):
+        code = self.request.GET.get('code', '')
+        if not code:
+            code = self.request.POST.get('code', '')
+        if code:
+            self.invitation = Invitation.objects.get(code=code)
+            if self.invitation.is_consumed:
+                    raise Exception('Invitation has beeen used')
+    
+    def get_signup_form(self):
         """
         Returns the necassary registration form depending the user is invited or not
         
         Throws Invitation.DoesNotExist in case ``code`` is not valid.
         """
-        code = request.GET.get('code', '')
+        request = self.request
         formclass = 'ExtendedUserCreationForm'
         initial_data = None
         if request.method == 'GET':
-            if code:
+            if self.invitation:
                 formclass = 'Invited%s' %formclass
-                self.invitation = Invitation.objects.get(code=code)
-                if self.invitation.is_consumed:
-                    raise Exception('Invitation has beeen used')
                 initial_data = {'username':self.invitation.username,
                                 'email':self.invitation.username,
                                 'realname':self.invitation.realname}
                 inviter = AstakosUser.objects.get(username=self.invitation.inviter)
                 initial_data['inviter'] = inviter.realname
+                initial_data['level'] = inviter.level + 1
         else:
             initial_data = request.POST
         return globals()[formclass](initial_data)
@@ -110,32 +126,28 @@ class InvitationsBackend(object):
         
         It should be called after ``get_signup_form`` which sets invitation if exists.
         """
-        invitation = getattr(self, 'invitation') if hasattr(self, 'invitation') else None
+        invitation = self.invitation
         if not invitation:
             return False
-        if invitation.username == user.username and not invitation.is_consumed:
+        if invitation.username == user.email and not invitation.is_consumed:
+            invitation.consume()
             return True
         return False
     
-    def signup(self, request):
+    def signup(self, form):
         """
-        Creates a incative user account. If the user is preaccepted (has a valid
-        invitation code) the user is activated and if the request param ``next``
-        is present redirects to it.
+        Initially creates an inactive user account. If the user is preaccepted
+        (has a valid invitation code) the user is activated and if the request
+        param ``next`` is present redirects to it.
         In any other case the method returns the action status and a message.
         """
         kwargs = {}
-        form = self.get_signup_form(request)
         user = form.save()
-        
         try:
             if self._is_preaccepted(user):
                 user.is_active = True
                 user.save()
                 message = _('Registration completed. You can now login.')
-                next = request.POST.get('next')
-                if next:
-                    return redirect(next)
             else:
                 message = _('Registration completed. You will receive an email upon your account\'s activation')
             status = messages.SUCCESS
@@ -150,14 +162,18 @@ class SimpleBackend(object):
     supplies the necessary registation information, an incative user account is
     created and receives an email in order to activate his/her account.
     """
-    def get_signup_form(self, request):
+    def __init__(self, request):
+        self.request = request
+    
+    def get_signup_form(self):
         """
         Returns the UserCreationForm
         """
+        request = self.request
         initial_data = request.POST if request.method == 'POST' else None
-        return UserCreationForm(initial_data)
+        return ExtendedUserCreationForm(initial_data)
     
-    def signup(self, request, email_template_name='activation_email.txt'):
+    def signup(self, form, email_template_name='activation_email.txt'):
         """
         Creates an inactive user account and sends a verification email.
         
@@ -178,12 +194,11 @@ class SimpleBackend(object):
         * DEFAULT_FROM_EMAIL: from email
         """
         kwargs = {}
-        form = self.get_signup_form(request)
         user = form.save()
         
         status = messages.SUCCESS
         try:
-            _send_verification(request, user, email_template_name)
+            _send_verification(self.request, user, email_template_name)
             message = _('Verification sent to %s' % user.email)
         except (SMTPException, socket.error) as e:
             status = messages.ERROR
@@ -191,18 +206,18 @@ class SimpleBackend(object):
             message = getattr(e, name) if hasattr(e, name) else e
         return status, message
 
-    def _send_verification(request, user, template_name):
-        site = Site.objects.get_current()
-        baseurl = request.build_absolute_uri('/').rstrip('/')
-        url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
-                                                  quote(user.auth_token),
-                                                  quote(baseurl))
-        message = render_to_string(template_name, {
-                'user': user,
-                'url': url,
-                'baseurl': baseurl,
-                'site_name': site.name,
-                'support': settings.DEFAULT_CONTACT_EMAIL})
-        sender = settings.DEFAULT_FROM_EMAIL
-        send_mail('Pithos account activation', message, sender, [user.email])
-        logging.info('Sent activation %s', user)
+def _send_verification(request, user, template_name):
+    site = Site.objects.get_current()
+    baseurl = request.build_absolute_uri('/').rstrip('/')
+    url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
+                                              quote(user.auth_token),
+                                              quote(baseurl))
+    message = render_to_string(template_name, {
+            'user': user,
+            'url': url,
+            'baseurl': baseurl,
+            'site_name': site.name,
+            'support': settings.DEFAULT_CONTACT_EMAIL})
+    sender = settings.DEFAULT_FROM_EMAIL
+    send_mail('Pithos account activation', message, sender, [user.email])
+    logging.info('Sent activation %s', user)

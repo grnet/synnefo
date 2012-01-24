@@ -1,18 +1,17 @@
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
-#from django.core.exceptions import ImproperlyConfigured
-#from django.db.models import get_model
+from django.core.validators import email_re
 
 from astakos.im.models import AstakosUser
 
-class AstakosUserModelCredentialsBackend(ModelBackend):
+class TokenBackend(ModelBackend):
     """
-    AuthenticationBackend used to authenticate user creadentials
+    AuthenticationBackend used to authenticate using token instead
     """
-    def authenticate(self, username=None, password=None):
+    def authenticate(self, email=None, auth_token=None):
         try:
-            user = AstakosUser.objects.get(username=username)
-            if user.check_password(password):
+            user = AstakosUser.objects.get(email=email)
+            if user.auth_token == auth_token:
                 return user
         except AstakosUser.DoesNotExist:
             return None
@@ -22,29 +21,31 @@ class AstakosUserModelCredentialsBackend(ModelBackend):
             return AstakosUser.objects.get(pk=user_id)
         except AstakosUser.DoesNotExist:
             return None
+
+class EmailBackend(ModelBackend):
+    """
+    If the ``username`` parameter is actually an email uses email to authenticate
+    the user else tries the username.
     
-    #@property
-    #def user_class(self):
-    #    if not hasattr(self, '_user_class'):
-    #        #self._user_class = get_model(*settings.CUSTOM_USER_MODEL.split('.', 2))
-    #        self._user_class = get_model('astakos.im', 'astakosuser')
-    #        print '#', self._user_class
-    #        if not self._user_class:
-    #            raise ImproperlyConfigured('Could not get custom user model')
-    #    return self._user_class
-
-class AstakosUserModelTokenBackend(ModelBackend):
+    Used from ``astakos.im.forms.LoginForm`` to authenticate.
     """
-    AuthenticationBackend used to authenticate using token instead
-    """
-    def authenticate(self, username=None, auth_token=None):
-        try:
-            user = AstakosUser.objects.get(username=username)
-            if user.auth_token == auth_token:
-                return user
-        except AstakosUser.DoesNotExist:
-            return None
-
+    def authenticate(self, username=None, password=None):
+        #If username is an email address, then try to pull it up
+        if email_re.search(username):
+            try:
+                user = AstakosUser.objects.get(email=username)
+            except AstakosUser.DoesNotExist:
+                return None
+        else:
+            #We have a non-email address username we
+            #should try username
+            try:
+                user = AstakosUser.objects.get(username=username)
+            except AstakosUser.DoesNotExist:
+                return None
+        if user.check_password(password):
+            return user
+    
     def get_user(self, user_id):
         try:
             return AstakosUser.objects.get(pk=user_id)

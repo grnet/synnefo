@@ -83,6 +83,7 @@ def authenticate(request):
         response = HttpResponse()
         response.status=204
         user_info = {'uniq':user.username,
+                     'email':user.email,
                      'auth_token':user.auth_token,
                      'auth_token_created':user.auth_token_created.isoformat(),
                      'auth_token_expires':user.auth_token_expires.isoformat()}

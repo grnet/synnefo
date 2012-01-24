@@ -37,13 +37,12 @@ from django.template.loader import render_to_string
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth import authenticate
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 
 from astakos.im.target.util import prepare_response
 from astakos.im.models import AstakosUser
-
+from astakos.im.forms import LoginForm
 from urllib import unquote
 
 from hashlib import new as newhasher
@@ -52,7 +51,7 @@ def login(request, on_failure='index.html'):
     """
     on_failure: whatever redirect accepts as to
     """
-    form = AuthenticationForm(data=request.POST)
+    form = LoginForm(data=request.POST)
     if not form.is_valid():
         return render_to_response(on_failure,
                                   {'form':form},
@@ -84,4 +83,4 @@ def activate(request):
     
     user.is_active = True
     user.save()
-    return prepare_response(request, user, next, renew=True)
+    return prepare_response(request, user, next, renew=True, skip_login=True)

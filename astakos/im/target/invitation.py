@@ -62,7 +62,7 @@ def login(request):
                               invitation.inviter.level + 1)
     
     # in order to login the user we must call authenticate first 
-    authenticate(username=user.username, auth_token=user.auth_token)
+    authenticate(email=user.email, auth_token=user.auth_token)
     next = request.GET.get('next')
     
     return prepare_response(request, user, next, 'renew' in request.GET)

@@ -223,7 +223,8 @@ def users_modify(request, user_id, template_name='users_info.html', extra_contex
     
     If the ``request.user`` is not a superuser redirects to login page.
     """
-    form = AdminProfileForm(request.POST)
+    user = AstakosUser.objects.get(id = user_id)
+    form = AdminProfileForm(request.POST, instance=user)
     if form.is_valid():
         form.save()
         return redirect(users_info, user.id, template_name, extra_context)
@@ -307,13 +308,12 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
                             context_instance = get_context(request, extra_context,**kwargs))
 
 def _send_greeting(request, user, template_name):
-    url = reverse('astakos.im.views.index')
     subject = _('Welcome to %s' %settings.SERVICE_NAME)
     site = Site.objects.get_current()
     baseurl = request.build_absolute_uri('/').rstrip('/')
     message = render_to_string(template_name, {
                 'user': user,
-                'url': url,
+                'url': site.domain,
                 'baseurl': baseurl,
                 'site_name': site.name,
                 'support': settings.DEFAULT_CONTACT_EMAIL})

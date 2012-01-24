@@ -54,7 +54,6 @@ from django.shortcuts import render_to_response
 from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.models import Site
@@ -66,7 +65,7 @@ from django.contrib.auth.forms import UserCreationForm
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.util import isoformat, get_or_create_user, get_context
 from astakos.im.backends import get_backend
-from astakos.im.forms import ProfileForm, FeedbackForm
+from astakos.im.forms import ProfileForm, FeedbackForm, LoginForm
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
@@ -99,7 +98,7 @@ def index(request, template_name='index.html', extra_context={}):
     
     """
     return render_response(template_name,
-                           form = AuthenticationForm(),
+                           form = LoginForm(),
                            context_instance = get_context(request, extra_context))
 
 def _generate_invitation_code():
@@ -164,8 +163,8 @@ def invite(request, template_name='invitations.html', extra_context={}):
     """
     status = None
     message = None
-    inviter = request.user
-
+    inviter = AstakosUser.objects.get(username = request.user.username)
+    
     if request.method == 'POST':
         username = request.POST.get('uniq')
         realname = request.POST.get('realname')
@@ -287,22 +286,22 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
     signup.html or ``template_name`` keyword argument.
     """
     if not backend:
-            backend = get_backend()
+            backend = get_backend(request)
     try:
-        form = backend.get_signup_form(request)
+        form = backend.get_signup_form()
         if request.method == 'POST':
             if form.is_valid():
-                status, message = backend.signup(request)
+                status, message = backend.signup(form)
                 # rollback incase of error
                 if status == messages.ERROR:
                     transaction.rollback()
                 else:
                     transaction.commit()
-                next = request.POST.get('next')
-                if next:
-                    return redirect(next)
+                    next = request.POST.get('next')
+                    if next:
+                        return redirect(next)
                 messages.add_message(request, status, message)
-    except (Invitation.DoesNotExist, Exception), e:
+    except Invitation.DoesNotExist, e:
         messages.add_message(request, messages.ERROR, e)
     return render_response(template_name,
                            form = form if 'form' in locals() else UserCreationForm(),

@@ -6,13 +6,6 @@
 <div class="container">
   <h3>You have {{ user.invitations }} invitation{{ user.invitations|pluralize }} left.</h3>
 
-  <!--{% if message %}
-  <br />
-  <div class="alert-message {{ status }}">
-    <p>{{ message }}</p>
-  </div>
-  {% endif %}-->
-
   {% if user.invitations %}
   <br />
   <h4>Invite someone else:</h4>

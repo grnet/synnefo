@@ -71,5 +71,8 @@ setup(
          'snf-ganeti-hook = synnefo.ganeti.hook:main',
          'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
          ],
+     'synnefo': [
+            'default_settings = synnefo.ganeti.settings'
+         ]
      },
 )

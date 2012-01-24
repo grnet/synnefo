@@ -323,7 +323,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict(object_conflict_response(request, e.data))
+        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
@@ -759,11 +759,11 @@ def hashmap_md5(request, hashmap, size):
         md5.update(data + ('\x00' * pad))
     return md5.hexdigest().lower()
 
-def object_conflict_response(request, l):
+def simple_list_response(request, l):
     if request.serialization == 'text':
         return '\n'.join(l) + '\n'
     if request.serialization == 'xml':
-        return render_to_string('conflicts.xml', {'conflicts': l})
+        return render_to_string('items.xml', {'items': l})
     if request.serialization == 'json':
         return json.dumps(l)
 

@@ -36,7 +36,7 @@ Revision                   Description
 \                          Always reply with the MD5 in the ETag.
 \                          Note that ``/login`` will only work if an external authentication system is defined.
 \                          Include option to ignore Content-Type on ``COPY``/``MOVE``.
-\                          Use format parameter for conflict (409) replies.
+\                          Use format parameter for conflict (409) and uploaded hash list (container level) replies.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -602,10 +602,11 @@ X-Container-Meta-*    Optional user defined metadata
 ======================  ============================================
 Request Parameter Name  Value
 ======================  ============================================
+format                  Optional hash list reply type (can be ``json`` or ``xml``)
 update                  Do not replace metadata/policy (no value parameter)
 ======================  ============================================
 
-No reply content/headers, except when uploading data, where the reply consists of a list of hashes for the blocks received (in a simple text format, with one hash per line).
+No reply content/headers, except when uploading data, where the reply consists of a list of hashes for the blocks received (in the format specified).
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
 To change policy, include an ``X-Container-Policy-*`` header with the name in the key. If no ``X-Container-Policy-*`` header is present, no changes will be applied to policy. The ``update`` parameter also applies to policy - deleted values will revert to defaults. To delete/revert a specific policy directive, use ``update`` and an empty header value. See container ``PUT`` for a reference of policy directives.

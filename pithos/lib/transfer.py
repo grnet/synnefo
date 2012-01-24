@@ -33,6 +33,7 @@
 
 import os
 import types
+import json
 
 from hashmap import HashMap
 from binascii import hexlify, unhexlify
@@ -64,7 +65,7 @@ def upload(client, path, container, prefix, name=None, mimetype=None):
         return v
     
     if type(fault.data) == types.StringType:
-        missing = fault.data.split('\n')
+        missing = json.loads(fault.data)
     elif type(fault.data) == types.ListType:
         missing = fault.data
     

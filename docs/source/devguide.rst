@@ -36,6 +36,7 @@ Revision                   Description
 \                          Always reply with the MD5 in the ETag.
 \                          Note that ``/login`` will only work if an external authentication system is defined.
 \                          Include option to ignore Content-Type on ``COPY``/``MOVE``.
+\                          Use format parameter for conflict (409) replies.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -840,11 +841,11 @@ X-Object-Meta-*       Optional user defined metadata
 ======================  ===================================
 Request Parameter Name  Value
 ======================  ===================================
-format                  Optional extended request type (can be ``json`` or ``xml``)
+format                  Optional extended request/conflict response type (can be ``json`` or ``xml``)
 hashmap                 Optional hashmap provided instead of data (no value parameter)
 ======================  ===================================
 
-The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts (in a simple text format, with one hash per line).
+The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created. Otherwise the server returns Conflict (409) with the list of the missing parts (in simple text format, with one hash per line, or in JSON/XML - depending on the ``format`` parameter).
 
 Hashmaps should be formatted as outlined in ``GET``.
 
@@ -861,7 +862,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
-409 (Conflict)                  The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply - in simple text format)
+409 (Conflict)                  The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 422 (Unprocessable Entity)      The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
@@ -870,14 +871,6 @@ Return Code                     Description
 
 COPY
 """"
-
-======================  ===================================
-Request Parameter Name  Value
-======================  ===================================
-ignore_content_type     Ignore the supplied Content-Type
-======================  ===================================
-
-|
 
 ====================  ================================
 Request Header Name   Value
@@ -898,6 +891,13 @@ X-Object-Meta-*       Optional user defined metadata
 
 :sup:`*` *When using django locally with the supplied web server, use the ignore_content_type parameter, or do provide a valid Content-Type, as a type of text/plain is applied by default to all requests. Client software should always state ignore_content_type, except when a Content-Type is explicitly defined by the user.*
 
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+format                  Optional conflict response type (can be ``json`` or ``xml``)
+ignore_content_type     Ignore the supplied Content-Type
+======================  ===================================
+
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 
 ==========================  ===============================
@@ -912,7 +912,7 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
-409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
+409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply)
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
 
@@ -952,6 +952,7 @@ X-Object-Meta-*       Optional user defined metadata
 ======================  ============================================
 Request Parameter Name  Value
 ======================  ============================================
+format                  Optional conflict response type (can be ``json`` or ``xml``)
 update                  Do not replace metadata (no value parameter)
 ======================  ============================================
 
@@ -989,7 +990,7 @@ Return Code                     Description
 ==============================  ==============================
 202 (Accepted)                  The request has been accepted (not a data update)
 204 (No Content)                The request succeeded (data updated)
-409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
+409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 416 (Range Not Satisfiable)     The supplied range is invalid

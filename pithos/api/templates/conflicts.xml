@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<conflicts>
+  {% for conflict in conflicts %}
+  <conflict>{{ conflict }}</conflict>
+  {% endfor %}
+</conflicts>

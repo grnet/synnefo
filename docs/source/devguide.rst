@@ -493,6 +493,8 @@ x_object_public             Object's publicly accessible URI (optional)
 x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
 
+Sharing metadata will only be returned if there is no ``until`` parameter defined.
+
 Extended replies may also include virtual directory markers in separate sections of the ``json`` or ``xml`` results.
 Virtual directory markers are only included when ``delimiter`` is explicitly set. They correspond to the substrings up to and including the first occurrence of the delimiter.
 In JSON results they appear as dictionaries with only a ``subdir`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
@@ -795,7 +797,7 @@ X-Object-Public             Object's publicly accessible URI (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
-|
+Sharing headers (``X-Object-Sharing``, ``X-Object-Shared-By`` and ``X-Object-Allowed-To``) are only included if the request is for the object's latest version (no specific ``version`` parameter is set).
 
 ===========================  ==============================
 Return Code                  Description

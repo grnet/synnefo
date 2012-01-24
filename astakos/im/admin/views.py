@@ -227,7 +227,7 @@ def users_modify(request, user_id, template_name='users_info.html', extra_contex
     form = AdminProfileForm(request.POST, instance=user)
     if form.is_valid():
         form.save()
-        return redirect(users_info, user.id, template_name, extra_context)
+        return users_info(request, user.id, template_name, extra_context)
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request, extra_context))

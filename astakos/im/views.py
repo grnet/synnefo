@@ -122,16 +122,16 @@ def _generate_invitation_code():
             return code
 
 def _send_invitation(request, baseurl, inv):
-    subject = _('Invitation to Astakos')
     site = Site.objects.get_current()
+    subject = _('Invitation to %s' % site.name)
     url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(site.domain))
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
                 'baseurl': baseurl,
                 'service': site.name,
-                'support': settings.DEFAULT_CONTACT_EMAIL})
-    sender = settings.DEFAULT_FROM_EMAIL
+                'support': settings.DEFAULT_CONTACT_EMAIL % site.name.lower()})
+    sender = settings.DEFAULT_FROM_EMAIL % site.name
     send_mail(subject, message, sender, [inv.username])
     logging.info('Sent invitation %s', inv)
 
@@ -343,7 +343,7 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
     
     **Settings:**
     
-    * FEEDBACK_CONTACT_EMAIL: List of feedback recipients
+    * DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
     if request.method == 'GET':
         form = FeedbackForm()
@@ -353,9 +353,10 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
         
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            subject = _("Feedback from Okeanos")
+            site = Site.objects.get_current()
+            subject = _("Feedback from %s" % site.name)
             from_email = request.user.email
-            recipient_list = [settings.FEEDBACK_CONTACT_EMAIL]
+            recipient_list = [settings.DEFAULT_CONTACT_EMAIL]
             content = render_to_string(email_template_name, {
                         'message': form.cleaned_data('feedback_msg'),
                         'data': form.cleaned_data('feedback_data'),

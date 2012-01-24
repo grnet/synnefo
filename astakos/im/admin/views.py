@@ -308,16 +308,16 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
                             context_instance = get_context(request, extra_context,**kwargs))
 
 def _send_greeting(request, user, template_name):
-    subject = _('Welcome to %s' %settings.SERVICE_NAME)
     site = Site.objects.get_current()
+    subject = _('Welcome to %s' % site.name)
     baseurl = request.build_absolute_uri('/').rstrip('/')
     message = render_to_string(template_name, {
                 'user': user,
                 'url': site.domain,
                 'baseurl': baseurl,
                 'site_name': site.name,
-                'support': settings.DEFAULT_CONTACT_EMAIL})
-    sender = settings.DEFAULT_FROM_EMAIL
+                'support': settings.DEFAULT_CONTACT_EMAIL % site.name.lower()})
+    sender = settings.DEFAULT_FROM_EMAIL % site.name
     send_mail(subject, message, sender, [user.email])
     logging.info('Sent greeting %s', user)
 

@@ -220,7 +220,7 @@ def _send_verification(request, user, template_name):
             'url': url,
             'baseurl': baseurl,
             'site_name': site.name,
-            'support': settings.DEFAULT_CONTACT_EMAIL})
-    sender = settings.DEFAULT_FROM_EMAIL
-    send_mail('Pithos account activation', message, sender, [user.email])
+            'support': settings.DEFAULT_CONTACT_EMAIL % site.name.lower()})
+    sender = settings.DEFAULT_FROM_EMAIL % site.name
+    send_mail('%s account activation' % site.name, message, sender, [user.email])
     logging.info('Sent activation %s', user)

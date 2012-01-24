@@ -79,15 +79,19 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     html = render_to_string(template, kwargs, context_instance=context_instance)
     return HttpResponse(html, status=status)
 
-def index(request, template_name='index.html', extra_context={}):
+def index(request, login_template_name='login.html', profile_template_name='profile.html', extra_context={}):
     """
-    Renders the index (login) page
+    If there is logged on user renders the profile page otherwise renders login page.
     
     **Arguments**
     
-    ``template_name``
-        A custom template to use. This is optional; if not specified,
-        this will default to ``index.html``.
+    ``login_template_name``
+        A custom login template to use. This is optional; if not specified,
+        this will default to ``login.html``.
+    
+    ``profile_template_name``
+        A custom profile template to use. This is optional; if not specified,
+        this will default to ``login.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
@@ -97,8 +101,15 @@ def index(request, template_name='index.html', extra_context={}):
     index.html or ``template_name`` keyword argument.
     
     """
+    template_name = login_template_name
+    formclass = 'LoginForm'
+    kwargs = {}
+    if request.user.is_authenticated():
+        template_name = profile_template_name
+        formclass = 'ProfileForm'
+        kwargs.update({'instance':request.user})
     return render_response(template_name,
-                           form = LoginForm(),
+                           form = globals()[formclass](**kwargs),
                            context_instance = get_context(request, extra_context))
 
 def _generate_invitation_code():

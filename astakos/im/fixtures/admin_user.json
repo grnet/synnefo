@@ -5,10 +5,7 @@
         "fields": {
             "level": 0,
             "invitations": 10000,
-            "auth_token": "0000",
-            "auth_token_created": "2011-09-11 09:17:14",
-            "auth_token_expires": "2012-09-11 09:17:14",
-            "updated": "2011-09-11"
-   	    }
+            "updated": "2012-01-24"
+   	}
     }
 ]

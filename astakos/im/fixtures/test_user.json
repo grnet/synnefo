@@ -1,0 +1,20 @@
+[
+    {
+        "model": "auth.user",
+        "pk": 2,
+        "fields": {
+            "username": "test",
+            "email": "papagian@gmail.com",
+            "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
+        }
+    },
+    {
+        "model": "im.AstakosUser",
+        "pk": 2,
+        "fields": {
+            "level": 1,
+            "invitations": 2,
+            "updated": "2012-01-24"
+   	}
+    }
+]

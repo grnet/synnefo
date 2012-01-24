@@ -54,7 +54,7 @@ import logging
 
 def get_backend(request):
     """
-    Return an instance of a registration backend,
+    Returns an instance of a registration backend,
     according to the INVITATIONS_ENABLED setting
     (if True returns ``astakos.im.backends.InvitationsBackend`` and if False
     returns ``astakos.im.backends.SimpleBackend``).
@@ -105,16 +105,20 @@ class InvitationsBackend(object):
         """
         request = self.request
         formclass = 'ExtendedUserCreationForm'
-        initial_data = None
         if self.invitation:
             formclass = 'Invited%s' %formclass
+        initial_data = None
         if request.method == 'GET':
-            initial_data = {'username':self.invitation.username,
-                            'email':self.invitation.username,
-                            'realname':self.invitation.realname}
-            inviter = AstakosUser.objects.get(username=self.invitation.inviter)
-            initial_data['inviter'] = inviter.realname
-        else:
+            if self.invitation:
+                # create a tmp user with the invitation realname
+                # to extract first and last name
+                u = AstakosUser(realname = self.invitation.realname)
+                initial_data = {'username':self.invitation.username,
+                                'email':self.invitation.username,
+                                'inviter':self.invitation.inviter.realname,
+                                'first_name':u.first_name,
+                                'last_name':u.last_name}
+        elif request.method == 'POST':
             initial_data = request.POST
         return globals()[formclass](initial_data)
     

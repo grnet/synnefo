@@ -4,6 +4,7 @@
 	dh $@ --with python2
 
 package=snf-ganeti-tools
+default_settings_dir=synnefo/ga/settings/default/
 
 override_dh_auto_install:
 	dh_auto_install
@@ -19,6 +20,12 @@ override_dh_auto_install:
 	  debian/$(package)/usr/bin/snf-progress-monitor \
 	  debian/$(package)/usr/sbin/snf-progress-monitor
 	rmdir debian/$(package)/usr/bin
+
+	mkdir -p debian/$(package)/etc/synnefo
+	cp synnefo/ganeti/settings.py  \
+		debian/$(package)/etc/synnefo/10-snf-ganeti-tools-backend.conf;
+	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;
+
 	# this package provides the synnefo namespace __init__.py
 	for py in $(shell pyversions -vr debian/control); do \
 		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \

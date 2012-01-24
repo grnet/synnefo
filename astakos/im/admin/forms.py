@@ -50,6 +50,7 @@ class AdminProfileForm(forms.ModelForm):
     """
     class Meta:
         model = AstakosUser
+        exclude = ('groups', 'user_permissions')
     
     def __init__(self, *args, **kwargs):
         super(AdminProfileForm, self).__init__(*args, **kwargs)
@@ -57,6 +58,4 @@ class AdminProfileForm(forms.ModelForm):
         ro_fields = ('username','date_joined', 'auth_token', 'last_login', 'email')
         if instance and instance.id:
             for field in ro_fields:
-                if isinstance(self.fields[field].widget, forms.CheckboxInput):
-                    self.fields[field].widget.attrs['disabled'] = True
                 self.fields[field].widget.attrs['readonly'] = True

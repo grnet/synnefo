@@ -73,7 +73,7 @@ def requires_admin(func):
     @wraps(func)
     def wrapper(request, *args):
         if not settings.BYPASS_ADMIN_AUTH:
-            if isinstance(request.user, AnonymousUser):
+            if request.user.is_anonymous():
                 next = urlencode({'next': request.build_absolute_uri()})
                 login_uri = reverse(index) + '?' + next
                 return HttpResponseRedirect(login_uri)

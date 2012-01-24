@@ -302,6 +302,8 @@ def split_container_object_string(s):
 def copy_or_move_object(request, src_account, src_container, src_name, dest_account, dest_container, dest_name, move=False):
     """Copy or move an object."""
     
+    if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
+        del(request.META['CONTENT_TYPE'])
     meta, permissions, public = get_object_headers(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:

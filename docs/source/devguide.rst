@@ -27,7 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Jan 19, 2012)         Update allowed versioning values.
+0.8 (Jan 24, 2012)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
@@ -35,6 +35,7 @@ Revision                   Description
 \                          Add object UUID field.
 \                          Always reply with the MD5 in the ETag.
 \                          Note that ``/login`` will only work if an external authentication system is defined.
+\                          Include option to ignore Content-Type on ``COPY``/``MOVE``.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -870,6 +871,14 @@ Return Code                     Description
 COPY
 """"
 
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+ignore_content_type     Ignore the supplied Content-Type
+======================  ===================================
+
+|
+
 ====================  ================================
 Request Header Name   Value
 ====================  ================================
@@ -887,7 +896,7 @@ X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-:sup:`*` *When using django locally with the supplied web server, do provide a valid Content-Type, as a type of text/plain is applied by default to all requests.*
+:sup:`*` *When using django locally with the supplied web server, use the ignore_content_type parameter, or do provide a valid Content-Type, as a type of text/plain is applied by default to all requests. Client software should always state ignore_content_type, except when a Content-Type is explicitly defined by the user.*
 
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 
@@ -1077,7 +1086,7 @@ List of differences from the OOS API:
 * Object create using ``POST`` to support standard HTML forms.
 * Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Include new version identifier in replies for object replace/change requests.
-* Object ``MOVE`` support.
+* Object ``MOVE`` support and ``ignore_content_type`` parameter in both ``COPY`` and ``MOVE``.
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.

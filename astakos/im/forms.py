@@ -36,6 +36,7 @@ from django.utils.translation import ugettext as _
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.conf import settings
 from django.core.validators import email_re
+from django.conf import settings
 
 from hashlib import new as newhasher
 
@@ -90,7 +91,8 @@ class ExtendedUserCreationForm(UserCreationForm):
         user.username = uuid.uuid4().hex[:30]
         user.is_active = False
         user.renew_token()
-        user.save()
+        if commit:
+            user.save()
         logging.info('Created user %s', user)
         return user
 
@@ -100,7 +102,6 @@ class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
     """
     
     inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
-    level = forms.IntegerField(widget=forms.TextInput(), label=_('Level'))
     
     class Meta:
         model = AstakosUser
@@ -111,13 +112,21 @@ class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
         Changes the order of fields, and removes the username field.
         """
         super(InvitedExtendedUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email', 'inviter', 'level', 'first_name',
+        self.fields.keyOrder = ['email', 'inviter', 'first_name',
                                 'last_name', 'password1', 'password2']
         #set readonly form fields
         self.fields['inviter'].widget.attrs['readonly'] = True
-        self.fields['level'].widget.attrs['readonly'] = True
         self.fields['email'].widget.attrs['readonly'] = True
         self.fields['username'].widget.attrs['readonly'] = True
+    
+    def save(self, commit=True):
+        user = super(InvitedExtendedUserCreationForm, self).save(commit=False)
+        level = user.invitation.inviter.level
+        user.level = level + 1
+        user.invitations = settings.INVITATIONS_PER_LEVEL[level]
+        if commit:
+            user.save()
+        return user
 
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label=_("Email"))

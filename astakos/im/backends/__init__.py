@@ -106,15 +106,14 @@ class InvitationsBackend(object):
         request = self.request
         formclass = 'ExtendedUserCreationForm'
         initial_data = None
+        if self.invitation:
+            formclass = 'Invited%s' %formclass
         if request.method == 'GET':
-            if self.invitation:
-                formclass = 'Invited%s' %formclass
-                initial_data = {'username':self.invitation.username,
-                                'email':self.invitation.username,
-                                'realname':self.invitation.realname}
-                inviter = AstakosUser.objects.get(username=self.invitation.inviter)
-                initial_data['inviter'] = inviter.realname
-                initial_data['level'] = inviter.level + 1
+            initial_data = {'username':self.invitation.username,
+                            'email':self.invitation.username,
+                            'realname':self.invitation.realname}
+            inviter = AstakosUser.objects.get(username=self.invitation.inviter)
+            initial_data['inviter'] = inviter.realname
         else:
             initial_data = request.POST
         return globals()[formclass](initial_data)

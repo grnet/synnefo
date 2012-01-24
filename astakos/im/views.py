@@ -286,13 +286,13 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
     signup.html or ``template_name`` keyword argument.
     """
     if not backend:
-            backend = get_backend(request)
+        backend = get_backend(request)
     try:
         form = backend.get_signup_form()
         if request.method == 'POST':
             if form.is_valid():
                 status, message = backend.signup(form)
-                # rollback incase of error
+                # rollback in case of error
                 if status == messages.ERROR:
                     transaction.rollback()
                 else:

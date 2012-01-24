@@ -91,7 +91,7 @@ class AstakosUser(User):
     @property
     def invitation(self):
         try:
-            return Invitation.objects.get(username=self.username)
+            return Invitation.objects.get(username=self.email)
         except Invitation.DoesNotExist:
             return None
     

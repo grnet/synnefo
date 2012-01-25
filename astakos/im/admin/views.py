@@ -64,6 +64,7 @@ from astakos.im.forms import *
 from astakos.im.backends import get_backend
 from astakos.im.views import render_response, index
 from astakos.im.admin.forms import AdminProfileForm
+from astakos.im.admin.forms import AdminUserCreationForm
 
 def requires_admin(func):
     """
@@ -214,6 +215,7 @@ def users_info(request, user_id, template_name='users_info.html', extra_context=
     user = AstakosUser.objects.get(id=user_id)
     return render_response(template_name,
                            form = AdminProfileForm(instance=user),
+                           user = user,
                            context_instance = get_context(request, extra_context))
 
 @requires_admin
@@ -534,18 +536,15 @@ def users_create(request, template_name='users_create.html', extra_context={}):
     users_create.html or ``template_name`` keyword argument.
     """
     if request.method == 'GET':
-        return render_response(template_name,
+        form = AdminUserCreationForm()
+    elif request.method == 'POST':
+        form = AdminUserCreationForm(request.POST)
+        if form.is_valid():
+            try:
+                user = form.save()
+                return users_info(request, user.id)
+            except ValueError, e:
+                messages.add_message(request, messages.ERROR, e)
+    return render_response(template_name,
+                               form = form,
                                context_instance=get_context(request, extra_context))
-    if request.method == 'POST':
-        user = AstakosUser()
-        user.username = request.POST.get('username')
-        user.email = request.POST.get('email')
-        user.first_name = request.POST.get('first_name')
-        user.last_name = request.POST.get('last_name')
-        user.is_superuser = True if request.POST.get('admin') else False
-        user.affiliation = request.POST.get('affiliation')
-        user.quota = int(request.POST.get('quota') or 0) * (1024**3)  # In GiB
-        user.renew_token()
-        user.provider = 'local'
-        user.save()
-        return redirect(users_info, user.id)

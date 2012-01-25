@@ -73,6 +73,8 @@ class ExtendedUserCreationForm(UserCreationForm):
     
     def clean_email(self):
         email = self.cleaned_data['email']
+        if not email:
+            raise forms.ValidationError(_("This field is required"))
         try:
             AstakosUser.objects.get(email = email)
             raise forms.ValidationError(_("Email is reserved"))
@@ -118,8 +120,8 @@ class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
     
     def save(self, commit=True):
         user = super(InvitedExtendedUserCreationForm, self).save(commit=False)
-        level = user.invitation.inviter.level
-        user.level = level + 1
+        level = user.invitation.inviter.level + 1
+        user.level = level
         user.invitations = settings.INVITATIONS_PER_LEVEL[level]
         if commit:
             user.save()

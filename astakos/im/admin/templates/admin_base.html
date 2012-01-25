@@ -2,7 +2,7 @@
     
 {% block tabs %}
 <ul class="tabs">
-  <li{% ifequal tab "home" %} class="active"{% endifequal %}>
+  <li{% ifequal tab "admin" %} class="active"{% endifequal %}>
     <a href="{% url astakos.im.admin.views.admin %}">Home</a>
   </li>
   <li{% ifequal tab "users" %} class="active"{% endifequal %}>

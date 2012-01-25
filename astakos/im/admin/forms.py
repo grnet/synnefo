@@ -39,6 +39,10 @@ from hashlib import new as newhasher
 
 from astakos.im.models import AstakosUser
 from astakos.im.util import get_or_create_user
+from astakos.im.forms import ExtendedUserCreationForm
+
+import uuid
+import logging
 
 class AdminProfileForm(forms.ModelForm):
     """
@@ -59,3 +63,27 @@ class AdminProfileForm(forms.ModelForm):
         if instance and instance.id:
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
+
+class AdminUserCreationForm(ExtendedUserCreationForm):
+    class Meta:
+        model = AstakosUser
+        fields = ("email", "first_name", "last_name", "is_superuser",
+                  "is_active", "affiliation")
+    
+    def __init__(self, *args, **kwargs):
+        """
+        Changes the order of fields, and removes the username field.
+        """
+        super(AdminUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email', 'first_name', 'last_name',
+                                'is_superuser', 'is_active', 'affiliation',
+                                'password1', 'password2']
+    
+    def save(self, commit=True):
+        user = super(AdminUserCreationForm, self).save(commit=False)
+        user.username = uuid.uuid4().hex[:30]
+        user.renew_token()
+        if commit:
+            user.save()
+        logging.info('Created user %s', user)
+        return user

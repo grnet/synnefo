@@ -5,11 +5,11 @@
   <li{% ifequal tab "profile" %} class="active"{% endifequal %}>
     <a href="{% url astakos.im.views.edit_profile %}">Profile</a>
   </li>
-  <li{% ifequal tab "passwordchange" %} class="active"{% endifequal %}>
+  <li{% ifequal not tab %} class="active"{% endifequal %}>
     <a href="{% url django.contrib.auth.views.password_change %}">Password Change</a>
   </li>
   {% if invitations_enabled %}
-  <li{% ifequal tab "invite" %} class="active"{% endifequal %}>
+  <li{% ifequal tab "invitations" %} class="active"{% endifequal %}>
     <a href="{% url astakos.im.views.invite %}">Invite</a>
   </li>
   {% endif %}

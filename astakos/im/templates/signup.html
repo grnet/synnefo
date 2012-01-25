@@ -10,7 +10,7 @@
     {% if "local" in im_modules %}
       <div class="span4">
         <h4>Local account</h4>
-        <form action="" method="post" class="form-stacked">{% csrf_token %}
+        <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
           {{ form.as_p }}
          <br>
           <div class="">

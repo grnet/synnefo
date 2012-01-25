@@ -61,7 +61,6 @@ from django.contrib import messages
 from django.db import transaction
 from django.contrib.auth.forms import UserCreationForm
 
-#from astakos.im.openid_store import PithosOpenIDStore
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.util import isoformat, get_context, get_current_site
 from astakos.im.backends import get_backend
@@ -74,7 +73,7 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     specified ``status``.
     """
     if tab is None:
-        tab = template.partition('_')[0]
+        tab = template.partition('_')[0].partition('.html')[0]
     kwargs.setdefault('tab', tab)
     html = render_to_string(template, kwargs, context_instance=context_instance)
     return HttpResponse(html, status=status)

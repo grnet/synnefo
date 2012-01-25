@@ -9,7 +9,7 @@
   {% if user.invitations %}
   <br />
   <h4>Invite someone else:</h4>
-  <form method="post">{% csrf_token %}
+  <form action="{% url astakos.im.views.invite %}" method="post">{% csrf_token %}
     <div class="clearfix">
       <label for="user-realname">Name</label>
       <div class="input">

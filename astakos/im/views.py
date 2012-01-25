@@ -358,14 +358,18 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
             from_email = request.user.email
             recipient_list = [settings.DEFAULT_CONTACT_EMAIL % sitename.lower()]
             content = render_to_string(email_template_name, {
-                        'message': form.cleaned_data('feedback_msg'),
-                        'data': form.cleaned_data('feedback_data'),
+                        'message': form.cleaned_data['feedback_msg'],
+                        'data': form.cleaned_data['feedback_data'],
                         'request': request})
             
-            send_mail(subject, content, from_email, recipient_list)
-            
-            resp = json.dumps({'status': 'send'})
-            return HttpResponse(resp)
+            try:
+                send_mail(subject, content, from_email, recipient_list)
+                message = _('Feedback successfully sent')
+                status = messages.SUCCESS
+            except (SMTPException, socket.error) as e:
+                status = messages.ERROR
+                message = getattr(e, 'strerror', '')
+            messages.add_message(request, status, message)
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request, extra_context))

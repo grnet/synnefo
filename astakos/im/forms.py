@@ -33,14 +33,19 @@
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordResetForm
 from django.conf import settings
 from django.core.validators import email_re
 from django.conf import settings
+from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
+from django.template import Context, loader
+from django.utils.http import int_to_base36
 
 from hashlib import new as newhasher
 
 from astakos.im.models import AstakosUser
+from astakos.im.util import get_current_site
 
 import logging
 import uuid
@@ -172,4 +177,33 @@ class SendInvitationForm(forms.Form):
     email = forms.EmailField(required = True, label = 'Email address')
     first_name = forms.EmailField(label = 'First name')
     last_name = forms.EmailField(label = 'Last name')
+
+class ExtendedPasswordResetForm(PasswordResetForm):
+    """
+    Extends PasswordResetForm by overriding save method:
+    passes a custom from_email in send_mail.
+    
+    Since Django 1.3 this is useless since ``django.contrib.auth.views.reset_password``
+    accepts a from_email argument.
+    """
+    def save(self, domain_override=None, email_template_name='registration/password_reset_email.html',
+             use_https=False, token_generator=default_token_generator, request=None):
+        """
+        Generates a one-use only link for resetting password and sends to the user.
+        """
+        for user in self.users_cache:
+            site_name, sitedomain = get_current_site(request, use_https=use_https)
+            t = loader.get_template(email_template_name)
+            c = {
+                'email': user.email,
+                'domain': sitedomain.split('://')[-1],
+                'site_name': site_name,
+                'uid': int_to_base36(user.id),
+                'user': user,
+                'token': token_generator.make_token(user),
+                'protocol': use_https and 'https' or 'http',
+            }
+            from_email = settings.DEFAULT_FROM_EMAIL % site_name
+            send_mail(_("Password reset on %s") % site_name,
+                t.render(Context(c)), from_email, [user.email])
     

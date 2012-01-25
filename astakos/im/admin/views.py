@@ -59,7 +59,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.sites.models import Site
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.util import isoformat, get_context
+from astakos.im.util import isoformat, get_context, get_current_site
 from astakos.im.forms import *
 from astakos.im.backends import get_backend
 from astakos.im.views import render_response, index
@@ -308,16 +308,16 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
                             context_instance = get_context(request, extra_context,**kwargs))
 
 def _send_greeting(request, user, template_name):
-    site = Site.objects.get_current()
-    subject = _('Welcome to %s' % site.name)
+    sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
+    subject = _('Welcome to %s' % sitename)
     baseurl = request.build_absolute_uri('/').rstrip('/')
     message = render_to_string(template_name, {
                 'user': user,
-                'url': site.domain,
+                'url': sitedomain,
                 'baseurl': baseurl,
-                'site_name': site.name,
-                'support': settings.DEFAULT_CONTACT_EMAIL % site.name.lower()})
-    sender = settings.DEFAULT_FROM_EMAIL % site.name
+                'site_name': sitename,
+                'support': settings.DEFAULT_CONTACT_EMAIL % sitename.lower()})
+    sender = settings.DEFAULT_FROM_EMAIL % sitename
     send_mail(subject, message, sender, [user.email])
     logging.info('Sent greeting %s', user)
 

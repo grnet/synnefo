@@ -35,6 +35,8 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.core.urlresolvers import reverse
 
+from astakos.im.forms import ExtendedPasswordResetForm
+
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index'),
     url(r'^login/?$', 'index'),
@@ -65,7 +67,8 @@ if 'local' in settings.IM_MODULES:
     )
     urlpatterns += patterns('django.contrib.auth.views',
         url(r'^local/password_reset/?$', 'password_reset',
-         {'email_template_name':'registration/password_email.txt'}),
+         {'email_template_name':'registration/password_email.txt',
+          'password_reset_form':ExtendedPasswordResetForm}),
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
          'password_reset_confirm'),

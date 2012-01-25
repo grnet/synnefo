@@ -3,7 +3,7 @@
         "model": "sites.site",
         "pk": 1,
         "fields": {
-            "domain": "https://pithos.dev.grnet.gr/im",
+            "domain": "pithos.dev.grnet.gr/im",
             "name": "Pithos"
    	    }
     }

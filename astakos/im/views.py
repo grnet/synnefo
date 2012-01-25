@@ -63,7 +63,7 @@ from django.contrib.auth.forms import UserCreationForm
 
 #from astakos.im.openid_store import PithosOpenIDStore
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.util import isoformat, get_context
+from astakos.im.util import isoformat, get_context, get_current_site
 from astakos.im.backends import get_backend
 from astakos.im.forms import ProfileForm, FeedbackForm, LoginForm
 
@@ -122,16 +122,16 @@ def _generate_invitation_code():
             return code
 
 def _send_invitation(request, baseurl, inv):
-    site = Site.objects.get_current()
-    subject = _('Invitation to %s' % site.name)
-    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(site.domain))
+    sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
+    subject = _('Invitation to %s' % sitename)
+    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(sitedomain))
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
                 'baseurl': baseurl,
-                'service': site.name,
-                'support': settings.DEFAULT_CONTACT_EMAIL % site.name.lower()})
-    sender = settings.DEFAULT_FROM_EMAIL % site.name
+                'service': sitename,
+                'support': settings.DEFAULT_CONTACT_EMAIL % sitename.lower()})
+    sender = settings.DEFAULT_FROM_EMAIL % sitename
     send_mail(subject, message, sender, [inv.username])
     logging.info('Sent invitation %s', inv)
 
@@ -353,10 +353,10 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
         
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            site = Site.objects.get_current()
-            subject = _("Feedback from %s" % site.name)
+            sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
+            subject = _("Feedback from %s" % sitename)
             from_email = request.user.email
-            recipient_list = [settings.DEFAULT_CONTACT_EMAIL]
+            recipient_list = [settings.DEFAULT_CONTACT_EMAIL % sitename.lower()]
             content = render_to_string(email_template_name, {
                         'message': form.cleaned_data('feedback_msg'),
                         'data': form.cleaned_data('feedback_data'),

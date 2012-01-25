@@ -36,6 +36,7 @@ import logging
 from datetime import tzinfo, timedelta
 from django.conf import settings
 from django.template import RequestContext
+from django.contrib.sites.models import Site
 
 from astakos.im.models import AstakosUser
 
@@ -83,3 +84,11 @@ def get_context(request, extra_context={}, **kwargs):
         extra_context = {}
     extra_context.update(kwargs)
     return RequestContext(request, extra_context)
+
+def get_current_site(request, use_https=False):
+    """
+    returns the current site name and full domain (including prorocol)
+    """
+    protocol = use_https and 'https' or 'http'
+    site = Site.objects.get_current()
+    return site.name, '%s://%s' % (protocol, site.domain)

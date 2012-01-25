@@ -35,7 +35,6 @@
 
 import oauth2 as oauth
 import urlparse
-import uuid
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -117,8 +116,8 @@ def authenticated(request):
     # should never be used.
     email = '%s@twitter.com' % access_token['screen_name']
     realname = access_token['screen_name']
-    username = uuid.uuid4().hex[:30]
-    user = get_or_create_user(username, realname=realname, affiliation='Twitter', level=0, email=email)
+    
+    user = get_or_create_user(email, realname=realname, affiliation='Twitter', provider='twitter', level=0)
     # in order to login the user we must call authenticate first
     user = authenticate(email=user.email, auth_token=user.auth_token)
     return prepare_response(request,

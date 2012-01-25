@@ -91,14 +91,14 @@ def index(request, login_template_name='login.html', profile_template_name='prof
     
     ``profile_template_name``
         A custom profile template to use. This is optional; if not specified,
-        this will default to ``login.html``.
+        this will default to ``profile.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    index.html or ``template_name`` keyword argument.
+    profile.html or login.html or ``template_name`` keyword argument.
     
     """
     template_name = login_template_name

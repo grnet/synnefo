@@ -47,9 +47,9 @@ from urllib import unquote
 
 from hashlib import new as newhasher
 
-def login(request, on_failure='index.html'):
+def login(request, on_failure='login.html'):
     """
-    on_failure: whatever redirect accepts as to
+    on_failure: the template name to render on login failure
     """
     form = LoginForm(data=request.POST)
     if not form.is_valid():

@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import logging
+import uuid
 
 from datetime import tzinfo, timedelta
 from django.conf import settings
@@ -55,15 +56,15 @@ def isoformat(d):
 
    return d.replace(tzinfo=UTC()).isoformat()
 
-def get_or_create_user(username, realname='', first_name='', last_name='', affiliation='', level=0, provider='local', password='', email=''):
+def get_or_create_user(email, realname='', first_name='', last_name='', affiliation='', level=0, provider='local', password=''):
     """Find or register a user into the internal database
        and issue a token for subsequent requests.
     """
-    user, created = AstakosUser.objects.get_or_create(username=username,
+    user, created = AstakosUser.objects.get_or_create(email=email,
         defaults={
             'is_active': False,
             'password':password,
-            'email':email,
+            'username':uuid.uuid4().hex[:30],
             'affiliation':affiliation,
             'level':level,
             'invitations':settings.INVITATIONS_PER_LEVEL[level],

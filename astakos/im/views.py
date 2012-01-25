@@ -312,7 +312,7 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
                     if next:
                         return redirect(next)
                 messages.add_message(request, status, message)
-    except Invitation.DoesNotExist, e:
+    except (Invitation.DoesNotExist, Exception), e:
         messages.add_message(request, messages.ERROR, e)
     return render_response(template_name,
                            form = form if 'form' in locals() else UserCreationForm(),

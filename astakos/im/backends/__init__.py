@@ -37,6 +37,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.sites.models import Site
 from django.contrib import messages
@@ -45,7 +46,6 @@ from django.shortcuts import redirect
 from smtplib import SMTPException
 from urllib import quote
 
-from astakos.im.util import get_or_create_user
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import ExtendedUserCreationForm, InvitedExtendedUserCreationForm
 
@@ -150,6 +150,10 @@ class InvitationsBackend(object):
             if self._is_preaccepted(user):
                 user.is_active = True
                 user.save()
+                # get the raw password from the form
+                password = form.cleaned_data['password1']
+                user = authenticate(username=user.email, password=password)
+                login(self.request, user)
                 message = _('Registration completed. You can now login.')
             else:
                 message = _('Registration completed. You will receive an email upon your account\'s activation')

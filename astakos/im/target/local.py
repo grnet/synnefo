@@ -83,4 +83,5 @@ def activate(request):
     
     user.is_active = True
     user.save()
-    return prepare_response(request, user, next, renew=True, skip_login=True)
+    user = authenticate(email=user.email, auth_token=user.auth_token)
+    return prepare_response(request, user, next, renew=True)

@@ -41,7 +41,6 @@ from django.conf import settings
 from hashlib import new as newhasher
 
 from astakos.im.models import AstakosUser
-from astakos.im.util import get_or_create_user
 
 import logging
 import uuid

@@ -35,6 +35,7 @@
 
 import oauth2 as oauth
 import urlparse
+import uuid
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -114,12 +115,12 @@ def authenticated(request):
     # These two things will likely never be used. Alternatively, you 
     # can prompt them for their email here. Either way, the password 
     # should never be used.
-    username = '%s@twitter.com' % access_token['screen_name']
+    email = '%s@twitter.com' % access_token['screen_name']
     realname = access_token['screen_name']
-    
-    user = get_or_create_user(username, realname=realname, affiliation='Twitter', level=0, email=username)
+    username = uuid.uuid4().hex[:30]
+    user = get_or_create_user(username, realname=realname, affiliation='Twitter', level=0, email=email)
     # in order to login the user we must call authenticate first
-    user = authenticate(username=user.username, auth_token=user.auth_token)
+    user = authenticate(email=user.email, auth_token=user.auth_token)
     return prepare_response(request,
                             user,
                             request_token.get('next'))

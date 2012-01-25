@@ -59,7 +59,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.sites.models import Site
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.util import isoformat, get_or_create_user, get_context
+from astakos.im.util import isoformat, get_context
 from astakos.im.forms import *
 from astakos.im.backends import get_backend
 from astakos.im.views import render_response, index

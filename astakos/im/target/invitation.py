@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import logging
+import uuid
 
 from datetime import datetime
 
@@ -56,10 +57,11 @@ def login(request):
         invitation.save()
         logging.info('Accepted invitation %s', invitation)
     
-    user = get_or_create_user(invitation.uniq,
-                              invitation.realname,
-                              'Invitation',
-                              invitation.inviter.level + 1)
+    user = get_or_create_user(username = uuid.uuid4().hex[:30],
+                              realname = invitation.realname,
+                              affiliation = 'Invitation',
+                              level = invitation.inviter.level + 1,
+                              email = invitation.uniq)
     
     # in order to login the user we must call authenticate first 
     authenticate(email=user.email, auth_token=user.auth_token)

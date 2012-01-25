@@ -63,7 +63,7 @@ from django.contrib.auth.forms import UserCreationForm
 
 #from astakos.im.openid_store import PithosOpenIDStore
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.util import isoformat, get_or_create_user, get_context
+from astakos.im.util import isoformat, get_context
 from astakos.im.backends import get_backend
 from astakos.im.forms import ProfileForm, FeedbackForm, LoginForm
 

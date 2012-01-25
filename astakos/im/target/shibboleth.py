@@ -38,6 +38,7 @@ from django.contrib.auth import authenticate
 from astakos.im.target.util import prepare_response
 from astakos.im.util import get_or_create_user
 
+import uuid
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -69,9 +70,10 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    user = get_or_create_user(eppn, realname=realname, affiliation=affiliation, level=0, email=eppn)
+    username = uuid.uuid4().hex[:30]
+    user = get_or_create_user(username, realname=realname, affiliation=affiliation, level=0, email=eppn)
     # in order to login the user we must call authenticate first
-    user = authenticate(username=user.username, auth_token=user.auth_token)
+    user = authenticate(email=user.email, auth_token=user.auth_token)
     return prepare_response(request,
                             user,
                             request.GET.get('next'),

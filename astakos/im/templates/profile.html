@@ -4,7 +4,7 @@
 
 {% block body %}
 
-<form method="post">{% csrf_token %}
+<form action={%url astakos.im.views.edit_profile %} method="post">{% csrf_token %}
     {{ form.as_p }}
 
   <div class="actions">

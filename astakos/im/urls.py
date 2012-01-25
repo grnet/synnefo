@@ -48,7 +48,7 @@ urlpatterns = patterns('astakos.im.views',
 
 urlpatterns += patterns('django.contrib.auth.views',
     url(r'^logout/?$', 'logout'),
-    url(r'^password/?$', 'password_change', {'post_change_redirect':'admin'}),
+    url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'})
 )
 
 urlpatterns += patterns('astakos.im.target',

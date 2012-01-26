@@ -54,7 +54,7 @@ env.roledefs = {
 }
 
 
-# coloured logging
+# colored logging
 notice = lambda x: sys.stdout.write(yellow(x) + "\n")
 info = lambda x: sys.stdout.write(green(x) + "\n")
 error = lambda x: sys.stdout.write(red(x) + "\n")
@@ -115,6 +115,7 @@ def installall():
     for p in env.packages:
         install_pkg(p)
 
+
 def collectdists():
     if os.path.exists("./packages"):
         notice("removing 'packages' directory")
@@ -123,6 +124,7 @@ def collectdists():
     local("mkdir packages");
     for p in env.packages:
         local("cp %s/dist/*.tar.gz ./packages/" % package_root(p));
+
 
 def removeall():
     for p in env.packages:
@@ -162,13 +164,16 @@ def co(c):
 
 env.debian_branch = 'debian-0.8'
 
+
 def _last_commit(f):
     return local("git rev-list --all --date-order --max-count=1 %s" % f,
             capture=True).strip()
 
+
 def _diff_from_master(c,f):
     return local("git log --oneline %s..master %s" \
                  " | wc -l" % (c, f), capture=True)
+
 
 def dch(p):
     with co(env.debian_branch):
@@ -188,6 +193,7 @@ def dch(p):
                       "-m 'Updated %s changelog'" % p)
 
             local("rm -r .git")
+
 
 def builddeb(p, master="master", branch="debian-0.8"):
     with lcd(package_root(p)):
@@ -213,6 +219,7 @@ def collectdebs():
     build_area = env.get('build_area', '../build-area')
     for p in env.deb_packages:
         local("cp %s/%s*.deb ./packages/" % (build_area, p))
+
 
 @roles('pypi')
 def uploadtars():

@@ -151,8 +151,11 @@ def branch():
 def co(c):
     current_branch = branch();
     git("checkout %s" % c)
-    yield
-    git("checkout %s" % current_branch)
+    # Use a try block to make sure we checkout the original branch.
+    try:
+        yield
+    finally:
+        git("checkout %s" % current_branch)
 
 
 #

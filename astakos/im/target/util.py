@@ -63,7 +63,7 @@ def prepare_response(request, user, next='', renew=False, skip_login=False):
         # TODO: Avoid redirect loops.
         parts = list(urlsplit(next))
         if not parts[1] or (parts[1] and request.get_host() != parts[1]):
-            parts[3] = urlencode({'user': user.username, 'token': user.auth_token})
+            parts[3] = urlencode({'user': user.email, 'token': user.auth_token})
             next = urlunsplit(parts)
     
     if settings.FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
@@ -78,9 +78,9 @@ def prepare_response(request, user, next='', renew=False, skip_login=False):
     
     response = HttpResponse()
     if not next:
-        response['X-Auth-User'] = user.username
+        response['X-Auth-User'] = user.email
         response['X-Auth-Token'] = user.auth_token
-        response.content = user.username + '\n' + user.auth_token + '\n'
+        response.content = user.email + '\n' + user.auth_token + '\n'
         response.status_code = 200
     else:
         response['Location'] = next

@@ -200,6 +200,7 @@ def nosigndebs():
 
 def builddeb(p, master="master", branch="debian-0.8"):
     with co(branch):
+        info("Building debian package for %s" % p)
         with lcd(package_root(p)):
             local("git merge master")
             local("if [ ! -d .git ]; then mkdir .git; fi")
@@ -210,20 +211,14 @@ def builddeb(p, master="master", branch="debian-0.8"):
                    (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
             local("git reset synnefo/versions/*.py")
+        info("Done building debian package for %s" % p)
 
 
 def builddeball(b="debian-0.8"):
     for p in env.deb_packages:
         builddeb(p, b)
-    collectdebs()
 
-
-def collectdebs():
-    build_area = env.get('build_area', '../build-area')
-    for p in env.deb_packages:
-        local("cp %s/%s*.deb ./packages/" % (build_area, p))
 
 @roles('pypi')
 def uploadtars():
     put("packages/*.tar.gz", 'www/pypi/')
-

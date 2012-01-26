@@ -223,7 +223,8 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
     Allows a user to edit his/her profile.
     
     In case of GET request renders a form for displaying the user information.
-    In case of POST updates the user informantion.
+    In case of POST updates the user informantion and redirects to ``next``
+    url parameter if exists.
     
     If the user isn't logged in, redirects to settings.LOGIN_URL.  
     
@@ -243,6 +244,7 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
     try:
         user = AstakosUser.objects.get(username=request.user)
         form = ProfileForm(instance=user)
+        extra_context['next'] = request.GET.get('next')
     except AstakosUser.DoesNotExist:
         token = request.GET.get('auth', None)
         user = AstakosUser.objects.get(auth_token=token)
@@ -255,6 +257,9 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
                 messages.add_message(request, messages.SUCCESS, msg)
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
+        next = request.POST.get('next')
+        if next:
+            return redirect(next)
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request,

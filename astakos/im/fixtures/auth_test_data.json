@@ -4,6 +4,7 @@
         "pk": 3,
         "fields": {
             "username": "verigak",
+            "email": "verigak@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff",
             "is_superuser": 1
         }
@@ -25,6 +26,7 @@
         "pk": 4,
         "fields": {
             "username": "chazapis",
+            "email": "chazapis@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff",
             "is_superuser": 1
         }
@@ -46,6 +48,7 @@
         "pk": 5,
         "fields": {
             "username": "gtsouk",
+            "email": "gtsouk@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },
@@ -66,6 +69,7 @@
         "pk": 6,
         "fields": {
             "username": "papagian",
+            "email": "papagian@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },
@@ -86,6 +90,7 @@
         "pk": 7,
         "fields": {
             "username": "louridas",
+            "email": "louridas@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },
@@ -106,6 +111,7 @@
         "pk": 7,
         "fields": {
             "username": "chstath",
+            "email": "chstath@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },
@@ -126,6 +132,7 @@
         "pk": 8,
         "fields": {
             "username": "pkanavos",
+            "email": "pkanavos@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },
@@ -146,6 +153,7 @@
         "pk": 8,
         "fields": {
             "username": "mvasilak",
+            "email": "mvasilak@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },
@@ -166,6 +174,7 @@
         "pk": 9,
         "fields": {
             "username": "διογένης",
+            "email": "diogenis@example.com",
             "password": "sha1$84fb5$d7d29831d42611a2ad56c136e4280fdc114539ff"
         }
     },

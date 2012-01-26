@@ -44,7 +44,6 @@ env.develop = False
 env.autoremove = True
 env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject',
                 'snf-okeanos-site']
-env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'
@@ -61,6 +60,7 @@ error = lambda x: sys.stdout.write(red(x) + "\n")
 
 def dev():
     env.develop = True
+
 
 # wrap local to respect global capturing setting from env.capture
 oldlocal = local
@@ -86,8 +86,7 @@ def remove_pkg(p):
 def build_pkg(p):
     info ("building package: %s" % p)
     with lcd(package_root(p)):
-        with settings(warn_only=True):
-            local("rm -r dist build")
+        local("rm -r dist build")
         local("python setup.py egg_info -d sdist")
 
 
@@ -161,14 +160,19 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.8'
+env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
+env.signdebs = True
+
 
 def _last_commit(f):
     return local("git rev-list --all --date-order --max-count=1 %s" % f,
             capture=True).strip()
 
+
 def _diff_from_master(c,f):
     return local("git log --oneline %s..master %s" \
                  " | wc -l" % (c, f), capture=True)
+
 
 def dch(p):
     with co(env.debian_branch):
@@ -189,23 +193,28 @@ def dch(p):
 
             local("rm -r .git")
 
+
+def nosigndebs():
+    env.signdebs = False
+
+
 def builddeb(p, master="master", branch="debian-0.8"):
-    with lcd(package_root(p)):
-        local("git merge master")
-        with settings(warn_only=True):
-            local("ls .git || mkdir .git")
+    with co(branch):
+        with lcd(package_root(p)):
+            local("git merge master")
+            local("if [ ! -d .git ]; then mkdir .git; fi")
             local("python setup.py clean")
             local("git add synnefo/versions/*.py -f")
-            local("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s \
---git-export=INDEX --git-ignore-new" % (master, branch))
+            local(("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s"
+                   " --git-export=INDEX --git-ignore-new %s") %
+                   (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
             local("git reset synnefo/versions/*.py")
 
 
 def builddeball(b="debian-0.8"):
-    with co(b):
-        for p in env.deb_packages:
-            builddeb(p, b)
+    for p in env.deb_packages:
+        builddeb(p, b)
     collectdebs()
 
 

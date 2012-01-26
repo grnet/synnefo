@@ -50,3 +50,15 @@ When not in a Django context, import the ``synnefo.settings`` module directly:
 
 In both cases, assembly of default settings and execution of
 ``$SYNNEFO_SETTINGS_DIR/*.conf`` happens in the same way.
+
+Package settings
+----------------
+
+Component :ref:`snf-sommon <snf-common>` requires the following
+settings:
+
+.. literalinclude:: ../synnefo/settings/default/admins.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/settings/default/logging.py
+    :lines: 4-
+

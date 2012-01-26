@@ -448,6 +448,7 @@ class OOS_Client(Client):
         account = account or self.account
         path = '/%s/%s/%s' % (account, dst_container, dst_object)
         headers = {} if not headers else headers
+        params = {}
         for k, v in meta.items():
             headers['x-object-meta-%s' % k] = v
         if remove:
@@ -456,8 +457,10 @@ class OOS_Client(Client):
             headers['x-copy-from'] = '/%s/%s' % (src_container, src_object)
         headers['content_length'] = 0
         if content_type:
-            headers['content_type'] = content_type 
-        return self.put(path, headers=headers)
+            headers['content_type'] = content_type
+        else:
+            params['ignore_content_type'] = ''
+        return self.put(path, headers=headers, params=params)
     
     def copy_object(self, src_container, src_object, dst_container, dst_object,
                    meta={}, account=None, content_type=None, **headers):

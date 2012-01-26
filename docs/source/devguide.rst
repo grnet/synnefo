@@ -27,7 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.8 (Jan 19, 2012)         Update allowed versioning values.
+0.8 (Jan 24, 2012)         Update allowed versioning values.
 \                          Change policy/meta formatting in JSON/XML replies.
 \                          Document that all non-ASCII characters in headers should be URL-encoded.
 \                          Support metadata-based queries when listing objects at the container level.
@@ -35,6 +35,8 @@ Revision                   Description
 \                          Add object UUID field.
 \                          Always reply with the MD5 in the ETag.
 \                          Note that ``/login`` will only work if an external authentication system is defined.
+\                          Include option to ignore Content-Type on ``COPY``/``MOVE``.
+\                          Use format parameter for conflict (409) and uploaded hash list (container level) replies.
 0.7 (Nov 21, 2011)         Suggest upload/download methods using hashmaps.
 \                          Propose syncing algorithm.
 \                          Support cross-account object copy and move.
@@ -493,6 +495,8 @@ x_object_public             Object's publicly accessible URI (optional)
 x_object_meta_*             Optional user defined metadata
 ==========================  ======================================
 
+Sharing metadata will only be returned if there is no ``until`` parameter defined.
+
 Extended replies may also include virtual directory markers in separate sections of the ``json`` or ``xml`` results.
 Virtual directory markers are only included when ``delimiter`` is explicitly set. They correspond to the substrings up to and including the first occurrence of the delimiter.
 In JSON results they appear as dictionaries with only a ``subdir`` key. In XML results they appear interleaved with ``<object>`` tags as ``<subdir name="..." />``.
@@ -598,10 +602,11 @@ X-Container-Meta-*    Optional user defined metadata
 ======================  ============================================
 Request Parameter Name  Value
 ======================  ============================================
+format                  Optional hash list reply type (can be ``json`` or ``xml``)
 update                  Do not replace metadata/policy (no value parameter)
 ======================  ============================================
 
-No reply content/headers, except when uploading data, where the reply consists of a list of hashes for the blocks received (in a simple text format, with one hash per line).
+No reply content/headers, except when uploading data, where the reply consists of a list of hashes for the blocks received (in the format specified).
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
 To change policy, include an ``X-Container-Policy-*`` header with the name in the key. If no ``X-Container-Policy-*`` header is present, no changes will be applied to policy. The ``update`` parameter also applies to policy - deleted values will revert to defaults. To delete/revert a specific policy directive, use ``update`` and an empty header value. See container ``PUT`` for a reference of policy directives.
@@ -795,7 +800,7 @@ X-Object-Public             Object's publicly accessible URI (optional)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
-|
+Sharing headers (``X-Object-Sharing``, ``X-Object-Shared-By`` and ``X-Object-Allowed-To``) are only included if the request is for the object's latest version (no specific ``version`` parameter is set).
 
 ===========================  ==============================
 Return Code                  Description
@@ -837,11 +842,11 @@ X-Object-Meta-*       Optional user defined metadata
 ======================  ===================================
 Request Parameter Name  Value
 ======================  ===================================
-format                  Optional extended request type (can be ``json`` or ``xml``)
+format                  Optional extended request/conflict response type (can be ``json`` or ``xml``)
 hashmap                 Optional hashmap provided instead of data (no value parameter)
 ======================  ===================================
 
-The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created, otherwise the server returns Conflict (409) with the list of the missing parts (in a simple text format, with one hash per line).
+The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created. Otherwise the server returns Conflict (409) with the list of the missing parts (in simple text format, with one hash per line, or in JSON/XML - depending on the ``format`` parameter).
 
 Hashmaps should be formatted as outlined in ``GET``.
 
@@ -858,7 +863,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
-409 (Conflict)                  The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply - in simple text format)
+409 (Conflict)                  The object can not be created from the provided hashmap, or there are conflicting permissions (a list of missing hashes, or a list of conflicting sharing paths will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 422 (Unprocessable Entity)      The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
@@ -885,7 +890,14 @@ X-Object-Public       Object is publicly accessible (optional)
 X-Object-Meta-*       Optional user defined metadata
 ====================  ================================
 
-:sup:`*` *When using django locally with the supplied web server, do provide a valid Content-Type, as a type of text/plain is applied by default to all requests.*
+:sup:`*` *When using django locally with the supplied web server, use the ignore_content_type parameter, or do provide a valid Content-Type, as a type of text/plain is applied by default to all requests. Client software should always state ignore_content_type, except when a Content-Type is explicitly defined by the user.*
+
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+format                  Optional conflict response type (can be ``json`` or ``xml``)
+ignore_content_type     Ignore the supplied Content-Type
+======================  ===================================
 
 Refer to ``PUT``/``POST`` for a description of request headers. Metadata is also copied, updated with any values defined. Sharing/publishing options are not copied.
 
@@ -901,7 +913,7 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
-409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
+409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply)
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
 
@@ -941,6 +953,7 @@ X-Object-Meta-*       Optional user defined metadata
 ======================  ============================================
 Request Parameter Name  Value
 ======================  ============================================
+format                  Optional conflict response type (can be ``json`` or ``xml``)
 update                  Do not replace metadata (no value parameter)
 ======================  ============================================
 
@@ -978,7 +991,7 @@ Return Code                     Description
 ==============================  ==============================
 202 (Accepted)                  The request has been accepted (not a data update)
 204 (No Content)                The request succeeded (data updated)
-409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply - in simple text format)
+409 (Conflict)                  There are conflicting permissions (a list of conflicting sharing paths will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 416 (Range Not Satisfiable)     The supplied range is invalid
@@ -1075,7 +1088,7 @@ List of differences from the OOS API:
 * Object create using ``POST`` to support standard HTML forms.
 * Partial object updates through ``POST``, using the ``Content-Length``, ``Content-Type``, ``Content-Range`` and ``Transfer-Encoding`` headers. Use another object's data to update with ``X-Source-Object`` and ``X-Source-Version``. Truncate with ``X-Object-Bytes``.
 * Include new version identifier in replies for object replace/change requests.
-* Object ``MOVE`` support.
+* Object ``MOVE`` support and ``ignore_content_type`` parameter in both ``COPY`` and ``MOVE``.
 * Conditional object create/update operations, using ``If-Match`` and ``If-None-Match`` headers.
 * Time-variant account/container listings via the ``until`` parameter.
 * Object versions - parameter ``version`` in ``HEAD``/``GET`` (list versions with ``GET``), ``X-Object-Version-*`` meta in replies, ``X-Source-Version`` in ``PUT``/``COPY``.

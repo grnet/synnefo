@@ -41,6 +41,7 @@ from urllib import quote, unquote
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_unicode, smart_str
@@ -302,6 +303,8 @@ def split_container_object_string(s):
 def copy_or_move_object(request, src_account, src_container, src_name, dest_account, dest_container, dest_name, move=False):
     """Copy or move an object."""
     
+    if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
+        del(request.META['CONTENT_TYPE'])
     meta, permissions, public = get_object_headers(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
@@ -320,7 +323,7 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict('\n'.join(e.data) + '\n')
+        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:
@@ -755,6 +758,14 @@ def hashmap_md5(request, hashmap, size):
         pad = bs - min(len(data), bs)
         md5.update(data + ('\x00' * pad))
     return md5.hexdigest().lower()
+
+def simple_list_response(request, l):
+    if request.serialization == 'text':
+        return '\n'.join(l) + '\n'
+    if request.serialization == 'xml':
+        return render_to_string('items.xml', {'items': l})
+    if request.serialization == 'json':
+        return json.dumps(l)
 
 def get_backend():
     backend = connect_backend(db_module=settings.BACKEND_DB_MODULE,

@@ -46,12 +46,12 @@ from pithos.lib.filter import parse_filters
 
 from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound, Conflict,
     LengthRequired, PreconditionFailed, RequestEntityTooLarge, RangeNotSatisfiable, UnprocessableEntity)
-from pithos.api.util import (rename_meta_key, format_header_key, printable_header_dict, get_account_headers,
-    put_account_headers, get_container_headers, put_container_headers, get_object_headers, put_object_headers,
-    update_manifest_meta, update_sharing_meta, update_public_meta, validate_modification_preconditions,
-    validate_matching_preconditions, split_container_object_string, copy_or_move_object,
-    get_int_parameter, get_content_length, get_content_range, socket_read_iterator, SaveToBackendHandler,
-    object_data_response, put_object_block, hashmap_md5, api_method, json_encode_decimal)
+from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header_key, printable_header_dict,
+    get_account_headers, put_account_headers, get_container_headers, put_container_headers, get_object_headers,
+    put_object_headers, update_manifest_meta, update_sharing_meta, update_public_meta,
+    validate_modification_preconditions, validate_matching_preconditions, split_container_object_string,
+    copy_or_move_object, get_int_parameter, get_content_length, get_content_range, socket_read_iterator,
+    SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
 from pithos.backends.base import NotAllowedError, QuotaError
 
 
@@ -376,7 +376,7 @@ def container_create(request, v_account, v_container):
     
     return HttpResponse(status=ret)
 
-@api_method('POST')
+@api_method('POST', format_allowed=True)
 def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -421,7 +421,7 @@ def container_update(request, v_account, v_container):
     
     response = HttpResponse(status=202)
     if hashmap:
-        response.content = '\n'.join(hashmap) + '\n'
+        response.content = simple_list_response(request, hashmap)
     return response
 
 @api_method('DELETE')
@@ -853,13 +853,13 @@ def object_write(request, v_account, v_container, v_object):
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except IndexError, e:
-        raise Conflict('\n'.join(e.data) + '\n')
+        raise Conflict(simple_list_response(request, e.data))
     except NameError:
         raise ItemNotFound('Container does not exist')
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict('\n'.join(e.data) + '\n')
+        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if 'ETag' not in meta:
@@ -919,7 +919,7 @@ def object_write_form(request, v_account, v_container, v_object):
     response['X-Object-Version'] = version_id
     return response
 
-@api_method('COPY')
+@api_method('COPY', format_allowed=True)
 def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -956,7 +956,7 @@ def object_copy(request, v_account, v_container, v_object):
     response['X-Object-Version'] = version_id
     return response
 
-@api_method('MOVE')
+@api_method('MOVE', format_allowed=True)
 def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -992,7 +992,7 @@ def object_move(request, v_account, v_container, v_object):
     response['X-Object-Version'] = version_id
     return response
 
-@api_method('POST')
+@api_method('POST', format_allowed=True)
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
     # Error Response Codes: internalServerError (500),
@@ -1044,7 +1044,7 @@ def object_update(request, v_account, v_container, v_object):
             except ValueError:
                 raise BadRequest('Invalid sharing header')
             except AttributeError, e:
-                raise Conflict('\n'.join(e.data) + '\n')
+                raise Conflict(simple_list_response(request, e.data))
         if public is not None:
             try:
                 request.backend.update_object_public(request.user_uniq, v_account,
@@ -1190,7 +1190,7 @@ def object_update(request, v_account, v_container, v_object):
     except ValueError:
         raise BadRequest('Invalid sharing header')
     except AttributeError, e:
-        raise Conflict('\n'.join(e.data) + '\n')
+        raise Conflict(simple_list_response(request, e.data))
     except QuotaError:
         raise RequestEntityTooLarge('Quota exceeded')
     if public is not None:

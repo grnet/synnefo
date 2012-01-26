@@ -290,10 +290,11 @@ body.alt {
   display: block;
   padding: 0.7em 5em;
   color: #fff;
-  font-size: 1.2em;
+  font-size: 1.1em;
   background-color: #FF7F2A;
   cursor: pointer;
   margin-right: -20px;
+  text-decoration: none;
 }
 .gotoapp:hover {
   background-color: #FF9955;
@@ -304,10 +305,6 @@ body.alt {
 }
 .inner-bottom.in-page .testuser {
   margin-right: 60px;
-}
-.gotoapp {
-  color: #fff;
-  text-decoration: none;
 }
 .banner-coming {
   position: absolute;
@@ -2802,6 +2799,7 @@ body, html {
   margin: 0;
   font-size: 13px;
 }
+
 .inner {
   min-height: 200px;
 }
@@ -2822,9 +2820,6 @@ body, html {
   color: #ffffff !important;
   font-weight: bold;
 }
-.canlogin {
-  display: none;
-}
 .logohover {
   position: relative;
   cursor: pointer;
@@ -2834,33 +2829,15 @@ body, html {
   top: 0;
   left: 0;
 }
-body .canlogin {
-  display: none;
-}
-body.auth .canlogin {
-  display: block !important;
-}
 .inner-bottom {
   position: relative;
   margin-bottom: 80px;
   margin-top: -40px;
 }
-.inner-bottom .canlogin {
-  font-size: 0.9em;
-  position: absolute;
-  right: 20px;
-  top: 25px;
-}
-body.auth .inner-bottom .nologin {
-  display: none;
-}
-.inner-bottom .nologin {
-  font-size: 0.9em;
-  position: absolute;
-  right: 20px;
-  top: 25px;
-}
 .inner-bottom .gotoapp {
+  position: absolute;
+  right: 20px;
+  top: 25px;
   padding: 0.5em 5em;
   margin-right: 0;
   -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -2870,11 +2847,8 @@ body.auth .inner-bottom .nologin {
 .inner-bottom .gotoapp:hover {
   color: #fff !important;
 }
-body.auth .downloads {
-  display: block;
-}
 .downloads {
-  display: none;
+  display: block;
   border-top: 2px solid #fff;
   background-color: #DCE9F1;
   background-color: #accfdf;

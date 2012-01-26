@@ -58,6 +58,7 @@ notice = lambda x: sys.stdout.write(yellow(x) + "\n")
 info = lambda x: sys.stdout.write(green(x) + "\n")
 error = lambda x: sys.stdout.write(red(x) + "\n")
 
+
 def dev():
     env.develop = True
 
@@ -155,8 +156,10 @@ def co(c):
     try:
         yield
     finally:
-        git("checkout %s" % current_branch)
-
+        try:
+            git("checkout %s" % current_branch)
+        except Exception:
+            error("Could not checkout %s, you're still left at %s" % c)
 
 #
 # Debian packaging helpers
@@ -165,6 +168,7 @@ def co(c):
 env.debian_branch = 'debian-0.8'
 env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
 env.signdebs = True
+env.debrelease = False  # Increase release number in Debian changelogs
 
 
 def _last_commit(f):
@@ -181,20 +185,34 @@ def dch(p):
     with co(env.debian_branch):
         local("git merge master")
         with lcd(package_root(p)):
-            local("ls .git || mkdir .git")
+            local("if [ ! -d .git ]; then mkdir .git; fi")
 
-            # check for new changes in package dir
-            diff = _diff_from_master(_last_commit("debian/changelog"), ".")
-            vercmd  = "git describe --tags --abbrev=0 "\
-                      " | sed -rn '\''s/^v(.*)/\\1/p'\''"
-            version = local(vercmd, capture=True)
-            if int(diff) > 0:
-                local("git-dch --debian-branch=%s --auto " \
-                      "--spawn-editor=always -N%s" % (env.debian_branch, version))
-                local("git commit debian/changelog " \
-                      "-m 'Updated %s changelog'" % p)
+            # FIXME:
+            # Checking for new changes in packages
+            # has been removed temporarily.
+            # Always create a new Debian changelog entry.
+            ## Check for new changes in package dir
+            #diff = _diff_from_master(_last_commit("debian/changelog"), ".")
+            #vercmd  = "git describe --tags --abbrev=0"\
+            #          " | sed -rn '\''s/^v(.*)/\\1/p'\''"
+            #version = local(vercmd, capture=True)
+            #if int(diff) > 0:
+            if True:
+                # Run git-dch in snapshot mode.
+                # TODO: Support a --release mode in fabfile
+                local(("git-dch --debian-branch=%s --auto %s" %
+                       (env.debian_branch,
+                        "--release" if env.debrelease else "--snapshot")))
+                local(("git commit debian/changelog"
+                       " -m 'Updated %s changelog'" % p))
+                notice(("Make sure to tag Debian release in %s" %
+                        env.debian_branch))
+            
+            local("rmdir .git")
 
-            local("rm -r .git")
+
+def debrelease():
+    env.debrelease = True
 
 
 def nosigndebs():

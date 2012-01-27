@@ -53,7 +53,7 @@ env.roledefs = {
 }
 
 
-# coloured logging
+# colored logging
 notice = lambda x: sys.stdout.write(yellow(x) + "\n")
 info = lambda x: sys.stdout.write(green(x) + "\n")
 error = lambda x: sys.stdout.write(red(x) + "\n")
@@ -115,6 +115,7 @@ def installall():
     for p in env.packages:
         install_pkg(p)
 
+
 def collectdists():
     if os.path.exists("./packages"):
         notice("removing 'packages' directory")
@@ -123,6 +124,7 @@ def collectdists():
     local("mkdir packages");
     for p in env.packages:
         local("cp %s/dist/*.tar.gz ./packages/" % package_root(p));
+
 
 def removeall():
     for p in env.packages:
@@ -169,6 +171,7 @@ env.debian_branch = 'debian-0.8'
 env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
 env.signdebs = True
 env.debrelease = False  # Increase release number in Debian changelogs
+
 
 
 def _last_commit(f):
@@ -219,6 +222,7 @@ def nosigndebs():
     env.signdebs = False
 
 
+
 def builddeb(p, master="master", branch="debian-0.8"):
     with co(branch):
         info("Building debian package for %s" % p)
@@ -238,6 +242,7 @@ def builddeb(p, master="master", branch="debian-0.8"):
 def builddeball(b="debian-0.8"):
     for p in env.deb_packages:
         builddeb(p, b)
+
 
 
 @roles('pypi')

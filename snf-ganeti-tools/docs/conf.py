@@ -1,7 +1,7 @@
 import sys, os
 
 
-project = u'snf-asterias-app'
+project = u'snf-asterias-ganeti-tools'
 copyright = u'2012, GRNET'
 version = '0.8'
 release = '0.8'

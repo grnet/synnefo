@@ -24,17 +24,24 @@ to install any dependencies of synnefo components (e.g. Macports has them all).
    .. code-block:: console
    
       $ virtualenv ~/synnefo-env
-      $ . ~/synnefo-env/bin/activate
+      $ source ~/synnefo-env/bin/activate
       (synnefo-env)$ 
-   
-Any :command:`pip` commands executed from now on, affect the ``synnefo-env``
-virtualenv.
+
+Virtualenv creates an isolated python environment to the path you pass as the
+first argument of the command. That means that all packages you install using
+:command:`pip` or :command:`easy_install` will be placed in
+``ENV/lib/pythonX.X/site-packages`` and their console scripts in ``ENV/bin/``.
+
+This allows you to develop against multiple versions of packages that your
+software depends on without messing with system python packages that may be
+needed in specific versions for other software you have installed on your
+system.
 
 * It is also recommended to install development helpers:
 
   .. code-block:: console
  
-     (synnefo-env)$ pip install django_extensions
+     (synnefo-env)$ pip install django_extensions fabric>=1.3
 
 * Create a custom settings directory for :ref:`snf-common <snf-common>` and set
   the ``SYNNEFO_SETTINGS_DIR`` environment variable to use development-specific
@@ -91,6 +98,7 @@ synnefo source
    .. code-block:: console
    
      (synnefo-env)$ git clone https://code.grnet.gr/git/synnefo synnefo
+     (synnefo-env)$ git clone https://code.grnet.gr/git/pithos pithos
    
 * Install the software components you wish to work on inside the
   virtualenv, in development mode:
@@ -117,7 +125,7 @@ Development tips
 
      (synnefo-env)$ snf-manage runserver
 
-  or, if you have the django_extensions and werkzeug packages installed:
+  or, if you have the ``django_extensions`` and ``werkzeug`` packages installed:
 
   .. code-block:: console
 
@@ -149,12 +157,18 @@ executed:
 
 .. code-block:: console
 
-   $ snf-manage syncdb       # Create / update the database with the south tables
-   $ snf-manage migrate      # Perform migration in the database
+   $ snf-manage syncdb --all      # Create / update the database with the south tables
+   $ snf-manage migrate --fake    # Perform migration in the database
 
-Note that syncdb will create the latest models that exist in the db app, so some
-migrations may fail.  If you are sure a migration has already taken place you
-must use the ``--fake`` option, to apply it.
+
+Note that ``--all`` and ``--fake`` arguments are only needed when you are
+initializing your database. If you want to migrate a previously create databse
+to the latest db scheme just run the same commands without those arguments.
+
+If you are trying to migrate a database that already contains the changes that
+applied from a specific migration script, ``south`` will probably notify you for
+inconsistent db scheme, a workaround for that issue is to use ``--fake`` option
+for a specific migration.
 
 For example:
 

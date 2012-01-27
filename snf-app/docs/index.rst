@@ -44,7 +44,7 @@ or request a specific version as ``snf-asterias-app==x.y.z``.
 
 .. code-block:: console
 
-   $ pip install snf-asterias-app -f https://code.grnet.gr/projects/synnefo/files
+   $ pip install snf-asterias-app -f https://docs.dev.grnet.gr/pypi
 
 On Debian Squeeze, install the ``snf-asterias-app`` Debian package.
 

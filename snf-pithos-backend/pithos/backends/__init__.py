@@ -33,10 +33,10 @@
 
 import warnings
 
-from pithos.backends.modular import ModularBackend
-
 
 def connect_backend(**kwargs):
+    from pithos.backends.modular import ModularBackend
+
     # Suppress mysql warnings.
     original_filters = warnings.filters[:]
     warnings.simplefilter('ignore')

@@ -1,4 +1,5 @@
 Django python-django
 vncauthproxy vncauthproxy
 snf-common snf-common
+snf-pithos-backend snf-pithos-backend
 IPy python-ipy

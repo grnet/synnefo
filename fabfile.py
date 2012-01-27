@@ -44,8 +44,6 @@ env.develop = False
 env.autoremove = True
 env.packages = ['snf-pithos-lib', 'snf-pithos-backend', 'snf-pithos-app',
                         'snf-pithos-tools']
-env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
-        'snf-pithos-tools', 'snf-pithos-app']
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'
@@ -170,7 +168,8 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.8'
-env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
+env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
+                    'snf-pithos-tools', 'snf-pithos-app']
 env.signdebs = True
 env.debrelease = False  # Increase release number in Debian changelogs
 env.upstream = 'packaging'

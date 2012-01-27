@@ -43,9 +43,9 @@ env.project_root = "./"
 env.develop = False
 env.autoremove = True
 env.packages = ['snf-pithos-lib', 'snf-pithos-backend', 'snf-pithos-app',
-                'snf-pithos-tools']
+                        'snf-pithos-tools']
 env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
-'snf-pithos-tools', 'snf-pithos-app']
+        'snf-pithos-tools', 'snf-pithos-app']
 env.capture = False
 env.colors = True
 env.pypi_root = 'pypi'
@@ -54,7 +54,8 @@ env.roledefs = {
     'pypi': ['docs.dev.grnet.gr']
 }
 
-# coloured logging
+
+# colored logging
 notice = lambda x: sys.stdout.write(yellow(x) + "\n")
 info = lambda x: sys.stdout.write(green(x) + "\n")
 error = lambda x: sys.stdout.write(red(x) + "\n")
@@ -62,6 +63,7 @@ error = lambda x: sys.stdout.write(red(x) + "\n")
 
 def dev():
     env.develop = True
+
 
 # wrap local to respect global capturing setting from env.capture
 oldlocal = local
@@ -87,15 +89,13 @@ def remove_pkg(p):
 def build_pkg(p):
     info ("building package: %s" % p)
     with lcd(package_root(p)):
-        with settings(warn_only=True):
-            local("rm -r dist build")
+        local("rm -r dist build")
         local("python setup.py egg_info -d sdist")
 
 
 def install_pkg(p):
     info("installing package: %s" % p)
     with lcd(package_root(p)):
-        print local('pwd');
         if env.develop:
             local("python setup.py develop")
         else:
@@ -117,6 +117,7 @@ def installall():
     for p in env.packages:
         install_pkg(p)
 
+
 def collectdists():
     if os.path.exists("./packages"):
         notice("removing 'packages' directory")
@@ -125,6 +126,7 @@ def collectdists():
     local("mkdir packages");
     for p in env.packages:
         local("cp %s/dist/*.tar.gz ./packages/" % package_root(p));
+
 
 def removeall():
     for p in env.packages:
@@ -154,38 +156,95 @@ def branch():
 def co(c):
     current_branch = branch();
     git("checkout %s" % c)
-    yield
-    git("checkout %s" % current_branch)
-
+    # Use a try block to make sure we checkout the original branch.
+    try:
+        yield
+    finally:
+        try:
+            git("checkout %s" % current_branch)
+        except Exception:
+            error("Could not checkout %s, you're still left at %s" % c)
 
 #
 # Debian packaging helpers
 #
 
+env.debian_branch = 'debian-0.8'
+env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
+env.signdebs = True
+env.debrelease = False  # Increase release number in Debian changelogs
+env.upstream = 'packaging'
 
-def builddeb(p, master="master", branch="debian-0.8"):
-    with lcd(package_root(p)):
-        with settings(warn_only=True):
-            local("mkdir .git")
+
+def _last_commit(f):
+    return local("git rev-list --all --date-order --max-count=1 %s" % f,
+            capture=True).strip()
+
+
+def _diff_from_master(c,f):
+    return local("git log --oneline %s..%s %s" \
+                 " | wc -l" % (c, env.upstream, f), capture=True)
+
+
+def dch(p):
+    with co(env.debian_branch):
+        local("git merge %s" % env.upstream)
+        with lcd(package_root(p)):
+            local("if [ ! -d .git ]; then mkdir .git; fi")
+
+            # FIXME:
+            # Checking for new changes in packages
+            # has been removed temporarily.
+            # Always create a new Debian changelog entry.
+            ## Check for new changes in package dir
+            #diff = _diff_from_master(_last_commit("debian/changelog"), ".")
+            #vercmd  = "git describe --tags --abbrev=0"\
+            #          " | sed -rn '\''s/^v(.*)/\\1/p'\''"
+            #version = local(vercmd, capture=True)
+            #if int(diff) > 0:
+            if True:
+                # Run git-dch in snapshot mode.
+                # TODO: Support a --release mode in fabfile
+                local(("git-dch --debian-branch=%s --auto %s" %
+                       (env.debian_branch,
+                        "--release" if env.debrelease else "--snapshot")))
+                local(("git commit debian/changelog"
+                       " -m 'Updated %s changelog'" % p))
+                notice(("Make sure to tag Debian release in %s" %
+                        env.debian_branch))
+
+            local("rmdir .git")
+
+
+def debrelease():
+    env.debrelease = True
+
+
+def nosigndebs():
+    env.signdebs = False
+
+
+def builddeb(p, master="packaging", branch="debian-0.8"):
+    with co(branch):
+        info("Building debian package for %s" % p)
+        with lcd(package_root(p)):
+            local("git merge %s" % master)
+            local("if [ ! -d .git ]; then mkdir .git; fi")
             local("python setup.py clean")
-            local("git add synnefo/versions/*.py -f")
-            local("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s \
---git-export=INDEX --git-ignore-new" % (master, branch))
+            local("git add ./*/*/version.py -f")
+            local(("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s"
+                   " --git-export=INDEX --git-ignore-new %s") %
+                   (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
-            local("git reset synnefo/versions/*.py")
+            local("git reset ./*/*/version.py")
+        info("Done building debian package for %s" % p)
 
 
 def builddeball(b="debian-0.8"):
-    with co(b):
-        for p in env.deb_packages:
-            builddeb(p, b)
-    collectdebs()
-
-
-def collectdebs():
-    build_area = env.get('build_area', '../build-area')
     for p in env.deb_packages:
-        local("cp %s/%s*.deb ./packages/" % (build_area, p))
+        builddeb(p, b)
+
+
 
 @roles('pypi')
 def uploadtars():

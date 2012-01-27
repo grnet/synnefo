@@ -76,7 +76,7 @@ INSTALL_REQUIRES = [
     'amqplib==0.6.1',
     'python-daemon==1.5.5',
     'snf-common>=0.7.3',
-    'vncauthproxy>=1.1',
+    'vncauthproxy>=1.0',
     'south>=0.7, <=0.7.3'
 ]
 

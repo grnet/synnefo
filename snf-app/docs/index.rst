@@ -1,38 +1,107 @@
-synnefo
-=======
+.. _snf-asterias-app:
 
-.. image:: /images/synnefo-logo.png
+Component snf-asterias-app
+==========================
 
-synnefo is software to create massively scalable IaaS clouds.
+synnefo component :ref:`snf-asterias-app <snf-asterias-app>` defines
+the web application for asterias. It includes the following:
 
-It powers GRNET's `~okeanos cloud service <https://okeanos.grnet.gr>`_.
+    * A set of Django applications that define among others:
+        * web UI
+        * API implementation
+        * business logic layer
+        * admin web UI
+    * :ref:`snf-dispatcher <snf-dispatcher>`, the logic dispatcher
 
-This is the main synnefo documentation page.
+.. todo:: make this section more complete.
 
-synnefo comprises the following major components:
+.. _snf-dispatcher:
 
-.. todo:: turn all of the following to links to the documentation, with
-   intersphinx links.
+snf-dispatcher
+--------------
 
-.. toctree::
-   :maxdepth: 1
+The logic dispatcher provides the context to run the business logic layer of
+:ref:`asterias <snf-asterias>`. It must run on :ref:`LOGIC <LOGIC_NODE>` nodes.
 
-   asterias (name TBD): Compute Service <src/asterias.rst>
-   pithos+: File storage service <http://docs.dev.grnet.gr/pithos>
-   plankton: Image registry <src/plankton.rst>
-   archipelagos: Volume storage service <http://docs.dev.grnet.gr/archipelagos>
-   astakos: Identity management module <http://docs.dev.grnet.gr/astakos>
-   aquarium: Billing module <http://docs.dev.grnet.gr/aquarium>
-   image: Secure image deployment tool <http://docs.dev.grnet.gr/snf-image>
-   kamaki: Command-line cloud management tool <http://docs.dev.grnet.gr/kamaki>
+The dispatcher retrieves messages from the queue, over AMQP, and calls the
+appropriate handler function, based on the type of the message.
 
-You may also see the detailed configuration for all
-:ref:`synnefo software components <components>`.
+.. _snf-admin:
 
-Indices and tables
-------------------
+snf-admin
+---------
 
+command :command:`snf-admin` provides the command-line admin interface
+for :ref:`asterias <snf-asterias>`.
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Package installation
+--------------------
+
+.. todo:: kpap: verify instructions for installation from source.
+
+Use ``pip`` to install the latest version of the package from source,
+or request a specific version as ``snf-asterias-app==x.y.z``.
+
+.. code-block:: console
+
+   $ pip install snf-asterias-app -f https://docs.dev.grnet.gr/pypi
+
+On Debian Squeeze, install the ``snf-asterias-app`` Debian package.
+
+Package configuration
+---------------------
+
+Web application
+***************
+
+Please see the configuration section of :ref:`snf-webproject <snf-webproject>`
+on how to serve :ref:`snf-asterias-app <snf-asterias-app>` as part of a
+Django project.
+
+snf-dispatcher
+**************
+
+.. note:: The Debian package configures the init script for
+   :command:`snf-dispatcher` automatically, see ``/etc/default/snf-dispatcher``.
+
+.. todo:: package an initscript for :command:`snf-dispatcher`
+
+Make sure the logic dispatcher starts automatically on system boot of
+:ref:`LOGIC <LOGIC_NODE>` nodes. Initscript ``conf/init.d/snf-dispatcher``
+is provided for your convenience.
+
+You may also start the dispatcher by hand:
+
+.. code-block:: console
+
+  $ snf-dispatcher
+
+The dispatcher should run in at least 2 instances to ensure high
+(actually, increased) availability.
+
+Package settings
+----------------
+
+Component :ref:`snf-asterias-app <snf-asterias-app>` requires the following
+settings, as managed by :ref:`snf-common <snf-common>`:
+
+.. literalinclude:: ../synnefo/app_settings/default/api.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/logging.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/backend.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/plankton.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/queues.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/reconsiliation.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/ui.py
+    :lines: 4-
+.. literalinclude:: ../synnefo/app_settings/default/userdata.py
+    :lines: 4-
+
+.. todo:: make sure the file headers are included properly in documentation.
+          If not change the :lines setting accordingly.
+

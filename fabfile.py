@@ -241,7 +241,7 @@ def builddeb(p, master="packaging", branch="debian-0.8"):
 
 def builddeball(b="debian-0.8"):
     for p in env.deb_packages:
-        builddeb(p, b)
+        builddeb(p=p, branch=b)
 
 
 

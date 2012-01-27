@@ -27,56 +27,8 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
-import datetime
-
 from django.conf import settings
 from django.db import models
-
-
-class Image(models.Model):
-    IMAGE_STATES = (
-        ('ACTIVE', 'Active'),
-        ('SAVING', 'Saving'),
-        ('DELETED', 'Deleted')
-    )
-
-    # The list of supported Image formats
-    FORMATS = (
-        ('dump', 'ext3 dump'),
-        ('extdump', 'Raw ext2/3/4 dump'),
-        ('lvm', 'lvm snapshot'),
-        ('ntfsclone', 'Windows Image produced by ntfsclone'),
-        ('ntfsdump', 'Raw NTFS dump'),
-        ('diskdump', 'Raw dump of a hard disk')
-    )
-
-    name = models.CharField('Image name', max_length=255)
-    state = models.CharField('Current Image State', choices=IMAGE_STATES,
-                             max_length=30)
-    userid = models.CharField('User ID of the owner', max_length=100, 
-                              null=True)
-    created = models.DateTimeField('Time of creation', auto_now_add=True)
-    updated = models.DateTimeField('Time of last update', auto_now=True)
-    sourcevm = models.ForeignKey('VirtualMachine', null=True)
-    backend_id = models.CharField(max_length=50, default='debian_base')
-    format = models.CharField(choices=FORMATS, max_length=30, default='dump')
-    public = models.BooleanField(default=False)
-    
-    def __unicode__(self):
-        return self.name
-
-
-class ImageMetadata(models.Model):
-    meta_key = models.CharField('Image metadata key name', max_length=50)
-    meta_value = models.CharField('Image metadata value', max_length=500)
-    image = models.ForeignKey(Image, related_name='metadata')
-    
-    class Meta:
-        unique_together = (('meta_key', 'image'),)
-        verbose_name = u'Key-value pair of Image metadata.'
-    
-    def __unicode__(self):
-        return u'%s: %s' % (self.meta_key, self.meta_value)
 
 
 class Flavor(models.Model):
@@ -190,7 +142,6 @@ class VirtualMachine(models.Model):
     userid = models.CharField('User ID of the owner', max_length=100)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    charged = models.DateTimeField(default=datetime.datetime.now())
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor)

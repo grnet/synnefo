@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,16 +31,18 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import dateutil.parser
+
 from django.conf.urls.defaults import patterns
-from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from synnefo.api import util
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest
-from synnefo.db.models import Image, ImageMetadata
+from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
+from synnefo.api.util import api_method, isoformat, isoparse
+from synnefo.plankton.backend import ImageBackend
 from synnefo.util.log import getLogger
 
 
@@ -49,9 +51,9 @@ log = getLogger('synnefo.api')
 urlpatterns = patterns('synnefo.api.images',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_images', {'detail': True}),
-    (r'^/(\d+)(?:.json|.xml)?$', 'image_demux'),
-    (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
-    (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
+    (r'^/([\w-]+)(?:.json|.xml)?$', 'image_demux'),
+    (r'^/([\w-]+)/meta(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/([\w-]+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux')
 )
 
 def demux(request):
@@ -90,26 +92,18 @@ def metadata_item_demux(request, image_id, key):
 
 
 def image_to_dict(image, detail=True):
-    d = {'id': image.id, 'name': image.name}
+    d = dict(id=image['id'], name=image['name'])
     if detail:
-        d['updated'] = util.isoformat(image.updated)
-        d['created'] = util.isoformat(image.created)
-        d['status'] = image.state
-        d['progress'] = 100 if image.state == 'ACTIVE' else 0
-        if image.sourcevm:
-            d['serverRef'] = image.sourcevm.id
-
-        metadata = {}
-        for meta in ImageMetadata.objects.filter(image=image):
-            metadata[meta.meta_key] = meta.meta_value
-
-        if metadata:
-            d['metadata'] = {'values': metadata}
-
+        d['updated'] = isoformat(dateutil.parser.parse(image['updated_at']))
+        d['created'] = isoformat(dateutil.parser.parse(image['created_at']))
+        d['status'] = 'DELETED' if image['deleted_at'] else 'ACTIVE'
+        d['progress'] = 100 if image['status'] == 'available' else 0
+        if image['properties']:
+            d['metadata'] = {'values': image['properties']}
     return d
 
 
-@util.api_method('GET')
+@api_method('GET')
 def list_images(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -119,28 +113,32 @@ def list_images(request, detail=False):
     #                       overLimit (413)
     
     log.debug('list_images detail=%s', detail)
-    user_images = Image.objects.filter(Q(owner=request.user) | Q(public=True))
-    since = util.isoparse(request.GET.get('changes-since'))
+    backend = ImageBackend(request.user)
     
+    since = isoparse(request.GET.get('changes-since'))
     if since:
-        user_images = user_images.filter(updated__gte=since)
-        if not user_images:
+        images = []
+        for image in backend.iter():
+            updated = dateutil.parser.parse(image['updated_at'])
+            if updated >= since:
+                images.append(image)
+        if not images:
             return HttpResponse(status=304)
     else:
-        user_images = user_images.exclude(state='DELETED')
+        images = backend.list()
     
-    images = [image_to_dict(image, detail) for image in user_images]
+    reply = [image_to_dict(image, detail) for image in images]
     
     if request.serialization == 'xml':
-        data = render_to_string('list_images.xml', {
-            'images': images,
-            'detail': detail})
+        data = render_to_string('list_images.xml',
+                                dict(images=reply, detail=detail))
     else:
-        data = json.dumps({'images': {'values': images}})
-
+        data = json.dumps(dict(images={'values': reply}))
+    
     return HttpResponse(data, status=200)
 
-@util.api_method('POST')
+
+@api_method('POST')
 def create_image(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -154,31 +152,11 @@ def create_image(request):
     #                       resizeNotAllowed (403),
     #                       backupOrResizeInProgress (409),
     #                       overLimit (413)
-
-    req = util.get_request_dict(request)
-    log.debug('create_image %s', req)
     
-    try:
-        d = req['image']
-        server_id = d['serverRef']
-        name = d['name']
-    except (KeyError, ValueError):
-        raise BadRequest('Malformed request.')
+    raise ServiceUnavailable('Not supported.')
 
-    owner = request.user
-    vm = util.get_vm(server_id, owner)
-    image = Image.objects.create(name=name, owner=owner, sourcevm=vm)
-    log.info('User %d created image %d', owner.id, image.id)
 
-    imagedict = image_to_dict(image)
-    if request.serialization == 'xml':
-        data = render_to_string('image.xml', {'image': imagedict})
-    else:
-        data = json.dumps({'image': imagedict})
-
-    return HttpResponse(data, status=202)
-
-@util.api_method('GET')
+@api_method('GET')
 def get_image_details(request, image_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -190,16 +168,17 @@ def get_image_details(request, image_id):
     
     log.debug('get_image_details %s', image_id)
     image = util.get_image(image_id, request.user)
-    imagedict = image_to_dict(image)
-
+    reply = image_to_dict(image)
+    
     if request.serialization == 'xml':
-        data = render_to_string('image.xml', {'image': imagedict})
+        data = render_to_string('image.xml', dict(image=reply))
     else:
-        data = json.dumps({'image': imagedict})
-
+        data = json.dumps(dict(image=reply))
+    
     return HttpResponse(data, status=200)
 
-@util.api_method('DELETE')
+
+@api_method('DELETE')
 def delete_image(request, image_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -209,13 +188,14 @@ def delete_image(request, image_id):
     #                       overLimit (413)
     
     log.debug('delete_image %s', image_id)
-    image = util.get_image(image_id, request.user)
-    image.state = 'DELETED'
-    image.save()
-    log.info('User %d deleted image %d', request.user.id, image.id)
+    backend = ImageBackend(request.user)
+    backend.delete(image_id)
+    backend.close()
+    log.info('User %s deleted image %s', request.user, image_id)
     return HttpResponse(status=204)
 
-@util.api_method('GET')
+
+@api_method('GET')
 def list_metadata(request, image_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -226,10 +206,11 @@ def list_metadata(request, image_id):
     
     log.debug('list_image_metadata %s', image_id)
     image = util.get_image(image_id, request.user)
-    metadata = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
+    metadata = image['properties']
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
-@util.api_method('POST')
+
+@api_method('POST')
 def update_metadata(request, image_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -249,16 +230,17 @@ def update_metadata(request, image_id):
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
     
-    for key, val in metadata.items():
-        meta, created = image.metadata.get_or_create(meta_key=key)
-        meta.meta_value = val
-        meta.save()
+    properties = image['properties']
+    properties.update(metadata)
     
-    image.save()
-    image_meta = dict((m.meta_key, m.meta_value) for m in image.metadata.all())
-    return util.render_metadata(request, image_meta, status=201)
+    backend = ImageBackend(request.user)
+    backend.update(image_id, dict(properties=properties))
+    backend.close()
+    
+    return util.render_metadata(request, properties, status=201)
 
-@util.api_method('GET')
+
+@api_method('GET')
 def get_metadata_item(request, image_id, key):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -270,10 +252,13 @@ def get_metadata_item(request, image_id, key):
     
     log.debug('get_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user)
-    meta = util.get_image_meta(image, key)
-    return util.render_meta(request, meta, status=200)
+    val = image['properties'].get(key)
+    if val is None:
+        raise ItemNotFound('Metadata key not found.')
+    return util.render_meta(request, {key: val}, status=200)
 
-@util.api_method('PUT')
+
+@api_method('PUT')
 def create_metadata_item(request, image_id, key):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -287,7 +272,6 @@ def create_metadata_item(request, image_id, key):
     
     req = util.get_request_dict(request)
     log.debug('create_image_metadata_item %s %s %s', image_id, key, req)
-    image = util.get_image(image_id, request.user)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -295,17 +279,20 @@ def create_metadata_item(request, image_id, key):
         assert key in metadict
     except (KeyError, AssertionError):
         raise BadRequest('Malformed request.')
-    
-    meta, created = ImageMetadata.objects.get_or_create(
-        meta_key=key,
-        image=image)
-    
-    meta.meta_value = metadict[key]
-    meta.save()
-    image.save()
-    return util.render_meta(request, meta, status=201)
 
-@util.api_method('DELETE')
+    val = metadict[key]
+    image = util.get_image(image_id, request.user)
+    properties = image['properties']
+    properties[key] = val
+    
+    backend = ImageBackend(request.user)
+    backend.update(image_id, dict(properties=properties))
+    backend.close()
+    
+    return util.render_meta(request, {key: val}, status=201)
+
+
+@api_method('DELETE')
 def delete_metadata_item(request, image_id, key):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -319,7 +306,11 @@ def delete_metadata_item(request, image_id, key):
     
     log.debug('delete_image_metadata_item %s %s', image_id, key)
     image = util.get_image(image_id, request.user)
-    meta = util.get_image_meta(image, key)
-    meta.delete()
-    image.save()
+    properties = image['properties']
+    properties.pop(key, None)
+    
+    backend = ImageBackend(request.user)
+    backend.update(image_id, dict(properties=properties))
+    backend.close()
+    
     return HttpResponse(status=204)

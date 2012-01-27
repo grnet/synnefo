@@ -180,7 +180,7 @@ class ListImages(Command):
     def main_pithos(self, image_id=None):
         backend = ImageBackend(self.user)
         if image_id:
-            images = [backend.get_meta(image_id)]
+            images = [backend.get_image(image_id)]
         else:
             images = backend.iter_shared()
         
@@ -343,7 +343,7 @@ class UpdateImage(Command):
     def main(self, image_id):
         backend = ImageBackend(self.user)
         
-        image = backend.get_meta(image_id)
+        image = backend.get_image(image_id)
         if not image:
             print 'Image not found'
             return
@@ -489,7 +489,7 @@ class ModifyImageMeta(Command):
         backend = ImageBackend(self.user)
                 
         try:
-            image = backend.get_meta(image_id)
+            image = backend.get_image(image_id)
             if not image:
                 print 'Image not found'
                 return

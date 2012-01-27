@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -65,6 +65,7 @@ def demux(request):
     else:
         return method_not_allowed(request)
 
+
 def network_demux(request, network_id):
     if request.method == 'GET':
         return get_network_details(request, network_id)
@@ -76,16 +77,17 @@ def network_demux(request, network_id):
         return method_not_allowed(request)
 
 
-def network_to_dict(network, user, detail=True):
+def network_to_dict(network, user_id, detail=True):
     network_id = str(network.id) if not network.public else 'public'
     d = {'id': network_id, 'name': network.name}
     if detail:
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
-        servers = [vm.id for vm in network.machines.filter(owner=user)]
+        servers = [vm.id for vm in network.machines.filter(userid=user_id)]
         d['servers'] = {'values': servers}
     return d
+
 
 def render_network(request, networkdict, status=200):
     if request.serialization == 'xml':
@@ -105,9 +107,9 @@ def list_networks(request, detail=False):
     #                       overLimit (413)
     
     log.debug('list_networks detail=%s', detail)
-    owner = request.user
     since = util.isoparse(request.GET.get('changes-since'))
-    user_networks = Network.objects.filter(Q(owner=owner) | Q(public=True))
+    user_networks = Network.objects.filter(
+                                    Q(userid=request.user) | Q(public=True))
     
     if since:
         user_networks = user_networks.filter(updated__gte=since)
@@ -116,7 +118,7 @@ def list_networks(request, detail=False):
     else:
         user_networks = user_networks.filter(state='ACTIVE')
     
-    networks = [network_to_dict(network, owner, detail)
+    networks = [network_to_dict(network, request.user, detail)
                 for network in user_networks]
     
     if request.serialization == 'xml':
@@ -127,6 +129,7 @@ def list_networks(request, detail=False):
         data = json.dumps({'networks': {'values': networks}})
 
     return HttpResponse(data, status=200)
+
 
 @util.api_method('POST')
 def create_network(request):
@@ -154,6 +157,7 @@ def create_network(request):
     networkdict = network_to_dict(network, request.user)
     return render_network(request, networkdict, status=202)
 
+
 @util.api_method('GET')
 def get_network_details(request, network_id):
     # Normal Response Codes: 200, 203
@@ -168,6 +172,7 @@ def get_network_details(request, network_id):
     net = util.get_network(network_id, request.user)
     netdict = network_to_dict(net, request.user)
     return render_network(request, netdict)
+
 
 @util.api_method('PUT')
 def update_network_name(request, network_id):
@@ -195,6 +200,7 @@ def update_network_name(request, network_id):
     net.save()
     return HttpResponse(status=204)
 
+
 @util.api_method('DELETE')
 def delete_network(request, network_id):
     # Normal Response Code: 204
@@ -211,6 +217,7 @@ def delete_network(request, network_id):
         raise Unauthorized('Can not delete the public network.')
     backend.delete_network(net)
     return HttpResponse(status=204)
+
 
 @util.api_method('POST')
 def network_action(request, network_id):

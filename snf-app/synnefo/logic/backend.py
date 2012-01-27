@@ -349,7 +349,7 @@ def create_network_link():
 
 
 @transaction.commit_on_success
-def create_network(name, owner):
+def create_network(name, user_id):
     try:
         link = NetworkLink.objects.filter(available=True)[0]
     except IndexError:
@@ -359,7 +359,7 @@ def create_network(name, owner):
 
     network = Network.objects.create(
         name=name,
-        owner=owner,
+        userid=user_id,
         state='ACTIVE',
         link=link)
 

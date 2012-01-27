@@ -223,6 +223,11 @@ class ImageBackend(object):
     def close(self):
         self.backend.close()
     
+    def delete(self, image_id):
+        image = self.get_image(image_id)
+        account, container, object = split_location(image['location'])
+        self.backend.delete_object(self.user, account, container, object)
+    
     def get_data(self, location):
         account, container, object = split_location(location)
         size, hashmap = self.backend.get_object_hashmap(self.user, account,
@@ -240,6 +245,20 @@ class ImageBackend(object):
         
         location = get_location(account, container, object)
         return self._get_image(location)
+    
+    def iter(self):
+        """Iter over all images available to the user"""
+        
+        backend = self.backend
+        for account in backend.list_accounts(self.user):
+            for container in backend.list_containers(self.user, account,
+                                                     shared=True):
+                for path, version_id in backend.list_objects(self.user,
+                        account, container, domain=PLANKTON_DOMAIN):
+                    location = get_location(account, container, path)
+                    image = self._get_image(location)
+                    if image:
+                        yield image
     
     def iter_public(self, filters):
         backend = self.backend
@@ -283,6 +302,11 @@ class ImageBackend(object):
                         yield meta['uuid']
                 except (NameError, NotAllowedError):
                     continue
+    
+    def list(self):
+        """Iter over all images available to the user"""
+        
+        return list(self.iter())
     
     def list_public(self, filters, params):
         images = list(self.iter_public(filters))

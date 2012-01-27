@@ -31,13 +31,50 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
+
+from httplib import HTTPConnection, HTTPSConnection
+from urlparse import urlparse
+
+from django.conf import settings
 from django.utils.cache import patch_vary_headers
 
 
 class ApiAuthMiddleware(object):
     def process_request(self, request):
         request.user = None
-
+        
+        token = request.GET.get('X-Auth-Token')
+        if not token:
+            token = request.META.get('HTTP_X_AUTH_TOKEN')
+        if not token:
+            token = request.COOKIES.get('X-Auth-Token')
+        
+        if not token:
+            return
+        
+        p = urlparse(settings.ASTAKOS_URL)
+        if p.scheme == 'https':
+            conn = HTTPSConnection(p.netloc)
+        else:
+            conn = HTTPConnection(p.netloc)
+        
+        headers = {'X-Auth-Token': token}
+        conn.request('GET', p.path, headers=headers)
+        resp = conn.getresponse()
+        if resp.status != 200:
+            return
+        
+        try:
+            reply = json.loads(resp.read())
+            assert 'uniq' in reply
+            assert 'username' in reply
+        except (ValueError, AssertionError):
+            return
+        
+        request.user = reply['uniq']
+        request.username = reply['username']
+    
     def process_response(self, request, response):
         # Tell proxies and other interested parties that the request varies
         # based on X-Auth-Token, to avoid caching of results

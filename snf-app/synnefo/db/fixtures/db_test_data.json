@@ -18,42 +18,12 @@
         }
     },
     {
-        "model": "db.Image",
-        "pk": 30000,
-        "fields": {
-            "name": "Debian Squeeze",
-            "updated": "2011-02-06 00:00:00",
-            "created": "2011-02-06 00:00:00",
-            "state": "ACTIVE",
-            "userid" : "test"
-        }
-    },
-    {
-        "model": "db.ImageMetadata",
-        "pk": 1,
-        "fields": {
-            "meta_key": "description",
-            "meta_value": "Debian Squeeze, full installation",
-            "image": 30000
-        }
-    },
-    {
-        "model": "db.ImageMetadata",
-        "pk": 2,
-        "fields": {
-            "meta_key": "size",
-            "meta_value": "2048",
-            "image": 30000
-        }
-    },
-    {
         "model": "db.VirtualMachine",
         "pk": 30000,
         "fields": {
             "userid": "test",
             "name": "snf-1001",
             "created": "2009-02-06 00:00:00",
-            "charged": "2010-02-06 00:00:00",
             "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
@@ -67,7 +37,6 @@
             "userid": "test",
             "name": "snf-1002",
             "created": "2009-02-06 00:00:00",
-            "charged": "2010-02-06 00:00:00",
             "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
@@ -81,7 +50,6 @@
             "userid": "test",
             "name": "snf-test-building",
             "created": "2009-02-06 00:00:00",
-            "charged": "2010-02-06 00:00:00",
             "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,

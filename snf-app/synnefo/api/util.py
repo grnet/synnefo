@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -54,9 +54,8 @@ from django.utils.cache import add_never_cache_headers
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized)
-from synnefo.db.models import (Flavor, Image, ImageMetadata,
-                                VirtualMachine, VirtualMachineMetadata,
-                                Network, NetworkInterface)
+from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
+                               Network, NetworkInterface)
 from synnefo.plankton.backend import ImageBackend
 from synnefo.util.log import getLogger
 
@@ -150,12 +149,12 @@ def encrypt(plaintext):
     return b64encode(enc)
 
 
-def get_vm(server_id, owner):
+def get_vm(server_id, user_id):
     """Return a VirtualMachine instance or raise ItemNotFound."""
 
     try:
         server_id = int(server_id)
-        return VirtualMachine.objects.get(id=server_id, owner=owner)
+        return VirtualMachine.objects.get(id=server_id, userid=user_id)
     except ValueError:
         raise BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
@@ -171,39 +170,17 @@ def get_vm_meta(vm, key):
         raise ItemNotFound('Metadata key not found.')
 
 
-def get_image(image_id, owner):
+def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
+    backend = ImageBackend(user_id)
     try:
-        image_id = int(image_id)
-        image = Image.objects.get(id=image_id)
-        if not image.public and image.userid != owner:
-            raise ItemNotFound('Image not found.')
-        return image
-    except ValueError:
-        raise ItemNotFound('Image not found.')
-    except Image.DoesNotExist:
-        raise ItemNotFound('Image not found.')
-
-
-def get_backend_image(image_id, owner):
-    backend = ImageBackend(owner.uniq)
-    try:
-        image = backend.get_meta(image_id)
+        image = backend.get_image(image_id)
         if not image:
             raise ItemNotFound('Image not found.')
         return image
     finally:
         backend.close()
-
-
-def get_image_meta(image, key):
-    """Return a ImageMetadata instance or raise ItemNotFound."""
-
-    try:
-        return ImageMetadata.objects.get(meta_key=key, image=image)
-    except ImageMetadata.DoesNotExist:
-        raise ItemNotFound('Metadata key not found.')
 
 
 def get_flavor(flavor_id):
@@ -212,13 +189,11 @@ def get_flavor(flavor_id):
     try:
         flavor_id = int(flavor_id)
         return Flavor.objects.get(id=flavor_id)
-    except ValueError:
-        raise BadRequest('Invalid flavor ID.')
-    except Flavor.DoesNotExist:
+    except (ValueError, Flavor.DoesNotExist):
         raise ItemNotFound('Flavor not found.')
 
 
-def get_network(network_id, owner):
+def get_network(network_id, user_id):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
@@ -226,10 +201,8 @@ def get_network(network_id, owner):
             return Network.objects.get(public=True)
         else:
             network_id = int(network_id)
-            return Network.objects.get(id=network_id, owner=owner)
-    except ValueError:
-        raise BadRequest('Invalid network ID.')
-    except Network.DoesNotExist:
+            return Network.objects.get(id=network_id, userid=user_id)
+    except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
 
 
@@ -281,9 +254,9 @@ def render_metadata(request, metadata, use_values=False, status=200):
 
 def render_meta(request, meta, status=200):
     if request.serialization == 'xml':
-        data = render_to_string('meta.xml', {'meta': meta})
+        data = render_to_string('meta.xml', dict(key=key, val=val))
     else:
-        data = json.dumps({'meta': {meta.meta_key: meta.meta_value}})
+        data = json.dumps(dict(meta=meta))
     return HttpResponse(data, status=status)
 
 
@@ -338,16 +311,9 @@ def api_method(http_method=None, atom_allowed=False):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            u = request.user.uniq if request.user else ''
             try:
-
-                request.serialization = request_serialization(
-                    request,
-                    atom_allowed)
-                if not request.method == 'GET':
-                    if 'readonly' in request.__dict__ and \
-                       request.readonly == True:
-                        raise BadRequest('Method not allowed')
+                request.serialization = request_serialization(request,
+                                                              atom_allowed)
                 if not request.user:
                     raise Unauthorized('No user found.')
                 if http_method and request.method != http_method:

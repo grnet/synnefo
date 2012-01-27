@@ -65,13 +65,9 @@ def plankton_method(method):
             try:
                 if request.method != method:
                     return HttpResponse(status=405)
-
-                user = get_request_user(request)
-                if not user:
+                if not request.user:
                     return HttpResponse(status=401)
-                request.user = user
-                request.backend = ImageBackend(user.uniq)
-                
+                request.backend = ImageBackend(request.user)
                 return func(request, *args, **kwargs)
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''

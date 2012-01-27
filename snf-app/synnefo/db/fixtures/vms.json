@@ -1,15 +1,5 @@
 [
     {
-        "model": "db.Image",
-        "pk": 1,
-        "fields": {
-            "name": "Debian Squeeze",
-            "created": "2011-02-06 00:00:00",
-            "updated": "2011-02-06 00:00:00",
-            "state": "ACTIVE"
-        }
-    },
-    {
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
@@ -17,7 +7,6 @@
             "name": "snf-1001",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
-            "charged": "2011-02-06 00:00:00",
             "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
@@ -32,7 +21,6 @@
             "name": "snf-1002",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
-            "charged": "2011-02-10 00:00:00",
             "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
@@ -47,7 +35,6 @@
             "name": "snf-1003",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
-            "charged": "2011-02-10 00:00:00",
             "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
@@ -63,7 +50,6 @@
             "name": "snf-1004",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
-            "charged": "2011-02-10 00:00:00",
             "imageid": "1",
             "hostid": "HAL-9000",
             "flavor": 1,
@@ -77,18 +63,6 @@
             "meta_key": "OS",
             "meta_value": "debian",
             "vm": 1001
-        }
-    },
-    {
-        "model": "db.Image",
-        "pk": 2,
-        "fields": {
-            "name": "Slackware 13.1",
-            "created": "2011-02-10 00:00:00",
-            "updated": "2011-02-10 00:00:00",
-            "state": "ACTIVE",
-            "userid": "test",
-            "sourcevm": 1001
         }
     }
 ]

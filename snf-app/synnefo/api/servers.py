@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -161,7 +161,7 @@ def list_servers(request, detail=False):
     #                       overLimit (413)
     
     log.debug('list_servers detail=%s', detail)
-    user_vms = VirtualMachine.objects.filter(owner=request.user)
+    user_vms = VirtualMachine.objects.filter(userid=request.user)
     since = util.isoparse(request.GET.get('changes-since'))
     
     if since:
@@ -197,7 +197,6 @@ def create_server(request):
 
     req = util.get_request_dict(request)
     log.debug('create_server %s', req)
-    owner = request.user
     
     try:
         server = req['server']
@@ -231,31 +230,25 @@ def create_server(request):
             raise faults.BadRequest("Malformed personality in request")
     
     image = {}
-    try:
-        img = util.get_image(image_id, owner)
-        image['backend_id'] = img.backend_id
-        image['format'] = img.format
-        image['metadata'] = dict((m.meta_key.upper(), m.meta_value)
-                for m in img.metadata.all())
-    except faults.ItemNotFound:
-        img = util.get_backend_image(image_id, owner)
-        properties = img.get('properties', {})
-        image['backend_id'] = img['location']
-        image['format'] = img['disk_format']
-        image['metadata'] = dict((key.upper(), val)
-                for key, val in properties.items())
+    img = util.get_image(image_id, request.user)
+    properties = img.get('properties', {})
+    image['backend_id'] = img['location']
+    image['format'] = img['disk_format']
+    image['metadata'] = dict((key.upper(), val) \
+                             for key, val in properties.items())
     
     flavor = util.get_flavor(flavor_id)
     password = util.random_password()
     
-    count = VirtualMachine.objects.filter(owner=owner, deleted=False).count()
+    count = VirtualMachine.objects.filter(userid=request.user,
+                                          deleted=False).count()
     if count >= settings.MAX_VMS_PER_USER:
         raise faults.OverLimit("Server count limit exceeded for your account.")
     
     # We must save the VM instance now, so that it gets a valid vm.backend_id.
     vm = VirtualMachine.objects.create(
         name=name,
-        owner=owner,
+        userid=request.user,
         imageid=image_id,
         flavor=flavor)
     
@@ -271,8 +264,8 @@ def create_server(request):
             meta_value=val,
             vm=vm)
     
-    log.info('User %d created vm with %s cpus, %s ram and %s storage',
-                    owner.id, flavor.cpu, flavor.ram, flavor.disk)
+    log.info('User %s created vm with %s cpus, %s ram and %s storage',
+             request.user, flavor.cpu, flavor.ram, flavor.disk)
     
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -392,9 +385,8 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       overLimit (413)
     
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
-    owner = request.user
-    machine = util.get_vm(server_id, owner)
-    network = util.get_network(network_id, owner)
+    machine = util.get_vm(server_id, request.user)
+    network = util.get_network(network_id, request.user)
     nic = util.get_nic(machine, network)
     address = nic_to_dict(nic)
     

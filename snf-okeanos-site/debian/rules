@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python2
+
+package=snf-okeanos-site
+static_dir=debian/$(package)/usr/share/synnefo/static/
+okeanos_static_dir=okeanos_site/static/okeanos_static/
+config_lvl=50
+
+override_dh_auto_install:
+	dh_auto_install
+	
+	mkdir -p $(static_dir)okeanos_static;
+	-mv $(okeanos_static_dir) $(static_dir);
+	
+	mkdir -p debian/$(package)/etc/synnefo
+	cp okeanos_site/settings.py \
+		debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-settings.conf;  \
+	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;
+

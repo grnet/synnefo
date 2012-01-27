@@ -225,3 +225,36 @@ def collectdebs():
 def uploadtars():
     put("packages/*.tar.gz", 'www/pypi/')
 
+
+def cleandocs():
+    """
+    Remove _build directories for each doc project
+    """
+
+    # snf-docs contains conf.py in root directory
+    if os.path.exists("snf-docs/docs/_build"):
+        local("rm -r snf-docs/docs/_build")
+
+    for p in env.packages:
+        buildpth = os.path.join(package_root(p), 'docs', '_build')
+        if os.path.exists(buildpth):
+            local('rm -r %s' % buildpth)
+
+
+def builddocs():
+    """
+    Run sphinx builder for each project separately
+    """
+    builddocs_cmd = "sphinx-build -b html -d _build/doctrees   . _build/html"
+
+    # snf-docs contains conf.py in root directory
+    with lcd("snf-docs"):
+        local(builddocs_cmd)
+
+    for p in env.packages:
+        info("Building %s docs" % p)
+        docspth = os.path.join(package_root(p), 'docs')
+        if os.path.exists(docspth):
+            with lcd(docspth):
+                local(builddocs_cmd)
+

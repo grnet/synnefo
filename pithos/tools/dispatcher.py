@@ -36,8 +36,8 @@
 import sys
 import logging
 
-import pika
-import json
+from pithos.lib.queue import (exchange_connect, exchange_close,
+    exchange_send, exchange_route, queue_callback, queue_start)
 
 from optparse import OptionParser
 
@@ -88,16 +88,11 @@ if __name__ == '__main__':
                         level=logging.DEBUG if DEBUG else logging.INFO)
     logger = logging.getLogger('dispatcher')
     
-    connection = pika.BlockingConnection(pika.ConnectionParameters(
-                    host=opts.host, port=opts.port, virtual_host=opts.vhost,
-                    credentials=pika.PlainCredentials(opts.user, opts.password)))
-    channel = connection.channel()
-    channel.exchange_declare(exchange=opts.exchange, type='topic', durable=True)
+    exchange = 'rabbitmq://%s:%s@%s:%s/%s' % (opts.user, opts.password, opts.host, opts.port, opts.exchange)
+    connection = exchange_connect(exchange)
     if opts.test:
-        channel.basic_publish(exchange=opts.exchange,
-                              routing_key=opts.key,
-                              body=json.dumps({"test": "0123456789"}))
-        connection.close()
+        exchange_send(connection, opts.key, {"test": "0123456789"})
+        exchange_close(connection)
         sys.exit()
     
     callback = None
@@ -108,22 +103,15 @@ if __name__ == '__main__':
             cb_module = sys.modules[cb[0]]
             callback = getattr(cb_module, cb[1])
     
-    def handle_delivery(channel, method_frame, header_frame, body):
-        logger.debug('Basic.Deliver %s delivery-tag %i: %s', header_frame.content_type,
-                                                             method_frame.delivery_tag,
-                                                             body)
+    def handle_message(msg):
+        logger.debug('%s', msg)
         if callback:
-            callback(json.loads(message_data))
-        channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+            callback(msg)
     
-    channel.queue_declare(queue=opts.queue, durable=True,
-                          exclusive=False, auto_delete=False)
-    channel.queue_bind(exchange=opts.exchange,
-                       queue=opts.queue,
-                       routing_key=opts.key)
-    channel.basic_consume(handle_delivery, queue=opts.queue)
+    exchange_route(connection, opts.key, opts.queue)
+    queue_callback(connection, opts.queue, handle_message)
     try:
-        channel.start_consuming()
+        queue_start(connection)
     except KeyboardInterrupt:
         pass
 

@@ -87,7 +87,8 @@ def remove_pkg(p):
 def build_pkg(p):
     info ("building package: %s" % p)
     with lcd(package_root(p)):
-        local("rm -r dist build")
+        local("if [ -d dist ]; then rm -r dist; fi;")
+        local("if [ -d build ]; then rm -r build; fi;")
         local("python setup.py egg_info -d sdist")
 
 

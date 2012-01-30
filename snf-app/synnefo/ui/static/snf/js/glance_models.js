@@ -31,7 +31,7 @@
         
         display_owner: function() {
             var owner = this.get_owner();
-            if (_.include(_.keys(synnefo.config.system_images_owners)), owner) {
+            if (_.include(_.keys(synnefo.config.system_images_owners), owner)) {
                 return synnefo.config.system_images_owners[owner];
             } else {
                 return owner;

@@ -1841,7 +1841,7 @@
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
 
-            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: false});
+            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: true});
         }
 
     })

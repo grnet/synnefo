@@ -240,7 +240,7 @@
                 title = this.title || this.type + " Error";
             }
 
-            this.$(".header .title").text(title);
+            this.$(".overlay-header .title").text(title);
             this.$(".error-code").text(this.code || "");
             this.$(".error-type").text(this.type || "");
             this.$(".error-module").text(this.ns || "");

@@ -1,0 +1,184 @@
+[
+    {
+        "model": "db.SynnefoUser",
+        "pk": 30000,
+        "fields": {
+            "name": "testdbuser",
+            "realname" :"test db user",
+            "uniq" :"test@synnefo.gr",
+            "credit": 10,
+            "auth_token": "5e41595e9e884543fa048e07c1094d74",
+            "auth_token_created": "2009-04-07 09:17:14",
+            "auth_token_expires": "2015-04-07 09:17:14",
+            "type": "STUDENT",
+            "created": "2011-02-06"
+   	    }
+    },
+    {
+        "model" : "db.Limit",
+        "pk" : 30000,
+        "fields" : {
+            "name" : "QUOTA_CREDIT",
+            "user" : 30000,
+            "value" : 100
+        }
+    },
+    {
+        "model" : "db.Limit",
+        "pk" : 30001,
+        "fields" : {
+            "name" : "MIN_CREDITS",
+            "user" : 30000,
+            "value" : -100
+        }
+    },
+    {
+        "model" : "db.Limit",
+        "pk" : 30002,
+        "fields" : {
+            "name" : "MONTHLY_RATE",
+            "user" : 30000,
+            "value" : 10
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 30000,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 10
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 30001,
+        "fields": {
+            "cpu": 1,
+            "ram": 1024,
+            "disk": 20
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30010,
+        "fields" : {
+            "cost_active" : 10,
+            "cost_inactive" : 5,
+            "effective_from" : "2010-01-01",
+            "flavor" : 30001
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30000,
+        "fields" : {
+            "cost_active" : 10,
+            "cost_inactive" : 5,
+            "effective_from" : "2011-01-01",
+            "flavor" : 30000
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30002,
+        "fields" : {
+            "cost_active" : 5,
+            "cost_inactive" : 2,
+            "effective_from" : "2010-12-01",
+            "flavor" : 30000
+        }
+    },
+    {
+        "model" : "db.FlavorCost",
+        "pk" : 30003,
+        "fields" : {
+            "cost_active" : 4,
+            "cost_inactive" : 10,
+            "effective_from" : "2010-01-01",
+            "flavor" : 30000
+        }
+    },
+    {
+        "model": "db.Image",
+        "pk": 30000,
+        "fields": {
+            "name": "Debian Squeeze",
+            "updated": "2011-02-06 00:00:00",
+            "created": "2011-02-06 00:00:00",
+            "state": "ACTIVE",
+            "owner" : 30000
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 1,
+        "fields": {
+            "meta_key": "description",
+            "meta_value": "Debian Squeeze, full installation",
+            "image": 30000
+        }
+    },
+    {
+        "model": "db.ImageMetadata",
+        "pk": 2,
+        "fields": {
+            "meta_key": "size",
+            "meta_value": "2048",
+            "image": 30000
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 30000,
+        "fields": {
+            "owner": 30000,
+            "name": "snf-1001",
+            "created": "2009-02-06 00:00:00",
+            "charged": "2010-02-06 00:00:00",
+            "imageid": "30000",
+            "hostid": "HAL-9000",
+            "flavor": 30000,
+            "operstate": "STARTED"
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 30001,
+        "fields": {
+            "owner": 30000,
+            "name": "snf-1002",
+            "created": "2009-02-06 00:00:00",
+            "charged": "2010-02-06 00:00:00",
+            "imageid": "30000",
+            "hostid": "HAL-9000",
+            "flavor": 30000,
+            "operstate": "STOPPED"
+        }
+    },
+    {
+        "model": "db.Disk",
+        "pk": 30000,
+        "fields": {
+            "name": "My_Music",
+            "created": "2011-02-10 00:00:00",
+            "size" : 20,
+            "vm" : 30000,
+            "owner" : 30000
+        }
+    },
+    {
+        "model": "db.VirtualMachine",
+        "pk": 30002,
+        "fields": {
+            "owner": 30000,
+            "name": "snf-test-building",
+            "created": "2009-02-06 00:00:00",
+            "charged": "2010-02-06 00:00:00",
+            "imageid": "30000",
+            "hostid": "HAL-9000",
+            "flavor": 30000,
+            "operstate": "BUILD"
+        }
+    }
+]

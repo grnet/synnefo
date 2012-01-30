@@ -62,14 +62,7 @@ from ganeti import jqueue
 from ganeti import constants
 from ganeti import serializer
 
-# XXX: this should be probably also moved to a command-line argument
-try:
-    conf_dir = os.environ["SYNNEFO_CONFIG_DIR"]
-    import config
-    settings = config.load(conf_dir)
-except KeyError:
-    import synnefo.settings as settings
-
+from synnefo import settings
 
 class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger):

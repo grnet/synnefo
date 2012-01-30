@@ -1,1 +1,2 @@
-include kvm-vif-bridge snf-ganeti-eventd.py snf-ganeti-hook.py snf-progress-monitor.py
+include kvm-vif-bridge 
+include distribute_setup.py

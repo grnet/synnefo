@@ -1,0 +1,52 @@
+body, html {
+}
+div.confirm_single button {
+    padding-bottom: 5px;
+}
+div.list table thead tr th {
+    border: none;
+    border-bottom: 1px solid #aaa;
+}
+
+
+/*vm views fixes*/
+div.vm-details {
+    width: 135px;
+}
+
+div.metadata-keys-container {
+    float: none;
+    width: 110px;
+}
+
+.icon .scrollable .items {
+    height: auto;
+    position: static !important;
+}
+
+div.column2 {
+    padding-bottom: 10px;
+}
+
+.images-list-cont .images-list {
+    position: relative;
+}
+
+.step-cont .images-info-cont {
+    left: 10px !important;
+    width: 540px !important;
+    position: absolute;
+}
+
+.flavor-options .flavor-opts-list {
+    margin-bottom: 10px;
+}
+
+.flavor-options span.title {
+    float: left;
+}
+
+.create-vm .list-cont h4 a {
+    margin-left: 14px;
+    float: none;
+}

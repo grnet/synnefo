@@ -42,6 +42,10 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
 
 from synnefo.db.models import SynnefoUser
 from synnefo.plankton.backend import ImageBackend, BackendException
+from synnefo.util.log import getLogger
+
+
+log = getLogger('synnefo.plankton')
 
 
 def get_user_from_token(token):
@@ -68,15 +72,16 @@ def plankton_method(method):
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            if request.method != method:
-                raise HttpResponse(status=405)
-            
-            user = get_request_user(request)
-            if not user:
-                return HttpResponse(status=401)
-            request.user = user
-            request.backend = ImageBackend(user.uniq)
             try:
+                if request.method != method:
+                    return HttpResponse(status=405)
+
+                user = get_request_user(request)
+                if not user:
+                    return HttpResponse(status=401)
+                request.user = user
+                request.backend = ImageBackend(user.uniq)
+                
                 return func(request, *args, **kwargs)
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''
@@ -86,8 +91,10 @@ def plankton_method(method):
                     message = format_exc(e)
                 else:
                     message = ''
+                log.exception(e)
                 return HttpResponseServerError(message)
             finally:
-                request.backend.close()
+                if hasattr(request, 'backend'):
+                    request.backend.close()
         return wrapper
     return decorator

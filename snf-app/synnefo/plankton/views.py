@@ -150,7 +150,7 @@ def add_image(request):
         return HttpResponse(status=501)     # Not Implemented
     
     if not image:
-        return HttpResponse(status=500)
+        return HttpResponse('Registration failed', status=500)
     
     return _create_image_response(image)
 
@@ -183,7 +183,7 @@ def get_image(request, image_id):
         in memory.
     """
     
-    #image = request.backend.get_meta(image_id)
+    #image = request.backend.get_image(image_id)
     #if not image:
     #    return HttpResponseNotFound()
     #
@@ -205,7 +205,7 @@ def get_image_meta(request, image_id):
     3.4. Requesting Detailed Metadata on a Specific Image
     """
 
-    image = request.backend.get_meta(image_id)
+    image = request.backend.get_image(image_id)
     if not image:
         return HttpResponseNotFound()
     return _create_image_response(image)

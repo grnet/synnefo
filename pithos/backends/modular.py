@@ -132,7 +132,7 @@ class ModularBackend(BaseBackend):
             self.queue = self.queue_module.Queue(**params)
         else:
             class NoQueue:
-                def send(self, key, value):
+                def send(self, *args):
                     pass
             
             self.queue = NoQueue()

@@ -198,6 +198,9 @@ setup(
     entry_points = {
      'console_scripts': [
          ],
+     'synnefo': [
+         'default_settings = pithos.backends.settings',
+         ]
       },
 )
 

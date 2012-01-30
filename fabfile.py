@@ -168,7 +168,7 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.8'
-env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
+env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject', 'snf-okeanos-site']
 env.signdebs = True
 env.debrelease = False  # Increase release number in Debian changelogs
 
@@ -210,7 +210,7 @@ def dch(p):
                        " -m 'Updated %s changelog'" % p))
                 notice(("Make sure to tag Debian release in %s" %
                         env.debian_branch))
-            
+
             local("rmdir .git")
 
 

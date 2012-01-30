@@ -38,7 +38,7 @@ from mapper import Mapper
 
 class Store(object):
     """Store.
-       Required contstructor parameters: path, block_size, hash_algorithm.
+       Required constructor parameters: path, block_size, hash_algorithm.
     """
     
     def __init__(self, **params):

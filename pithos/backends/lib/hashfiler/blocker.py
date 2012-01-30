@@ -41,7 +41,7 @@ from context_file import ContextFile, file_sync_read_chunks
 
 class Blocker(object):
     """Blocker.
-       Required contstructor parameters: blocksize, blockpath, hashtype.
+       Required constructor parameters: blocksize, blockpath, hashtype.
     """
 
     blocksize = None

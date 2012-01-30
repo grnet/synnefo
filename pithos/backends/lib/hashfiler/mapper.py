@@ -40,7 +40,7 @@ from context_file import ContextFile
 
 class Mapper(object):
     """Mapper.
-       Required contstructor parameters: mappath, namelen.
+       Required constructor parameters: mappath, namelen.
     """
     
     mappath = None

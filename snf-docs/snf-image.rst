@@ -5,7 +5,7 @@ snf-image
 =========
 
 :ref:`snf-image <snf-image>` is the secure image deployment tool used
-by the synnefo's Compute Service, :ref:`asterias <asterias>`.
+by the synnefo's Compute Service, :ref:`cyclades <cyclades>`.
 
 Currently, it is implemented as an OS definition inside Ganeti.
 

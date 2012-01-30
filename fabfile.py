@@ -42,7 +42,7 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
-env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject',
+env.packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject',
                 'snf-okeanos-site']
 env.capture = False
 env.colors = True
@@ -87,7 +87,8 @@ def remove_pkg(p):
 def build_pkg(p):
     info ("building package: %s" % p)
     with lcd(package_root(p)):
-        local("rm -r dist build")
+        local("if [ -d dist ]; then rm -r dist; fi;")
+        local("if [ -d build ]; then rm -r build; fi;")
         local("python setup.py egg_info -d sdist")
 
 
@@ -168,7 +169,7 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.8'
-env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject', 'snf-okeanos-site']
+env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject', 'snf-okeanos-site']
 env.signdebs = True
 env.debrelease = False  # Increase release number in Debian changelogs
 

@@ -29,7 +29,7 @@ SYNNEFO_PROJECTS = {
     'snf-webproject': 'dev',
     'snf-common': 'dev',
     'snf-image': 'dev',
-    'snf-asterias-app': 'dev'
+    'snf-cyclades-app': 'dev'
 }
 
 for name, ver in SYNNEFO_PROJECTS.iteritems():

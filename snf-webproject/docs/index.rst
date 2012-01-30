@@ -5,7 +5,7 @@ Component snf-webproject
 
 synnefo component :ref:`snf-webproject <snf-webproject>` defines
 a Django project in which the various other synnefo components
-(:ref:`snf-asterias-app <snf-asterias-app>`,
+(:ref:`snf-cyclades-app <snf-cyclades-app>`,
 :ref:`snf-pithos-app <snf-pithos-app>`, etc.) may run.
 
 It provides a standard mechanism for every synnefo software component to modify

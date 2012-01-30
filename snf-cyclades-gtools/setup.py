@@ -1,6 +1,4 @@
-#!/bin/bash
-#
-#
+#!/usr/bin/env python
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -35,55 +33,46 @@
 # or implied, of GRNET S.A.
 #
 
-set -e
+import os
 
-rm -rf env
-virtualenv --no-site-packages -ppython2.6 env
-source env/bin/activate
-export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
-pip install -r requirements.pip
+from setuptools import setup
 
-cd snf-common
-rm -rf build dist
-python setup.py install
-cd ../snf-cyclades-app
-rm -rf build dist
-python setup.py install
-cd ../snf-cyclades-gtools
-rm -rf build dist
-python setup.py install
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
+try:
+    # try to update the version file
+    from synnefo.util.version import update_version
+    update_version('synnefo.versions', 'ganeti', HERE)
+except ImportError:
+    pass
 
-cd ../env
-# avoid vncauthproxy errors
-rm bin/vncauthproxy.py
-echo "running django tests..." >&2
-export SYNNEFO_SETTINGS_DIR=/etc/lala
-snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
-cd ..
-deactivate
+from synnefo.versions.ganeti import __version__
 
-#rm -rf env
-#virtualenv --no-site-packages -ppython2.7 env
-#source env/bin/activate
-#export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
-#pip install -r requirements.pip
-
-#cd snf-common
-#rm -rf build dist
-#python setup.py install
-#cd ../snf-cyclades-app
-#rm -rf build dist
-#python setup.py install
-#cd ../snf-cyclades-gtools
-#rm -rf build dist
-#python setup.py install
-
-#cd env
-## avoid vncauthproxy errors
-#rm bin/vncauthproxy.py
-#echo "running django tests..." >&2
-#snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
-#cd ..
-#deactivate
-#rm -rf env
+setup(
+    name="snf-cyclades-gtools",
+    version=__version__,
+    description="Synnefo Ganeti supplementary tools",
+    author="Synnefo Development Team",
+    author_email="synnefo@lists.grnet.gr",
+    license="BSD",
+    url="http://code.grnet.gr/projects/synnefo",
+    namespace_packages=["synnefo", "synnefo.versions"],
+    packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
+    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    install_requires=[
+        'python-daemon',
+        'pyinotify',
+        'amqplib',
+        'python-prctl',
+    ],
+    entry_points = {
+     'console_scripts': [
+         'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
+         'snf-ganeti-hook = synnefo.ganeti.hook:main',
+         'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
+         ],
+     'synnefo': [
+            'default_settings = synnefo.ganeti.settings'
+         ]
+     },
+)

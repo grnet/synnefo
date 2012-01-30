@@ -84,14 +84,3 @@ Urls
 The application contains a convenience `urls.py` file which
 extends the synnefo urlpatterns with two extra urls and modifies.
 
-
-Deploying synnefo with ~okeanos intro pages
--------------------------------------------
-
-A sample configuration file with documented settings 
-modifications exists in okeanos_site/90-okeanos.conf.sample .
-
-The sample configuration file contains all settings needed
-for the smooth deployment of ~okeanos aplha release with no extra
-modifications on the synnefo application settings.
-

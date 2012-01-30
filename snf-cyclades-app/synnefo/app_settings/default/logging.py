@@ -1,5 +1,5 @@
 #
-# snf-app logging configuration
+# snf-cyclades-app logging configuration
 #####################
 
 DISPATCHER_LOGGING = {

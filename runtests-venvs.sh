@@ -46,7 +46,7 @@ pip install -r requirements.pip
 cd snf-common
 rm -rf build dist
 python setup.py install
-cd ../snf-app
+cd ../snf-cyclades-app
 rm -rf build dist
 python setup.py install
 cd ../snf-cyclades-gtools
@@ -72,7 +72,7 @@ deactivate
 #cd snf-common
 #rm -rf build dist
 #python setup.py install
-#cd ../snf-app
+#cd ../snf-cyclades-app
 #rm -rf build dist
 #python setup.py install
 #cd ../snf-cyclades-gtools

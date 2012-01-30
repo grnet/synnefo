@@ -183,7 +183,7 @@ def find_package_data(
     return out
 
 setup(
-    name = 'snf-app',
+    name = 'snf-cyclades-app',
     version = VERSION,
     license = 'BSD',
     url = 'http://code.grnet.gr/',

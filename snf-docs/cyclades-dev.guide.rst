@@ -405,7 +405,7 @@ To create a python package from the Synnefo source code run
 
 .. code-block:: bash
 
-    $ cd snf-app
+    $ cd snf-cyclades-app
     $ python setup.py sdist
 
 this command will create a ``tar.gz`` python source package inside ``dist`` directory.
@@ -418,7 +418,7 @@ Make sure you have ``sphinx`` installed.
 
 .. code-block:: bash
     
-    $ cd snf-app/docs
+    $ cd snf-cyclades-app/docs
     $ make html
 
 .. note::
@@ -427,7 +427,7 @@ Make sure you have ``sphinx`` installed.
    not available in the version of Sphinx shipped with Debian Squeeze. Replace
    it with ``default`` to build with a Squeeze-provided Sphinx.
 
-html files are generated in the ``snf-app/docs/_build/html`` directory.
+html files are generated in the ``snf-cyclades-app/docs/_build/html`` directory.
 
 
 Continuous integration with Jenkins

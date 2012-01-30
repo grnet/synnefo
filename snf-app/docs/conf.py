@@ -1,7 +1,7 @@
 import sys, os
 
 
-project = u'snf-asterias-app'
+project = u'snf-cyclades-app'
 copyright = u'2012, GRNET'
 version = '0.8'
 release = '0.8'
@@ -29,7 +29,7 @@ SYNNEFO_PROJECTS = {
     'snf-webproject': 'dev',
     'snf-common': 'dev',
     'snf-image': 'dev',
-    'snf-asterias-app': 'dev'
+    'snf-cyclades-app': 'dev'
 }
 
 for name, ver in SYNNEFO_PROJECTS.iteritems():

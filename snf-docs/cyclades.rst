@@ -1,4 +1,4 @@
-.. _asterias:
+.. _cyclades:
 
 Asterias Service
 ----------------
@@ -10,11 +10,11 @@ Asterias is the the synnefo Compute Service and implements OpenStack Compute API
 .. toctree::
    :maxdepth: 2
 
-   asterias-admin-guide
-   asterias-api-guide
-   asterias-admin-tools
-   asterias-dev-guide
-   asterias-upgrade
+   cyclades-admin-guide
+   cyclades-api-guide
+   cyclades-admin-tools
+   cyclades-dev-guide
+   cyclades-upgrade
 ..   src/design
 ..   src/dev
 ..   src/user

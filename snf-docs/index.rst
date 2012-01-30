@@ -14,14 +14,14 @@ synnefo comprises the following major components:
 .. toctree::
    :maxdepth: 1
 
-   asterias (name TBD): Compute Service <asterias>
+   cyclades (name TBD): Compute Service <cyclades>
    pithos+: File storage service <http://docs.dev.grnet.gr/pithos>
-   plankton: Image registry <http://docs.dev.grnet.gr/asterias/plankton>
+   plankton: Image registry <http://docs.dev.grnet.gr/cyclades/plankton>
    archipelagos: Volume storage service <http://docs.dev.grnet.gr/archipelagos>
    astakos: Identity management module <http://docs.dev.grnet.gr/astakos>
    aquarium: Billing module <http://docs.dev.grnet.gr/aquarium>
    image: Secure image deployment tool <snf-image>
-   kamaki: Command-line cloud management tool <http://docs.dev.grnet.gr/asterias/kamaki>
+   kamaki: Command-line cloud management tool <http://docs.dev.grnet.gr/cyclades/kamaki>
 
 Indices and tables
 ------------------

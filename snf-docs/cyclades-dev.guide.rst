@@ -1,15 +1,15 @@
-.. _asterias-developer-guide:
+.. _cyclades-developer-guide:
 
 ===============
 Developer Guide
 ===============
 
-This is the asterias developer guide.
+This is the cyclades developer guide.
 
 It is intended for developers, wishing to implement new functionality
-inside :ref:`asterias <asterias>`.
+inside :ref:`cyclades <cyclades>`.
 
-It assumes thorough familiarity with the :ref:`asterias-admin-guide`.
+It assumes thorough familiarity with the :ref:`cyclades-admin-guide`.
 
 Building a dev environment
 --------------------------
@@ -105,7 +105,7 @@ synnefo source
 
    .. code-block:: console
    
-      (synnefo-env)$ cd snf-asterias-app
+      (synnefo-env)$ cd snf-cyclades-app
       (synnefo-env)$ python setup.py develop -N
    
 * Initialize database:
@@ -147,7 +147,7 @@ Development tips
 South Database Migrations
 -------------------------
 
-.. _asterias-dev-initialmigration:
+.. _cyclades-dev-initialmigration:
 
 Initial Migration
 *****************
@@ -190,7 +190,7 @@ Schema migrations
 
 Do not use the syncdb management command. It can only be used the first time
 and/or if you drop the database and must recreate it from scratch. See
-:ref:`asterias-dev-initialmigration`.
+:ref:`cyclades-dev-initialmigration`.
 
 
 Every time you make changes to the database and data migration is not required

@@ -1,10 +1,10 @@
-.. _snf-asterias-app:
+.. _snf-cyclades-app:
 
-Component snf-asterias-app
+Component snf-cyclades-app
 ==========================
 
-synnefo component :ref:`snf-asterias-app <snf-asterias-app>` defines
-the web application for asterias. It includes the following:
+synnefo component :ref:`snf-cyclades-app <snf-cyclades-app>` defines
+the web application for cyclades. It includes the following:
 
     * A set of Django applications that define among others:
         * web UI
@@ -21,7 +21,7 @@ snf-dispatcher
 --------------
 
 The logic dispatcher provides the context to run the business logic layer of
-:ref:`asterias <snf-asterias>`. It must run on :ref:`LOGIC <LOGIC_NODE>` nodes.
+:ref:`cyclades <snf-cyclades>`. It must run on :ref:`LOGIC <LOGIC_NODE>` nodes.
 
 The dispatcher retrieves messages from the queue, over AMQP, and calls the
 appropriate handler function, based on the type of the message.
@@ -32,7 +32,7 @@ snf-admin
 ---------
 
 command :command:`snf-admin` provides the command-line admin interface
-for :ref:`asterias <snf-asterias>`.
+for :ref:`cyclades <snf-cyclades>`.
 
 Package installation
 --------------------
@@ -40,13 +40,13 @@ Package installation
 .. todo:: kpap: verify instructions for installation from source.
 
 Use ``pip`` to install the latest version of the package from source,
-or request a specific version as ``snf-asterias-app==x.y.z``.
+or request a specific version as ``snf-cyclades-app==x.y.z``.
 
 .. code-block:: console
 
-   $ pip install snf-asterias-app -f https://docs.dev.grnet.gr/pypi
+   $ pip install snf-cyclades-app -f https://docs.dev.grnet.gr/pypi
 
-On Debian Squeeze, install the ``snf-asterias-app`` Debian package.
+On Debian Squeeze, install the ``snf-cyclades-app`` Debian package.
 
 Package configuration
 ---------------------
@@ -55,7 +55,7 @@ Web application
 ***************
 
 Please see the configuration section of :ref:`snf-webproject <snf-webproject>`
-on how to serve :ref:`snf-asterias-app <snf-asterias-app>` as part of a
+on how to serve :ref:`snf-cyclades-app <snf-cyclades-app>` as part of a
 Django project.
 
 snf-dispatcher
@@ -82,7 +82,7 @@ The dispatcher should run in at least 2 instances to ensure high
 Package settings
 ----------------
 
-Component :ref:`snf-asterias-app <snf-asterias-app>` requires the following
+Component :ref:`snf-cyclades-app <snf-cyclades-app>` requires the following
 settings, as managed by :ref:`snf-common <snf-common>`:
 
 .. literalinclude:: ../synnefo/app_settings/default/api.py

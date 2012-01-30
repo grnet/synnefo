@@ -1,10 +1,10 @@
-.. _asterias-admin-guide:
+.. _cyclades-admin-guide:
 
 ===================
 Administrator Guide
 ===================
 
-This is the asterias administrator guide.
+This is the cyclades administrator guide.
 
 It contains instructions on how to download, install and configure
 the synnefo components necessary to deploy the Compute Service. It also covers
@@ -19,26 +19,26 @@ Overview
 This guide covers the following:
 
 Architecture
-    Node types needed for a complete deployment of asterias,
+    Node types needed for a complete deployment of cyclades,
     and their roles. Throughout this guide, `node` refers to a physical machine
     in the deployment.
 Installation
     The installation of services and synnefo software components for a working
-    deployment of asterias, either from source packages or the provided
+    deployment of cyclades, either from source packages or the provided
     packages for Debian Squeeze.
 Configuration
-    Configuration of the various software components comprising an asterias
+    Configuration of the various software components comprising an cyclades
     deployment.
 Upgrades/Changelogs
-    Upgrades of existing deployments of asterias to newer versions, associated
+    Upgrades of existing deployments of cyclades to newer versions, associated
     Changelogs.
 
-.. _asterias-architecture:
+.. _cyclades-architecture:
 
 Architecture
 ------------
 
-Nodes in an asterias deployment belong in one of the following types.
+Nodes in an cyclades deployment belong in one of the following types.
 For every type, we list the services that execute on corresponding nodes.
 
 .. _DB_NODE:
@@ -48,7 +48,7 @@ DB
 
 A node [or more than one nodes, if using an HA configuration], running a DB
 engine supported by the Django ORM layer. The DB is the single source of
-truth for the servicing of API requests by asterias.
+truth for the servicing of API requests by cyclades.
 
 *Services:* PostgreSQL / MySQL
 
@@ -57,7 +57,7 @@ truth for the servicing of API requests by asterias.
 APISERVER
 *********
 A node running the ``api`` application contained in
-:ref:`snf-asterias-app <snf-asterias-app>`. Any number of
+:ref:`snf-cyclades-app <snf-cyclades-app>`. Any number of
 :ref:`APISERVER <APISERVER_NODE>` nodes
 can be used, in a load-balancing configuration, without any
 special consideration. Access to a common DB ensures consistency.
@@ -108,21 +108,21 @@ queue.
         * the synnefo Ganeti hook, ``ganeti/snf-ganeti-hook.py``.
     * on every :ref:`GANETI-NODE <GANETI_NODE>`:
         * a deployment-specific KVM ifup script
-        * properly configured :ref:`NFDHCPD <asterias-nfdhcpd-setup>`
+        * properly configured :ref:`NFDHCPD <cyclades-nfdhcpd-setup>`
 
 .. _WEBAPP_NODE:
 
 Installation
 ------------
 
-Installation of asterias is a two step process:
+Installation of cyclades is a two step process:
 
-1. install the external services (prerequisites) on which asterias depends
-2. install the synnefo software components associated with asterias
+1. install the external services (prerequisites) on which cyclades depends
+2. install the synnefo software components associated with cyclades
 
 Prerequisites
 *************
-.. _asterias-install-ganeti:
+.. _cyclades-install-ganeti:
 
 Ganeti installation
 ```````````````````
@@ -132,7 +132,7 @@ of Ganeti is not covered by this document, please refer to
 gory details. A successful Ganeti installation concludes with a working 
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs <GANETI_NODES>`.
 
-.. _asterias-install-db:
+.. _cyclades-install-db:
 
 Database
 ````````
@@ -140,12 +140,12 @@ Database
 Database installation is done as part of the
 :ref:`snf-webproject <snf-webproject>` component.
 
-.. _asterias-install-rabbitmq:
+.. _cyclades-install-rabbitmq:
 
 RabbitMQ 
 ````````
 
-RabbitMQ is used as a generic message broker for asterias. It should be
+RabbitMQ is used as a generic message broker for cyclades. It should be
 installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high availability
 configuration as described here:
 
@@ -165,7 +165,7 @@ The values set for the user and password must be mirrored in the
 .. todo:: Document an active-active configuration based on the latest version
    of RabbitMQ.
 
-.. _asterias-install-vncauthproxy:
+.. _cyclades-install-vncauthproxy:
 
 vncauthproxy
 ````````````
@@ -212,7 +212,7 @@ Alternatively, build and install Debian packages.
 .. todo:: Mention vncauthproxy bug, snf-vncauthproxy, inability to install using pip
 .. todo:: kpap: fix installation commands
 
-.. _asterias-install-nfdhcpd:
+.. _cyclades-install-nfdhcpd:
 
 NFDHCPD
 ```````
@@ -236,7 +236,7 @@ to NFDHCPD's state directory, usually ``/var/lib/nfdhcpd``.
 
 .. todo:: soc: document NFDHCPD installation, settle on KVM ifup script
 
-.. _asterias-install-snfimage:
+.. _cyclades-install-snfimage:
 
 snf-image
 `````````
@@ -244,7 +244,7 @@ snf-image
 Install the :ref:`snf-image <snf-image>` Ganeti OS provider for image
 deployment.
 
-For :ref:`asterias <asterias>` to be able to launch VMs from specified
+For :ref:`cyclades <cyclades>` to be able to launch VMs from specified
 Images, you need the snf-image OS Provider installed on *all* Ganeti nodes.
 
 Please see `https://code.grnet.gr/projects/snf-image/wiki`_
@@ -262,7 +262,7 @@ synnefo components
 ******************
 
 You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <asterias-architecture>`.
+depending on its type, see :ref:`Architecture <cyclades-architecture>`.
 
 Most synnefo components have dependencies on additional Python packages.
 The dependencies are described inside each package, and are setup
@@ -278,38 +278,38 @@ Nodes of type :ref:`APISERVER <APISERVER_NODE>`
     Components
     :ref:`snf-common <snf-common>`,
     :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-asterias-app <snf-asterias-app>`
+    :ref:`snf-cyclades-app <snf-cyclades-app>`
 Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
     Components
     :ref:`snf-common <snf-common>`,
-    :ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>`
+    :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>`
 Nodes of type :ref:`LOGIC <LOGIC_NODE>`
     Components
     :ref:`snf-common <snf-common>`,
     :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-asterias-app <snf-asterias-app>`.
+    :ref:`snf-cyclades-app <snf-cyclades-app>`.
 
 Configuration
 -------------
 
-This section targets the configuration of the prerequisites for asterias,
+This section targets the configuration of the prerequisites for cyclades,
 and the configuration of the associated synnefo software components.
 
 synnefo components
 ******************
 
-asterias uses :ref:`snf-common <snf-common>` for settings.
+cyclades uses :ref:`snf-common <snf-common>` for settings.
 Please refer to the configuration sections of
 :ref:`snf-webproject <snf-webproject>`,
-:ref:`snf-asterias-app <snf-asterias-app>`,
-:ref:`snf-asterias-ganeti-tools <snf-asterias-ganeti-tools>` for more
+:ref:`snf-cyclades-app <snf-cyclades-app>`,
+:ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>` for more
 information on their configuration.
 
 Ganeti
 ``````
 
 Set ``GANETI_NODES``, ``GANETI_MASTER_IP``, ``GANETI_CLUSTER_INFO`` based on
-your :ref:`Ganeti installation <asterias-install-ganeti>` and change the
+your :ref:`Ganeti installation <cyclades-install-ganeti>` and change the
 `BACKEND_PREFIX_ID`` setting, using an custom ``PREFIX_ID``.
 
 Database
@@ -349,6 +349,6 @@ RabbitMQ
 ````````
 
 Change ``RABBIT_*`` settings to match your :ref:`RabbitMQ setup
-<asterias-install-rabbitmq>`.
+<cyclades-install-rabbitmq>`.
 
 .. include:: ../../Changelog

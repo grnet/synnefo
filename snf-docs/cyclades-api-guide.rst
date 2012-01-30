@@ -8,7 +8,7 @@ It is meant for users wishing to make calls to the REST API directly.
 
 The :ref:`kamaki <http://docs.dev.grnet.gr/kamaki>` command-line client
 and associated python library can be used instead of making direct calls to
-:ref:`asterias <asterias>`.
+:ref:`cyclades <cyclades>`.
 
 Overview
 ========

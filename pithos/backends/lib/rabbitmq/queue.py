@@ -31,18 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.lib.queue import exchange_connect, exchange_send
+from pithos.lib.queue import exchange_connect, exchange_send, Receipt
 
 
 class Queue(object):
     """Queue.
-       Required contstructor parameters: exchange.
+       Required constructor parameters: exchange, message_key, client_id.
     """
     
     def __init__(self, **params):
         exchange = params['exchange']
         self.conn = exchange_connect(exchange)
+        self.message_key = params['message_key']
+        self.client_id = params['client_id']
     
-    def send(self, key, value):
-        exchange_send(self.conn, key, value)
-
+    def send(self, user, resource, value, details):
+        body = Receipt(self.client_id, user, resource, value, details).format()
+        exchange_send(self.conn, self.message_key, body)

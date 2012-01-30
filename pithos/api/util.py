@@ -771,7 +771,9 @@ def get_backend():
     backend = connect_backend(db_module=settings.BACKEND_DB_MODULE,
                               db_connection=settings.BACKEND_DB_CONNECTION,
                               block_module=settings.BACKEND_BLOCK_MODULE,
-                              block_path=settings.BACKEND_BLOCK_PATH)
+                              block_path=settings.BACKEND_BLOCK_PATH,
+                              queue_module=settings.BACKEND_QUEUE_MODULE,
+                              queue_connection=settings.BACKEND_QUEUE_CONNECTION)
     backend.default_policy['quota'] = settings.BACKEND_QUOTA
     backend.default_policy['versioning'] = settings.BACKEND_VERSIONING
     return backend

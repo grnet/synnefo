@@ -11,22 +11,46 @@
       <div class="span4">
         <h4>Local account</h4>
         <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
-          {{ form.as_p }}
+          {{ local_form.as_p }}
          <br>
           <div class="">
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
+            <input type="hidden" name="provider" value="local">
             <button type="submit" class="btn primary">Go</button>
           </div>
         </form>
       </div>
     {% endif %}
-    <div class="span8">
-        {% for o in im_modules %}
-            {% if o != 'local' %}
-                <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="{{ o|title }}"><img src="/im/static/{{ o }}.png" width="120" height="120"></a>
-            {% endif %}
-        {% endfor %}
+    <div class="span4">
+        {% if 'twitter' in im_modules %}
+            <img src="/im/static/twitter.png" width="120" height="120">
+            <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
+                 {{ twitter_form.as_p }}
+                <br>
+                <div class="">
+                  <input type="hidden" name="next" value="{{ next }}">
+                  <input type="hidden" name="code" value="{{ code }}">
+                  <input type="hidden" name="provider" value="twitter">
+                  <input type="submit" value="Signup with Twitter"/>
+                </div>
+              </form>
+        {% endif %}
+    </div>
+    <div class="span4">
+        {% if 'shibboleth' in im_modules %}
+            <img src="/im/static/shibboleth.png" width="120" height="120">
+            <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
+                 {{ shibboleth_form.as_p }}
+                <br>
+                <div class="">
+                  <input type="hidden" name="next" value="{{ next }}">
+                  <input type="hidden" name="code" value="{{ code }}">
+                  <input type="hidden" name="provider" value="shibboleth">
+                  <input type="submit" value="Sign up with Shibboleth"/>
+                </div>
+              </form>
+        {% endif %}
       </div>
     </div>
 {% endblock body%}

@@ -39,9 +39,8 @@ from hashlib import new as newhasher
 
 from astakos.im.models import AstakosUser
 from astakos.im.util import get_or_create_user
-from astakos.im.forms import ExtendedUserCreationForm
+from astakos.im.forms import LocalUserCreationForm
 
-import uuid
 import logging
 
 class AdminProfileForm(forms.ModelForm):
@@ -64,7 +63,7 @@ class AdminProfileForm(forms.ModelForm):
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
 
-class AdminUserCreationForm(ExtendedUserCreationForm):
+class AdminUserCreationForm(LocalUserCreationForm):
     class Meta:
         model = AstakosUser
         fields = ("email", "first_name", "last_name", "is_superuser",
@@ -81,7 +80,6 @@ class AdminUserCreationForm(ExtendedUserCreationForm):
     
     def save(self, commit=True):
         user = super(AdminUserCreationForm, self).save(commit=False)
-        user.username = uuid.uuid4().hex[:30]
         user.renew_token()
         if commit:
             user.save()

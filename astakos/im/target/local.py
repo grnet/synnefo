@@ -40,13 +40,14 @@ from django.contrib.auth import authenticate
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 
-from astakos.im.target.util import prepare_response
+from astakos.im.target.util import prepare_response, requires_anonymous
 from astakos.im.models import AstakosUser
 from astakos.im.forms import LoginForm
 from urllib import unquote
 
 from hashlib import new as newhasher
 
+@requires_anonymous
 def login(request, on_failure='login.html'):
     """
     on_failure: the template name to render on login failure

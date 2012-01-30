@@ -32,14 +32,15 @@
 # or implied, of GRNET S.A.
 
 import logging
-import uuid
 
 from datetime import tzinfo, timedelta
 from django.conf import settings
 from django.template import RequestContext
 from django.contrib.sites.models import Site
+from django.utils.translation import ugettext as _
+from django.contrib import messages
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Invitation
 
 class UTC(tzinfo):
    def utcoffset(self, dt):
@@ -62,9 +63,7 @@ def get_or_create_user(email, realname='', first_name='', last_name='', affiliat
     """
     user, created = AstakosUser.objects.get_or_create(email=email,
         defaults={
-            'is_active': False,
             'password':password,
-            'username':uuid.uuid4().hex[:30],
             'affiliation':affiliation,
             'level':level,
             'invitations':settings.INVITATIONS_PER_LEVEL[level],
@@ -93,3 +92,27 @@ def get_current_site(request, use_https=False):
     protocol = use_https and 'https' or 'http'
     site = Site.objects.get_current()
     return site.name, '%s://%s' % (protocol, site.domain)
+
+def get_invitation(request):
+    """
+    Returns the invitation identified by the ``code``.
+    
+    Raises Invitation.DoesNotExist and Exception if the invitation is consumed
+    """
+    code = request.GET.get('code')
+    if request.method == 'POST':
+        code = request.POST.get('code')
+    if not code:
+        if 'invitation_code' in request.session:
+            code = request.session.pop('invitation_code')
+    if not code:
+        return
+    invitation = Invitation.objects.get(code = code)
+    if invitation.is_consumed:
+        raise ValueError(_('Invitation is consumed'))
+    try:
+        AstakosUser.objects.get(email = invitation.username)
+        raise ValueError(_('Email: %s is reserved' % invitation.username))
+    except AstakosUser.DoesNotExist:
+        pass
+    return invitation

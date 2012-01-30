@@ -18,7 +18,7 @@
   <thead>
     <tr>
       <th>ID</th>
-      <th>Username</th>
+      <th>Email</th>
       <th>Real Name</th>
       <th>Admin</th>
       <th>Affiliation</th>
@@ -31,7 +31,7 @@
     {% for user in users %}
     <tr>
       <td><a href="{% url astakos.im.admin.views.users_info user.id %}">{{ user.id }}</a></td>
-      <td><a href="{% url astakos.im.admin.views.users_info user.id %}">{{ user.username }}</a></td>
+      <td><a href="{% url astakos.im.admin.views.users_info user.id %}">{{ user.email }}</a></td>
       <td>{{ user.realname }}</td>
       <td>{{ user.is_superuser }}</td>
       <td>{{ user.affiliation }}</td>

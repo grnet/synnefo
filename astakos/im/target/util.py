@@ -35,12 +35,13 @@ import datetime
 
 from urlparse import urlsplit, urlunsplit
 from urllib import quote
+from functools import wraps
 
 from django.http import HttpResponse
 from django.utils.http import urlencode
 from django.core.urlresolvers import reverse
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 
 def prepare_response(request, user, next='', renew=False, skip_login=False):
     """Return the unique username and the token
@@ -86,3 +87,15 @@ def prepare_response(request, user, next='', renew=False, skip_login=False):
         response['Location'] = next
         response.status_code = 302
     return response
+
+def requires_anonymous(func):
+    """
+    Decorator checkes whether the request.user is an Anonymous and if not
+    logouts the request.user.
+    """
+    @wraps(func)
+    def wrapper(request, *args):
+        if not request.user.is_anonymous():
+            logout(request)
+        return func(request, *args)
+    return wrapper

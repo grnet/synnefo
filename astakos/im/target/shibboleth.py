@@ -32,11 +32,15 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponseBadRequest
-from django.core.urlresolvers import reverse
 from django.contrib.auth import authenticate
+from django.contrib import messages
 
-from astakos.im.target.util import prepare_response
-from astakos.im.util import get_or_create_user
+from astakos.im.target.util import prepare_response, requires_anonymous
+from astakos.im.util import get_or_create_user, get_context
+from astakos.im.models import AstakosUser, Invitation
+from astakos.im.views import render_response, create_user
+from astakos.im.backends import get_backend
+from astakos.im.forms import LocalUserCreationForm, ThirdPartyUserCreationForm
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -48,8 +52,12 @@ class Tokens:
     SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
-
+@requires_anonymous
 def login(request):
+    # store invitation code and email
+    request.session['email'] = request.GET.get('email')
+    request.session['invitation_code'] = request.GET.get('code')
+
     tokens = request.META
     
     try:
@@ -68,10 +76,44 @@ def login(request):
     
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
-    user = get_or_create_user(eppn, realname=realname, affiliation=affiliation, provider='shibboleth', level=0)
-    # in order to login the user we must call authenticate first
-    user = authenticate(email=user.email, auth_token=user.auth_token)
-    return prepare_response(request,
-                            user,
-                            request.GET.get('next'),
-                            'renew' in request.GET)
+    next = request.GET.get('next')
+    # check first if user with that identifier is registered
+    user = None
+    email = request.session.pop('email')
+    
+    if email:
+        # signup mode
+        if not reserved_screen_name(eppn):
+            try:
+                user = AstakosUser.objects.get(email = email)
+            except AstakosUser.DoesNotExist, e:
+                # register a new user
+                first_name, space, last_name = realname.partition(' ')
+                post_data = {'provider':'Shibboleth', 'first_name':first_name,
+                                'last_name':last_name, 'affiliation':affiliation,
+                                'third_party_identifier':eppn}
+                form = ThirdPartyUserCreationForm({'email':email})
+                return create_user(request, form, backend, post_data, next, template_name, extra_context)
+        else:
+            status = messages.ERROR
+            message = '%s@shibboleth is already registered' % eppn
+            messages.add_message(request, messages.ERROR, message)
+    else:
+        # login mode
+        if user and user.is_active:
+            #in order to login the user we must call authenticate first
+            user = authenticate(email=user.email, auth_token=user.auth_token)
+            return prepare_response(request, user, next)
+        elif user and not user.is_active:
+            messages.add_message(request, messages.ERROR, 'Inactive account: %s' % user.email)
+    return render_response(template_name,
+                   form = LocalUserCreationForm(),
+                   context_instance=get_context(request, extra_context))
+
+def reserved_identifier(identifier):
+    try:
+        AstakosUser.objects.get(provider='Shibboleth',
+                                third_party_identifier=identifier)
+        return True
+    except AstakosUser.DoesNotExist, e:
+        return False

@@ -42,12 +42,15 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.sites.models import Site
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.db import transaction
+from django.core.urlresolvers import reverse
 
 from smtplib import SMTPException
 from urllib import quote
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.forms import ExtendedUserCreationForm, InvitedExtendedUserCreationForm
+from astakos.im.forms import *
+from astakos.im.util import get_invitation
 
 import socket
 import logging
@@ -84,50 +87,52 @@ class InvitationsBackend(object):
     administrator activates his/her account.
     """
     def __init__(self, request):
+        """
+        raises Invitation.DoesNotExist and ValueError if invitation is consumed
+        or invitation username is reserved.
+        """
         self.request = request
-        self.invitation = None
-        self.set_invitation()
+        self.invitation = get_invitation(request)
     
-    def set_invitation(self):
-        code = self.request.GET.get('code', '')
-        if not code:
-            code = self.request.POST.get('code', '')
-        if code:
-            self.invitation = Invitation.objects.get(code=code)
-            if self.invitation.is_consumed:
-                    raise Exception('Invitation has beeen used')
+    def get_signup_form(self, provider):
+        """
+        Returns the form class name 
+        """
+        invitation = self.invitation
+        initial_data = self.get_signup_initial_data(provider)
+        prefix = 'Invited' if invitation else ''
+        main = provider.capitalize() if provider == 'local' else 'ThirdParty'
+        suffix  = 'UserCreationForm'
+        formclass = '%s%s%s' % (prefix, main, suffix)
+        return globals()[formclass](initial_data)
     
-    def get_signup_form(self):
+    def get_signup_initial_data(self, provider):
         """
         Returns the necassary registration form depending the user is invited or not
         
         Throws Invitation.DoesNotExist in case ``code`` is not valid.
         """
         request = self.request
-        formclass = 'ExtendedUserCreationForm'
-        if self.invitation:
-            formclass = 'Invited%s' %formclass
+        invitation = self.invitation
         initial_data = None
         if request.method == 'GET':
-            if self.invitation:
+            if invitation:
                 # create a tmp user with the invitation realname
                 # to extract first and last name
-                u = AstakosUser(realname = self.invitation.realname)
-                initial_data = {'username':self.invitation.username,
-                                'email':self.invitation.username,
-                                'inviter':self.invitation.inviter.realname,
+                u = AstakosUser(realname = invitation.realname)
+                initial_data = {'email':invitation.username,
+                                'inviter':invitation.inviter.realname,
                                 'first_name':u.first_name,
                                 'last_name':u.last_name}
-        elif request.method == 'POST':
-            initial_data = request.POST
-        return globals()[formclass](initial_data)
+        else:
+            if provider == request.POST.get('provider', ''):
+                initial_data = request.POST
+        return initial_data
     
     def _is_preaccepted(self, user):
         """
         If there is a valid, not-consumed invitation code for the specific user
         returns True else returns False.
-        
-        It should be called after ``get_signup_form`` which sets invitation if exists.
         """
         invitation = self.invitation
         if not invitation:
@@ -137,31 +142,43 @@ class InvitationsBackend(object):
             return True
         return False
     
+    @transaction.commit_manually
     def signup(self, form):
         """
         Initially creates an inactive user account. If the user is preaccepted
         (has a valid invitation code) the user is activated and if the request
         param ``next`` is present redirects to it.
         In any other case the method returns the action status and a message.
+        
+        The method uses commit_manually decorator in order to ensure the user
+        will be created only if the procedure has been completed successfully.
         """
-        kwargs = {}
-        user = form.save()
+        user = None
         try:
+            user = form.save()
             if self._is_preaccepted(user):
                 user.is_active = True
                 user.save()
                 # get the raw password from the form
-                password = form.cleaned_data['password1']
-                user = authenticate(username=user.email, password=password)
+                user = authenticate(email=user.email, auth_token=user.auth_token)
                 login(self.request, user)
                 message = _('Registration completed. You can now login.')
             else:
-                message = _('Registration completed. You will receive an email upon your account\'s activation')
+                message = _('Registration completed. You will receive an email upon your account\'s activation.')
             status = messages.SUCCESS
         except Invitation.DoesNotExist, e:
             status = messages.ERROR
             message = _('Invalid invitation code')
-        return status, message
+        except socket.error, e:
+            status = messages.ERROR
+            message = _(e.strerror)
+        
+        # rollback in case of error
+        if status == messages.ERROR:
+            transaction.rollback()
+        else:
+            transaction.commit()
+        return status, message, user
 
 class SimpleBackend(object):
     """
@@ -172,17 +189,27 @@ class SimpleBackend(object):
     def __init__(self, request):
         self.request = request
     
-    def get_signup_form(self):
+    def get_signup_form(self, provider):
         """
-        Returns the UserCreationForm
+        Returns the form class name
         """
+        main = provider.capitalize() if provider == 'local' else 'ThirdParty'
+        suffix  = 'UserCreationForm'
+        formclass = '%s%s' % (main, suffix)
         request = self.request
-        initial_data = request.POST if request.method == 'POST' else None
-        return ExtendedUserCreationForm(initial_data)
+        initial_data = None
+        if request.method == 'POST':
+            if provider == request.POST.get('provider', ''):
+                initial_data = request.POST
+        return globals()[formclass](initial_data)
     
+    @transaction.commit_manually
     def signup(self, form, email_template_name='activation_email.txt'):
         """
         Creates an inactive user account and sends a verification email.
+        
+        The method uses commit_manually decorator in order to ensure the user
+        will be created only if the procedure has been completed successfully.
         
         ** Arguments **
         
@@ -200,18 +227,23 @@ class SimpleBackend(object):
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """
-        kwargs = {}
-        user = form.save()
-        
-        status = messages.SUCCESS
+        user = None
         try:
+            user = form.save()
+            status = messages.SUCCESS
             _send_verification(self.request, user, email_template_name)
             message = _('Verification sent to %s' % user.email)
         except (SMTPException, socket.error) as e:
             status = messages.ERROR
             name = 'strerror'
             message = getattr(e, name) if hasattr(e, name) else e
-        return status, message
+        
+        # rollback in case of error
+        if status == messages.ERROR:
+            transaction.rollback()
+        else:
+            transaction.commit()
+        return status, message, user
 
 def _send_verification(request, user, template_name):
     site = Site.objects.get_current()

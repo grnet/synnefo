@@ -62,9 +62,9 @@ from django.db import transaction
 from django.contrib.auth.forms import UserCreationForm
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.util import isoformat, get_context, get_current_site
 from astakos.im.backends import get_backend
-from astakos.im.forms import ProfileForm, FeedbackForm, LoginForm
+from astakos.im.util import get_context, get_current_site, get_invitation
+from astakos.im.forms import *
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
@@ -241,15 +241,10 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
     
     profile.html or ``template_name`` keyword argument.
     """
-    try:
-        user = AstakosUser.objects.get(username=request.user)
-        form = ProfileForm(instance=user)
-        extra_context['next'] = request.GET.get('next')
-    except AstakosUser.DoesNotExist:
-        token = request.GET.get('auth', None)
-        user = AstakosUser.objects.get(auth_token=token)
+    form = ProfileForm(instance=request.user)
+    extra_context['next'] = request.GET.get('next')
     if request.method == 'POST':
-        form = ProfileForm(request.POST, instance=user)
+        form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             try:
                 form.save()
@@ -264,9 +259,8 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
                            form = form,
                            context_instance = get_context(request,
                                                           extra_context,
-                                                          user=user))
+                                                          user=request.user))
 
-@transaction.commit_manually
 def signup(request, template_name='signup.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
@@ -284,9 +278,6 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
     
     On unsuccessful creation, renders the same page with an error message.
     
-    The view uses commit_manually decorator in order to ensure the user will be created
-    only if the procedure has been completed successfully.
-    
     **Arguments**
     
     ``template_name``
@@ -303,23 +294,32 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
     try:
         if not backend:
             backend = get_backend(request)
-        form = backend.get_signup_form()
+        for provider in settings.IM_MODULES:
+            extra_context['%s_form' % provider] = backend.get_signup_form(provider)
         if request.method == 'POST':
+            provider = request.POST.get('provider')
+            next = request.POST.get('next', '')
+            form = extra_context['%s_form' % provider]
             if form.is_valid():
-                status, message = backend.signup(form)
-                # rollback in case of error
-                if status == messages.ERROR:
-                    transaction.rollback()
+                if provider != 'local':
+                    url = reverse('astakos.im.target.%s.login' % provider)
+                    url = '%s?email=%s&next=%s' % (url, form.data['email'], next)
+                    if backend.invitation:
+                        url = '%s&code=%s' % (url, backend.invitation.code)
+                    return redirect(url)
                 else:
-                    transaction.commit()
-                    next = request.POST.get('next')
-                    if next:
-                        return redirect(next)
-                messages.add_message(request, status, message)
-    except (Invitation.DoesNotExist, Exception), e:
+                    status, message, user = backend.signup(form)
+                    if status == messages.SUCCESS:
+                        if next:
+                            return redirect(next)
+                    messages.add_message(request, status, message)    
+    except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
+        for provider in settings.IM_MODULES:
+            main = provider.capitalize() if provider == 'local' else 'ThirdParty'
+            formclass = '%sUserCreationForm' % main
+            extra_context['%s_form' % provider] = globals()[formclass]()
     return render_response(template_name,
-                           form = form if 'form' in locals() else UserCreationForm(),
                            context_instance=get_context(request, extra_context))
 
 @login_required
@@ -377,3 +377,24 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request, extra_context))
+
+def create_user(request, form, backend=None, post_data={}, next = None, template_name='login.html', extra_context={}): 
+    try:
+        if not backend:
+            backend = get_backend(request)
+        if form.is_valid():
+            status, message, user = backend.signup(form)
+            if status == messages.SUCCESS:
+                for k,v in post_data.items():
+                    setattr(user,k, v)
+                user.save()
+                if next:
+                    return redirect(next)
+            messages.add_message(request, status, message)
+        else:
+            messages.add_message(request, messages.ERROR, form.errors)
+    except (Invitation.DoesNotExist, ValueError), e:
+        messages.add_message(request, messages.ERROR, e)
+    return render_response(template_name,
+                           form = LocalUserCreationForm(),
+                           context_instance=get_context(request, extra_context))

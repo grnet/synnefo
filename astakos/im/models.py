@@ -33,6 +33,7 @@
 
 import logging
 import hashlib
+import uuid
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -67,6 +68,9 @@ class AstakosUser(User):
     updated = models.DateTimeField('Update date')
     is_verified = models.BooleanField('Is verified?', default=False)
     
+    # ex. screen_name for twitter, eppn for shibboleth
+    third_party_identifier = models.CharField('Third-party identifier', max_length=255, null=True, blank=True)
+    
     @property
     def realname(self):
         return '%s %s' %(self.first_name, self.last_name)
@@ -98,14 +102,19 @@ class AstakosUser(User):
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
+                while not self.username:
+                    username =  uuid.uuid4().hex[:30]
+                    try:
+                        AstakosUser.objects.get(username = username)
+                    except AstakosUser.DoesNotExist, e:
+                        self.username = username
+                self.is_active = False
+                if not self.provider:
+                    self.provider = 'local'
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
         
         super(AstakosUser, self).save(**kwargs)
-        
-        #invitation consume
-        if self.invitation and not self.invitation.is_consumed:
-            self.invitation.consume()
     
     def renew_token(self):
         md5 = hashlib.md5()

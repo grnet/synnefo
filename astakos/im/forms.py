@@ -48,9 +48,8 @@ from astakos.im.models import AstakosUser
 from astakos.im.util import get_current_site
 
 import logging
-import uuid
 
-class ExtendedUserCreationForm(UserCreationForm):
+class LocalUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
     
@@ -67,7 +66,7 @@ class ExtendedUserCreationForm(UserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        super(ExtendedUserCreationForm, self).__init__(*args, **kwargs)
+        super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
     
@@ -86,18 +85,16 @@ class ExtendedUserCreationForm(UserCreationForm):
         Saves the email, first_name and last_name properties, after the normal
         save behavior is complete.
         """
-        user = super(ExtendedUserCreationForm, self).save(commit=False)
-        user.username = uuid.uuid4().hex[:30]
-        user.is_active = False
+        user = super(LocalUserCreationForm, self).save(commit=False)
         user.renew_token()
         if commit:
             user.save()
         logging.info('Created user %s', user)
         return user
 
-class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
+class InvitedLocalUserCreationForm(LocalUserCreationForm):
     """
-    Extends the ExtendedUserCreationForm: adds an inviter readonly field.
+    Extends the LocalUserCreationForm: adds an inviter readonly field.
     """
     
     inviter = forms.CharField(widget=forms.TextInput(), label=_('Inviter Real Name'))
@@ -110,7 +107,7 @@ class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
         """
         Changes the order of fields, and removes the username field.
         """
-        super(InvitedExtendedUserCreationForm, self).__init__(*args, **kwargs)
+        super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'inviter', 'first_name',
                                 'last_name', 'password1', 'password2']
         #set readonly form fields
@@ -119,7 +116,7 @@ class InvitedExtendedUserCreationForm(ExtendedUserCreationForm):
         self.fields['username'].widget.attrs['readonly'] = True
     
     def save(self, commit=True):
-        user = super(InvitedExtendedUserCreationForm, self).save(commit=False)
+        user = super(InvitedLocalUserCreationForm, self).save(commit=False)
         level = user.invitation.inviter.level + 1
         user.level = level
         user.invitations = settings.INVITATIONS_PER_LEVEL[level]
@@ -161,6 +158,39 @@ class ProfileForm(forms.ModelForm):
             user.save()
         return user
 
+class ThirdPartyUserCreationForm(ProfileForm):
+    class Meta:
+        model = AstakosUser
+        fields = ('email', 'last_name', 'first_name', 'affiliation', 'provider', 'third_party_identifier')
+    
+    def __init__(self, *args, **kwargs):
+        super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields.keyOrder = ['email']
+    
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if not email:
+            raise forms.ValidationError(_("This field is required"))
+        try:
+            user = AstakosUser.objects.get(email = email)
+            raise forms.ValidationError(_("Email is reserved"))
+        except AstakosUser.DoesNotExist:
+            return email
+    
+    def save(self, commit=True):
+        user = super(ThirdPartyUserCreationForm, self).save(commit=False)
+        user.verified = False
+        user.renew_token()
+        if commit:
+            user.save()
+        logging.info('Created user %s', user)
+        return user
+
+class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
+    def __init__(self, *args, **kwargs):
+        super(InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
+        #set readonly form fields
+        self.fields['email'].widget.attrs['readonly'] = True
 
 class FeedbackForm(forms.Form):
     """
@@ -208,4 +238,3 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             from_email = settings.DEFAULT_FROM_EMAIL % site_name
             send_mail(_("Password reset on %s") % site_name,
                 t.render(Context(c)), from_email, [user.email])
-    

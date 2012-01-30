@@ -1,6 +1,4 @@
-# Example configuration file for snf-ganeti-tools
-#
-# You should copy this to /etc/synnefo and change it accordingly
+# snf-cyclades-gtools settings
 
 RABBIT_HOST = "127.0.0.1:5672"
 RABBIT_USERNAME = "rabbit-username"

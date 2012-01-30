@@ -213,7 +213,7 @@ GANETI-INSTANCE-IMAGE
       https://code.grnet.gr/projects/gnt-instance-image/files
 
 COMPONENTS
-    * snf-ganeti-tools must be rebuilt, see snf-ganeti-tools/debian/
+    * snf-cyclades-gtools must be rebuilt, see snf-cyclades-gtools/debian/
       for Debian packaging.
 
 NEW SETTINGS
@@ -244,7 +244,7 @@ UI
       (https://docs.djangoproject.com/en/dev/topics/email/)
 
 COMPONENTS
-    * snf-ganeti-tools must be rebuilt, see snf-ganeti-tools/debian/
+    * snf-cyclades-gtools must be rebuilt, see snf-cyclades-gtools/debian/
       for Debian packaging.
 
 
@@ -252,17 +252,17 @@ v0.5.3 -> v0.5.4
 ----------------
 
 REPOSITORY
-    * Split Synnefo Ganeti tools to snf-ganeti-tools, with Debian packaging
+    * Split Synnefo Ganeti tools to snf-cyclades-gtools, with Debian packaging
 
 REMOVED APPS
     * The ganeti/ app has been removed from the Django project completely.
       Any explicit references to it in Django settings must be removed.
 
 DJANGO SETTINGS
-    * snf-ganeti-tools is configured independently from Django,
+    * snf-cyclades-gtools is configured independently from Django,
       need to add proper /etc/synnefo/settings.conf
     * Removed 15-queues.conf: fix_amqp_settings (no need to call it anywhere)
-    * Removed settings.d/98-ganeti-* due to split of snf-ganeti-tools
+    * Removed settings.d/98-ganeti-* due to split of snf-cyclades-gtools
     * ~okeanos intro: OKEANOS_VIDEO_URL: Changed from string to dict
     * ~okeanos intro: OKEANOS_VIDEO_POSTER_IMAGE_URL: New setting
     * ~okeanos intro: OKEANOS_VIDEO_FLOWPLAYER_URL: New setting
@@ -271,11 +271,11 @@ DB MIGRATIONS
     * 0018_auto__add_field_virtualmachine_buildpercentage
 
 PACKAGING
-    * Split Synnefo Ganeti tools to separate snf-ganeti-tools Debian package
+    * Split Synnefo Ganeti tools to separate snf-cyclades-gtools Debian package
 
 NEW DEPENDENCIES
     * python-prctl: Needed by the snf-progress-monitor,
-      specified as a dependency of the snf-ganeti-tools Debian package.
+      specified as a dependency of the snf-cyclades-gtools Debian package.
 
 EXTERNAL COMPONENTS
     * Ganeti Instance Image must be upgraded to support progress monitoring,

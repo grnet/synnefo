@@ -234,7 +234,7 @@ FEATURES:
           (#889)
     Deployment:
         * Drop ganeti-eventd & snf-ganeti-hook synnefo dependency (#691)
-        * Split Synnefo Ganeti tools to separate project under snf-ganeti-tools/
+        * Split Synnefo Ganeti tools to separate project under snf-cyclades-gtools/
         * Import code for building Debian packages, refactor repository (#691)
 
 

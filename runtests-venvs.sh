@@ -49,7 +49,7 @@ python setup.py install
 cd ../snf-app
 rm -rf build dist
 python setup.py install
-cd ../snf-ganeti-tools
+cd ../snf-cyclades-gtools
 rm -rf build dist
 python setup.py install
 
@@ -75,7 +75,7 @@ deactivate
 #cd ../snf-app
 #rm -rf build dist
 #python setup.py install
-#cd ../snf-ganeti-tools
+#cd ../snf-cyclades-gtools
 #rm -rf build dist
 #python setup.py install
 

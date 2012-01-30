@@ -49,7 +49,7 @@ except ImportError:
 from synnefo.versions.ganeti import __version__
 
 setup(
-    name="snf-ganeti-tools",
+    name="snf-cyclades-gtools",
     version=__version__,
     description="Synnefo Ganeti supplementary tools",
     author="Synnefo Development Team",

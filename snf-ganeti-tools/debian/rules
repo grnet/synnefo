@@ -4,7 +4,6 @@
 	dh $@ --with python2
 
 package=snf-ganeti-tools
-default_settings_dir=synnefo/ga/settings/default/
 
 override_dh_auto_install:
 	dh_auto_install

@@ -43,6 +43,12 @@ from django.utils.cache import patch_vary_headers
 class ApiAuthMiddleware(object):
     def process_request(self, request):
         request.user = None
+        request.username = ''
+
+        if settings.TEST:
+            request.user = 'test'
+            request.username = 'test'
+            return
         
         token = request.GET.get('X-Auth-Token')
         if not token:

@@ -1,4 +1,4 @@
-Source: snf-app
+Source: snf-cyclades-app
 Section: python
 Priority: optional
 Maintainer: Vangelis Koukis <vkoukis@grnet.gr>
@@ -7,7 +7,7 @@ Standards-Version: 3.9.2
 XS-Python-Version: >= 2.6
 Homepage: https://code.grnet.gr/projects/synnefo
 
-Package: snf-app
+Package: snf-cyclades-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
 Provides: ${python:Provides}

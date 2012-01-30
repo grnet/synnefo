@@ -3,7 +3,7 @@
 %:
 	dh $@ --with python2
 
-package=snf-ganeti-tools
+package=snf-cyclades-gtools
 
 override_dh_auto_install:
 	dh_auto_install
@@ -22,7 +22,7 @@ override_dh_auto_install:
 
 	mkdir -p debian/$(package)/etc/synnefo
 	cp synnefo/ganeti/settings.py  \
-		debian/$(package)/etc/synnefo/10-snf-ganeti-tools-backend.conf;
+		debian/$(package)/etc/synnefo/10-snf-cyclades-gtools-backend.conf;
 	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;
 
 	# this package provides the synnefo namespace __init__.py

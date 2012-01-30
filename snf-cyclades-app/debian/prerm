@@ -1,5 +1,5 @@
 #!/bin/sh
-# prerm script for snf-app
+# prerm script for snf-cyclades-app
 #
 # see: dh_installdeb(1)
 

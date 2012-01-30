@@ -3,7 +3,7 @@
 %:
 	dh $@ --with python2
 
-package=snf-app
+package=snf-cyclades-app
 static_dir=debian/$(package)/usr/share/synnefo/static/
 ui_static_dir=synnefo/ui/static/
 admin_static_dir=synnefo/admin/static/

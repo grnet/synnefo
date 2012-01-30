@@ -1,5 +1,5 @@
 #!/bin/sh
-# postrm script for snf-ganeti-tools
+# postrm script for snf-cyclades-app
 #
 # see: dh_installdeb(1)
 
@@ -25,7 +25,7 @@ case "$1" in
 
     purge)
         echo "Removing rc.d links..."
-        update-rc.d snf-ganeti-eventd remove
+        update-rc.d snf-dispatcher remove
     ;;
 
     *)

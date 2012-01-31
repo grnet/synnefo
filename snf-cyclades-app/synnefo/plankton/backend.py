@@ -241,7 +241,8 @@ class ImageBackend(object):
         location = get_location(account, container, object)
         return self._get_image(location)
     
-    def iter_public(self, filters):
+    def iter_public(self, filters=None):
+        filters = filters or {}
         backend = self.backend
         
         keys = [PLANKTON_PREFIX + 'name']

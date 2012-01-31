@@ -1,6 +1,3 @@
-#!/bin/bash
-#
-#
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -33,57 +30,17 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-set -e
+from synnefo.app_settings.default.logging import *
+from synnefo.app_settings.default.backend import *
+from synnefo.app_settings.default.queues import *
+from synnefo.app_settings.default.api import *
+from synnefo.app_settings.default.plankton import *
+from synnefo.app_settings.default.ui import *
+from synnefo.app_settings.default.userdata import *
+from synnefo.app_settings.default.aai import *
+from synnefo.app_settings.default.invitations import *
+from synnefo.app_settings.default.reconciliation import *
+from synnefo.app_settings.default.helpdesk import *
+from synnefo.app_settings.default.tests import *
 
-rm -rf env
-virtualenv --no-site-packages -ppython2.6 env
-source env/bin/activate
-export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
-pip install -r requirements.pip
-
-cd snf-common
-rm -rf build dist
-python setup.py install
-cd ../snf-cyclades-app
-rm -rf build dist
-python setup.py install
-cd ../snf-cyclades-gtools
-rm -rf build dist
-python setup.py install
-
-
-cd ../env
-# avoid vncauthproxy errors
-rm bin/vncauthproxy.py
-echo "running django tests..." >&2
-export SYNNEFO_SETTINGS_DIR=/etc/lala
-snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
-cd ..
-deactivate
-
-#rm -rf env
-#virtualenv --no-site-packages -ppython2.7 env
-#source env/bin/activate
-#export PIP_DOWNLOAD_CACHE=/tmp/.pip_cache
-#pip install -r requirements.pip
-
-#cd snf-common
-#rm -rf build dist
-#python setup.py install
-#cd ../snf-cyclades-app
-#rm -rf build dist
-#python setup.py install
-#cd ../snf-cyclades-gtools
-#rm -rf build dist
-#python setup.py install
-
-#cd env
-## avoid vncauthproxy errors
-#rm bin/vncauthproxy.py
-#echo "running django tests..." >&2
-#snf-manage test aai admin api db helpdesk invitations logic userdata --settings=synnefo.settings.test
-#cd ..
-#deactivate
-#rm -rf env

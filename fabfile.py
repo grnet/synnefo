@@ -42,7 +42,7 @@ from fabric.colors import *
 env.project_root = "./"
 env.develop = False
 env.autoremove = True
-env.packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject',
+env.packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject',
                 'snf-okeanos-site']
 env.capture = False
 env.colors = True
@@ -87,7 +87,8 @@ def remove_pkg(p):
 def build_pkg(p):
     info ("building package: %s" % p)
     with lcd(package_root(p)):
-        local("rm -r dist build")
+        local("if [ -d dist ]; then rm -r dist; fi;")
+        local("if [ -d build ]; then rm -r build; fi;")
         local("python setup.py egg_info -d sdist")
 
 
@@ -168,7 +169,7 @@ def co(c):
 #
 
 env.debian_branch = 'debian-0.8'
-env.deb_packages = ['snf-common', 'snf-app', 'snf-ganeti-tools', 'snf-webproject']
+env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject', 'snf-okeanos-site']
 env.signdebs = True
 env.debrelease = False  # Increase release number in Debian changelogs
 
@@ -210,7 +211,7 @@ def dch(p):
                        " -m 'Updated %s changelog'" % p))
                 notice(("Make sure to tag Debian release in %s" %
                         env.debian_branch))
-            
+
             local("rmdir .git")
 
 
@@ -241,10 +242,43 @@ def builddeb(p, master="master", branch="debian-0.8"):
 
 def builddeball(b="debian-0.8"):
     for p in env.deb_packages:
-        builddeb(p, b)
+        builddeb(p=p, branch=b)
 
 
 
 @roles('pypi')
 def uploadtars():
     put("packages/*.tar.gz", 'www/pypi/')
+
+
+def cleandocs():
+    """
+    Remove _build directories for each doc project
+    """
+
+    # snf-docs contains conf.py in root directory
+    if os.path.exists("snf-docs/docs/_build"):
+        local("rm -r snf-docs/docs/_build")
+
+    for p in env.packages:
+        buildpth = os.path.join(package_root(p), 'docs', '_build')
+        if os.path.exists(buildpth):
+            local('rm -r %s' % buildpth)
+
+
+def builddocs():
+    """
+    Run sphinx builder for each project separately
+    """
+    builddocs_cmd = "sphinx-build -b html -d _build/doctrees   . _build/html"
+
+    # snf-docs contains conf.py in root directory
+    with lcd("snf-docs"):
+        local(builddocs_cmd)
+
+    for p in env.packages:
+        info("Building %s docs" % p)
+        docspth = os.path.join(package_root(p), 'docs')
+        if os.path.exists(docspth):
+            with lcd(docspth):
+                local(builddocs_cmd)

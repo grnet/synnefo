@@ -204,15 +204,12 @@ def invite(request, template_name='invitations.html', extra_context={}):
             message = _('No invitations left')
     messages.add_message(request, status, message)
     
-    if request.GET.get('format') == 'json':
-        sent = [{'email': inv.username,
+    sent = [{'email': inv.username,
                  'realname': inv.realname,
                  'is_accepted': inv.is_accepted}
                     for inv in inviter.invitations_sent.all()]
-        rep = {'invitations': inviter.invitations, 'sent': sent}
-        return HttpResponse(json.dumps(rep))
-    
-    kwargs = {'user': inviter}
+    kwargs = {'user': inviter,
+              'sent':sent}
     context = get_context(request, extra_context, **kwargs)
     return render_response(template_name,
                            context_instance = context)
@@ -398,3 +395,10 @@ def create_user(request, form, backend=None, post_data={}, next = None, template
     return render_response(template_name,
                            form = LocalUserCreationForm(),
                            context_instance=get_context(request, extra_context))
+
+def user_logout(request):
+    response = HttpResponse()
+    response.delete_cookie(settings.COOKIE_NAME)
+    response['Location'] = reverse('django.contrib.auth.views.logout')
+    response.status_code = 302
+    return response

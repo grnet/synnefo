@@ -34,17 +34,37 @@
 from django.http import HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
+from django.utils.translation import ugettext as _
+from django.contrib import messages
+from django.utils.http import urlencode
+
 from urllib import quote
+from urlparse import urlunsplit, urlsplit
 
 from astakos.im.target.util import prepare_response
 
 def login(request):
-    next = request.GET.get('next')
-    if not next:
-        return HttpResponseBadRequest('No next step provided')
+    """
+    If the request user is authenticated, redirects to `next` request parameter
+    if exists, otherwise redirects to astakos index page displaying an error
+    message.
+    If the request user is not authenticated, redirects to login in order to
+    return back here after successful login.
+    """
     if request.user.is_authenticated():
-        return prepare_response(request, request.user, next, skip_login=True)
+        next = request.GET.get('next')
+        if next:
+            parts = list(urlsplit(next))
+            parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
+            url = urlunsplit(parts)
+            return redirect(url)
+        else:
+            msg = _('No next parameter')
+            messages.add_message(request, messages.ERROR, msg)
+            url = reverse('astakos.im.views.index')
+            return redirect(url)
     else:
+        # redirect to login with self as next
         url = reverse('astakos.im.views.index')
         url = '%s?next=%s' % (url, quote(request.build_absolute_uri()))
         return redirect(url)

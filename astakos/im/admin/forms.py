@@ -51,17 +51,33 @@ class AdminProfileForm(forms.ModelForm):
     The class defines a save method which sets ``is_verified`` to True so as the user
     during the next login will not to be redirected to profile page.
     """
+    quota = forms.CharField(label=_('Quota (GiB)'))
+    
     class Meta:
         model = AstakosUser
-        exclude = ('groups', 'user_permissions')
+        fields = ('email', 'first_name', 'last_name', 'is_superuser',
+                  'affiliation',  'is_active', 'invitations', 'quota',
+                  'auth_token', 'auth_token_created', 'auth_token_expires',
+                  'date_joined', 'updated')
     
     def __init__(self, *args, **kwargs):
         super(AdminProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('username','date_joined', 'auth_token', 'last_login', 'email')
+        ro_fields = ('date_joined', 'auth_token', 'auth_token_created',
+                     'auth_token_expires', 'updated', 'email')
         if instance and instance.id:
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
+        user = kwargs['instance']
+        if user:
+            quota = lambda x: int(x) / 1024 ** 3
+            self.fields['quota'].widget.attrs['value'] = quota(user.quota)
+    
+    def save(self, commit=True):
+        user = super(AdminProfileForm, self).save(commit=False)
+        quota = lambda x: int(x or 0) * (1024 ** 3)
+        user.quota = quota(self.cleaned_data['quota'])
+        user.save()
 
 class AdminUserCreationForm(LocalUserCreationForm):
     class Meta:

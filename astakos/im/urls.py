@@ -43,16 +43,16 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^profile/?$', 'edit_profile'),
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup'),
+    url(r'^user_logout/?$', 'user_logout'),
     url(r'^admin/', include('astakos.im.admin.urls')),
 )
 
 urlpatterns += patterns('django.contrib.auth.views',
-    url(r'^logout/?$', 'logout'),
-    url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'})
+    url(r'^logout/?$', 'logout')
 )
 
 urlpatterns += patterns('astakos.im.target',
-    url(r'^login/dummy/?$', 'dummy.login')
+    url(r'^login/redirect/?$', 'redirect.login')
 )
 
 urlpatterns += patterns('',
@@ -72,7 +72,8 @@ if 'local' in settings.IM_MODULES:
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
         url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/$',
          'password_reset_confirm'),
-        url(r'^local/password/reset/complete/$', 'password_reset_complete')
+        url(r'^local/password/reset/complete/$', 'password_reset_complete'),
+        url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'})
     )
 
 if settings.INVITATIONS_ENABLED:

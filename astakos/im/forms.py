@@ -137,18 +137,14 @@ class ProfileForm(forms.ModelForm):
     """
     class Meta:
         model = AstakosUser
-        exclude = ('is_active', 'is_superuser', 'is_staff', 'is_verified', 'groups', 'user_permissions')
+        fields = ('email', 'first_name', 'last_name', 'auth_token', 'auth_token_expires')
     
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('username','date_joined', 'updated', 'auth_token',
-                     'auth_token_created', 'auth_token_expires', 'invitations',
-                     'level', 'last_login', 'email', )
+        ro_fields = ('auth_token', 'auth_token_expires', 'email')
         if instance and instance.id:
             for field in ro_fields:
-                if isinstance(self.fields[field].widget, forms.CheckboxInput):
-                    self.fields[field].widget.attrs['disabled'] = True
                 self.fields[field].widget.attrs['readonly'] = True
     
     def save(self, commit=True):

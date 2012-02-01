@@ -57,8 +57,9 @@ class AstakosUser(User):
     provider = models.CharField('Provider', max_length=255, blank=True)
     
     #for invitations
-    level = models.IntegerField('Inviter level', default=4)
-    invitations = models.IntegerField('Invitations left', default=0)
+    user_level = settings.DEFAULT_USER_LEVEL
+    level = models.IntegerField('Inviter level', default=user_level)
+    invitations = models.IntegerField('Invitations left', default=settings.INVITATIONS_PER_LEVEL[user_level])
     
     auth_token = models.CharField('Authentication Token', max_length=32,
                                   null=True, blank=True)
@@ -102,6 +103,7 @@ class AstakosUser(User):
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
+                # set username
                 while not self.username:
                     username =  uuid.uuid4().hex[:30]
                     try:

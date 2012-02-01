@@ -78,14 +78,19 @@ def prepare_response(request, user, next='', renew=False, skip_login=False):
         login(request, user)
     
     response = HttpResponse()
+    
+    # set cookie
+    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')	
+    cookie_value = quote(user.email + '|' + user.auth_token)
+    response.set_cookie(settings.COOKIE_NAME, value=cookie_value,
+                        expires=expire_fmt, path='/',
+                        domain = settings.COOKIE_DOMAIN)
+    
     if not next:
-        response['X-Auth-User'] = user.email
-        response['X-Auth-Token'] = user.auth_token
-        response.content = user.email + '\n' + user.auth_token + '\n'
-        response.status_code = 200
-    else:
-        response['Location'] = next
-        response.status_code = 302
+        next = reverse('astakos.im.views.index')
+    
+    response['Location'] = next
+    response.status_code = 302
     return response
 
 def requires_anonymous(func):

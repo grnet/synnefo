@@ -40,8 +40,7 @@
     <div class="span4">
         {% if 'shibboleth' in im_modules %}
             <img src="/im/static/shibboleth.png" width="120" height="120">
-            <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
-                 {{ shibboleth_form.as_p }}
+            <form action="{% url astakos.im.target.shibboleth.login %}" method="post" class="form-stacked">{% csrf_token %}
                 <br>
                 <div class="">
                   <input type="hidden" name="next" value="{{ next }}">

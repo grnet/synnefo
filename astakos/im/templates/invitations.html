@@ -5,6 +5,25 @@
 {% block body %}
 <div class="container">
   <h3>You have {{ user.invitations }} invitation{{ user.invitations|pluralize }} left.</h3>
+  
+  <table class="zebra-striped id-sorted">
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Real Name</th>
+        <th>Consumed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in sent %}
+      <tr>
+        <td>{{ inv.email }}</td>
+        <td>{{ inv.realname }} GiB</td>
+        <td>{{ inv.is_consumed }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
   {% if user.invitations %}
   <br />

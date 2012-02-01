@@ -53,10 +53,18 @@ architecture. Such an installation, also provides a quick preview of the basic
 synnefo features, although we would like to think that its real power will
 unveil while scaling.
 
-Large Installation
-------------------
+The quick installation guide comes in two versions:
 
-Also a complete large-installation guide will soon be available, that will
+| :ref:`Administrator's quick installation guide <quick-install-admin-guide>`
+| This guide will walk you through a complete installation using debian packages.
+
+| :ref:`Developer's quick installation guide <quick-install-devel-guide>`
+| This guide will setup a development environment using pip install.
+
+Standard Installation
+---------------------
+
+Also a complete standard installation guide will soon be available, that will
 describe thoroughly how to deploy all services, interconnected with each other,
 on multiple physical nodes.
 

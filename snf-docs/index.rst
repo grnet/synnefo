@@ -49,9 +49,9 @@ A quick installation guide is provided, that describes how to install synnefo in
 just one physical node for testing and development purposes. This guide is also
 useful to those interested in deploying synnefo in large scale, as a starting
 point that will help them get familiar with the synnefo components and overall
-architecture. Such an installation, also provides a quick preview of the basic
-synnefo features, although we would like to think that its real power will
-unveil while scaling.
+architecture, as well as the interconnection between different services. Such an
+installation, also provides a quick preview of the basic synnefo features,
+although we would like to think that its real power will unveil while scaling.
 
 The quick installation guide comes in two versions:
 
@@ -66,7 +66,8 @@ Standard Installation
 
 Also a complete standard installation guide will soon be available, that will
 describe thoroughly how to deploy all services, interconnected with each other,
-on multiple physical nodes.
+on multiple physical nodes. For now, please refer to each services own
+documentation.
 
 Contact
 -------

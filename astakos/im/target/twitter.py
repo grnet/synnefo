@@ -42,10 +42,11 @@ from django.utils import simplejson as json
 from django.contrib import messages
 
 from astakos.im.util import get_context, prepare_response
-from astakos.im.models import AstakosUser
-from astakos.im.views import render_response, create_user, requires_anonymous
+from astakos.im.models import AstakosUser, Invitation
+from astakos.im.views import render_response, requires_anonymous
 from astakos.im.forms import LocalUserCreationForm, ThirdPartyUserCreationForm
 from astakos.im.faults import BadRequest
+from astakos.im.backends import get_backend
 
 # It's probably a good idea to put your consumer's OAuth token and
 # OAuth secret into your project's settings. 
@@ -59,7 +60,7 @@ access_token_url = 'http://twitter.com/oauth/access_token'
 authenticate_url = 'http://twitter.com/oauth/authenticate'
 
 @requires_anonymous
-def login(request, template_name='signup.html', extra_context={}):
+def login(request, extra_context={}):
     # store invitation code and email
     request.session['email'] = request.GET.get('email')
     request.session['invitation_code'] = request.GET.get('code')
@@ -84,7 +85,7 @@ def login(request, template_name='signup.html', extra_context={}):
     return response
 
 @requires_anonymous
-def authenticated(request, backend=None, template_name='login.html', extra_context={}):
+def authenticated(request, backend=None, login_template='login.html', on_signup_failure='signup.html', on_signup_success='signup_complete.html', extra_context={}):
     # Step 1. Use the request token in the session to build a new client.
     data = request.session.get('Twitter-Request-Token')
     if not data:
@@ -142,11 +143,19 @@ def authenticated(request, backend=None, template_name='login.html', extra_conte
                 post_data = {'provider':'Twitter', 'affiliation':'twitter',
                                 'third_party_identifier':screen_name}
                 form = ThirdPartyUserCreationForm({'email':email})
-                return create_user(request, form, backend, post_data, next, template_name, extra_context)
+                return create_user(request, form, backend, post_data, next, on_signup_failure, on_signup_success, extra_context)
         else:
             status = messages.ERROR
             message = '%s@twitter is already registered' % screen_name
             messages.add_message(request, messages.ERROR, message)
+            prefix = 'Invited' if request.session['invitation_code'] else ''
+            suffix  = 'UserCreationForm'
+            for provider in settings.IM_MODULES:
+                main = provider.capitalize() if provider == 'local' else 'ThirdParty'
+                formclass = '%s%s%s' % (prefix, main, suffix)
+                extra_context['%s_form' % provider] = globals()[formclass]()
+            return render_response(on_signup_failure,
+                                   context_instance=get_context(request, extra_context))
     else: # login mode
         try:
             user = AstakosUser.objects.get(third_party_identifier = screen_name,
@@ -157,7 +166,7 @@ def authenticated(request, backend=None, template_name='login.html', extra_conte
             return prepare_response(request, user, next)
         elif user and not user.is_active:
             messages.add_message(request, messages.ERROR, 'Inactive account: %s' % user.email)
-    return render_response(template_name,
+    return render_response(login_template,
                    form = LocalUserCreationForm(),
                    context_instance=get_context(request, extra_context))
 
@@ -168,3 +177,59 @@ def reserved_screen_name(screen_name):
         return True
     except AstakosUser.DoesNotExist, e:
         return False
+
+def create_user(request, form, backend=None, post_data={}, next = None, on_failure='signup.html', on_success='signup_complete.html', extra_context={}): 
+    """
+    Create a user.
+    
+    The user activation will be delegated to the backend specified by the ``backend`` keyword argument
+    if present, otherwise to the ``astakos.im.backends.InvitationBackend``
+    if settings.INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
+    (see backends);
+    
+    Upon successful user creation if ``next`` url parameter is present the user is redirected there
+    otherwise renders the ``on_success`` template (if exists) or signup_complete.html.
+    
+    On unsuccessful creation, renders the ``on_failure`` template (if exists) or signup.html with an error message.
+    
+    **Arguments**
+    
+    ``on_failure``
+        A custom template to render in case of failure. This is optional;
+        if not specified, this will default to ``signup.html``.
+    
+    ``on_success``
+        A custom template to render in case of success. This is optional;
+        if not specified, this will default to ``signup_complete.html``.
+    
+    ``extra_context``
+        An dictionary of variables to add to the template context.
+    
+    **Template:**
+    
+    signup.html or ``on_failure`` keyword argument.
+    signup_complete.html or ``on_success`` keyword argument.
+    """
+    try:
+        if not backend:
+            backend = get_backend(request)
+        if form.is_valid():
+            status, message, user = backend.signup(form)
+            if status == messages.SUCCESS:
+                for k,v in post_data.items():
+                    setattr(user,k, v)
+                user.save()
+                if user.is_active:
+                    return prepare_response(request, user, next=next)
+            messages.add_message(request, status, message)
+            return render_response(on_success,
+                                   context_instance=get_context(request, extra_context))
+        else:
+            messages.add_message(request, messages.ERROR, form.errors)
+    except (Invitation.DoesNotExist, ValueError), e:
+        messages.add_message(request, messages.ERROR, e)
+    for provider in settings.IM_MODULES:
+        extra_context['%s_form' % provider] = backend.get_signup_form(provider)
+    return render_response(on_failure,
+                           form = LocalUserCreationForm(),
+                           context_instance=get_context(request, extra_context))

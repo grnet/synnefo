@@ -265,7 +265,7 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
                                                           extra_context,
                                                           user=request.user))
 
-def signup(request, template_name='signup.html', extra_context={}, backend=None):
+def signup(request, on_failure='signup.html', on_success='signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
     
@@ -284,16 +284,22 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
     
     **Arguments**
     
-    ``template_name``
-        A custom template to use. This is optional; if not specified,
-        this will default to ``signup.html``.
+    ``on_failure``
+        A custom template to render in case of failure. This is optional;
+        if not specified, this will default to ``signup.html``.
+    
+    
+    ``on_success``
+        A custom template to render in case of success. This is optional;
+        if not specified, this will default to ``signup_complete.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    signup.html or ``template_name`` keyword argument.
+    signup.html or ``on_failure`` keyword argument.
+    signup_complete.html or ``on_success`` keyword argument. 
     """
     try:
         if not backend:
@@ -315,14 +321,16 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
                     status, message, user = backend.signup(form)
                     if user and user.is_active:
                         return prepare_response(request, user, next=next)
-                    messages.add_message(request, status, message)    
+                    messages.add_message(request, status, message)
+                    return render_response(on_success,
+                           context_instance=get_context(request, extra_context))
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
         for provider in settings.IM_MODULES:
             main = provider.capitalize() if provider == 'local' else 'ThirdParty'
             formclass = '%sUserCreationForm' % main
             extra_context['%s_form' % provider] = globals()[formclass]()
-    return render_response(template_name,
+    return render_response(on_failure,
                            context_instance=get_context(request, extra_context))
 
 @login_required
@@ -380,27 +388,6 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request, extra_context))
-
-def create_user(request, form, backend=None, post_data={}, next = None, template_name='login.html', extra_context={}): 
-    try:
-        if not backend:
-            backend = get_backend(request)
-        if form.is_valid():
-            status, message, user = backend.signup(form)
-            if status == messages.SUCCESS:
-                for k,v in post_data.items():
-                    setattr(user,k, v)
-                user.save()
-                if user.is_active():
-                    return prepare_response(request, user, next=next)
-            messages.add_message(request, status, message)
-        else:
-            messages.add_message(request, messages.ERROR, form.errors)
-    except (Invitation.DoesNotExist, ValueError), e:
-        messages.add_message(request, messages.ERROR, e)
-    return render_response(template_name,
-                           form = LocalUserCreationForm(),
-                           context_instance=get_context(request, extra_context))
 
 def logout(request, template='registration/logged_out.html', extra_context={}):
     """

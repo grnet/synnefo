@@ -216,7 +216,6 @@ class SimpleBackend(object):
         
         ** Settings **
         
-        * ACTIVATION_LOGIN_TARGET: Where users should activate their local account
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """

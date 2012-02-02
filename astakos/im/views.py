@@ -175,7 +175,6 @@ def invite(request, template_name='invitations.html', extra_context={}):
     The view expectes the following settings are defined:
     
     * LOGIN_URL: login uri
-    * SIGNUP_TARGET: Where users should signup with their invitation code
     * DEFAULT_CONTACT_EMAIL: service support email
     * DEFAULT_FROM_EMAIL: from email
     """
@@ -253,13 +252,13 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
         if form.is_valid():
             try:
                 form.save()
+                next = request.POST.get('next')
+                if next:
+                    return redirect(next)
                 msg = _('Profile has been updated successfully')
                 messages.add_message(request, messages.SUCCESS, msg)
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
-        next = request.POST.get('next')
-        if next:
-            return redirect(next)
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request,

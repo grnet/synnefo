@@ -75,9 +75,6 @@ if settings.INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
         url(r'^invite/?$', 'invite'),
     )
-    urlpatterns += patterns('astakos.im.target',
-        url(r'^login/invitation/?$', 'invitation.login')
-    )
 
 if 'shibboleth' in settings.IM_MODULES:
     urlpatterns += patterns('astakos.im.target',

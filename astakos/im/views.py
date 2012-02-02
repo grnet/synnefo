@@ -212,9 +212,9 @@ def invite(request, template_name='invitations.html', extra_context={}):
     messages.add_message(request, status, message)
     
     sent = [{'email': inv.username,
-                 'realname': inv.realname,
-                 'is_accepted': inv.is_accepted}
-                    for inv in inviter.invitations_sent.all()]
+             'realname': inv.realname,
+             'is_consumed': inv.is_consumed}
+             for inv in inviter.invitations_sent.all()]
     kwargs = {'user': inviter,
               'sent':sent}
     context = get_context(request, extra_context, **kwargs)

@@ -460,7 +460,7 @@ def invitations_export(request):
                      'Inviter Real Name',
                      'Is_accepted',
                      'Created',
-                     'Accepted',])
+                     'Consumed',])
     invitations = Invitation.objects.order_by('id')
     for inv in invitations:
         
@@ -472,7 +472,7 @@ def invitations_export(request):
                          inv.inviter.realname.encode("utf-8"),
                          inv.is_accepted,
                          inv.created,
-                         inv.accepted])
+                         inv.consumed])
 
     return response
 

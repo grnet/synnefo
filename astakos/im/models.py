@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
 import hashlib
 import uuid
 
@@ -42,7 +41,6 @@ from base64 import b64encode
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User, UserManager
-from django.utils.translation import ugettext_lazy as _
 
 from astakos.im.interface import get_quota, set_quota
 
@@ -115,7 +113,6 @@ class AstakosUser(User):
                     self.provider = 'local'
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
-        
         super(AstakosUser, self).save(**kwargs)
     
     def renew_token(self):

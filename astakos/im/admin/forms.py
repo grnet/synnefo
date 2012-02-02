@@ -33,12 +33,8 @@
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import UserCreationForm
-from django.conf import settings
-from hashlib import new as newhasher
 
 from astakos.im.models import AstakosUser
-from astakos.im.util import get_or_create_user
 from astakos.im.forms import LocalUserCreationForm
 
 import logging

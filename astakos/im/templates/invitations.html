@@ -3,7 +3,8 @@
 {% load formatters %}
 
 {% block body %}
-  <h3>You have {{ user.invitations }} invitation{{ user.invitations|pluralize }} left.</h3>
+  <h3>You have {{ inviter.invitations }} invitation{{ inviter.invitations|pluralize }} left.</h3>
+  
   
   <table class="zebra-striped id-sorted">
     <thead>
@@ -17,14 +18,14 @@
       {% for inv in sent %}
       <tr>
         <td>{{ inv.email }}</td>
-        <td>{{ inv.realname }} GiB</td>
+        <td>{{ inv.realname }}</td>
         <td>{{ inv.is_consumed }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  {% if user.invitations %}
+ {% if inviter.invitations %}
   <br />
   <h4>Invite someone else:</h4>
   <form action="{% url astakos.im.views.invite %}" method="post"

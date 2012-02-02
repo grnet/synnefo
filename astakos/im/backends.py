@@ -37,13 +37,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.sites.models import Site
 from django.contrib import messages
-from django.shortcuts import redirect
 from django.db import transaction
-from django.core.urlresolvers import reverse
 
 from smtplib import SMTPException
 from urllib import quote
@@ -159,9 +155,6 @@ class InvitationsBackend(object):
             if self._is_preaccepted(user):
                 user.is_active = True
                 user.save()
-                # get the raw password from the form
-                user = authenticate(email=user.email, auth_token=user.auth_token)
-                login(self.request, user)
                 message = _('Registration completed. You can now login.')
             else:
                 message = _('Registration completed. You will receive an email upon your account\'s activation.')
@@ -223,7 +216,6 @@ class SimpleBackend(object):
         
         ** Settings **
         
-        * ACTIVATION_LOGIN_TARGET: Where users should activate their local account
         * DEFAULT_CONTACT_EMAIL: service support email
         * DEFAULT_FROM_EMAIL: from email
         """
@@ -248,9 +240,9 @@ class SimpleBackend(object):
 def _send_verification(request, user, template_name):
     site = Site.objects.get_current()
     baseurl = request.build_absolute_uri('/').rstrip('/')
-    url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
-                                              quote(user.auth_token),
-                                              quote(baseurl))
+    url = '%s%s?auth=%s&next=%s' % (baseurl,
+                                    reverse('astakos.im.target.activate'),
+                                    quote(user.auth_token))
     message = render_to_string(template_name, {
             'user': user,
             'url': url,

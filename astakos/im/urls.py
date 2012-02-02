@@ -33,7 +33,6 @@
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
-from django.core.urlresolvers import reverse
 
 from astakos.im.forms import ExtendedPasswordResetForm
 
@@ -43,12 +42,9 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^profile/?$', 'edit_profile'),
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup'),
-    url(r'^user_logout/?$', 'user_logout'),
+    url(r'^logout/?$', 'logout'),
+    url(r'^activate/?$', 'activate'),
     url(r'^admin/', include('astakos.im.admin.urls')),
-)
-
-urlpatterns += patterns('django.contrib.auth.views',
-    url(r'^logout/?$', 'logout')
 )
 
 urlpatterns += patterns('astakos.im.target',
@@ -62,8 +58,7 @@ urlpatterns += patterns('',
 
 if 'local' in settings.IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-        url(r'^local/?$', 'local.login'),
-        url(r'^local/activate/?$', 'local.activate'),
+        url(r'^local/?$', 'local.login')
     )
     urlpatterns += patterns('django.contrib.auth.views',
         url(r'^local/password_reset/?$', 'password_reset',
@@ -79,9 +74,6 @@ if 'local' in settings.IM_MODULES:
 if settings.INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
         url(r'^invite/?$', 'invite'),
-    )
-    urlpatterns += patterns('astakos.im.target',
-        url(r'^login/invitation/?$', 'invitation.login')
     )
 
 if 'shibboleth' in settings.IM_MODULES:

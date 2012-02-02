@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
@@ -40,8 +39,6 @@ from django.utils.http import urlencode
 
 from urllib import quote
 from urlparse import urlunsplit, urlsplit
-
-from astakos.im.target.util import prepare_response
 
 def login(request):
     """

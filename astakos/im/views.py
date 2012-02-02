@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-#
+# 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-#
+# 
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-#
+# 
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-#
+# 
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,45 +25,37 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
+# 
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
 import logging
 import socket
-import csv
-import sys
 
-from datetime import datetime
-from functools import wraps
-from math import ceil
 from random import randint
 from smtplib import SMTPException
-from hashlib import new as newhasher
 from urllib import quote
+from functools import wraps
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
-from django.shortcuts import render_to_response
-from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.decorators import login_required
-from django.contrib.sites.models import Site
 from django.contrib import messages
 from django.db import transaction
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import logout as auth_logout
+from django.utils.http import urlencode
+from django.http import HttpResponseRedirect
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
-from astakos.im.util import get_context, get_current_site, get_invitation
+from astakos.im.util import get_context, get_current_site, prepare_response
 from astakos.im.forms import *
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
@@ -78,27 +70,42 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     html = render_to_string(template, kwargs, context_instance=context_instance)
     return HttpResponse(html, status=status)
 
+
+def requires_anonymous(func):
+    """
+    Decorator checkes whether the request.user is Anonymous and in that case
+    redirects to `logout`.
+    """
+    @wraps(func)
+    def wrapper(request, *args):
+        if not request.user.is_anonymous():
+            next = urlencode({'next': request.build_absolute_uri()})
+            login_uri = reverse(logout) + '?' + next
+            return HttpResponseRedirect(login_uri)
+        return func(request, *args)
+    return wrapper
+
 def index(request, login_template_name='login.html', profile_template_name='profile.html', extra_context={}):
     """
     If there is logged on user renders the profile page otherwise renders login page.
-
+    
     **Arguments**
-
+    
     ``login_template_name``
         A custom login template to use. This is optional; if not specified,
         this will default to ``login.html``.
-
+    
     ``profile_template_name``
         A custom profile template to use. This is optional; if not specified,
         this will default to ``profile.html``.
-
+    
     ``extra_context``
         An dictionary of variables to add to the template context.
-
+    
     **Template:**
-
+    
     profile.html or login.html or ``template_name`` keyword argument.
-
+    
     """
     template_name = login_template_name
     formclass = 'LoginForm'
@@ -123,7 +130,8 @@ def _generate_invitation_code():
 def _send_invitation(request, baseurl, inv):
     sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
     subject = _('Invitation to %s' % sitename)
-    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(sitedomain))
+    baseurl = request.build_absolute_uri('/').rstrip('/')
+    url = '%s%s?code=%d' % (baseurl, reverse('astakos.im.views.signup'), inv.code)
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
@@ -139,59 +147,58 @@ def _send_invitation(request, baseurl, inv):
 def invite(request, template_name='invitations.html', extra_context={}):
     """
     Allows a user to invite somebody else.
-
+    
     In case of GET request renders a form for providing the invitee information.
     In case of POST checks whether the user has not run out of invitations and then
     sends an invitation email to singup to the service.
-
+    
     The view uses commit_manually decorator in order to ensure the number of the
     user invitations is going to be updated only if the email has been successfully sent.
-
+    
     If the user isn't logged in, redirects to settings.LOGIN_URL.
-
+    
     **Arguments**
-
+    
     ``template_name``
         A custom template to use. This is optional; if not specified,
         this will default to ``invitations.html``.
-
+    
     ``extra_context``
         An dictionary of variables to add to the template context.
-
+    
     **Template:**
-
+    
     invitations.html or ``template_name`` keyword argument.
-
+    
     **Settings:**
-
+    
     The view expectes the following settings are defined:
-
+    
     * LOGIN_URL: login uri
-    * SIGNUP_TARGET: Where users should signup with their invitation code
     * DEFAULT_CONTACT_EMAIL: service support email
     * DEFAULT_FROM_EMAIL: from email
     """
     status = None
     message = None
     inviter = AstakosUser.objects.get(username = request.user.username)
-
+    
     if request.method == 'POST':
         username = request.POST.get('uniq')
         realname = request.POST.get('realname')
-
+        
         if inviter.invitations > 0:
             code = _generate_invitation_code()
-            invitation, created = Invitation.objects.get_or_create(
-                inviter=inviter,
-                username=username,
-                defaults={'code': code, 'realname': realname})
-
+            invitation = Invitation(inviter=inviter,
+                                    username=username,
+                                    code=code,
+                                    realname=realname)
+            invitation.save()
+            
             try:
                 baseurl = request.build_absolute_uri('/').rstrip('/')
                 _send_invitation(request, baseurl, invitation)
-                if created:
-                    inviter.invitations = max(0, inviter.invitations - 1)
-                    inviter.save()
+                inviter.invitations = max(0, inviter.invitations - 1)
+                inviter.save()
                 status = messages.SUCCESS
                 message = _('Invitation sent to %s' % username)
                 transaction.commit()
@@ -203,12 +210,12 @@ def invite(request, template_name='invitations.html', extra_context={}):
             status = messages.ERROR
             message = _('No invitations left')
     messages.add_message(request, status, message)
-
+    
     sent = [{'email': inv.username,
-                 'realname': inv.realname,
-                 'is_accepted': inv.is_accepted}
-                    for inv in inviter.invitations_sent.all()]
-    kwargs = {'user': inviter,
+             'realname': inv.realname,
+             'is_consumed': inv.is_consumed}
+             for inv in inviter.invitations_sent.all()]
+    kwargs = {'inviter': inviter,
               'sent':sent}
     context = get_context(request, extra_context, **kwargs)
     return render_response(template_name,
@@ -218,24 +225,24 @@ def invite(request, template_name='invitations.html', extra_context={}):
 def edit_profile(request, template_name='profile.html', extra_context={}):
     """
     Allows a user to edit his/her profile.
-
+    
     In case of GET request renders a form for displaying the user information.
     In case of POST updates the user informantion and redirects to ``next``
     url parameter if exists.
-
-    If the user isn't logged in, redirects to settings.LOGIN_URL.
-
+    
+    If the user isn't logged in, redirects to settings.LOGIN_URL.  
+    
     **Arguments**
-
+    
     ``template_name``
         A custom template to use. This is optional; if not specified,
         this will default to ``profile.html``.
-
+    
     ``extra_context``
         An dictionary of variables to add to the template context.
-
+    
     **Template:**
-
+    
     profile.html or ``template_name`` keyword argument.
     """
     form = ProfileForm(instance=request.user)
@@ -245,48 +252,54 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
         if form.is_valid():
             try:
                 form.save()
+                next = request.POST.get('next')
+                if next:
+                    return redirect(next)
                 msg = _('Profile has been updated successfully')
                 messages.add_message(request, messages.SUCCESS, msg)
             except ValueError, ve:
                 messages.add_message(request, messages.ERROR, ve)
-        next = request.POST.get('next')
-        if next:
-            return redirect(next)
     return render_response(template_name,
                            form = form,
                            context_instance = get_context(request,
                                                           extra_context,
                                                           user=request.user))
 
-def signup(request, template_name='signup.html', extra_context={}, backend=None):
+def signup(request, on_failure='signup.html', on_success='signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
-
+    
     In case of GET request renders a form for providing the user information.
     In case of POST handles the signup.
-
+    
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
     if present, otherwise to the ``astakos.im.backends.InvitationBackend``
     if settings.INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
     (see backends);
-
+    
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
     otherwise renders the same page with a success message.
-
+    
     On unsuccessful creation, renders the same page with an error message.
-
+    
     **Arguments**
-
-    ``template_name``
-        A custom template to use. This is optional; if not specified,
-        this will default to ``signup.html``.
-
+    
+    ``on_failure``
+        A custom template to render in case of failure. This is optional;
+        if not specified, this will default to ``signup.html``.
+    
+    
+    ``on_success``
+        A custom template to render in case of success. This is optional;
+        if not specified, this will default to ``signup_complete.html``.
+    
     ``extra_context``
         An dictionary of variables to add to the template context.
-
+    
     **Template:**
-
-    signup.html or ``template_name`` keyword argument.
+    
+    signup.html or ``on_failure`` keyword argument.
+    signup_complete.html or ``on_success`` keyword argument. 
     """
     try:
         if not backend:
@@ -306,44 +319,45 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
                     return redirect(url)
                 else:
                     status, message, user = backend.signup(form)
-                    if status == messages.SUCCESS:
-                        if next:
-                            return redirect(next)
+                    if user and user.is_active:
+                        return prepare_response(request, user, next=next)
                     messages.add_message(request, status, message)
+                    return render_response(on_success,
+                           context_instance=get_context(request, extra_context))
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
         for provider in settings.IM_MODULES:
             main = provider.capitalize() if provider == 'local' else 'ThirdParty'
             formclass = '%sUserCreationForm' % main
             extra_context['%s_form' % provider] = globals()[formclass]()
-    return render_response(template_name,
+    return render_response(on_failure,
                            context_instance=get_context(request, extra_context))
 
 @login_required
 def send_feedback(request, template_name='feedback.html', email_template_name='feedback_mail.txt', extra_context={}):
     """
     Allows a user to send feedback.
-
+    
     In case of GET request renders a form for providing the feedback information.
     In case of POST sends an email to support team.
-
-    If the user isn't logged in, redirects to settings.LOGIN_URL.
-
+    
+    If the user isn't logged in, redirects to settings.LOGIN_URL.  
+    
     **Arguments**
-
+    
     ``template_name``
         A custom template to use. This is optional; if not specified,
         this will default to ``feedback.html``.
-
+    
     ``extra_context``
         An dictionary of variables to add to the template context.
-
+    
     **Template:**
-
+    
     signup.html or ``template_name`` keyword argument.
-
+    
     **Settings:**
-
+    
     * DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
     if request.method == 'GET':
@@ -351,7 +365,7 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
     if request.method == 'POST':
         if not request.user:
             return HttpResponse('Unauthorized', status=401)
-
+        
         form = FeedbackForm(request.POST)
         if form.is_valid():
             sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
@@ -362,7 +376,7 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
                         'message': form.cleaned_data['feedback_msg'],
                         'data': form.cleaned_data['feedback_data'],
                         'request': request})
-
+            
             try:
                 send_mail(subject, content, from_email, recipient_list)
                 message = _('Feedback successfully sent')
@@ -375,30 +389,32 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
                            form = form,
                            context_instance = get_context(request, extra_context))
 
-def create_user(request, form, backend=None, post_data={}, next = None, template_name='login.html', extra_context={}):
-    try:
-        if not backend:
-            backend = get_backend(request)
-        if form.is_valid():
-            status, message, user = backend.signup(form)
-            if status == messages.SUCCESS:
-                for k,v in post_data.items():
-                    setattr(user,k, v)
-                user.save()
-                if next:
-                    return redirect(next)
-            messages.add_message(request, status, message)
-        else:
-            messages.add_message(request, messages.ERROR, form.errors)
-    except (Invitation.DoesNotExist, ValueError), e:
-        messages.add_message(request, messages.ERROR, e)
-    return render_response(template_name,
-                           form = LocalUserCreationForm(),
-                           context_instance=get_context(request, extra_context))
-
-def user_logout(request):
+def logout(request, template='registration/logged_out.html', extra_context={}):
+    """
+    Wraps `django.contrib.auth.logout` and delete the cookie.
+    """
+    auth_logout(request)
     response = HttpResponse()
     response.delete_cookie(settings.COOKIE_NAME)
-    response['Location'] = reverse('django.contrib.auth.views.logout')
-    response.status_code = 302
-    return response
+    next = request.GET.get('next')
+    if next:
+        response['Location'] = next
+        response.status_code = 302
+        return response
+    html = render_to_string(template, context_instance=get_context(request, extra_context))
+    return HttpResponse(html)
+
+def activate(request):
+    """
+    Activates the user identified by the ``auth`` request parameter
+    """
+    token = request.GET.get('auth')
+    next = request.GET.get('next')
+    try:
+        user = AstakosUser.objects.get(auth_token=token)
+    except AstakosUser.DoesNotExist:
+        return HttpResponseBadRequest('No such user')
+    
+    user.is_active = True
+    user.save()
+    return prepare_response(request, user, next, renew=True)

@@ -31,23 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
 import logging
 import socket
 import csv
-import sys
 
-from datetime import datetime
 from functools import wraps
 from math import ceil
-from random import randint
 from smtplib import SMTPException
-from hashlib import new as newhasher
-from urllib import quote
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.utils.http import urlencode
@@ -55,13 +49,10 @@ from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.db import transaction
-from django.contrib.auth.models import AnonymousUser
-from django.contrib.sites.models import Site
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.util import isoformat, get_context, get_current_site
+from astakos.im.util import get_context, get_current_site
 from astakos.im.forms import *
-from astakos.im.backends import get_backend
 from astakos.im.views import render_response, index
 from astakos.im.admin.forms import AdminProfileForm
 from astakos.im.admin.forms import AdminUserCreationForm
@@ -469,7 +460,7 @@ def invitations_export(request):
                      'Inviter Real Name',
                      'Is_accepted',
                      'Created',
-                     'Accepted',])
+                     'Consumed',])
     invitations = Invitation.objects.order_by('id')
     for inv in invitations:
         
@@ -481,7 +472,7 @@ def invitations_export(request):
                          inv.inviter.realname.encode("utf-8"),
                          inv.is_accepted,
                          inv.created,
-                         inv.accepted])
+                         inv.consumed])
 
     return response
 

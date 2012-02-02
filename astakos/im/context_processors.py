@@ -51,3 +51,4 @@ def media(request):
 def current_url(request):
     from django.core.urlresolvers import resolve
     return {'CURRENT_URL' : request.get_full_path()}
+

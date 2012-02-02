@@ -32,11 +32,9 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponseBadRequest
-from django.core.urlresolvers import reverse
-from django.contrib.auth import authenticate
 
-from astakos.im.target.util import prepare_response
-from astakos.im.util import get_or_create_user
+from astakos.im.util import get_or_create_user, prepare_response
+from astakos.im.views import requires_anonymous
 
 class Tokens:
     # these are mapped by the Shibboleth SP software
@@ -48,7 +46,7 @@ class Tokens:
     SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
 
-
+@requires_anonymous
 def login(request):
     tokens = request.META
     
@@ -69,8 +67,6 @@ def login(request):
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, '')
     
     user = get_or_create_user(eppn, realname=realname, affiliation=affiliation, provider='shibboleth', level=0)
-    # in order to login the user we must call authenticate first
-    user = authenticate(email=user.email, auth_token=user.auth_token)
     return prepare_response(request,
                             user,
                             request.GET.get('next'),

@@ -1,16 +1,18 @@
 {% extends "account_base.html" %}
-
 {% load formatters %}
 
 {% block body %}
+<form action="{% url astakos.im.views.send_feedback %}" method="post"
+    class="withlabels">{% csrf_token %}
 
-<form action="{% url astakos.im.views.send_feedback %}" method="post">{% csrf_token %}
-    {{ form.as_p }}
+    {% include "form_render.html" %}
 
-  <div class="actions">
-    <input type="hidden" name="next" value="{{ next }}">
-    <button type="submit" class="btn primary">Send Feedback</button>
-  </div>
-
+    <div class="form-row submit">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="auth" value="{{ user.auth_token }}">
+    <input type="hidden" name="username" value="{{ username }}">
+        <input type="submit" class="submit altcol" value="UPDATE" />
+    </div>
+  
 </form>
 {% endblock body %}

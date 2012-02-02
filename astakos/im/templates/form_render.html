@@ -1,0 +1,16 @@
+<div class="form-errors all">
+{% for key, err in form.errors.items %}
+{% if key == "__all__" %}
+<div class="form-error">{{ err }}</div>
+{% endif %}
+{% endfor %}
+</div>
+{% for field in form %}
+<div class="form-row {% if field.errors|length %}with-errors{% endif %}">
+        {{ field.errors }}
+     <p class="{% if field.blank %}required{% endif %}">
+        {{ field.label_tag }}
+        {{ field }}
+        </p>
+    </div>
+{% endfor %}

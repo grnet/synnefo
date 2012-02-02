@@ -1,32 +1,99 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--> <html lang="en" class="no-js"> <!--<![endif]-->
 <head>
-  <meta charset="utf-8" />
-  <title>{{ title|default:"Astakos Login" }}</title>
-  <link rel="stylesheet" href="/im/static/bootstrap.css">
-  <script src="/im/static/jquery.js"></script>
-  <script src="/im/static/jquery.tablesorter.js"></script>
-  <script src="/im/static/main.js"></script>
-  {% block head %}{% endblock %}
-</head>
-<body>
-  <div class="container">
-    <div style="padding: 5px 0px 0px 0px">
-      <img src="/im/static/banner.png" width="900" height="200">
-    </div>
-    {% block title %}{% endblock %}
+  {% block starthead %}{% endblock starthead %}
+  <meta charset="UTF-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="{{ resource.meta.compatibility }}">
+  
+  <title>
+     {% block page.title %}{% endblock %} / GRNET Cloud Accounts 
+  </title>
+  
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="viewport" content="">
     
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li{% if message.tags %} class="alert-message.{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+  {% block page.js %}
+  <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  {% endblock %}
+  
+  {% block page.favicons %}
+  <link rel="shortcut icon" href="">
+  <link rel="apple-touch-icon" href="">
+  {% endblock page.favicons %}
 
-    {% block tabs %}{% endblock %}
+  {% block page.css %}
+      <link href='http://fonts.googleapis.com/css?family=Antic' 
+        rel='stylesheet' type='text/css'>
+      <link rel="stylesheet" href="{{ IM_MEDIA_URL }}css/styles.css" 
+        type='text/css'>
+  {% endblock page.css %}
 
-    {% block body %}{% endblock %}
-  </div>
+  {% block headjs %}
+      <script src="{{ IM_MEDIA_URL }}js/modernizr-2.0.6.js"
+          type="text/javascript"></script>
+      <script src="{{ IM_MEDIA_URL }}js/jquery.js" 
+          type="text/javascript"></script>
+      <script src="{{ IM_MEDIA_URL }}js/jquery.infieldlabel.js" 
+          type="text/javascript"></script>
+      <script src="{{ IM_MEDIA_URL }}js/bootstrap-tooltip.js" 
+          type="text/javascript"></script>
+      <script src="{{ IM_MEDIA_URL }}js/form-errors.js" 
+          type="text/javascript"></script>
+  {% endblock headjs %}
+  {% block endhead %}{% endblock endhead %}
+
+  <script type="text/javascript">
+      $(document).ready(function() {
+          $("form.innerlabels label").inFieldLabels();
+          $("form input").attr('autocomplete', 'off');
+          $("form .form-row").formErrors();
+      })
+  </script>
+</head>
+
+<body>
+    <div class='container'>
+        <div class='header'>
+            <div class="mainlogo">
+                <h1>accounts</h1>
+            </div>
+            
+            <ul class="mainnav inline quicknav">
+                {% block page.quicknav.items %}
+                    <li class="{% block signup_class %}{% endblock %}">
+                        <a href="{% url astakos.im.views.index %}">Login</a>
+                    </li>
+                    <li class="{% block signin_class %}{% endblock %}">
+                        <a href="{% url astakos.im.views.signup %}">Sign up</a>
+                    </li>
+                {% endblock %}
+            </ul>
+
+            {% block page.nav %}
+            <ul class="mainnav inline">
+                {% block page.nav.items %}
+                {% endblock %}
+            </ul>
+            {% endblock %}
+        </div>
+        <div class="page">
+            {% block page.body %}
+                <div class="maincol">
+                    {% block body %}
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+    <div class="footer">
+    </div>
 </body>
 </html>

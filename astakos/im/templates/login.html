@@ -1,35 +1,45 @@
-{% extends 'base.html'%}
+{% extends 'base_two_cols.html'%}
 
-{% block title%}
-        <h2>Welcome</h2>
-        <p>Choose how to login. Or move on to <a href="admin">admin</a>.</p>
-        <p>Don't have an account? <a href="{% url astakos.im.views.signup %}">Sign up</a>.</p>
-{% endblock title%}
+{% block signup_class %}hidden{% endblock %}
+{% block page.title %}
+Login
+{% endblock %}
+
+{% block body %}
+<div class="section">
+    <img class="pic" src="{{ IM_MEDIA_URL }}images/pictures/login_pic.png" />
+</div>
+{% include "services_description.html" %}
+{% endblock body %}
     
-{% block body%}
-    <div class="row">
-    {% if "local" in im_modules %}
-      <div class="span4">
-        <h4>Local account</h4>
-        <form action="{% url astakos.im.target.local.login %}" method="post" class="form-stacked">{% csrf_token %}
-          {{ form.as_p }}
-         <div>
-            <a href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
-         </div>
-         <br>
-          <div class="">
+{% block body.right %}
+     {% if "local" in im_modules %}
+        <form action="{% url astakos.im.target.local.login %}" method="post"
+            class="login innerlabels">{% csrf_token %}
+            <h2 class="formheader"><span>LOGIN</span></h2>
+            {% include "form_render.html" %}
             <input type="hidden" name="next" value="{{ next }}">
-            <button type="submit" class="btn primary">Go</button>
-          </div>
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="SUBMIT" />
+                <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
+            </div>
         </form>
-      </div>
-    {% endif %}
-      <div class="span8">
-        {% for o in im_modules %}
+      {% endif %}
+
+          <div class="section">
+              {% for o in im_modules %}
+              <div>
             {% if o != 'local' %}
-                <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" alt="{{ o|title }}"><img src="/im/static/{{ o }}.png" width="120" height="120"></a>
+            LOGIN using 
+            <a href="/im/login/{{ o }}{% ifnotequal next "" %}?next={{ next|urlencode }}{% endifnotequal %}" 
+                alt="{{ o|title }}">{{ o }}</a>
             {% endif %}
-        {% endfor %}
-      </div>
-    </div>
-{% endblock body%}
+            </div>
+            {% endfor %}
+        </div>
+            <div class="section">
+                <a href="{% url astakos.im.views.signup %}" class="action">SIGN UP</a>
+            </div>
+        </div>
+
+{% endblock %}

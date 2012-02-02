@@ -3,7 +3,6 @@
 {% load formatters %}
 
 {% block body %}
-<div class="container">
   <h3>You have {{ user.invitations }} invitation{{ user.invitations|pluralize }} left.</h3>
   
   <table class="zebra-striped id-sorted">
@@ -28,8 +27,9 @@
   {% if user.invitations %}
   <br />
   <h4>Invite someone else:</h4>
-  <form action="{% url astakos.im.views.invite %}" method="post">{% csrf_token %}
-    <div class="clearfix">
+  <form action="{% url astakos.im.views.invite %}" method="post"
+    class="withlabels">{% csrf_token %}
+    <div class="clearfix f">
       <label for="user-realname">Name</label>
       <div class="input">
         <input type="text" class="span4" id="user-realname" name="realname" />
@@ -43,9 +43,8 @@
       </div>
     </div>
 
-    <div class="actions">
-      <button type="reset" class="btn">Reset</button>
-      <button type="submit" class="btn primary">Invite</button>
+    <div class="form-row submit">
+        <input type="submit" class="submit altcol" value="INVITE" />
     </div>
   </form>
   {% endif %}

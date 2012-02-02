@@ -122,8 +122,11 @@ class Command(object):
     def execute(self):
         try:
             self.main(*self.args)
-        except TypeError:
-            self.parser.print_help()
+        except TypeError as e:
+            if e.args and e.args[0].startswith('main()'):
+                self.parser.print_help()
+            else:
+                raise
 
 
 # Server commands
@@ -315,9 +318,9 @@ class ListImages(Command):
     def main_pithos(self, image_id=None):
         backend = ImageBackend(self.user)
         if image_id:
-            images = [backend.get_meta(image_id)]
+            images = [backend.get_image(image_id)]
         else:
-            images = backend.iter_shared()
+            images = backend.iter_public()
         
         for image in images:
             print image['id'], image['name']
@@ -401,59 +404,6 @@ class RegisterImage(Command):
         backend.close()
 
 
-class UploadImage(Command):
-    group = 'image'
-    name = 'upload'
-    syntax = '<name> <path>'
-    description = 'upload an image'
-    
-    def add_options(self, parser):
-        container_formats = ', '.join(settings.ALLOWED_CONTAINER_FORMATS)
-        disk_formats = ', '.join(settings.ALLOWED_DISK_FORMATS)
-        
-        parser.add_option('--container-format', dest='container_format',
-                default=settings.DEFAULT_CONTAINER_FORMAT,
-                metavar='FORMAT',
-                help='set container format (%s)' % container_formats)
-        parser.add_option('--disk-format', dest='disk_format',
-                default=settings.DEFAULT_DISK_FORMAT,
-                metavar='FORMAT',
-                help='set disk format (%s)' % disk_formats)
-        parser.add_option('--meta', dest='meta', action='append',
-                metavar='KEY=VAL',
-                help='add metadata (can be used multiple times)')
-        parser.add_option('--owner', dest='owner',
-                default=settings.SYSTEM_IMAGES_OWNER,
-                metavar='USER',
-                help='set owner to USER')
-        parser.add_option('--public', action='store_true', dest='public',
-                default=False,
-                help='make image public')
-    
-    def main(self, name, path):
-        backend = ImageBackend(self.owner)
-        
-        params = {
-            'container_format': self.container_format,
-            'disk_format': self.disk_format,
-            'is_public': self.public,
-            'filename': basename(path),
-            'properties': {}}
-        
-        if self.meta:
-            for m in self.meta:
-                key, sep, val = m.partition('=')
-                if key and val:
-                    params['properties'][key] = val
-                else:
-                    print 'WARNING: Ignoring meta', m
-        
-        with open(path) as f:
-            backend.put(name, f, params)
-        
-        backend.close()
-
-
 class UpdateImage(Command):
     group = 'image'
     name = 'update'
@@ -485,7 +435,7 @@ class UpdateImage(Command):
     def main(self, image_id):
         backend = ImageBackend(self.user)
         
-        image = backend.get_meta(image_id)
+        image = backend.get_image(image_id)
         if not image:
             print 'Image not found'
             return
@@ -803,6 +753,7 @@ def print_usage(exe, groups, group=None, shortcut=False):
 
 
 def main():
+    dictConfig(settings.SNFADMIN_LOGGING)
     groups = defaultdict(dict)
     module = sys.modules[__name__]
     for name, cls in inspect.getmembers(module, inspect.isclass):
@@ -836,5 +787,4 @@ def main():
 
 
 if __name__ == '__main__':
-    dictConfig(settings.SNFADMIN_LOGGING)
     main()

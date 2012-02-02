@@ -1,0 +1,25 @@
+{% spaceless %}
+{"errors": [
+        {% if errors %}
+            {% for error in errors %}
+                {
+                    "msg": "{{ error|escapejs }}"
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        {% endif %}
+    ],
+    "invitations" : [
+        {% for inv in invitations %}
+            {
+                "updated": "{{ inv.updated|date }}",
+                "accepted": {% if inv.accepted %}true{% else %}false{% endif %},
+                "targetname": "{{ inv.targetname|escapejs }}",
+                "target": "{{ inv.target|escapejs }}",
+                "id": "{{ inv.id }}"
+            }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "invitations_left": "{{ invitations_left|escapejs }}"
+
+    }
+{% endspaceless %}

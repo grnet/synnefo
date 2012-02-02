@@ -1,0 +1,598 @@
+<!doctype html>
+<html>
+
+{% load i18n %}
+<head>
+    <title>~okeanos</title>
+    
+    <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
+
+    <link rel="shortcut icon" href="{{ SYNNEFO_IMAGES_URL }}favicon.ico" />
+
+    {% comment %}
+    <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
+    {% endcomment %}
+
+    <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
+
+    <!--[if IE]>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie.css);</style>
+    <![endif]-->
+    <!--[if (lte IE 7)]>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie7.css);</style>
+    <![endif]-->
+
+    <script src="{{ SYNNEFO_JS_LIB_URL }}jquery-1.7.1.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.cookie.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.client.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.tools.min.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.dataTables.min.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.pagination.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.zclip.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.base64.js"></script>
+
+
+    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}backbone.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}json2.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js"></script>
+
+    <!--[if (lt IE 7)]>
+        <script src="{{ SYNNEFO_JS_LIB_URL }}selectivizr.js"></script>
+    <! [endif] -->
+
+    <!--[if IE]>
+        <script src="{{ SYNNEFO_JS_URL }}ui/ie_fixes.js"></script>
+    <![endif]-->
+    
+    <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}sync.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}models.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}glance_models.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}views.js"></script>
+
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vms_base_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_model_views.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_error_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_icon_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_invitations_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js"></script>
+
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_router.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_main_view.js"></script>
+
+    <!-- the following views require refactor -->
+    <script src="{{ SYNNEFO_JS_URL }}invitations.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
+    
+    <script>
+        // empty object for console to avoid errors in browsers that don't support it
+        if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
+            window.console.error = function() {}};
+        
+        //populate available image icons array
+        var os_icons = {{image_icons|safe}};
+        
+        // timeout value from settings.py
+        var TIMEOUT = {{ timeout }};
+        var TIMEOUTS_OCCURED = 0;
+        var SKIP_TIMEOUTS = 1;
+        var UPDATE_INTERVAL = {{ update_interval }};
+        var LOGOUT_REDIRECT = '{{ logout_redirect }}';
+        var INVITATIONS_URL = "{% url invitations %}";
+        var INVITATIONS_TITLE = "{% trans "Invite people" %}";
+        var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
+        var FEEDBACK_URL = "{% url feedback %}";
+        var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
+        var API_OVERLAY_TITLE = "{% trans "API access" %}";
+        var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
+
+        STATE_TEXTS = {
+            'UNKNOWN': '{% trans "Unknown" %}',
+            'BUILD':  '{% trans "Building..." %}',
+            'FIREWALL':  '{% trans "Firewall change..." %}',
+            'REBOOT': '{% trans "Rebooting..." %}',
+            'STOPPED':'{% trans "Stopped" %}',
+            'ACTIVE': '{% trans "Running" %}',
+            'ERROR':  '{% trans "Error" %}',
+            'DELETE': '',
+            'DESTROY': '{% trans "Destroying..." %}',
+            'BUILD_INIT':  '{% trans "Building..." %}',
+            'BUILD_COPY':  '{% trans "Building..." %}',
+            'BUILD_FINAL':  '{% trans "Building..." %}',
+            'SHUTDOWN': '{% trans "Shutting down..." %}',
+            'START': '{% trans "Starting..." %}',
+            'CONNECT': '{% trans "Connecting..." %}',
+            'DISCONNECT': '{% trans "Disconnecting..." %}'
+        }
+
+
+
+        // building statuses
+        var BUILDING_MESSAGES = {
+            'INIT': '{% trans "Initializing..." %}',
+            'COPY': '{% trans "{0} of {1} ({2}%)" %}',
+            'FINAL': '{% trans "Finalizing..." %}'
+        }
+
+        var ERROR_OVERRIDES = {
+            // error message header
+            'HEADER' : '{% trans "Error" %}',
+            // default
+            'DEFAULT' : '{% trans "Could not contact the service. Please check your network connectivity and try again." %}',
+            // bad request
+            '400' : '{% trans "Malformed request." %}',
+            // not found
+            '404' : '{% trans "Your request has failed. Resource not found." %}',
+            // internal server error
+            '500' : '{% trans "There has been an Internal Error. Our administrators have been notified." %}',
+            // service unavailable
+            '501' : '{% trans "This server has not been implemented yet." %}',
+            // service unavailable
+            '502' : '{% trans "Bad Gateway error." %}',
+            // service unavailable
+            '503' : '{% trans "This service is unavailable right now, please try again later." %}',
+            // no server handshake
+            '0' : '{% trans "Could not contact the server." %}',
+            // no images found
+            '-212' : '{% trans "Cannot show the Create machine wizard: No images found." %}',
+            // no flavors found
+            '-213' : '{% trans "Cannot show the Create machine wizard: No machine configurations found." %}',
+            // error box title
+            'GENERIC_POPUP_HEADER' : '{% trans "Something seems to have gone wrong :( Here is what happened:" %}',
+            // no advanced details
+            'NO_DETAILS' : '{% trans "Νο advanced details provided" %}',
+            // timeout message
+            'TIMEOUT' : '{% trans "It seems the server takes too long to respond, please check your network connectivity" %}'
+        };
+
+        var SUGGESTED_FLAVORS = {{ suggested_flavors|safe }};
+        var SUGGESTED_ROLES = {{ suggested_roles|safe }}
+
+        var SUCCESS = {
+            'HEADER' : '{% trans "Success" %}',
+            'DEFAULT' : '{% trans "Your request has been succefully executed." %}',
+            'PASSWORD' : '{% trans "Password:" %}',
+            'CREATE_VM_SUCCESS' : '{% trans "Success" %}',
+            'CREATE_VM_SUCCESS_ONE' : '{% trans "Your new machine is now buidling... (this might take a few minutes)" %}',
+            'CREATE_VM_SUCCESS_TWO' : '{% trans "Write down your password now:" %}',
+            'CREATE_VM_SUCCESS_THREE' : '{% trans "You will need this later to connect to your machine." %}',
+            'CREATE_VM_SUCCESS_FOUR' : '{% trans "After closing this window you will NOT be able to retrieve it again." %}'
+        };
+
+        var VARIOUS = {
+            'CONFIRM' : '{% trans "Confirm" %}',
+            'CANCEL' : '{% trans "Cancel" %}',
+            'APPLY' : '{% trans "Apply" %}',
+            'OFF' : '{% trans "Off" %}',
+            'ON' : '{% trans "On" %}'
+        };
+
+    </script>
+</head>
+
+<body id="app">
+    <!--<img id="okeanos-image" src="{{ SYNNEFO_IMAGES_URL }}body-bg2.png" />-->
+    <div id="container">
+        <div id="header">
+            <div id="user">
+                <div class="usermenu">
+                    <div class="username">{{ request.user.uniq }}</div>
+                    <ul class="useractions">
+                        <li class="invitations"><a class="action" href="#">{% trans "invite friends..." %}</a></li>
+                        <li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>
+                        <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
+                        <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
+                        <!--<li class="custom_images"><a class="action" href="#">{% trans "custom images..." %}</a></li>-->
+                        <li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>
+                    </ul>
+                </div>
+                <div class="langmenu">
+                    <a class="current_lang">en</a>
+                    {% comment %}
+                {% get_available_languages as LANGUAGES %}
+                {% for lang in LANGUAGES %}
+                <a {% if current_lang == lang.0 %}
+                    class="current_lang" {% else %}  href="/lang/?l={{lang.0}}" {% endif %}>{{lang.0}}</a>
+
+                    {% if not forloop.last %}<span class="sep">~</span>{% endif %}
+                    {% endfor %}
+                {% endcomment %}
+                </div>
+            </div>
+            <div class="header-logo">
+                <a href="/">
+                    <img src="{{ SYNNEFO_IMAGES_URL }}okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
+                </a>
+            </div>
+        </div>
+        <div id="content">
+            <div id="wrapper" class="clearfix">
+
+                <div class="panes-menu clearfix">
+                <!-- tabs -->
+                <div class="tab-name">{% trans "machines" %}</div>
+                <ul class="css-tabs">
+                    <li><a href="machines" title="{% trans "manage your virtual machines" %}"
+                        class="primary" id="machines_view_link">
+                        <img src="{{ SYNNEFO_IMAGES_URL }}machines-icon.png" /></a></li>
+                    <li><a href="networks" title="{% trans "configure networking" %}"
+                        class="primary" id="networks_view_link">
+                        <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
+                    <li class="hidden"><a href="disks" title="{% trans "manage your storage volumes" %}"
+                        class="primary" id="disks_view_link">
+                        <img src="{{ SYNNEFO_IMAGES_URL }}disks-icon.png" /></a></li>
+                </ul>
+                </div>
+                <div class="css-panes">
+                    <div id="machines-pane" class="pane" style="display:block;">
+                        {% include "partials/machines.html" %}
+                    </div>
+                    <div id="networks-pane" class="pane">
+                        {% include "partials/networks.html" %}
+                    </div>
+                    <div id="disks-pane" class="pane"></div>
+
+                    <div class="confirm_multiple clearfix" id="multiple_actions_container">
+                        <div class="confirm_multiple_actions confirm-all-cont global hidden confirm_multiple_cont clearfix">
+                            <div class="confirm-all msg">
+                                <p>You requested multiple actions to execute (<span
+                                    class"show">show all</span>)</p>
+                                <button class="yes">Confirm all</button>
+                                <button class="no">Cancel all</button>
+                            </div>
+                            <div class="details"></div>
+                        </div>
+                        <div class="ns-confirms-cont">
+                            <div class="confirm_multiple_actions hidden confirm_multiple_cont
+                                ns-confirm clearfix"
+                                id="conirm_multiple_cont_template">
+                                <div class="confirm-all msg">
+                                    <p></p>
+                                    <button class="yes"></button>
+                                    <button class="no"></button>
+                                </div>
+                                <div class="details"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- activate tabs with JavaScript -->
+    <script>
+
+        //load opera css fixes
+        if ($.browser.opera) {
+            $("<link/>", {
+               rel: "stylesheet",
+               type: "text/css",
+               href: "{{ SYNNEFO_CSS_URL }}opera.css"
+            }).appendTo("head");
+        }
+
+        $(document).ready(function(){
+
+            {% if current_lang == "el" and not DEBUG %}
+                window.location = "/lang/?l=en";
+            {% endif %}
+
+            // user menu interaction
+            var resetUserMenu = function() {
+                $(this).removeClass("hovered");
+                $(this).removeClass("active");
+            }
+
+            $(".usermenu").live("click", function(){
+                $(this).addClass("active");
+            });
+            $(".usermenu").bind('mouseleave', resetUserMenu);
+            $(".usermenu").live("mouseover", function(){
+                $(this).addClass("hovered");
+            });
+
+            $(".usermenu li").mouseenter(function(){$(this).addClass("hovered")})
+            $(".usermenu li").mouseleave(function(){$(this).removeClass("hovered")});
+
+            // bind menu actions
+            $(".usermenu .logout").click(function() {
+                synnefo.ui.logout();
+            });
+
+            $(".usermenu .api").click(function(){
+                synnefo.ui.main.api_info_view.show();
+            });
+
+        });
+        
+        function positionBottomMessages() {
+            var el = $("#multiple_actions_container");
+        }
+
+        $(window).bind("load", function() { 
+               var footerHeight = 0;
+               var footerTop = 0;
+               var $footer = $("#footer-container");
+
+               positionFooter();
+               function positionFooter() {
+                   footerHeight = 80;
+                   footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
+                   if (($(document.body).height()+footerHeight) < $(window).height()) {
+
+                       $footer.css({
+                            position: "absolute"
+                       }).css({
+                            top: footerTop
+                       })
+                    } else {
+                    
+                       if ($footer.css("position") == "static") {
+                           if ($(document.body).height() < $(window).height()) {    
+                               $footer.css({
+                                    position: "absolute"
+                               }).css({
+                                    top: footerTop
+                                })
+                            }
+                        } else {
+
+                           $footer.css({
+                               position: "static"
+                           })
+                       }
+                   }
+
+                   }
+               window.positionFooter = _.throttle(positionFooter, 100);
+               $(window).scroll(positionFooter).resize(positionFooter)
+        });
+    </script>
+
+    <!-- base notification for error/success reporting -->
+    <a id="notification" rel="#error-success" href="#"></a>
+    <a id="msgbox" rel="#notification-box" href="#"></a>
+    <a id="feedbackbox" rel="#feedback-form" href="#"></a>
+
+    <div class="overlay" id="generic-overlay-tpl">
+        <div class="overlay-inner">
+            <h3 class="overlay-header clearfix">
+                <span class="subtitle"></span>
+                <span class="title"></span>
+                <span class="closeme">close</span></h3>
+            <div class="container">
+                <div class="content">
+                </div>
+            </div>
+            <div class="footer"></div>
+        </div>
+    </div>
+
+    <div id="error-overlay-content" class="hidden">
+        <div class="error-nav hidden clearfix">
+            <span class="indicator"><span class="num">1</span> <span
+                    class="ind-msg">new error occured</span></span>
+            <span class="show-next nav-btn">{% trans "next" %}</span>
+            <span class="show-prev nav-btn">{% trans "previous" %}</span>
+        </div>
+        <div class="message"><p></p></div>
+        <div class="error-details">
+            <span class="key">{% trans "Module" %}</span>
+            <span class="value error-module"></span>
+
+            <span class="key">{% trans "Code" %}</span>
+            <span class="value error-code"></span>
+
+            <span class="key">{% trans "Type" %}</span>
+            <span class="value error-type"></span>
+
+            <span class="key details">{% trans "Details" %}</span>
+            <div class="value error-more-details"><p></p></div>
+        </div>
+        
+        <!--<div class="navigation">-->
+            <!--<span class="next-error">{% trans "next error" %}</span>-->
+            <!--<span class="previous-error">{% trans "previous error" %}</span>-->
+        <!--</div>-->
+        
+        <!--<div class="date">-->
+            <!--<span class="error-date"></span>-->
+        <!--</div>-->
+
+        <div class="actions">
+            <span class="show-details">{% trans "Show details" %}</span>
+            <span class="hide-details">{% trans "Hide details" %}</span>
+            <span class="report-error">{% trans "Send report" %}</span>
+            <span class="reload-app">{% trans "Reload" %}</span>
+        </div>
+    </div>
+    {% include "partials/invitations.html" %}
+    <div id="feedback-overlay-content" class="hidden overlay-content feedback-form">
+        <div class="description">
+            <p>
+                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+                We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}
+            </p>
+        </div>
+        <div class="description messages noborder">
+            <p class="success-message hidden">
+            {% trans "thank you for submiting your feedback" %}
+            </p>
+            <p class="error-message hidden">
+                {% trans "some error occured submiting submiting your feedback, please try again later" %}
+            </p>
+            <p class="sending-message hidden">
+            {% blocktrans %}Sending feedback...{% endblocktrans %}
+            </p>
+        </div>
+        <div class="form">
+            <div class="form-field">
+                <label for>{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+                <textarea class="feedback-message"> 
+                </textarea>
+            </div>
+            <div class="form-actions clearfix noborder">
+                <span class="form-action submit">{% trans "send feedback" %}</span>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="feedback-form" class="feedback notification-box">
+        <h3 class="popup-header overlay-header">
+            <span class="header-box">{% trans "Send feedback" %}</span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="form-container">
+                <p class="feedback-intro">
+                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
+                <form id="feedback-form">
+                    <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
+                    <div class="description"></div>
+                    <div class="empty-error-msg">{% trans "Please provide some feedback" %}</div>
+                    <textarea name="feedback-msg" class="feedback-text"></textarea>
+
+                    <input type="checkbox" name="submit-submit-data" class='submit-data' />
+                    <input type="submit" value="{% trans "submit feedback" %}" class="submit" />
+                    <textarea name="feedback-data" class="data-text"></textarea>
+                </form>
+            </div>
+
+            <div class="message sending">{% trans "submiting your data....." %}</div>
+            <div class="message success">
+                {% trans "thank you for submiting your feedback" %}
+                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+            <div class="message errormsg">
+                {% trans "some error occured submiting submiting your feedback, please try again later" %}
+                <span class="close-msg-box"> {% trans "close feedback" %}</span></div>
+            </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="api-info-overlay" class="overlay-content overlay-info hidden">
+        <div class="description">
+            <p>{% blocktrans with EXTERNAL_CLIENT_URL as EXTERNAL_CLIENT_URL %}Use the following API key along with the <a
+                href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage
+            your cloud resources from outside this page.{% endblocktrans %}</p>
+        </div>
+        <div class="copy-content">
+            <p></p>
+        </div>
+        <div class="description subinfo">
+            <p>
+            {% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}
+            </p>
+        </div>
+    </div>
+
+    <div class="api_overlay_template">
+        <div class="api_overlay_content">
+            <p>Use the following API key along with the <a href="{{ EXTERNAL_CLIENT_URL }}">./kamaki</a> client to manage your cloud resources from outside this page.</p>
+        </div>
+    </div>
+
+    <div class="modal" id="notification-box" class="notification-box">
+        <h3 class="popup-header">
+            <span class="header-box"></span>
+        </h3>
+        <div class="popup-body">
+            <div class="popup-body-inner">
+                <div class="machine-now-building"></div>
+                <div class="popup-separator"></div>
+                <div class="password-container">
+                    <div class="password"></div>
+                </div>
+                <div class="sub-text"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading-view" class="hidden">
+        <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
+        <div class="header">Loading <span>~okeanos</span></div>
+        <div class="info hidden"></div>
+    </div>
+    <div id="user_public_keys" class="overlay-content overlay-content hidden">
+        {% include "userdata/public_keys_view.html" %}
+    </div>
+    <div id="user_custom_images" class="overlay-content overlay-content hidden">
+        {% include "partials/custom_images.html" %}
+    </div>
+    {% include "footer.html" %}
+
+    <script>
+        $(document).ready(function() {
+            $(".css-panes").hide();
+
+            // TODO: match <= 1.9.1
+            if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {
+                synnefo.config.overlay_speed = 0;
+                $.fx.off = true;
+            }
+            
+            // synnefo js config
+            synnefo.VERSION = "{{ synnefo_version }}";
+            synnefo.config.update_interval = {{ update_interval }};
+            synnefo.config.update_interval_increase = {{ update_interval_increase }};
+            synnefo.config.fast_interval = {{ update_interval_fast }};
+            synnefo.config.update_interval_increase_after_calls = {{ update_interval_increase_after_calls }};
+            synnefo.config.update_interval_max = {{ update_interval_max }};
+            synnefo.config.delay_on_blur = {{ delay_on_blur }};
+            synnefo.config.update_hidden_views = {{ update_hidden_views }};
+            synnefo.config.handle_window_exceptions = {{ handle_window_exceptions }};
+            synnefo.config.ajax_timeout = {{ timeout }};
+            synnefo.config.skip_timeouts = {{ skip_timeouts }};
+            synnefo.config.invitations_url = "{% url invitations %}";
+            synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.vm_name_template = {{ vm_name_template|safe }};
+            synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
+   			// TODO: make it dynamic
+            synnefo.config.api_urls = {
+                'compute':  {{ compute_api_url|safe }}, 
+                'glance': {{ glance_api_url|safe }}
+            };
+            // TODO: configurable userdata urls in models.js
+            synnefo.config.userdata_url = '/ui/userdata';
+            synnefo.config.logout_url = '{{ logout_redirect }}';
+            synnefo.config.userdata_keys_url = '{% url keys_collection %}';
+            synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
+            // media config
+            synnefo.config.media_url = '{{ UI_MEDIA_URL }}';
+            synnefo.config.js_url = '{{ SYNNEFO_JS_URL }}';
+            synnefo.config.images_url = '{{ SYNNEFO_IMAGES_URL }}';
+            synnefo.config.use_glance = {{ use_glance }};
+            synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
+            synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
+            synnefo.config.os_created_users = {{ os_created_users|safe }};
+            // user config
+            synnefo.user = {};
+            synnefo.user.username = '{{ request.user.uniq }}';
+            synnefo.user.token = $.cookie("X-Auth-Token");
+            // images config
+            synnefo.config.system_images_owners = {{ system_images_owners|safe }};
+            synnefo.ui.init();
+            synnefo.ui.main.bind("initial", function(){
+            });
+
+        })
+    </script>
+</body>
+</html>

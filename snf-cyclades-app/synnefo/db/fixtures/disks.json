@@ -1,0 +1,26 @@
+[
+    {
+        "model": "db.Disk",
+        "pk": 1,
+        "fields": {
+            "name": "My_Music",
+            "created": "2011-02-10 00:00:00",
+            "updated": "2011-02-10 00:00:00",
+            "size" : "20",
+            "vm" : "1001",
+            "owner" : "1"
+        }
+    }, 
+    {
+        "model": "db.Disk",
+        "pk": 2,
+        "fields": {
+            "name": "My_Videos",
+            "created": "2011-02-10 00:00:00",
+            "updated": "2011-02-10 00:00:00",
+            "size" : "300",
+            "vm" : "1001",
+            "owner" : "1"
+        }
+    } 
+] 

@@ -12,9 +12,9 @@ if an application (synnefo component) wants to plug additional configuration
 to the django project it should define within its setup.py file the 'synnefo'
 appropriate entry_points.
 
-For usage example please take a look how snf-app package defines its entry
+For usage example please take a look how snf-cyclades-app package defines its entry
 points in:
 
-    - snf-app/setup.py
-    - snf-app/app_settings/__init__.py
+    - snf-cyclades-app/setup.py
+    - snf-cyclades-app/app_settings/__init__.py
 

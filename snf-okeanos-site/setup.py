@@ -52,7 +52,7 @@ from okeanos_site.version import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
+README = open(os.path.join(HERE, 'docs/index.rst')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Package short description'
 

@@ -46,10 +46,10 @@ pip install -r requirements.pip
 cd snf-common
 rm -rf build dist
 python setup.py install
-cd ../snf-app
+cd ../snf-cyclades-app
 rm -rf build dist
 python setup.py install
-cd ../snf-ganeti-tools
+cd ../snf-cyclades-gtools
 rm -rf build dist
 python setup.py install
 
@@ -72,10 +72,10 @@ deactivate
 #cd snf-common
 #rm -rf build dist
 #python setup.py install
-#cd ../snf-app
+#cd ../snf-cyclades-app
 #rm -rf build dist
 #python setup.py install
-#cd ../snf-ganeti-tools
+#cd ../snf-cyclades-gtools
 #rm -rf build dist
 #python setup.py install
 

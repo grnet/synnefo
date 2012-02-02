@@ -130,7 +130,8 @@ def _generate_invitation_code():
 def _send_invitation(request, baseurl, inv):
     sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
     subject = _('Invitation to %s' % sitename)
-    url = settings.SIGNUP_TARGET % (baseurl, inv.code, quote(sitedomain))
+    baseurl = request.build_absolute_uri('/').rstrip('/')
+    url = '%s%s?code=%d' % (baseurl, reverse('astakos.im.views.signup'), inv.code)
     message = render_to_string('invitation.txt', {
                 'invitation': inv,
                 'url': url,
@@ -188,17 +189,17 @@ def invite(request, template_name='invitations.html', extra_context={}):
         
         if inviter.invitations > 0:
             code = _generate_invitation_code()
-            invitation, created = Invitation.objects.get_or_create(
-                inviter=inviter,
-                username=username,
-                defaults={'code': code, 'realname': realname})
+            invitation = Invitation(inviter=inviter,
+                                    username=username,
+                                    code=code,
+                                    realname=realname)
+            invitation.save()
             
             try:
                 baseurl = request.build_absolute_uri('/').rstrip('/')
                 _send_invitation(request, baseurl, invitation)
-                if created:
-                    inviter.invitations = max(0, inviter.invitations - 1)
-                    inviter.save()
+                inviter.invitations = max(0, inviter.invitations - 1)
+                inviter.save()
                 status = messages.SUCCESS
                 message = _('Invitation sent to %s' % username)
                 transaction.commit()
@@ -403,3 +404,18 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         return response
     html = render_to_string(template, context_instance=get_context(request, extra_context))
     return HttpResponse(html)
+
+def activate(request):
+    """
+    Activates the user identified by the ``auth`` request parameter
+    """
+    token = request.GET.get('auth')
+    next = request.GET.get('next')
+    try:
+        user = AstakosUser.objects.get(auth_token=token)
+    except AstakosUser.DoesNotExist:
+        return HttpResponseBadRequest('No such user')
+    
+    user.is_active = True
+    user.save()
+    return prepare_response(request, user, next, renew=True)

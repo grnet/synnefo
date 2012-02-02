@@ -241,9 +241,9 @@ class SimpleBackend(object):
 def _send_verification(request, user, template_name):
     site = Site.objects.get_current()
     baseurl = request.build_absolute_uri('/').rstrip('/')
-    url = settings.ACTIVATION_LOGIN_TARGET % (baseurl,
-                                              quote(user.auth_token),
-                                              quote(baseurl))
+    url = '%s%s?auth=%s&next=%s' % (baseurl,
+                                    reverse('astakos.im.target.activate'),
+                                    quote(user.auth_token))
     message = render_to_string(template_name, {
             'user': user,
             'url': url,

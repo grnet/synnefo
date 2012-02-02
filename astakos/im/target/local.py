@@ -69,16 +69,3 @@ def login(request, on_failure='login.html'):
     
     next = request.POST.get('next')
     return prepare_response(request, user, next)
-    
-def activate(request):
-    token = request.GET.get('auth')
-    next = request.GET.get('next')
-    try:
-        user = AstakosUser.objects.get(auth_token=token)
-    except AstakosUser.DoesNotExist:
-        return HttpResponseBadRequest('No such user')
-    
-    user.is_active = True
-    user.save()
-    user = authenticate(email=user.email, auth_token=user.auth_token)
-    return prepare_response(request, user, next, renew=True)

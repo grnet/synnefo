@@ -43,6 +43,7 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup'),
     url(r'^logout/?$', 'logout'),
+    url(r'^activate/?$', 'activate'),
     url(r'^admin/', include('astakos.im.admin.urls')),
 )
 
@@ -57,8 +58,7 @@ urlpatterns += patterns('',
 
 if 'local' in settings.IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
-        url(r'^local/?$', 'local.login'),
-        url(r'^local/activate/?$', 'local.activate'),
+        url(r'^local/?$', 'local.login')
     )
     urlpatterns += patterns('django.contrib.auth.views',
         url(r'^local/password_reset/?$', 'password_reset',

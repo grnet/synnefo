@@ -40,8 +40,6 @@ from django.utils import simplejson as json
 from astakos.im.faults import BadRequest, Unauthorized, ServiceUnavailable
 from astakos.im.models import AstakosUser
 
-import datetime
-
 def render_fault(request, fault):
     if settings.DEBUG or settings.TEST:
         fault.details = format_exc(fault)

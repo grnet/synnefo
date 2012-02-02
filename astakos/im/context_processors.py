@@ -44,4 +44,3 @@ def code(request):
 
 def invitations(request):
     return {'invitations_enabled' :settings.INVITATIONS_ENABLED}
-    

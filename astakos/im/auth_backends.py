@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.core.validators import email_re
 

@@ -31,21 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
-from django.conf import settings
-from django.template.loader import render_to_string
+from django.http import HttpResponseBadRequest
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.contrib import messages
 from django.utils.translation import ugettext as _
 
-from astakos.im.target.util import prepare_response, requires_anonymous
+from astakos.im.util import prepare_response
+from astakos.im.views import requires_anonymous
 from astakos.im.models import AstakosUser
 from astakos.im.forms import LoginForm
-from urllib import unquote
-
-from hashlib import new as newhasher
 
 @requires_anonymous
 def login(request, on_failure='login.html'):

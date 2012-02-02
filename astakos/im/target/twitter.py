@@ -35,20 +35,15 @@
 
 import oauth2 as oauth
 import urlparse
-import  traceback
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
-from django.contrib.auth import authenticate
 from django.contrib import messages
-from django.shortcuts import redirect
 
-from astakos.im.target.util import prepare_response, requires_anonymous
-from astakos.im.util import get_or_create_user, get_context
-from astakos.im.models import AstakosUser, Invitation
-from astakos.im.views import render_response, create_user
-from astakos.im.backends import get_backend
+from astakos.im.util import get_context, prepare_response
+from astakos.im.models import AstakosUser
+from astakos.im.views import render_response, create_user, requires_anonymous
 from astakos.im.forms import LocalUserCreationForm, ThirdPartyUserCreationForm
 from astakos.im.faults import BadRequest
 
@@ -138,8 +133,7 @@ def authenticated(request, backend=None, template_name='login.html', extra_conte
     user = None
     email = request.session.pop('email')
     
-    # signup mode
-    if email:
+    if email: # signup mode
         if not reserved_screen_name(screen_name): 
             try:
                 user = AstakosUser.objects.get(email = email)
@@ -153,16 +147,13 @@ def authenticated(request, backend=None, template_name='login.html', extra_conte
             status = messages.ERROR
             message = '%s@twitter is already registered' % screen_name
             messages.add_message(request, messages.ERROR, message)
-    else:
-        # login mode
+    else: # login mode
         try:
             user = AstakosUser.objects.get(third_party_identifier = screen_name,
                                            provider = 'Twitter')
         except AstakosUser.DoesNotExist:
             messages.add_message(request, messages.ERROR, 'Not registered user')
         if user and user.is_active:
-            #in order to login the user we must call authenticate first
-            user = authenticate(email=user.email, auth_token=user.auth_token)
             return prepare_response(request, user, next)
         elif user and not user.is_active:
             messages.add_message(request, messages.ERROR, 'Inactive account: %s' % user.email)

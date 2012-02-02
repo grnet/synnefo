@@ -31,39 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
 import logging
 import socket
-import csv
-import sys
 
-from datetime import datetime
-from functools import wraps
-from math import ceil
 from random import randint
 from smtplib import SMTPException
-from hashlib import new as newhasher
 from urllib import quote
+from functools import wraps
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
-from django.shortcuts import render_to_response
-from django.utils.http import urlencode
 from django.utils.translation import ugettext as _
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.decorators import login_required
-from django.contrib.sites.models import Site
 from django.contrib import messages
 from django.db import transaction
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.views import logout
+from django.utils.http import urlencode
+from django.http import HttpResponseRedirect
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
-from astakos.im.util import get_context, get_current_site, get_invitation
+from astakos.im.util import get_context, get_current_site, prepare_response
 from astakos.im.forms import *
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
@@ -77,6 +69,21 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     kwargs.setdefault('tab', tab)
     html = render_to_string(template, kwargs, context_instance=context_instance)
     return HttpResponse(html, status=status)
+
+
+def requires_anonymous(func):
+    """
+    Decorator checkes whether the request.user is Anonymous and in that case
+    redirects to `user_logout`.
+    """
+    @wraps(func)
+    def wrapper(request, *args):
+        if not request.user.is_anonymous():
+            next = urlencode({'next': request.build_absolute_uri()})
+            login_uri = reverse(user_logout) + '?' + next
+            return HttpResponseRedirect(login_uri)
+        return func(request, *args)
+    return wrapper
 
 def index(request, login_template_name='login.html', profile_template_name='profile.html', extra_context={}):
     """
@@ -306,9 +313,8 @@ def signup(request, template_name='signup.html', extra_context={}, backend=None)
                     return redirect(url)
                 else:
                     status, message, user = backend.signup(form)
-                    if status == messages.SUCCESS:
-                        if next:
-                            return redirect(next)
+                    if user and user.is_active:
+                        return prepare_response(request, user, next=next)
                     messages.add_message(request, status, message)    
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
@@ -385,8 +391,8 @@ def create_user(request, form, backend=None, post_data={}, next = None, template
                 for k,v in post_data.items():
                     setattr(user,k, v)
                 user.save()
-                if next:
-                    return redirect(next)
+                if user.is_active():
+                    return prepare_response(request, user, next=next)
             messages.add_message(request, status, message)
         else:
             messages.add_message(request, messages.ERROR, form.errors)
@@ -397,8 +403,14 @@ def create_user(request, form, backend=None, post_data={}, next = None, template
                            context_instance=get_context(request, extra_context))
 
 def user_logout(request):
-    response = HttpResponse()
+    """
+    Wraps `django.contrib.auth.views.logout` and delete the cookie.
+    """
+    response = logout(request)
     response.delete_cookie(settings.COOKIE_NAME)
-    response['Location'] = reverse('django.contrib.auth.views.logout')
-    response.status_code = 302
+    next = request.GET.get('next')
+    if next:
+        response['Location'] = next
+        response.status_code = 302
+        return response
     return response

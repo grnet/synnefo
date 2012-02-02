@@ -32,13 +32,20 @@
 # or implied, of GRNET S.A.
 
 import logging
+import datetime
+
+from urllib import quote
+from urlparse import urlsplit, urlunsplit
+from functools import wraps
 
 from datetime import tzinfo, timedelta
+from django.http import HttpResponse, urlencode
 from django.conf import settings
 from django.template import RequestContext
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
-from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, Invitation
 
@@ -116,3 +123,53 @@ def get_invitation(request):
     except AstakosUser.DoesNotExist:
         pass
     return invitation
+
+def prepare_response(request, user, next='', renew=False, skip_login=False):
+    """Return the unique username and the token
+       as 'X-Auth-User' and 'X-Auth-Token' headers,
+       or redirect to the URL provided in 'next'
+       with the 'user' and 'token' as parameters.
+       
+       Reissue the token even if it has not yet
+       expired, if the 'renew' parameter is present
+       or user has not a valid token.
+    """
+    
+    renew = renew or (not user.auth_token)
+    renew = renew or (user.auth_token_expires and user.auth_token_expires < datetime.datetime.now())
+    if renew:
+        user.renew_token()
+        user.save()
+    
+    if next:
+        # TODO: Avoid redirect loops.
+        parts = list(urlsplit(next))
+        if not parts[1] or (parts[1] and request.get_host() != parts[1]):
+            parts[3] = urlencode({'user': user.email, 'token': user.auth_token})
+            next = urlunsplit(parts)
+    
+    if settings.FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
+        params = ''
+        if next:
+            params = '?' + urlencode({'next': next})
+        next = reverse('astakos.im.views.edit_profile') + params
+    
+    response = HttpResponse()
+    
+    if not skip_login:
+        # authenticate before login
+        user = authenticate(email=user.email, auth_token=user.auth_token)
+        login(request, user)
+        # set cookie
+        expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+        cookie_value = quote(user.email + '|' + user.auth_token)
+        response.set_cookie(settings.COOKIE_NAME, value=cookie_value,
+                            expires=expire_fmt, path='/',
+                            domain = settings.COOKIE_DOMAIN)
+    
+    if not next:
+        next = reverse('astakos.im.views.index')
+    
+    response['Location'] = next
+    response.status_code = 302
+    return response

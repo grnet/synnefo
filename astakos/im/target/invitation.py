@@ -35,13 +35,11 @@ import logging
 
 from datetime import datetime
 
-from django.conf import settings
 from django.http import HttpResponseBadRequest
 from django.contrib.auth import authenticate
 
 from astakos.im.models import Invitation
-from astakos.im.target.util import prepare_response
-from astakos.im.util import get_or_create_user
+from astakos.im.util import get_or_create_user, prepare_response
 
 def login(request):
     code = request.GET.get('code')

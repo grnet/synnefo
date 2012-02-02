@@ -215,7 +215,7 @@ def invite(request, template_name='invitations.html', extra_context={}):
              'realname': inv.realname,
              'is_consumed': inv.is_consumed}
              for inv in inviter.invitations_sent.all()]
-    kwargs = {'user': inviter,
+    kwargs = {'inviter': inviter,
               'sent':sent}
     context = get_context(request, extra_context, **kwargs)
     return render_response(template_name,

@@ -124,7 +124,7 @@ def get_invitation(request):
         pass
     return invitation
 
-def prepare_response(request, user, next='', renew=False, skip_login=False):
+def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
        as 'X-Auth-User' and 'X-Auth-Token' headers,
        or redirect to the URL provided in 'next'
@@ -141,13 +141,6 @@ def prepare_response(request, user, next='', renew=False, skip_login=False):
         user.renew_token()
         user.save()
     
-    if next:
-        # TODO: Avoid redirect loops.
-        parts = list(urlsplit(next))
-        if not parts[1] or (parts[1] and request.get_host() != parts[1]):
-            parts[3] = urlencode({'user': user.email, 'token': user.auth_token})
-            next = urlunsplit(parts)
-    
     if settings.FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''
         if next:
@@ -156,16 +149,15 @@ def prepare_response(request, user, next='', renew=False, skip_login=False):
     
     response = HttpResponse()
     
-    if not skip_login:
-        # authenticate before login
-        user = authenticate(email=user.email, auth_token=user.auth_token)
-        login(request, user)
-        # set cookie
-        expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
-        cookie_value = quote(user.email + '|' + user.auth_token)
-        response.set_cookie(settings.COOKIE_NAME, value=cookie_value,
-                            expires=expire_fmt, path='/',
-                            domain = settings.COOKIE_DOMAIN)
+    # authenticate before login
+    user = authenticate(email=user.email, auth_token=user.auth_token)
+    login(request, user)
+    # set cookie
+    expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+    cookie_value = quote(user.email + '|' + user.auth_token)
+    response.set_cookie(settings.COOKIE_NAME, value=cookie_value,
+                        expires=expire_fmt, path='/',
+                        domain = settings.COOKIE_DOMAIN)
     
     if not next:
         next = reverse('astakos.im.views.index')

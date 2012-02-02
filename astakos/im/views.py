@@ -49,7 +49,7 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.contrib.auth.views import logout
+from django.contrib.auth import logout as auth_logout
 from django.utils.http import urlencode
 from django.http import HttpResponseRedirect
 
@@ -74,13 +74,13 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
 def requires_anonymous(func):
     """
     Decorator checkes whether the request.user is Anonymous and in that case
-    redirects to `user_logout`.
+    redirects to `logout`.
     """
     @wraps(func)
     def wrapper(request, *args):
         if not request.user.is_anonymous():
             next = urlencode({'next': request.build_absolute_uri()})
-            login_uri = reverse(user_logout) + '?' + next
+            login_uri = reverse(logout) + '?' + next
             return HttpResponseRedirect(login_uri)
         return func(request, *args)
     return wrapper
@@ -402,15 +402,17 @@ def create_user(request, form, backend=None, post_data={}, next = None, template
                            form = LocalUserCreationForm(),
                            context_instance=get_context(request, extra_context))
 
-def user_logout(request):
+def logout(request, template='registration/logged_out.html', extra_context={}):
     """
-    Wraps `django.contrib.auth.views.logout` and delete the cookie.
+    Wraps `django.contrib.auth.logout` and delete the cookie.
     """
-    response = logout(request)
+    auth_logout(request)
+    response = HttpResponse()
     response.delete_cookie(settings.COOKIE_NAME)
     next = request.GET.get('next')
     if next:
         response['Location'] = next
         response.status_code = 302
         return response
-    return response
+    html = render_to_string(template, context_instance=get_context(request, extra_context))
+    return HttpResponse(html)

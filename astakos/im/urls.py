@@ -42,12 +42,8 @@ urlpatterns = patterns('astakos.im.views',
     url(r'^profile/?$', 'edit_profile'),
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^signup/?$', 'signup'),
-    url(r'^user_logout/?$', 'user_logout'),
+    url(r'^logout/?$', 'logout'),
     url(r'^admin/', include('astakos.im.admin.urls')),
-)
-
-urlpatterns += patterns('django.contrib.auth.views',
-    url(r'^logout/?$', 'logout')
 )
 
 urlpatterns += patterns('astakos.im.target',

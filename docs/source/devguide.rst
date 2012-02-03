@@ -1004,7 +1004,7 @@ The ``POST`` method can also be used for creating an object via a standard HTML 
     <input type="submit">
   </form>
 
-This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data (usually, automatically handled by the browser). Metadata, sharing and other object attributes can not be set this way.
+This will create/override the object with the given name, as if using ``PUT``. The ``Content-Type`` of the object will be set to the value of the corresponding header sent in the part of the request containing the data (usually, automatically handled by the browser). Metadata, sharing and other object attributes can not be set this way. The response will contain the object's ETag.
 
 ==========================  ===============================
 Reply Header Name           Value

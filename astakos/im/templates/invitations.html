@@ -17,10 +17,10 @@
             </thead>
             <tbody>
               {% for inv in sent %}
-              <tr>
+              <tr class="{% if inv.is_consumed %}consumed{% endif %}">
                 <td>{{ inv.email }}</td>
                 <td>{{ inv.realname }}</td>
-                <td>{{ inv.is_consumed }}</td>
+                <td class="consumed">{% if inv.is_consumed %}Yes{% else %}No{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>

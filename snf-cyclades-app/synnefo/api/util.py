@@ -189,7 +189,7 @@ def get_image(image_id, owner):
 def get_backend_image(image_id, owner):
     backend = ImageBackend(owner.uniq)
     try:
-        image = backend.get_meta(image_id)
+        image = backend.get_image(image_id)
         if not image:
             raise ItemNotFound('Image not found.')
         return image

@@ -223,6 +223,15 @@ def nosigndebs():
     env.signdebs = False
 
 
+# Commands which automatically add and reset the version files which are not tracked by
+# git. Those version files are created from each setup.py using the synnefo-common
+# update_version, so we execute `python setup.py clean` to ensure that file gets
+# created and git add will not fail. The reset of those files after each build
+# certifies that succeded git checkouts will not fail due to existing local
+# changes.
+add_versions_cmd = "find . -regextype posix-egrep -regex \".*version.py$|.*\/synnefo\/versions\/.*py$\" -exec git add -f {} \;"
+reset_versions_cmd = "find . -regextype posix-egrep -regex \".*version.py$|.*\/synnefo\/versions\/.*py$\" -exec git reset {} \;"
+
 
 def builddeb(p, master="master", branch="debian-0.8"):
     with co(branch):
@@ -231,12 +240,12 @@ def builddeb(p, master="master", branch="debian-0.8"):
             local("git merge master")
             local("if [ ! -d .git ]; then mkdir .git; fi")
             local("python setup.py clean")
-            local("git add synnefo/versions/*.py -f")
+            local(add_versions_cmd)
             local(("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s"
                    " --git-export=INDEX --git-ignore-new %s") %
                    (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
-            local("git reset synnefo/versions/*.py")
+            local(reset_versions_cmd)
         info("Done building debian package for %s" % p)
 
 

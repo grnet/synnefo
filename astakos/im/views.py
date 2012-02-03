@@ -401,8 +401,9 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
         response['Location'] = next
         response.status_code = 302
         return response
-    html = render_to_string(template, context_instance=get_context(request, extra_context))
-    return HttpResponse(html)
+    context = get_context(request, extra_context)
+    response.write(render_to_string(template, context_instance=context))
+    return response
 
 def activate(request):
     """

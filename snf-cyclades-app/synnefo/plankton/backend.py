@@ -246,7 +246,6 @@ class ImageBackend(object):
         location = get_location(account, container, object)
         return self._get_image(location)
     
-<<<<<<< HEAD:snf-app/synnefo/plankton/backend.py
     def iter(self):
         """Iter over all images available to the user"""
         
@@ -261,11 +260,8 @@ class ImageBackend(object):
                     if image:
                         yield image
     
-    def iter_public(self, filters):
-=======
     def iter_public(self, filters=None):
         filters = filters or {}
->>>>>>> origin/master:snf-cyclades-app/synnefo/plankton/backend.py
         backend = self.backend
         
         keys = [PLANKTON_PREFIX + 'name']

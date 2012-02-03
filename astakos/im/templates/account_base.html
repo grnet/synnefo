@@ -10,16 +10,16 @@
 {% endblock %}
 
 {% block page.nav.items %}
-    <li class="{% block profile_class %}{% endblock %}">
+    <li class="{% if tab == "profile" %}active{% endif %}">
         <a href="{% url astakos.im.views.edit_profile %}">Profile</a>
     </li>
-    <li class="{% block password_class %}{% endblock %}">
+    <li class="{% if not tab %}active{% endif %}">
         <a href="{% url django.contrib.auth.views.password_change %}">Change password</a>
     </li>
-    <li class="{% block invitations_class %}{% endblock %}">
+    <li class="{% if tab == "invitations" %}active{% endif %}">
         <a href="{% url astakos.im.views.invite %}">Invitations</a>
     </li>
-    <li class="{% block feedback_class %}{% endblock %}">
+    <li class="{% if tab == "feedback" %}active{% endif %}">
         <a href="{% url astakos.im.views.send_feedback %}">Send feedback</a>
     </li>
 {% endblock %}

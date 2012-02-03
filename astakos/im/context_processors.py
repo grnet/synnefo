@@ -48,7 +48,3 @@ def invitations(request):
 def media(request):
     return {'IM_MEDIA_URL' : getattr(settings, 'IM_MEDIA_URL', '/static/im/')}
 
-def current_url(request):
-    from django.core.urlresolvers import resolve
-    return {'CURRENT_URL' : request.get_full_path()}
-

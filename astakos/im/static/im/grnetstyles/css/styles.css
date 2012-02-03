@@ -722,6 +722,29 @@ div.form-stacked {
 .section p {
   line-height: 1.7em;
 }
+.messages {
+  display: inline;
+  float: left;
+  margin-left: 22px;
+  width: 798px;
+  margin-bottom: 2em;
+  background-color: #ddd;
+}
+.messages li {
+  padding: 1em;
+}
+.messages li.success {
+  background-color: #46a546;
+  color: #ffffff;
+}
+.messages li.error {
+  background-color: #9d261d;
+  color: #ffffff;
+}
+.messages li.warning {
+  background-color: #ffc40d;
+  color: #000000;
+}
 .service-desc {
   margin-top: 4em;
 }

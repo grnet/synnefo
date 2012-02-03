@@ -29,7 +29,7 @@ used by the ``kamaki store`` commands:
 
 .. code-block:: console
 
-  kamaki config set storage_account okeanos
+  kamaki config set storage_account images@okeanos.grnet.gr
   kamaki config set storage_container images
 
 If the container does not exist, you will have to create it before uploading
@@ -48,7 +48,7 @@ or use kamaki directly:
 
 You can use any Pithos client to verify that the image was uploaded correctly.
 The full Pithos URL for the previous example will be
-``pithos://okeanos/images/ubuntu.iso``.
+``pithos://images@okeanos.grnet.gr/images/ubuntu.iso``.
 
 
 Register the image
@@ -59,7 +59,7 @@ a public image the one from the previous example use:
 
 .. code-block:: console
 
-  kamaki glance register Ubuntu pithos://okeanos/images/ubuntu.iso --public
+  kamaki glance register Ubuntu pithos://images@okeanos.grnet.gr/images/ubuntu.iso --public
 
 The ``--public`` flag is important, if missing the registered image will not
 be listed by ``kamaki glance list``.
@@ -69,8 +69,8 @@ options. A more complete example would be the following:
 
 .. code-block:: console
 
-  kamaki glance register Ubuntu pithos://okeanos/images/ubuntu.iso --public \
-      --disk-format diskdump --property kernel=3.1.2
+  kamaki glance register Ubuntu pithos://images@okeanos.grnet.gr/images/ubuntu.iso \
+      --public --disk-format diskdump --property kernel=3.1.2
 
 To verify that the image was registered successfully use:
 

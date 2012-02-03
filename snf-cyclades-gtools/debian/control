@@ -11,7 +11,7 @@ Package: snf-cyclades-gtools
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, nfdhcpd, arptables, ganeti2,
  snf-common
-Provides: ${python:Provides} snf-ganeti-tools
+Provides: ${python:Provides}, snf-ganeti-tools
 Replaces: snf-ganeti-tools
 Conflicts: snf-ganeti-tools
 XB-Python-Version: ${python:Versions}

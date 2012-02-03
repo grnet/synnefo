@@ -9,6 +9,11 @@ config_lvl=00
 override_dh_auto_install:
 	dh_auto_install
 	
+	# this package provides the synnefo namespace __init__.py
+	for py in $(shell pyversions -vr debian/control); do \
+		cp synnefo/__init__.py debian/$(package)/usr/lib/python$$py/*-packages/synnefo/; \
+	done
+	
 	mkdir -p debian/$(package)/etc/synnefo
 	echo "# Place your custom configuration options here\n\n" > debian/$(package)/etc/synnefo/99-local.conf
 	for f in admins logging; do \
@@ -16,4 +21,8 @@ override_dh_auto_install:
 			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
 	done;
 	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;
+
+	for py in $(shell pyversions -vr debian/control); do \
+		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
+	done
 

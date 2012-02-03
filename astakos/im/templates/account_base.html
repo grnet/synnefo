@@ -1,5 +1,6 @@
 {% extends "base_two_cols.html" %}
 
+{% block page.title %}Profile{% endblock %}
 {% block page.nav.classes %}{% endblock %}
 
 {% block page.quicknav.items %}
@@ -24,7 +25,7 @@
 {% endblock %}
     
 {% block page.body %}
-<div class="maincol full">
+<div class="maincol {% block innerpage.class %}full{% endblock %}">
 {% block body %}{% endblock %}
 </div>
 {% endblock %}

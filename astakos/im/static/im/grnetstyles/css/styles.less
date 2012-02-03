@@ -1,5 +1,6 @@
 @import "../less/bootstrap.less";
 @import "../less/django_forms.less";
+@import "../less/tables.less";
 
 body {
     #font.main();
@@ -59,9 +60,8 @@ a img {
 
 .header {
     position: relative;
-    height: 2*@gridGutterWidth;
     margin-top: 4*@gridGutterWidth;
-    margin-bottom: 3*@gridGutterWidth;
+    margin-bottom: @gridGutterWidth;
     h1 {
         color: @shadowColor;
         display: inline;
@@ -95,7 +95,7 @@ ul.inline {
 .mainnav.quicknav {
     position: absolute;
     right: 0;
-    top: 1em;
+    top: -2*@gridGutterWidth;
     margin:0;
 
     li {
@@ -107,9 +107,10 @@ ul.inline {
 .mainnav {
     font-size: 1.2em;
     
-    margin-top: 2*@gridGutterWidth;
+    li {
+        margin-top: 3*@gridGutterWidth;
+    }
 
-    height: 1*@gridGutterWidth;
     li.active {
         a {
             border-bottom: 1px solid @linkColor;
@@ -278,12 +279,10 @@ form {
 }
 
 .form-error {
-    position: absolute;
     background-color: @red;
     color: #fff;
     font-size: 0.8em;
-    padding: 2px 5px;
-    border-radius: 5px;
+    padding: 5px 5px;
 }
 
 .form-errors.all {

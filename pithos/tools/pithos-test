@@ -41,6 +41,8 @@ from xml.dom import minidom
 from StringIO import StringIO
 from hashlib import new as newhasher
 from binascii import hexlify
+from httplib import HTTPConnection
+from urlparse import urlparse
 
 import json
 import unittest
@@ -1833,8 +1835,7 @@ class TestGreek(BaseTestCase):
         self.client.share_object('φάκελος', 'ο1', ['%s:σεφς' % get_user()])
         chef = Pithos_Client(get_url(),
                             '0009',
-                            'διογένης',
-                            get_api())
+                            'διογένης')
         self.assert_not_raises_fault(403, chef.retrieve_object_metadata,
                                      'φάκελος', 'ο1', account=get_user())
         
@@ -1892,7 +1893,7 @@ class TestPermissions(BaseTestCase):
     
     def assert_read(self, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_url(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             if account in authorized or any:
                 self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o', account=get_user())
@@ -1903,7 +1904,7 @@ class TestPermissions(BaseTestCase):
         #check inheritance
         o = self.upload_random_data('c', 'o/also-shared')
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_url(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             if account in authorized or any:
                 self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o/also-shared', account=get_user())
@@ -1913,7 +1914,7 @@ class TestPermissions(BaseTestCase):
     
     def assert_write(self, o_data, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_url(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
@@ -1937,7 +1938,7 @@ class TestPermissions(BaseTestCase):
         o = self.upload_random_data('c', 'o/also-shared')
         o_data = o['data']
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_url(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
@@ -2004,8 +2005,19 @@ class TestPublish(BaseTestCase):
         meta = self.client.retrieve_object_metadata('c', 'o')
         self.assertTrue('x-object-public' in meta)
         url = meta['x-object-public']
-        public_client = Pithos_Client(get_url(), get_auth(), get_user(), api='')
-        data = public_client.get(url)[2]
+        
+        p = urlparse(get_url())
+        if p.scheme == 'http':
+            conn = HTTPConnection(p.netloc)
+        elif p.scheme == 'https':
+            conn = HTTPSConnection(p.netloc)
+        else:
+            raise Exception('Unknown URL scheme')
+        
+        conn.request('GET', url)
+        resp = conn.getresponse()
+        length = resp.getheader('content-length', None)
+        data = resp.read(length)
         self.assertEqual(o_data, data)
 
 class AssertUUidInvariant(object):

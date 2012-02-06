@@ -68,7 +68,7 @@ class Command(object):
     
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
-        parser.add_option('--url', dest='url', metavar='HOST',
+        parser.add_option('--url', dest='url', metavar='URL',
                           default=get_url(), help='server URL (currently: %s)' % get_url())
         parser.add_option('--user', dest='user', metavar='USER',
                           default=get_user(),

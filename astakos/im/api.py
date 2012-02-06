@@ -41,7 +41,7 @@ from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
 from astakos.im.models import AstakosUser
 
 def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and (settings.DEBUG):
+    if isinstance(fault, InternalServerError) and settings.DEBUG:
         fault.details = format_exc(fault)
     
     request.serialization = 'text'

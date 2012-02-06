@@ -12,12 +12,12 @@
               <tr>
                 <th>Email</th>
                 <th>Real Name</th>
-                <th>Consumed</th>
+                <th>Used</th>
               </tr>
             </thead>
             <tbody>
               {% for inv in sent %}
-              <tr class="{% if inv.is_consumed %}consumed{% endif %}">
+              <tr class="{% if inv.is_consumed %}used{% endif %}">
                 <td>{{ inv.email }}</td>
                 <td>{{ inv.realname }}</td>
                 <td class="consumed">{% if inv.is_consumed %}Yes{% else %}No{% endif %}</td>

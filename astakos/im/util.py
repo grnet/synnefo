@@ -116,7 +116,7 @@ def get_invitation(request):
         return
     invitation = Invitation.objects.get(code = code)
     if invitation.is_consumed:
-        raise ValueError(_('Invitation is consumed'))
+        raise ValueError(_('Invitation is used'))
     try:
         AstakosUser.objects.get(email = invitation.username)
         raise ValueError(_('Email: %s is reserved' % invitation.username))

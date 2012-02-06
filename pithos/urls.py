@@ -35,9 +35,5 @@ from django.conf.urls.defaults import include, patterns
 
 
 urlpatterns = patterns('',
-    (r'^v1(?:$|/)', include('pithos.api.urls')),
-    (r'^v1\.0(?:$|/)', include('pithos.api.urls')),
-    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
-    (r'^login/?$', 'pithos.api.login.redirect_to_login_service'),
-    (r'^ui', include('pithos.ui.urls'))
+    (r'', include('pithos.api.urls')),
 )

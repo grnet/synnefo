@@ -69,17 +69,17 @@ class Command(object):
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
         parser.add_option('--url', dest='url', metavar='HOST',
-                          default=get_url(), help='use server URL')
-        parser.add_option('--user', dest='user', metavar='USERNAME',
+                          default=get_url(), help='server URL (currently: %s)' % get_url())
+        parser.add_option('--user', dest='user', metavar='USER',
                           default=get_user(),
-                          help='use account USERNAME')
-        parser.add_option('--token', dest='token', metavar='AUTH',
+                          help='account USER (currently: %s)' % get_user())
+        parser.add_option('--token', dest='token', metavar='TOKEN',
                           default=get_auth(),
-                          help='use account AUTH')
+                          help='account TOKEN (currently: %s)' % get_auth())
         parser.add_option('-v', action='store_true', dest='verbose',
-                          default=False, help='use verbose output')
+                          default=False, help='verbose output')
         parser.add_option('-d', action='store_true', dest='debug',
-                          default=False, help='use debug output')
+                          default=False, help='debug output')
         self.add_options(parser)
         options, args = parser.parse_args(argv)
         

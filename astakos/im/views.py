@@ -39,7 +39,6 @@ from smtplib import SMTPException
 from urllib import quote
 from functools import wraps
 
-from django.conf import settings
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -57,6 +56,7 @@ from astakos.im.models import AstakosUser, Invitation
 from astakos.im.backends import get_backend
 from astakos.im.util import get_context, get_current_site, prepare_response
 from astakos.im.forms import *
+from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, IM_MODULES
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
@@ -137,8 +137,8 @@ def _send_invitation(request, baseurl, inv):
                 'url': url,
                 'baseurl': baseurl,
                 'service': sitename,
-                'support': settings.DEFAULT_CONTACT_EMAIL % sitename.lower()})
-    sender = settings.DEFAULT_FROM_EMAIL % sitename
+                'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
+    sender = DEFAULT_FROM_EMAIL % sitename
     send_mail(subject, message, sender, [inv.username])
     logging.info('Sent invitation %s', inv)
 
@@ -155,7 +155,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     The view uses commit_manually decorator in order to ensure the number of the
     user invitations is going to be updated only if the email has been successfully sent.
     
-    If the user isn't logged in, redirects to settings.LOGIN_URL.
+    If the user isn't logged in, redirects to settings.ASTAKOS_LOGIN_URL.
     
     **Arguments**
     
@@ -230,7 +230,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
     In case of POST updates the user informantion and redirects to ``next``
     url parameter if exists.
     
-    If the user isn't logged in, redirects to settings.LOGIN_URL.  
+    If the user isn't logged in, redirects to settings.ASTAKOS_LOGIN_URL.  
     
     **Arguments**
     
@@ -244,6 +244,12 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
     **Template:**
     
     im/profile.html or ``template_name`` keyword argument.
+    
+    **Settings:**
+    
+    The view expectes the following settings are defined:
+    
+    * LOGIN_URL: login uri
     """
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
@@ -274,7 +280,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
     if present, otherwise to the ``astakos.im.backends.InvitationBackend``
-    if settings.INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
+    if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
     (see backends);
     
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
@@ -304,7 +310,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
     try:
         if not backend:
             backend = get_backend(request)
-        for provider in settings.IM_MODULES:
+        for provider in IM_MODULES:
             extra_context['%s_form' % provider] = backend.get_signup_form(provider)
         if request.method == 'POST':
             provider = request.POST.get('provider')
@@ -326,7 +332,7 @@ def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.
                            context_instance=get_context(request, extra_context))
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
-        for provider in settings.IM_MODULES:
+        for provider in IM_MODULES:
             main = provider.capitalize() if provider == 'local' else 'ThirdParty'
             formclass = '%sUserCreationForm' % main
             extra_context['%s_form' % provider] = globals()[formclass]()
@@ -341,7 +347,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
     In case of GET request renders a form for providing the feedback information.
     In case of POST sends an email to support team.
     
-    If the user isn't logged in, redirects to settings.LOGIN_URL.  
+    If the user isn't logged in, redirects to settings.ASTAKOS_LOGIN_URL.  
     
     **Arguments**
     
@@ -358,6 +364,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
     
     **Settings:**
     
+    * LOGIN_URL: login uri
     * DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
     if request.method == 'GET':
@@ -371,7 +378,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
             sitename, sitedomain = get_current_site(request, use_https=request.is_secure())
             subject = _("Feedback from %s" % sitename)
             from_email = request.user.email
-            recipient_list = [settings.DEFAULT_CONTACT_EMAIL % sitename.lower()]
+            recipient_list = [DEFAULT_CONTACT_EMAIL % sitename.lower()]
             content = render_to_string(email_template_name, {
                         'message': form.cleaned_data['feedback_msg'],
                         'data': form.cleaned_data['feedback_data'],
@@ -395,7 +402,7 @@ def logout(request, template='registration/logged_out.html', extra_context={}):
     """
     auth_logout(request)
     response = HttpResponse()
-    response.delete_cookie(settings.COOKIE_NAME)
+    response.delete_cookie(COOKIE_NAME)
     next = request.GET.get('next')
     if next:
         response['Location'] = next

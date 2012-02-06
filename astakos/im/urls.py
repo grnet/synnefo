@@ -31,10 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 
 from astakos.im.forms import ExtendedPasswordResetForm
+from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, PROJECT_PATH
 
 urlpatterns = patterns('astakos.im.views',
     url(r'^$', 'index'),
@@ -53,10 +53,10 @@ urlpatterns += patterns('astakos.im.target',
 
 urlpatterns += patterns('',
     url(r'^static/(?P<path>.*)$', 'django.views.static.serve',
-                                {'document_root': settings.PROJECT_PATH + '/im/static'})
+                                {'document_root': PROJECT_PATH + '/im/static'})
 )
 
-if 'local' in settings.IM_MODULES:
+if 'local' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
         url(r'^local/?$', 'local.login')
     )
@@ -71,17 +71,17 @@ if 'local' in settings.IM_MODULES:
         url(r'^password/?$', 'password_change', {'post_change_redirect':'profile'})
     )
 
-if settings.INVITATIONS_ENABLED:
+if INVITATIONS_ENABLED:
     urlpatterns += patterns('astakos.im.views',
         url(r'^invite/?$', 'invite'),
     )
 
-if 'shibboleth' in settings.IM_MODULES:
+if 'shibboleth' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
         url(r'^login/shibboleth/?$', 'shibboleth.login')
     )
 
-if 'twitter' in settings.IM_MODULES:
+if 'twitter' in IM_MODULES:
     urlpatterns += patterns('astakos.im.target',
         url(r'^login/twitter/?$', 'twitter.login'),
         url(r'^login/twitter/authenticated/?$', 'twitter.authenticated')

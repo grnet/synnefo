@@ -40,7 +40,6 @@ from functools import wraps
 
 from datetime import tzinfo, timedelta
 from django.http import HttpResponse, urlencode
-from django.conf import settings
 from django.template import RequestContext
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
@@ -48,6 +47,7 @@ from django.contrib.auth import login, authenticate
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, Invitation
+from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, FORCE_PROFILE_UPDATE
 
 class UTC(tzinfo):
    def utcoffset(self, dt):
@@ -73,7 +73,7 @@ def get_or_create_user(email, realname='', first_name='', last_name='', affiliat
             'password':password,
             'affiliation':affiliation,
             'level':level,
-            'invitations':settings.INVITATIONS_PER_LEVEL[level],
+            'invitations':INVITATIONS_PER_LEVEL[level],
             'provider':provider,
             'realname':realname,
             'first_name':first_name,
@@ -141,7 +141,7 @@ def prepare_response(request, user, next='', renew=False):
         user.renew_token()
         user.save()
     
-    if settings.FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
+    if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
         params = ''
         if next:
             params = '?' + urlencode({'next': next})
@@ -155,9 +155,9 @@ def prepare_response(request, user, next='', renew=False):
     # set cookie
     expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
     cookie_value = quote(user.email + '|' + user.auth_token)
-    response.set_cookie(settings.COOKIE_NAME, value=cookie_value,
+    response.set_cookie(COOKIE_NAME, value=cookie_value,
                         expires=expire_fmt, path='/',
-                        domain = settings.COOKIE_DOMAIN)
+                        domain = COOKIE_DOMAIN)
     
     if not next:
         next = reverse('astakos.im.views.index')

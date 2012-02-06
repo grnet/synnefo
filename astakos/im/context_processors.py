@@ -31,10 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_MEDIA_URL
 
 def im_modules(request):
-    return {'im_modules': settings.IM_MODULES}
+    return {'im_modules': IM_MODULES}
 
 def next(request):
     return {'next' : request.GET.get('next', '')}
@@ -43,8 +43,8 @@ def code(request):
     return {'code' : request.GET.get('code', '')}
 
 def invitations(request):
-    return {'invitations_enabled' :settings.INVITATIONS_ENABLED}
+    return {'invitations_enabled' :INVITATIONS_ENABLED}
 
 def media(request):
-    return {'IM_MEDIA_URL' : getattr(settings, 'IM_MEDIA_URL', '/static/im/')}
+    return {'IM_MEDIA_URL' : IM_MEDIA_URL}
 

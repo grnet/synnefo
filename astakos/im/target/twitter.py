@@ -36,7 +36,6 @@
 import oauth2 as oauth
 import urlparse
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.contrib import messages
@@ -47,10 +46,11 @@ from astakos.im.views import render_response, requires_anonymous
 from astakos.im.forms import LocalUserCreationForm, ThirdPartyUserCreationForm
 from astakos.im.faults import BadRequest
 from astakos.im.backends import get_backend
+from astakos.im.settings import TWITTER_KEY, TWITTER_SECRET, INVITATIONS_ENABLED, IM_MODULES
 
 # It's probably a good idea to put your consumer's OAuth token and
 # OAuth secret into your project's settings. 
-consumer = oauth.Consumer(settings.TWITTER_KEY, settings.TWITTER_SECRET)
+consumer = oauth.Consumer(TWITTER_KEY, TWITTER_SECRET)
 client = oauth.Client(consumer)
 
 request_token_url = 'http://twitter.com/oauth/request_token'
@@ -150,7 +150,7 @@ def authenticated(request, backend=None, login_template='im/login.html', on_sign
             messages.add_message(request, messages.ERROR, message)
             prefix = 'Invited' if request.session['invitation_code'] else ''
             suffix  = 'UserCreationForm'
-            for provider in settings.IM_MODULES:
+            for provider in IM_MODULES:
                 main = provider.capitalize() if provider == 'local' else 'ThirdParty'
                 formclass = '%s%s%s' % (prefix, main, suffix)
                 extra_context['%s_form' % provider] = globals()[formclass]()
@@ -184,7 +184,7 @@ def create_user(request, form, backend=None, post_data={}, next = None, on_failu
     
     The user activation will be delegated to the backend specified by the ``backend`` keyword argument
     if present, otherwise to the ``astakos.im.backends.InvitationBackend``
-    if settings.INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
+    if settings.ASTAKOS_INVITATIONS_ENABLED is True or ``astakos.im.backends.SimpleBackend`` if not
     (see backends);
     
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
@@ -228,7 +228,7 @@ def create_user(request, form, backend=None, post_data={}, next = None, on_failu
             messages.add_message(request, messages.ERROR, form.errors)
     except (Invitation.DoesNotExist, ValueError), e:
         messages.add_message(request, messages.ERROR, e)
-    for provider in settings.IM_MODULES:
+    for provider in IM_MODULES:
         extra_context['%s_form' % provider] = backend.get_signup_form(provider)
     return render_response(on_failure,
                            form = LocalUserCreationForm(),

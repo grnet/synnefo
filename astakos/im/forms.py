@@ -34,7 +34,6 @@
 from django import forms
 from django.utils.translation import ugettext as _
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordResetForm
-from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth.tokens import default_token_generator
 from django.template import Context, loader
@@ -42,6 +41,7 @@ from django.utils.http import int_to_base36
 
 from astakos.im.models import AstakosUser
 from astakos.im.util import get_current_site
+from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL
 
 import logging
 
@@ -115,7 +115,7 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         user = super(InvitedLocalUserCreationForm, self).save(commit=False)
         level = user.invitation.inviter.level + 1
         user.level = level
-        user.invitations = settings.INVITATIONS_PER_LEVEL[level]
+        user.invitations = INVITATIONS_PER_LEVEL[level]
         if commit:
             user.save()
         return user
@@ -190,8 +190,8 @@ class FeedbackForm(forms.Form):
     """
     feedback_msg = forms.CharField(widget=forms.Textarea(),
                                 label=u'Message', required=False)
-    feedback_data = forms.CharField(widget=forms.Textarea(),
-                                label=u'Data', required=False)
+    feedback_data = forms.CharField(widget=forms.HiddenInput(),
+                                label='', required=False)
 
 class SendInvitationForm(forms.Form):
     """
@@ -227,6 +227,6 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'token': token_generator.make_token(user),
                 'protocol': use_https and 'https' or 'http',
             }
-            from_email = settings.DEFAULT_FROM_EMAIL % site_name
+            from_email = DEFAULT_FROM_EMAIL % site_name
             send_mail(_("Password reset on %s") % site_name,
                 t.render(Context(c)), from_email, [user.email])

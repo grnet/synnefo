@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail
@@ -47,6 +46,7 @@ from urllib import quote
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.forms import *
 from astakos.im.util import get_invitation
+from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
 
 import socket
 import logging
@@ -62,7 +62,7 @@ def get_backend(request):
     is raised.
     """
     module = 'astakos.im.backends'
-    prefix = 'Invitations' if settings.INVITATIONS_ENABLED else 'Simple'
+    prefix = 'Invitations' if INVITATIONS_ENABLED else 'Simple'
     backend_class_name = '%sBackend' %prefix
     try:
         mod = import_module(module)
@@ -248,7 +248,7 @@ def _send_verification(request, user, template_name):
             'url': url,
             'baseurl': baseurl,
             'site_name': site.name,
-            'support': settings.DEFAULT_CONTACT_EMAIL % site.name.lower()})
-    sender = settings.DEFAULT_FROM_EMAIL % site.name
+            'support': DEFAULT_CONTACT_EMAIL % site.name.lower()})
+    sender = DEFAULT_FROM_EMAIL % site.name
     send_mail('%s account activation' % site.name, message, sender, [user.email])
     logging.info('Sent activation %s', user)

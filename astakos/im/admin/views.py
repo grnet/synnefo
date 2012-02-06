@@ -39,7 +39,6 @@ from functools import wraps
 from math import ceil
 from smtplib import SMTPException
 
-from django.conf import settings
 from django.core.mail import send_mail
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
@@ -56,7 +55,7 @@ from astakos.im.forms import *
 from astakos.im.views import render_response, index
 from astakos.im.admin.forms import AdminProfileForm
 from astakos.im.admin.forms import AdminUserCreationForm
-
+from astakos.im.settings import BYPASS_ADMIN_AUTH, ADMIN_PAGE_LIMIT, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
 def requires_admin(func):
     """
     Decorator checkes whether the request.user is a superuser and if not
@@ -64,7 +63,7 @@ def requires_admin(func):
     """
     @wraps(func)
     def wrapper(request, *args):
-        if not settings.BYPASS_ADMIN_AUTH:
+        if not BYPASS_ADMIN_AUTH:
             if request.user.is_anonymous():
                 next = urlencode({'next': request.build_absolute_uri()})
                 login_uri = reverse(index) + '?' + next
@@ -160,10 +159,10 @@ def users_list(request, template_name='users_list.html', extra_context={}):
         page = int(request.GET.get('page', 1))
     except ValueError:
         page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
+    offset = max(0, page - 1) * ADMIN_PAGE_LIMIT
+    limit = offset + ADMIN_PAGE_LIMIT
     
-    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
+    npages = int(ceil(1.0 * users.count() / ADMIN_PAGE_LIMIT))
     prev = page - 1 if page > 1 else None
     next = page + 1 if page < npages else None
     
@@ -285,10 +284,10 @@ def pending_users(request, template_name='pending_users.html', extra_context={})
         page = int(request.GET.get('page', 1))
     except ValueError:
         page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
+    offset = max(0, page - 1) * ADMIN_PAGE_LIMIT
+    limit = offset + ADMIN_PAGE_LIMIT
     
-    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
+    npages = int(ceil(1.0 * users.count() / ADMIN_PAGE_LIMIT))
     prev = page - 1 if page > 1 else None
     next = page + 1 if page < npages else None
     kwargs = {'users':users[offset:limit],
@@ -309,8 +308,8 @@ def _send_greeting(request, user, template_name):
                 'url': sitedomain,
                 'baseurl': baseurl,
                 'site_name': sitename,
-                'support': settings.DEFAULT_CONTACT_EMAIL % sitename.lower()})
-    sender = settings.DEFAULT_FROM_EMAIL % sitename
+                'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
+    sender = DEFAULT_FROM_EMAIL % sitename
     send_mail(subject, message, sender, [user.email])
     logging.info('Sent greeting %s', user)
 
@@ -369,10 +368,10 @@ def users_activate(request, user_id, template_name='pending_users.html', extra_c
         page = int(request.POST.get('page', 1))
     except ValueError:
         page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
+    offset = max(0, page - 1) * ADMIN_PAGE_LIMIT
+    limit = offset + ADMIN_PAGE_LIMIT
     
-    npages = int(ceil(1.0 * users.count() / settings.ADMIN_PAGE_LIMIT))
+    npages = int(ceil(1.0 * users.count() / ADMIN_PAGE_LIMIT))
     prev = page - 1 if page > 1 else None
     next = page + 1 if page < npages else None
     kwargs = {'users':users[offset:limit],
@@ -427,10 +426,10 @@ def invitations_list(request, template_name='invitations_list.html', extra_conte
         page = int(request.GET.get('page', 1))
     except ValueError:
         page = 1
-    offset = max(0, page - 1) * settings.ADMIN_PAGE_LIMIT
-    limit = offset + settings.ADMIN_PAGE_LIMIT
+    offset = max(0, page - 1) * ADMIN_PAGE_LIMIT
+    limit = offset + ADMIN_PAGE_LIMIT
     
-    npages = int(ceil(1.0 * invitations.count() / settings.ADMIN_PAGE_LIMIT))
+    npages = int(ceil(1.0 * invitations.count() / ADMIN_PAGE_LIMIT))
     prev = page - 1 if page > 1 else None
     next = page + 1 if page < npages else None
     kwargs = {'invitations':invitations[offset:limit],

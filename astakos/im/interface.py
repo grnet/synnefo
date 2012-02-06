@@ -31,18 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+from astakos.im.settings import BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH, BACKEND_DB_CONNECTION, BACKEND_DB_MODULE, BACKEND_QUOTA, BACKEND_VERSIONING
 
 from pithos.backends import connect_backend
 
-
 def get_backend():
-    backend = connect_backend(db_module=settings.BACKEND_DB_MODULE,
-                              db_connection=settings.BACKEND_DB_CONNECTION,
-                              block_module=settings.BACKEND_BLOCK_MODULE,
-                              block_path=settings.BACKEND_BLOCK_PATH)
-    backend.default_policy['quota'] = settings.BACKEND_QUOTA
-    backend.default_policy['versioning'] = settings.BACKEND_VERSIONING
+    backend = connect_backend(db_module=BACKEND_DB_MODULE,
+                              db_connection=BACKEND_DB_CONNECTION,
+                              block_module=BACKEND_BLOCK_MODULE,
+                              block_path=BACKEND_BLOCK_PATH)
+    backend.default_policy['quota'] = BACKEND_QUOTA
+    backend.default_policy['versioning'] = BACKEND_VERSIONING
     return backend
 
 def get_quota(user):

@@ -38,11 +38,11 @@ from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
 
-from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User, UserManager
 
 from astakos.im.interface import get_quota, set_quota
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, AUTH_TOKEN_DURATION
 
 class AstakosUser(User):
     """
@@ -55,9 +55,9 @@ class AstakosUser(User):
     provider = models.CharField('Provider', max_length=255, blank=True)
     
     #for invitations
-    user_level = settings.DEFAULT_USER_LEVEL
+    user_level = DEFAULT_USER_LEVEL
     level = models.IntegerField('Inviter level', default=user_level)
-    invitations = models.IntegerField('Invitations left', default=settings.INVITATIONS_PER_LEVEL[user_level])
+    invitations = models.IntegerField('Invitations left', default=INVITATIONS_PER_LEVEL[user_level])
     
     auth_token = models.CharField('Authentication Token', max_length=32,
                                   null=True, blank=True)
@@ -124,7 +124,7 @@ class AstakosUser(User):
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
-                                  timedelta(hours=settings.AUTH_TOKEN_DURATION)
+                                  timedelta(hours=AUTH_TOKEN_DURATION)
     
     def __unicode__(self):
         return self.username

@@ -1831,7 +1831,7 @@ class TestGreek(BaseTestCase):
         self.client.create_container('φάκελος')
         o = self.upload_random_data('φάκελος', 'ο1')
         self.client.share_object('φάκελος', 'ο1', ['%s:σεφς' % get_user()])
-        chef = Pithos_Client(get_server(),
+        chef = Pithos_Client(get_url(),
                             '0009',
                             'διογένης',
                             get_api())
@@ -1892,7 +1892,7 @@ class TestPermissions(BaseTestCase):
     
     def assert_read(self, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account, get_api()) 
             if account in authorized or any:
                 self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o', account=get_user())
@@ -1903,7 +1903,7 @@ class TestPermissions(BaseTestCase):
         #check inheritance
         o = self.upload_random_data('c', 'o/also-shared')
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account, get_api()) 
             if account in authorized or any:
                 self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o/also-shared', account=get_user())
@@ -1913,7 +1913,7 @@ class TestPermissions(BaseTestCase):
     
     def assert_write(self, o_data, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account, get_api()) 
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
@@ -1937,7 +1937,7 @@ class TestPermissions(BaseTestCase):
         o = self.upload_random_data('c', 'o/also-shared')
         o_data = o['data']
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account, get_api()) 
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
@@ -2004,7 +2004,7 @@ class TestPublish(BaseTestCase):
         meta = self.client.retrieve_object_metadata('c', 'o')
         self.assertTrue('x-object-public' in meta)
         url = meta['x-object-public']
-        public_client = Pithos_Client(get_server(), get_auth(), get_user(), api='')
+        public_client = Pithos_Client(get_url(), get_auth(), get_user(), api='')
         data = public_client.get(url)[2]
         self.assertEqual(o_data, data)
 

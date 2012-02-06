@@ -35,6 +35,7 @@ import json
 
 from string import punctuation
 from StringIO import StringIO
+from urllib import unquote
 
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseNotFound
@@ -99,10 +100,10 @@ def _get_image_headers(request):
     for key, val in request.META.items():
         if key.startswith(META_PROPERTY_PREFIX):
             name = normalize(key[META_PROPERTY_PREFIX_LEN:])
-            headers['properties'][name] = val
+            headers['properties'][unquote(name)] = unquote(val)
         elif key.startswith(META_PREFIX):
             name = normalize(key[META_PREFIX_LEN:])
-            headers[name] = val
+            headers[unquote(name)] = unquote(val)
     
     is_public = headers.get('is_public', None)
     if is_public is not None:

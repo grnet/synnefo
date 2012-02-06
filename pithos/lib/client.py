@@ -115,7 +115,7 @@ class Client(object):
         else:
             raise Exception('Unknown URL scheme')
         
-        full_path = _prepare_path(p.path + path, params)
+        full_path = _prepare_path(p.path + path, params=params)
         
         conn.putrequest(method, full_path)
         conn.putheader('x-auth-token', self.token)

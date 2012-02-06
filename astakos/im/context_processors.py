@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_MEDIA_URL
+from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL
 
 def im_modules(request):
     return {'im_modules': IM_MODULES}
@@ -46,5 +46,5 @@ def invitations(request):
     return {'invitations_enabled' :INVITATIONS_ENABLED}
 
 def media(request):
-    return {'IM_MEDIA_URL' : IM_MEDIA_URL}
+    return {'IM_STATIC_URL' : IM_STATIC_URL}
 

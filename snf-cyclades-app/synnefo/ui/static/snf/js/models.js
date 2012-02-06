@@ -1564,10 +1564,24 @@
             this.api_call(this.path + "/" + id, this.read_method, {_options:{async:true, skip_api_error:true}}, undefined, 
             _.bind(function() {
                 if (!this.get(id)) {
-                    this.add({id:id, name:"Unknown image", size:-1, 
-                              progress:100, status:"DELETED"});
+		            if (this.fallback_service) {
+                        // if current service has fallback_service attribute set
+                        // use this service to retrieve the missing image model
+                        var tmpservice = new this.fallback_service();
+                        tmpservice.update_unknown_id(id, _.bind(function(img){
+                            img.attributes.status = "DELETED";
+                            this.add(img.attributes);
+                            callback(this.get(id));
+                        }, this));
+                    } else {
+                        // else add a dummy DELETED state image entry
+                        this.add({id:id, name:"Unknown image", size:-1, 
+                                  progress:100, status:"DELETED"});
+                        callback(this.get(id));
+                    }   
+                } else {
+                    callback(this.get(id));
                 }
-                callback(this.get(id));
             }, this), _.bind(function(image, msg, xhr) {
                 var img_data = this._read_image_from_request(image, msg, xhr);
                 this.add(img_data);

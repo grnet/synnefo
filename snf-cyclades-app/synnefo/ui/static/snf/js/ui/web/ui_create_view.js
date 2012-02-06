@@ -407,8 +407,12 @@
         },
 
         show: function() {
-            views.CreateImageSelectView.__super__.show.apply(this, arguments);
+            // reset previous selection and state of the view
+            this.selected_image = false;
             this.image_details.hide();
+            this.parent.$(".create-controls").show();
+
+            views.CreateImageSelectView.__super__.show.apply(this, arguments);
         },
 
         add_image: function(img) {

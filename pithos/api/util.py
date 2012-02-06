@@ -54,6 +54,10 @@ from pithos.api.faults import (Fault, NotModified, BadRequest, Unauthorized, For
                                 Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
                                 RangeNotSatisfiable, InternalServerError, NotImplemented)
 from pithos.api.short_url import encode_url
+from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
+                                    BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
+                                    BACKEND_QUEUE_MODULE, BACKEND_QUEUE_CONNECTION,
+                                    BACKEND_QUOTA, BACKEND_VERSIONING)
 from pithos.backends import connect_backend
 from pithos.backends.base import NotAllowedError, QuotaError
 
@@ -768,14 +772,14 @@ def simple_list_response(request, l):
         return json.dumps(l)
 
 def get_backend():
-    backend = connect_backend(db_module=settings.BACKEND_DB_MODULE,
-                              db_connection=settings.BACKEND_DB_CONNECTION,
-                              block_module=settings.BACKEND_BLOCK_MODULE,
-                              block_path=settings.BACKEND_BLOCK_PATH,
-                              queue_module=settings.BACKEND_QUEUE_MODULE,
-                              queue_connection=settings.BACKEND_QUEUE_CONNECTION)
-    backend.default_policy['quota'] = settings.BACKEND_QUOTA
-    backend.default_policy['versioning'] = settings.BACKEND_VERSIONING
+    backend = connect_backend(db_module=BACKEND_DB_MODULE,
+                              db_connection=BACKEND_DB_CONNECTION,
+                              block_module=BACKEND_BLOCK_MODULE,
+                              block_path=BACKEND_BLOCK_PATH,
+                              queue_module=BACKEND_QUEUE_MODULE,
+                              queue_connection=BACKEND_QUEUE_CONNECTION)
+    backend.default_policy['quota'] = BACKEND_QUOTA
+    backend.default_policy['versioning'] = BACKEND_VERSIONING
     return backend
 
 def update_request_headers(request):
@@ -818,12 +822,9 @@ def update_response_headers(request, response):
             k.startswith('X-Object-') or k.startswith('Content-')):
             del(response[k])
             response[quote(k)] = quote(v, safe='/=,:@; ')
-    
-    if settings.TEST:
-        response['Date'] = format_date_time(time())
 
 def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and (settings.DEBUG or settings.TEST):
+    if isinstance(fault, InternalServerError) and settings.DEBUG:
         fault.details = format_exc(fault)
     
     request.serialization = 'text'

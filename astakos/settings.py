@@ -83,23 +83,6 @@ TEMPLATE_DIRS = (
     join(PROJECT_PATH, 'im/admin/templates/')
 )
 
-conf = join(PROJECT_PATH, 'settings.local')
-
-if exists(conf):
-    execfile(conf)
-elif exists('/etc/astakos/settings.local'):
-    execfile('/etc/astakos/settings.local')
-
-INSTALLED_APPS = (
-    'astakos.im',
-    'south',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.messages',
-    'django.contrib.sites',
-    'django.contrib.sessions'
-)
-
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.messages.context_processors.messages',
     'django.contrib.auth.context_processors.auth',
@@ -128,3 +111,19 @@ USE_X_FORWARDED_HOST = False
 
 # The URL where requests are redirected for login, especially when using the login_required() decorator.
 LOGIN_URL = '/im'
+
+conf = join(PROJECT_PATH, 'settings.local')
+if exists(conf):
+    execfile(conf)
+elif exists('/etc/astakos/settings.local'):
+    execfile('/etc/astakos/settings.local')
+
+INSTALLED_APPS = (
+    'astakos.im',
+    'south',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.messages',
+    'django.contrib.sites',
+    'django.contrib.sessions'
+)

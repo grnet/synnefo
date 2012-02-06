@@ -1,9 +1,9 @@
-.. _snf-cyclades-ganeti-tools:
+.. _snf-cyclades-gtools:
 
-Component snf-cyclades-ganeti-tools
+Component snf-cyclades-gtools
 ===================================
 
-synnefo component :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>` is a set of
+synnefo component :ref:`snf-cyclades-gtools <snf-cyclades-gtools>` is a set of
 tools that need to be installed on all Ganeti nodes:
 
     * :ref:`event daemon <eventd>`
@@ -15,7 +15,7 @@ tools that need to be installed on all Ganeti nodes:
 Event daemon
 ------------
 
-synnefo component :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>` includes
+synnefo component :ref:`snf-cyclades-gtools <snf-cyclades-gtools>` includes
 ``snf-ganeti-eventd``, the synnefo-specific Ganeti event daemon.
 It monitors the Ganeti job queue and produces notifications to the rest of
 the synnefo infrastructure over AMQP whenever a Ganeti job makes progress.
@@ -27,7 +27,7 @@ the synnefo infrastructure over AMQP whenever a Ganeti job makes progress.
 Hook
 ----
 
-synnefo component :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>` defines
+synnefo component :ref:`snf-cyclades-gtools <snf-cyclades-gtools>` defines
 a synnefo-specific hook, running inside Ganeti.
 
 .. _progress_monitor:
@@ -42,10 +42,10 @@ A small Python tool to monitor the progress of image deployment.
 Package source
 --------------
 
-The source for component :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>`
-lives under ``snf-cyclades-ganeti-tools/`` at ``git://code.grnet.gr/git/synnefo``,
+The source for component :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
+lives under ``snf-cyclades-gtools/`` at ``git://code.grnet.gr/git/synnefo``,
 also accessible at
-`code.grnet.gr <https://code.grnet.gr/projects/synnefo/repository/revisions/master/show/snf-cyclades-ganeti-tools>`_.
+`code.grnet.gr <https://code.grnet.gr/projects/synnefo/repository/revisions/master/show/snf-cyclades-gtools>`_.
 
 Package installation
 --------------------
@@ -53,13 +53,13 @@ Package installation
 .. todo:: kpap: verify instructions for installation from source.
 
 Use ``pip`` to install the latest version of the package from source,
-or request a specific version as ``snf-cyclades-ganeti-tools==x.y.z``.
+or request a specific version as ``snf-cyclades-gtools==x.y.z``.
 
 .. code-block:: console
 
-   pip install snf-cyclades-ganeti-tools -f https://docs.dev.grnet.gr/pypi
+   pip install snf-cyclades-gtools -f https://docs.dev.grnet.gr/pypi
 
-On Debian Squeeze, install the ``snf-cyclades-ganeti-tools`` Debian package.
+On Debian Squeeze, install the ``snf-cyclades-gtools`` Debian package.
 
 Package configuration
 ---------------------
@@ -97,9 +97,9 @@ on :ref:`GANETI-MASTER <GANETI_MASTER>`, e.g.:
 Package settings
 ----------------
 
-Component :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>` requires the following
+Component :ref:`snf-cyclades-gtools <snf-cyclades-gtools>` requires the following
 settings, as managed by :ref:`snf-common <snf-common>`:
 
-.. literalinclude:: ../../../snf-cyclades-ganeti-tools/synnefo/settings.py
+.. literalinclude:: ../../../snf-cyclades-gtools/synnefo/settings.py
 
 .. todo:: make sure the settings are included properly.

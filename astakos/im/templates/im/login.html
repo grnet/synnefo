@@ -1,4 +1,4 @@
-{% extends 'base_two_cols.html'%}
+{% extends 'im/base_two_cols.html'%}
 
 {% block signup_class %}hidden{% endblock %}
 {% block page.title %}
@@ -9,7 +9,7 @@ Login
 <div class="section">
     <img class="pic" src="{{ IM_MEDIA_URL }}images/pictures/login_pic.png" />
 </div>
-{% include "services_description.html" %}
+{% include "im/services_description.html" %}
 {% endblock body %}
     
 {% block body.right %}
@@ -17,7 +17,7 @@ Login
         <form action="{% url astakos.im.target.local.login %}" method="post"
             class="login innerlabels">{% csrf_token %}
             <h2 class="formheader"><span>LOGIN</span></h2>
-            {% include "form_render.html" %}
+            {% include "im/form_render.html" %}
             <input type="hidden" name="next" value="{{ next }}">
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SUBMIT" />

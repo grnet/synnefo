@@ -1,4 +1,4 @@
-{% extends 'base_two_cols.html' %}
+{% extends 'im/base_two_cols.html' %}
 
 {% block signin_class %}hidden{% endblock %}
 
@@ -10,7 +10,7 @@
 <div class="section">
     <img class="pic" src="{{ IM_MEDIA_URL }}images/pictures/signup_pic.png" />
 </div>
-{% include "services_description.html" %}
+{% include "im/services_description.html" %}
 {% endblock body %}
 
 {% block body.right %}
@@ -23,7 +23,7 @@
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value="local">
             {% with local_form as form %}
-            {% include "form_render.html" %}
+            {% include "im/form_render.html" %}
             {% endwith %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SUBMIT" />
@@ -40,7 +40,7 @@
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value="twitter">
             {% with twitter_form as form %}
-            {% include "form_render.html" %}
+            {% include "im/form_render.html" %}
             {% endwith %}
             <div class="form-row submit">
                 <input type="submit" class="submit altcol" value="SUBMIT" />

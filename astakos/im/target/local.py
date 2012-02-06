@@ -44,7 +44,7 @@ from astakos.im.models import AstakosUser
 from astakos.im.forms import LoginForm
 
 @requires_anonymous
-def login(request, on_failure='login.html'):
+def login(request, on_failure='im/login.html'):
     """
     on_failure: the template name to render on login failure
     """

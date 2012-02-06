@@ -85,7 +85,7 @@ def requires_anonymous(func):
         return func(request, *args)
     return wrapper
 
-def index(request, login_template_name='login.html', profile_template_name='profile.html', extra_context={}):
+def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context={}):
     """
     If there is logged on user renders the profile page otherwise renders login page.
     
@@ -93,18 +93,18 @@ def index(request, login_template_name='login.html', profile_template_name='prof
     
     ``login_template_name``
         A custom login template to use. This is optional; if not specified,
-        this will default to ``login.html``.
+        this will default to ``im/login.html``.
     
     ``profile_template_name``
         A custom profile template to use. This is optional; if not specified,
-        this will default to ``profile.html``.
+        this will default to ``im/profile.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    profile.html or login.html or ``template_name`` keyword argument.
+    im/profile.html or im/login.html or ``template_name`` keyword argument.
     
     """
     template_name = login_template_name
@@ -132,7 +132,7 @@ def _send_invitation(request, baseurl, inv):
     subject = _('Invitation to %s' % sitename)
     baseurl = request.build_absolute_uri('/').rstrip('/')
     url = '%s%s?code=%d' % (baseurl, reverse('astakos.im.views.signup'), inv.code)
-    message = render_to_string('invitation.txt', {
+    message = render_to_string('im/invitation.txt', {
                 'invitation': inv,
                 'url': url,
                 'baseurl': baseurl,
@@ -144,7 +144,7 @@ def _send_invitation(request, baseurl, inv):
 
 @login_required
 @transaction.commit_manually
-def invite(request, template_name='invitations.html', extra_context={}):
+def invite(request, template_name='im/invitations.html', extra_context={}):
     """
     Allows a user to invite somebody else.
     
@@ -161,14 +161,14 @@ def invite(request, template_name='invitations.html', extra_context={}):
     
     ``template_name``
         A custom template to use. This is optional; if not specified,
-        this will default to ``invitations.html``.
+        this will default to ``im/invitations.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    invitations.html or ``template_name`` keyword argument.
+    im/invitations.html or ``template_name`` keyword argument.
     
     **Settings:**
     
@@ -222,7 +222,7 @@ def invite(request, template_name='invitations.html', extra_context={}):
                            context_instance = context)
 
 @login_required
-def edit_profile(request, template_name='profile.html', extra_context={}):
+def edit_profile(request, template_name='im/profile.html', extra_context={}):
     """
     Allows a user to edit his/her profile.
     
@@ -236,14 +236,14 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
     
     ``template_name``
         A custom template to use. This is optional; if not specified,
-        this will default to ``profile.html``.
+        this will default to ``im/profile.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    profile.html or ``template_name`` keyword argument.
+    im/profile.html or ``template_name`` keyword argument.
     """
     form = ProfileForm(instance=request.user)
     extra_context['next'] = request.GET.get('next')
@@ -265,7 +265,7 @@ def edit_profile(request, template_name='profile.html', extra_context={}):
                                                           extra_context,
                                                           user=request.user))
 
-def signup(request, on_failure='signup.html', on_success='signup_complete.html', extra_context={}, backend=None):
+def signup(request, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}, backend=None):
     """
     Allows a user to create a local account.
     
@@ -286,20 +286,20 @@ def signup(request, on_failure='signup.html', on_success='signup_complete.html',
     
     ``on_failure``
         A custom template to render in case of failure. This is optional;
-        if not specified, this will default to ``signup.html``.
+        if not specified, this will default to ``im/signup.html``.
     
     
     ``on_success``
         A custom template to render in case of success. This is optional;
-        if not specified, this will default to ``signup_complete.html``.
+        if not specified, this will default to ``im/signup_complete.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    signup.html or ``on_failure`` keyword argument.
-    signup_complete.html or ``on_success`` keyword argument. 
+    im/signup.html or ``on_failure`` keyword argument.
+    im/signup_complete.html or ``on_success`` keyword argument. 
     """
     try:
         if not backend:
@@ -334,7 +334,7 @@ def signup(request, on_failure='signup.html', on_success='signup_complete.html',
                            context_instance=get_context(request, extra_context))
 
 @login_required
-def send_feedback(request, template_name='feedback.html', email_template_name='feedback_mail.txt', extra_context={}):
+def send_feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context={}):
     """
     Allows a user to send feedback.
     
@@ -347,14 +347,14 @@ def send_feedback(request, template_name='feedback.html', email_template_name='f
     
     ``template_name``
         A custom template to use. This is optional; if not specified,
-        this will default to ``feedback.html``.
+        this will default to ``im/feedback.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    signup.html or ``template_name`` keyword argument.
+    im/signup.html or ``template_name`` keyword argument.
     
     **Settings:**
     

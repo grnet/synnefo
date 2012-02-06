@@ -85,7 +85,7 @@ def login(request, extra_context={}):
     return response
 
 @requires_anonymous
-def authenticated(request, backend=None, login_template='login.html', on_signup_failure='signup.html', on_signup_success='signup_complete.html', extra_context={}):
+def authenticated(request, backend=None, login_template='im/login.html', on_signup_failure='im/signup.html', on_signup_success='im/signup_complete.html', extra_context={}):
     # Step 1. Use the request token in the session to build a new client.
     data = request.session.get('Twitter-Request-Token')
     if not data:
@@ -178,7 +178,7 @@ def reserved_screen_name(screen_name):
     except AstakosUser.DoesNotExist, e:
         return False
 
-def create_user(request, form, backend=None, post_data={}, next = None, on_failure='signup.html', on_success='signup_complete.html', extra_context={}): 
+def create_user(request, form, backend=None, post_data={}, next = None, on_failure='im/signup.html', on_success='im/signup_complete.html', extra_context={}): 
     """
     Create a user.
     
@@ -188,27 +188,27 @@ def create_user(request, form, backend=None, post_data={}, next = None, on_failu
     (see backends);
     
     Upon successful user creation if ``next`` url parameter is present the user is redirected there
-    otherwise renders the ``on_success`` template (if exists) or signup_complete.html.
+    otherwise renders the ``on_success`` template (if exists) or im/signup_complete.html.
     
-    On unsuccessful creation, renders the ``on_failure`` template (if exists) or signup.html with an error message.
+    On unsuccessful creation, renders the ``on_failure`` template (if exists) or im/signup.html with an error message.
     
     **Arguments**
     
     ``on_failure``
         A custom template to render in case of failure. This is optional;
-        if not specified, this will default to ``signup.html``.
+        if not specified, this will default to ``im/signup.html``.
     
     ``on_success``
         A custom template to render in case of success. This is optional;
-        if not specified, this will default to ``signup_complete.html``.
+        if not specified, this will default to ``im/signup_complete.html``.
     
     ``extra_context``
         An dictionary of variables to add to the template context.
     
     **Template:**
     
-    signup.html or ``on_failure`` keyword argument.
-    signup_complete.html or ``on_success`` keyword argument.
+    im/signup.html or ``on_failure`` keyword argument.
+    im/signup_complete.html or ``on_success`` keyword argument.
     """
     try:
         if not backend:

@@ -197,7 +197,7 @@ class SimpleBackend(object):
         return globals()[formclass](initial_data)
     
     @transaction.commit_manually
-    def signup(self, form, email_template_name='activation_email.txt'):
+    def signup(self, form, email_template_name='im/activation_email.txt'):
         """
         Creates an inactive user account and sends a verification email.
         
@@ -209,10 +209,10 @@ class SimpleBackend(object):
         ``email_template_name``
             A custom template for the verification email body to use. This is
             optional; if not specified, this will default to
-            ``activation_email.txt``.
+            ``im/activation_email.txt``.
         
         ** Templates **
-            activation_email.txt or ``email_template_name`` keyword argument
+            im/activation_email.txt or ``email_template_name`` keyword argument
         
         ** Settings **
         

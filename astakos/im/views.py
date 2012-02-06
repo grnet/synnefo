@@ -155,7 +155,7 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     The view uses commit_manually decorator in order to ensure the number of the
     user invitations is going to be updated only if the email has been successfully sent.
     
-    If the user isn't logged in, redirects to settings.ASTAKOS_LOGIN_URL.
+    If the user isn't logged in, redirects to settings.LOGIN_URL.
     
     **Arguments**
     
@@ -175,8 +175,8 @@ def invite(request, template_name='im/invitations.html', extra_context={}):
     The view expectes the following settings are defined:
     
     * LOGIN_URL: login uri
-    * DEFAULT_CONTACT_EMAIL: service support email
-    * DEFAULT_FROM_EMAIL: from email
+    * ASTAKOS_DEFAULT_CONTACT_EMAIL: service support email
+    * ASTAKOS_DEFAULT_FROM_EMAIL: from email
     """
     status = None
     message = None
@@ -230,7 +230,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context={}):
     In case of POST updates the user informantion and redirects to ``next``
     url parameter if exists.
     
-    If the user isn't logged in, redirects to settings.ASTAKOS_LOGIN_URL.  
+    If the user isn't logged in, redirects to settings.LOGIN_URL.
     
     **Arguments**
     
@@ -347,7 +347,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
     In case of GET request renders a form for providing the feedback information.
     In case of POST sends an email to support team.
     
-    If the user isn't logged in, redirects to settings.ASTAKOS_LOGIN_URL.  
+    If the user isn't logged in, redirects to settings.LOGIN_URL.
     
     **Arguments**
     
@@ -365,7 +365,7 @@ def send_feedback(request, template_name='im/feedback.html', email_template_name
     **Settings:**
     
     * LOGIN_URL: login uri
-    * DEFAULT_CONTACT_EMAIL: List of feedback recipients
+    * ASTAKOS_DEFAULT_CONTACT_EMAIL: List of feedback recipients
     """
     if request.method == 'GET':
         form = FeedbackForm()

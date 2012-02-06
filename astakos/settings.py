@@ -125,3 +125,6 @@ USE_X_FORWARDED_HOST = False
 
 # Set umask (needed for gunicorn setup).
 #umask(0077)
+
+# The URL where requests are redirected for login, especially when using the login_required() decorator.
+LOGIN_URL = '/im'

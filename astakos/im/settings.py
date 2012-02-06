@@ -40,9 +40,6 @@ FORCE_PROFILE_UPDATE = getattr(settings, 'ASTAKOS_FORCE_PROFILE_UPDATE', True)
 #Enable invitations
 INVITATIONS_ENABLED = getattr(settings, 'ASTAKOS_INVITATIONS_ENABLED', True)
 
-# The URL where requests are redirected for login, especially when using the login_required() decorator.
-LOGIN_URL = getattr(settings, 'ASTAKOS_LOGIN_URL', '/im')
-
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
 COOKIE_DOMAIN = getattr(settings, 'ASTAKOS_COOKIE_DOMAIN', None)
 

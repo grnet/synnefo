@@ -2,51 +2,59 @@
 
 {% load formatters %}
 
-{% block body %}
-<div class="container">
-  <h3>You have {{ inviter.invitations }} invitation{{ inviter.invitations|pluralize }} left.</h3>
-  
-  <table class="zebra-striped id-sorted">
-    <thead>
-      <tr>
-        <th>Email</th>
-        <th>Real Name</th>
-        <th>Consumed</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for inv in sent %}
-      <tr>
-        <td>{{ inv.email }}</td>
-        <td>{{ inv.realname }}</td>
-        <td>{{ inv.is_consumed }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% block page.body %}
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="section">
+        <h2>You have <em>{{ inviter.invitations }}</em> invitation{{ inviter.invitations|pluralize }} left.</h2>
+        {% if sent|length %}
+          <table class="zebra-striped id-sorted">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Real Name</th>
+                <th>Consumed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inv in sent %}
+              <tr class="{% if inv.is_consumed %}consumed{% endif %}">
+                <td>{{ inv.email }}</td>
+                <td>{{ inv.realname }}</td>
+                <td class="consumed">{% if inv.is_consumed %}Yes{% else %}No{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p>No invitations sent</p>
+        {% endif %}
+    </div>
+</div>
 
-  {% if inviter.invitations %}
-  <br />
-  <h4>Invite someone else:</h4>
-  <form action="{% url astakos.im.views.invite %}" method="post">{% csrf_token %}
-    <div class="clearfix">
+<div class="rightcol">
+ {% if inviter.invitations %}
+  <form action="{% url astakos.im.views.invite %}" method="post"
+    class="innerlabels">{% csrf_token %}
+    <h2>INVITE SOMEONE ELSE</h2>
+    <div class="form-row">
       <label for="user-realname">Name</label>
       <div class="input">
-        <input type="text" class="span4" id="user-realname" name="realname" />
+        <input type="text" class="text" id="user-realname" name="realname" />
       </div>
     </div>
 
-    <div class="clearfix">
+    <div class="form-row">
       <label for="user-uniq">Email</label>
       <div class="input">
-        <input type="text" class="span4" id="user-uniq" name="uniq" />
+        <input type="text" class="text" id="user-uniq" name="uniq" />
       </div>
     </div>
 
-    <div class="actions">
-      <button type="reset" class="btn">Reset</button>
-      <button type="submit" class="btn primary">Invite</button>
+    <div class="form-row submit">
+        <input type="submit" class="submit altcol" value="SEND" />
     </div>
   </form>
   {% endif %}
-{% endblock body %}
+</div>
+{% endblock %}
+

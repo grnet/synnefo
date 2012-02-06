@@ -37,25 +37,24 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-from astakos.im.faults import BadRequest, Unauthorized, ServiceUnavailable
+from astakos.im.faults import BadRequest, Unauthorized, InternalServerError
 from astakos.im.models import AstakosUser
 
 def render_fault(request, fault):
-    if settings.DEBUG or settings.TEST:
+    if isinstance(fault, InternalServerError) and (settings.DEBUG or settings.TEST):
         fault.details = format_exc(fault)
     
     request.serialization = 'text'
-    data = '\n'.join((fault.message, fault.details)) + '\n'
+    data = fault.message + '\n'
+    if fault.details:
+        data += '\n' + fault.details
     response = HttpResponse(data, status=fault.code)
-    return response
-
-def update_response_headers(response):
-    response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
+    return response
 
 def authenticate(request):
     # Normal Response Codes: 204
-    # Error Response Codes: serviceUnavailable (503)
+    # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
     try:
@@ -86,8 +85,9 @@ def authenticate(request):
                      'auth_token_created':user.auth_token_created.isoformat(),
                      'auth_token_expires':user.auth_token_expires.isoformat()}
         response.content = json.dumps(user_info)
-        update_response_headers(response)
+        response['Content-Type'] = 'application/json; charset=UTF-8'
+        response['Content-Length'] = len(response.content)
         return response
     except BaseException, e:
-        fault = ServiceUnavailable('Unexpected error')
+        fault = InternalServerError('Unexpected error')
         return render_fault(request, fault)

@@ -47,5 +47,5 @@ class BadRequest(Fault):
 class Unauthorized(Fault):
     code = 401
 
-class ServiceUnavailable(Fault):
-    code = 503
+class InternalServerError(Fault):
+    code = 500

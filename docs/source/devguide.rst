@@ -108,21 +108,11 @@ Example reply:
 
 |
 
-=========================  =====================
-Return Code                Description
-=========================  =====================
-204 (No Content)           The request succeeded
-400 (Bad Request)          The request is invalid
-401 (Unauthorized)         Missing token or inactive user
-503 (Service Unavailable)  The request cannot be completed because of an internal error
-=========================  =====================
-
-The Astakos views
------------------
-
-Astakos incorporates the ``django.contrib.auth`` mechanism for handling user login,
-logout, password change and password reset.
-
-==============================  =====================
-Uri                             view
-==============================  =====================
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (No Content)            The request succeeded
+400 (Bad Request)           The request is invalid
+401 (Unauthorized)          Missing token or inactive user
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================

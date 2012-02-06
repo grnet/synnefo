@@ -43,6 +43,8 @@
     models.GlanceImages = snf.models.Images.extend({
         model: models.GlanceImage,
         api_type: 'glance',
+        fallback_service: snf.models.Images,
+
         type_selections: {'personal':'My images', 
                           'shared': 'Shared with me', 
                           'public': 'Public'},

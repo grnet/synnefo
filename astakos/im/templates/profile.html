@@ -4,14 +4,16 @@
 
 {% block body %}
 
-<form action={%url astakos.im.views.edit_profile %} method="post">{% csrf_token %}
-    {{ form.as_p }}
+<form action={%url astakos.im.views.edit_profile %} method="post"
+    class="withlabels">{% csrf_token %}
 
-  <div class="actions">
-    <input type="hidden" name="next" value="{{ next }}">
-    <input type="hidden" name="auth" value="{{ user.auth_token }}">
-    <button type="submit" class="btn primary">Update</button>
-  </div>
+    {% include "form_render.html" %}
+
+    <div class="form-row submit">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="auth" value="{{ user.auth_token }}">
+        <input type="submit" class="submit altcol" value="UPDATE" />
+    </div>
 
 </form>
 {% endblock body %}

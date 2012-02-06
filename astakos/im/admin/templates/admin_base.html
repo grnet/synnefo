@@ -1,5 +1,29 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{{ title|default:"Astakos Login" }}</title>
+  <link rel="stylesheet" href="{{ IM_MEDIA_URL }}css/bootstrap.css">
+  <script src="{{ IM_MEDIA_URL }}js/jquery.js"></script>
+  <script src="{{ IM_MEDIA_URL }}js/jquery.tablesorter.js"></script>
+  <script src="{{ IM_MEDIA_URL }}js/main.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="container">
+    <div style="padding: 5px 0px 0px 0px">
+        <img src="{{ IM_MEDIA_URL }}images/banner.png" width="900" height="200">
+    </div>
+    {% block title %}{% endblock %}
     
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="alert-message.{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
 {% block tabs %}
 <ul class="tabs">
   <li{% ifequal tab "admin" %} class="active"{% endifequal %}>
@@ -20,4 +44,8 @@
 </ul>
 {% endblock %}
 
-{% block body %}{% endblock %}
+    {% block body %}{% endblock %}
+  </div>
+</body>
+</html>
+

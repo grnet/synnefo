@@ -1,55 +1,66 @@
-{% extends "base.html" %}
+{% extends 'base_two_cols.html' %}
 
-{% block title%}
-        <h1>Welcome</h1>
-        <p>Choose how to signup.</p>
-{% endblock title%}
+{% block signin_class %}hidden{% endblock %}
 
-{% block body%}
-    <div class="row">
+{% block page.title %}
+    Signup
+{% endblock %}
+
+{% block body %}
+<div class="section">
+    <img class="pic" src="{{ IM_MEDIA_URL }}images/pictures/signup_pic.png" />
+</div>
+{% include "services_description.html" %}
+{% endblock body %}
+
+{% block body.right %}
     {% if "local" in im_modules %}
-      <div class="span4">
-        <h4>Local account</h4>
-        <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
-          {{ local_form.as_p }}
-         <br>
-          <div class="">
+      <div class="form-stacked">
+        <form action="{% url astakos.im.views.signup %}" method="post"
+            class="innerlabels signup">{% csrf_token %}
+          <h2><span>SIGN UP</span></h2>
             <input type="hidden" name="next" value="{{ next }}">
             <input type="hidden" name="code" value="{{ code }}">
             <input type="hidden" name="provider" value="local">
-            <button type="submit" class="btn primary">Go</button>
-          </div>
+            {% with local_form as form %}
+            {% include "form_render.html" %}
+            {% endwith %}
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="SUBMIT" />
+            </div>
         </form>
       </div>
     {% endif %}
-    <div class="span4">
-        {% if 'twitter' in im_modules %}
-            <img src="/im/static/twitter.png" width="120" height="120">
-            <form action="{% url astakos.im.views.signup %}" method="post" class="form-stacked">{% csrf_token %}
-                 {{ twitter_form.as_p }}
-                <br>
-                <div class="">
-                  <input type="hidden" name="next" value="{{ next }}">
-                  <input type="hidden" name="code" value="{{ code }}">
-                  <input type="hidden" name="provider" value="twitter">
-                  <input type="submit" value="Signup with Twitter"/>
-                </div>
-              </form>
-        {% endif %}
-    </div>
-    <div class="span4">
+    {% if "twitter" in im_modules %}
+      <div class="form-stacked">
+        <form action="{% url astakos.im.views.signup %}" method="post"
+            class="innerlabels signup">{% csrf_token %}
+            <h2><span>SIGN UP USING TWITTER</span></h2>
+            <input type="hidden" name="next" value="{{ next }}">
+            <input type="hidden" name="code" value="{{ code }}">
+            <input type="hidden" name="provider" value="twitter">
+            {% with twitter_form as form %}
+            {% include "form_render.html" %}
+            {% endwith %}
+            <div class="form-row submit">
+                <input type="submit" class="submit altcol" value="SUBMIT" />
+            </div>
+        </form>
+      </div>
+    {% endif %}
         {% if 'shibboleth' in im_modules %}
-            <img src="/im/static/shibboleth.png" width="120" height="120">
-            <form action="{% url astakos.im.target.shibboleth.login %}" method="post" class="form-stacked">{% csrf_token %}
-                <br>
-                <div class="">
+          <div class="form">
+            <form action="{% url astakos.im.target.shibboleth.login %}" method="post"
+                class="innerlabels signup">{% csrf_token %}
+              <h2><span>SIGN UP USING SHIBBOLETH</span></h2>
                   <input type="hidden" name="next" value="{{ next }}">
                   <input type="hidden" name="code" value="{{ code }}">
                   <input type="hidden" name="provider" value="shibboleth">
-                  <input type="submit" value="Sign up with Shibboleth"/>
+                <div class="form-row submit">
+                    <input type="submit" class="submit altcol" value="SUBMIT" />
                 </div>
-              </form>
+            </form>
+          </div>
         {% endif %}
       </div>
-    </div>
-{% endblock body%}
+{% endblock %}

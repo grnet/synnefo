@@ -44,7 +44,7 @@ from time import time
 from pithos.lib.compat import parse_http_date
 from pithos.lib.client import OOS_Client, Fault
 from pithos.lib.fuse import FUSE, FuseOSError, Operations
-from pithos.lib.util import get_user, get_auth, get_server
+from pithos.lib.util import get_user, get_auth, get_url
 
 
 epoch = int(time())
@@ -53,7 +53,7 @@ epoch = int(time())
 class StoreFS(Operations):
     def __init__(self, verbose=False):
         self.verbose = verbose
-        self.client = OOS_Client(get_server(), get_auth(), get_user())
+        self.client = OOS_Client(get_url(), get_auth(), get_user())
     
     def __call__(self, op, path, *args):
         container, sep, object = path[1:].partition('/')

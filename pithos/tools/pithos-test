@@ -35,7 +35,7 @@
 # or implied, of GRNET S.A.
 
 from pithos.lib.client import Pithos_Client, Fault
-from pithos.lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.util import get_user, get_auth, get_url
 
 from xml.dom import minidom
 from StringIO import StringIO
@@ -71,11 +71,9 @@ OTHER_ACCOUNTS = {
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
-        self.client = Pithos_Client(get_server(), get_auth(), get_user(),
-                                    get_api())
+        self.client = Pithos_Client(get_url(), get_auth(), get_user())
         self._clean_account()
-        self.invalid_client = Pithos_Client(get_server(), get_auth(), 'invalid',
-                                            get_api())
+        self.invalid_client = Pithos_Client(get_url(), get_auth(), 'invalid')
         
         #keep track of initial account groups
         self.initial_groups = self.client.retrieve_account_groups()
@@ -1681,10 +1679,9 @@ class ListSharing(BaseTestCase):
             l.append(accounts.popitem())
     
     def test_list_other_shared(self):
-        self.other = Pithos_Client(get_server(),
+        self.other = Pithos_Client(get_url(),
                               self.o1_sharing_with[0],
-                              self.o1_sharing_with[1],
-                              get_api())
+                              self.o1_sharing_with[1])
         self.assertTrue(get_user() in self.other.list_shared_by_others())
     
     def test_list_my_shared(self):

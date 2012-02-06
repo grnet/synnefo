@@ -917,6 +917,7 @@ def object_write_form(request, v_account, v_container, v_object):
     response = HttpResponse(status=201)
     response['ETag'] = meta['ETag']
     response['X-Object-Version'] = version_id
+    response.content = meta['ETag']
     return response
 
 @api_method('COPY', format_allowed=True)

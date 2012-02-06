@@ -40,7 +40,7 @@ from sys import argv, exit, stdin, stdout
 from datetime import datetime
 
 from pithos.lib.client import Pithos_Client, Fault
-from pithos.lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.util import get_user, get_auth, get_url
 from pithos.lib.transfer import upload, download
 
 import json
@@ -68,20 +68,18 @@ class Command(object):
     
     def __init__(self, name, argv):
         parser = OptionParser('%%prog %s [options] %s' % (name, self.syntax))
-        parser.add_option('--host', dest='host', metavar='HOST',
-                          default=get_server(), help='use server HOST')
-        parser.add_option('--user', dest='user', metavar='USERNAME',
+        parser.add_option('--url', dest='url', metavar='HOST',
+                          default=get_url(), help='server URL (currently: %s)' % get_url())
+        parser.add_option('--user', dest='user', metavar='USER',
                           default=get_user(),
-                          help='use account USERNAME')
-        parser.add_option('--token', dest='token', metavar='AUTH',
+                          help='account USER (currently: %s)' % get_user())
+        parser.add_option('--token', dest='token', metavar='TOKEN',
                           default=get_auth(),
-                          help='use account AUTH')
-        parser.add_option('--api', dest='api', metavar='API',
-                          default=get_api(), help='use api API')
+                          help='account TOKEN (currently: %s)' % get_auth())
         parser.add_option('-v', action='store_true', dest='verbose',
-                          default=False, help='use verbose output')
+                          default=False, help='verbose output')
         parser.add_option('-d', action='store_true', dest='debug',
-                          default=False, help='use debug output')
+                          default=False, help='debug output')
         self.add_options(parser)
         options, args = parser.parse_args(argv)
         
@@ -92,7 +90,7 @@ class Command(object):
                 val = getattr(options, key)
                 setattr(self, key, val)
         
-        self.client = Pithos_Client(self.host, self.token, self.user, self.api, self.verbose,
+        self.client = Pithos_Client(self.url, self.token, self.user, self.verbose,
                              self.debug)
         
         self.parser = parser

@@ -170,7 +170,7 @@ def co(c):
 env.debian_branch = 'debian-0.8'
 env.deb_packages = ['snf-pithos-lib', 'snf-pithos-backend',
                     'snf-pithos-tools', 'snf-pithos-app']
-env.signdebs = True
+env.signdebs = False
 env.debrelease = False  # Increase release number in Debian changelogs
 env.upstream = 'packaging'
 
@@ -219,8 +219,8 @@ def debrelease():
     env.debrelease = True
 
 
-def nosigndebs():
-    env.signdebs = False
+def signdebs():
+    env.signdebs = True
 
 
 def builddeb(p, master="packaging", branch="debian-0.8"):

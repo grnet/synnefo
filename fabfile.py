@@ -204,6 +204,9 @@ def dch(p):
             if True:
                 # Run git-dch in snapshot mode.
                 # TODO: Support a --release mode in fabfile
+                if not env.debrelease:
+                    notice(("Producing snapshot changelog entry, "
+                            "use 'debrelease' to produce release entries."))
                 local(("git-dch --debian-branch=%s --auto %s" %
                        (env.debian_branch,
                         "--release" if env.debrelease else "--snapshot")))
@@ -213,6 +216,12 @@ def dch(p):
                         env.debian_branch))
 
             local("rmdir .git")
+
+
+def dchall():
+    for p in env.deb_packages:
+        info("updating debian changelog for package: %s" % p)
+        dch(p)
 
 
 def debrelease():
@@ -252,7 +261,6 @@ def builddeb(p, master="master", branch="debian-0.8"):
 def builddeball(b="debian-0.8"):
     for p in env.deb_packages:
         builddeb(p=p, branch=b)
-
 
 
 @roles('pypi')

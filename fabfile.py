@@ -170,7 +170,7 @@ def co(c):
 
 env.debian_branch = 'debian-0.8'
 env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject', 'snf-okeanos-site']
-env.signdebs = True
+env.signdebs = False
 env.debrelease = False  # Increase release number in Debian changelogs
 
 
@@ -219,8 +219,8 @@ def debrelease():
     env.debrelease = True
 
 
-def nosigndebs():
-    env.signdebs = False
+def signdebs():
+    env.signdebs = True
 
 
 # Commands which automatically add and reset the version files which are not tracked by

@@ -35,6 +35,8 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',
     (r'^ui/', include('synnefo.ui.urls')),
+    url(r'^machines/console$', 'synnefo.ui.views.machines_console', name='machines-console'),
+    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect', name='machines-connect'),
     (r'^admin/', include('synnefo.admin.urls')),
     (r'^api/', include('synnefo.api.urls')),
     (r'^helpdesk/?', include('synnefo.helpdesk.urls')),

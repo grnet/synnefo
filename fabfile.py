@@ -265,9 +265,9 @@ def cleandocs():
     Remove _build directories for each doc project
     """
 
-    # snf-docs contains conf.py in root directory
-    if os.path.exists("snf-docs/docs/_build"):
-        local("rm -r snf-docs/docs/_build")
+    # docs contains conf.py in root directory
+    if os.path.exists("docs/docs/_build"):
+        local("rm -r docs/docs/_build")
 
     for p in env.packages:
         buildpth = os.path.join(package_root(p), 'docs', '_build')
@@ -281,8 +281,8 @@ def builddocs():
     """
     builddocs_cmd = "sphinx-build -b html -d _build/doctrees   . _build/html"
 
-    # snf-docs contains conf.py in root directory
-    with lcd("snf-docs"):
+    # docs contains conf.py in root directory
+    with lcd("docs"):
         local(builddocs_cmd)
 
     for p in env.packages:

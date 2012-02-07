@@ -34,6 +34,7 @@
 import logging
 
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
@@ -45,6 +46,7 @@ from pithos.api.short_url import decode_url
 logger = logging.getLogger(__name__)
 
 
+@csrf_exempt
 def public_demux(request, v_public):
     if request.method == 'HEAD':
         return public_meta(request, v_public)

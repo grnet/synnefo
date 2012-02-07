@@ -31,12 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import include, patterns
 
 # TODO: This only works when in this order.
-urlpatterns = patterns('pithos.api.functions',
+api_urlpatterns = patterns('pithos.api.functions',
     (r'^$', 'top_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$', 'object_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/?$', 'container_demux'),
     (r'^(?P<v_account>.+?)/?$', 'account_demux')
+)
+
+urlpatterns = patterns('',
+    (r'^v1(?:$|/)', include(api_urlpatterns)),
+    (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
+    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'),
+    (r'^login/?$', 'pithos.api.login.redirect_to_login_service')
 )

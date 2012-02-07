@@ -31,8 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-import hashlib
+from xml.dom import minidom
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -40,7 +39,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
-from xml.dom import minidom
+from django.views.decorators.csrf import csrf_exempt
 
 from pithos.lib.filter import parse_filters
 
@@ -54,10 +53,14 @@ from pithos.api.util import (json_encode_decimal, rename_meta_key, format_header
     SaveToBackendHandler, object_data_response, put_object_block, hashmap_md5, simple_list_response, api_method)
 from pithos.backends.base import NotAllowedError, QuotaError
 
+import logging
+import hashlib
+
 
 logger = logging.getLogger(__name__)
 
 
+@csrf_exempt
 def top_demux(request):
     if request.method == 'GET':
         if getattr(request, 'user', None) is not None:
@@ -66,6 +69,7 @@ def top_demux(request):
     else:
         return method_not_allowed(request)
 
+@csrf_exempt
 def account_demux(request, v_account):
     if request.method == 'HEAD':
         return account_meta(request, v_account)
@@ -76,6 +80,7 @@ def account_demux(request, v_account):
     else:
         return method_not_allowed(request)
 
+@csrf_exempt
 def container_demux(request, v_account, v_container):
     if request.method == 'HEAD':
         return container_meta(request, v_account, v_container)
@@ -90,6 +95,7 @@ def container_demux(request, v_account, v_container):
     else:
         return method_not_allowed(request)
 
+@csrf_exempt
 def object_demux(request, v_account, v_container, v_object):
     if request.method == 'HEAD':
         return object_meta(request, v_account, v_container, v_object)

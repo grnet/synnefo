@@ -35,12 +35,14 @@
 # or implied, of GRNET S.A.
 
 from pithos.lib.client import Pithos_Client, Fault
-from pithos.lib.util import get_user, get_auth, get_server, get_api
+from pithos.lib.util import get_user, get_auth, get_url
 
 from xml.dom import minidom
 from StringIO import StringIO
 from hashlib import new as newhasher
 from binascii import hexlify
+from httplib import HTTPConnection
+from urlparse import urlparse
 
 import json
 import unittest
@@ -71,11 +73,9 @@ OTHER_ACCOUNTS = {
 class BaseTestCase(unittest.TestCase):
     #TODO unauthorized request
     def setUp(self):
-        self.client = Pithos_Client(get_server(), get_auth(), get_user(),
-                                    get_api())
+        self.client = Pithos_Client(get_url(), get_auth(), get_user())
         self._clean_account()
-        self.invalid_client = Pithos_Client(get_server(), get_auth(), 'invalid',
-                                            get_api())
+        self.invalid_client = Pithos_Client(get_url(), get_auth(), 'invalid')
         
         #keep track of initial account groups
         self.initial_groups = self.client.retrieve_account_groups()
@@ -1681,10 +1681,9 @@ class ListSharing(BaseTestCase):
             l.append(accounts.popitem())
     
     def test_list_other_shared(self):
-        self.other = Pithos_Client(get_server(),
+        self.other = Pithos_Client(get_url(),
                               self.o1_sharing_with[0],
-                              self.o1_sharing_with[1],
-                              get_api())
+                              self.o1_sharing_with[1])
         self.assertTrue(get_user() in self.other.list_shared_by_others())
     
     def test_list_my_shared(self):
@@ -1834,10 +1833,9 @@ class TestGreek(BaseTestCase):
         self.client.create_container('φάκελος')
         o = self.upload_random_data('φάκελος', 'ο1')
         self.client.share_object('φάκελος', 'ο1', ['%s:σεφς' % get_user()])
-        chef = Pithos_Client(get_server(),
+        chef = Pithos_Client(get_url(),
                             '0009',
-                            'διογένης',
-                            get_api())
+                            'διογένης')
         self.assert_not_raises_fault(403, chef.retrieve_object_metadata,
                                      'φάκελος', 'ο1', account=get_user())
         
@@ -1895,7 +1893,7 @@ class TestPermissions(BaseTestCase):
     
     def assert_read(self, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             if account in authorized or any:
                 self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o', account=get_user())
@@ -1906,7 +1904,7 @@ class TestPermissions(BaseTestCase):
         #check inheritance
         o = self.upload_random_data('c', 'o/also-shared')
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             if account in authorized or any:
                 self.assert_not_raises_fault(403, cl.retrieve_object_metadata,
                                              'c', 'o/also-shared', account=get_user())
@@ -1916,7 +1914,7 @@ class TestPermissions(BaseTestCase):
     
     def assert_write(self, o_data, authorized=[], any=False):
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
@@ -1940,7 +1938,7 @@ class TestPermissions(BaseTestCase):
         o = self.upload_random_data('c', 'o/also-shared')
         o_data = o['data']
         for token, account in OTHER_ACCOUNTS.items():
-            cl = Pithos_Client(get_server(), token, account, get_api()) 
+            cl = Pithos_Client(get_url(), token, account)
             new_data = get_random_data()
             if account in authorized or any:
                 # test write access
@@ -2007,8 +2005,19 @@ class TestPublish(BaseTestCase):
         meta = self.client.retrieve_object_metadata('c', 'o')
         self.assertTrue('x-object-public' in meta)
         url = meta['x-object-public']
-        public_client = Pithos_Client(get_server(), get_auth(), get_user(), api='')
-        data = public_client.get(url)[2]
+        
+        p = urlparse(get_url())
+        if p.scheme == 'http':
+            conn = HTTPConnection(p.netloc)
+        elif p.scheme == 'https':
+            conn = HTTPSConnection(p.netloc)
+        else:
+            raise Exception('Unknown URL scheme')
+        
+        conn.request('GET', url)
+        resp = conn.getresponse()
+        length = resp.getheader('content-length', None)
+        data = resp.read(length)
         self.assertEqual(o_data, data)
 
 class AssertUUidInvariant(object):

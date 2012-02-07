@@ -1,5 +1,5 @@
-snf-webproject (0.7.4-1) UNRELEASED; urgency=low
+snf-webproject (0.8.0-1) stable; urgency=low
 
-  * New upstream version.
+  * Initial Debian packaging for Synnefo v0.8.0.
 
- -- Kostas Papadimitriou <kpap@grnet.gr>  Fri, 13 Jan 2012 16:44:01 +0300
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Tue, 07 Feb 2012 15:17:56 +0200

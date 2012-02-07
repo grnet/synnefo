@@ -1,14 +1,8 @@
-snf-cyclades-gtools (0.7.4-1) UNRELEASED; urgency=low
+snf-cyclades-gtools (0.8.0-1) stable; urgency=low
 
   * New upstream version.
 
- -- Kostas Papadimitriou <kpap@grnet.gr>  Fri, 19 Jan 2012 16:44:01 +0300
-
-snf-cyclades-gtools (0.8) UNRELEASED; urgency=low
-
-  * New upstream version.
-
- -- Constantinos Venetsanopoulos <cven@grnet.gr>  Fri, 13 Jan 2012 16:44:01 +0300
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Tue, 07 Feb 2012 15:16:31 +0200
 
 snf-cyclades-gtools (0.7.1) UNRELEASED; urgency=low
 

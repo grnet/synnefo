@@ -1,9 +1,35 @@
 .. _cyclades:
 
-Asterias Service
-----------------
+Compute Service (cyclades)
+--------------------------
 
-Asterias is the the synnefo Compute Service and implements OpenStack Compute API v1.1.
+Cyclades is the the synnefo Compute Service and implements OpenStack Compute API v1.1.
+
+Cyclades need the following synnefo components:
+
+.. todo:: list synnefo components needed by cyclades
+
+
+Cyclades Architecture
+=====================
+
+.. todo:: document the overall cyclades architecture
+
+
+Cyclades as a standalone Service
+================================
+
+.. todo:: document what does that mean, what are the limitations, how to install.
+
+
+Cyclades interconnected with other synnefo Services
+===================================================
+
+.. todo:: document with which services it can connect, why and how.
+
+
+Cyclades Guides
+===============
 
 .. todo:: document the Compute Service.
 

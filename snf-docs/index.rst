@@ -58,7 +58,7 @@ The quick installation guide comes in two versions:
 | :ref:`Administrator's quick installation guide <quick-install-admin-guide>`
 | This guide will walk you through a complete installation using debian packages.
 
-| :ref:`Developer's quick installation guide <quick-install-devel-guide>`
+| :ref:`Developer's quick installation guide <quick-install-dev-guide>`
 | This guide will setup a development environment using pip install.
 
 Standard Installation

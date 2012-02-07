@@ -1,4 +1,4 @@
-.. _quick-install-devel-guide:
+.. _quick-install-dev-guide:
 
 Developer's Quick Installation Guide
 ========================================

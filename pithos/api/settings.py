@@ -4,7 +4,7 @@ from os.path import abspath, dirname, join
 PROJECT_PATH = getattr(settings, 'PROJECT_PATH', dirname(dirname(abspath(__file__))))
 
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).
-BACKEND_DB_MODULE =  getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
+BACKEND_DB_MODULE = getattr(settings, 'PITHOS_BACKEND_DB_MODULE', 'pithos.backends.lib.sqlalchemy')
 BACKEND_DB_CONNECTION = getattr(settings, 'PITHOS_BACKEND_DB_CONNECTION', 'sqlite:///' + join(PROJECT_PATH, 'backend.db'))
 
 # Block storage.

@@ -41,7 +41,7 @@ class Flavor(models.Model):
     
     class Meta:
         verbose_name = u'Virtual machine flavor'
-        unique_together = ('cpu', 'ram', 'disk')
+        unique_together = ('cpu', 'ram', 'disk', 'disk_template')
     
     @property
     def name(self):

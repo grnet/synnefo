@@ -170,7 +170,7 @@ def co(c):
 
 env.debian_branch = 'debian-0.8'
 env.deb_packages = ['snf-common', 'snf-cyclades-app', 'snf-cyclades-gtools', 'snf-webproject', 'snf-okeanos-site']
-env.signdebs = True
+env.signdebs = False
 env.debrelease = False  # Increase release number in Debian changelogs
 
 
@@ -204,6 +204,9 @@ def dch(p):
             if True:
                 # Run git-dch in snapshot mode.
                 # TODO: Support a --release mode in fabfile
+                if not env.debrelease:
+                    notice(("Producing snapshot changelog entry, "
+                            "use 'debrelease' to produce release entries."))
                 local(("git-dch --debian-branch=%s --auto %s" %
                        (env.debian_branch,
                         "--release" if env.debrelease else "--snapshot")))
@@ -215,13 +218,28 @@ def dch(p):
             local("rmdir .git")
 
 
+def dchall():
+    for p in env.deb_packages:
+        info("updating debian changelog for package: %s" % p)
+        dch(p)
+
+
 def debrelease():
     env.debrelease = True
 
 
-def nosigndebs():
-    env.signdebs = False
+def signdebs():
+    env.signdebs = True
 
+
+# Commands which automatically add and reset the version files which are not tracked by
+# git. Those version files are created from each setup.py using the synnefo-common
+# update_version, so we execute `python setup.py clean` to ensure that file gets
+# created and git add will not fail. The reset of those files after each build
+# certifies that succeded git checkouts will not fail due to existing local
+# changes.
+add_versions_cmd = "find . -regextype posix-egrep -regex \".*version.py$|.*\/synnefo\/versions\/.*py$\" -exec git add -f {} \;"
+reset_versions_cmd = "find . -regextype posix-egrep -regex \".*version.py$|.*\/synnefo\/versions\/.*py$\" -exec git reset {} \;"
 
 
 def builddeb(p, master="master", branch="debian-0.8"):
@@ -231,19 +249,18 @@ def builddeb(p, master="master", branch="debian-0.8"):
             local("git merge master")
             local("if [ ! -d .git ]; then mkdir .git; fi")
             local("python setup.py clean")
-            local("git add synnefo/versions/*.py -f")
+            local(add_versions_cmd)
             local(("git-buildpackage --git-upstream-branch=%s --git-debian-branch=%s"
                    " --git-export=INDEX --git-ignore-new %s") %
                    (master, branch, "" if env.signdebs else "-us -uc"))
             local("rm -rf .git")
-            local("git reset synnefo/versions/*.py")
+            local(reset_versions_cmd)
         info("Done building debian package for %s" % p)
 
 
 def builddeball(b="debian-0.8"):
     for p in env.deb_packages:
         builddeb(p=p, branch=b)
-
 
 
 @roles('pypi')
@@ -256,9 +273,9 @@ def cleandocs():
     Remove _build directories for each doc project
     """
 
-    # snf-docs contains conf.py in root directory
-    if os.path.exists("snf-docs/docs/_build"):
-        local("rm -r snf-docs/docs/_build")
+    # docs contains conf.py in root directory
+    if os.path.exists("docs/docs/_build"):
+        local("rm -r docs/docs/_build")
 
     for p in env.packages:
         buildpth = os.path.join(package_root(p), 'docs', '_build')
@@ -272,8 +289,8 @@ def builddocs():
     """
     builddocs_cmd = "sphinx-build -b html -d _build/doctrees   . _build/html"
 
-    # snf-docs contains conf.py in root directory
-    with lcd("snf-docs"):
+    # docs contains conf.py in root directory
+    with lcd("docs"):
         local(builddocs_cmd)
 
     for p in env.packages:

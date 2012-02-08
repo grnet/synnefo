@@ -282,7 +282,7 @@ Nodes of type :ref:`APISERVER <APISERVER_NODE>`
 Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
     Components
     :ref:`snf-common <snf-common>`,
-    :ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>`
+    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
 Nodes of type :ref:`LOGIC <LOGIC_NODE>`
     Components
     :ref:`snf-common <snf-common>`,
@@ -302,7 +302,7 @@ cyclades uses :ref:`snf-common <snf-common>` for settings.
 Please refer to the configuration sections of
 :ref:`snf-webproject <snf-webproject>`,
 :ref:`snf-cyclades-app <snf-cyclades-app>`,
-:ref:`snf-cyclades-ganeti-tools <snf-cyclades-ganeti-tools>` for more
+:ref:`snf-cyclades-gtools <snf-cyclades-gtools>` for more
 information on their configuration.
 
 Ganeti

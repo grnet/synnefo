@@ -9,70 +9,80 @@ v0.7.4 -> v0.8
 --------------
 
 Synnefo is now distributed packaged in python/debian packages. You should
-consider the following when migration from a previously `source` deployment
-projects:
+consider the following when migrating from projects previously deployed from
+source:
     
-    * To keep consistency with future changes you should change ``python
-      manage.py`` calls with deployed ``snf-manage`` console script.
+    * To keep consistency with future changes, change all ``python manage.py``
+      calls to refer to the shipped ``snf-manage`` console script.
       This includes automation scripts, service scripts etc.
 
       Same applies for calls to ``dispatcher.py``, ``snf-tools/admin.py``,
       ``snf-tools/burnin.py`` and ``snf-tools/cloud.py`` which are replaced
-      respectively by ``snf-dispatcher``, ``snf-admin``,
-      ``snf-burnin`` and ``snf-cloud``.
+      by ``snf-dispatcher``, ``snf-admin``, ``snf-burnin`` and ``snf-cloud``,
+      respectively.
 
-    * Copy custom settings files located in projects ``settings.d`` directory
+    * Copy custom settings files located in project's ``settings.d`` directory
       to ``/etc/synnefo/`` directory.
 
     * Migrate location from which :ref:`static files <static-files>` are served from.
 
+.. warning::
+   
+   Synnefo settings have been refactored as part of the
+   :ref:`snf-common <snf-common>` component. File locations may be inaccurate
+   and the list of changed settings incomplete.  Please consult the actual
+   files installed under ``/etc/synnefo`` as the authoritative source for new
+   settings.
+
 NEW APPS
-    * The 'synnefo.ui.userdata' application has been added in
-      settings.d/00-apps.conf. Application urls appended in ui/urls.py.
-      If no custom ROOT_URLCONF module is used, no url change is needed.
+    * The ``synnefo.ui.userdata`` application has been added in
+      :file:`settings.d/00-apps.conf`. Application urls appended in
+      :file:`ui/urls.py`.
+      If no custom ``ROOT_URLCONF`` module is used, no url change is needed.
     * The new app has migrations defined.
-      Use './manage.py migrate' to migrate *all* apps.
+      Use ``snf-manage migrate`` to migrate *all* apps.
 
 NEW/UPDATED SETTINGS
-    * BYPASS_AUTHENTICATION_TOKEN_SECRET replaces BYPASS_AUTHENTICATION_TOKEN
-      in settings/common/aai.py.
-    * New config file 31-userdata.conf, containing userdata app settings
-    * USERDATA_SSH_KEY_LENGTH in 31-userdata.conf:
+    * ``BYPASS_AUTHENTICATION_TOKEN_SECRET`` replaces ``BYPASS_AUTHENTICATION_TOKEN``
+      in :file:`settings/common/aai.py`.
+    * New config file :file:`31-userdata.conf`, containing userdata app settings
+    * ``USERDATA_SSH_KEY_LENGTH`` in :file:`31-userdata.conf`:
       Key length in bits for generated ssh keys
-    * USERDATA_SSH_KEY_EXPONENT in 31-userdata.conf:
+    * ``USERDATA_SSH_KEY_EXPONENT`` in :file:`31-userdata.conf`:
       Generated SSH key exponent
-    * USERDATA_MAX_SSH_KEYS_PER_USER in 31-userdata.conf:
+    * ``USERDATA_MAX_SSH_KEYS_PER_USER`` in :file:`31-userdata.conf`:
       Maximum number of ssh keys a user is allowed to have
-    * UI_SUPPORT_SSH_OS_LIST, in 30-ui.conf:
+    * ``UI_SUPPORT_SSH_OS_LIST``, in :file:`30-ui.conf`:
       A list of os names that support ssh public key assignment
-    * UI_OS_DEFAULT_USER_MAP, in 30-ui.conf:
+    * ``UI_OS_DEFAULT_USER_MAP``, in :file:`30-ui.conf`:
       OS/username map to identify default user name for a specific os
-    * VM_CREATE_NAME_TPL, in 30-ui.conf:
+    * ``VM_CREATE_NAME_TPL``, in :file:`30-ui.conf`:
       Template to be used for suggesting the user a default name for newly
       created VMs. String {0} gets replaced by the value of metadata key "os"
       for the Image.
-    * UI_FLAVORS_DISK_TEMPLATES_INFO added in 30-ui.conf:
+    * ``UI_FLAVORS_DISK_TEMPLATES_INFO`` added in :file:`30-ui.conf`:
       Name/description metadata for the available flavor disk templates
-    * VM_CREATE_SUGGESTED_FLAVORS in 30-ui.conf:
+    * ``VM_CREATE_SUGGESTED_FLAVORS`` in :file:`30-ui.conf`:
       Updated flavor data to include disk_template value.
-    * GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE in 20-api.conf:
+    * ``GANETI_DISK_TEMPLATES`` and ``DEFAULT_GANETI_DISK_TEMPLATE`` in :file:`20-api.conf`:
       The list of disk templates supported by the Ganeti backend.
       The default template to be used when migrating Flavors with no value for
       disk_template (i.e., 'drbd').
-    * UI_COMPUTE_URL, UI_GLANCE_URL in ui app:
+    * ``UI_COMPUTE_URL``, ``UI_GLANCE_URL`` in ui app:
       Configurable API endpoints
-    * UI_ENABLE_GLANCE in ui app:
+    * ``UI_ENABLE_GLANCE`` in ui app:
       Whether or not UI should retrieve images from the Glance API endpoint
-      set in UI_GLANCE_API_URL. If setting is set to False, ui will request 
-      images from Compute API
+      set in ``UI_GLANCE_API_URL``. If setting is set to False, ui will request
+      images using calls to the Cyclades API.
 UI
-    * synnefo.ui.userdata application has been added in INSTALLED_APPS.
+    * ``synnefo.ui.userdata`` application has been added in ``INSTALLED_APPS``.
       Database migration is needed for the creation of application db tables.
 
 API
-    * A new 'disk_template' attribute has been added to Flavors.
-      GANETI_DISK_TEMPLATES and DEFAULT_GANETI_DISK_TEMPLATE have been added
-      in 20-api.conf to control its value. A database migration is needed.
+    * A new ``disk_template`` attribute has been added to Flavors.
+      ``GANETI_DISK_TEMPLATES`` and ``DEFAULT_GANETI_DISK_TEMPLATE`` have been
+      added in :file:`20-api.conf` to control its value. A database migration is
+      needed.
 
 PLANKTON
     Plankton is a new image service that has been added as a separate app. The
@@ -81,14 +91,14 @@ PLANKTON
     settings are defined in the new plankton.py file in settings.
     
     Plankton stores and looks for images in the Pithos container named
-    PITHOS_IMAGE_CONTAINER.
+    ``PITHOS_IMAGE_CONTAINER``.
     
     There is a Pithos account that is reserved for system images. This account
-    is defined in SYSTEM_IMAGES_OWNER.
+    is defined in ``SYSTEM_IMAGES_OWNER``.
 
 ADMIN TOOLS
-    * A new --disk-template flag has been added to snf-admin to choose a
-      disk template when creating flavors. Similarly, disk_template support
+    * A new ``--disk-template`` flag has been added to snf-admin to choose a
+      disk template when creating flavors. Similarly, ``disk_template`` support
       in flavors has beed added to the admin web interface.
 
 

@@ -55,8 +55,6 @@ class Permissions(XFeatures, Groups, Public):
         if not members:
             return
         feature = self.xfeature_create(path)
-        if feature is None:
-            return
         self.feature_setmany(feature, access, members)
     
     def access_set(self, path, permissions):
@@ -79,10 +77,9 @@ class Permissions(XFeatures, Groups, Public):
         if access == READ and self.public_get(path) is not None:
             return True
         
-        r = self.xfeature_inherit(path)
-        if not r:
+        feature = self.xfeature_get(path)
+        if not feature:
             return False
-        fpath, feature = r
         members = self.feature_get(feature, access)
         if member in members or '*' in members:
             return True
@@ -92,25 +89,30 @@ class Permissions(XFeatures, Groups, Public):
         return False
     
     def access_inherit(self, path):
-        """Return the inherited or assigned (path, permissions) pair for path."""
+        """Return the paths influencing the access for path."""
         
         r = self.xfeature_inherit(path)
         if not r:
-            return (path, {})
-        fpath, feature = r
-        permissions = self.feature_dict(feature)
-        if READ in permissions:
-            permissions['read'] = permissions[READ]
-            del(permissions[READ])
-        if WRITE in permissions:
-            permissions['write'] = permissions[WRITE]
-            del(permissions[WRITE])
-        return (fpath, permissions)
-    
-    def access_list(self, path):
-        """List all permission paths inherited by or inheriting from path."""
+            return []
         
-        return [x[0] for x in self.xfeature_list(path) if x[0] != path]
+        def get_permissions(feature):
+            permissions = self.feature_dict(feature)
+            if READ in permissions:
+                permissions['read'] = permissions[READ]
+                del(permissions[READ])
+            if WRITE in permissions:
+                permissions['write'] = permissions[WRITE]
+                del(permissions[WRITE])
+            return permissions
+        
+        # Only keep path components.
+        parts = path.rstrip('/').split('/')
+        valid = []
+        for i in range(1, len(parts)):
+            subp = '/'.join(parts[:i + 1])
+            valid.append(subp)
+            valid.append(subp + '/')
+        return [(x[0], get_permissions(x[1])) for x in r if x[0] in valid]
     
     def access_list_paths(self, member, prefix=None):
         """Return the list of paths granted to member."""

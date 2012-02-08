@@ -34,17 +34,31 @@
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 
+from astakos.lib.dictconfig import dictConfig
+
 import logging
+
+
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
 
 
 class LoggingConfigMiddleware:
     def __init__(self):
         '''Initialise the logging setup from settings, called on first request.'''
-        args = {}
-        args['level'] = logging.DEBUG if getattr(settings, 'DEBUG', False) else logging.INFO
-        if settings.LOGFILE:
-            args['filename'] = settings.LOGFILE
-        args['format'] = '%(asctime)s [%(levelname)s] %(name)s %(message)s'
-        args['datefmt'] = '%Y-%m-%d %H:%M:%S'
-        logging.basicConfig(**args)
+        logging_setting = getattr(settings, 'LOGGING_SETUP', None)
+        if logging_setting:
+            # Disable handlers that are not used by any logger.
+            active_handlers = set()
+            loggers = logging_setting.get('loggers', {})
+            for logger in loggers.values():
+                active_handlers.update(logger.get('handlers', []))
+            handlers = logging_setting.get('handlers', {})
+            for handler in handlers:
+                if handler not in active_handlers:
+                    handlers[handler] = {'class': 'logging.NullHandler'}
+            
+            logging.NullHandler = NullHandler
+            dictConfig(logging_setting)
         raise MiddlewareNotUsed('Logging setup only.')

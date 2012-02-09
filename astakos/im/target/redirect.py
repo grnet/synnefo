@@ -36,9 +36,13 @@ from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.utils.http import urlencode
+from django.contrib.auth import login as auth_login, authenticate
+from django.http import HttpResponse
 
 from urllib import quote
 from urlparse import urlunsplit, urlsplit
+
+from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
 
 def login(request):
     """
@@ -50,11 +54,29 @@ def login(request):
     """
     if request.user.is_authenticated():
         next = request.GET.get('next')
+        renew = request.GET.get('renew', None)
         if next:
+            response = HttpResponse()
+            if renew == '':
+                request.user.renew_token()
+                request.user.save()
+                
+                # authenticate before login
+                user = authenticate(email=request.user.email, auth_token=request.user.auth_token)
+                auth_login(request, user)
+                
+                # set cookie
+                expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+                cookie_value = quote(user.email + '|' + user.auth_token)
+                response.set_cookie(COOKIE_NAME, value=cookie_value,
+                                    expires=expire_fmt, path='/',
+                                    domain = COOKIE_DOMAIN)
             parts = list(urlsplit(next))
             parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
             url = urlunsplit(parts)
-            return redirect(url)
+            response['Location'] = url
+            response.status_code = 302
+            return response
         else:
             msg = _('No next parameter')
             messages.add_message(request, messages.ERROR, msg)

@@ -172,22 +172,21 @@ def put_container_headers(request, response, meta, policy):
         response[smart_str(format_header_key('X-Container-Policy-' + k), strings_only=True)] = smart_str(v, strings_only=True)
 
 def get_object_headers(request):
+    content_type = request.META.get('CONTENT_TYPE', None)
     meta = get_header_prefix(request, 'X-Object-Meta-')
-    if request.META.get('CONTENT_TYPE'):
-        meta['Content-Type'] = request.META['CONTENT_TYPE']
     if request.META.get('HTTP_CONTENT_ENCODING'):
         meta['Content-Encoding'] = request.META['HTTP_CONTENT_ENCODING']
     if request.META.get('HTTP_CONTENT_DISPOSITION'):
         meta['Content-Disposition'] = request.META['HTTP_CONTENT_DISPOSITION']
     if request.META.get('HTTP_X_OBJECT_MANIFEST'):
         meta['X-Object-Manifest'] = request.META['HTTP_X_OBJECT_MANIFEST']
-    return meta, get_sharing(request), get_public(request)
+    return content_type, meta, get_sharing(request), get_public(request)
 
 def put_object_headers(response, meta, restricted=False):
     if 'ETag' in meta:
         response['ETag'] = meta['ETag']
     response['Content-Length'] = meta['bytes']
-    response['Content-Type'] = meta.get('Content-Type', 'application/octet-stream')
+    response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
@@ -309,17 +308,17 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
     
     if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
         del(request.META['CONTENT_TYPE'])
-    meta, permissions, public = get_object_headers(request)
+    content_type, meta, permissions, public = get_object_headers(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
     try:
         if move:
             version_id = request.backend.move_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
-                                                        'pithos', meta, False, permissions)
+                                                        content_type, 'pithos', meta, False, permissions)
         else:
             version_id = request.backend.copy_object(request.user_uniq, src_account, src_container, src_name,
                                                         dest_account, dest_container, dest_name,
-                                                        'pithos', meta, False, permissions, src_version)
+                                                        content_type, 'pithos', meta, False, permissions, src_version)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except (NameError, IndexError):

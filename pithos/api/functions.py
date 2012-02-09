@@ -797,12 +797,12 @@ def object_write(request, v_account, v_container, v_object):
         response['X-Object-Version'] = version_id
         return response
     
-    meta, permissions, public = get_object_headers(request)
+    content_type, meta, permissions, public = get_object_headers(request)
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
         content_length = get_content_length(request)
     # Should be BadRequest, but API says otherwise.
-    if 'Content-Type' not in meta:
+    if not content_type:
         raise LengthRequired('Missing Content-Type header')
     
     if 'hashmap' in request.GET:
@@ -855,7 +855,7 @@ def object_write(request, v_account, v_container, v_object):
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, hashmap,
-                        'pithos', meta, True, permissions)
+                        content_type, 'pithos', meta, True, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except IndexError, e:
@@ -903,14 +903,14 @@ def object_write_form(request, v_account, v_container, v_object):
         raise BadRequest('Missing X-Object-Data field')
     file = request.FILES['X-Object-Data']
     
+    content_type = file.content_type
     meta = {}
-    meta['Content-Type'] = file.content_type
     meta['ETag'] = file.etag
     
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, file.size, file.hashmap,
-                        'pithos', meta, True)
+                        content_type, 'pithos', meta, True)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:
@@ -1006,10 +1006,7 @@ def object_update(request, v_account, v_container, v_object):
     #                       forbidden (403),
     #                       badRequest (400)
     
-    meta, permissions, public = get_object_headers(request)
-    content_type = meta.get('Content-Type')
-    if content_type:
-        del(meta['Content-Type']) # Do not allow changing the Content-Type.
+    content_type, meta, permissions, public = get_object_headers(request)
     
     try:
         prev_meta = request.backend.get_object_meta(request.user_uniq, v_account,
@@ -1023,14 +1020,13 @@ def object_update(request, v_account, v_container, v_object):
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
         validate_matching_preconditions(request, prev_meta)
     
-    # If replacing, keep previous values of 'Content-Type' and 'ETag'.
+    # If replacing, keep previous value of 'ETag'.
     replace = True
     if 'update' in request.GET:
         replace = False
     if replace:
-        for k in ('Content-Type', 'ETag'):
-            if k in prev_meta:
-                meta[k] = prev_meta[k]
+        if 'ETag' in prev_meta:
+            meta['ETag'] = prev_meta['ETag']
     
     # A Content-Type or X-Source-Object header indicates data updates.
     src_object = request.META.get('HTTP_X_SOURCE_OBJECT')
@@ -1185,7 +1181,7 @@ def object_update(request, v_account, v_container, v_object):
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                         v_account, v_container, v_object, size, hashmap,
-                        'pithos', meta, replace, permissions)
+                        prev_meta['type'], 'pithos', meta, replace, permissions)
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except NameError:

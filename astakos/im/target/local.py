@@ -49,9 +49,11 @@ def login(request, on_failure='im/login.html'):
     on_failure: the template name to render on login failure
     """
     form = LoginForm(data=request.POST)
+    next = request.POST.get('next')
     if not form.is_valid():
         return render_to_response(on_failure,
-                                  {'form':form},
+                                  {'form':form,
+                                   'next':next},
                                   context_instance=RequestContext(request))
     # get the user from the cash
     user = form.user_cache
@@ -67,5 +69,4 @@ def login(request, on_failure='im/login.html'):
                                   {'form':form},
                                   context_instance=RequestContext(request))
     
-    next = request.POST.get('next')
     return prepare_response(request, user, next)

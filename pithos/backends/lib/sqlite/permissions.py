@@ -61,9 +61,17 @@ class Permissions(XFeatures, Groups, Public):
         """Set permissions for path. The permissions dict
            maps 'read', 'write' keys to member lists."""
         
-        self.xfeature_destroy(path)
-        self.access_grant(path, READ, permissions.get('read', []))
-        self.access_grant(path, WRITE, permissions.get('write', []))
+        r = permissions.get('read', [])
+        w = permissions.get('write', [])
+        if not r and not w:
+            self.xfeature_destroy(path)
+            return
+        feature = self.xfeature_create(path)
+        self.feature_clear(feature)
+        if r:
+            self.feature_setmany(feature, READ, r)
+        if w:
+            self.feature_setmany(feature, WRITE, w)
     
     def access_clear(self, path):
         """Revoke access to path (both permissions and public)."""

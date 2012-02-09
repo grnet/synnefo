@@ -401,6 +401,8 @@ class ModularBackend(BaseBackend):
         self.node.node_remove(node)
         self.queue.send(user, 'diskspace', 0, {'action': 'delete', 'total': 0})
     
+    # XXX: Up to here...
+    
     @backend_method
     def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
         """Return a list of objects existing under a container."""
@@ -920,18 +922,42 @@ class ModularBackend(BaseBackend):
     
     def _check_permissions(self, path, permissions):
         # raise ValueError('Bad characters in permissions')
+        pass
         
         # Check for existing permissions.
-        paths = self.permissions.access_list(path)
-        if paths:
-            ae = AttributeError()
-            ae.data = paths
-            raise ae
+#         paths = self.permissions.access_list(path)
+#         if paths:
+#             ae = AttributeError()
+#             ae.data = paths
+#             raise ae
+    
+    def _get_permissions_path(self, account, container, name):
+        path = '/'.join((account, container, name))
+        permission_paths = self.permissions.access_inherit(path)
+        permission_paths.sort()
+        permission_paths.reverse()
+        for p in permission_paths:
+            if p == path:
+                return p
+            else:
+                try:
+                    parts = p.split('/', 2)
+                    if len(parts) != 3:
+                        return None
+                    path, node = self._lookup_object(*p.split('/', 2))
+                    props = self._get_version(node)
+                    # XXX: Put type in properties...
+                    meta = dict(self.node.attribute_get(props[self.SERIAL], 'pithos'))
+                    if meta['Content-Type'] == 'application/directory':
+                        return p
+                except NameError:
+                    pass
+        return None
     
     def _can_read(self, user, account, container, name):
         if user == account:
             return True
-        path = '/'.join((account, container, name))
+        path = self._get_permissions_path(account, container, name)
         if not self.permissions.access_check(path, self.READ, user) and not self.permissions.access_check(path, self.WRITE, user):
             raise NotAllowedError
     

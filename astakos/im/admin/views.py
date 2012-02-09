@@ -56,6 +56,9 @@ from astakos.im.views import render_response, index
 from astakos.im.admin.forms import AdminProfileForm
 from astakos.im.admin.forms import AdminUserCreationForm
 from astakos.im.settings import BYPASS_ADMIN_AUTH, ADMIN_PAGE_LIMIT, DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL
+
+logger = logging.getLogger(__name__)
+
 def requires_admin(func):
     """
     Decorator checkes whether the request.user is a superuser and if not
@@ -311,7 +314,7 @@ def _send_greeting(request, user, template_name):
                 'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
     sender = DEFAULT_FROM_EMAIL % sitename
     send_mail(subject, message, sender, [user.email])
-    logging.info('Sent greeting %s', user)
+    logger.info('Sent greeting %s', user)
 
 @requires_admin
 @transaction.commit_manually

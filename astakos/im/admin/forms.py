@@ -39,6 +39,8 @@ from astakos.im.forms import LocalUserCreationForm
 
 import logging
 
+logger = logging.getLogger(__name__)
+
 class AdminProfileForm(forms.ModelForm):
     """
     Subclass of ``ModelForm`` for permiting user to edit his/her profile.
@@ -95,5 +97,5 @@ class AdminUserCreationForm(LocalUserCreationForm):
         user.renew_token()
         if commit:
             user.save()
-        logging.info('Created user %s', user)
+        logger.info('Created user %s', user)
         return user

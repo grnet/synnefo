@@ -44,6 +44,10 @@ from urlparse import urlunsplit, urlsplit
 
 from astakos.im.settings import COOKIE_NAME, COOKIE_DOMAIN
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def login(request):
     """
     If the request user is authenticated, redirects to `next` request parameter
@@ -71,6 +75,7 @@ def login(request):
                 response.set_cookie(COOKIE_NAME, value=cookie_value,
                                     expires=expire_fmt, path='/',
                                     domain = COOKIE_DOMAIN)
+                logger.info('Token reset for %s' % request.user.email)
             parts = list(urlsplit(next))
             parts[3] = urlencode({'user': request.user.email, 'token': request.user.auth_token})
             url = urlunsplit(parts)

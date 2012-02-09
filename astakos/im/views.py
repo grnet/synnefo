@@ -58,6 +58,8 @@ from astakos.im.util import get_context, get_current_site, prepare_response
 from astakos.im.forms import *
 from astakos.im.settings import DEFAULT_CONTACT_EMAIL, DEFAULT_FROM_EMAIL, COOKIE_NAME, IM_MODULES
 
+logger = logging.getLogger(__name__)
+
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
@@ -140,7 +142,7 @@ def _send_invitation(request, baseurl, inv):
                 'support': DEFAULT_CONTACT_EMAIL % sitename.lower()})
     sender = DEFAULT_FROM_EMAIL % sitename
     send_mail(subject, message, sender, [inv.username])
-    logging.info('Sent invitation %s', inv)
+    logger.info('Sent invitation %s', inv)
 
 @login_required
 @transaction.commit_manually

@@ -45,6 +45,8 @@ from astakos.im.settings import INVITATIONS_PER_LEVEL, DEFAULT_FROM_EMAIL
 
 import logging
 
+logger = logging.getLogger(__name__)
+
 class LocalUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
@@ -85,7 +87,7 @@ class LocalUserCreationForm(UserCreationForm):
         user.renew_token()
         if commit:
             user.save()
-        logging.info('Created user %s', user)
+        logger.info('Created user %s', user)
         return user
 
 class InvitedLocalUserCreationForm(LocalUserCreationForm):
@@ -175,7 +177,7 @@ class ThirdPartyUserCreationForm(ProfileForm):
         user.renew_token()
         if commit:
             user.save()
-        logging.info('Created user %s', user)
+        logger.info('Created user %s', user)
         return user
 
 class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):

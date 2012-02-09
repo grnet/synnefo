@@ -51,6 +51,8 @@ from astakos.im.settings import INVITATIONS_ENABLED, DEFAULT_CONTACT_EMAIL, DEFA
 import socket
 import logging
 
+logger = logging.getLogger(__name__)
+
 def get_backend(request):
     """
     Returns an instance of a registration backend,
@@ -251,4 +253,4 @@ def _send_verification(request, user, template_name):
             'support': DEFAULT_CONTACT_EMAIL % site.name.lower()})
     sender = DEFAULT_FROM_EMAIL % site.name
     send_mail('%s account activation' % site.name, message, sender, [user.email])
-    logging.info('Sent activation %s', user)
+    logger.info('Sent activation %s', user)

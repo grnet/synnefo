@@ -49,6 +49,8 @@ from django.core.urlresolvers import reverse
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.settings import INVITATIONS_PER_LEVEL, COOKIE_NAME, COOKIE_DOMAIN, FORCE_PROFILE_UPDATE
 
+logger = logging.getLogger(__name__)
+
 class UTC(tzinfo):
    def utcoffset(self, dt):
        return timedelta(0)
@@ -82,7 +84,7 @@ def get_or_create_user(email, realname='', first_name='', last_name='', affiliat
     if created:
         user.renew_token()
         user.save()
-        logging.info('Created user %s', user)
+        logger.info('Created user %s', user)
     
     return user
 

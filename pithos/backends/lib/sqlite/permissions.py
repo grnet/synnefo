@@ -73,6 +73,19 @@ class Permissions(XFeatures, Groups, Public):
         if w:
             self.feature_setmany(feature, WRITE, w)
     
+    def access_get(self, path):
+        feature = self.xfeature_get(path)
+        if not feature:
+            return False
+        permissions = self.feature_dict(feature)
+        if READ in permissions:
+            permissions['read'] = permissions[READ]
+            del(permissions[READ])
+        if WRITE in permissions:
+            permissions['write'] = permissions[WRITE]
+            del(permissions[WRITE])
+        return permissions
+    
     def access_clear(self, path):
         """Revoke access to path (both permissions and public)."""
         
@@ -103,16 +116,6 @@ class Permissions(XFeatures, Groups, Public):
         if not r:
             return []
         
-        def get_permissions(feature):
-            permissions = self.feature_dict(feature)
-            if READ in permissions:
-                permissions['read'] = permissions[READ]
-                del(permissions[READ])
-            if WRITE in permissions:
-                permissions['write'] = permissions[WRITE]
-                del(permissions[WRITE])
-            return permissions
-        
         # Only keep path components.
         parts = path.rstrip('/').split('/')
         valid = []
@@ -120,7 +123,7 @@ class Permissions(XFeatures, Groups, Public):
             subp = '/'.join(parts[:i + 1])
             valid.append(subp)
             valid.append(subp + '/')
-        return [(x[0], get_permissions(x[1])) for x in r if x[0] in valid]
+        return [x[0] for x in r if x[0] in valid]
     
     def access_list_paths(self, member, prefix=None):
         """Return the list of paths granted to member."""

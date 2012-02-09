@@ -529,7 +529,7 @@ class Node(DBWorker):
             return (0, 0, mtime)
         
         # All children (get size and mtime).
-        # XXX: This is why the full path is stored.
+        # This is why the full path is stored.
         s = select([func.count(v.c.serial),
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])

@@ -445,7 +445,7 @@ class Node(DBWorker):
             return (0, 0, mtime)
         
         # All children (get size and mtime).
-        # XXX: This is why the full path is stored.
+        # This is why the full path is stored.
         q = ("select count(serial), sum(size), max(mtime) "
              "from versions v "
              "where serial = (select max(serial) "

@@ -51,6 +51,6 @@ def get_auth():
 
 def get_url():
     try:
-        return os.environ['PITHOS_URL']
+        return os.environ['PITHOS_URL'].rstrip('/')
     except KeyError:
         return DEFAULT_URL

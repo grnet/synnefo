@@ -1,3 +1,10 @@
+snf-common (0.8.0-2) stable; urgency=low
+
+  * Depend on python-setuptools
+  * Conflicts/Replaces: snf-ganeti-tools
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Thu, 09 Feb 2012 10:15:13 +0200
+
 snf-common (0.8.0-1) stable; urgency=low
 
   * Initial debian packaging for Synnefo v0.8.0.

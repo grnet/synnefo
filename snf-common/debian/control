@@ -9,8 +9,10 @@ Homepage: https://code.grnet.gr/projects/synnefo
 
 Package: snf-common
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, ${python:Depends}, python-setuptools
 Provides: ${python:Provides}
+Conflicts: snf-ganeti-tools
+Replaces: snf-ganeti-tools
 XB-Python-Version: ${python:Versions}
 Description: Synnefo common package
 
